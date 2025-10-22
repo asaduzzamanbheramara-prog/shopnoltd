@@ -3,36 +3,33 @@ FROM php:8.2-apache
 
 # Install system dependencies and PHP extensions
 RUN apt-get update && apt-get install -y \
-    git unzip libpq-dev libzip-dev zip curl \
-    && docker-php-ext-install pdo pdo_pgsql zip
+    git zip unzip libpq-dev libzip-dev libonig-dev libxml2-dev \
+    && docker-php-ext-install pdo pdo_pgsql mbstring zip exif pcntl bcmath
 
-# Enable Apache rewrite module (needed for Laravel routes)
+# Enable Apache mod_rewrite for Laravel routes
 RUN a2enmod rewrite
 
 # Set working directory
 WORKDIR /var/www/html
 
-# Copy project files to the container
+# Copy all files
 COPY . .
 
-# Install Composer
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+# Copy Composer from official image
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-# Install PHP dependencies (optimize for production)
+# Install dependencies
 RUN composer install --no-dev --optimize-autoloader
 
-# Set Apache document root to Laravel public directory
-ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
+# Set correct Apache document root to /public
+ENV APACHE_DOCUMENT_ROOT /var/www/html/public
+RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/000-default.conf /etc/apache2/apache2.conf /etc/apache2/sites-enabled/000-default.conf
 
-# Update Apache configuration for Laravel
-RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf && \
-    sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
-
-# Expose port 80 for web traffic
-EXPOSE 80
-
-# Set permissions for Laravel storage and cache folders
+# Set permissions for storage and cache
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 
-# Start Apache server
+# Expose port 80
+EXPOSE 80
+
+# Start Apache
 CMD ["apache2-foreground"]
