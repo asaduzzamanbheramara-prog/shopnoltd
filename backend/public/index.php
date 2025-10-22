@@ -1,3 +1,4 @@
 <?php
-require __DIR__ . '/../bootstrap/app.php';
-echo "<h1>ShopNoLtd - Reconstructed</h1>";
+define('LARAVEL_START', microtime(true));
+require __DIR__.'/../vendor/autoload.php';
+$app = require_once __DIR__.'/../bootstrap/app.php';
