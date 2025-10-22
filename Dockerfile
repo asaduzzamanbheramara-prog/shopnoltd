@@ -14,7 +14,10 @@ RUN apk add --no-cache bash git icu-dev oniguruma-dev zlib-dev libzip-dev postgr
 # Set working directory
 WORKDIR /var/www/html
 
-# Copy vendor from composer stage
+# Copy composer binary
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+# Copy vendor from first stage
 COPY --from=vendor /app/vendor /var/www/html/vendor
 
 # Copy project files
@@ -24,15 +27,15 @@ COPY . /var/www/html
 RUN mkdir -p storage/framework/{sessions,views,cache} storage/logs bootstrap/cache \
     && chown -R www-data:www-data storage bootstrap/cache
 
-# Install PHP dependencies again (in case of updates)
+# Install PHP dependencies again (ensure autoload optimized)
 RUN composer install --no-dev --optimize-autoloader
 
 # Create .env if missing
 RUN if [ ! -f .env ]; then \
-    cp .env.example .env && \
-    sed -i 's/APP_ENV=.*/APP_ENV=production/' .env && \
-    sed -i 's/APP_DEBUG=.*/APP_DEBUG=false/' .env && \
-    sed -i 's|APP_URL=.*|APP_URL=https://shopnoltd.onrender.com|' .env; \
+        cp .env.example .env && \
+        sed -i 's/APP_ENV=.*/APP_ENV=production/' .env && \
+        sed -i 's/APP_DEBUG=.*/APP_DEBUG=false/' .env && \
+        sed -i 's|APP_URL=.*|APP_URL=https://shopnoltd.onrender.com|' .env; \
     fi
 
 # Generate Laravel application key
