@@ -1,3 +1,2 @@
 #!/usr/bin/env php
-<?php
-echo "artisan stub\n";
+<?php echo "Laravel artisan placeholder\n";
