@@ -1,22 +1,21 @@
 version: "3.8"
-
 services:
-  # Laravel PHP-FPM app
   app:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     image: shopnoltd_app:latest
     container_name: shopnoltd_app
     restart: unless-stopped
     volumes:
       - ./:/var/www/html:cached
     env_file:
-      - .env
+      - ./.env
     depends_on:
       - db
     networks:
       - shopnet
 
-  # Nginx web server for Laravel + React
   nginx:
     image: nginx:stable-alpine
     container_name: shopnoltd_nginx
@@ -31,15 +30,14 @@ services:
     networks:
       - shopnet
 
-  # Postgres database
   db:
     image: postgres:15-alpine
     container_name: shopnoltd_db
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${DB_DATABASE:-shopnoltd}
-      POSTGRES_USER: ${DB_USERNAME:-shopuser}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-secret}
+      POSTGRES_DB: ${DB_DATABASE:-shopnoltd_db}
+      POSTGRES_USER: ${DB_USERNAME:-shopnouser}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-Asad18081978#}
     volumes:
       - db_data:/var/lib/postgresql/data
     networks:
