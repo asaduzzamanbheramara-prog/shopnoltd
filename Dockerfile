@@ -2,34 +2,14 @@
 FROM composer:2 AS vendor
 WORKDIR /app
 COPY composer.json composer.lock* /app/
-RUN composer install --no-dev --prefer-dist --no-interaction --no-progress --ignore-platform-reqs
+RUN composer install --no-dev --prefer-dist --no-interaction --no-progress
 
 # Stage 2: PHP-FPM
 FROM php:8.2-fpm-alpine
 
-# Install system dependencies + PostgreSQL + GD for images
-RUN apk add --no-cache \
-    bash \
-    git \
-    icu-dev \
-    oniguruma-dev \
-    zlib-dev \
-    libzip-dev \
-    postgresql-dev \
-    libpng-dev \
-    freetype-dev \
-    libjpeg-turbo-dev \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install \
-        pdo \
-        pdo_mysql \
-        pdo_pgsql \
-        mbstring \
-        zip \
-        intl \
-        bcmath \
-        opcache \
-        gd
+# Install system dependencies + PostgreSQL extensions
+RUN apk add --no-cache bash git icu-dev oniguruma-dev zlib-dev libzip-dev postgresql-dev \
+    && docker-php-ext-install pdo pdo_mysql pdo_pgsql mbstring zip intl bcmath opcache
 
 # Set working directory
 WORKDIR /var/www/html
@@ -40,16 +20,15 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 # Copy vendor from first stage
 COPY --from=vendor /app/vendor /var/www/html/vendor
 
-# Copy project files
+# Copy all project files
 COPY . /var/www/html
 
-# Create storage & bootstrap cache directories
+# Create storage & bootstrap/cache directories
 RUN mkdir -p storage/framework/{sessions,views,cache} storage/logs bootstrap/cache \
     && chown -R www-data:www-data storage bootstrap/cache
 
-# Clear Composer cache and reinstall dependencies (robust)
-RUN composer clear-cache \
-    && composer install --no-dev --optimize-autoloader --ignore-platform-reqs
+# Install PHP dependencies again (optimize autoload)
+RUN composer install --no-dev --optimize-autoloader
 
 # Create .env if missing
 RUN if [ ! -f .env ]; then \
