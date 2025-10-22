@@ -4,7 +4,7 @@ FROM php:8.2-apache
 # Set working directory
 WORKDIR /var/www/html
 
-# Install required dependencies
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     git curl zip unzip libpng-dev libjpeg-dev libfreetype6-dev \
     libonig-dev libxml2-dev libzip-dev \
@@ -14,23 +14,25 @@ RUN apt-get update && apt-get install -y \
 # Enable Apache rewrite module
 RUN a2enmod rewrite
 
-# Copy Composer from official image
+# Copy Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-# Copy app files
+# Copy the Laravel app
 COPY . /var/www/html
 
-# Install Composer dependencies (optimize for production)
+# Install Composer dependencies
 RUN composer install --no-dev --optimize-autoloader
 
-# Fix permissions for Laravel
+# Fix permissions for Laravel storage and cache
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
     && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
-# Configure Apache to serve Laravel's public directory
-RUN echo "<VirtualHost *:80>\n\
+# ✅ Set Apache to serve the public directory
+RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf && \
+    echo "<VirtualHost *:80>\n\
     DocumentRoot /var/www/html/public\n\
     <Directory /var/www/html/public>\n\
+        Options Indexes FollowSymLinks\n\
         AllowOverride All\n\
         Require all granted\n\
     </Directory>\n\
