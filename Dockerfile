@@ -1,20 +1,30 @@
-# Stage: PHP-FPM
+# Stage 1: vendor
+FROM composer:2 AS vendor
+WORKDIR /app
+COPY composer.json composer.lock* /app/
+RUN composer install --no-dev --prefer-dist --no-interaction --no-progress
+
+# Stage 2: PHP-FPM
 FROM php:8.2-fpm-alpine
 
-# Install system dependencies
+# Install system dependencies + Postgres
 RUN apk add --no-cache bash git icu-dev oniguruma-dev zlib-dev libzip-dev postgresql-dev \
-    && docker-php-ext-install pdo pdo_mysql pdo_pgsql mbstring zip intl bcmath opcache
+    && docker-php-ext-install pdo pdo_pgsql mbstring zip intl bcmath opcache
 
 # Set working directory
 WORKDIR /var/www/html
 
-# Copy composer from official image
-COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+# Copy vendor from composer stage
+COPY --from=vendor /app/vendor /var/www/html/vendor
 
 # Copy project files
-COPY . .
+COPY . /var/www/html
 
-# Install PHP dependencies
+# Create storage & bootstrap cache directories
+RUN mkdir -p storage/framework/{sessions,views,cache} storage/logs bootstrap/cache \
+    && chown -R www-data:www-data storage bootstrap/cache
+
+# Install PHP dependencies again (in case of updates)
 RUN composer install --no-dev --optimize-autoloader
 
 # Create .env if missing
@@ -25,14 +35,13 @@ RUN if [ ! -f .env ]; then \
     sed -i 's|APP_URL=.*|APP_URL=https://shopnoltd.onrender.com|' .env; \
     fi
 
-# Generate Laravel app key
+# Generate Laravel application key
 RUN php artisan key:generate --force
 
-# Fix permissions
-RUN mkdir -p storage/framework/{sessions,views,cache} storage/logs bootstrap/cache \
-    && chown -R www-data:www-data storage bootstrap/cache
+# Fix permissions one last time
+RUN chown -R www-data:www-data storage bootstrap/cache
 
-# Expose port
+# Expose PHP-FPM port
 EXPOSE 9000
 
 # Start PHP-FPM
