@@ -1,5 +1,7 @@
 version: "3.8"
+
 services:
+  # Laravel PHP-FPM app
   app:
     build: .
     image: shopnoltd_app:latest
@@ -13,6 +15,8 @@ services:
       - db
     networks:
       - shopnet
+
+  # Nginx web server for Laravel + React
   nginx:
     image: nginx:stable-alpine
     container_name: shopnoltd_nginx
@@ -26,6 +30,8 @@ services:
       - app
     networks:
       - shopnet
+
+  # Postgres database
   db:
     image: postgres:15-alpine
     container_name: shopnoltd_db
@@ -41,6 +47,7 @@ services:
 
 volumes:
   db_data:
+
 networks:
   shopnet:
     driver: bridge
