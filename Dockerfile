@@ -2,14 +2,34 @@
 FROM composer:2 AS vendor
 WORKDIR /app
 COPY composer.json composer.lock* /app/
-RUN composer install --no-dev --prefer-dist --no-interaction --no-progress
+RUN composer install --no-dev --prefer-dist --no-interaction --no-progress --ignore-platform-reqs
 
 # Stage 2: PHP-FPM
 FROM php:8.2-fpm-alpine
 
-# Install system dependencies + Postgres
-RUN apk add --no-cache bash git icu-dev oniguruma-dev zlib-dev libzip-dev postgresql-dev \
-    && docker-php-ext-install pdo pdo_pgsql mbstring zip intl bcmath opcache
+# Install system dependencies + PostgreSQL + GD for images
+RUN apk add --no-cache \
+    bash \
+    git \
+    icu-dev \
+    oniguruma-dev \
+    zlib-dev \
+    libzip-dev \
+    postgresql-dev \
+    libpng-dev \
+    freetype-dev \
+    libjpeg-turbo-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install \
+        pdo \
+        pdo_mysql \
+        pdo_pgsql \
+        mbstring \
+        zip \
+        intl \
+        bcmath \
+        opcache \
+        gd
 
 # Set working directory
 WORKDIR /var/www/html
@@ -27,8 +47,9 @@ COPY . /var/www/html
 RUN mkdir -p storage/framework/{sessions,views,cache} storage/logs bootstrap/cache \
     && chown -R www-data:www-data storage bootstrap/cache
 
-# Install PHP dependencies again (ensure autoload optimized)
-RUN composer install --no-dev --optimize-autoloader
+# Clear Composer cache and reinstall dependencies (robust)
+RUN composer clear-cache \
+    && composer install --no-dev --optimize-autoloader --ignore-platform-reqs
 
 # Create .env if missing
 RUN if [ ! -f .env ]; then \
