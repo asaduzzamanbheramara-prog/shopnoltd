@@ -1,12 +1,11 @@
 {
-  "name": "shopnoltd/superapp",
-  "description": "SuperApp Laravel + React scaffold",
+  "name": "shopnoltd/shopnoltd",
+  "description": "ShopNoLtd - Laravel scaffold",
   "type": "project",
   "require": {
     "php": "^8.2",
     "laravel/framework": "^11.0",
     "guzzlehttp/guzzle": "^7.0",
-    "fideloper/proxy": "^4.4",
     "fruitcake/laravel-cors": "^2.0",
     "laravel/tinker": "^2.8"
   },
