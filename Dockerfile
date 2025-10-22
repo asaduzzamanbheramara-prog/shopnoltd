@@ -2,26 +2,29 @@
 FROM php:8.2-apache
 
 # Set working directory
-WORKDIR /var/www/html
+WORKDIR /app
 
-# Install required packages
+# Install dependencies
 RUN apt-get update && apt-get install -y \
-    git zip unzip libpng-dev libonig-dev libxml2-dev curl \
+    git unzip libpng-dev libonig-dev libxml2-dev zip curl \
     && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd
 
-# Enable Apache rewrite module
+# Enable Apache mod_rewrite
 RUN a2enmod rewrite
 
-# Copy Laravel project files into container
-COPY . /var/www/html
+# Copy existing application directory contents
+COPY . /app
 
-# Set correct permissions
-RUN chown -R www-data:www-data /var/www/html \
-    && chmod -R 755 /var/www/html/storage
+# Set permissions for Laravel
+RUN chown -R www-data:www-data /app/storage /app/bootstrap/cache \
+    && chmod -R 775 /app/storage /app/bootstrap/cache
 
-# Set Apache DocumentRoot to Laravel's public directory
-RUN sed -i 's|/var/www/html|/var/www/html/public|g' /etc/apache2/sites-available/000-default.conf \
-    && echo "ServerName localhost" >> /etc/apache2/apache2.conf
+# Set the Apache DocumentRoot to Laravel's public folder
+RUN sed -i 's|/var/www/html|/app/public|g' /etc/apache2/sites-available/000-default.conf \
+    && echo "<Directory /app/public>\n\
+    AllowOverride All\n\
+    Require all granted\n\
+</Directory>" >> /etc/apache2/apache2.conf
 
 # Expose port 80
 EXPOSE 80
