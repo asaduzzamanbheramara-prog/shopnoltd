@@ -1,17 +1,39 @@
-# Stage 1: vendor
-FROM composer:2 as vendor
-WORKDIR /app
-COPY composer.json composer.lock* /app/
-RUN composer install --no-dev --prefer-dist --no-interaction --no-progress || true
+# Stage: PHP-FPM
+FROM php:8.2-fpm-alpine
 
-# Stage 2: PHP FPM
-FROM php:8.2-fpm-alpine AS base
-RUN apk add --no-cache git icu-dev oniguruma-dev zlib-dev libzip-dev bash
-RUN docker-php-ext-install pdo pdo_mysql pdo_pgsql mbstring zip intl bcmath opcache || true
+# Install system dependencies
+RUN apk add --no-cache bash git icu-dev oniguruma-dev zlib-dev libzip-dev postgresql-dev \
+    && docker-php-ext-install pdo pdo_mysql pdo_pgsql mbstring zip intl bcmath opcache
+
+# Set working directory
 WORKDIR /var/www/html
-COPY . /var/www/html
-COPY --from=vendor /app/vendor /var/www/html/vendor
-RUN mkdir -p storage/framework/sessions storage/framework/views storage/framework/cache storage/logs bootstrap/cache
-RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache || true
+
+# Copy composer from official image
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+# Copy project files
+COPY . .
+
+# Install PHP dependencies
+RUN composer install --no-dev --optimize-autoloader
+
+# Create .env if missing
+RUN if [ ! -f .env ]; then \
+    cp .env.example .env && \
+    sed -i 's/APP_ENV=.*/APP_ENV=production/' .env && \
+    sed -i 's/APP_DEBUG=.*/APP_DEBUG=false/' .env && \
+    sed -i 's|APP_URL=.*|APP_URL=https://shopnoltd.onrender.com|' .env; \
+    fi
+
+# Generate Laravel app key
+RUN php artisan key:generate --force
+
+# Fix permissions
+RUN mkdir -p storage/framework/{sessions,views,cache} storage/logs bootstrap/cache \
+    && chown -R www-data:www-data storage bootstrap/cache
+
+# Expose port
 EXPOSE 9000
+
+# Start PHP-FPM
 CMD ["php-fpm"]
