@@ -1,53 +1,59 @@
 version: "3.9"
 
 services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: shopnoltd_app
+    restart: always
+    ports:
+      - "8080:80"
+    depends_on:
+      - db
+    volumes:
+      - ./backend:/var/www/html
+    environment:
+      APP_ENV: production
+      APP_DEBUG: false
+      APP_KEY: base64:exampleKeyHere=
+      DB_CONNECTION: pgsql
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_DATABASE: shopnoltd_db
+      DB_USERNAME: shopnouser
+      DB_PASSWORD: Asad18081978#
+    networks:
+      - shopnoltd_net
+
   db:
     image: postgres:15
     container_name: shopnoltd_db
     restart: always
     environment:
-      POSTGRES_DB: ${DB_DATABASE}
-      POSTGRES_USER: ${DB_USERNAME}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: shopnoltd_db
+      POSTGRES_USER: shopnouser
+      POSTGRES_PASSWORD: Asad18081978#
     volumes:
-      - db_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
-
-  backend:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: shopnoltd_backend
-    restart: always
-    depends_on:
-      - db
-    env_file:
-      - .env
-    volumes:
-      - ./backend:/var/www/html
-    ports:
-      - "8000:80"
-    command: >
-      sh -c "php artisan migrate --force &&
-             php artisan config:cache &&
-             php-fpm"
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - shopnoltd_net
 
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile.frontend
+      dockerfile: ../Dockerfile.frontend
     container_name: shopnoltd_frontend
     restart: always
-    depends_on:
-      - backend
-    environment:
-      - REACT_APP_API_URL=${API_URL}
-      - REACT_APP_APP_NAME=${APP_NAME}
-      - REACT_APP_ENV=${APP_ENV}
-      - REACT_APP_VERSION=1.0.0
     ports:
-      - "3000:80"
+      - "3000:3000"
+    depends_on:
+      - app
+    networks:
+      - shopnoltd_net
+
+networks:
+  shopnoltd_net:
 
 volumes:
-  db_data:
+  pgdata:
