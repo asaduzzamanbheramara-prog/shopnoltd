@@ -5,7 +5,7 @@ FROM composer:2 AS vendor
 
 WORKDIR /app
 
-# Copy all project files
+# Copy all project files so composer can access everything
 COPY . /app/
 
 # Install PHP dependencies without running post-autoload scripts
@@ -35,7 +35,7 @@ RUN apk add --no-cache \
 # Set working directory
 WORKDIR /var/www/html
 
-# Copy Composer binary
+# Copy Composer binary (optional, useful for artisan/composer commands)
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 # Copy vendor from build stage
@@ -44,13 +44,13 @@ COPY --from=vendor /app/vendor /var/www/html/vendor
 # Copy all project files
 COPY . /var/www/html
 
-# Ensure Laravel directories exist
+# Ensure necessary Laravel directories exist
 RUN mkdir -p storage/framework/{sessions,views,cache} storage/logs bootstrap/cache
 
 # Set proper permissions
 RUN chown -R www-data:www-data storage bootstrap/cache
 
-# If .env is missing, create it from example
+# If .env is missing, create it from example and set production values
 RUN if [ ! -f .env ]; then \
         cp .env.example .env && \
         sed -i 's/APP_ENV=.*/APP_ENV=production/' .env && \
