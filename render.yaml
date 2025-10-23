@@ -1,0 +1,93 @@
+services:
+  # =========================
+  # 🌐 Frontend Service
+  # =========================
+  - type: web
+    name: shopnoltd-frontend
+    env: docker
+    plan: free
+    dockerfilePath: ./Dockerfile.frontend
+    autoDeploy: true
+    envVars:
+      - key: REACT_APP_API_URL
+        value: https://shopnoltd.onrender.com/api
+
+  # =========================
+  # ⚙️ Backend (Laravel)
+  # =========================
+  - type: web
+    name: shopnoltd-backend
+    env: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    autoDeploy: true
+    envVars:
+      - key: APP_NAME
+        value: ShopNoLtd
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: false
+      - key: APP_URL
+        value: https://shopnoltd.onrender.com
+      - key: APP_KEY
+        generateValue: true
+      - key: DB_CONNECTION
+        value: pgsql
+      - key: DB_HOST
+        fromService:
+          type: pserv
+          name: shopnoltd-db
+      - key: DB_PORT
+        value: 5432
+      - key: DB_DATABASE
+        value: shopnoltd_db
+      - key: DB_USERNAME
+        value: shopnouser
+      - key: DB_PASSWORD
+        value: Asad18081978#
+      - key: CACHE_DRIVER
+        value: file
+      - key: QUEUE_CONNECTION
+        value: sync
+      - key: SESSION_DRIVER
+        value: file
+      - key: SESSION_LIFETIME
+        value: 120
+      - key: MAIL_MAILER
+        value: smtp
+      - key: MAIL_HOST
+        value: smtp.mailtrap.io
+      - key: MAIL_PORT
+        value: 2525
+      - key: MAIL_FROM_ADDRESS
+        value: shopnoltd@example.com
+      - key: MAIL_FROM_NAME
+        value: ShopNoLtd
+    envSpecificDetails:
+      - type: deploy
+        command: |
+          php artisan key:generate --force
+          php artisan migrate --force
+          php artisan config:cache
+          php artisan route:cache
+
+  # =========================
+  # 🗄️ PostgreSQL Database
+  # =========================
+  - type: pserv
+    name: shopnoltd-db
+    plan: free
+    env: docker
+    dockerCommand: docker run -d postgres:15
+    disk:
+      name: shopnoltd-db-storage
+      mountPath: /var/lib/postgresql/data
+      sizeGB: 1
+    envVars:
+      - key: POSTGRES_DB
+        value: shopnoltd_db
+      - key: POSTGRES_USER
+        value: shopnouser
+      - key: POSTGRES_PASSWORD
+        value: Asad18081978#
