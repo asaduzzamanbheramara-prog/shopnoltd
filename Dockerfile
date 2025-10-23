@@ -44,8 +44,11 @@ COPY --from=vendor /app/vendor /var/www/html/vendor
 # Copy backend application files
 COPY backend/ /var/www/html
 
-# Copy Nginx and Supervisor configs
+# ✅ Copy both Nginx configs (new fix)
+COPY docker/nginx/nginx.conf /etc/nginx/nginx.conf
 COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
+
+# Copy Supervisor config
 COPY docker/supervisord.conf /etc/supervisord.conf
 
 # Ensure Laravel writable directories exist
