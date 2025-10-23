@@ -3,16 +3,15 @@
 # ===========================
 FROM composer:2 AS vendor
 
-# Set working directory
 WORKDIR /app
 
-# Copy only composer files for caching
+# Copy composer files for caching
 COPY backend/composer.json backend/composer.lock* ./
 
-# Install PHP dependencies without dev packages
+# Install dependencies
 RUN composer install --no-dev --prefer-dist --no-interaction --no-progress --no-scripts -vvv
 
-# Copy the rest of the backend for vendor autoload discovery
+# Copy rest of backend
 COPY backend/ .
 
 # ===========================
@@ -28,7 +27,6 @@ RUN apk add --no-cache \
     && apk del git \
     && rm -rf /var/cache/apk/*
 
-# Set working directory
 WORKDIR /var/www/html
 
 # Copy Composer binary
@@ -46,7 +44,7 @@ RUN mkdir -p storage/framework/{sessions,views,cache} storage/logs bootstrap/cac
 # Set permissions
 RUN chown -R www-data:www-data storage bootstrap/cache
 
-# Copy .env if missing
+# Copy .env if missing and configure for production
 RUN if [ ! -f .env ]; then \
         cp .env.example .env && \
         sed -i 's/APP_ENV=.*/APP_ENV=production/' .env && \
@@ -57,7 +55,7 @@ RUN if [ ! -f .env ]; then \
 # Optimize Composer autoloader
 RUN composer dump-autoload --optimize
 
-# Generate Laravel application key
+# Generate Laravel key
 RUN php artisan key:generate --force || true
 
 # Final permissions fix
