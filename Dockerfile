@@ -1,20 +1,20 @@
-# ---------------------------
+# ===========================
 # Stage 1: Composer dependencies
-# ---------------------------
+# ===========================
 FROM composer:2 AS vendor
 
 WORKDIR /app
 
-# Copy full backend so composer has everything it may reference (autoload, path repos, files, etc.)
+# Copy full backend so composer has everything it may reference (autoload, path repos, etc.)
 COPY backend/ /app/
 
 # Install PHP dependencies (no dev)
 RUN composer install --no-dev --prefer-dist --no-interaction --no-progress
 
 
-# ---------------------------
+# ===========================
 # Stage 2: PHP-FPM (runtime)
-# ---------------------------
+# ===========================
 FROM php:8.2-fpm-alpine
 
 # Install system packages and PHP extensions required by Laravel
@@ -25,21 +25,22 @@ RUN apk add --no-cache \
     && apk del git \
     && rm -rf /var/cache/apk/*
 
+# Set working directory
 WORKDIR /var/www/html
 
-# Copy Composer binary (optional, useful for artisan commands that run composer)
+# Copy Composer binary (useful for artisan/composer commands)
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 # Copy vendor from build stage (already installed)
 COPY --from=vendor /app/vendor /var/www/html/vendor
 
-# Copy application source
+# Copy backend source code
 COPY backend/ /var/www/html
 
 # Ensure necessary Laravel directories exist
 RUN mkdir -p storage/framework/{sessions,views,cache} storage/logs bootstrap/cache
 
-# Set ownership for Laravel writable directories
+# Set proper permissions
 RUN chown -R www-data:www-data storage bootstrap/cache
 
 # If .env is missing, create it from example and set production values
@@ -59,6 +60,8 @@ RUN php artisan key:generate --force || true
 # Final permission fix
 RUN chown -R www-data:www-data storage bootstrap/cache
 
+# Expose PHP-FPM port
 EXPOSE 9000
 
+# Start PHP-FPM
 CMD ["php-fpm"]
