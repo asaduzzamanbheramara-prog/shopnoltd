@@ -1,47 +1,48 @@
 # ========================================
-# 1️⃣ Build Stage (Composer Dependencies)
+# 1️⃣ Build Stage: Composer
 # ========================================
 FROM composer:2 AS vendor
 
 WORKDIR /app
 
-# Copy backend composer files (lock optional)
-COPY backend/composer.json backend/composer.lock* ./
+# Copy only composer files first for caching
+COPY backend/composer.json backend/composer.lock ./
 
 # Install PHP dependencies
-RUN composer install --no-dev --prefer-dist --optimize-autoloader --no-scripts --no-progress -vvv
+RUN composer install --no-dev --prefer-dist --optimize-autoloader
 
 # ========================================
-# 2️⃣ Final Stage (PHP-FPM + Nginx)
+# 2️⃣ Final Stage: PHP-FPM + Nginx
 # ========================================
 FROM php:8.2-fpm-bullseye AS app
 
 # Install system dependencies & PHP extensions
 RUN apt-get update && apt-get install -y \
-    nginx \
-    supervisor \
-    git \
-    unzip \
-    libpng-dev \
-    libjpeg-dev \
-    libfreetype6-dev \
-    libonig-dev \
-    libxml2-dev \
-    zip \
-    curl \
- && docker-php-ext-configure gd --with-freetype --with-jpeg \
- && docker-php-ext-install gd mbstring pdo pdo_mysql tokenizer xml bcmath intl opcache \
- && apt-get clean && rm -rf /var/lib/apt/lists/*
+        nginx \
+        supervisor \
+        git \
+        unzip \
+        libpng-dev \
+        libjpeg-dev \
+        libfreetype6-dev \
+        libonig-dev \
+        libxml2-dev \
+        zip \
+        curl \
+        libicu-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j$(nproc) gd mbstring pdo pdo_mysql xml bcmath intl opcache \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /var/www/html
 
-# Copy backend Laravel app
-COPY backend/ .
+# Copy Laravel app
+COPY backend/ ./
 
-# Copy vendor from build stage
+# Copy vendor from builder stage
 COPY --from=vendor /app/vendor ./vendor
 
-# Copy Docker configs
+# Copy Nginx & Supervisor configs
 COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
 COPY docker/supervisord.conf /etc/supervisord.conf
 
@@ -51,7 +52,7 @@ RUN mkdir -p storage/framework/{sessions,views,cache} storage/logs bootstrap/cac
 # Set permissions
 RUN chown -R www-data:www-data storage bootstrap/cache
 
-# Prepare .env if missing
+# Prepare .env if not exists
 RUN if [ ! -f .env ]; then \
         cp .env.example .env && \
         sed -i 's/APP_ENV=.*/APP_ENV=production/' .env && \
@@ -63,11 +64,11 @@ RUN if [ ! -f .env ]; then \
 RUN composer dump-autoload --optimize || true
 RUN php artisan key:generate --force || true
 
-# Ensure Nginx directories exist
+# Create directories for Nginx
 RUN mkdir -p /var/log/nginx /run/nginx
 
 # Expose HTTP port
 EXPOSE 80
 
-# Start Supervisor (runs both Nginx & PHP-FPM)
+# Start Supervisor (manages Nginx + PHP-FPM)
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]
