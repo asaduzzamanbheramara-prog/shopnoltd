@@ -1,11 +1,11 @@
 # ========================================
-# 1️⃣ Build Stage: Composer
+# 1️⃣ Build Stage: Composer dependencies
 # ========================================
 FROM composer:2 AS vendor
 
 WORKDIR /app
 
-# Copy only composer files first (for caching)
+# Copy only composer files first for caching
 COPY backend/composer.json backend/composer.lock ./
 
 # Install PHP dependencies
@@ -16,7 +16,7 @@ RUN composer install --no-dev --prefer-dist --optimize-autoloader
 # ========================================
 FROM php:8.2-fpm-bullseye AS app
 
-# System dependencies & PHP extensions
+# Install system dependencies & PHP extensions
 RUN apt-get update && apt-get install -y \
         nginx \
         supervisor \
@@ -36,21 +36,23 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /var/www/html
 
-# Copy Laravel backend
+# Copy Laravel app
 COPY backend/ ./
 
-# Copy vendor from builder
+# Copy vendor from build stage
 COPY --from=vendor /app/vendor ./vendor
 
 # Copy Nginx & Supervisor configs
 COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
 COPY docker/supervisord.conf /etc/supervisord.conf
 
-# Create storage/cache dirs & set permissions
-RUN mkdir -p storage/framework/{sessions,views,cache} storage/logs bootstrap/cache \
-    && chown -R www-data:www-data storage bootstrap/cache
+# Create storage & cache directories
+RUN mkdir -p storage/framework/{sessions,views,cache} storage/logs bootstrap/cache
 
-# Prepare .env if missing
+# Set permissions
+RUN chown -R www-data:www-data storage bootstrap/cache
+
+# Prepare .env if not exists
 RUN if [ ! -f .env ]; then \
         cp .env.example .env && \
         sed -i 's/APP_ENV=.*/APP_ENV=production/' .env && \
@@ -63,8 +65,11 @@ RUN composer dump-autoload --optimize || true
 RUN php artisan key:generate --force || true
 RUN php artisan config:cache || true
 
-# Expose HTTP
+# Create directories for Nginx
+RUN mkdir -p /var/log/nginx /run/nginx
+
+# Expose HTTP port
 EXPOSE 80
 
-# Start Supervisor (Nginx + PHP-FPM)
+# Start Supervisor (manages Nginx + PHP-FPM)
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]
