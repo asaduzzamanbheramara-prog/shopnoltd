@@ -1,9 +1,6 @@
 version: "3.9"
 
 services:
-  # ========================
-  # 🗄️ Database (PostgreSQL)
-  # ========================
   db:
     image: postgres:15
     container_name: shopnoltd_db
@@ -17,9 +14,6 @@ services:
     ports:
       - "5432:5432"
 
-  # ========================
-  # ⚙️ Backend (Laravel)
-  # ========================
   backend:
     build:
       context: .
@@ -28,41 +22,17 @@ services:
     restart: always
     depends_on:
       - db
-    environment:
-      APP_NAME: ${APP_NAME}
-      APP_ENV: ${APP_ENV}
-      APP_KEY: ${APP_KEY}
-      APP_DEBUG: ${APP_DEBUG}
-      APP_URL: ${APP_URL}
-
-      DB_CONNECTION: ${DB_CONNECTION}
-      DB_HOST: db
-      DB_PORT: ${DB_PORT}
-      DB_DATABASE: ${DB_DATABASE}
-      DB_USERNAME: ${DB_USERNAME}
-      DB_PASSWORD: ${DB_PASSWORD}
-
-      MAIL_MAILER: smtp
-      MAIL_HOST: smtp.mailtrap.io
-      MAIL_PORT: 2525
-      MAIL_USERNAME: ${MAIL_USERNAME:-null}
-      MAIL_PASSWORD: ${MAIL_PASSWORD:-null}
-      MAIL_ENCRYPTION: ${MAIL_ENCRYPTION:-null}
-      MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS}
-      MAIL_FROM_NAME: ${MAIL_FROM_NAME}
-
-      CACHE_DRIVER: file
-      SESSION_DRIVER: file
-      QUEUE_CONNECTION: sync
-
+    env_file:
+      - .env
     volumes:
       - ./backend:/var/www/html
     ports:
       - "8000:80"
+    command: >
+      sh -c "php artisan migrate --force &&
+             php artisan config:cache &&
+             php-fpm"
 
-  # ========================
-  # 🌐 Frontend (React)
-  # ========================
   frontend:
     build:
       context: ./frontend
