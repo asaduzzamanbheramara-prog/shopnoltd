@@ -1,15 +1,18 @@
 # ===========================
-# Stage 1: Composer dependencies (debug mode)
+# Stage 1: Composer dependencies
 # ===========================
 FROM composer:2 AS vendor
 
+# Set working directory to Laravel root
 WORKDIR /app
 
-# Copy all project files so Composer can access everything
-COPY . /app/
+# Copy composer files first for caching
+COPY backend/composer.json backend/composer.lock* ./
 
-# Install PHP dependencies without running post-autoload scripts
-# Fail fast and show PHP files with syntax errors if Composer fails
+# Copy the rest of the backend folder
+COPY backend/ ./
+
+# Install PHP dependencies without post-autoload scripts
 RUN set -e; \
     composer install --no-dev --prefer-dist --no-interaction --no-progress --no-scripts -vvv || { \
         echo "❌ Composer install failed! Listing PHP files with potential issues:"; \
@@ -18,13 +21,11 @@ RUN set -e; \
         exit 1; \
     }
 
-
 # ===========================
-# Stage 2: PHP-FPM (runtime)
+# Stage 2: PHP-FPM
 # ===========================
 FROM php:8.2-fpm-alpine
 
-# Install system packages and PHP extensions required by Laravel
 RUN apk add --no-cache \
         bash git icu-dev oniguruma-dev zlib-dev libzip-dev postgresql-dev \
     && docker-php-ext-install \
@@ -32,25 +33,24 @@ RUN apk add --no-cache \
     && apk del git \
     && rm -rf /var/cache/apk/*
 
-# Set working directory
 WORKDIR /var/www/html
 
-# Copy Composer binary (useful for artisan/composer commands)
+# Copy Composer binary
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 # Copy vendor from build stage
 COPY --from=vendor /app/vendor /var/www/html/vendor
 
-# Copy all project files
-COPY . /var/www/html
+# Copy backend source code
+COPY backend/ /var/www/html
 
-# Ensure necessary Laravel directories exist
+# Ensure Laravel directories exist
 RUN mkdir -p storage/framework/{sessions,views,cache} storage/logs bootstrap/cache
 
-# Set proper permissions for Laravel writable directories
+# Set proper permissions
 RUN chown -R www-data:www-data storage bootstrap/cache
 
-# If .env is missing, create it from example and set production values
+# Copy .env if missing
 RUN if [ ! -f .env ]; then \
         cp .env.example .env && \
         sed -i 's/APP_ENV=.*/APP_ENV=production/' .env && \
@@ -58,17 +58,14 @@ RUN if [ ! -f .env ]; then \
         sed -i 's|APP_URL=.*|APP_URL=https://shopnoltd.onrender.com|' .env; \
     fi
 
-# Optimize autoloader (scripts can now run safely because PHP extensions exist)
+# Optimize autoloader
 RUN composer dump-autoload --optimize
 
-# Generate application key
+# Generate Laravel application key
 RUN php artisan key:generate --force || true
 
-# Final permission fix
+# Final permissions fix
 RUN chown -R www-data:www-data storage bootstrap/cache
 
-# Expose PHP-FPM port
 EXPOSE 9000
-
-# Start PHP-FPM
 CMD ["php-fpm"]
