@@ -1,24 +1,25 @@
-version: "3.9"
+version: '3.9'
 
 services:
-  app:
+  backend:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: shopnoltd_backend
-    restart: unless-stopped
     ports:
-      - "8080:80"       # Map container port 80 to host 8080
+      - "8080:80"
     volumes:
-      - ./backend/public:/var/www/html/public
-      - ./backend/storage:/var/www/html/storage
-      - ./backend/.env:/var/www/html/.env
+      - ./backend:/var/www/html
     environment:
-      - APP_ENV=production
-      - APP_DEBUG=false
-    networks:
-      - shopnoltd_network
+      APP_ENV: production
+      APP_DEBUG: false
 
-networks:
-  shopnoltd_network:
-    driver: bridge
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.frontend
+    container_name: shopnoltd_frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
