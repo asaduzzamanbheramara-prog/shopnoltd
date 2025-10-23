@@ -30,6 +30,9 @@ COPY --from=vendor /app/vendor ./vendor
 COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
 COPY docker/supervisord.conf /etc/supervisord.conf
 
+# ✅ Copy Composer binary so we can run composer commands
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
 # Create writable directories
 RUN mkdir -p storage/framework/{sessions,views,cache} storage/logs bootstrap/cache \
     && chown -R www-data:www-data storage bootstrap/cache
