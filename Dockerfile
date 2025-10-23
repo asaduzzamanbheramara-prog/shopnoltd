@@ -1,19 +1,22 @@
 # ========================================
-# 1️⃣ Build Stage
+# 1️⃣ Build Stage (Composer Dependencies)
 # ========================================
 FROM composer:2 AS vendor
 
 WORKDIR /app
 
-COPY composer.json composer.lock ./
-RUN composer install --no-dev --prefer-dist --optimize-autoloader
+# Copy backend composer files (lock optional)
+COPY backend/composer.json backend/composer.lock* ./
+
+# Install PHP dependencies
+RUN composer install --no-dev --prefer-dist --optimize-autoloader --no-scripts --no-progress -vvv
 
 # ========================================
-# 2️⃣ Final Stage (Nginx + PHP-FPM)
+# 2️⃣ Final Stage (PHP-FPM + Nginx)
 # ========================================
 FROM php:8.2-fpm-bullseye AS app
 
-# Install dependencies
+# Install system dependencies & PHP extensions
 RUN apt-get update && apt-get install -y \
     nginx \
     supervisor \
@@ -32,23 +35,23 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /var/www/html
 
-# Copy Laravel app files
-COPY . .
+# Copy backend Laravel app
+COPY backend/ .
 
-# Copy vendor from builder
+# Copy vendor from build stage
 COPY --from=vendor /app/vendor ./vendor
 
-# Copy configs
+# Copy Docker configs
 COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
 COPY docker/supervisord.conf /etc/supervisord.conf
 
-# Create Laravel storage & cache directories
+# Create storage & cache directories
 RUN mkdir -p storage/framework/{sessions,views,cache} storage/logs bootstrap/cache
 
-# Permissions
+# Set permissions
 RUN chown -R www-data:www-data storage bootstrap/cache
 
-# Prepare .env (if not exists)
+# Prepare .env if missing
 RUN if [ ! -f .env ]; then \
         cp .env.example .env && \
         sed -i 's/APP_ENV=.*/APP_ENV=production/' .env && \
@@ -60,11 +63,11 @@ RUN if [ ! -f .env ]; then \
 RUN composer dump-autoload --optimize || true
 RUN php artisan key:generate --force || true
 
-# Nginx directories
+# Ensure Nginx directories exist
 RUN mkdir -p /var/log/nginx /run/nginx
 
-# Expose ports
+# Expose HTTP port
 EXPOSE 80
 
-# Start both Nginx & PHP-FPM using Supervisor
+# Start Supervisor (runs both Nginx & PHP-FPM)
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]
