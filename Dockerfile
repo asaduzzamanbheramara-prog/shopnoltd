@@ -8,42 +8,33 @@ WORKDIR /app
 # Copy composer files first for caching
 COPY backend/composer.json backend/composer.lock* ./
 
-# Install PHP dependencies
-RUN composer install --no-dev --prefer-dist --no-interaction --no-progress --no-scripts -vvv
+# Install dependencies
+RUN composer install --no-dev --prefer-dist --no-interaction --no-progress --no-scripts
 
-# Copy the rest of backend
-COPY backend/ .
+# Copy full backend source
+COPY backend/ ./
 
 # ===========================
-# Stage 2: PHP-FPM + Nginx
+# Stage 2: PHP + Nginx
 # ===========================
 FROM php:8.2-fpm-alpine
 
-# Install system dependencies + Nginx
-RUN apk add --no-cache \
-        bash git icu-dev oniguruma-dev zlib-dev libzip-dev postgresql-dev nginx supervisor \
-    && docker-php-ext-install \
-        pdo pdo_mysql pdo_pgsql mbstring zip intl bcmath opcache \
-    && apk del git \
+# Install system dependencies
+RUN apk add --no-cache bash nginx supervisor icu-dev oniguruma-dev zlib-dev libzip-dev postgresql-dev \
+    && docker-php-ext-install pdo pdo_mysql pdo_pgsql mbstring zip intl bcmath opcache \
     && rm -rf /var/cache/apk/*
 
-# Set working directory
 WORKDIR /var/www/html
 
-# Copy Composer binary
-COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
-
-# Copy backend source code
-COPY backend/ ./
-
-# Copy vendor directory
+# Copy vendor from build stage
 COPY --from=vendor /app/vendor ./vendor
 
-# Ensure Laravel directories exist
-RUN mkdir -p storage/framework/{sessions,views,cache} storage/logs bootstrap/cache
+# Copy backend source
+COPY backend/ .
 
-# Set permissions
-RUN chown -R www-data:www-data storage bootstrap/cache
+# Ensure Laravel directories exist
+RUN mkdir -p storage/framework/{sessions,views,cache} storage/logs bootstrap/cache \
+    && chown -R www-data:www-data storage bootstrap/cache
 
 # Copy .env if missing
 RUN if [ ! -f .env ]; then \
@@ -53,24 +44,12 @@ RUN if [ ! -f .env ]; then \
         sed -i 's|APP_URL=.*|APP_URL=https://shopnoltd.onrender.com|' .env; \
     fi
 
-# Optimize Composer autoloader
-RUN composer dump-autoload --optimize
-
-# Generate Laravel key
+# Generate app key
 RUN php artisan key:generate --force || true
 
-# Final permissions fix
-RUN chown -R www-data:www-data storage bootstrap/cache
-
-# ===========================
-# Nginx configuration
-# ===========================
-RUN mkdir -p /run/nginx
-
-COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
-
-# Supervisor configuration to run PHP-FPM + Nginx
+# Copy Supervisor config
 COPY docker/supervisord.conf /etc/supervisord.conf
 
-EXPOSE 80
+EXPOSE 80 443 9000
+
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]
