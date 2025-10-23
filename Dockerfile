@@ -3,34 +3,28 @@
 # ===========================
 FROM composer:2 AS vendor
 
-# Set working directory to Laravel root
 WORKDIR /app
 
 # Copy composer files first for caching
 COPY backend/composer.json backend/composer.lock* ./
 
-# Copy the rest of the backend folder
+# Install dependencies
+RUN composer install --no-dev --prefer-dist --no-interaction --no-progress --no-scripts -vvv
+
+# Copy backend source code (after composer install for caching)
 COPY backend/ ./
 
-# Install PHP dependencies without post-autoload scripts
-RUN set -e; \
-    composer install --no-dev --prefer-dist --no-interaction --no-progress --no-scripts -vvv || { \
-        echo "❌ Composer install failed! Listing PHP files with potential issues:"; \
-        find . -type f -name "*.php" -exec php -l {} \; | grep -v "No syntax errors detected"; \
-        echo "❌ Stopping Docker build due to Composer errors."; \
-        exit 1; \
-    }
 
 # ===========================
 # Stage 2: PHP-FPM
 # ===========================
 FROM php:8.2-fpm-alpine
 
+# Install PHP extensions
 RUN apk add --no-cache \
-        bash git icu-dev oniguruma-dev zlib-dev libzip-dev postgresql-dev \
+        bash icu-dev oniguruma-dev zlib-dev libzip-dev postgresql-dev \
     && docker-php-ext-install \
         pdo pdo_mysql pdo_pgsql mbstring zip intl bcmath opcache \
-    && apk del git \
     && rm -rf /var/cache/apk/*
 
 WORKDIR /var/www/html
@@ -67,5 +61,8 @@ RUN php artisan key:generate --force || true
 # Final permissions fix
 RUN chown -R www-data:www-data storage bootstrap/cache
 
-EXPOSE 9000
+# Expose PHP-FPM port and HTTP port for Nginx
+EXPOSE 9000 80
+
+# Start PHP-FPM
 CMD ["php-fpm"]
