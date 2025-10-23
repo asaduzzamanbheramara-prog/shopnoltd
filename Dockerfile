@@ -3,44 +3,50 @@
 # ===========================
 FROM composer:2 AS vendor
 
+# Set working directory
 WORKDIR /app
 
-# Copy only composer files first for caching
+# Copy only composer files for caching
 COPY backend/composer.json backend/composer.lock* ./
 
 # Install PHP dependencies without dev packages
 RUN composer install --no-dev --prefer-dist --no-interaction --no-progress --no-scripts -vvv
+
+# Copy the rest of the backend for vendor autoload discovery
+COPY backend/ .
 
 # ===========================
 # Stage 2: PHP-FPM
 # ===========================
 FROM php:8.2-fpm-alpine
 
-# Install system dependencies and PHP extensions
+# Install system dependencies
 RUN apk add --no-cache \
-        bash icu-dev oniguruma-dev zlib-dev libzip-dev postgresql-dev \
+        bash git icu-dev oniguruma-dev zlib-dev libzip-dev postgresql-dev \
     && docker-php-ext-install \
         pdo pdo_mysql pdo_pgsql mbstring zip intl bcmath opcache \
+    && apk del git \
     && rm -rf /var/cache/apk/*
 
+# Set working directory
 WORKDIR /var/www/html
 
-# Copy Composer from vendor stage
+# Copy Composer binary
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-# Copy vendor folder from build stage
-COPY --from=vendor /app/vendor /var/www/html/vendor
+# Copy backend source code
+COPY backend/ ./
 
-# Copy the backend source code
-COPY backend/ /var/www/html
+# Copy vendor directory from build stage
+COPY --from=vendor /app/vendor ./vendor
 
 # Ensure Laravel directories exist
 RUN mkdir -p storage/framework/{sessions,views,cache} storage/logs bootstrap/cache
 
-# Set proper permissions
+# Set permissions
 RUN chown -R www-data:www-data storage bootstrap/cache
 
-# Copy .env if missing and configure
+# Copy .env if missing
 RUN if [ ! -f .env ]; then \
         cp .env.example .env && \
         sed -i 's/APP_ENV=.*/APP_ENV=production/' .env && \
@@ -48,15 +54,14 @@ RUN if [ ! -f .env ]; then \
         sed -i 's|APP_URL=.*|APP_URL=https://shopnoltd.onrender.com|' .env; \
     fi
 
-# Optimize autoloader
+# Optimize Composer autoloader
 RUN composer dump-autoload --optimize
 
 # Generate Laravel application key
-RUN php artisan key:generate --force
+RUN php artisan key:generate --force || true
 
 # Final permissions fix
 RUN chown -R www-data:www-data storage bootstrap/cache
 
 EXPOSE 9000
-
 CMD ["php-fpm"]
