@@ -8,9 +8,9 @@ WORKDIR /app
 # Copy backend files so composer can access everything
 COPY backend/ /app/
 
-# Run composer in verbose mode for debugging
-# Shows full error message if something fails
-RUN composer install --no-dev --prefer-dist --no-interaction --no-progress -vvv || \
+# Install PHP dependencies without running post-autoload scripts
+# --no-scripts prevents failures due to missing PHP extensions in this stage
+RUN composer install --no-dev --prefer-dist --no-interaction --no-progress --no-scripts -vvv || \
     (echo "❌ Composer install failed! Dumping composer.json for debugging:" && \
      cat composer.json && exit 1)
 
@@ -31,7 +31,7 @@ RUN apk add --no-cache \
 # Set working directory
 WORKDIR /var/www/html
 
-# Copy Composer binary (useful for artisan/composer commands)
+# Copy Composer binary (optional, useful for artisan/composer commands)
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 # Copy vendor from build stage (already installed)
@@ -54,10 +54,10 @@ RUN if [ ! -f .env ]; then \
         sed -i 's|APP_URL=.*|APP_URL=https://shopnoltd.onrender.com|' .env; \
     fi
 
-# Optimize autoloader (uses vendor already copied)
+# Optimize autoloader (scripts can now run safely because PHP extensions exist)
 RUN composer dump-autoload --optimize
 
-# Generate app key (ignore failure if artisan not available yet)
+# Generate application key
 RUN php artisan key:generate --force || true
 
 # Final permission fix
