@@ -5,13 +5,18 @@ FROM composer:2 AS vendor
 
 WORKDIR /app
 
-# Copy all project files so composer can access everything
+# Copy all project files
 COPY . /app/
 
 # Install PHP dependencies without running post-autoload scripts
-RUN composer install --no-dev --prefer-dist --no-interaction --no-progress --no-scripts -vvv || \
-    (echo "❌ Composer install failed! Dumping composer.json for debugging:" && \
-     cat composer.json && exit 1)
+# Fail fast and show problematic files if Composer fails
+RUN set -e; \
+    composer install --no-dev --prefer-dist --no-interaction --no-progress --no-scripts -vvv || { \
+        echo "❌ Composer install failed! Listing PHP files with potential issues:"; \
+        find . -type f -name "*.php" -exec php -l {} \; | grep -v "No syntax errors detected"; \
+        echo "❌ Stopping Docker build due to Composer errors."; \
+        exit 1; \
+    }
 
 
 # ===========================
@@ -39,13 +44,13 @@ COPY --from=vendor /app/vendor /var/www/html/vendor
 # Copy all project files
 COPY . /var/www/html
 
-# Ensure necessary Laravel directories exist
+# Ensure Laravel directories exist
 RUN mkdir -p storage/framework/{sessions,views,cache} storage/logs bootstrap/cache
 
 # Set proper permissions
 RUN chown -R www-data:www-data storage bootstrap/cache
 
-# If .env is missing, create it from example and set production values
+# If .env is missing, create it from example
 RUN if [ ! -f .env ]; then \
         cp .env.example .env && \
         sed -i 's/APP_ENV=.*/APP_ENV=production/' .env && \
