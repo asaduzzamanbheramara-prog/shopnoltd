@@ -2,7 +2,7 @@ services:
   - type: web
     name: shopnoltd-backend
     env: docker
-    plan: starter  # change to 'standard' if needed
+    plan: starter
     dockerfilePath: backend/Dockerfile
     autoDeploy: true
     branch: main
