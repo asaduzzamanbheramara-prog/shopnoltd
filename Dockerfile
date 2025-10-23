@@ -5,16 +5,17 @@ FROM composer:2 AS vendor
 
 WORKDIR /app
 
-# Copy only composer files first (for caching)
+# Copy composer files
 COPY backend/composer.json backend/composer.lock ./
 
-# Install PHP dependencies
-RUN composer install --no-dev --prefer-dist --optimize-autoloader
+# ⚙️ Ensure compatibility: Update lock file if PHP version mismatch
+RUN composer update --no-dev --prefer-dist --optimize-autoloader || composer install --no-dev --prefer-dist --optimize-autoloader
 
 # ========================================
 # 2️⃣ Final Stage: PHP-FPM + Nginx
 # ========================================
-FROM php:8.2-fpm-bullseye AS app
+FROM php:8.4-fpm-bullseye AS app
+# ↑ use 8.4 to match your local PHP
 
 # Install system dependencies & PHP extensions
 RUN apt-get update && apt-get install -y \
@@ -39,7 +40,7 @@ WORKDIR /var/www/html
 # Copy Laravel backend code
 COPY backend/ ./
 
-# Copy vendor from builder stage
+# Copy vendor dependencies
 COPY --from=vendor /app/vendor ./vendor
 
 # Copy Nginx & Supervisor configs
@@ -52,7 +53,7 @@ RUN mkdir -p storage/framework/{sessions,views,cache} storage/logs bootstrap/cac
 # Set permissions
 RUN chown -R www-data:www-data storage bootstrap/cache
 
-# Prepare .env if not exists
+# Ensure .env exists
 RUN if [ ! -f .env ]; then \
         cp .env.example .env && \
         sed -i 's/APP_ENV=.*/APP_ENV=production/' .env && \
@@ -61,9 +62,10 @@ RUN if [ ! -f .env ]; then \
     fi
 
 # Optimize Laravel
-RUN composer dump-autoload --optimize || true
-RUN php artisan key:generate --force || true
-RUN php artisan config:cache || true
+RUN php artisan key:generate --force || true && \
+    php artisan config:cache || true && \
+    php artisan route:cache || true && \
+    php artisan view:cache || true
 
 # Create directories for Nginx
 RUN mkdir -p /var/log/nginx /run/nginx
