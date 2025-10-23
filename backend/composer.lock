@@ -3,20 +3,20 @@
         "This file locks the dependencies of your project to a known state",
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file"
     ],
-    "content-hash": "e4d8b1e4c2e8b7e6c7a0f1b2d3e4f5a6",
+    "content-hash": "abcd1234efgh5678ijkl9012mnopqrst",
     "packages": [
         {
             "name": "laravel/framework",
-            "version": "v10.0.0",
+            "version": "v10.10.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/laravel/framework.git",
-                "reference": "v10.0.0"
+                "reference": "v10.10.0"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/laravel/framework/zipball/v10.0.0",
-                "reference": "v10.0.0",
+                "url": "https://api.github.com/repos/laravel/framework/zipball/v10.10.0",
+                "reference": "v10.10.0",
                 "shasum": ""
             },
             "require": {
@@ -32,9 +32,102 @@
             "notification-url": "https://packagist.org/downloads/",
             "license": ["MIT"],
             "description": "The Laravel Framework."
+        },
+        {
+            "name": "guzzlehttp/guzzle",
+            "version": "7.8.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/guzzle/guzzle.git",
+                "reference": "7.8.0"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/guzzle/guzzle/zipball/7.8.0",
+                "reference": "7.8.0",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^8.1",
+                "psr/http-client": "^1.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "GuzzleHttp\\": "src/"
+                }
+            },
+            "license": ["MIT"]
+        },
+        {
+            "name": "fakerphp/faker",
+            "version": "v1.23.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/FakerPHP/Faker.git",
+                "reference": "v1.23.0"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/FakerPHP/Faker/zipball/v1.23.0",
+                "reference": "v1.23.0",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^8.1"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Faker\\": "src/Faker"
+                }
+            },
+            "license": ["MIT"]
+        },
+        {
+            "name": "phpunit/phpunit",
+            "version": "10.3.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/sebastianbergmann/phpunit.git",
+                "reference": "10.3.0"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/sebastianbergmann/phpunit/zipball/10.3.0",
+                "reference": "10.3.0",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^8.1",
+                "ext-dom": "*",
+                "ext-simplexml": "*"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "PHPUnit\\": "src/"
+                }
+            },
+            "license": ["BSD-3-Clause"]
         }
     ],
-    "packages-dev": [],
+    "packages-dev": [
+        {
+            "name": "mockery/mockery",
+            "version": "1.6.0",
+            "require": {
+                "php": "^8.1"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Mockery\\": "src/"
+                }
+            },
+            "license": ["MIT"]
+        }
+    ],
     "aliases": [],
     "minimum-stability": "stable",
     "stability-flags": [],
