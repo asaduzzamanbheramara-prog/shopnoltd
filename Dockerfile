@@ -5,7 +5,7 @@ FROM composer:2 AS vendor
 
 WORKDIR /app
 
-# Copy only composer files first for caching
+# Copy only composer files first (for caching)
 COPY backend/composer.json backend/composer.lock ./
 
 # Install PHP dependencies
@@ -31,15 +31,15 @@ RUN apt-get update && apt-get install -y \
         curl \
         libicu-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j$(nproc) gd mbstring pdo pdo_mysql xml bcmath intl opcache \
+    && docker-php-ext-install -j$(nproc) gd mbstring pdo pdo_pgsql xml bcmath intl opcache \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /var/www/html
 
-# Copy Laravel app
+# Copy Laravel backend code
 COPY backend/ ./
 
-# Copy vendor from build stage
+# Copy vendor from builder stage
 COPY --from=vendor /app/vendor ./vendor
 
 # Copy Nginx & Supervisor configs
