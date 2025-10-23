@@ -5,11 +5,10 @@ FROM composer:2 AS vendor
 
 WORKDIR /app
 
-# Copy backend files so composer can access everything
-COPY backend/ /app/
+# Copy all project files so composer can access everything
+COPY . /app/
 
 # Install PHP dependencies without running post-autoload scripts
-# --no-scripts prevents failures due to missing PHP extensions in this stage
 RUN composer install --no-dev --prefer-dist --no-interaction --no-progress --no-scripts -vvv || \
     (echo "❌ Composer install failed! Dumping composer.json for debugging:" && \
      cat composer.json && exit 1)
@@ -31,14 +30,14 @@ RUN apk add --no-cache \
 # Set working directory
 WORKDIR /var/www/html
 
-# Copy Composer binary (optional, useful for artisan/composer commands)
+# Copy Composer binary
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-# Copy vendor from build stage (already installed)
+# Copy vendor from build stage
 COPY --from=vendor /app/vendor /var/www/html/vendor
 
-# Copy backend source code
-COPY backend/ /var/www/html
+# Copy all project files
+COPY . /var/www/html
 
 # Ensure necessary Laravel directories exist
 RUN mkdir -p storage/framework/{sessions,views,cache} storage/logs bootstrap/cache
@@ -54,7 +53,7 @@ RUN if [ ! -f .env ]; then \
         sed -i 's|APP_URL=.*|APP_URL=https://shopnoltd.onrender.com|' .env; \
     fi
 
-# Optimize autoloader (scripts can now run safely because PHP extensions exist)
+# Optimize autoloader
 RUN composer dump-autoload --optimize
 
 # Generate application key
