@@ -5,22 +5,18 @@ FROM composer:2 AS vendor
 
 WORKDIR /app
 
-# Copy composer files first for caching
+# Copy only composer files first for caching
 COPY backend/composer.json backend/composer.lock* ./
 
-# Install dependencies
+# Install PHP dependencies without dev packages
 RUN composer install --no-dev --prefer-dist --no-interaction --no-progress --no-scripts -vvv
-
-# Copy backend source code (after composer install for caching)
-COPY backend/ ./
-
 
 # ===========================
 # Stage 2: PHP-FPM
 # ===========================
 FROM php:8.2-fpm-alpine
 
-# Install PHP extensions
+# Install system dependencies and PHP extensions
 RUN apk add --no-cache \
         bash icu-dev oniguruma-dev zlib-dev libzip-dev postgresql-dev \
     && docker-php-ext-install \
@@ -29,13 +25,13 @@ RUN apk add --no-cache \
 
 WORKDIR /var/www/html
 
-# Copy Composer binary
+# Copy Composer from vendor stage
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-# Copy vendor from build stage
+# Copy vendor folder from build stage
 COPY --from=vendor /app/vendor /var/www/html/vendor
 
-# Copy backend source code
+# Copy the backend source code
 COPY backend/ /var/www/html
 
 # Ensure Laravel directories exist
@@ -44,7 +40,7 @@ RUN mkdir -p storage/framework/{sessions,views,cache} storage/logs bootstrap/cac
 # Set proper permissions
 RUN chown -R www-data:www-data storage bootstrap/cache
 
-# Copy .env if missing
+# Copy .env if missing and configure
 RUN if [ ! -f .env ]; then \
         cp .env.example .env && \
         sed -i 's/APP_ENV=.*/APP_ENV=production/' .env && \
@@ -56,13 +52,11 @@ RUN if [ ! -f .env ]; then \
 RUN composer dump-autoload --optimize
 
 # Generate Laravel application key
-RUN php artisan key:generate --force || true
+RUN php artisan key:generate --force
 
 # Final permissions fix
 RUN chown -R www-data:www-data storage bootstrap/cache
 
-# Expose PHP-FPM port and HTTP port for Nginx
-EXPOSE 9000 80
+EXPOSE 9000
 
-# Start PHP-FPM
 CMD ["php-fpm"]
