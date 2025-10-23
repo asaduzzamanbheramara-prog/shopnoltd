@@ -8,53 +8,27 @@ services:
     branch: main
     envVars:
       - key: APP_NAME
-        fromFile: backend/.env
+        value: ShopNoLtd
       - key: APP_ENV
-        fromFile: backend/.env
+        value: production
       - key: APP_KEY
         fromFile: backend/.env
       - key: APP_DEBUG
-        fromFile: backend/.env
+        value: false
       - key: APP_URL
-        fromFile: backend/.env
+        value: https://shopnoltd.onrender.com
       - key: DB_CONNECTION
-        fromFile: backend/.env
+        value: pgsql
       - key: DB_HOST
-        fromFile: backend/.env
+        value: db
       - key: DB_PORT
-        fromFile: backend/.env
+        value: "5432"
       - key: DB_DATABASE
-        fromFile: backend/.env
+        value: shopnoltd_db
       - key: DB_USERNAME
-        fromFile: backend/.env
+        value: shopnouser
       - key: DB_PASSWORD
-        fromFile: backend/.env
-      - key: BROADCAST_DRIVER
-        fromFile: backend/.env
-      - key: CACHE_DRIVER
-        fromFile: backend/.env
-      - key: QUEUE_CONNECTION
-        fromFile: backend/.env
-      - key: SESSION_DRIVER
-        fromFile: backend/.env
-      - key: SESSION_LIFETIME
-        fromFile: backend/.env
-      - key: MAIL_MAILER
-        fromFile: backend/.env
-      - key: MAIL_HOST
-        fromFile: backend/.env
-      - key: MAIL_PORT
-        fromFile: backend/.env
-      - key: MAIL_USERNAME
-        fromFile: backend/.env
-      - key: MAIL_PASSWORD
-        fromFile: backend/.env
-      - key: MAIL_ENCRYPTION
-        fromFile: backend/.env
-      - key: MAIL_FROM_ADDRESS
-        fromFile: backend/.env
-      - key: MAIL_FROM_NAME
-        fromFile: backend/.env
+        value: Asad18081978#
     healthCheckPath: /health
     mounts:
       - type: volume
