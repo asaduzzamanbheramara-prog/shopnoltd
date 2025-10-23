@@ -9,7 +9,7 @@ WORKDIR /app
 COPY . /app/
 
 # Install PHP dependencies without running post-autoload scripts
-# Fail fast and show problematic files if Composer fails
+# Fail fast and show PHP files with syntax errors if Composer fails
 RUN set -e; \
     composer install --no-dev --prefer-dist --no-interaction --no-progress --no-scripts -vvv || { \
         echo "❌ Composer install failed! Listing PHP files with potential issues:"; \
