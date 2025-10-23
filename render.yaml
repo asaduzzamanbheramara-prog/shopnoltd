@@ -2,33 +2,81 @@ services:
   - type: web
     name: shopnoltd-backend
     env: docker
-    plan: starter
-    dockerfilePath: Dockerfile
+    plan: starter  # change to 'standard' if needed
+    dockerfilePath: backend/Dockerfile
     autoDeploy: true
-    buildCommand: ""
-    startCommand: ""
+    branch: main
     envVars:
+      - key: APP_NAME
+        fromFile: backend/.env
       - key: APP_ENV
-        value: production
+        fromFile: backend/.env
+      - key: APP_KEY
+        fromFile: backend/.env
       - key: APP_DEBUG
-        value: false
+        fromFile: backend/.env
       - key: APP_URL
-        value: https://shopnoltd.onrender.com
+        fromFile: backend/.env
       - key: DB_CONNECTION
-        value: pgsql
+        fromFile: backend/.env
       - key: DB_HOST
-        value: db
+        fromFile: backend/.env
       - key: DB_PORT
-        value: "5432"
+        fromFile: backend/.env
       - key: DB_DATABASE
-        value: shopnoltd_db
+        fromFile: backend/.env
       - key: DB_USERNAME
-        value: shopnouser
+        fromFile: backend/.env
       - key: DB_PASSWORD
-        value: Asad18081978#
+        fromFile: backend/.env
+      - key: BROADCAST_DRIVER
+        fromFile: backend/.env
+      - key: CACHE_DRIVER
+        fromFile: backend/.env
+      - key: QUEUE_CONNECTION
+        fromFile: backend/.env
+      - key: SESSION_DRIVER
+        fromFile: backend/.env
+      - key: SESSION_LIFETIME
+        fromFile: backend/.env
+      - key: MAIL_MAILER
+        fromFile: backend/.env
+      - key: MAIL_HOST
+        fromFile: backend/.env
+      - key: MAIL_PORT
+        fromFile: backend/.env
+      - key: MAIL_USERNAME
+        fromFile: backend/.env
+      - key: MAIL_PASSWORD
+        fromFile: backend/.env
+      - key: MAIL_ENCRYPTION
+        fromFile: backend/.env
+      - key: MAIL_FROM_ADDRESS
+        fromFile: backend/.env
+      - key: MAIL_FROM_NAME
+        fromFile: backend/.env
+    healthCheckPath: /health
+    mounts:
+      - type: volume
+        name: shopnoltd-backend-storage
+        mountPath: /var/www/html/storage
+
   - type: web
     name: shopnoltd-frontend
     env: docker
     plan: starter
     dockerfilePath: Dockerfile.frontend
     autoDeploy: true
+    branch: main
+    envVars:
+      - key: REACT_APP_API_URL
+        value: "https://shopnoltd-backend.onrender.com/api"
+    healthCheckPath: /
+
+databases:
+  - name: shopnoltd-db
+    engine: postgres
+    plan: starter
+    user: shopnouser
+    password: Asad18081978#
+    database: shopnoltd_db
