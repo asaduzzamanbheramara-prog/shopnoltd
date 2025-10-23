@@ -1,4 +1,7 @@
 services:
+  # ==========================
+  # Backend Service
+  # ==========================
   - type: web
     name: shopnoltd-backend
     env: docker
@@ -12,7 +15,7 @@ services:
       - key: APP_ENV
         value: production
       - key: APP_KEY
-        fromFile: backend/.env
+        value: ""
       - key: APP_DEBUG
         value: false
       - key: APP_URL
@@ -29,12 +32,41 @@ services:
         value: shopnouser
       - key: DB_PASSWORD
         value: Asad18081978#
+      - key: BROADCAST_DRIVER
+        value: log
+      - key: CACHE_DRIVER
+        value: file
+      - key: QUEUE_CONNECTION
+        value: sync
+      - key: SESSION_DRIVER
+        value: file
+      - key: SESSION_LIFETIME
+        value: "120"
+      - key: MAIL_MAILER
+        value: smtp
+      - key: MAIL_HOST
+        value: smtp.mailtrap.io
+      - key: MAIL_PORT
+        value: "2525"
+      - key: MAIL_USERNAME
+        value: null
+      - key: MAIL_PASSWORD
+        value: null
+      - key: MAIL_ENCRYPTION
+        value: null
+      - key: MAIL_FROM_ADDRESS
+        value: shopnoltd@example.com
+      - key: MAIL_FROM_NAME
+        value: ShopNoLtd
     healthCheckPath: /health
     mounts:
       - type: volume
         name: shopnoltd-backend-storage
         mountPath: /var/www/html/storage
 
+  # ==========================
+  # Frontend Service
+  # ==========================
   - type: web
     name: shopnoltd-frontend
     env: docker
@@ -47,6 +79,9 @@ services:
         value: "https://shopnoltd-backend.onrender.com/api"
     healthCheckPath: /
 
+# ==========================
+# Database Service
+# ==========================
 databases:
   - name: shopnoltd-db
     engine: postgres
