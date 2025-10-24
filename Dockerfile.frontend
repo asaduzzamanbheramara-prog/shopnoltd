@@ -1,33 +1,16 @@
-# ========================================
-# 🌐 Frontend Build & Serve (for React/Vue/Next)
-# ========================================
+# Build Stage
 FROM node:20-alpine AS build
-
-# Set working directory
 WORKDIR /app
 
-# Copy package files
 COPY frontend/package*.json ./
-
-# Install dependencies
 RUN npm install
 
-# Copy all frontend source code
-COPY frontend/ .
+COPY frontend/ ./
+RUN npm run build  # React uses 'build', Vue uses 'dist', adjust accordingly
 
-# Build production assets
-RUN npm run build
-
-# ========================================
-# ⚙️ Serve with Nginx
-# ========================================
+# Serve with Nginx
 FROM nginx:1.25-alpine
-
-# Copy built frontend assets to Nginx html folder
-COPY --from=build /app/dist /usr/share/nginx/html
-# (or /app/build if React creates a `build/` folder instead of `dist/`)
-
-# Replace default Nginx config with your custom one
+COPY --from=build /app/build /usr/share/nginx/html  # Adjust to /app/dist if Vue
 COPY docker/nginx/frontend.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
