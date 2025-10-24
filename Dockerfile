@@ -5,7 +5,7 @@ FROM composer:2 AS vendor
 
 WORKDIR /app
 
-# Copy entire backend for full context
+# Copy backend for full context
 COPY backend/ ./
 
 # Ensure directories exist to prevent Composer classmap errors
@@ -29,7 +29,7 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
-WORKDIR /var/www/html
+WORKDIR /app
 
 # Copy Laravel application
 COPY backend/ ./
@@ -44,11 +44,11 @@ COPY docker/supervisord.conf /etc/supervisord.conf
 COPY docker/php-fpm.conf /usr/local/etc/php-fpm.d/www.conf
 RUN ln -sf /etc/nginx/conf.d/default.conf /etc/nginx/sites-enabled/default
 
-# Laravel writable directories
-RUN mkdir -p storage/framework/{sessions,views,cache} storage/logs bootstrap/cache \
-    && chown -R www-data:www-data storage bootstrap/cache
+# Create writable directories
+RUN mkdir -p storage/framework/{sessions,views,cache} storage/logs bootstrap/cache /var/log/php-fpm \
+    && chown -R www-data:www-data storage bootstrap/cache /var/log/php-fpm
 
-# Ensure .env exists and is configured for production
+# Ensure .env exists and configured for production
 RUN if [ ! -f .env ]; then \
         cp .env.example .env && \
         sed -i 's/APP_ENV=.*/APP_ENV=production/' .env && \
