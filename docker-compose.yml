@@ -1,37 +1,9 @@
 version: "3.9"
 
 services:
-  # ----------------------------
-  # Laravel Backend (PHP-FPM + Nginx)
-  # ----------------------------
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: shopnoltd_app
-    restart: always
-    ports:
-      - "8080:80"
-    depends_on:
-      - db
-    volumes:
-      - ./backend:/var/www/html
-    environment:
-      APP_ENV: production
-      APP_DEBUG: false
-      APP_KEY: base64:exampleKeyHere=
-      DB_CONNECTION: pgsql
-      DB_HOST: db
-      DB_PORT: 5432
-      DB_DATABASE: shopnoltd_db
-      DB_USERNAME: shopnouser
-      DB_PASSWORD: Asad18081978#
-    networks:
-      - shopnoltd_net
-
-  # ----------------------------
+  # ===========================
   # PostgreSQL Database
-  # ----------------------------
+  # ===========================
   db:
     image: postgres:15
     container_name: shopnoltd_db
@@ -41,34 +13,38 @@ services:
       POSTGRES_USER: shopnouser
       POSTGRES_PASSWORD: Asad18081978#
     volumes:
-      - pgdata:/var/lib/postgresql/data
-    networks:
-      - shopnoltd_net
+      - db_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
 
-  # ----------------------------
-  # Frontend (React/Vue/Next.js SPA)
-  # ----------------------------
-  frontend:
+  # ===========================
+  # Laravel App (PHP-FPM + Nginx + Supervisor)
+  # ===========================
+  app:
     build:
-      context: ./frontend
-      dockerfile: ../Dockerfile.frontend
-    container_name: shopnoltd_frontend
+      context: .
+      dockerfile: Dockerfile
+    container_name: shopnoltd_app
     restart: always
     ports:
-      - "3000:80"  # Serves SPA via Nginx
+      - "80:80"
     depends_on:
-      - app
-    networks:
-      - shopnoltd_net
+      - db
+    environment:
+      APP_ENV: production
+      APP_DEBUG: false
+      APP_URL: https://shopnoltd.onrender.com
+      DB_CONNECTION: pgsql
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_DATABASE: shopnoltd_db
+      DB_USERNAME: shopnouser
+      DB_PASSWORD: Asad18081978#
+    volumes:
+      - ./backend:/var/www/html
+      - ./docker/nginx:/etc/nginx
+      - ./docker/supervisord.conf:/etc/supervisord.conf
+      - ./backend/storage:/var/www/html/storage
 
-# ----------------------------
-# Networks
-# ----------------------------
-networks:
-  shopnoltd_net:
-
-# ----------------------------
-# Volumes
-# ----------------------------
 volumes:
-  pgdata:
+  db_data:
