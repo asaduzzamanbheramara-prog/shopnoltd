@@ -2,10 +2,14 @@
 # 1️⃣ Build Stage: Composer dependencies
 # ========================================
 FROM composer:2 AS vendor
+
 WORKDIR /app
 
 # Copy entire backend for full context
 COPY backend/ ./
+
+# Ensure directories exist to prevent Composer classmap errors
+RUN mkdir -p database/seeders database/factories
 
 # Force Composer to update and install all dependencies, ignoring lock file
 RUN composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader || \
@@ -24,12 +28,13 @@ RUN apt-get update && apt-get install -y \
     && docker-php-ext-install -j"$(nproc)" gd mbstring pdo pdo_pgsql xml bcmath intl opcache \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
+# Set working directory
 WORKDIR /var/www/html
 
-# Copy Laravel code
+# Copy Laravel application
 COPY backend/ ./
 
-# Copy dependencies from vendor stage
+# Copy vendor dependencies from build stage
 COPY --from=vendor /app/vendor ./vendor
 
 # Remove default Nginx HTML and config, use custom
