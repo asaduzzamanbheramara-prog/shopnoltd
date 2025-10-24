@@ -8,7 +8,7 @@ WORKDIR /app
 # Copy backend for full context
 COPY backend/ ./
 
-# Ensure directories exist to prevent Composer classmap errors
+# Ensure directories exist
 RUN mkdir -p database/seeders database/factories
 
 # Install/update dependencies
@@ -31,7 +31,7 @@ RUN apt-get update && apt-get install -y \
 # Set working directory
 WORKDIR /app
 
-# Copy Laravel application
+# Copy Laravel app
 COPY backend/ ./
 
 # Copy vendor dependencies from build stage
@@ -41,19 +41,26 @@ COPY --from=vendor /app/vendor ./vendor
 RUN rm -rf /usr/share/nginx/html/* /etc/nginx/conf.d/default.conf
 COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
 COPY docker/supervisord.conf /etc/supervisord.conf
-COPY docker/php-fpm.conf /usr/local/etc/php-fpm.d/www.conf
 
-# Set global PHP-FPM error log (must NOT be in pool file)
+# ===========================
+# PHP-FPM Global Config
+# ===========================
+# Create /usr/local/etc/php-fpm.conf with global error log
 RUN echo "error_log = /var/log/php-fpm/error.log" > /usr/local/etc/php-fpm.conf
 
-# Symlink default Nginx config
+# Pool file: www.conf
+COPY docker/php-fpm.conf /usr/local/etc/php-fpm.d/www.conf
+
+# Symlink Nginx site
 RUN ln -sf /etc/nginx/conf.d/default.conf /etc/nginx/sites-enabled/default
 
-# Create writable directories and log folder
+# Create writable directories
 RUN mkdir -p storage/framework/{sessions,views,cache} storage/logs bootstrap/cache /var/log/php-fpm \
     && chown -R www-data:www-data storage bootstrap/cache /var/log/php-fpm
 
-# Ensure .env exists and enable debugging
+# ===========================
+# Debug-friendly Laravel .env
+# ===========================
 RUN if [ ! -f .env ]; then \
         cp .env.example .env && \
         sed -i 's/APP_ENV=.*/APP_ENV=local/' .env && \
@@ -61,7 +68,7 @@ RUN if [ ! -f .env ]; then \
         sed -i 's|APP_URL=.*|APP_URL=https://shopnoltd.onrender.com|' .env; \
     fi
 
-# Laravel optimizations (cleared to show errors)
+# Laravel optimizations (cache cleared for debugging)
 RUN php artisan key:generate --force \
     && php artisan config:clear \
     && php artisan route:clear \
@@ -72,4 +79,4 @@ RUN php artisan key:generate --force \
 EXPOSE 80
 
 # Start supervisor (Nginx + PHP-FPM)
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]
+CMD ["/usr/bin/supervisord", "-n", "-c", "/etc/supervisord.conf"]
