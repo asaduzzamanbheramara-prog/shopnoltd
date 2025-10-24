@@ -44,11 +44,14 @@ WORKDIR /var/www/html
 # Copy application source
 COPY backend/ ./
 
-# Copy vendor dependencies from build stage (ignore errors if not present)
+# Copy vendor dependencies from build stage
 COPY --from=vendor /app/vendor ./vendor
 
-# Copy Nginx & Supervisor configuration
+# 🧩 Fix: Remove default Nginx config and use Laravel’s one
+RUN rm -f /etc/nginx/conf.d/default.conf
 COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
+
+# Copy Supervisor configuration
 COPY docker/supervisord.conf /etc/supervisord.conf
 
 # Prepare writable dirs
