@@ -5,16 +5,11 @@ FROM composer:2 AS vendor
 
 WORKDIR /app
 
-# Copy composer files (lock file optional)
-COPY backend/composer.json backend/composer.lock* ./
-
-# Ensure composer.lock exists before install
-RUN if [ ! -f composer.lock ]; then composer update --no-dev --prefer-dist --optimize-autoloader; fi
+# Copy the entire backend for full context (autoload + composer)
+COPY backend/ ./
 
 # Install PHP dependencies (optimized for production)
-RUN composer install --no-dev --prefer-dist --no-interaction --no-scripts --optimize-autoloader || \
-    composer update --no-dev --prefer-dist --no-interaction --optimize-autoloader
-
+RUN composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader
 
 # ========================================
 # 2️⃣ Final Stage: PHP-FPM + Nginx
@@ -43,23 +38,19 @@ RUN apt-get update && apt-get install -y \
 # Set working directory
 WORKDIR /var/www/html
 
-# Copy Laravel backend code
+# Copy backend application
 COPY backend/ ./
 
-# Copy vendor dependencies from Composer build stage
+# Copy vendor dependencies from Composer build
 COPY --from=vendor /app/vendor ./vendor
 
-# 🧩 Fix: Remove default Nginx HTML & config
+# 🧩 Remove default Nginx stuff and add custom config
 RUN rm -rf /usr/share/nginx/html/* /etc/nginx/conf.d/default.conf
-
-# Copy custom Nginx & Supervisor configs
 COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
 COPY docker/supervisord.conf /etc/supervisord.conf
-
-# 🧠 Force Nginx to use our Laravel config (Render safety)
 RUN ln -sf /etc/nginx/conf.d/default.conf /etc/nginx/sites-enabled/default
 
-# Set correct permissions for Laravel writable directories
+# Permissions for Laravel writable dirs
 RUN mkdir -p storage/framework/{sessions,views,cache} storage/logs bootstrap/cache \
     && chown -R www-data:www-data storage bootstrap/cache
 
@@ -71,14 +62,14 @@ RUN if [ ! -f .env ]; then \
         sed -i 's|APP_URL=.*|APP_URL=https://shopnoltd.onrender.com|' .env; \
     fi
 
-# Laravel optimizations (ignore artisan errors if config/cache not ready)
+# Laravel optimizations
 RUN php artisan key:generate --force || true && \
     php artisan config:cache || true && \
     php artisan route:cache || true && \
     php artisan view:cache || true
 
-# Expose Nginx web port
+# Expose web port
 EXPOSE 80
 
-# Run Supervisor to manage Nginx + PHP-FPM
+# Start supervisor (Nginx + PHP-FPM)
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]
