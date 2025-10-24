@@ -46,13 +46,14 @@ COPY docker/php-fpm.conf /usr/local/etc/php-fpm.d/www.conf
 # Set global PHP-FPM error log (must NOT be in pool file)
 RUN echo "error_log = /var/log/php-fpm/error.log" > /usr/local/etc/php-fpm.conf
 
+# Symlink default Nginx config
 RUN ln -sf /etc/nginx/conf.d/default.conf /etc/nginx/sites-enabled/default
 
 # Create writable directories and log folder
 RUN mkdir -p storage/framework/{sessions,views,cache} storage/logs bootstrap/cache /var/log/php-fpm \
     && chown -R www-data:www-data storage bootstrap/cache /var/log/php-fpm
 
-# Ensure .env exists and enable debug for checking
+# Ensure .env exists and enable debugging
 RUN if [ ! -f .env ]; then \
         cp .env.example .env && \
         sed -i 's/APP_ENV=.*/APP_ENV=local/' .env && \
@@ -60,11 +61,12 @@ RUN if [ ! -f .env ]; then \
         sed -i 's|APP_URL=.*|APP_URL=https://shopnoltd.onrender.com|' .env; \
     fi
 
-# Laravel optimizations (can be cleared if debugging)
+# Laravel optimizations (cleared to show errors)
 RUN php artisan key:generate --force \
     && php artisan config:clear \
     && php artisan route:clear \
-    && php artisan view:clear
+    && php artisan view:clear \
+    && php artisan cache:clear
 
 # Expose web port
 EXPOSE 80
