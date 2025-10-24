@@ -44,7 +44,7 @@ COPY docker/supervisord.conf /etc/supervisord.conf
 COPY docker/php-fpm.conf /usr/local/etc/php-fpm.d/www.conf
 RUN ln -sf /etc/nginx/conf.d/default.conf /etc/nginx/sites-enabled/default
 
-# Create writable directories
+# Create writable directories and log folder
 RUN mkdir -p storage/framework/{sessions,views,cache} storage/logs bootstrap/cache /var/log/php-fpm \
     && chown -R www-data:www-data storage bootstrap/cache /var/log/php-fpm
 
@@ -65,5 +65,12 @@ RUN php artisan key:generate --force \
 # Expose web port
 EXPOSE 80
 
-# Start supervisor (Nginx + PHP-FPM)
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]
+# =================================================
+# 3️⃣ Debug-friendly startup: print PHP-FPM errors
+# =================================================
+# Override CMD to keep logs in foreground
+CMD bash -c "\
+    echo '== Starting PHP-FPM manually for debugging ==' && \
+    /usr/local/sbin/php-fpm -F -y /usr/local/etc/php-fpm.d/www.conf & \
+    echo '== Starting Nginx in foreground ==' && \
+    nginx -g 'daemon off;'"
