@@ -12,17 +12,22 @@ services:
     depends_on:
       - db
     volumes:
+      # Mount Laravel source for local dev (optional)
       - ./backend:/var/www/html
     environment:
       APP_ENV: production
-      APP_DEBUG: false
+      APP_DEBUG: "false"
       APP_KEY: base64:exampleKeyHere=
+      APP_URL: http://localhost:8080
       DB_CONNECTION: pgsql
       DB_HOST: db
       DB_PORT: 5432
       DB_DATABASE: shopnoltd_db
       DB_USERNAME: shopnouser
       DB_PASSWORD: Asad18081978#
+      CACHE_DRIVER: file
+      SESSION_DRIVER: file
+      QUEUE_CONNECTION: sync
     networks:
       - shopnoltd_net
 
@@ -36,6 +41,8 @@ services:
       POSTGRES_PASSWORD: Asad18081978#
     volumes:
       - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
     networks:
       - shopnoltd_net
 
@@ -49,11 +56,14 @@ services:
       - "3000:3000"
     depends_on:
       - app
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8080
     networks:
       - shopnoltd_net
 
 networks:
   shopnoltd_net:
+    driver: bridge
 
 volumes:
   pgdata:
