@@ -52,19 +52,19 @@ RUN ln -sf /etc/nginx/conf.d/default.conf /etc/nginx/sites-enabled/default
 RUN mkdir -p storage/framework/{sessions,views,cache} storage/logs bootstrap/cache /var/log/php-fpm \
     && chown -R www-data:www-data storage bootstrap/cache /var/log/php-fpm
 
-# Ensure .env exists and configured for production
+# Ensure .env exists and enable debug for checking
 RUN if [ ! -f .env ]; then \
         cp .env.example .env && \
-        sed -i 's/APP_ENV=.*/APP_ENV=production/' .env && \
-        sed -i 's/APP_DEBUG=.*/APP_DEBUG=false/' .env && \
+        sed -i 's/APP_ENV=.*/APP_ENV=local/' .env && \
+        sed -i 's/APP_DEBUG=.*/APP_DEBUG=true/' .env && \
         sed -i 's|APP_URL=.*|APP_URL=https://shopnoltd.onrender.com|' .env; \
     fi
 
-# Laravel optimizations
+# Laravel optimizations (can be cleared if debugging)
 RUN php artisan key:generate --force \
-    && php artisan config:cache \
-    && php artisan route:cache \
-    && php artisan view:cache
+    && php artisan config:clear \
+    && php artisan route:clear \
+    && php artisan view:clear
 
 # Expose web port
 EXPOSE 80
