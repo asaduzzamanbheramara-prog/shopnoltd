@@ -46,13 +46,8 @@ COPY docker/supervisord.conf /etc/supervisord.conf
 # ===========================
 # PHP-FPM Global Config
 # ===========================
-# Create /usr/local/etc/php-fpm.conf with global error log
 RUN echo "error_log = /var/log/php-fpm/error.log" > /usr/local/etc/php-fpm.conf
-
-# Pool file: www.conf
 COPY docker/php-fpm.conf /usr/local/etc/php-fpm.d/www.conf
-
-# Symlink Nginx site
 RUN ln -sf /etc/nginx/conf.d/default.conf /etc/nginx/sites-enabled/default
 
 # Create writable directories
@@ -90,8 +85,21 @@ RUN { \
   echo "error_log=/var/log/php-fpm/error.log"; \
 } > /usr/local/etc/php/conf.d/debug.ini
 
+# ===========================
+# 📜 Supervisor + Log Tailer
+# ===========================
+# Add a process to continuously print Laravel + PHP logs to Render logs
+RUN echo '[program:laravel-log]' >> /etc/supervisord.conf && \
+    echo 'command=/bin/bash -c "tail -F /app/storage/logs/laravel.log /var/log/php-fpm/error.log"' >> /etc/supervisord.conf && \
+    echo 'autostart=true' >> /etc/supervisord.conf && \
+    echo 'autorestart=true' >> /etc/supervisord.conf && \
+    echo 'stdout_logfile=/dev/stdout' >> /etc/supervisord.conf && \
+    echo 'stdout_logfile_maxbytes=0' >> /etc/supervisord.conf && \
+    echo 'stderr_logfile=/dev/stderr' >> /etc/supervisord.conf && \
+    echo 'stderr_logfile_maxbytes=0' >> /etc/supervisord.conf
+
 # Expose web port
 EXPOSE 80
 
-# Start supervisor (Nginx + PHP-FPM)
+# Start supervisor (Nginx + PHP-FPM + Log Tailer)
 CMD ["/usr/bin/supervisord", "-n", "-c", "/etc/supervisord.conf"]
