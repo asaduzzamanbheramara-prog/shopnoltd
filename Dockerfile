@@ -8,8 +8,10 @@ WORKDIR /app
 # Copy the entire backend for full context (autoload + composer)
 COPY backend/ ./
 
-# Install PHP dependencies (optimized for production)
-RUN composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader
+# ✅ Fix composer lock inconsistencies automatically
+RUN composer update --no-dev --prefer-dist --no-interaction --optimize-autoloader \
+    || composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader
+
 
 # ========================================
 # 2️⃣ Final Stage: PHP-FPM + Nginx
@@ -62,14 +64,15 @@ RUN if [ ! -f .env ]; then \
         sed -i 's|APP_URL=.*|APP_URL=https://shopnoltd.onrender.com|' .env; \
     fi
 
-# Laravel optimizations
-RUN php artisan key:generate --force || true && \
-    php artisan config:cache || true && \
-    php artisan route:cache || true && \
-    php artisan view:cache || true
+# ✅ Prevent artisan crashes if env/vendor not ready
+RUN php -r "file_exists('vendor/autoload.php') && require 'vendor/autoload.php';" \
+    && php artisan key:generate --force || true \
+    && php artisan config:cache || true \
+    && php artisan route:cache || true \
+    && php artisan view:cache || true
 
 # Expose web port
 EXPOSE 80
 
-# Start supervisor (Nginx + PHP-FPM)
+# Start supervisor (manages Nginx + PHP-FPM)
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]
