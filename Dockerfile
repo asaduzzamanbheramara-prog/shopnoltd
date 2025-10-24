@@ -5,20 +5,18 @@ FROM composer:2 AS vendor
 
 WORKDIR /app
 
-# Copy the entire backend for full context (autoload + composer)
+# Copy all backend files (so composer sees full autoload context)
 COPY backend/ ./
 
-# ✅ Fix composer lock inconsistencies automatically
-RUN composer update --no-dev --prefer-dist --no-interaction --optimize-autoloader \
-    || composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader
-
+# Ensure lock file is up to date and install dependencies
+RUN composer update --no-dev --prefer-dist --no-interaction --optimize-autoloader
 
 # ========================================
 # 2️⃣ Final Stage: PHP-FPM + Nginx
 # ========================================
 FROM php:8.4-fpm-bullseye AS app
 
-# Install system dependencies & PHP extensions
+# Install system packages + PHP extensions
 RUN apt-get update && apt-get install -y \
         nginx \
         supervisor \
@@ -40,23 +38,25 @@ RUN apt-get update && apt-get install -y \
 # Set working directory
 WORKDIR /var/www/html
 
-# Copy backend application
+# Copy Laravel backend
 COPY backend/ ./
 
-# Copy vendor dependencies from Composer build
+# Copy vendor from build stage
 COPY --from=vendor /app/vendor ./vendor
 
-# 🧩 Remove default Nginx stuff and add custom config
+# Remove default Nginx HTML + config
 RUN rm -rf /usr/share/nginx/html/* /etc/nginx/conf.d/default.conf
+
+# Copy custom Nginx & Supervisor configs
 COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
 COPY docker/supervisord.conf /etc/supervisord.conf
 RUN ln -sf /etc/nginx/conf.d/default.conf /etc/nginx/sites-enabled/default
 
-# Permissions for Laravel writable dirs
+# Set permissions for Laravel writable directories
 RUN mkdir -p storage/framework/{sessions,views,cache} storage/logs bootstrap/cache \
     && chown -R www-data:www-data storage bootstrap/cache
 
-# Ensure .env exists and is configured for production
+# Ensure .env exists and is set for production
 RUN if [ ! -f .env ]; then \
         cp .env.example .env && \
         sed -i 's/APP_ENV=.*/APP_ENV=production/' .env && \
@@ -64,15 +64,14 @@ RUN if [ ! -f .env ]; then \
         sed -i 's|APP_URL=.*|APP_URL=https://shopnoltd.onrender.com|' .env; \
     fi
 
-# ✅ Prevent artisan crashes if env/vendor not ready
-RUN php -r "file_exists('vendor/autoload.php') && require 'vendor/autoload.php';" \
-    && php artisan key:generate --force || true \
-    && php artisan config:cache || true \
-    && php artisan route:cache || true \
-    && php artisan view:cache || true
+# Laravel optimizations (ignore artisan errors if cache/config not ready)
+RUN php artisan key:generate --force || true && \
+    php artisan config:cache || true && \
+    php artisan route:cache || true && \
+    php artisan view:cache || true
 
-# Expose web port
+# Expose HTTP port
 EXPOSE 80
 
-# Start supervisor (manages Nginx + PHP-FPM)
+# Start Supervisor (manages Nginx + PHP-FPM)
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]
