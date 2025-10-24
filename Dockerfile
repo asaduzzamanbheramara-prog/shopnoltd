@@ -15,6 +15,7 @@ RUN mkdir -p database/seeders database/factories
 RUN composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader || \
     composer update --no-dev --prefer-dist --no-interaction --optimize-autoloader
 
+
 # ========================================
 # 2️⃣ Final Stage: PHP-FPM + Nginx
 # ========================================
@@ -65,15 +66,29 @@ RUN if [ ! -f .env ]; then \
         cp .env.example .env && \
         sed -i 's/APP_ENV=.*/APP_ENV=local/' .env && \
         sed -i 's/APP_DEBUG=.*/APP_DEBUG=true/' .env && \
-        sed -i 's|APP_URL=.*|APP_URL=https://shopnoltd.onrender.com|' .env; \
+        sed -i 's|APP_URL=.*|APP_URL=https://shopnoltd.onrender.com|' .env && \
+        echo 'LOG_CHANNEL=single' >> .env; \
     fi
 
-# Laravel optimizations (cache cleared for debugging)
-RUN php artisan key:generate --force \
-    && php artisan config:clear \
-    && php artisan route:clear \
-    && php artisan view:clear \
-    && php artisan cache:clear
+# ===========================
+# Laravel setup + clear caches
+# ===========================
+RUN php artisan key:generate --force || true \
+    && php artisan config:clear || true \
+    && php artisan route:clear || true \
+    && php artisan view:clear || true \
+    && php artisan cache:clear || true
+
+# ===========================
+# 🐞 Debug PHP Config
+# ===========================
+RUN { \
+  echo "display_errors=On"; \
+  echo "display_startup_errors=On"; \
+  echo "error_reporting=E_ALL"; \
+  echo "log_errors=On"; \
+  echo "error_log=/var/log/php-fpm/error.log"; \
+} > /usr/local/etc/php/conf.d/debug.ini
 
 # Expose web port
 EXPOSE 80
