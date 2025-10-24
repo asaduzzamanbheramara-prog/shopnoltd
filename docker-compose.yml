@@ -1,6 +1,9 @@
 version: "3.9"
 
 services:
+  # ----------------------------
+  # Laravel Backend (PHP-FPM + Nginx)
+  # ----------------------------
   app:
     build:
       context: .
@@ -12,25 +15,23 @@ services:
     depends_on:
       - db
     volumes:
-      # Mount Laravel source for local dev (optional)
       - ./backend:/var/www/html
     environment:
       APP_ENV: production
-      APP_DEBUG: "false"
+      APP_DEBUG: false
       APP_KEY: base64:exampleKeyHere=
-      APP_URL: http://localhost:8080
       DB_CONNECTION: pgsql
       DB_HOST: db
       DB_PORT: 5432
       DB_DATABASE: shopnoltd_db
       DB_USERNAME: shopnouser
       DB_PASSWORD: Asad18081978#
-      CACHE_DRIVER: file
-      SESSION_DRIVER: file
-      QUEUE_CONNECTION: sync
     networks:
       - shopnoltd_net
 
+  # ----------------------------
+  # PostgreSQL Database
+  # ----------------------------
   db:
     image: postgres:15
     container_name: shopnoltd_db
@@ -41,11 +42,12 @@ services:
       POSTGRES_PASSWORD: Asad18081978#
     volumes:
       - pgdata:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
     networks:
       - shopnoltd_net
 
+  # ----------------------------
+  # Frontend (React/Vue/Next.js SPA)
+  # ----------------------------
   frontend:
     build:
       context: ./frontend
@@ -53,17 +55,20 @@ services:
     container_name: shopnoltd_frontend
     restart: always
     ports:
-      - "3000:3000"
+      - "3000:80"  # Serves SPA via Nginx
     depends_on:
       - app
-    environment:
-      NEXT_PUBLIC_API_URL: http://localhost:8080
     networks:
       - shopnoltd_net
 
+# ----------------------------
+# Networks
+# ----------------------------
 networks:
   shopnoltd_net:
-    driver: bridge
 
+# ----------------------------
+# Volumes
+# ----------------------------
 volumes:
   pgdata:
