@@ -5,7 +5,7 @@ FROM composer:2 AS vendor
 
 WORKDIR /app
 
-# Copy composer files (with optional lock file)
+# Copy composer files (lock file optional)
 COPY backend/composer.json backend/composer.lock* ./
 
 # Ensure composer.lock exists before install
@@ -49,12 +49,15 @@ COPY backend/ ./
 # Copy vendor dependencies from Composer build stage
 COPY --from=vendor /app/vendor ./vendor
 
-# 🧩 Fix: Remove default Nginx HTML and config
+# 🧩 Fix: Remove default Nginx HTML & config
 RUN rm -rf /usr/share/nginx/html/* /etc/nginx/conf.d/default.conf
 
 # Copy custom Nginx & Supervisor configs
 COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
 COPY docker/supervisord.conf /etc/supervisord.conf
+
+# 🧠 Force Nginx to use our Laravel config (Render safety)
+RUN ln -sf /etc/nginx/conf.d/default.conf /etc/nginx/sites-enabled/default
 
 # Set correct permissions for Laravel writable directories
 RUN mkdir -p storage/framework/{sessions,views,cache} storage/logs bootstrap/cache \
