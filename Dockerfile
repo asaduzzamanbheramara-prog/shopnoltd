@@ -5,22 +5,22 @@ FROM composer:2 AS vendor
 
 WORKDIR /app
 
-# Copy backend for context
+# Copy backend for full context
 COPY backend/ ./
 
 # Ensure directories exist
 RUN mkdir -p database/seeders database/factories
 
-# Install dependencies
+# Install/update dependencies
 RUN composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader || \
     composer update --no-dev --prefer-dist --no-interaction --optimize-autoloader
 
 # ========================================
 # 2️⃣ Final Stage: PHP-FPM + Nginx
 # ========================================
-FROM php:8.4-fpm-bullseye
+FROM php:8.4-fpm-bullseye AS app
 
-# Install minimal system dependencies & PHP extensions
+# Install system dependencies & PHP extensions
 RUN apt-get update && apt-get install -y \
         nginx git unzip libpng-dev libjpeg-dev libfreetype6-dev \
         libonig-dev libxml2-dev zip curl libicu-dev libpq-dev \
@@ -31,18 +31,23 @@ RUN apt-get update && apt-get install -y \
 # Set working directory
 WORKDIR /app
 
-# Copy Laravel app & vendor
+# Copy Laravel app
 COPY backend/ ./
+
+# Copy vendor dependencies from build stage
 COPY --from=vendor /app/vendor ./vendor
 
-# Remove default Nginx HTML & copy custom config
+# Remove default Nginx HTML and config
 RUN rm -rf /usr/share/nginx/html/* /etc/nginx/conf.d/default.conf
-COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
 
-# Minimal PHP-FPM global config
+# Copy custom configs
+COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
+COPY docker/php-fpm.conf /usr/local/etc/php-fpm.d/www.conf
+
+# PHP-FPM global error log
 RUN echo "error_log = /var/log/php-fpm/error.log" > /usr/local/etc/php-fpm.conf
 
-# Writable dirs
+# Create writable directories
 RUN mkdir -p storage/framework/{sessions,views,cache} storage/logs bootstrap/cache /var/log/php-fpm \
     && chown -R www-data:www-data storage bootstrap/cache /var/log/php-fpm
 
@@ -55,11 +60,11 @@ RUN if [ ! -f .env ]; then \
         echo 'LOG_CHANNEL=single' >> .env; \
     fi
 
-# Skip caching commands to reduce memory usage
+# Generate key
 RUN php artisan key:generate --force || true
 
-# Expose web port
+# Expose port
 EXPOSE 80
 
-# Start Nginx + PHP-FPM (no Supervisor)
-CMD ["sh", "-c", "php-fpm -D && nginx -g 'daemon off;'"]
+# Start PHP-FPM and Nginx
+CMD ["sh", "-c", "php-fpm -F & nginx -g 'daemon off;'"]
