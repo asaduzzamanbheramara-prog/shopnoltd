@@ -11,7 +11,7 @@ COPY backend/ ./
 # Ensure directories exist to prevent Composer classmap errors
 RUN mkdir -p database/seeders database/factories
 
-# Force Composer to install/update dependencies
+# Install/update dependencies
 RUN composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader || \
     composer update --no-dev --prefer-dist --no-interaction --optimize-autoloader
 
@@ -41,20 +41,24 @@ COPY --from=vendor /app/vendor ./vendor
 RUN rm -rf /usr/share/nginx/html/* /etc/nginx/conf.d/default.conf
 COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
 COPY docker/supervisord.conf /etc/supervisord.conf
+COPY docker/php-fpm.conf /usr/local/etc/php-fpm.d/www.conf
 RUN ln -sf /etc/nginx/conf.d/default.conf /etc/nginx/sites-enabled/default
 
 # Laravel writable directories
 RUN mkdir -p storage/framework/{sessions,views,cache} storage/logs bootstrap/cache \
     && chown -R www-data:www-data storage bootstrap/cache
 
-# Copy production .env if exists
-COPY backend/.env .env
-
-# Ensure APP_KEY is set (generate if missing)
-RUN php artisan key:generate --force
+# Ensure .env exists and is configured for production
+RUN if [ ! -f .env ]; then \
+        cp .env.example .env && \
+        sed -i 's/APP_ENV=.*/APP_ENV=production/' .env && \
+        sed -i 's/APP_DEBUG=.*/APP_DEBUG=false/' .env && \
+        sed -i 's|APP_URL=.*|APP_URL=https://shopnoltd.onrender.com|' .env; \
+    fi
 
 # Laravel optimizations
-RUN php artisan config:cache \
+RUN php artisan key:generate --force \
+    && php artisan config:cache \
     && php artisan route:cache \
     && php artisan view:cache
 
