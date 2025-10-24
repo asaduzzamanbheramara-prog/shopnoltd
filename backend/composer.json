@@ -1,18 +1,20 @@
 {
   "name": "shopnoltd/backend",
-  "description": "Shopno Ltd Backend (Laravel 10)",
+  "description": "Shopno Ltd Laravel backend",
   "type": "project",
-  "license": "MIT",
   "require": {
     "php": "^8.1",
-    "laravel/framework": "^10.10",
+    "laravel/framework": "^10.0",
     "laravel/tinker": "^2.8",
     "guzzlehttp/guzzle": "^7.8",
-    "fakerphp/faker": "^1.23"
+    "psr/http-client": "^1.0",
+    "psr/http-message": "^1.0",
+    "psr/log": "^3.0"
   },
   "require-dev": {
-    "phpunit/phpunit": "^10.3",
-    "mockery/mockery": "^1.6"
+    "fakerphp/faker": "^1.23",
+    "mockery/mockery": "^1.6",
+    "phpunit/phpunit": "^10.3"
   },
   "autoload": {
     "psr-4": {
