@@ -8,13 +8,12 @@ WORKDIR /app
 # Copy backend for full context
 COPY backend/ ./
 
-# Ensure directories exist
+# Ensure directories exist to prevent Composer classmap errors
 RUN mkdir -p database/seeders database/factories
 
 # Install/update dependencies
 RUN composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader || \
     composer update --no-dev --prefer-dist --no-interaction --optimize-autoloader
-
 
 # ========================================
 # 2️⃣ Final Stage: PHP-FPM + Nginx
@@ -32,7 +31,7 @@ RUN apt-get update && apt-get install -y \
 # Set working directory
 WORKDIR /app
 
-# Copy Laravel app
+# Copy Laravel application
 COPY backend/ ./
 
 # Copy vendor dependencies from build stage
@@ -47,10 +46,18 @@ COPY docker/supervisord.conf /etc/supervisord.conf
 # PHP-FPM Global Config
 # ===========================
 RUN echo "error_log = /var/log/php-fpm/error.log" > /usr/local/etc/php-fpm.conf
+
+# Pool file
 COPY docker/php-fpm.conf /usr/local/etc/php-fpm.d/www.conf
+
+# ===========================
+# Nginx symlink
+# ===========================
 RUN ln -sf /etc/nginx/conf.d/default.conf /etc/nginx/sites-enabled/default
 
+# ===========================
 # Create writable directories
+# ===========================
 RUN mkdir -p storage/framework/{sessions,views,cache} storage/logs bootstrap/cache /var/log/php-fpm \
     && chown -R www-data:www-data storage bootstrap/cache /var/log/php-fpm
 
@@ -65,9 +72,7 @@ RUN if [ ! -f .env ]; then \
         echo 'LOG_CHANNEL=single' >> .env; \
     fi
 
-# ===========================
-# Laravel setup + clear caches
-# ===========================
+# Laravel cache clearing for debugging
 RUN php artisan key:generate --force || true \
     && php artisan config:clear || true \
     && php artisan route:clear || true \
@@ -75,31 +80,32 @@ RUN php artisan key:generate --force || true \
     && php artisan cache:clear || true
 
 # ===========================
-# 🐞 Debug PHP Config
+# PHP Debug Settings
 # ===========================
 RUN { \
-  echo "display_errors=On"; \
-  echo "display_startup_errors=On"; \
-  echo "error_reporting=E_ALL"; \
-  echo "log_errors=On"; \
-  echo "error_log=/var/log/php-fpm/error.log"; \
-} > /usr/local/etc/php/conf.d/debug.ini
+        echo "display_errors=On"; \
+        echo "display_startup_errors=On"; \
+        echo "error_reporting=E_ALL"; \
+        echo "log_errors=On"; \
+        echo "error_log=/var/log/php-fpm/error.log"; \
+    } > /usr/local/etc/php/conf.d/debug.ini
 
 # ===========================
-# 📜 Supervisor + Log Tailer
+# Supervisor: Laravel + PHP-FPM + Nginx logs
 # ===========================
-# Add a process to continuously print Laravel + PHP logs to Render logs
-RUN echo '[program:laravel-log]' >> /etc/supervisord.conf && \
-    echo 'command=/bin/bash -c "tail -F /app/storage/logs/laravel.log /var/log/php-fpm/error.log"' >> /etc/supervisord.conf && \
-    echo 'autostart=true' >> /etc/supervisord.conf && \
-    echo 'autorestart=true' >> /etc/supervisord.conf && \
-    echo 'stdout_logfile=/dev/stdout' >> /etc/supervisord.conf && \
-    echo 'stdout_logfile_maxbytes=0' >> /etc/supervisord.conf && \
-    echo 'stderr_logfile=/dev/stderr' >> /etc/supervisord.conf && \
-    echo 'stderr_logfile_maxbytes=0' >> /etc/supervisord.conf
+RUN { \
+        echo '[program:laravel-log]'; \
+        echo 'command=/bin/bash -c "mkdir -p /app/storage/logs && touch /app/storage/logs/laravel.log && tail -F /app/storage/logs/laravel.log /var/log/php-fpm/error.log"'; \
+        echo 'autostart=true'; \
+        echo 'autorestart=true'; \
+        echo 'stdout_logfile=/dev/stdout'; \
+        echo 'stdout_logfile_maxbytes=0'; \
+        echo 'stderr_logfile=/dev/stderr'; \
+        echo 'stderr_logfile_maxbytes=0'; \
+    } >> /etc/supervisord.conf
 
 # Expose web port
 EXPOSE 80
 
-# Start supervisor (Nginx + PHP-FPM + Log Tailer)
+# Start supervisor (Nginx + PHP-FPM)
 CMD ["/usr/bin/supervisord", "-n", "-c", "/etc/supervisord.conf"]
