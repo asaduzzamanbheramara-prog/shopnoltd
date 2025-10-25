@@ -57,9 +57,9 @@ RUN apt-get update && apt-get install -y \
 # Copy Composer dependencies from vendor stage
 COPY --from=vendor /app /app
 
-# Copy Nginx & Supervisor configs
-COPY docker/nginx.conf /etc/nginx/nginx.conf
-COPY docker/default.conf /etc/nginx/conf.d/default.conf
+# Copy Nginx & Supervisor configs (paths updated)
+COPY docker/nginx/nginx.conf /etc/nginx/nginx.conf
+COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
 COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 # Expose port 80
