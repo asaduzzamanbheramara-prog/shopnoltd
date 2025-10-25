@@ -1,55 +1,56 @@
-# ========================================
-# 1️⃣ Build Stage: Composer dependencies
-# ========================================
+# ================================
+# Stage 0: Composer (dependencies)
+# ================================
 FROM composer:2 AS vendor
 
 WORKDIR /app
 
-# Copy full Laravel backend so artisan exists
+# Copy backend code
 COPY backend/ ./
 
-# Create empty directories Laravel expects
+# Ensure directories exist
 RUN mkdir -p database/seeders database/factories
 
-# Install PHP dependencies
-RUN composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader
+# Install dependencies with robust error handling
+RUN set -eux; \
+    echo "Installing composer dependencies..."; \
+    if ! composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader; then \
+        echo ""; \
+        echo "======================================================"; \
+        echo "ERROR: composer.lock is out of date with composer.json!"; \
+        echo "Missing packages:"; \
+        echo "  - psr/http-client"; \
+        echo "  - psr/http-message"; \
+        echo "  - psr/log"; \
+        echo "Solution: Run 'composer update' locally and commit composer.lock"; \
+        echo "======================================================"; \
+        exit 1; \
+    fi
 
-# ========================================
-# 2️⃣ Final Stage: PHP-FPM + Nginx
-# ========================================
+# ================================
+# Stage 1: PHP-FPM + production setup
+# ================================
 FROM php:8.2-fpm-bullseye
 
-# Set working directory
 WORKDIR /app
 
-# Install system dependencies
+# Install PHP extensions + system packages
 RUN apt-get update && apt-get install -y \
-    nginx git unzip libpng-dev libjpeg-dev libfreetype6-dev \
-    libonig-dev libxml2-dev zip curl libicu-dev libpq-dev supervisor \
+    nginx git unzip zip curl libpng-dev libjpeg-dev libfreetype6-dev \
+    libonig-dev libxml2-dev libicu-dev libpq-dev supervisor \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j$(nproc) gd mbstring pdo pdo_pgsql xml bcmath intl opcache \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Copy composer dependencies from vendor stage
+# Copy backend + vendor dependencies
 COPY --from=vendor /app /app
 
-# Remove default Nginx site and copy custom configuration
-RUN rm -rf /etc/nginx/sites-enabled/default /etc/nginx/conf.d/default.conf
-COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
+# Optional: nginx/supervisor configs
+COPY docker/nginx.conf /etc/nginx/nginx.conf
+COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
-# Copy PHP-FPM config
-COPY docker/php-fpm.conf /usr/local/etc/php-fpm.d/www.conf
+# Expose PHP-FPM port
+EXPOSE 9000
 
-# Copy Supervisor config
-COPY docker/supervisord.conf /etc/supervisord.conf
-
-# Create Laravel storage & cache directories and set permissions
-RUN mkdir -p storage/framework/{sessions,views,cache} storage/logs bootstrap/cache \
-    && chown -R www-data:www-data storage bootstrap/cache \
-    && chmod -R 775 storage bootstrap/cache
-
-# Expose ports
-EXPOSE 80
-
-# Start Supervisor (which manages PHP-FPM & Nginx)
-CMD ["/usr/bin/supervisord", "-n", "-c", "/etc/supervisord.conf"]
+# Start supervisor
+CMD ["/usr/bin/supervisord", "-n"]
