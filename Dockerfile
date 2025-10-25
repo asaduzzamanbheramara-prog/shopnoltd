@@ -2,16 +2,18 @@
 FROM composer:2 AS vendor
 WORKDIR /app
 
-# Copy entire Laravel project
-COPY . .
+# Copy only composer files first to leverage caching
+COPY composer.json composer.lock ./
 
-# Ensure directories exist
-RUN mkdir -p database/seeders database/factories
-
-# Install PHP dependencies and generate autoloader
+# Install PHP dependencies
 RUN composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader
 
+# Copy the rest of the Laravel project
+COPY . .
+
+# ========================================
 # 2️⃣ Final stage: PHP-FPM + Nginx
+# ========================================
 FROM php:8.2-fpm-bullseye
 
 # Install system dependencies
