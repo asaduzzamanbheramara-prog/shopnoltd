@@ -8,17 +8,15 @@ WORKDIR /app
 # Copy composer files first
 COPY backend/composer.json backend/composer.lock ./
 
-# Force composer to install and update if lock is out-of-sync
+# Ensure folders exist before composer install
+RUN mkdir -p database/seeders database/factories
+
+# Install dependencies, update if lock is out-of-date
 RUN composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader || \
     composer update --no-dev --prefer-dist --no-interaction --optimize-autoloader
 
-# Copy the rest of the backend files
+# Copy the rest of backend files
 COPY backend/ ./
-
-# Ensure necessary directories exist
-RUN mkdir -p database/seeders database/factories \
-    storage/framework/{sessions,views,cache} \
-    storage/logs bootstrap/cache
 
 # =========================
 # 2️⃣ Final stage: PHP-FPM + Nginx
@@ -35,7 +33,7 @@ RUN apt-get update && apt-get install -y \
     && docker-php-ext-install -j$(nproc) gd mbstring pdo pdo_pgsql xml bcmath intl opcache \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Copy application files and vendor from build stage
+# Copy app and vendor from build stage
 COPY --from=vendor /app /app
 
 # Nginx configuration
@@ -48,42 +46,16 @@ COPY docker/php-fpm.conf /usr/local/etc/php-fpm.d/www.conf
 # Supervisor config
 COPY docker/supervisord.conf /etc/supervisord.conf
 
-# Debug PHP
-RUN { \
-    echo "display_errors=On"; \
-    echo "display_startup_errors=On"; \
-    echo "error_reporting=E_ALL"; \
-    echo "log_errors=On"; \
-    echo "error_log=/var/log/php-fpm/error.log"; \
-} > /usr/local/etc/php/conf.d/debug.ini
-
 # Fix permissions
-RUN chown -R www-data:www-data storage bootstrap/cache /var/log/php-fpm
+RUN mkdir -p storage/framework/{sessions,views,cache} storage/logs bootstrap/cache && \
+    chown -R www-data:www-data storage bootstrap/cache /var/log/php-fpm
 
-# Environment setup
-RUN if [ ! -f .env ]; then \
-        cp .env.example .env && \
-        sed -i 's/APP_ENV=.*/APP_ENV=local/' .env && \
-        sed -i 's/APP_DEBUG=.*/APP_DEBUG=true/' .env && \
-        sed -i 's|APP_URL=.*|APP_URL=https://shopnoltd.onrender.com|' .env && \
-        echo 'LOG_CHANNEL=single' >> .env; \
-    fi
-
-# Laravel key
+# Laravel environment
+RUN if [ ! -f .env ]; then cp .env.example .env; fi
 RUN php artisan key:generate --force || true
 
-# Supervisor processes
-RUN echo '[program:laravel-log]' >> /etc/supervisord.conf && \
-    echo 'command=/bin/bash -c "mkdir -p /app/storage/logs && touch /app/storage/logs/laravel.log && tail -F /app/storage/logs/laravel.log /var/log/php-fpm/error.log"' >> /etc/supervisord.conf && \
-    echo 'autostart=true' >> /etc/supervisord.conf && \
-    echo 'autorestart=true' >> /etc/supervisord.conf && \
-    echo 'stdout_logfile=/dev/stdout' >> /etc/supervisord.conf && \
-    echo 'stdout_logfile_maxbytes=0' >> /etc/supervisord.conf && \
-    echo 'stderr_logfile=/dev/stderr' >> /etc/supervisord.conf && \
-    echo 'stderr_logfile_maxbytes=0' >> /etc/supervisord.conf
-
-# Expose port
+# Expose HTTP port
 EXPOSE 80
 
-# Start supervisord (manages PHP-FPM + Nginx + Laravel log)
+# Start all services via supervisor
 CMD ["/usr/bin/supervisord", "-n", "-c", "/etc/supervisord.conf"]
