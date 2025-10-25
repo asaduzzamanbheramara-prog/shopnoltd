@@ -5,18 +5,15 @@ FROM composer:2 AS vendor
 
 WORKDIR /app
 
-# Copy composer files first
-COPY backend/composer.json backend/composer.lock ./
+# Copy full backend code first (includes artisan)
+COPY backend/ ./
 
-# Ensure folders exist before composer install
+# Ensure folders exist to avoid classmap errors
 RUN mkdir -p database/seeders database/factories
 
-# Install dependencies, update if lock is out-of-date
+# Install dependencies
 RUN composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader || \
     composer update --no-dev --prefer-dist --no-interaction --optimize-autoloader
-
-# Copy the rest of backend files
-COPY backend/ ./
 
 # =========================
 # 2️⃣ Final stage: PHP-FPM + Nginx
@@ -26,6 +23,7 @@ FROM php:8.2-fpm-bullseye
 WORKDIR /app
 
 # Install system dependencies and PHP extensions
+ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y \
     nginx git unzip libpng-dev libjpeg-dev libfreetype6-dev \
     libonig-dev libxml2-dev zip curl libicu-dev libpq-dev supervisor \
