@@ -1,71 +1,78 @@
+# =========================
 # 1️⃣ Build stage: Composer dependencies
+# =========================
 FROM composer:2 AS vendor
+
 WORKDIR /app
 
-# Copy only composer files first to leverage caching
-COPY composer.json composer.lock ./
+# Copy only composer files from backend to leverage caching
+COPY backend/composer.json backend/composer.lock ./
+
+# Ensure directories exist for Laravel
+RUN mkdir -p database/seeders database/factories
 
 # Install PHP dependencies
 RUN composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader
 
-# Copy the rest of the Laravel project
-COPY . .
-
-# ========================================
+# =========================
 # 2️⃣ Final stage: PHP-FPM + Nginx
-# ========================================
+# =========================
 FROM php:8.2-fpm-bullseye
-
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    nginx git unzip libpng-dev libjpeg-dev libfreetype6-dev \
-    libonig-dev libxml2-dev zip curl libicu-dev libpq-dev \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j$(nproc) gd mbstring pdo pdo_pgsql xml bcmath intl opcache \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Copy Laravel files
-COPY . .
+# Install system packages and PHP extensions
+RUN apt-get update && apt-get install -y \
+    nginx git unzip libpng-dev libjpeg-dev libfreetype6-dev \
+    libonig-dev libxml2-dev zip curl libicu-dev libpq-dev \
+ && docker-php-ext-configure gd --with-freetype --with-jpeg \
+ && docker-php-ext-install -j$(nproc) gd mbstring pdo pdo_pgsql xml bcmath intl opcache \
+ && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Copy vendor from build stage
+# Copy Composer dependencies from the build stage
 COPY --from=vendor /app/vendor ./vendor
 
-# Nginx config
+# Copy the full backend source code
+COPY backend/ ./
+
+# Remove default Nginx config and add our own
 RUN rm -rf /etc/nginx/sites-enabled/default /etc/nginx/conf.d/default.conf
 COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
 
-# PHP-FPM pool
-RUN echo "[www]" > /usr/local/etc/php-fpm.d/www.conf && \
-    echo "user = www-data" >> /usr/local/etc/php-fpm.d/www.conf && \
-    echo "group = www-data" >> /usr/local/etc/php-fpm.d/www.conf && \
-    echo "listen = 9000" >> /usr/local/etc/php-fpm.d/www.conf && \
-    echo "pm = dynamic" >> /usr/local/etc/php-fpm.d/www.conf && \
-    echo "pm.max_children = 5" >> /usr/local/etc/php-fpm.d/www.conf && \
-    echo "pm.start_servers = 1" >> /usr/local/etc/php-fpm.d/www.conf && \
-    echo "pm.min_spare_servers = 1" >> /usr/local/etc/php-fpm.d/www.conf && \
-    echo "pm.max_spare_servers = 2" >> /usr/local/etc/php-fpm.d/www.conf
+# Copy PHP-FPM config
+COPY docker/php-fpm.conf /usr/local/etc/php-fpm.d/www.conf
 
-# Writable directories
+# Setup Laravel storage & bootstrap/cache permissions
 RUN mkdir -p storage/framework/{sessions,views,cache} storage/logs bootstrap/cache \
     && chown -R www-data:www-data storage bootstrap/cache
 
-# Debug PHP
-RUN { echo "display_errors=On"; echo "display_startup_errors=On"; echo "error_reporting=E_ALL"; echo "log_errors=On"; echo "error_log=/var/log/php-fpm.log"; } > /usr/local/etc/php/conf.d/debug.ini
+# Copy supervisord configuration
+COPY docker/supervisord.conf /etc/supervisord.conf
 
-# Setup .env
+# Setup Laravel environment if not exists
 RUN if [ ! -f .env ]; then \
-        cp .env.example .env && \
-        sed -i 's/APP_ENV=.*/APP_ENV=local/' .env && \
-        sed -i 's/APP_DEBUG=.*/APP_DEBUG=true/' .env && \
-        sed -i 's|APP_URL=.*|APP_URL=https://shopnoltd.onrender.com|' .env; \
+      cp .env.example .env && \
+      sed -i 's/APP_ENV=.*/APP_ENV=local/' .env && \
+      sed -i 's/APP_DEBUG=.*/APP_DEBUG=true/' .env && \
+      sed -i 's|APP_URL=.*|APP_URL=https://shopnoltd.onrender.com|' .env && \
+      echo 'LOG_CHANNEL=single' >> .env; \
     fi
 
-# Generate app key
-RUN php artisan key:generate --force
+# Generate Laravel app key
+RUN php artisan key:generate --force || true
 
+# Configure Supervisor to tail Laravel & PHP-FPM logs
+RUN echo '[program:laravel-log]' >> /etc/supervisord.conf && \
+    echo 'command=/bin/bash -c "mkdir -p /app/storage/logs && touch /app/storage/logs/laravel.log && tail -F /app/storage/logs/laravel.log /var/log/php-fpm/error.log"' >> /etc/supervisord.conf && \
+    echo 'autostart=true' >> /etc/supervisord.conf && \
+    echo 'autorestart=true' >> /etc/supervisord.conf && \
+    echo 'stdout_logfile=/dev/stdout' >> /etc/supervisord.conf && \
+    echo 'stdout_logfile_maxbytes=0' >> /etc/supervisord.conf && \
+    echo 'stderr_logfile=/dev/stderr' >> /etc/supervisord.conf && \
+    echo 'stderr_logfile_maxbytes=0' >> /etc/supervisord.conf
+
+# Expose port 80 for Nginx
 EXPOSE 80
 
-# Start PHP-FPM + Nginx
-CMD ["sh", "-c", "php-fpm -R -F -y /usr/local/etc/php-fpm.conf & nginx -g 'daemon off;'"]
+# Start Supervisor (which manages Nginx and PHP-FPM)
+CMD ["/usr/bin/supervisord", "-n", "-c", "/etc/supervisord.conf"]
