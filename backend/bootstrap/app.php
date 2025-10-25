@@ -5,9 +5,9 @@
 | Create The Application
 |--------------------------------------------------------------------------
 |
-| This script creates the Laravel application instance that serves
-| as the "glue" for all components, and is used by the
-| incoming requests and the Artisan console commands.
+| The first thing we will do is create a new Laravel application instance
+| which serves as the "glue" for all the components of Laravel, and is
+| the IoC container for the system binding all of the various parts.
 |
 */
 
@@ -20,8 +20,9 @@ $app = new Illuminate\Foundation\Application(
 | Bind Important Interfaces
 |--------------------------------------------------------------------------
 |
-| Here we bind the HTTP kernel, console kernel, and exception handler
-| into the container so that Laravel can resolve them when needed.
+| Next, we need to bind some important interfaces into the container so
+| we will be able to resolve them when needed. The kernels serve the
+| incoming requests to this application from both the web and CLI.
 |
 */
 
@@ -45,8 +46,9 @@ $app->singleton(
 | Return The Application
 |--------------------------------------------------------------------------
 |
-| This script returns the application instance. The instance is used
-| by both the web server (public/index.php) and CLI (artisan).
+| This script returns the application instance. The instance is given to
+| the calling script so we can separate the building of the instances
+| from the actual running of the application and sending responses.
 |
 */
 

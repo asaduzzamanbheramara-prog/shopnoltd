@@ -1,7 +1,6 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\HomeController;
 
-Route::get('/', fn() => response('Laravel backend working!', 200));
-
-Route::get('/ping', fn() => response('pong', 200));
+Route::get('/', [HomeController::class, 'index']);
