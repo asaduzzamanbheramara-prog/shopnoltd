@@ -1,46 +1,40 @@
-# ========================================
 # 1️⃣ Build stage: Composer dependencies
-# ========================================
 FROM composer:2 AS vendor
-
 WORKDIR /app
 
-# Copy backend (Laravel project)
-COPY backend/ ./
+# Copy entire Laravel project
+COPY . .
 
-# Ensure directories exist to prevent errors
+# Ensure directories exist
 RUN mkdir -p database/seeders database/factories
 
-# Use composer update to fix lock file mismatch
-RUN composer update --no-dev --prefer-dist --no-interaction --optimize-autoloader
+# Install PHP dependencies and generate autoloader
+RUN composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader
 
-# ========================================
 # 2️⃣ Final stage: PHP-FPM + Nginx
-# ========================================
 FROM php:8.2-fpm-bullseye
 
-# Install system dependencies & PHP extensions
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
-        nginx git unzip libpng-dev libjpeg-dev libfreetype6-dev \
-        libonig-dev libxml2-dev zip curl libicu-dev libpq-dev \
+    nginx git unzip libpng-dev libjpeg-dev libfreetype6-dev \
+    libonig-dev libxml2-dev zip curl libicu-dev libpq-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j$(nproc) gd mbstring pdo pdo_pgsql xml bcmath intl opcache \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Set working directory
 WORKDIR /app
 
-# Copy Laravel app
-COPY backend/ ./
+# Copy Laravel files
+COPY . .
 
 # Copy vendor from build stage
 COPY --from=vendor /app/vendor ./vendor
 
-# Remove default Nginx config, copy custom
+# Nginx config
 RUN rm -rf /etc/nginx/sites-enabled/default /etc/nginx/conf.d/default.conf
 COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
 
-# Create PHP-FPM pool config
+# PHP-FPM pool
 RUN echo "[www]" > /usr/local/etc/php-fpm.d/www.conf && \
     echo "user = www-data" >> /usr/local/etc/php-fpm.d/www.conf && \
     echo "group = www-data" >> /usr/local/etc/php-fpm.d/www.conf && \
@@ -51,14 +45,14 @@ RUN echo "[www]" > /usr/local/etc/php-fpm.d/www.conf && \
     echo "pm.min_spare_servers = 1" >> /usr/local/etc/php-fpm.d/www.conf && \
     echo "pm.max_spare_servers = 2" >> /usr/local/etc/php-fpm.d/www.conf
 
-# Create writable directories
+# Writable directories
 RUN mkdir -p storage/framework/{sessions,views,cache} storage/logs bootstrap/cache \
     && chown -R www-data:www-data storage bootstrap/cache
 
-# Debug-friendly PHP
+# Debug PHP
 RUN { echo "display_errors=On"; echo "display_startup_errors=On"; echo "error_reporting=E_ALL"; echo "log_errors=On"; echo "error_log=/var/log/php-fpm.log"; } > /usr/local/etc/php/conf.d/debug.ini
 
-# .env setup
+# Setup .env
 RUN if [ ! -f .env ]; then \
         cp .env.example .env && \
         sed -i 's/APP_ENV=.*/APP_ENV=local/' .env && \
@@ -66,11 +60,10 @@ RUN if [ ! -f .env ]; then \
         sed -i 's|APP_URL=.*|APP_URL=https://shopnoltd.onrender.com|' .env; \
     fi
 
-# Laravel minimal setup
+# Generate app key
 RUN php artisan key:generate --force
 
-# Expose web port
 EXPOSE 80
 
-# Start services without supervisord (simpler for free hosting)
+# Start PHP-FPM + Nginx
 CMD ["sh", "-c", "php-fpm -R -F -y /usr/local/etc/php-fpm.conf & nginx -g 'daemon off;'"]
