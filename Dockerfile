@@ -28,7 +28,7 @@ RUN set -eux; \
     fi
 
 # ===========================
-# 2️⃣ Main PHP-FPM Stage
+# 2️⃣ Main PHP-FPM + Nginx Stage
 # ===========================
 FROM php:8.2-fpm-bullseye
 
@@ -57,17 +57,17 @@ RUN apt-get update && apt-get install -y \
 # Copy Composer dependencies from vendor stage
 COPY --from=vendor /app /app
 
-# Copy Nginx & Supervisor configs (paths updated)
+# Copy Nginx & Supervisor configs (correct paths)
 COPY docker/nginx/nginx.conf /etc/nginx/nginx.conf
 COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
 COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
-# Expose port 80
+# Expose HTTP port
 EXPOSE 80
 
-# Ensure permissions (optional, adjust user/group as needed)
+# Set permissions
 RUN chown -R www-data:www-data /app \
     && chmod -R 755 /app
 
-# Start Supervisor (which will start PHP-FPM & Nginx)
+# Start Supervisor (manages PHP-FPM & Nginx)
 CMD ["/usr/bin/supervisord", "-n", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
