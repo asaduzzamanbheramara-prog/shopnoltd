@@ -1,6 +1,6 @@
-# ================================
-# Stage 0: Composer (dependencies)
-# ================================
+# ===========================
+# 1️⃣ Vendor / Composer Stage
+# ===========================
 FROM composer:2 AS vendor
 
 WORKDIR /app
@@ -8,17 +8,17 @@ WORKDIR /app
 # Copy backend code
 COPY backend/ ./
 
-# Ensure directories exist
+# Ensure required directories exist
 RUN mkdir -p database/seeders database/factories
 
-# Install dependencies with robust error handling
+# Install Composer dependencies robustly
 RUN set -eux; \
     echo "Installing composer dependencies..."; \
     if ! composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader; then \
         echo ""; \
         echo "======================================================"; \
         echo "ERROR: composer.lock is out of date with composer.json!"; \
-        echo "Missing packages:"; \
+        echo "Missing packages might include:"; \
         echo "  - psr/http-client"; \
         echo "  - psr/http-message"; \
         echo "  - psr/log"; \
@@ -27,30 +27,47 @@ RUN set -eux; \
         exit 1; \
     fi
 
-# ================================
-# Stage 1: PHP-FPM + production setup
-# ================================
+# ===========================
+# 2️⃣ Main PHP-FPM Stage
+# ===========================
 FROM php:8.2-fpm-bullseye
 
 WORKDIR /app
 
-# Install PHP extensions + system packages
+# Install system dependencies & PHP extensions
 RUN apt-get update && apt-get install -y \
-    nginx git unzip zip curl libpng-dev libjpeg-dev libfreetype6-dev \
-    libonig-dev libxml2-dev libicu-dev libpq-dev supervisor \
+        nginx \
+        git \
+        unzip \
+        zip \
+        curl \
+        libpng-dev \
+        libjpeg-dev \
+        libfreetype6-dev \
+        libonig-dev \
+        libxml2-dev \
+        libicu-dev \
+        libpq-dev \
+        supervisor \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j$(nproc) gd mbstring pdo pdo_pgsql xml bcmath intl opcache \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
-# Copy backend + vendor dependencies
+# Copy Composer dependencies from vendor stage
 COPY --from=vendor /app /app
 
-# Optional: nginx/supervisor configs
+# Copy Nginx & Supervisor configs
 COPY docker/nginx.conf /etc/nginx/nginx.conf
+COPY docker/default.conf /etc/nginx/conf.d/default.conf
 COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
-# Expose PHP-FPM port
-EXPOSE 9000
+# Expose port 80
+EXPOSE 80
 
-# Start supervisor
-CMD ["/usr/bin/supervisord", "-n"]
+# Ensure permissions (optional, adjust user/group as needed)
+RUN chown -R www-data:www-data /app \
+    && chmod -R 755 /app
+
+# Start Supervisor (which will start PHP-FPM & Nginx)
+CMD ["/usr/bin/supervisord", "-n", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
