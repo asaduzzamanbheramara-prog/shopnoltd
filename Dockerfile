@@ -6,7 +6,7 @@ FROM composer:2 AS vendor
 WORKDIR /app
 
 # Copy backend Laravel project
-COPY backend/ ./
+COPY . ./
 
 # Ensure directories exist
 RUN mkdir -p database/seeders database/factories
@@ -24,7 +24,7 @@ WORKDIR /app
 # Copy code & vendor deps from previous stage
 COPY --from=vendor /app /app
 
-# Install system dependencies + gettext for envsubst
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     nginx supervisor git unzip libzip-dev zip gettext \
     && docker-php-ext-install pdo pdo_mysql \
@@ -35,26 +35,29 @@ RUN if [ -f /usr/local/etc/php-fpm.d/www.conf ]; then \
       sed -i 's|^listen = .*|listen = /run/php/php8.2-fpm.sock|' /usr/local/etc/php-fpm.d/www.conf; \
     fi
 
-# Copy Nginx template & Supervisor config
+# Copy Nginx & Supervisor configs
 COPY backend/docker/default.conf.template /etc/nginx/conf.d/default.conf.template
 COPY backend/docker/supervisord.conf /etc/docker/supervisord.conf
 
-# Substitute Render PORT in Nginx config
-RUN envsubst '$PORT' < /etc/nginx/conf.d/default.conf.template > /etc/nginx/conf.d/default.conf
-
-# Ensure .env and APP_KEY exist
+# Laravel .env setup and permissions
 RUN if [ ! -f .env ]; then \
       cp .env.example .env && \
       sed -i 's/APP_ENV=.*/APP_ENV=production/' .env && \
       sed -i 's/APP_DEBUG=.*/APP_DEBUG=false/' .env; \
     fi \
  && php artisan key:generate --force \
+ && mkdir -p storage/logs \
+ && touch storage/logs/laravel.log \
  && chown -R www-data:www-data /app/storage /app/bootstrap/cache \
  && chmod -R 755 /app/storage /app/bootstrap/cache
 
-# Render dynamic port
-ENV PORT=10000
-EXPOSE 10000
+# Render dynamic port (fallback)
+ENV PORT=8080
+EXPOSE 8080
 
-# Start Supervisor (manages Nginx + PHP-FPM + Laravel logs)
-CMD ["/usr/bin/supervisord", "-c", "/etc/docker/supervisord.conf"]
+# Copy startup script
+COPY backend/docker/start.sh /start.sh
+RUN chmod +x /start.sh
+
+# Start Supervisor via startup script
+CMD ["/start.sh"]
