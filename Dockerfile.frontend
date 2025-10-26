@@ -1,0 +1,38 @@
+# ===========================
+# 1️⃣ Build Stage
+# ===========================
+FROM node:20 AS builder
+
+WORKDIR /app
+
+# Copy package.json and package-lock.json (or yarn.lock)
+COPY frontend/package*.json ./
+
+# Install dependencies
+RUN npm install --legacy-peer-deps
+
+# Copy all frontend code
+COPY frontend/ ./
+
+# Build frontend assets
+RUN npm run build
+
+# ===========================
+# 2️⃣ Production Stage
+# ===========================
+FROM nginx:alpine
+
+# Remove default nginx static files
+RUN rm -rf /usr/share/nginx/html/*
+
+# Copy built frontend assets from builder
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Copy custom nginx config if needed
+# COPY docker/frontend.conf /etc/nginx/conf.d/default.conf
+
+# Expose port 3000
+EXPOSE 3000
+
+# Start Nginx
+CMD ["nginx", "-g", "daemon off;"]

@@ -1,0 +1,35 @@
+version: "3.9"
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: shopnoltd_app
+    restart: unless-stopped
+    environment:
+      PORT: 10000
+    ports:
+      - "10000:10000"
+      - "9000:9000"   # PHP-FPM, optional if needed
+    volumes:
+      - ./backend:/app
+    depends_on:
+      - db
+
+  db:
+    image: mysql:8.0
+    container_name: shopnoltd_db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: shopnoltd_db
+      MYSQL_USER: shopnoltd_user
+      MYSQL_PASSWORD: Asad18081978#
+      MYSQL_ROOT_PASSWORD: rootpassword
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+
+volumes:
+  db_data:

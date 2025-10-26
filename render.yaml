@@ -1,0 +1,56 @@
+# ===========================================================
+# Render Deployment for Shopno Ltd Laravel Application
+# ===========================================================
+
+# ------------------------------
+# 🌐 Web Service
+# ------------------------------
+services:
+  - type: web
+    name: shopnoltd
+    env: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+
+    # Render listens on dynamic PORT, overridden below
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: APP_NAME
+        value: ShopnoLtd
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: false
+      - key: APP_URL
+        value: https://shopnoltd.onrender.com
+      - key: APP_KEY
+        generateValue: true
+
+      # Database connection (linked below)
+      - key: DB_CONNECTION
+        value: mysql
+      - key: DB_HOST
+        fromService: shopnoltd-db
+      - key: DB_PORT
+        value: 3306
+      - key: DB_DATABASE
+        value: shopnoltd_db
+      - key: DB_USERNAME
+        value: shopnoltd_user
+      - key: DB_PASSWORD
+        fromService: shopnoltd-db
+
+    healthCheckPath: /
+    autoDeploy: true
+    buildCommand: ""
+    startCommand: ""
+
+# ------------------------------
+# 🗄️ MySQL Database Service
+# ------------------------------
+databases:
+  - name: shopnoltd-db
+    databaseName: shopnoltd_db
+    user: shopnoltd_user
+    plan: free

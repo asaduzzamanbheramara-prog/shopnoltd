@@ -1,0 +1,13 @@
+{
+  "name": "superapp-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "framer-motion": "^10.12.16"
+  },
+  "scripts": {
+    "start": "echo 'Frontend placeholder, integrate into SPA build system'"
+  }
+}

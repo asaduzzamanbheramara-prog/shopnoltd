@@ -1,0 +1,5 @@
+# Ignore everything except backend Laravel project and docker configs
+*
+!backend/**
+!docker/**
+!Dockerfile
