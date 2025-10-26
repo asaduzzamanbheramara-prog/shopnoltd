@@ -3,9 +3,10 @@
 # =========================
 FROM php:8.2-fpm
 
-# Install system dependencies
+# Install system dependencies (added gettext-base for envsubst)
 RUN apt-get update && apt-get install -y \
-    git curl unzip zip nginx supervisor libpng-dev libjpeg-dev libfreetype6-dev libonig-dev libzip-dev && \
+    git curl unzip zip nginx supervisor gettext-base \
+    libpng-dev libjpeg-dev libfreetype6-dev libonig-dev libzip-dev && \
     docker-php-ext-configure gd --with-freetype --with-jpeg && \
     docker-php-ext-install pdo pdo_mysql mbstring gd zip exif pcntl && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
@@ -48,7 +49,7 @@ COPY backend/docker/default.conf.template /etc/nginx/conf.d/default.conf.templat
 ENV PORT=8080
 EXPOSE 8080
 
-# Generate Nginx conf
+# Generate Nginx conf (uses envsubst)
 RUN envsubst '$PORT' < /etc/nginx/conf.d/default.conf.template > /etc/nginx/conf.d/default.conf
 
 # =========================
