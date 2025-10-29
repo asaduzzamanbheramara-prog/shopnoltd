@@ -45,10 +45,9 @@ RUN if [ ! -f .env ]; then \
 COPY backend/docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY backend/docker/default.conf.template /etc/nginx/conf.d/default.conf.template
 
-# Render dynamic port (Render requires 10000)
+# Render dynamic port
 ENV PORT=10000
 EXPOSE 10000
-
 
 # Generate Nginx conf (uses envsubst)
 RUN envsubst '$PORT' < /etc/nginx/conf.d/default.conf.template > /etc/nginx/conf.d/default.conf
