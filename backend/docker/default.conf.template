@@ -1,6 +1,6 @@
 server {
-    listen ${PORT};
-    server_name _;
+    listen       ${PORT};
+    server_name  localhost;
 
     root /app/public;
     index index.php index.html;
@@ -20,7 +20,4 @@ server {
     location ~ /\.ht {
         deny all;
     }
-
-    access_log /var/log/nginx/access.log;
-    error_log /var/log/nginx/error.log;
 }
