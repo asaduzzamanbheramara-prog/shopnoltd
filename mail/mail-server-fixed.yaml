@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mail-server
+  namespace: default
+  labels:
+    app: mail-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mail-server
+  template:
+    metadata:
+      labels:
+        app: mail-server
+    spec:
+      containers:
+      - name: mail-server
+        image: tvial/docker-mailserver:latest
+        ports:
+        - containerPort: 25
+        - containerPort: 587
+        - containerPort: 993
+        env:
+        - name: HOSTNAME
+          value: "mail.shopnoltd.dpdns.org"
+        - name: DOMAINNAME
+          value: "shopnoltd.dpdns.org"
