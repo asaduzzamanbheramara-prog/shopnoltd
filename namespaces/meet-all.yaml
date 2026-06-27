@@ -1,0 +1,1107 @@
+apiVersion: v1
+items:
+- apiVersion: v1
+  kind: Pod
+  metadata:
+    creationTimestamp: "2026-06-26T18:08:34Z"
+    generateName: jicofo-5fc684bfc7-
+    generation: 1
+    labels:
+      app: jicofo
+      pod-template-hash: 5fc684bfc7
+    name: jicofo-5fc684bfc7-qc878
+    namespace: meet
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: ReplicaSet
+      name: jicofo-5fc684bfc7
+      uid: 6c17da5a-7f94-4e8c-8dee-207ab20fad4c
+    resourceVersion: "133272"
+    uid: 988adcb1-0e28-4874-85e5-37046e79a546
+  spec:
+    containers:
+    - image: jitsi/jicofo:stable
+      imagePullPolicy: IfNotPresent
+      name: jicofo
+      resources: {}
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-wrl2z
+        readOnly: true
+    dnsPolicy: ClusterFirst
+    enableServiceLinks: true
+    nodeName: desktop-control-plane
+    preemptionPolicy: PreemptLowerPriority
+    priority: 0
+    restartPolicy: Always
+    schedulerName: default-scheduler
+    securityContext: {}
+    serviceAccount: default
+    serviceAccountName: default
+    terminationGracePeriodSeconds: 30
+    tolerations:
+    - effect: NoExecute
+      key: node.kubernetes.io/not-ready
+      operator: Exists
+      tolerationSeconds: 300
+    - effect: NoExecute
+      key: node.kubernetes.io/unreachable
+      operator: Exists
+      tolerationSeconds: 300
+    volumes:
+    - name: kube-api-access-wrl2z
+      projected:
+        defaultMode: 420
+        sources:
+        - serviceAccountToken:
+            expirationSeconds: 3607
+            path: token
+        - configMap:
+            items:
+            - key: ca.crt
+              path: ca.crt
+            name: kube-root-ca.crt
+        - downwardAPI:
+            items:
+            - fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+              path: namespace
+  status:
+    conditions:
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T13:14:04Z"
+      observedGeneration: 1
+      status: "True"
+      type: PodReadyToStartContainers
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-26T18:08:34Z"
+      observedGeneration: 1
+      status: "True"
+      type: Initialized
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T16:28:06Z"
+      message: 'containers with unready status: [jicofo]'
+      observedGeneration: 1
+      reason: ContainersNotReady
+      status: "False"
+      type: Ready
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T16:28:06Z"
+      message: 'containers with unready status: [jicofo]'
+      observedGeneration: 1
+      reason: ContainersNotReady
+      status: "False"
+      type: ContainersReady
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-26T18:08:34Z"
+      observedGeneration: 1
+      status: "True"
+      type: PodScheduled
+    containerStatuses:
+    - containerID: containerd://31b00f1365ae6e4d400e53a55ff228e24b3db8440005994ea6511d678c5c6ac5
+      image: docker.io/jitsi/jicofo:stable
+      imageID: docker.io/jitsi/jicofo@sha256:1f78fb0c0548ae5efd83a2b488df6aabbae4a70bc6f64c74395b6937b3aceb98
+      lastState:
+        terminated:
+          containerID: containerd://31b00f1365ae6e4d400e53a55ff228e24b3db8440005994ea6511d678c5c6ac5
+          exitCode: 1
+          finishedAt: "2026-06-27T16:28:06Z"
+          reason: Error
+          startedAt: "2026-06-27T16:27:59Z"
+      name: jicofo
+      ready: false
+      resources: {}
+      restartCount: 240
+      started: false
+      state:
+        waiting:
+          message: back-off 5m0s restarting failed container=jicofo pod=jicofo-5fc684bfc7-qc878_meet(988adcb1-0e28-4874-85e5-37046e79a546)
+          reason: CrashLoopBackOff
+      user:
+        linux:
+          gid: 0
+          supplementalGroups:
+          - 0
+          uid: 0
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-wrl2z
+        readOnly: true
+        recursiveReadOnly: Disabled
+    hostIP: 172.18.0.4
+    hostIPs:
+    - ip: 172.18.0.4
+    observedGeneration: 1
+    phase: Running
+    podIP: 10.244.0.18
+    podIPs:
+    - ip: 10.244.0.18
+    qosClass: BestEffort
+    startTime: "2026-06-26T18:08:34Z"
+- apiVersion: v1
+  kind: Pod
+  metadata:
+    creationTimestamp: "2026-06-26T18:08:34Z"
+    generateName: jvb-8664664cc9-
+    generation: 1
+    labels:
+      app: jvb
+      pod-template-hash: 8664664cc9
+    name: jvb-8664664cc9-vb54b
+    namespace: meet
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: ReplicaSet
+      name: jvb-8664664cc9
+      uid: 91377502-8ae4-46d3-8a47-355c1a53206f
+    resourceVersion: "133442"
+    uid: 91b0fc89-a36d-4726-888a-944ec246a015
+  spec:
+    containers:
+    - image: jitsi/jvb:stable
+      imagePullPolicy: IfNotPresent
+      name: jvb
+      ports:
+      - containerPort: 10000
+        protocol: UDP
+      resources: {}
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-tj9sv
+        readOnly: true
+    dnsPolicy: ClusterFirst
+    enableServiceLinks: true
+    nodeName: desktop-control-plane
+    preemptionPolicy: PreemptLowerPriority
+    priority: 0
+    restartPolicy: Always
+    schedulerName: default-scheduler
+    securityContext: {}
+    serviceAccount: default
+    serviceAccountName: default
+    terminationGracePeriodSeconds: 30
+    tolerations:
+    - effect: NoExecute
+      key: node.kubernetes.io/not-ready
+      operator: Exists
+      tolerationSeconds: 300
+    - effect: NoExecute
+      key: node.kubernetes.io/unreachable
+      operator: Exists
+      tolerationSeconds: 300
+    volumes:
+    - name: kube-api-access-tj9sv
+      projected:
+        defaultMode: 420
+        sources:
+        - serviceAccountToken:
+            expirationSeconds: 3607
+            path: token
+        - configMap:
+            items:
+            - key: ca.crt
+              path: ca.crt
+            name: kube-root-ca.crt
+        - downwardAPI:
+            items:
+            - fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+              path: namespace
+  status:
+    conditions:
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T13:14:04Z"
+      observedGeneration: 1
+      status: "True"
+      type: PodReadyToStartContainers
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-26T18:08:34Z"
+      observedGeneration: 1
+      status: "True"
+      type: Initialized
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T16:28:07Z"
+      message: 'containers with unready status: [jvb]'
+      observedGeneration: 1
+      reason: ContainersNotReady
+      status: "False"
+      type: Ready
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T16:28:07Z"
+      message: 'containers with unready status: [jvb]'
+      observedGeneration: 1
+      reason: ContainersNotReady
+      status: "False"
+      type: ContainersReady
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-26T18:08:34Z"
+      observedGeneration: 1
+      status: "True"
+      type: PodScheduled
+    containerStatuses:
+    - containerID: containerd://46a8847f0821d1efda75f93969e5a2e39be126ec39affee97aa9544da286d09a
+      image: docker.io/jitsi/jvb:stable
+      imageID: docker.io/jitsi/jvb@sha256:3460de3541a8f96d007b8f2b4681ea8321cae64c17387338eabf776e73cd0f51
+      lastState:
+        terminated:
+          containerID: containerd://46a8847f0821d1efda75f93969e5a2e39be126ec39affee97aa9544da286d09a
+          exitCode: 1
+          finishedAt: "2026-06-27T16:28:06Z"
+          reason: Error
+          startedAt: "2026-06-27T16:27:59Z"
+      name: jvb
+      ready: false
+      resources: {}
+      restartCount: 240
+      started: false
+      state:
+        waiting:
+          message: back-off 5m0s restarting failed container=jvb pod=jvb-8664664cc9-vb54b_meet(91b0fc89-a36d-4726-888a-944ec246a015)
+          reason: CrashLoopBackOff
+      user:
+        linux:
+          gid: 0
+          supplementalGroups:
+          - 0
+          uid: 0
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-tj9sv
+        readOnly: true
+        recursiveReadOnly: Disabled
+    hostIP: 172.18.0.4
+    hostIPs:
+    - ip: 172.18.0.4
+    - ip: fc00:f853:ccd:e793::4
+    observedGeneration: 1
+    phase: Running
+    podIP: 10.244.0.10
+    podIPs:
+    - ip: 10.244.0.10
+    qosClass: BestEffort
+    startTime: "2026-06-26T18:08:34Z"
+- apiVersion: v1
+  kind: Pod
+  metadata:
+    creationTimestamp: "2026-06-26T18:08:34Z"
+    generateName: prosody-774bf488d5-
+    generation: 1
+    labels:
+      app: prosody
+      pod-template-hash: 774bf488d5
+    name: prosody-774bf488d5-g8lqv
+    namespace: meet
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: ReplicaSet
+      name: prosody-774bf488d5
+      uid: 7fa8d78f-df41-48e7-9492-ddc4b717565f
+    resourceVersion: "133446"
+    uid: 2b1e47aa-f1f6-4c1f-bcc9-873c4ed388a1
+  spec:
+    containers:
+    - image: jitsi/prosody:stable
+      imagePullPolicy: IfNotPresent
+      name: prosody
+      ports:
+      - containerPort: 5222
+        protocol: TCP
+      resources: {}
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-8ptdv
+        readOnly: true
+    dnsPolicy: ClusterFirst
+    enableServiceLinks: true
+    nodeName: desktop-control-plane
+    preemptionPolicy: PreemptLowerPriority
+    priority: 0
+    restartPolicy: Always
+    schedulerName: default-scheduler
+    securityContext: {}
+    serviceAccount: default
+    serviceAccountName: default
+    terminationGracePeriodSeconds: 30
+    tolerations:
+    - effect: NoExecute
+      key: node.kubernetes.io/not-ready
+      operator: Exists
+      tolerationSeconds: 300
+    - effect: NoExecute
+      key: node.kubernetes.io/unreachable
+      operator: Exists
+      tolerationSeconds: 300
+    volumes:
+    - name: kube-api-access-8ptdv
+      projected:
+        defaultMode: 420
+        sources:
+        - serviceAccountToken:
+            expirationSeconds: 3607
+            path: token
+        - configMap:
+            items:
+            - key: ca.crt
+              path: ca.crt
+            name: kube-root-ca.crt
+        - downwardAPI:
+            items:
+            - fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+              path: namespace
+  status:
+    conditions:
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T13:14:04Z"
+      observedGeneration: 1
+      status: "True"
+      type: PodReadyToStartContainers
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-26T18:08:34Z"
+      observedGeneration: 1
+      status: "True"
+      type: Initialized
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T16:29:46Z"
+      message: 'containers with unready status: [prosody]'
+      observedGeneration: 1
+      reason: ContainersNotReady
+      status: "False"
+      type: Ready
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T16:29:46Z"
+      message: 'containers with unready status: [prosody]'
+      observedGeneration: 1
+      reason: ContainersNotReady
+      status: "False"
+      type: ContainersReady
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-26T18:08:34Z"
+      observedGeneration: 1
+      status: "True"
+      type: PodScheduled
+    containerStatuses:
+    - containerID: containerd://523049493b5efb0cf365777bc98088ab875a2b2348e61aa8f3a85611b6d781e1
+      image: docker.io/jitsi/prosody:stable
+      imageID: docker.io/jitsi/prosody@sha256:926c508c0d9198bf9d0b6adb88ce9092461e9a79e2895fb57fe4ef5f44ff3523
+      lastState:
+        terminated:
+          containerID: containerd://523049493b5efb0cf365777bc98088ab875a2b2348e61aa8f3a85611b6d781e1
+          exitCode: 1
+          finishedAt: "2026-06-27T16:29:45Z"
+          reason: Error
+          startedAt: "2026-06-27T16:29:37Z"
+      name: prosody
+      ready: false
+      resources: {}
+      restartCount: 238
+      started: false
+      state:
+        waiting:
+          message: back-off 5m0s restarting failed container=prosody pod=prosody-774bf488d5-g8lqv_meet(2b1e47aa-f1f6-4c1f-bcc9-873c4ed388a1)
+          reason: CrashLoopBackOff
+      user:
+        linux:
+          gid: 0
+          supplementalGroups:
+          - 0
+          uid: 0
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-8ptdv
+        readOnly: true
+        recursiveReadOnly: Disabled
+    hostIP: 172.18.0.4
+    hostIPs:
+    - ip: 172.18.0.4
+    - ip: fc00:f853:ccd:e793::4
+    observedGeneration: 1
+    phase: Running
+    podIP: 10.244.0.13
+    podIPs:
+    - ip: 10.244.0.13
+    qosClass: BestEffort
+    startTime: "2026-06-26T18:08:34Z"
+- apiVersion: v1
+  kind: Pod
+  metadata:
+    creationTimestamp: "2026-06-26T18:08:34Z"
+    generateName: web-65478fd8cd-
+    generation: 1
+    labels:
+      app: web
+      pod-template-hash: 65478fd8cd
+    name: web-65478fd8cd-wxw6k
+    namespace: meet
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: ReplicaSet
+      name: web-65478fd8cd
+      uid: dc296f2a-8d5f-4311-bf10-53e6ec783052
+    resourceVersion: "133251"
+    uid: 62d470a9-d583-4255-917b-bbd4ca0aaea8
+  spec:
+    containers:
+    - image: jitsi/web:stable
+      imagePullPolicy: IfNotPresent
+      name: web
+      ports:
+      - containerPort: 80
+        protocol: TCP
+      resources: {}
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-xfzqp
+        readOnly: true
+    dnsPolicy: ClusterFirst
+    enableServiceLinks: true
+    nodeName: desktop-control-plane
+    preemptionPolicy: PreemptLowerPriority
+    priority: 0
+    restartPolicy: Always
+    schedulerName: default-scheduler
+    securityContext: {}
+    serviceAccount: default
+    serviceAccountName: default
+    terminationGracePeriodSeconds: 30
+    tolerations:
+    - effect: NoExecute
+      key: node.kubernetes.io/not-ready
+      operator: Exists
+      tolerationSeconds: 300
+    - effect: NoExecute
+      key: node.kubernetes.io/unreachable
+      operator: Exists
+      tolerationSeconds: 300
+    volumes:
+    - name: kube-api-access-xfzqp
+      projected:
+        defaultMode: 420
+        sources:
+        - serviceAccountToken:
+            expirationSeconds: 3607
+            path: token
+        - configMap:
+            items:
+            - key: ca.crt
+              path: ca.crt
+            name: kube-root-ca.crt
+        - downwardAPI:
+            items:
+            - fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+              path: namespace
+  status:
+    conditions:
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T13:14:04Z"
+      observedGeneration: 1
+      status: "True"
+      type: PodReadyToStartContainers
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-26T18:08:34Z"
+      observedGeneration: 1
+      status: "True"
+      type: Initialized
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T13:14:04Z"
+      observedGeneration: 1
+      status: "True"
+      type: Ready
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T13:14:04Z"
+      observedGeneration: 1
+      status: "True"
+      type: ContainersReady
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-26T18:08:34Z"
+      observedGeneration: 1
+      status: "True"
+      type: PodScheduled
+    containerStatuses:
+    - containerID: containerd://ac43339b404f3d75c8cb4a8412f343667944770427d2cfbcfec6b8bbf066e9ae
+      image: docker.io/jitsi/web:stable
+      imageID: docker.io/jitsi/web@sha256:2183593bbbe1b5e27c368e3737efc51915ce7742de93f594e5ca7950c864c233
+      lastState:
+        terminated:
+          containerID: containerd://70f5d1e3a94f3d9239e8be3b3ee6cbf7f705278a040a3fd3a2837a4a038f32d7
+          exitCode: 255
+          finishedAt: "2026-06-27T13:13:14Z"
+          reason: Unknown
+          startedAt: "2026-06-27T12:58:35Z"
+      name: web
+      ready: true
+      resources: {}
+      restartCount: 3
+      started: true
+      state:
+        running:
+          startedAt: "2026-06-27T13:14:04Z"
+      user:
+        linux:
+          gid: 0
+          supplementalGroups:
+          - 0
+          uid: 0
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-xfzqp
+        readOnly: true
+        recursiveReadOnly: Disabled
+    hostIP: 172.18.0.4
+    hostIPs:
+    - ip: 172.18.0.4
+    - ip: fc00:f853:ccd:e793::4
+    observedGeneration: 1
+    phase: Running
+    podIP: 10.244.0.15
+    podIPs:
+    - ip: 10.244.0.15
+    qosClass: BestEffort
+    startTime: "2026-06-26T18:08:34Z"
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"name":"jvb","namespace":"meet"},"spec":{"ports":[{"port":10000,"protocol":"UDP"}],"selector":{"app":"jvb"}}}
+    creationTimestamp: "2026-06-26T18:08:34Z"
+    name: jvb
+    namespace: meet
+    resourceVersion: "11750"
+    uid: ba5f0724-8468-4c78-98b0-c0e0ada0309f
+  spec:
+    clusterIP: 10.96.136.108
+    clusterIPs:
+    - 10.96.136.108
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - port: 10000
+      protocol: UDP
+      targetPort: 10000
+    selector:
+      app: jvb
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"name":"meet-web","namespace":"meet"},"spec":{"ports":[{"port":80,"targetPort":80}],"selector":{"app":"web"}}}
+    creationTimestamp: "2026-06-26T18:08:34Z"
+    name: meet-web
+    namespace: meet
+    resourceVersion: "11736"
+    uid: ff96d30b-391c-413c-b1d7-2f67703952ea
+  spec:
+    clusterIP: 10.96.43.252
+    clusterIPs:
+    - 10.96.43.252
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - port: 80
+      protocol: TCP
+      targetPort: 80
+    selector:
+      app: web
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    annotations:
+      deployment.kubernetes.io/revision: "1"
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"name":"jicofo","namespace":"meet"},"spec":{"replicas":1,"selector":{"matchLabels":{"app":"jicofo"}},"template":{"metadata":{"labels":{"app":"jicofo"}},"spec":{"containers":[{"image":"jitsi/jicofo:stable","name":"jicofo"}]}}}}
+    creationTimestamp: "2026-06-26T18:08:34Z"
+    generation: 1
+    name: jicofo
+    namespace: meet
+    resourceVersion: "133145"
+    uid: e187ce97-134f-42de-98e1-4b3c50ff441b
+  spec:
+    progressDeadlineSeconds: 600
+    replicas: 1
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        app: jicofo
+    strategy:
+      rollingUpdate:
+        maxSurge: 25%
+        maxUnavailable: 25%
+      type: RollingUpdate
+    template:
+      metadata:
+        labels:
+          app: jicofo
+      spec:
+        containers:
+        - image: jitsi/jicofo:stable
+          imagePullPolicy: IfNotPresent
+          name: jicofo
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    conditions:
+    - lastTransitionTime: "2026-06-26T18:08:34Z"
+      lastUpdateTime: "2026-06-26T18:12:42Z"
+      message: ReplicaSet "jicofo-5fc684bfc7" has successfully progressed.
+      reason: NewReplicaSetAvailable
+      status: "True"
+      type: Progressing
+    - lastTransitionTime: "2026-06-27T16:28:07Z"
+      lastUpdateTime: "2026-06-27T16:28:07Z"
+      message: Deployment does not have minimum availability.
+      reason: MinimumReplicasUnavailable
+      status: "False"
+      type: Available
+    observedGeneration: 1
+    replicas: 1
+    unavailableReplicas: 1
+    updatedReplicas: 1
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    annotations:
+      deployment.kubernetes.io/revision: "1"
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"name":"jvb","namespace":"meet"},"spec":{"replicas":1,"selector":{"matchLabels":{"app":"jvb"}},"template":{"metadata":{"labels":{"app":"jvb"}},"spec":{"containers":[{"image":"jitsi/jvb:stable","name":"jvb","ports":[{"containerPort":10000,"protocol":"UDP"}]}]}}}}
+    creationTimestamp: "2026-06-26T18:08:34Z"
+    generation: 1
+    name: jvb
+    namespace: meet
+    resourceVersion: "133150"
+    uid: 5ee4db90-f4b1-42a0-8bf6-705fcd1e32f7
+  spec:
+    progressDeadlineSeconds: 600
+    replicas: 1
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        app: jvb
+    strategy:
+      rollingUpdate:
+        maxSurge: 25%
+        maxUnavailable: 25%
+      type: RollingUpdate
+    template:
+      metadata:
+        labels:
+          app: jvb
+      spec:
+        containers:
+        - image: jitsi/jvb:stable
+          imagePullPolicy: IfNotPresent
+          name: jvb
+          ports:
+          - containerPort: 10000
+            protocol: UDP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    conditions:
+    - lastTransitionTime: "2026-06-26T18:08:34Z"
+      lastUpdateTime: "2026-06-26T18:12:19Z"
+      message: ReplicaSet "jvb-8664664cc9" has successfully progressed.
+      reason: NewReplicaSetAvailable
+      status: "True"
+      type: Progressing
+    - lastTransitionTime: "2026-06-27T16:28:07Z"
+      lastUpdateTime: "2026-06-27T16:28:07Z"
+      message: Deployment does not have minimum availability.
+      reason: MinimumReplicasUnavailable
+      status: "False"
+      type: Available
+    observedGeneration: 1
+    replicas: 1
+    unavailableReplicas: 1
+    updatedReplicas: 1
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    annotations:
+      deployment.kubernetes.io/revision: "1"
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"name":"prosody","namespace":"meet"},"spec":{"replicas":1,"selector":{"matchLabels":{"app":"prosody"}},"template":{"metadata":{"labels":{"app":"prosody"}},"spec":{"containers":[{"image":"jitsi/prosody:stable","name":"prosody","ports":[{"containerPort":5222}]}]}}}}
+    creationTimestamp: "2026-06-26T18:08:33Z"
+    generation: 1
+    name: prosody
+    namespace: meet
+    resourceVersion: "133351"
+    uid: 08703490-f212-4150-9b4e-7b7c9ceac20b
+  spec:
+    progressDeadlineSeconds: 600
+    replicas: 1
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        app: prosody
+    strategy:
+      rollingUpdate:
+        maxSurge: 25%
+        maxUnavailable: 25%
+      type: RollingUpdate
+    template:
+      metadata:
+        labels:
+          app: prosody
+      spec:
+        containers:
+        - image: jitsi/prosody:stable
+          imagePullPolicy: IfNotPresent
+          name: prosody
+          ports:
+          - containerPort: 5222
+            protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    conditions:
+    - lastTransitionTime: "2026-06-26T18:08:34Z"
+      lastUpdateTime: "2026-06-26T18:12:50Z"
+      message: ReplicaSet "prosody-774bf488d5" has successfully progressed.
+      reason: NewReplicaSetAvailable
+      status: "True"
+      type: Progressing
+    - lastTransitionTime: "2026-06-27T16:29:46Z"
+      lastUpdateTime: "2026-06-27T16:29:46Z"
+      message: Deployment does not have minimum availability.
+      reason: MinimumReplicasUnavailable
+      status: "False"
+      type: Available
+    observedGeneration: 1
+    replicas: 1
+    unavailableReplicas: 1
+    updatedReplicas: 1
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    annotations:
+      deployment.kubernetes.io/revision: "1"
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"name":"web","namespace":"meet"},"spec":{"replicas":1,"selector":{"matchLabels":{"app":"web"}},"template":{"metadata":{"labels":{"app":"web"}},"spec":{"containers":[{"image":"jitsi/web:stable","name":"web","ports":[{"containerPort":80}]}]}}}}
+    creationTimestamp: "2026-06-26T18:08:34Z"
+    generation: 1
+    name: web
+    namespace: meet
+    resourceVersion: "113320"
+    uid: b6742529-1c56-4697-b4c8-f3ec31c136fa
+  spec:
+    progressDeadlineSeconds: 600
+    replicas: 1
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        app: web
+    strategy:
+      rollingUpdate:
+        maxSurge: 25%
+        maxUnavailable: 25%
+      type: RollingUpdate
+    template:
+      metadata:
+        labels:
+          app: web
+      spec:
+        containers:
+        - image: jitsi/web:stable
+          imagePullPolicy: IfNotPresent
+          name: web
+          ports:
+          - containerPort: 80
+            protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    availableReplicas: 1
+    conditions:
+    - lastTransitionTime: "2026-06-26T18:08:34Z"
+      lastUpdateTime: "2026-06-26T18:13:41Z"
+      message: ReplicaSet "web-65478fd8cd" has successfully progressed.
+      reason: NewReplicaSetAvailable
+      status: "True"
+      type: Progressing
+    - lastTransitionTime: "2026-06-27T13:14:05Z"
+      lastUpdateTime: "2026-06-27T13:14:05Z"
+      message: Deployment has minimum availability.
+      reason: MinimumReplicasAvailable
+      status: "True"
+      type: Available
+    observedGeneration: 1
+    readyReplicas: 1
+    replicas: 1
+    updatedReplicas: 1
+- apiVersion: apps/v1
+  kind: ReplicaSet
+  metadata:
+    annotations:
+      deployment.kubernetes.io/desired-replicas: "1"
+      deployment.kubernetes.io/max-replicas: "2"
+      deployment.kubernetes.io/revision: "1"
+    creationTimestamp: "2026-06-26T18:08:34Z"
+    generation: 1
+    labels:
+      app: jicofo
+      pod-template-hash: 5fc684bfc7
+    name: jicofo-5fc684bfc7
+    namespace: meet
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Deployment
+      name: jicofo
+      uid: e187ce97-134f-42de-98e1-4b3c50ff441b
+    resourceVersion: "133144"
+    uid: 6c17da5a-7f94-4e8c-8dee-207ab20fad4c
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        app: jicofo
+        pod-template-hash: 5fc684bfc7
+    template:
+      metadata:
+        labels:
+          app: jicofo
+          pod-template-hash: 5fc684bfc7
+      spec:
+        containers:
+        - image: jitsi/jicofo:stable
+          imagePullPolicy: IfNotPresent
+          name: jicofo
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    fullyLabeledReplicas: 1
+    observedGeneration: 1
+    replicas: 1
+- apiVersion: apps/v1
+  kind: ReplicaSet
+  metadata:
+    annotations:
+      deployment.kubernetes.io/desired-replicas: "1"
+      deployment.kubernetes.io/max-replicas: "2"
+      deployment.kubernetes.io/revision: "1"
+    creationTimestamp: "2026-06-26T18:08:34Z"
+    generation: 1
+    labels:
+      app: jvb
+      pod-template-hash: 8664664cc9
+    name: jvb-8664664cc9
+    namespace: meet
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Deployment
+      name: jvb
+      uid: 5ee4db90-f4b1-42a0-8bf6-705fcd1e32f7
+    resourceVersion: "133149"
+    uid: 91377502-8ae4-46d3-8a47-355c1a53206f
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        app: jvb
+        pod-template-hash: 8664664cc9
+    template:
+      metadata:
+        labels:
+          app: jvb
+          pod-template-hash: 8664664cc9
+      spec:
+        containers:
+        - image: jitsi/jvb:stable
+          imagePullPolicy: IfNotPresent
+          name: jvb
+          ports:
+          - containerPort: 10000
+            protocol: UDP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    fullyLabeledReplicas: 1
+    observedGeneration: 1
+    replicas: 1
+- apiVersion: apps/v1
+  kind: ReplicaSet
+  metadata:
+    annotations:
+      deployment.kubernetes.io/desired-replicas: "1"
+      deployment.kubernetes.io/max-replicas: "2"
+      deployment.kubernetes.io/revision: "1"
+    creationTimestamp: "2026-06-26T18:08:34Z"
+    generation: 1
+    labels:
+      app: prosody
+      pod-template-hash: 774bf488d5
+    name: prosody-774bf488d5
+    namespace: meet
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Deployment
+      name: prosody
+      uid: 08703490-f212-4150-9b4e-7b7c9ceac20b
+    resourceVersion: "133350"
+    uid: 7fa8d78f-df41-48e7-9492-ddc4b717565f
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        app: prosody
+        pod-template-hash: 774bf488d5
+    template:
+      metadata:
+        labels:
+          app: prosody
+          pod-template-hash: 774bf488d5
+      spec:
+        containers:
+        - image: jitsi/prosody:stable
+          imagePullPolicy: IfNotPresent
+          name: prosody
+          ports:
+          - containerPort: 5222
+            protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    fullyLabeledReplicas: 1
+    observedGeneration: 1
+    replicas: 1
+- apiVersion: apps/v1
+  kind: ReplicaSet
+  metadata:
+    annotations:
+      deployment.kubernetes.io/desired-replicas: "1"
+      deployment.kubernetes.io/max-replicas: "2"
+      deployment.kubernetes.io/revision: "1"
+    creationTimestamp: "2026-06-26T18:08:34Z"
+    generation: 1
+    labels:
+      app: web
+      pod-template-hash: 65478fd8cd
+    name: web-65478fd8cd
+    namespace: meet
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Deployment
+      name: web
+      uid: b6742529-1c56-4697-b4c8-f3ec31c136fa
+    resourceVersion: "113318"
+    uid: dc296f2a-8d5f-4311-bf10-53e6ec783052
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        app: web
+        pod-template-hash: 65478fd8cd
+    template:
+      metadata:
+        labels:
+          app: web
+          pod-template-hash: 65478fd8cd
+      spec:
+        containers:
+        - image: jitsi/web:stable
+          imagePullPolicy: IfNotPresent
+          name: web
+          ports:
+          - containerPort: 80
+            protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    availableReplicas: 1
+    fullyLabeledReplicas: 1
+    observedGeneration: 1
+    readyReplicas: 1
+    replicas: 1
+kind: List
+metadata:
+  resourceVersion: ""

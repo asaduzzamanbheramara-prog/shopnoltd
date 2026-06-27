@@ -1,0 +1,6089 @@
+apiVersion: v1
+items:
+- apiVersion: v1
+  kind: Pod
+  metadata:
+    creationTimestamp: "2026-06-27T16:29:49Z"
+    generateName: api-764cc6744-
+    generation: 1
+    labels:
+      app: api
+      pod-template-hash: 764cc6744
+    name: api-764cc6744-vgjqh
+    namespace: default
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: ReplicaSet
+      name: api-764cc6744
+      uid: f2bba699-29ef-4cc8-b6bc-e5140f33d1e8
+    resourceVersion: "133386"
+    uid: 8a6d6906-e0c4-4ba5-9f27-5b5a7492929a
+  spec:
+    containers:
+    - env:
+      - name: PYTHONPATH
+        value: /workspace
+      - name: BRAND_NAME
+        value: Shopnoltd
+      - name: COMPANY
+        value: Shopno Database Firm
+      image: python:3.11
+      imagePullPolicy: IfNotPresent
+      name: api
+      ports:
+      - containerPort: 8000
+        protocol: TCP
+      resources: {}
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      volumeMounts:
+      - mountPath: /workspace
+        name: app
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-vrtnj
+        readOnly: true
+    - image: python:3.11
+      imagePullPolicy: IfNotPresent
+      name: python
+      resources: {}
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-vrtnj
+        readOnly: true
+    dnsPolicy: ClusterFirst
+    enableServiceLinks: true
+    nodeName: desktop-control-plane
+    preemptionPolicy: PreemptLowerPriority
+    priority: 0
+    restartPolicy: Always
+    schedulerName: default-scheduler
+    securityContext: {}
+    serviceAccount: default
+    serviceAccountName: default
+    terminationGracePeriodSeconds: 30
+    tolerations:
+    - effect: NoExecute
+      key: node.kubernetes.io/not-ready
+      operator: Exists
+      tolerationSeconds: 300
+    - effect: NoExecute
+      key: node.kubernetes.io/unreachable
+      operator: Exists
+      tolerationSeconds: 300
+    volumes:
+    - hostPath:
+        path: C:\Users\asadu\PROJECTS\shopnoltd
+        type: Directory
+      name: app
+    - name: kube-api-access-vrtnj
+      projected:
+        defaultMode: 420
+        sources:
+        - serviceAccountToken:
+            expirationSeconds: 3607
+            path: token
+        - configMap:
+            items:
+            - key: ca.crt
+              path: ca.crt
+            name: kube-root-ca.crt
+        - downwardAPI:
+            items:
+            - fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+              path: namespace
+  status:
+    conditions:
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T16:29:49Z"
+      observedGeneration: 1
+      status: "False"
+      type: PodReadyToStartContainers
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T16:29:49Z"
+      observedGeneration: 1
+      status: "True"
+      type: Initialized
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T16:29:49Z"
+      message: 'containers with unready status: [api python]'
+      observedGeneration: 1
+      reason: ContainersNotReady
+      status: "False"
+      type: Ready
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T16:29:49Z"
+      message: 'containers with unready status: [api python]'
+      observedGeneration: 1
+      reason: ContainersNotReady
+      status: "False"
+      type: ContainersReady
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T16:29:49Z"
+      observedGeneration: 1
+      status: "True"
+      type: PodScheduled
+    containerStatuses:
+    - image: python:3.11
+      imageID: ""
+      lastState: {}
+      name: api
+      ready: false
+      restartCount: 0
+      started: false
+      state:
+        waiting:
+          reason: ContainerCreating
+      volumeMounts:
+      - mountPath: /workspace
+        name: app
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-vrtnj
+        readOnly: true
+        recursiveReadOnly: Disabled
+    - image: python:3.11
+      imageID: ""
+      lastState: {}
+      name: python
+      ready: false
+      restartCount: 0
+      started: false
+      state:
+        waiting:
+          reason: ContainerCreating
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-vrtnj
+        readOnly: true
+        recursiveReadOnly: Disabled
+    hostIP: 172.18.0.4
+    hostIPs:
+    - ip: 172.18.0.4
+    observedGeneration: 1
+    phase: Pending
+    qosClass: BestEffort
+    startTime: "2026-06-27T16:29:49Z"
+- apiVersion: v1
+  kind: Pod
+  metadata:
+    creationTimestamp: "2026-06-27T16:29:48Z"
+    generateName: api-85f6cfb5d5-
+    generation: 1
+    labels:
+      app: api
+      pod-template-hash: 85f6cfb5d5
+    name: api-85f6cfb5d5-d9dl4
+    namespace: default
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: ReplicaSet
+      name: api-85f6cfb5d5
+      uid: d2303d74-6fcf-4417-8fc8-cbbbb4c4ac43
+    resourceVersion: "133432"
+    uid: f68de0e1-e007-40c5-bf62-c131202f29fc
+  spec:
+    containers:
+    - image: python:3.11
+      imagePullPolicy: IfNotPresent
+      name: python
+      resources: {}
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-rtchp
+        readOnly: true
+    dnsPolicy: ClusterFirst
+    enableServiceLinks: true
+    nodeName: desktop-control-plane
+    preemptionPolicy: PreemptLowerPriority
+    priority: 0
+    restartPolicy: Always
+    schedulerName: default-scheduler
+    securityContext: {}
+    serviceAccount: default
+    serviceAccountName: default
+    terminationGracePeriodSeconds: 30
+    tolerations:
+    - effect: NoExecute
+      key: node.kubernetes.io/not-ready
+      operator: Exists
+      tolerationSeconds: 300
+    - effect: NoExecute
+      key: node.kubernetes.io/unreachable
+      operator: Exists
+      tolerationSeconds: 300
+    volumes:
+    - name: kube-api-access-rtchp
+      projected:
+        defaultMode: 420
+        sources:
+        - serviceAccountToken:
+            expirationSeconds: 3607
+            path: token
+        - configMap:
+            items:
+            - key: ca.crt
+              path: ca.crt
+            name: kube-root-ca.crt
+        - downwardAPI:
+            items:
+            - fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+              path: namespace
+  status:
+    conditions:
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T16:29:50Z"
+      observedGeneration: 1
+      status: "True"
+      type: PodReadyToStartContainers
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T16:29:48Z"
+      observedGeneration: 1
+      status: "True"
+      type: Initialized
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T16:29:48Z"
+      message: 'containers with unready status: [python]'
+      observedGeneration: 1
+      reason: ContainersNotReady
+      status: "False"
+      type: Ready
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T16:29:48Z"
+      message: 'containers with unready status: [python]'
+      observedGeneration: 1
+      reason: ContainersNotReady
+      status: "False"
+      type: ContainersReady
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T16:29:48Z"
+      observedGeneration: 1
+      status: "True"
+      type: PodScheduled
+    containerStatuses:
+    - containerID: containerd://119e740fa2c88fcbbc3a962e5f529705f8e68ce2af7ec4d87cc1292723ba02a3
+      image: docker.io/library/python:3.11
+      imageID: docker.io/library/python@sha256:9800957d2a88867f853ce6072ae1669e37fa269cc6f76009fa1aef4757f62212
+      lastState:
+        terminated:
+          containerID: containerd://89ebaeb61bd5aa9911d0e24bd3c6018a7cb28f7f2e7841e0e4c6802c87280163
+          exitCode: 0
+          finishedAt: "2026-06-27T16:29:50Z"
+          reason: Completed
+          startedAt: "2026-06-27T16:29:50Z"
+      name: python
+      ready: false
+      resources: {}
+      restartCount: 2
+      started: false
+      state:
+        terminated:
+          containerID: containerd://119e740fa2c88fcbbc3a962e5f529705f8e68ce2af7ec4d87cc1292723ba02a3
+          exitCode: 0
+          finishedAt: "2026-06-27T16:30:06Z"
+          reason: Completed
+          startedAt: "2026-06-27T16:30:06Z"
+      user:
+        linux:
+          gid: 0
+          supplementalGroups:
+          - 0
+          uid: 0
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-rtchp
+        readOnly: true
+        recursiveReadOnly: Disabled
+    hostIP: 172.18.0.4
+    hostIPs:
+    - ip: 172.18.0.4
+    observedGeneration: 1
+    phase: Running
+    podIP: 10.244.0.31
+    podIPs:
+    - ip: 10.244.0.31
+    qosClass: BestEffort
+    startTime: "2026-06-27T16:29:48Z"
+- apiVersion: v1
+  kind: Pod
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/restartedAt: "2026-06-27T00:48:27+06:00"
+    creationTimestamp: "2026-06-26T18:48:28Z"
+    generateName: api-service-77ff5bd79-
+    generation: 1
+    labels:
+      app: api-service
+      pod-template-hash: 77ff5bd79
+    name: api-service-77ff5bd79-72wnq
+    namespace: default
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: ReplicaSet
+      name: api-service-77ff5bd79
+      uid: 1506cfca-2577-4540-bf1b-83c8fce690e0
+    resourceVersion: "132798"
+    uid: 912d6911-30ca-4da5-8ca1-c2413d42c4a0
+  spec:
+    containers:
+    - env:
+      - name: POSTGRES_URL
+        value: postgres://saas:saaspass@postgres:5432/saasdb?sslmode=disable
+      - name: REDIS_ADDR
+        value: redis:6379
+      - name: JWT_SECRET
+        value: SUPER_SECRET_KEY
+      - name: BILLING_SERVICE
+        value: http://billing-engine:5000
+      - name: OTEL_SERVICE_NAME
+        value: api-service
+      - name: OTEL_EXPORTER_OTLP_ENDPOINT
+        value: http://otel-collector.observability.svc.cluster.local:4318
+      - name: OTEL_EXPORTER_OTLP_PROTOCOL
+        value: http/protobuf
+      image: api-service:v4
+      imagePullPolicy: IfNotPresent
+      name: api-service
+      ports:
+      - containerPort: 8080
+        protocol: TCP
+      resources: {}
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-n8j4d
+        readOnly: true
+    dnsPolicy: ClusterFirst
+    enableServiceLinks: true
+    nodeName: desktop-control-plane
+    preemptionPolicy: PreemptLowerPriority
+    priority: 0
+    restartPolicy: Always
+    schedulerName: default-scheduler
+    securityContext: {}
+    serviceAccount: default
+    serviceAccountName: default
+    terminationGracePeriodSeconds: 30
+    tolerations:
+    - effect: NoExecute
+      key: node.kubernetes.io/not-ready
+      operator: Exists
+      tolerationSeconds: 300
+    - effect: NoExecute
+      key: node.kubernetes.io/unreachable
+      operator: Exists
+      tolerationSeconds: 300
+    volumes:
+    - name: kube-api-access-n8j4d
+      projected:
+        defaultMode: 420
+        sources:
+        - serviceAccountToken:
+            expirationSeconds: 3607
+            path: token
+        - configMap:
+            items:
+            - key: ca.crt
+              path: ca.crt
+            name: kube-root-ca.crt
+        - downwardAPI:
+            items:
+            - fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+              path: namespace
+  status:
+    conditions:
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T13:14:06Z"
+      observedGeneration: 1
+      status: "True"
+      type: PodReadyToStartContainers
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-26T18:48:28Z"
+      observedGeneration: 1
+      status: "True"
+      type: Initialized
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T13:15:26Z"
+      observedGeneration: 1
+      status: "True"
+      type: Ready
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T13:15:26Z"
+      observedGeneration: 1
+      status: "True"
+      type: ContainersReady
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-26T18:48:28Z"
+      observedGeneration: 1
+      status: "True"
+      type: PodScheduled
+    containerStatuses:
+    - containerID: containerd://72df4379af4041d008fb53e4650a8a19910c4dba0aefc7a79dcb483e2f51405b
+      image: docker.io/library/api-service:v4
+      imageID: docker.io/library/api-service@sha256:a9d28569f387892cddb621c165bb10099b21f2bc5cdc02d16c53f7052fb987b0
+      lastState:
+        terminated:
+          containerID: containerd://f26855031bed922b535c536a292e67ad2f0835f8341425067086fa506280bc97
+          exitCode: 1
+          finishedAt: "2026-06-27T13:14:54Z"
+          reason: Error
+          startedAt: "2026-06-27T13:14:39Z"
+      name: api-service
+      ready: true
+      resources: {}
+      restartCount: 8
+      started: true
+      state:
+        running:
+          startedAt: "2026-06-27T13:15:26Z"
+      user:
+        linux:
+          gid: 0
+          supplementalGroups:
+          - 0
+          - 1
+          - 2
+          - 3
+          - 4
+          - 6
+          - 10
+          - 11
+          - 20
+          - 26
+          - 27
+          uid: 0
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-n8j4d
+        readOnly: true
+        recursiveReadOnly: Disabled
+    hostIP: 172.18.0.4
+    hostIPs:
+    - ip: 172.18.0.4
+    observedGeneration: 1
+    phase: Running
+    podIP: 10.244.0.21
+    podIPs:
+    - ip: 10.244.0.21
+    qosClass: BestEffort
+    startTime: "2026-06-26T18:48:28Z"
+- apiVersion: v1
+  kind: Pod
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/restartedAt: "2026-06-27T00:48:27+06:00"
+    creationTimestamp: "2026-06-26T18:48:33Z"
+    generateName: api-service-77ff5bd79-
+    generation: 1
+    labels:
+      app: api-service
+      pod-template-hash: 77ff5bd79
+    name: api-service-77ff5bd79-phfl9
+    namespace: default
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: ReplicaSet
+      name: api-service-77ff5bd79
+      uid: 1506cfca-2577-4540-bf1b-83c8fce690e0
+    resourceVersion: "133248"
+    uid: f4f3a3ee-a3fa-4206-a11f-49c10ed52071
+  spec:
+    containers:
+    - env:
+      - name: POSTGRES_URL
+        value: postgres://saas:saaspass@postgres:5432/saasdb?sslmode=disable
+      - name: REDIS_ADDR
+        value: redis:6379
+      - name: JWT_SECRET
+        value: SUPER_SECRET_KEY
+      - name: BILLING_SERVICE
+        value: http://billing-engine:5000
+      - name: OTEL_SERVICE_NAME
+        value: api-service
+      - name: OTEL_EXPORTER_OTLP_ENDPOINT
+        value: http://otel-collector.observability.svc.cluster.local:4318
+      - name: OTEL_EXPORTER_OTLP_PROTOCOL
+        value: http/protobuf
+      image: api-service:v4
+      imagePullPolicy: IfNotPresent
+      name: api-service
+      ports:
+      - containerPort: 8080
+        protocol: TCP
+      resources: {}
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-79qk5
+        readOnly: true
+    dnsPolicy: ClusterFirst
+    enableServiceLinks: true
+    nodeName: desktop-control-plane
+    preemptionPolicy: PreemptLowerPriority
+    priority: 0
+    restartPolicy: Always
+    schedulerName: default-scheduler
+    securityContext: {}
+    serviceAccount: default
+    serviceAccountName: default
+    terminationGracePeriodSeconds: 30
+    tolerations:
+    - effect: NoExecute
+      key: node.kubernetes.io/not-ready
+      operator: Exists
+      tolerationSeconds: 300
+    - effect: NoExecute
+      key: node.kubernetes.io/unreachable
+      operator: Exists
+      tolerationSeconds: 300
+    volumes:
+    - name: kube-api-access-79qk5
+      projected:
+        defaultMode: 420
+        sources:
+        - serviceAccountToken:
+            expirationSeconds: 3607
+            path: token
+        - configMap:
+            items:
+            - key: ca.crt
+              path: ca.crt
+            name: kube-root-ca.crt
+        - downwardAPI:
+            items:
+            - fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+              path: namespace
+  status:
+    conditions:
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T13:14:06Z"
+      observedGeneration: 1
+      status: "True"
+      type: PodReadyToStartContainers
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-26T18:48:33Z"
+      observedGeneration: 1
+      status: "True"
+      type: Initialized
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T13:15:11Z"
+      observedGeneration: 1
+      status: "True"
+      type: Ready
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T13:15:11Z"
+      observedGeneration: 1
+      status: "True"
+      type: ContainersReady
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-26T18:48:33Z"
+      observedGeneration: 1
+      status: "True"
+      type: PodScheduled
+    containerStatuses:
+    - containerID: containerd://a432c3ce66baeb48c0b17da13d08d94206c3e7df3fe0c07c1d5420adc5d84abb
+      image: docker.io/library/api-service:v4
+      imageID: docker.io/library/api-service@sha256:a9d28569f387892cddb621c165bb10099b21f2bc5cdc02d16c53f7052fb987b0
+      lastState:
+        terminated:
+          containerID: containerd://4d9c29f996a07e8f0fa92c94da7203b63c0b00893c0f371b1a8524dcc4ff10b3
+          exitCode: 1
+          finishedAt: "2026-06-27T13:14:47Z"
+          reason: Error
+          startedAt: "2026-06-27T13:14:37Z"
+      name: api-service
+      ready: true
+      resources: {}
+      restartCount: 8
+      started: true
+      state:
+        running:
+          startedAt: "2026-06-27T13:15:10Z"
+      user:
+        linux:
+          gid: 0
+          supplementalGroups:
+          - 0
+          - 1
+          - 2
+          - 3
+          - 4
+          - 6
+          - 10
+          - 11
+          - 20
+          - 26
+          - 27
+          uid: 0
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-79qk5
+        readOnly: true
+        recursiveReadOnly: Disabled
+    hostIP: 172.18.0.4
+    hostIPs:
+    - ip: 172.18.0.4
+    - ip: fc00:f853:ccd:e793::4
+    observedGeneration: 1
+    phase: Running
+    podIP: 10.244.0.25
+    podIPs:
+    - ip: 10.244.0.25
+    qosClass: BestEffort
+    startTime: "2026-06-26T18:48:33Z"
+- apiVersion: v1
+  kind: Pod
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/restartedAt: "2026-06-27T00:25:09+06:00"
+    creationTimestamp: "2026-06-26T18:25:10Z"
+    generateName: billing-engine-7db97b4848-
+    generation: 1
+    labels:
+      app: billing-engine
+      pod-template-hash: 7db97b4848
+    name: billing-engine-7db97b4848-p2rnt
+    namespace: default
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: ReplicaSet
+      name: billing-engine-7db97b4848
+      uid: 310c01cd-76de-44c1-8cd4-f6a80606f33c
+    resourceVersion: "133303"
+    uid: ad37bef4-d8d6-406d-b6b0-e326800ca8eb
+  spec:
+    containers:
+    - env:
+      - name: OTEL_SERVICE_NAME
+        value: billing-engine
+      - name: OTEL_EXPORTER_OTLP_ENDPOINT
+        value: http://otel-collector.observability.svc.cluster.local:4318
+      - name: OTEL_EXPORTER_OTLP_PROTOCOL
+        value: http/protobuf
+      envFrom:
+      - secretRef:
+          name: stripe-secret
+      image: billing-engine:v4
+      imagePullPolicy: IfNotPresent
+      livenessProbe:
+        failureThreshold: 3
+        httpGet:
+          path: /health
+          port: 5000
+          scheme: HTTP
+        initialDelaySeconds: 20
+        periodSeconds: 10
+        successThreshold: 1
+        timeoutSeconds: 1
+      name: billing-engine
+      ports:
+      - containerPort: 5000
+        protocol: TCP
+      readinessProbe:
+        failureThreshold: 3
+        httpGet:
+          path: /health
+          port: 5000
+          scheme: HTTP
+        initialDelaySeconds: 10
+        periodSeconds: 5
+        successThreshold: 1
+        timeoutSeconds: 1
+      resources: {}
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-gwhjt
+        readOnly: true
+    dnsPolicy: ClusterFirst
+    enableServiceLinks: true
+    nodeName: desktop-control-plane
+    preemptionPolicy: PreemptLowerPriority
+    priority: 0
+    restartPolicy: Always
+    schedulerName: default-scheduler
+    securityContext: {}
+    serviceAccount: default
+    serviceAccountName: default
+    terminationGracePeriodSeconds: 30
+    tolerations:
+    - effect: NoExecute
+      key: node.kubernetes.io/not-ready
+      operator: Exists
+      tolerationSeconds: 300
+    - effect: NoExecute
+      key: node.kubernetes.io/unreachable
+      operator: Exists
+      tolerationSeconds: 300
+    volumes:
+    - name: kube-api-access-gwhjt
+      projected:
+        defaultMode: 420
+        sources:
+        - serviceAccountToken:
+            expirationSeconds: 3607
+            path: token
+        - configMap:
+            items:
+            - key: ca.crt
+              path: ca.crt
+            name: kube-root-ca.crt
+        - downwardAPI:
+            items:
+            - fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+              path: namespace
+  status:
+    conditions:
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T13:14:02Z"
+      observedGeneration: 1
+      status: "True"
+      type: PodReadyToStartContainers
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-26T18:25:10Z"
+      observedGeneration: 1
+      status: "True"
+      type: Initialized
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T13:14:16Z"
+      observedGeneration: 1
+      status: "True"
+      type: Ready
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T13:14:16Z"
+      observedGeneration: 1
+      status: "True"
+      type: ContainersReady
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-26T18:25:10Z"
+      observedGeneration: 1
+      status: "True"
+      type: PodScheduled
+    containerStatuses:
+    - containerID: containerd://0b46d7a1c6eeda302a6c13aa7fd83fb3f2459f59321e536b234cb598cfaf279d
+      image: docker.io/library/billing-engine:v4
+      imageID: docker.io/library/billing-engine@sha256:ea32634ec92ac56dcf8cc7883a4d15fb8f4376b2107489ac167176c78f17d319
+      lastState:
+        terminated:
+          containerID: containerd://303384335b0d5817508783a4edd9e9f293a8152badefd7111a2efd8faa485104
+          exitCode: 255
+          finishedAt: "2026-06-27T13:13:14Z"
+          reason: Unknown
+          startedAt: "2026-06-27T12:58:33Z"
+      name: billing-engine
+      ready: true
+      resources: {}
+      restartCount: 3
+      started: true
+      state:
+        running:
+          startedAt: "2026-06-27T13:14:02Z"
+      user:
+        linux:
+          gid: 0
+          supplementalGroups:
+          - 0
+          uid: 0
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-gwhjt
+        readOnly: true
+        recursiveReadOnly: Disabled
+    hostIP: 172.18.0.4
+    hostIPs:
+    - ip: 172.18.0.4
+    - ip: fc00:f853:ccd:e793::4
+    observedGeneration: 1
+    phase: Running
+    podIP: 10.244.0.19
+    podIPs:
+    - ip: 10.244.0.19
+    qosClass: BestEffort
+    startTime: "2026-06-26T18:25:10Z"
+- apiVersion: v1
+  kind: Pod
+  metadata:
+    creationTimestamp: "2026-06-27T16:19:58Z"
+    generateName: chat-67589c557f-
+    generation: 1
+    labels:
+      app: chat
+      pod-template-hash: 67589c557f
+    name: chat-67589c557f-69fgz
+    namespace: default
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: ReplicaSet
+      name: chat-67589c557f
+      uid: 480c0d00-d83f-4d07-93e1-f3330826a969
+    resourceVersion: "133445"
+    uid: cb40522c-cd32-40eb-a406-304dd3527d93
+  spec:
+    containers:
+    - image: nginx:latest
+      imagePullPolicy: Always
+      name: nginx
+      resources: {}
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-mt89t
+        readOnly: true
+    dnsPolicy: ClusterFirst
+    enableServiceLinks: true
+    nodeName: desktop-control-plane
+    preemptionPolicy: PreemptLowerPriority
+    priority: 0
+    restartPolicy: Always
+    schedulerName: default-scheduler
+    securityContext: {}
+    serviceAccount: default
+    serviceAccountName: default
+    terminationGracePeriodSeconds: 30
+    tolerations:
+    - effect: NoExecute
+      key: node.kubernetes.io/not-ready
+      operator: Exists
+      tolerationSeconds: 300
+    - effect: NoExecute
+      key: node.kubernetes.io/unreachable
+      operator: Exists
+      tolerationSeconds: 300
+    volumes:
+    - name: kube-api-access-mt89t
+      projected:
+        defaultMode: 420
+        sources:
+        - serviceAccountToken:
+            expirationSeconds: 3607
+            path: token
+        - configMap:
+            items:
+            - key: ca.crt
+              path: ca.crt
+            name: kube-root-ca.crt
+        - downwardAPI:
+            items:
+            - fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+              path: namespace
+  status:
+    conditions:
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T16:25:37Z"
+      observedGeneration: 1
+      status: "True"
+      type: PodReadyToStartContainers
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T16:19:58Z"
+      observedGeneration: 1
+      status: "True"
+      type: Initialized
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T16:25:37Z"
+      observedGeneration: 1
+      status: "True"
+      type: Ready
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T16:25:37Z"
+      observedGeneration: 1
+      status: "True"
+      type: ContainersReady
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T16:19:58Z"
+      observedGeneration: 1
+      status: "True"
+      type: PodScheduled
+    containerStatuses:
+    - containerID: containerd://98e46caabc432dc505bd8e36cfda4d01643cca4dae42fbdf10ca3479ae200599
+      image: docker.io/library/nginx:latest
+      imageID: docker.io/library/nginx@sha256:ec4ed8b5299e5e90694af7750eb6dffd2627317d30544d056b0371f8082f7bce
+      lastState: {}
+      name: nginx
+      ready: true
+      resources: {}
+      restartCount: 0
+      started: true
+      state:
+        running:
+          startedAt: "2026-06-27T16:25:36Z"
+      user:
+        linux:
+          gid: 0
+          supplementalGroups:
+          - 0
+          uid: 0
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-mt89t
+        readOnly: true
+        recursiveReadOnly: Disabled
+    hostIP: 172.18.0.4
+    hostIPs:
+    - ip: 172.18.0.4
+    - ip: fc00:f853:ccd:e793::4
+    observedGeneration: 1
+    phase: Running
+    podIP: 10.244.0.30
+    podIPs:
+    - ip: 10.244.0.30
+    qosClass: BestEffort
+    startTime: "2026-06-27T16:19:58Z"
+- apiVersion: v1
+  kind: Pod
+  metadata:
+    creationTimestamp: "2026-06-26T17:47:39Z"
+    generateName: freedomain-585fd7f556-
+    generation: 1
+    labels:
+      app: freedomain
+      pod-template-hash: 585fd7f556
+    name: freedomain-585fd7f556-ls5hh
+    namespace: default
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: ReplicaSet
+      name: freedomain-585fd7f556
+      uid: 5301eb48-5eeb-49c3-8cc5-65d9e99ac7f6
+    resourceVersion: "133278"
+    uid: 74b83088-c728-41d3-b1b7-0fa05190b3f0
+  spec:
+    containers:
+    - args:
+      - -text=FREE-DOMAIN
+      image: hashicorp/http-echo
+      imagePullPolicy: Always
+      name: freedomain
+      ports:
+      - containerPort: 5678
+        protocol: TCP
+      resources: {}
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-6kzml
+        readOnly: true
+    dnsPolicy: ClusterFirst
+    enableServiceLinks: true
+    nodeName: desktop-control-plane
+    preemptionPolicy: PreemptLowerPriority
+    priority: 0
+    restartPolicy: Always
+    schedulerName: default-scheduler
+    securityContext: {}
+    serviceAccount: default
+    serviceAccountName: default
+    terminationGracePeriodSeconds: 30
+    tolerations:
+    - effect: NoExecute
+      key: node.kubernetes.io/not-ready
+      operator: Exists
+      tolerationSeconds: 300
+    - effect: NoExecute
+      key: node.kubernetes.io/unreachable
+      operator: Exists
+      tolerationSeconds: 300
+    volumes:
+    - name: kube-api-access-6kzml
+      projected:
+        defaultMode: 420
+        sources:
+        - serviceAccountToken:
+            expirationSeconds: 3607
+            path: token
+        - configMap:
+            items:
+            - key: ca.crt
+              path: ca.crt
+            name: kube-root-ca.crt
+        - downwardAPI:
+            items:
+            - fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+              path: namespace
+  status:
+    conditions:
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T13:14:11Z"
+      observedGeneration: 1
+      status: "True"
+      type: PodReadyToStartContainers
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-26T17:47:39Z"
+      observedGeneration: 1
+      status: "True"
+      type: Initialized
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T13:14:11Z"
+      observedGeneration: 1
+      status: "True"
+      type: Ready
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T13:14:11Z"
+      observedGeneration: 1
+      status: "True"
+      type: ContainersReady
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-26T17:47:39Z"
+      observedGeneration: 1
+      status: "True"
+      type: PodScheduled
+    containerStatuses:
+    - containerID: containerd://08de9ba8850fdb7f5f25333867d316438fc687a761f78b056c6673f5ce4dfe31
+      image: docker.io/hashicorp/http-echo:latest
+      imageID: docker.io/hashicorp/http-echo@sha256:fcb75f691c8b0414d670ae570240cbf95502cc18a9ba57e982ecac589760a186
+      lastState:
+        terminated:
+          containerID: containerd://2350ad6bb5e91c00478116d19d26f0a957186aa8e87b2be98bae19ce6ea6dc49
+          exitCode: 255
+          finishedAt: "2026-06-27T13:13:14Z"
+          reason: Unknown
+          startedAt: "2026-06-27T12:58:44Z"
+      name: freedomain
+      ready: true
+      resources: {}
+      restartCount: 3
+      started: true
+      state:
+        running:
+          startedAt: "2026-06-27T13:14:10Z"
+      user:
+        linux:
+          gid: 65532
+          supplementalGroups:
+          - 65532
+          uid: 65532
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-6kzml
+        readOnly: true
+        recursiveReadOnly: Disabled
+    hostIP: 172.18.0.4
+    hostIPs:
+    - ip: 172.18.0.4
+    observedGeneration: 1
+    phase: Running
+    podIP: 10.244.0.16
+    podIPs:
+    - ip: 10.244.0.16
+    qosClass: BestEffort
+    startTime: "2026-06-26T17:47:39Z"
+- apiVersion: v1
+  kind: Pod
+  metadata:
+    creationTimestamp: "2026-06-26T17:47:39Z"
+    generateName: freedomain-ui-7d4bc8846f-
+    generation: 1
+    labels:
+      app: freedomain-ui
+      pod-template-hash: 7d4bc8846f
+    name: freedomain-ui-7d4bc8846f-hpxsp
+    namespace: default
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: ReplicaSet
+      name: freedomain-ui-7d4bc8846f
+      uid: 5b4206e2-7a47-4384-872e-8a91963cbbc9
+    resourceVersion: "133195"
+    uid: 0b4293d6-b094-429e-b3d7-e2eaf3d6ba82
+  spec:
+    containers:
+    - image: freedomain-ui:v1
+      imagePullPolicy: IfNotPresent
+      name: freedomain-ui
+      ports:
+      - containerPort: 80
+        protocol: TCP
+      resources: {}
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-6v7vg
+        readOnly: true
+    dnsPolicy: ClusterFirst
+    enableServiceLinks: true
+    nodeName: desktop-control-plane
+    preemptionPolicy: PreemptLowerPriority
+    priority: 0
+    restartPolicy: Always
+    schedulerName: default-scheduler
+    securityContext: {}
+    serviceAccount: default
+    serviceAccountName: default
+    terminationGracePeriodSeconds: 30
+    tolerations:
+    - effect: NoExecute
+      key: node.kubernetes.io/not-ready
+      operator: Exists
+      tolerationSeconds: 300
+    - effect: NoExecute
+      key: node.kubernetes.io/unreachable
+      operator: Exists
+      tolerationSeconds: 300
+    volumes:
+    - name: kube-api-access-6v7vg
+      projected:
+        defaultMode: 420
+        sources:
+        - serviceAccountToken:
+            expirationSeconds: 3607
+            path: token
+        - configMap:
+            items:
+            - key: ca.crt
+              path: ca.crt
+            name: kube-root-ca.crt
+        - downwardAPI:
+            items:
+            - fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+              path: namespace
+  status:
+    conditions:
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T13:14:02Z"
+      observedGeneration: 1
+      status: "True"
+      type: PodReadyToStartContainers
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-26T17:47:39Z"
+      observedGeneration: 1
+      status: "True"
+      type: Initialized
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T13:14:02Z"
+      observedGeneration: 1
+      status: "True"
+      type: Ready
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T13:14:02Z"
+      observedGeneration: 1
+      status: "True"
+      type: ContainersReady
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-26T17:47:39Z"
+      observedGeneration: 1
+      status: "True"
+      type: PodScheduled
+    containerStatuses:
+    - containerID: containerd://b3cc54c4bcf23374331b38202b5a11b080ab14bea4945ee0bb0c204b14c2a0f5
+      image: docker.io/library/freedomain-ui:v1
+      imageID: sha256:81e474a18f653f720a7de09e2597b87cd373ad4888816aba94d57304d44f91f9
+      lastState:
+        terminated:
+          containerID: containerd://03183b7b9bb3a1f49c0e82d4e7694aca1594d5fea6d0605e471e38281a988e8b
+          exitCode: 255
+          finishedAt: "2026-06-27T13:13:14Z"
+          reason: Unknown
+          startedAt: "2026-06-27T12:58:33Z"
+      name: freedomain-ui
+      ready: true
+      resources: {}
+      restartCount: 3
+      started: true
+      state:
+        running:
+          startedAt: "2026-06-27T13:14:01Z"
+      user:
+        linux:
+          gid: 0
+          supplementalGroups:
+          - 0
+          - 1
+          - 2
+          - 3
+          - 4
+          - 6
+          - 10
+          - 11
+          - 20
+          - 26
+          - 27
+          uid: 0
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-6v7vg
+        readOnly: true
+        recursiveReadOnly: Disabled
+    hostIP: 172.18.0.4
+    hostIPs:
+    - ip: 172.18.0.4
+    - ip: fc00:f853:ccd:e793::4
+    observedGeneration: 1
+    phase: Running
+    podIP: 10.244.0.6
+    podIPs:
+    - ip: 10.244.0.6
+    qosClass: BestEffort
+    startTime: "2026-06-26T17:47:39Z"
+- apiVersion: v1
+  kind: Pod
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/restartedAt: "2026-06-27T11:23:57+06:00"
+    creationTimestamp: "2026-06-27T05:23:57Z"
+    generateName: freedomain-website-57448959ff-
+    generation: 1
+    labels:
+      app: freedomain-website
+      pod-template-hash: 57448959ff
+    name: freedomain-website-57448959ff-ztq24
+    namespace: default
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: ReplicaSet
+      name: freedomain-website-57448959ff
+      uid: e1849e67-a4e6-449c-a51e-ba4d856ed014
+    resourceVersion: "133061"
+    uid: f16a4050-e147-4c4a-b800-88d2387f1bdf
+  spec:
+    containers:
+    - image: freedomain-site:v1
+      imagePullPolicy: Never
+      name: freedomain-website
+      ports:
+      - containerPort: 80
+        protocol: TCP
+      resources: {}
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-dwlts
+        readOnly: true
+    dnsPolicy: ClusterFirst
+    enableServiceLinks: true
+    nodeName: desktop-control-plane
+    preemptionPolicy: PreemptLowerPriority
+    priority: 0
+    restartPolicy: Always
+    schedulerName: default-scheduler
+    securityContext: {}
+    serviceAccount: default
+    serviceAccountName: default
+    terminationGracePeriodSeconds: 30
+    tolerations:
+    - effect: NoExecute
+      key: node.kubernetes.io/not-ready
+      operator: Exists
+      tolerationSeconds: 300
+    - effect: NoExecute
+      key: node.kubernetes.io/unreachable
+      operator: Exists
+      tolerationSeconds: 300
+    volumes:
+    - name: kube-api-access-dwlts
+      projected:
+        defaultMode: 420
+        sources:
+        - serviceAccountToken:
+            expirationSeconds: 3607
+            path: token
+        - configMap:
+            items:
+            - key: ca.crt
+              path: ca.crt
+            name: kube-root-ca.crt
+        - downwardAPI:
+            items:
+            - fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+              path: namespace
+  status:
+    conditions:
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T13:14:06Z"
+      observedGeneration: 1
+      status: "True"
+      type: PodReadyToStartContainers
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T05:23:57Z"
+      observedGeneration: 1
+      status: "True"
+      type: Initialized
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T13:14:06Z"
+      observedGeneration: 1
+      status: "True"
+      type: Ready
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T13:14:06Z"
+      observedGeneration: 1
+      status: "True"
+      type: ContainersReady
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T05:23:57Z"
+      observedGeneration: 1
+      status: "True"
+      type: PodScheduled
+    containerStatuses:
+    - containerID: containerd://0ec6b8f6881258bcbd6abbcf01008040056fda42052d6b5e4b91c24cc12d6bd9
+      image: docker.io/library/freedomain-site:v1
+      imageID: docker.io/library/freedomain-site@sha256:0f965f242998f10bf79cfb1730ed0492d4da1c331a0a1e832417453db1c325c9
+      lastState:
+        terminated:
+          containerID: containerd://6d4069341f92b9f4933505ecdca365428c0d95c334bb4d9cf839c3d00aa3b875
+          exitCode: 255
+          finishedAt: "2026-06-27T13:13:14Z"
+          reason: Unknown
+          startedAt: "2026-06-27T12:58:36Z"
+      name: freedomain-website
+      ready: true
+      resources: {}
+      restartCount: 3
+      started: true
+      state:
+        running:
+          startedAt: "2026-06-27T13:14:04Z"
+      user:
+        linux:
+          gid: 0
+          supplementalGroups:
+          - 0
+          - 1
+          - 2
+          - 3
+          - 4
+          - 6
+          - 10
+          - 11
+          - 20
+          - 26
+          - 27
+          uid: 0
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-dwlts
+        readOnly: true
+        recursiveReadOnly: Disabled
+    hostIP: 172.18.0.4
+    hostIPs:
+    - ip: 172.18.0.4
+    - ip: fc00:f853:ccd:e793::4
+    observedGeneration: 1
+    phase: Running
+    podIP: 10.244.0.24
+    podIPs:
+    - ip: 10.244.0.24
+    qosClass: BestEffort
+    startTime: "2026-06-27T05:23:57Z"
+- apiVersion: v1
+  kind: Pod
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/restartedAt: "2026-06-27T11:23:56+06:00"
+    creationTimestamp: "2026-06-27T05:23:56Z"
+    generateName: live-6dd7796d74-
+    generation: 1
+    labels:
+      app: live
+      pod-template-hash: 6dd7796d74
+    name: live-6dd7796d74-gwf8s
+    namespace: default
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: ReplicaSet
+      name: live-6dd7796d74
+      uid: fa69eac0-0a41-4cb2-b9c2-b3e37e196110
+    resourceVersion: "133016"
+    uid: 9974d368-b471-49fa-8252-df23502e505a
+  spec:
+    containers:
+    - image: live:latest
+      imagePullPolicy: Never
+      name: live
+      ports:
+      - containerPort: 80
+        protocol: TCP
+      resources: {}
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-87qtt
+        readOnly: true
+    dnsPolicy: ClusterFirst
+    enableServiceLinks: true
+    nodeName: desktop-control-plane
+    preemptionPolicy: PreemptLowerPriority
+    priority: 0
+    restartPolicy: Always
+    schedulerName: default-scheduler
+    securityContext: {}
+    serviceAccount: default
+    serviceAccountName: default
+    terminationGracePeriodSeconds: 30
+    tolerations:
+    - effect: NoExecute
+      key: node.kubernetes.io/not-ready
+      operator: Exists
+      tolerationSeconds: 300
+    - effect: NoExecute
+      key: node.kubernetes.io/unreachable
+      operator: Exists
+      tolerationSeconds: 300
+    volumes:
+    - name: kube-api-access-87qtt
+      projected:
+        defaultMode: 420
+        sources:
+        - serviceAccountToken:
+            expirationSeconds: 3607
+            path: token
+        - configMap:
+            items:
+            - key: ca.crt
+              path: ca.crt
+            name: kube-root-ca.crt
+        - downwardAPI:
+            items:
+            - fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+              path: namespace
+  status:
+    conditions:
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T13:14:06Z"
+      observedGeneration: 1
+      status: "True"
+      type: PodReadyToStartContainers
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T05:23:56Z"
+      observedGeneration: 1
+      status: "True"
+      type: Initialized
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T13:14:06Z"
+      observedGeneration: 1
+      status: "True"
+      type: Ready
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T13:14:06Z"
+      observedGeneration: 1
+      status: "True"
+      type: ContainersReady
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T05:23:56Z"
+      observedGeneration: 1
+      status: "True"
+      type: PodScheduled
+    containerStatuses:
+    - containerID: containerd://8e0ee37e8f9cae33062b1b0368a766bd4bb3ca5be80557e2376e5382b5e84475
+      image: docker.io/library/live:latest
+      imageID: docker.io/library/live@sha256:c5fa2564d1b19689ab35526a8ce6f524c50bc9f494da0fb10440f0a4cc5f7701
+      lastState:
+        terminated:
+          containerID: containerd://61966f267b93378532e8842945ecb1d5ea8d09aef0291418dc90b54a555a96cf
+          exitCode: 255
+          finishedAt: "2026-06-27T13:13:14Z"
+          reason: Unknown
+          startedAt: "2026-06-27T12:58:35Z"
+      name: live
+      ready: true
+      resources: {}
+      restartCount: 3
+      started: true
+      state:
+        running:
+          startedAt: "2026-06-27T13:14:04Z"
+      user:
+        linux:
+          gid: 101
+          supplementalGroups:
+          - 101
+          uid: 101
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-87qtt
+        readOnly: true
+        recursiveReadOnly: Disabled
+    hostIP: 172.18.0.4
+    hostIPs:
+    - ip: 172.18.0.4
+    observedGeneration: 1
+    phase: Running
+    podIP: 10.244.0.26
+    podIPs:
+    - ip: 10.244.0.26
+    qosClass: BestEffort
+    startTime: "2026-06-27T05:23:56Z"
+- apiVersion: v1
+  kind: Pod
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/restartedAt: "2026-06-27T00:08:48+06:00"
+    creationTimestamp: "2026-06-26T18:08:48Z"
+    generateName: oauth-service-55bf8bbc9d-
+    generation: 1
+    labels:
+      app: oauth-service
+      pod-template-hash: 55bf8bbc9d
+    name: oauth-service-55bf8bbc9d-kxtdh
+    namespace: default
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: ReplicaSet
+      name: oauth-service-55bf8bbc9d
+      uid: 347b6bb3-5bfb-4e0c-afec-c60b33d29e0c
+    resourceVersion: "131618"
+    uid: ef2a875e-c20b-4548-9917-0f1892e3b42b
+  spec:
+    containers:
+    - command:
+      - node
+      - server.js
+      env:
+      - name: NODE_ENV
+        value: production
+      - name: BASE_URL
+        value: https://api.shopnoltd.dpdns.org
+      - name: FRONTEND_URL
+        value: https://domain.shopnoltd.dpdns.org
+      - name: JWT_SECRET
+        valueFrom:
+          secretKeyRef:
+            key: JWT_SECRET
+            name: oauth-secrets
+      - name: SESSION_SECRET
+        valueFrom:
+          secretKeyRef:
+            key: SESSION_SECRET
+            name: oauth-secrets
+      - name: GOOGLE_CLIENT_ID
+        value: 530228436303-2k8sl5mdjfotsvkcqgtcktcb7q2b78fn.apps.googleusercontent.com
+      - name: GOOGLE_CLIENT_SECRET
+        value: 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
+      - name: FACEBOOK_APP_ID
+        value: "1239063184913011"
+      - name: FACEBOOK_APP_SECRET
+        value: 9afa42656338eb1917cdc3ac79c61f2d
+      - name: GITHUB_CLIENT_ID
+        value: Ov23liIa4IFALaMIZ1XP
+      - name: GITHUB_CLIENT_SECRET
+        value: 682ac6a6332f85eda27113ad6e634f51eff0ffe2
+      - name: OTEL_SERVICE_NAME
+        value: oauth-service
+      - name: OTEL_EXPORTER_OTLP_ENDPOINT
+        value: http://otel-collector.observability.svc.cluster.local:4318
+      - name: OTEL_EXPORTER_OTLP_PROTOCOL
+        value: http/protobuf
+      image: oauth-service:1.0.0
+      imagePullPolicy: IfNotPresent
+      name: oauth-service
+      ports:
+      - containerPort: 3000
+        protocol: TCP
+      resources: {}
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-gxtcq
+        readOnly: true
+    dnsPolicy: ClusterFirst
+    enableServiceLinks: true
+    nodeName: desktop-control-plane
+    preemptionPolicy: PreemptLowerPriority
+    priority: 0
+    restartPolicy: Always
+    schedulerName: default-scheduler
+    securityContext: {}
+    serviceAccount: default
+    serviceAccountName: default
+    terminationGracePeriodSeconds: 30
+    tolerations:
+    - effect: NoExecute
+      key: node.kubernetes.io/not-ready
+      operator: Exists
+      tolerationSeconds: 300
+    - effect: NoExecute
+      key: node.kubernetes.io/unreachable
+      operator: Exists
+      tolerationSeconds: 300
+    volumes:
+    - name: kube-api-access-gxtcq
+      projected:
+        defaultMode: 420
+        sources:
+        - serviceAccountToken:
+            expirationSeconds: 3607
+            path: token
+        - configMap:
+            items:
+            - key: ca.crt
+              path: ca.crt
+            name: kube-root-ca.crt
+        - downwardAPI:
+            items:
+            - fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+              path: namespace
+  status:
+    conditions:
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T13:14:02Z"
+      observedGeneration: 1
+      status: "True"
+      type: PodReadyToStartContainers
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-26T18:08:49Z"
+      observedGeneration: 1
+      status: "True"
+      type: Initialized
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T13:14:02Z"
+      observedGeneration: 1
+      status: "True"
+      type: Ready
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T13:14:02Z"
+      observedGeneration: 1
+      status: "True"
+      type: ContainersReady
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-26T18:08:48Z"
+      observedGeneration: 1
+      status: "True"
+      type: PodScheduled
+    containerStatuses:
+    - containerID: containerd://48c67a1ef1ffa2a5410b0dbf66ec23d9da08a3782ec07f29e9a0a8378a9fc6b8
+      image: docker.io/library/oauth-service:1.0.0
+      imageID: docker.io/library/oauth-service@sha256:1299854a3a511a1e12c031455fef7fb114e52146c0338eb1c2dc5d02a86c04f2
+      lastState:
+        terminated:
+          containerID: containerd://3b817aa36c84750303989a1f616d3331788550faf421da9df9ae4bf3fae27386
+          exitCode: 255
+          finishedAt: "2026-06-27T13:13:14Z"
+          reason: Unknown
+          startedAt: "2026-06-27T12:58:34Z"
+      name: oauth-service
+      ready: true
+      resources: {}
+      restartCount: 3
+      started: true
+      state:
+        running:
+          startedAt: "2026-06-27T13:14:00Z"
+      user:
+        linux:
+          gid: 0
+          supplementalGroups:
+          - 0
+          - 1
+          - 2
+          - 3
+          - 4
+          - 6
+          - 10
+          - 11
+          - 20
+          - 26
+          - 27
+          uid: 0
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-gxtcq
+        readOnly: true
+        recursiveReadOnly: Disabled
+    hostIP: 172.18.0.4
+    hostIPs:
+    - ip: 172.18.0.4
+    observedGeneration: 1
+    phase: Running
+    podIP: 10.244.0.8
+    podIPs:
+    - ip: 10.244.0.8
+    qosClass: BestEffort
+    startTime: "2026-06-26T18:08:49Z"
+- apiVersion: v1
+  kind: Pod
+  metadata:
+    creationTimestamp: "2026-06-26T18:25:51Z"
+    generateName: postgres-7b4cbccb6-
+    generation: 1
+    labels:
+      app: postgres
+      pod-template-hash: 7b4cbccb6
+    name: postgres-7b4cbccb6-gq48r
+    namespace: default
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: ReplicaSet
+      name: postgres-7b4cbccb6
+      uid: 2c29d3a4-66b4-4190-8878-e17965a4687f
+    resourceVersion: "133050"
+    uid: c0947426-4b11-453e-ad44-03af996616aa
+  spec:
+    containers:
+    - envFrom:
+      - secretRef:
+          name: postgres-secret
+      image: postgres:16
+      imagePullPolicy: IfNotPresent
+      name: postgres
+      ports:
+      - containerPort: 5432
+        protocol: TCP
+      resources: {}
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      volumeMounts:
+      - mountPath: /var/lib/postgresql/data
+        name: pgdata
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-7mdvn
+        readOnly: true
+    dnsPolicy: ClusterFirst
+    enableServiceLinks: true
+    nodeName: desktop-control-plane
+    preemptionPolicy: PreemptLowerPriority
+    priority: 0
+    restartPolicy: Always
+    schedulerName: default-scheduler
+    securityContext: {}
+    serviceAccount: default
+    serviceAccountName: default
+    terminationGracePeriodSeconds: 30
+    tolerations:
+    - effect: NoExecute
+      key: node.kubernetes.io/not-ready
+      operator: Exists
+      tolerationSeconds: 300
+    - effect: NoExecute
+      key: node.kubernetes.io/unreachable
+      operator: Exists
+      tolerationSeconds: 300
+    volumes:
+    - name: pgdata
+      persistentVolumeClaim:
+        claimName: postgres-pvc
+    - name: kube-api-access-7mdvn
+      projected:
+        defaultMode: 420
+        sources:
+        - serviceAccountToken:
+            expirationSeconds: 3607
+            path: token
+        - configMap:
+            items:
+            - key: ca.crt
+              path: ca.crt
+            name: kube-root-ca.crt
+        - downwardAPI:
+            items:
+            - fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+              path: namespace
+  status:
+    conditions:
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T13:14:05Z"
+      observedGeneration: 1
+      status: "True"
+      type: PodReadyToStartContainers
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-26T18:25:58Z"
+      observedGeneration: 1
+      status: "True"
+      type: Initialized
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T13:14:05Z"
+      observedGeneration: 1
+      status: "True"
+      type: Ready
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T13:14:05Z"
+      observedGeneration: 1
+      status: "True"
+      type: ContainersReady
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-26T18:25:58Z"
+      observedGeneration: 1
+      status: "True"
+      type: PodScheduled
+    containerStatuses:
+    - containerID: containerd://d4b653c5b091710f6942bc8333271676386b39a22452595609c3218043bc7e92
+      image: docker.io/library/postgres:16
+      imageID: docker.io/library/postgres@sha256:081f1bc7bd5e143dbb6e487b710bbc27712cdcfaced4c071b8e47349aa1b4171
+      lastState:
+        terminated:
+          containerID: containerd://20ab71dd37399f41efeb1a0b96d8b33648ba6e7c154cb7b5259735a32d7ee81e
+          exitCode: 255
+          finishedAt: "2026-06-27T13:13:14Z"
+          reason: Unknown
+          startedAt: "2026-06-27T12:58:35Z"
+      name: postgres
+      ready: true
+      resources: {}
+      restartCount: 3
+      started: true
+      state:
+        running:
+          startedAt: "2026-06-27T13:14:05Z"
+      user:
+        linux:
+          gid: 0
+          supplementalGroups:
+          - 0
+          uid: 0
+      volumeMounts:
+      - mountPath: /var/lib/postgresql/data
+        name: pgdata
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-7mdvn
+        readOnly: true
+        recursiveReadOnly: Disabled
+    hostIP: 172.18.0.4
+    hostIPs:
+    - ip: 172.18.0.4
+    - ip: fc00:f853:ccd:e793::4
+    observedGeneration: 1
+    phase: Running
+    podIP: 10.244.0.22
+    podIPs:
+    - ip: 10.244.0.22
+    qosClass: BestEffort
+    startTime: "2026-06-26T18:25:58Z"
+- apiVersion: v1
+  kind: Pod
+  metadata:
+    creationTimestamp: "2026-06-26T18:26:28Z"
+    generateName: redis-7c46f4654d-
+    generation: 1
+    labels:
+      app: redis
+      pod-template-hash: 7c46f4654d
+    name: redis-7c46f4654d-vbbqf
+    namespace: default
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: ReplicaSet
+      name: redis-7c46f4654d
+      uid: b558159c-3e98-45f9-bc30-de3ec7379cf4
+    resourceVersion: "133247"
+    uid: 8e66a949-776e-474c-acfe-79708236b85d
+  spec:
+    containers:
+    - image: redis:7
+      imagePullPolicy: IfNotPresent
+      name: redis
+      ports:
+      - containerPort: 6379
+        protocol: TCP
+      resources: {}
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-r6d6p
+        readOnly: true
+    dnsPolicy: ClusterFirst
+    enableServiceLinks: true
+    nodeName: desktop-control-plane
+    preemptionPolicy: PreemptLowerPriority
+    priority: 0
+    restartPolicy: Always
+    schedulerName: default-scheduler
+    securityContext: {}
+    serviceAccount: default
+    serviceAccountName: default
+    terminationGracePeriodSeconds: 30
+    tolerations:
+    - effect: NoExecute
+      key: node.kubernetes.io/not-ready
+      operator: Exists
+      tolerationSeconds: 300
+    - effect: NoExecute
+      key: node.kubernetes.io/unreachable
+      operator: Exists
+      tolerationSeconds: 300
+    volumes:
+    - name: kube-api-access-r6d6p
+      projected:
+        defaultMode: 420
+        sources:
+        - serviceAccountToken:
+            expirationSeconds: 3607
+            path: token
+        - configMap:
+            items:
+            - key: ca.crt
+              path: ca.crt
+            name: kube-root-ca.crt
+        - downwardAPI:
+            items:
+            - fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+              path: namespace
+  status:
+    conditions:
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T13:14:06Z"
+      observedGeneration: 1
+      status: "True"
+      type: PodReadyToStartContainers
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-26T18:26:28Z"
+      observedGeneration: 1
+      status: "True"
+      type: Initialized
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T13:14:06Z"
+      observedGeneration: 1
+      status: "True"
+      type: Ready
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T13:14:06Z"
+      observedGeneration: 1
+      status: "True"
+      type: ContainersReady
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-26T18:26:28Z"
+      observedGeneration: 1
+      status: "True"
+      type: PodScheduled
+    containerStatuses:
+    - containerID: containerd://db39b434d3d92ddb0021f846f654db8f4dec10a811406e109d34f19ad57b2047
+      image: docker.io/library/redis:7
+      imageID: docker.io/library/redis@sha256:b2b95679e3b46fb51864949ed25ea976fc3a6bcc00a40a1bc00d568cb2822e50
+      lastState:
+        terminated:
+          containerID: containerd://0896c8981d387d67836aec61953d442ca283948ffb31d8236241d51937e1ffc2
+          exitCode: 255
+          finishedAt: "2026-06-27T13:13:14Z"
+          reason: Unknown
+          startedAt: "2026-06-27T12:58:35Z"
+      name: redis
+      ready: true
+      resources: {}
+      restartCount: 3
+      started: true
+      state:
+        running:
+          startedAt: "2026-06-27T13:14:04Z"
+      user:
+        linux:
+          gid: 0
+          supplementalGroups:
+          - 0
+          uid: 0
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-r6d6p
+        readOnly: true
+        recursiveReadOnly: Disabled
+    hostIP: 172.18.0.4
+    hostIPs:
+    - ip: 172.18.0.4
+    - ip: fc00:f853:ccd:e793::4
+    observedGeneration: 1
+    phase: Running
+    podIP: 10.244.0.23
+    podIPs:
+    - ip: 10.244.0.23
+    qosClass: BestEffort
+    startTime: "2026-06-26T18:26:28Z"
+- apiVersion: v1
+  kind: Pod
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/restartedAt: "2026-06-27T00:08:51+06:00"
+    creationTimestamp: "2026-06-26T18:08:51Z"
+    generateName: root-app-58fdf546c7-
+    generation: 1
+    labels:
+      app: root-app
+      pod-template-hash: 58fdf546c7
+    name: root-app-58fdf546c7-897m5
+    namespace: default
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: ReplicaSet
+      name: root-app-58fdf546c7
+      uid: 2d946f6f-9720-4a84-bee4-89aa215edff2
+    resourceVersion: "132786"
+    uid: 6371b066-98e1-4173-8d81-9da3c1c9bb31
+  spec:
+    containers:
+    - image: shopno-frontend:latest
+      imagePullPolicy: IfNotPresent
+      name: frontend
+      ports:
+      - containerPort: 80
+        protocol: TCP
+      resources: {}
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-8559c
+        readOnly: true
+    dnsPolicy: ClusterFirst
+    enableServiceLinks: true
+    nodeName: desktop-control-plane
+    preemptionPolicy: PreemptLowerPriority
+    priority: 0
+    restartPolicy: Always
+    schedulerName: default-scheduler
+    securityContext: {}
+    serviceAccount: default
+    serviceAccountName: default
+    terminationGracePeriodSeconds: 30
+    tolerations:
+    - effect: NoExecute
+      key: node.kubernetes.io/not-ready
+      operator: Exists
+      tolerationSeconds: 300
+    - effect: NoExecute
+      key: node.kubernetes.io/unreachable
+      operator: Exists
+      tolerationSeconds: 300
+    volumes:
+    - name: kube-api-access-8559c
+      projected:
+        defaultMode: 420
+        sources:
+        - serviceAccountToken:
+            expirationSeconds: 3607
+            path: token
+        - configMap:
+            items:
+            - key: ca.crt
+              path: ca.crt
+            name: kube-root-ca.crt
+        - downwardAPI:
+            items:
+            - fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+              path: namespace
+  status:
+    conditions:
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T13:14:04Z"
+      observedGeneration: 1
+      status: "True"
+      type: PodReadyToStartContainers
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-26T18:08:51Z"
+      observedGeneration: 1
+      status: "True"
+      type: Initialized
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T13:14:04Z"
+      observedGeneration: 1
+      status: "True"
+      type: Ready
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T13:14:04Z"
+      observedGeneration: 1
+      status: "True"
+      type: ContainersReady
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-26T18:08:51Z"
+      observedGeneration: 1
+      status: "True"
+      type: PodScheduled
+    containerStatuses:
+    - containerID: containerd://09c3360f863ebd6ea3d4a97b2d28a0c1aff8542db268da2b783c4b4e6a0cfbd3
+      image: docker.io/library/shopno-frontend:latest
+      imageID: docker.io/library/shopno-frontend@sha256:671ade3ab4f140f9c3c9042b0a4227e92fa55853f49373c23060248ea487b660
+      lastState:
+        terminated:
+          containerID: containerd://183f1ce1ed0170a21fdc3aea41a235c2d5e9496bfdeadfca77a673670289e469
+          exitCode: 255
+          finishedAt: "2026-06-27T13:13:14Z"
+          reason: Unknown
+          startedAt: "2026-06-27T12:58:33Z"
+      name: frontend
+      ready: true
+      resources: {}
+      restartCount: 3
+      started: true
+      state:
+        running:
+          startedAt: "2026-06-27T13:14:02Z"
+      user:
+        linux:
+          gid: 0
+          supplementalGroups:
+          - 0
+          - 1
+          - 2
+          - 3
+          - 4
+          - 6
+          - 10
+          - 11
+          - 20
+          - 26
+          - 27
+          uid: 0
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-8559c
+        readOnly: true
+        recursiveReadOnly: Disabled
+    hostIP: 172.18.0.4
+    hostIPs:
+    - ip: 172.18.0.4
+    observedGeneration: 1
+    phase: Running
+    podIP: 10.244.0.17
+    podIPs:
+    - ip: 10.244.0.17
+    qosClass: BestEffort
+    startTime: "2026-06-26T18:08:51Z"
+- apiVersion: v1
+  kind: Pod
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/restartedAt: "2026-06-27T00:08:51+06:00"
+    creationTimestamp: "2026-06-26T18:08:53Z"
+    generateName: root-app-58fdf546c7-
+    generation: 1
+    labels:
+      app: root-app
+      pod-template-hash: 58fdf546c7
+    name: root-app-58fdf546c7-jk48s
+    namespace: default
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: ReplicaSet
+      name: root-app-58fdf546c7
+      uid: 2d946f6f-9720-4a84-bee4-89aa215edff2
+    resourceVersion: "133271"
+    uid: 25226c69-8ea8-47c2-94e3-663ffe77f6db
+  spec:
+    containers:
+    - image: shopno-frontend:latest
+      imagePullPolicy: IfNotPresent
+      name: frontend
+      ports:
+      - containerPort: 80
+        protocol: TCP
+      resources: {}
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-mr4fl
+        readOnly: true
+    dnsPolicy: ClusterFirst
+    enableServiceLinks: true
+    nodeName: desktop-control-plane
+    preemptionPolicy: PreemptLowerPriority
+    priority: 0
+    restartPolicy: Always
+    schedulerName: default-scheduler
+    securityContext: {}
+    serviceAccount: default
+    serviceAccountName: default
+    terminationGracePeriodSeconds: 30
+    tolerations:
+    - effect: NoExecute
+      key: node.kubernetes.io/not-ready
+      operator: Exists
+      tolerationSeconds: 300
+    - effect: NoExecute
+      key: node.kubernetes.io/unreachable
+      operator: Exists
+      tolerationSeconds: 300
+    volumes:
+    - name: kube-api-access-mr4fl
+      projected:
+        defaultMode: 420
+        sources:
+        - serviceAccountToken:
+            expirationSeconds: 3607
+            path: token
+        - configMap:
+            items:
+            - key: ca.crt
+              path: ca.crt
+            name: kube-root-ca.crt
+        - downwardAPI:
+            items:
+            - fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+              path: namespace
+  status:
+    conditions:
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T13:14:02Z"
+      observedGeneration: 1
+      status: "True"
+      type: PodReadyToStartContainers
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-26T18:08:53Z"
+      observedGeneration: 1
+      status: "True"
+      type: Initialized
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T13:14:02Z"
+      observedGeneration: 1
+      status: "True"
+      type: Ready
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T13:14:02Z"
+      observedGeneration: 1
+      status: "True"
+      type: ContainersReady
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-26T18:08:53Z"
+      observedGeneration: 1
+      status: "True"
+      type: PodScheduled
+    containerStatuses:
+    - containerID: containerd://d1fe4093d4e85e4be73aec94dc18ab98e35a7afa4a17f650727c8222283fe7d7
+      image: docker.io/library/shopno-frontend:latest
+      imageID: docker.io/library/shopno-frontend@sha256:671ade3ab4f140f9c3c9042b0a4227e92fa55853f49373c23060248ea487b660
+      lastState:
+        terminated:
+          containerID: containerd://f90be79f57ce6052c9a4ede32efebe67765392afb0f29dad140d43ad2cceea32
+          exitCode: 255
+          finishedAt: "2026-06-27T13:13:14Z"
+          reason: Unknown
+          startedAt: "2026-06-27T12:58:32Z"
+      name: frontend
+      ready: true
+      resources: {}
+      restartCount: 3
+      started: true
+      state:
+        running:
+          startedAt: "2026-06-27T13:14:01Z"
+      user:
+        linux:
+          gid: 0
+          supplementalGroups:
+          - 0
+          - 1
+          - 2
+          - 3
+          - 4
+          - 6
+          - 10
+          - 11
+          - 20
+          - 26
+          - 27
+          uid: 0
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-mr4fl
+        readOnly: true
+        recursiveReadOnly: Disabled
+    hostIP: 172.18.0.4
+    hostIPs:
+    - ip: 172.18.0.4
+    observedGeneration: 1
+    phase: Running
+    podIP: 10.244.0.9
+    podIPs:
+    - ip: 10.244.0.9
+    qosClass: BestEffort
+    startTime: "2026-06-26T18:08:53Z"
+- apiVersion: v1
+  kind: Pod
+  metadata:
+    creationTimestamp: "2026-06-26T17:47:39Z"
+    generateName: tenant-router-5db869bc8d-
+    generation: 1
+    labels:
+      app: tenant-router
+      pod-template-hash: 5db869bc8d
+    name: tenant-router-5db869bc8d-fvz72
+    namespace: default
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: ReplicaSet
+      name: tenant-router-5db869bc8d
+      uid: ca8a3c67-2de3-467e-9889-779237f6d6ed
+    resourceVersion: "133151"
+    uid: 4e70eb05-a96e-4987-9af2-0174072a0164
+  spec:
+    containers:
+    - env:
+      - name: OTEL_SERVICE_NAME
+        value: tenant-router
+      - name: OTEL_EXPORTER_OTLP_ENDPOINT
+        value: http://otel-collector.observability.svc.cluster.local:4318
+      - name: OTEL_EXPORTER_OTLP_PROTOCOL
+        value: http/protobuf
+      image: openresty/openresty:alpine
+      imagePullPolicy: IfNotPresent
+      name: openresty
+      ports:
+      - containerPort: 80
+        protocol: TCP
+      resources: {}
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      volumeMounts:
+      - mountPath: /usr/local/openresty/nginx/conf/nginx.conf
+        name: nginx-config
+        subPath: nginx.conf
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-hlvbz
+        readOnly: true
+    dnsPolicy: ClusterFirst
+    enableServiceLinks: true
+    nodeName: desktop-control-plane
+    preemptionPolicy: PreemptLowerPriority
+    priority: 0
+    restartPolicy: Always
+    schedulerName: default-scheduler
+    securityContext: {}
+    serviceAccount: default
+    serviceAccountName: default
+    terminationGracePeriodSeconds: 30
+    tolerations:
+    - effect: NoExecute
+      key: node.kubernetes.io/not-ready
+      operator: Exists
+      tolerationSeconds: 300
+    - effect: NoExecute
+      key: node.kubernetes.io/unreachable
+      operator: Exists
+      tolerationSeconds: 300
+    volumes:
+    - configMap:
+        defaultMode: 420
+        name: tenant-router-config
+      name: nginx-config
+    - name: kube-api-access-hlvbz
+      projected:
+        defaultMode: 420
+        sources:
+        - serviceAccountToken:
+            expirationSeconds: 3607
+            path: token
+        - configMap:
+            items:
+            - key: ca.crt
+              path: ca.crt
+            name: kube-root-ca.crt
+        - downwardAPI:
+            items:
+            - fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+              path: namespace
+  status:
+    conditions:
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T13:14:04Z"
+      observedGeneration: 1
+      status: "True"
+      type: PodReadyToStartContainers
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-26T17:47:39Z"
+      observedGeneration: 1
+      status: "True"
+      type: Initialized
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T13:14:04Z"
+      observedGeneration: 1
+      status: "True"
+      type: Ready
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T13:14:04Z"
+      observedGeneration: 1
+      status: "True"
+      type: ContainersReady
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-26T17:47:39Z"
+      observedGeneration: 1
+      status: "True"
+      type: PodScheduled
+    containerStatuses:
+    - containerID: containerd://737dbbf984ceec8045a04c29f6cf3ea3a33a15f6f68b2efcd0e948306c4d0a00
+      image: docker.io/openresty/openresty:alpine
+      imageID: docker.io/openresty/openresty@sha256:49db7235f2f94aa179c1242882619aea258c112b20f48ba45aefba010a1d0607
+      lastState:
+        terminated:
+          containerID: containerd://b36d3bb6d87bc2f97d8136ca5adeca6f50f3a66653397129f45e5f773583c46e
+          exitCode: 255
+          finishedAt: "2026-06-27T13:13:14Z"
+          reason: Unknown
+          startedAt: "2026-06-27T12:58:33Z"
+      name: openresty
+      ready: true
+      resources: {}
+      restartCount: 3
+      started: true
+      state:
+        running:
+          startedAt: "2026-06-27T13:14:02Z"
+      user:
+        linux:
+          gid: 0
+          supplementalGroups:
+          - 0
+          - 1
+          - 2
+          - 3
+          - 4
+          - 6
+          - 10
+          - 11
+          - 20
+          - 26
+          - 27
+          uid: 0
+      volumeMounts:
+      - mountPath: /usr/local/openresty/nginx/conf/nginx.conf
+        name: nginx-config
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-hlvbz
+        readOnly: true
+        recursiveReadOnly: Disabled
+    hostIP: 172.18.0.4
+    hostIPs:
+    - ip: 172.18.0.4
+    observedGeneration: 1
+    phase: Running
+    podIP: 10.244.0.7
+    podIPs:
+    - ip: 10.244.0.7
+    qosClass: BestEffort
+    startTime: "2026-06-26T17:47:39Z"
+- apiVersion: v1
+  kind: Pod
+  metadata:
+    creationTimestamp: "2026-06-26T17:47:39Z"
+    generateName: tenant-router-5db869bc8d-
+    generation: 1
+    labels:
+      app: tenant-router
+      pod-template-hash: 5db869bc8d
+    name: tenant-router-5db869bc8d-r97x6
+    namespace: default
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: ReplicaSet
+      name: tenant-router-5db869bc8d
+      uid: ca8a3c67-2de3-467e-9889-779237f6d6ed
+    resourceVersion: "133133"
+    uid: 8bf21243-9aee-4d87-94d3-a8da23ec3eb1
+  spec:
+    containers:
+    - env:
+      - name: OTEL_SERVICE_NAME
+        value: tenant-router
+      - name: OTEL_EXPORTER_OTLP_ENDPOINT
+        value: http://otel-collector.observability.svc.cluster.local:4318
+      - name: OTEL_EXPORTER_OTLP_PROTOCOL
+        value: http/protobuf
+      image: openresty/openresty:alpine
+      imagePullPolicy: IfNotPresent
+      name: openresty
+      ports:
+      - containerPort: 80
+        protocol: TCP
+      resources: {}
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      volumeMounts:
+      - mountPath: /usr/local/openresty/nginx/conf/nginx.conf
+        name: nginx-config
+        subPath: nginx.conf
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-8lbjq
+        readOnly: true
+    dnsPolicy: ClusterFirst
+    enableServiceLinks: true
+    nodeName: desktop-control-plane
+    preemptionPolicy: PreemptLowerPriority
+    priority: 0
+    restartPolicy: Always
+    schedulerName: default-scheduler
+    securityContext: {}
+    serviceAccount: default
+    serviceAccountName: default
+    terminationGracePeriodSeconds: 30
+    tolerations:
+    - effect: NoExecute
+      key: node.kubernetes.io/not-ready
+      operator: Exists
+      tolerationSeconds: 300
+    - effect: NoExecute
+      key: node.kubernetes.io/unreachable
+      operator: Exists
+      tolerationSeconds: 300
+    volumes:
+    - configMap:
+        defaultMode: 420
+        name: tenant-router-config
+      name: nginx-config
+    - name: kube-api-access-8lbjq
+      projected:
+        defaultMode: 420
+        sources:
+        - serviceAccountToken:
+            expirationSeconds: 3607
+            path: token
+        - configMap:
+            items:
+            - key: ca.crt
+              path: ca.crt
+            name: kube-root-ca.crt
+        - downwardAPI:
+            items:
+            - fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+              path: namespace
+  status:
+    conditions:
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T13:14:04Z"
+      observedGeneration: 1
+      status: "True"
+      type: PodReadyToStartContainers
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-26T17:47:39Z"
+      observedGeneration: 1
+      status: "True"
+      type: Initialized
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T13:14:04Z"
+      observedGeneration: 1
+      status: "True"
+      type: Ready
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T13:14:04Z"
+      observedGeneration: 1
+      status: "True"
+      type: ContainersReady
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-26T17:47:39Z"
+      observedGeneration: 1
+      status: "True"
+      type: PodScheduled
+    containerStatuses:
+    - containerID: containerd://7fcf26218e5fe3c9ecfb848afb27cbf7bb0833a49a7b6ecc0a7183cca777b339
+      image: docker.io/openresty/openresty:alpine
+      imageID: docker.io/openresty/openresty@sha256:49db7235f2f94aa179c1242882619aea258c112b20f48ba45aefba010a1d0607
+      lastState:
+        terminated:
+          containerID: containerd://7cebaa5d7093b8a4e502e0ed617f39ad784d0ae25483fe6f6c7d5fcd62a5bf4a
+          exitCode: 255
+          finishedAt: "2026-06-27T13:13:14Z"
+          reason: Unknown
+          startedAt: "2026-06-27T12:58:32Z"
+      name: openresty
+      ready: true
+      resources: {}
+      restartCount: 3
+      started: true
+      state:
+        running:
+          startedAt: "2026-06-27T13:14:02Z"
+      user:
+        linux:
+          gid: 0
+          supplementalGroups:
+          - 0
+          - 1
+          - 2
+          - 3
+          - 4
+          - 6
+          - 10
+          - 11
+          - 20
+          - 26
+          - 27
+          uid: 0
+      volumeMounts:
+      - mountPath: /usr/local/openresty/nginx/conf/nginx.conf
+        name: nginx-config
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-8lbjq
+        readOnly: true
+        recursiveReadOnly: Disabled
+    hostIP: 172.18.0.4
+    hostIPs:
+    - ip: 172.18.0.4
+    - ip: fc00:f853:ccd:e793::4
+    observedGeneration: 1
+    phase: Running
+    podIP: 10.244.0.11
+    podIPs:
+    - ip: 10.244.0.11
+    qosClass: BestEffort
+    startTime: "2026-06-26T17:47:39Z"
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"name":"api","namespace":"default"},"spec":{"ports":[{"port":80,"targetPort":8000}],"selector":{"app":"api"}}}
+    creationTimestamp: "2026-06-26T17:47:39Z"
+    name: api
+    namespace: default
+    resourceVersion: "9076"
+    uid: bbe7f5c9-8601-4951-b7ae-c38b7152cc50
+  spec:
+    clusterIP: 10.96.80.227
+    clusterIPs:
+    - 10.96.80.227
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - port: 80
+      protocol: TCP
+      targetPort: 8000
+    selector:
+      app: api
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"name":"api-service","namespace":"default"},"spec":{"ports":[{"port":80,"protocol":"TCP","targetPort":8080}],"selector":{"app":"api-service"},"type":"ClusterIP"}}
+    creationTimestamp: "2026-06-26T18:08:32Z"
+    name: api-service
+    namespace: default
+    resourceVersion: "11616"
+    uid: a318c544-e73b-4b71-a2e2-05c6e8471c3a
+  spec:
+    clusterIP: 10.96.12.233
+    clusterIPs:
+    - 10.96.12.233
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - port: 80
+      protocol: TCP
+      targetPort: 8080
+    selector:
+      app: api-service
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"name":"billing-engine","namespace":"default"},"spec":{"ports":[{"port":5000,"targetPort":5000}],"selector":{"app":"billing-engine"}}}
+    creationTimestamp: "2026-06-26T17:47:39Z"
+    name: billing-engine
+    namespace: default
+    resourceVersion: "9104"
+    uid: ba871b67-53e1-4c5f-83dc-b743219d8143
+  spec:
+    clusterIP: 10.96.145.164
+    clusterIPs:
+    - 10.96.145.164
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - port: 5000
+      protocol: TCP
+      targetPort: 5000
+    selector:
+      app: billing-engine
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    creationTimestamp: "2026-06-27T16:19:59Z"
+    labels:
+      app: chat
+    name: chat
+    namespace: default
+    resourceVersion: "132297"
+    uid: f437f2de-959e-4350-b47c-4ba153b67956
+  spec:
+    clusterIP: 10.96.41.246
+    clusterIPs:
+    - 10.96.41.246
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - port: 80
+      protocol: TCP
+      targetPort: 80
+    selector:
+      app: chat
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"name":"freedomain","namespace":"default"},"spec":{"ports":[{"port":80,"targetPort":5678}],"selector":{"app":"freedomain"}}}
+    creationTimestamp: "2026-06-26T17:47:39Z"
+    name: freedomain
+    namespace: default
+    resourceVersion: "9079"
+    uid: 716df5a1-f258-4dd9-926d-cccc1a72f781
+  spec:
+    clusterIP: 10.96.37.97
+    clusterIPs:
+    - 10.96.37.97
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - port: 80
+      protocol: TCP
+      targetPort: 5678
+    selector:
+      app: freedomain
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"name":"freedomain-ui","namespace":"default"},"spec":{"ports":[{"port":80,"targetPort":80}],"selector":{"app":"freedomain-ui"}}}
+    creationTimestamp: "2026-06-26T17:47:39Z"
+    name: freedomain-ui
+    namespace: default
+    resourceVersion: "9084"
+    uid: 8fedb49d-30f0-473f-9fe3-f16940ac2900
+  spec:
+    clusterIP: 10.96.99.147
+    clusterIPs:
+    - 10.96.99.147
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - port: 80
+      protocol: TCP
+      targetPort: 80
+    selector:
+      app: freedomain-ui
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"name":"freedomain-website","namespace":"default"},"spec":{"ports":[{"port":80,"targetPort":80}],"selector":{"app":"freedomain-website"}}}
+    creationTimestamp: "2026-06-26T17:47:39Z"
+    name: freedomain-website
+    namespace: default
+    resourceVersion: "9088"
+    uid: 3b76729f-cc08-4ea3-bddd-cdc468236141
+  spec:
+    clusterIP: 10.96.26.105
+    clusterIPs:
+    - 10.96.26.105
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - port: 80
+      protocol: TCP
+      targetPort: 80
+    selector:
+      app: freedomain-website
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    creationTimestamp: "2026-06-26T14:42:10Z"
+    labels:
+      component: apiserver
+      provider: kubernetes
+    name: kubernetes
+    namespace: default
+    resourceVersion: "241"
+    uid: f6e4d602-30b8-4362-adb8-7f0b8ab5ed53
+  spec:
+    clusterIP: 10.96.0.1
+    clusterIPs:
+    - 10.96.0.1
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: https
+      port: 443
+      protocol: TCP
+      targetPort: 6443
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"name":"oauth-service","namespace":"default"},"spec":{"ports":[{"port":3000,"targetPort":3000}],"selector":{"app":"oauth-service"},"type":"ClusterIP"}}
+    creationTimestamp: "2026-06-26T17:47:39Z"
+    name: oauth-service
+    namespace: default
+    resourceVersion: "9092"
+    uid: bf15b5b4-2a92-4ea2-962f-0fbc825d44db
+  spec:
+    clusterIP: 10.96.66.111
+    clusterIPs:
+    - 10.96.66.111
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - port: 3000
+      protocol: TCP
+      targetPort: 3000
+    selector:
+      app: oauth-service
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"name":"postgres","namespace":"default"},"spec":{"ports":[{"port":5432,"targetPort":5432}],"selector":{"app":"postgres"}}}
+    creationTimestamp: "2026-06-26T18:25:51Z"
+    name: postgres
+    namespace: default
+    resourceVersion: "14894"
+    uid: d4d49f4d-bbdd-412e-a240-efae0d9eb852
+  spec:
+    clusterIP: 10.96.132.59
+    clusterIPs:
+    - 10.96.132.59
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - port: 5432
+      protocol: TCP
+      targetPort: 5432
+    selector:
+      app: postgres
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"name":"redis","namespace":"default"},"spec":{"ports":[{"port":6379,"targetPort":6379}],"selector":{"app":"redis"}}}
+    creationTimestamp: "2026-06-26T18:26:28Z"
+    name: redis
+    namespace: default
+    resourceVersion: "15018"
+    uid: 5aff169f-e4af-43e1-8bde-a2484f0aff70
+  spec:
+    clusterIP: 10.96.230.127
+    clusterIPs:
+    - 10.96.230.127
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - port: 6379
+      protocol: TCP
+      targetPort: 6379
+    selector:
+      app: redis
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"name":"root-app","namespace":"default"},"spec":{"ports":[{"port":80,"protocol":"TCP","targetPort":80}],"selector":{"app":"root-app"},"type":"ClusterIP"}}
+    creationTimestamp: "2026-06-26T17:47:39Z"
+    name: root-app
+    namespace: default
+    resourceVersion: "9096"
+    uid: 0b604eb3-a736-4e7f-bda8-5823a94095f2
+  spec:
+    clusterIP: 10.96.230.237
+    clusterIPs:
+    - 10.96.230.237
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - port: 80
+      protocol: TCP
+      targetPort: 80
+    selector:
+      app: root-app
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"name":"tenant-router","namespace":"default"},"spec":{"ports":[{"port":80,"targetPort":80}],"selector":{"app":"tenant-router"},"type":"ClusterIP"}}
+    creationTimestamp: "2026-06-26T17:47:39Z"
+    name: tenant-router
+    namespace: default
+    resourceVersion: "9100"
+    uid: 9846ca04-e8ed-4a63-af7b-e909aedb5416
+  spec:
+    clusterIP: 10.96.85.186
+    clusterIPs:
+    - 10.96.85.186
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - port: 80
+      protocol: TCP
+      targetPort: 80
+    selector:
+      app: tenant-router
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    annotations:
+      deployment.kubernetes.io/revision: "2"
+    creationTimestamp: "2026-06-27T16:29:48Z"
+    generation: 2
+    labels:
+      app: api
+    name: api
+    namespace: default
+    resourceVersion: "133385"
+    uid: 48cd9ed8-a35e-4905-bea8-3e40d61d8122
+  spec:
+    progressDeadlineSeconds: 600
+    replicas: 1
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        app: api
+    strategy:
+      rollingUpdate:
+        maxSurge: 25%
+        maxUnavailable: 25%
+      type: RollingUpdate
+    template:
+      metadata:
+        labels:
+          app: api
+      spec:
+        containers:
+        - env:
+          - name: PYTHONPATH
+            value: /workspace
+          - name: BRAND_NAME
+            value: Shopnoltd
+          - name: COMPANY
+            value: Shopno Database Firm
+          image: python:3.11
+          imagePullPolicy: IfNotPresent
+          name: api
+          ports:
+          - containerPort: 8000
+            protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /workspace
+            name: app
+        - image: python:3.11
+          imagePullPolicy: IfNotPresent
+          name: python
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+        volumes:
+        - hostPath:
+            path: C:\Users\asadu\PROJECTS\shopnoltd
+            type: Directory
+          name: app
+  status:
+    conditions:
+    - lastTransitionTime: "2026-06-27T16:29:48Z"
+      lastUpdateTime: "2026-06-27T16:29:48Z"
+      message: Deployment does not have minimum availability.
+      reason: MinimumReplicasUnavailable
+      status: "False"
+      type: Available
+    - lastTransitionTime: "2026-06-27T16:29:48Z"
+      lastUpdateTime: "2026-06-27T16:29:49Z"
+      message: ReplicaSet "api-764cc6744" is progressing.
+      reason: ReplicaSetUpdated
+      status: "True"
+      type: Progressing
+    observedGeneration: 2
+    replicas: 2
+    unavailableReplicas: 2
+    updatedReplicas: 1
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    annotations:
+      deployment.kubernetes.io/revision: "5"
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"name":"api-service","namespace":"default"},"spec":{"replicas":2,"selector":{"matchLabels":{"app":"api-service"}},"template":{"metadata":{"labels":{"app":"api-service"}},"spec":{"containers":[{"env":[{"name":"POSTGRES_URL","value":"postgres://saas:saaspass@postgres:5432/saasdb?sslmode=disable"},{"name":"REDIS_ADDR","value":"redis:6379"},{"name":"JWT_SECRET","value":"SUPER_SECRET_KEY"},{"name":"BILLING_SERVICE","value":"http://billing-engine:5000"},{"name":"OTEL_SERVICE_NAME","value":"api-service"},{"name":"OTEL_EXPORTER_OTLP_ENDPOINT","value":"http://otel-collector.observability.svc.cluster.local:4318"},{"name":"OTEL_EXPORTER_OTLP_PROTOCOL","value":"http/protobuf"}],"image":"api-service:v4","imagePullPolicy":"IfNotPresent","name":"api-service","ports":[{"containerPort":8080}]}]}}}}
+    creationTimestamp: "2026-06-26T17:47:39Z"
+    generation: 5
+    name: api-service
+    namespace: default
+    resourceVersion: "113790"
+    uid: 7c1b4704-894d-45a3-a52c-d26591ba430a
+  spec:
+    progressDeadlineSeconds: 600
+    replicas: 2
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        app: api-service
+    strategy:
+      rollingUpdate:
+        maxSurge: 25%
+        maxUnavailable: 25%
+      type: RollingUpdate
+    template:
+      metadata:
+        annotations:
+          kubectl.kubernetes.io/restartedAt: "2026-06-27T00:48:27+06:00"
+        labels:
+          app: api-service
+      spec:
+        containers:
+        - env:
+          - name: POSTGRES_URL
+            value: postgres://saas:saaspass@postgres:5432/saasdb?sslmode=disable
+          - name: REDIS_ADDR
+            value: redis:6379
+          - name: JWT_SECRET
+            value: SUPER_SECRET_KEY
+          - name: BILLING_SERVICE
+            value: http://billing-engine:5000
+          - name: OTEL_SERVICE_NAME
+            value: api-service
+          - name: OTEL_EXPORTER_OTLP_ENDPOINT
+            value: http://otel-collector.observability.svc.cluster.local:4318
+          - name: OTEL_EXPORTER_OTLP_PROTOCOL
+            value: http/protobuf
+          image: api-service:v4
+          imagePullPolicy: IfNotPresent
+          name: api-service
+          ports:
+          - containerPort: 8080
+            protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    availableReplicas: 2
+    conditions:
+    - lastTransitionTime: "2026-06-26T18:08:33Z"
+      lastUpdateTime: "2026-06-26T18:48:37Z"
+      message: ReplicaSet "api-service-77ff5bd79" has successfully progressed.
+      reason: NewReplicaSetAvailable
+      status: "True"
+      type: Progressing
+    - lastTransitionTime: "2026-06-27T13:15:26Z"
+      lastUpdateTime: "2026-06-27T13:15:26Z"
+      message: Deployment has minimum availability.
+      reason: MinimumReplicasAvailable
+      status: "True"
+      type: Available
+    observedGeneration: 5
+    readyReplicas: 2
+    replicas: 2
+    updatedReplicas: 2
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    annotations:
+      deployment.kubernetes.io/revision: "4"
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"name":"billing-engine","namespace":"default"},"spec":{"replicas":1,"selector":{"matchLabels":{"app":"billing-engine"}},"template":{"metadata":{"labels":{"app":"billing-engine"}},"spec":{"containers":[{"env":[{"name":"OTEL_SERVICE_NAME","value":"billing-engine"},{"name":"OTEL_EXPORTER_OTLP_ENDPOINT","value":"http://otel-collector.observability.svc.cluster.local:4318"},{"name":"OTEL_EXPORTER_OTLP_PROTOCOL","value":"http/protobuf"}],"envFrom":[{"secretRef":{"name":"stripe-secret"}}],"image":"billing-engine:v4","imagePullPolicy":"IfNotPresent","livenessProbe":{"httpGet":{"path":"/health","port":5000},"initialDelaySeconds":20,"periodSeconds":10},"name":"billing-engine","ports":[{"containerPort":5000}],"readinessProbe":{"httpGet":{"path":"/health","port":5000},"initialDelaySeconds":10,"periodSeconds":5}}]}}}}
+    creationTimestamp: "2026-06-26T17:47:39Z"
+    generation: 4
+    name: billing-engine
+    namespace: default
+    resourceVersion: "113463"
+    uid: 8d48186d-a640-4d1e-94ba-83b5360a3f7e
+  spec:
+    progressDeadlineSeconds: 600
+    replicas: 1
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        app: billing-engine
+    strategy:
+      rollingUpdate:
+        maxSurge: 25%
+        maxUnavailable: 25%
+      type: RollingUpdate
+    template:
+      metadata:
+        annotations:
+          kubectl.kubernetes.io/restartedAt: "2026-06-27T00:25:09+06:00"
+        labels:
+          app: billing-engine
+      spec:
+        containers:
+        - env:
+          - name: OTEL_SERVICE_NAME
+            value: billing-engine
+          - name: OTEL_EXPORTER_OTLP_ENDPOINT
+            value: http://otel-collector.observability.svc.cluster.local:4318
+          - name: OTEL_EXPORTER_OTLP_PROTOCOL
+            value: http/protobuf
+          envFrom:
+          - secretRef:
+              name: stripe-secret
+          image: billing-engine:v4
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /health
+              port: 5000
+              scheme: HTTP
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          name: billing-engine
+          ports:
+          - containerPort: 5000
+            protocol: TCP
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /health
+              port: 5000
+              scheme: HTTP
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 1
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    availableReplicas: 1
+    conditions:
+    - lastTransitionTime: "2026-06-26T18:25:09Z"
+      lastUpdateTime: "2026-06-26T18:25:26Z"
+      message: ReplicaSet "billing-engine-7db97b4848" has successfully progressed.
+      reason: NewReplicaSetAvailable
+      status: "True"
+      type: Progressing
+    - lastTransitionTime: "2026-06-27T13:14:16Z"
+      lastUpdateTime: "2026-06-27T13:14:16Z"
+      message: Deployment has minimum availability.
+      reason: MinimumReplicasAvailable
+      status: "True"
+      type: Available
+    observedGeneration: 4
+    readyReplicas: 1
+    replicas: 1
+    updatedReplicas: 1
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    annotations:
+      deployment.kubernetes.io/revision: "1"
+    creationTimestamp: "2026-06-27T16:19:58Z"
+    generation: 1
+    labels:
+      app: chat
+    name: chat
+    namespace: default
+    resourceVersion: "132865"
+    uid: bebb3f6a-bf47-4f1b-830a-d053d72540d6
+  spec:
+    progressDeadlineSeconds: 600
+    replicas: 1
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        app: chat
+    strategy:
+      rollingUpdate:
+        maxSurge: 25%
+        maxUnavailable: 25%
+      type: RollingUpdate
+    template:
+      metadata:
+        labels:
+          app: chat
+      spec:
+        containers:
+        - image: nginx:latest
+          imagePullPolicy: Always
+          name: nginx
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    availableReplicas: 1
+    conditions:
+    - lastTransitionTime: "2026-06-27T16:25:37Z"
+      lastUpdateTime: "2026-06-27T16:25:37Z"
+      message: Deployment has minimum availability.
+      reason: MinimumReplicasAvailable
+      status: "True"
+      type: Available
+    - lastTransitionTime: "2026-06-27T16:19:58Z"
+      lastUpdateTime: "2026-06-27T16:25:37Z"
+      message: ReplicaSet "chat-67589c557f" has successfully progressed.
+      reason: NewReplicaSetAvailable
+      status: "True"
+      type: Progressing
+    observedGeneration: 1
+    readyReplicas: 1
+    replicas: 1
+    updatedReplicas: 1
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    annotations:
+      deployment.kubernetes.io/revision: "1"
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"name":"freedomain","namespace":"default"},"spec":{"replicas":1,"selector":{"matchLabels":{"app":"freedomain"}},"template":{"metadata":{"labels":{"app":"freedomain"}},"spec":{"containers":[{"args":["-text=FREE-DOMAIN"],"image":"hashicorp/http-echo","name":"freedomain","ports":[{"containerPort":5678}]}]}}}}
+    creationTimestamp: "2026-06-26T17:47:39Z"
+    generation: 1
+    name: freedomain
+    namespace: default
+    resourceVersion: "113419"
+    uid: fdcab25e-5e54-4293-ac4a-932d0bc1afe3
+  spec:
+    progressDeadlineSeconds: 600
+    replicas: 1
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        app: freedomain
+    strategy:
+      rollingUpdate:
+        maxSurge: 25%
+        maxUnavailable: 25%
+      type: RollingUpdate
+    template:
+      metadata:
+        labels:
+          app: freedomain
+      spec:
+        containers:
+        - args:
+          - -text=FREE-DOMAIN
+          image: hashicorp/http-echo
+          imagePullPolicy: Always
+          name: freedomain
+          ports:
+          - containerPort: 5678
+            protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    availableReplicas: 1
+    conditions:
+    - lastTransitionTime: "2026-06-26T17:47:39Z"
+      lastUpdateTime: "2026-06-26T17:47:35Z"
+      message: ReplicaSet "freedomain-585fd7f556" has successfully progressed.
+      reason: NewReplicaSetAvailable
+      status: "True"
+      type: Progressing
+    - lastTransitionTime: "2026-06-27T13:14:12Z"
+      lastUpdateTime: "2026-06-27T13:14:12Z"
+      message: Deployment has minimum availability.
+      reason: MinimumReplicasAvailable
+      status: "True"
+      type: Available
+    observedGeneration: 1
+    readyReplicas: 1
+    replicas: 1
+    updatedReplicas: 1
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    annotations:
+      deployment.kubernetes.io/revision: "1"
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"name":"freedomain-ui","namespace":"default"},"spec":{"replicas":1,"selector":{"matchLabels":{"app":"freedomain-ui"}},"template":{"metadata":{"labels":{"app":"freedomain-ui"}},"spec":{"containers":[{"image":"freedomain-ui:v1","imagePullPolicy":"IfNotPresent","name":"freedomain-ui","ports":[{"containerPort":80}]}]}}}}
+    creationTimestamp: "2026-06-26T17:47:39Z"
+    generation: 1
+    name: freedomain-ui
+    namespace: default
+    resourceVersion: "113262"
+    uid: 1eb55656-1b40-495c-aa14-269b608f3f2e
+  spec:
+    progressDeadlineSeconds: 600
+    replicas: 1
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        app: freedomain-ui
+    strategy:
+      rollingUpdate:
+        maxSurge: 25%
+        maxUnavailable: 25%
+      type: RollingUpdate
+    template:
+      metadata:
+        labels:
+          app: freedomain-ui
+      spec:
+        containers:
+        - image: freedomain-ui:v1
+          imagePullPolicy: IfNotPresent
+          name: freedomain-ui
+          ports:
+          - containerPort: 80
+            protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    availableReplicas: 1
+    conditions:
+    - lastTransitionTime: "2026-06-26T18:21:51Z"
+      lastUpdateTime: "2026-06-26T18:21:51Z"
+      message: ReplicaSet "freedomain-ui-7d4bc8846f" has successfully progressed.
+      reason: NewReplicaSetAvailable
+      status: "True"
+      type: Progressing
+    - lastTransitionTime: "2026-06-27T13:14:02Z"
+      lastUpdateTime: "2026-06-27T13:14:02Z"
+      message: Deployment has minimum availability.
+      reason: MinimumReplicasAvailable
+      status: "True"
+      type: Available
+    observedGeneration: 1
+    readyReplicas: 1
+    replicas: 1
+    updatedReplicas: 1
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    annotations:
+      deployment.kubernetes.io/revision: "5"
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"name":"freedomain-website","namespace":"default"},"spec":{"replicas":1,"selector":{"matchLabels":{"app":"freedomain-website"}},"template":{"metadata":{"labels":{"app":"freedomain-website"}},"spec":{"containers":[{"image":"freedomain-site:v1","imagePullPolicy":"IfNotPresent","name":"freedomain-website","ports":[{"containerPort":80}]}]}}}}
+    creationTimestamp: "2026-06-26T17:47:39Z"
+    generation: 5
+    name: freedomain-website
+    namespace: default
+    resourceVersion: "113375"
+    uid: 1b2c81e5-f7d9-4c66-8db4-429177fb7741
+  spec:
+    progressDeadlineSeconds: 600
+    replicas: 1
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        app: freedomain-website
+    strategy:
+      rollingUpdate:
+        maxSurge: 25%
+        maxUnavailable: 25%
+      type: RollingUpdate
+    template:
+      metadata:
+        annotations:
+          kubectl.kubernetes.io/restartedAt: "2026-06-27T11:23:57+06:00"
+        labels:
+          app: freedomain-website
+      spec:
+        containers:
+        - image: freedomain-site:v1
+          imagePullPolicy: Never
+          name: freedomain-website
+          ports:
+          - containerPort: 80
+            protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    availableReplicas: 1
+    conditions:
+    - lastTransitionTime: "2026-06-26T18:58:30Z"
+      lastUpdateTime: "2026-06-27T05:24:00Z"
+      message: ReplicaSet "freedomain-website-57448959ff" has successfully progressed.
+      reason: NewReplicaSetAvailable
+      status: "True"
+      type: Progressing
+    - lastTransitionTime: "2026-06-27T13:14:07Z"
+      lastUpdateTime: "2026-06-27T13:14:07Z"
+      message: Deployment has minimum availability.
+      reason: MinimumReplicasAvailable
+      status: "True"
+      type: Available
+    observedGeneration: 5
+    readyReplicas: 1
+    replicas: 1
+    updatedReplicas: 1
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    annotations:
+      deployment.kubernetes.io/revision: "4"
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"name":"live","namespace":"default"},"spec":{"replicas":1,"selector":{"matchLabels":{"app":"live"}},"template":{"metadata":{"labels":{"app":"live"}},"spec":{"containers":[{"image":"live:latest","name":"live","ports":[{"containerPort":80}]}]}}}}
+    creationTimestamp: "2026-06-26T18:08:33Z"
+    generation: 4
+    name: live
+    namespace: default
+    resourceVersion: "113387"
+    uid: 2b38880e-e252-48c8-a530-571cd71d05bd
+  spec:
+    progressDeadlineSeconds: 600
+    replicas: 1
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        app: live
+    strategy:
+      rollingUpdate:
+        maxSurge: 25%
+        maxUnavailable: 25%
+      type: RollingUpdate
+    template:
+      metadata:
+        annotations:
+          kubectl.kubernetes.io/restartedAt: "2026-06-27T11:23:56+06:00"
+        labels:
+          app: live
+      spec:
+        containers:
+        - image: live:latest
+          imagePullPolicy: Never
+          name: live
+          ports:
+          - containerPort: 80
+            protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    availableReplicas: 1
+    conditions:
+    - lastTransitionTime: "2026-06-26T19:27:04Z"
+      lastUpdateTime: "2026-06-27T05:24:00Z"
+      message: ReplicaSet "live-6dd7796d74" has successfully progressed.
+      reason: NewReplicaSetAvailable
+      status: "True"
+      type: Progressing
+    - lastTransitionTime: "2026-06-27T13:14:07Z"
+      lastUpdateTime: "2026-06-27T13:14:07Z"
+      message: Deployment has minimum availability.
+      reason: MinimumReplicasAvailable
+      status: "True"
+      type: Available
+    observedGeneration: 4
+    readyReplicas: 1
+    replicas: 1
+    updatedReplicas: 1
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    annotations:
+      deployment.kubernetes.io/revision: "3"
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"name":"oauth-service","namespace":"default"},"spec":{"replicas":1,"selector":{"matchLabels":{"app":"oauth-service"}},"strategy":{"rollingUpdate":{"maxSurge":1,"maxUnavailable":0},"type":"RollingUpdate"},"template":{"metadata":{"labels":{"app":"oauth-service"}},"spec":{"containers":[{"command":["node","server.js"],"env":[{"name":"NODE_ENV","value":"production"},{"name":"BASE_URL","value":"https://api.shopnoltd.dpdns.org"},{"name":"FRONTEND_URL","value":"https://domain.shopnoltd.dpdns.org"},{"name":"JWT_SECRET","valueFrom":{"secretKeyRef":{"key":"JWT_SECRET","name":"oauth-secrets"}}},{"name":"SESSION_SECRET","valueFrom":{"secretKeyRef":{"key":"SESSION_SECRET","name":"oauth-secrets"}}},{"name":"GOOGLE_CLIENT_ID","value":"530228436303-2k8sl5mdjfotsvkcqgtcktcb7q2b78fn.apps.googleusercontent.com"},{"name":"GOOGLE_CLIENT_SECRET","value":"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"},{"name":"FACEBOOK_APP_ID","value":"1239063184913011"},{"name":"FACEBOOK_APP_SECRET","value":"9afa42656338eb1917cdc3ac79c61f2d"},{"name":"GITHUB_CLIENT_ID","value":"Ov23liIa4IFALaMIZ1XP"},{"name":"GITHUB_CLIENT_SECRET","value":"682ac6a6332f85eda27113ad6e634f51eff0ffe2"},{"name":"OTEL_SERVICE_NAME","value":"oauth-service"},{"name":"OTEL_EXPORTER_OTLP_ENDPOINT","value":"http://otel-collector.observability.svc.cluster.local:4318"},{"name":"OTEL_EXPORTER_OTLP_PROTOCOL","value":"http/protobuf"}],"image":"oauth-service:1.0.0","imagePullPolicy":"IfNotPresent","name":"oauth-service","ports":[{"containerPort":3000}]}]}}}}
+    creationTimestamp: "2026-06-26T17:47:39Z"
+    generation: 3
+    name: oauth-service
+    namespace: default
+    resourceVersion: "113261"
+    uid: 984b209f-0907-444d-a03c-986ae25b341b
+  spec:
+    progressDeadlineSeconds: 600
+    replicas: 1
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        app: oauth-service
+    strategy:
+      rollingUpdate:
+        maxSurge: 1
+        maxUnavailable: 0
+      type: RollingUpdate
+    template:
+      metadata:
+        annotations:
+          kubectl.kubernetes.io/restartedAt: "2026-06-27T00:08:48+06:00"
+        labels:
+          app: oauth-service
+      spec:
+        containers:
+        - command:
+          - node
+          - server.js
+          env:
+          - name: NODE_ENV
+            value: production
+          - name: BASE_URL
+            value: https://api.shopnoltd.dpdns.org
+          - name: FRONTEND_URL
+            value: https://domain.shopnoltd.dpdns.org
+          - name: JWT_SECRET
+            valueFrom:
+              secretKeyRef:
+                key: JWT_SECRET
+                name: oauth-secrets
+          - name: SESSION_SECRET
+            valueFrom:
+              secretKeyRef:
+                key: SESSION_SECRET
+                name: oauth-secrets
+          - name: GOOGLE_CLIENT_ID
+            value: 530228436303-2k8sl5mdjfotsvkcqgtcktcb7q2b78fn.apps.googleusercontent.com
+          - name: GOOGLE_CLIENT_SECRET
+            value: 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
+          - name: FACEBOOK_APP_ID
+            value: "1239063184913011"
+          - name: FACEBOOK_APP_SECRET
+            value: 9afa42656338eb1917cdc3ac79c61f2d
+          - name: GITHUB_CLIENT_ID
+            value: Ov23liIa4IFALaMIZ1XP
+          - name: GITHUB_CLIENT_SECRET
+            value: 682ac6a6332f85eda27113ad6e634f51eff0ffe2
+          - name: OTEL_SERVICE_NAME
+            value: oauth-service
+          - name: OTEL_EXPORTER_OTLP_ENDPOINT
+            value: http://otel-collector.observability.svc.cluster.local:4318
+          - name: OTEL_EXPORTER_OTLP_PROTOCOL
+            value: http/protobuf
+          image: oauth-service:1.0.0
+          imagePullPolicy: IfNotPresent
+          name: oauth-service
+          ports:
+          - containerPort: 3000
+            protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    availableReplicas: 1
+    conditions:
+    - lastTransitionTime: "2026-06-26T18:08:36Z"
+      lastUpdateTime: "2026-06-26T18:15:17Z"
+      message: ReplicaSet "oauth-service-55bf8bbc9d" has successfully progressed.
+      reason: NewReplicaSetAvailable
+      status: "True"
+      type: Progressing
+    - lastTransitionTime: "2026-06-27T13:14:02Z"
+      lastUpdateTime: "2026-06-27T13:14:02Z"
+      message: Deployment has minimum availability.
+      reason: MinimumReplicasAvailable
+      status: "True"
+      type: Available
+    observedGeneration: 3
+    readyReplicas: 1
+    replicas: 1
+    updatedReplicas: 1
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    annotations:
+      deployment.kubernetes.io/revision: "1"
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"name":"postgres","namespace":"default"},"spec":{"replicas":1,"selector":{"matchLabels":{"app":"postgres"}},"template":{"metadata":{"labels":{"app":"postgres"}},"spec":{"containers":[{"envFrom":[{"secretRef":{"name":"postgres-secret"}}],"image":"postgres:16","name":"postgres","ports":[{"containerPort":5432}],"volumeMounts":[{"mountPath":"/var/lib/postgresql/data","name":"pgdata"}]}],"volumes":[{"name":"pgdata","persistentVolumeClaim":{"claimName":"postgres-pvc"}}]}}}}
+    creationTimestamp: "2026-06-26T18:25:51Z"
+    generation: 1
+    name: postgres
+    namespace: default
+    resourceVersion: "113352"
+    uid: b156d538-2ac8-4c72-8628-30114b62fe35
+  spec:
+    progressDeadlineSeconds: 600
+    replicas: 1
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        app: postgres
+    strategy:
+      rollingUpdate:
+        maxSurge: 25%
+        maxUnavailable: 25%
+      type: RollingUpdate
+    template:
+      metadata:
+        labels:
+          app: postgres
+      spec:
+        containers:
+        - envFrom:
+          - secretRef:
+              name: postgres-secret
+          image: postgres:16
+          imagePullPolicy: IfNotPresent
+          name: postgres
+          ports:
+          - containerPort: 5432
+            protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /var/lib/postgresql/data
+            name: pgdata
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+        volumes:
+        - name: pgdata
+          persistentVolumeClaim:
+            claimName: postgres-pvc
+  status:
+    availableReplicas: 1
+    conditions:
+    - lastTransitionTime: "2026-06-26T18:25:51Z"
+      lastUpdateTime: "2026-06-26T18:26:27Z"
+      message: ReplicaSet "postgres-7b4cbccb6" has successfully progressed.
+      reason: NewReplicaSetAvailable
+      status: "True"
+      type: Progressing
+    - lastTransitionTime: "2026-06-27T13:14:06Z"
+      lastUpdateTime: "2026-06-27T13:14:06Z"
+      message: Deployment has minimum availability.
+      reason: MinimumReplicasAvailable
+      status: "True"
+      type: Available
+    observedGeneration: 1
+    readyReplicas: 1
+    replicas: 1
+    updatedReplicas: 1
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    annotations:
+      deployment.kubernetes.io/revision: "1"
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"name":"redis","namespace":"default"},"spec":{"replicas":1,"selector":{"matchLabels":{"app":"redis"}},"template":{"metadata":{"labels":{"app":"redis"}},"spec":{"containers":[{"image":"redis:7","name":"redis","ports":[{"containerPort":6379}]}]}}}}
+    creationTimestamp: "2026-06-26T18:26:28Z"
+    generation: 1
+    name: redis
+    namespace: default
+    resourceVersion: "113361"
+    uid: d4d03f7f-8ece-46ef-abe7-f61990de435c
+  spec:
+    progressDeadlineSeconds: 600
+    replicas: 1
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        app: redis
+    strategy:
+      rollingUpdate:
+        maxSurge: 25%
+        maxUnavailable: 25%
+      type: RollingUpdate
+    template:
+      metadata:
+        labels:
+          app: redis
+      spec:
+        containers:
+        - image: redis:7
+          imagePullPolicy: IfNotPresent
+          name: redis
+          ports:
+          - containerPort: 6379
+            protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    availableReplicas: 1
+    conditions:
+    - lastTransitionTime: "2026-06-26T18:26:28Z"
+      lastUpdateTime: "2026-06-26T18:26:45Z"
+      message: ReplicaSet "redis-7c46f4654d" has successfully progressed.
+      reason: NewReplicaSetAvailable
+      status: "True"
+      type: Progressing
+    - lastTransitionTime: "2026-06-27T13:14:06Z"
+      lastUpdateTime: "2026-06-27T13:14:06Z"
+      message: Deployment has minimum availability.
+      reason: MinimumReplicasAvailable
+      status: "True"
+      type: Available
+    observedGeneration: 1
+    readyReplicas: 1
+    replicas: 1
+    updatedReplicas: 1
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    annotations:
+      deployment.kubernetes.io/revision: "2"
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"name":"root-app","namespace":"default"},"spec":{"replicas":2,"selector":{"matchLabels":{"app":"root-app"}},"template":{"metadata":{"labels":{"app":"root-app"}},"spec":{"containers":[{"image":"shopno-frontend:latest","imagePullPolicy":"IfNotPresent","name":"frontend","ports":[{"containerPort":80}]}]}}}}
+    creationTimestamp: "2026-06-26T17:47:39Z"
+    generation: 2
+    name: root-app
+    namespace: default
+    resourceVersion: "113310"
+    uid: b89ee791-6a51-4000-92a7-492949a928fd
+  spec:
+    progressDeadlineSeconds: 600
+    replicas: 2
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        app: root-app
+    strategy:
+      rollingUpdate:
+        maxSurge: 25%
+        maxUnavailable: 25%
+      type: RollingUpdate
+    template:
+      metadata:
+        annotations:
+          kubectl.kubernetes.io/restartedAt: "2026-06-27T00:08:51+06:00"
+        labels:
+          app: root-app
+      spec:
+        containers:
+        - image: shopno-frontend:latest
+          imagePullPolicy: IfNotPresent
+          name: frontend
+          ports:
+          - containerPort: 80
+            protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    availableReplicas: 2
+    conditions:
+    - lastTransitionTime: "2026-06-26T17:47:39Z"
+      lastUpdateTime: "2026-06-26T18:08:55Z"
+      message: ReplicaSet "root-app-58fdf546c7" has successfully progressed.
+      reason: NewReplicaSetAvailable
+      status: "True"
+      type: Progressing
+    - lastTransitionTime: "2026-06-27T13:14:05Z"
+      lastUpdateTime: "2026-06-27T13:14:05Z"
+      message: Deployment has minimum availability.
+      reason: MinimumReplicasAvailable
+      status: "True"
+      type: Available
+    observedGeneration: 2
+    readyReplicas: 2
+    replicas: 2
+    updatedReplicas: 2
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    annotations:
+      deployment.kubernetes.io/revision: "1"
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"name":"tenant-router","namespace":"default"},"spec":{"replicas":2,"selector":{"matchLabels":{"app":"tenant-router"}},"template":{"metadata":{"labels":{"app":"tenant-router"}},"spec":{"containers":[{"env":[{"name":"OTEL_SERVICE_NAME","value":"tenant-router"},{"name":"OTEL_EXPORTER_OTLP_ENDPOINT","value":"http://otel-collector.observability.svc.cluster.local:4318"},{"name":"OTEL_EXPORTER_OTLP_PROTOCOL","value":"http/protobuf"}],"image":"openresty/openresty:alpine","name":"openresty","ports":[{"containerPort":80}],"volumeMounts":[{"mountPath":"/usr/local/openresty/nginx/conf/nginx.conf","name":"nginx-config","subPath":"nginx.conf"}]}],"volumes":[{"configMap":{"name":"tenant-router-config"},"name":"nginx-config"}]}}}}
+    creationTimestamp: "2026-06-26T17:47:39Z"
+    generation: 1
+    name: tenant-router
+    namespace: default
+    resourceVersion: "113334"
+    uid: 5b4b4b5d-2aef-493a-bca1-b8c3a19b7386
+  spec:
+    progressDeadlineSeconds: 600
+    replicas: 2
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        app: tenant-router
+    strategy:
+      rollingUpdate:
+        maxSurge: 25%
+        maxUnavailable: 25%
+      type: RollingUpdate
+    template:
+      metadata:
+        labels:
+          app: tenant-router
+      spec:
+        containers:
+        - env:
+          - name: OTEL_SERVICE_NAME
+            value: tenant-router
+          - name: OTEL_EXPORTER_OTLP_ENDPOINT
+            value: http://otel-collector.observability.svc.cluster.local:4318
+          - name: OTEL_EXPORTER_OTLP_PROTOCOL
+            value: http/protobuf
+          image: openresty/openresty:alpine
+          imagePullPolicy: IfNotPresent
+          name: openresty
+          ports:
+          - containerPort: 80
+            protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /usr/local/openresty/nginx/conf/nginx.conf
+            name: nginx-config
+            subPath: nginx.conf
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+        volumes:
+        - configMap:
+            defaultMode: 420
+            name: tenant-router-config
+          name: nginx-config
+  status:
+    availableReplicas: 2
+    conditions:
+    - lastTransitionTime: "2026-06-26T17:47:39Z"
+      lastUpdateTime: "2026-06-26T17:48:07Z"
+      message: ReplicaSet "tenant-router-5db869bc8d" has successfully progressed.
+      reason: NewReplicaSetAvailable
+      status: "True"
+      type: Progressing
+    - lastTransitionTime: "2026-06-27T13:14:05Z"
+      lastUpdateTime: "2026-06-27T13:14:05Z"
+      message: Deployment has minimum availability.
+      reason: MinimumReplicasAvailable
+      status: "True"
+      type: Available
+    observedGeneration: 1
+    readyReplicas: 2
+    replicas: 2
+    updatedReplicas: 2
+- apiVersion: apps/v1
+  kind: ReplicaSet
+  metadata:
+    annotations:
+      deployment.kubernetes.io/desired-replicas: "1"
+      deployment.kubernetes.io/max-replicas: "2"
+      deployment.kubernetes.io/revision: "2"
+    creationTimestamp: "2026-06-27T16:29:49Z"
+    generation: 1
+    labels:
+      app: api
+      pod-template-hash: 764cc6744
+    name: api-764cc6744
+    namespace: default
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Deployment
+      name: api
+      uid: 48cd9ed8-a35e-4905-bea8-3e40d61d8122
+    resourceVersion: "133384"
+    uid: f2bba699-29ef-4cc8-b6bc-e5140f33d1e8
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        app: api
+        pod-template-hash: 764cc6744
+    template:
+      metadata:
+        labels:
+          app: api
+          pod-template-hash: 764cc6744
+      spec:
+        containers:
+        - env:
+          - name: PYTHONPATH
+            value: /workspace
+          - name: BRAND_NAME
+            value: Shopnoltd
+          - name: COMPANY
+            value: Shopno Database Firm
+          image: python:3.11
+          imagePullPolicy: IfNotPresent
+          name: api
+          ports:
+          - containerPort: 8000
+            protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /workspace
+            name: app
+        - image: python:3.11
+          imagePullPolicy: IfNotPresent
+          name: python
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+        volumes:
+        - hostPath:
+            path: C:\Users\asadu\PROJECTS\shopnoltd
+            type: Directory
+          name: app
+  status:
+    fullyLabeledReplicas: 1
+    observedGeneration: 1
+    replicas: 1
+- apiVersion: apps/v1
+  kind: ReplicaSet
+  metadata:
+    annotations:
+      deployment.kubernetes.io/desired-replicas: "1"
+      deployment.kubernetes.io/max-replicas: "2"
+      deployment.kubernetes.io/revision: "1"
+    creationTimestamp: "2026-06-27T16:29:48Z"
+    generation: 1
+    labels:
+      app: api
+      pod-template-hash: 85f6cfb5d5
+    name: api-85f6cfb5d5
+    namespace: default
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Deployment
+      name: api
+      uid: 48cd9ed8-a35e-4905-bea8-3e40d61d8122
+    resourceVersion: "133363"
+    uid: d2303d74-6fcf-4417-8fc8-cbbbb4c4ac43
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        app: api
+        pod-template-hash: 85f6cfb5d5
+    template:
+      metadata:
+        labels:
+          app: api
+          pod-template-hash: 85f6cfb5d5
+      spec:
+        containers:
+        - image: python:3.11
+          imagePullPolicy: IfNotPresent
+          name: python
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    fullyLabeledReplicas: 1
+    observedGeneration: 1
+    replicas: 1
+- apiVersion: apps/v1
+  kind: ReplicaSet
+  metadata:
+    annotations:
+      deployment.kubernetes.io/desired-replicas: "2"
+      deployment.kubernetes.io/max-replicas: "3"
+      deployment.kubernetes.io/revision: "4"
+    creationTimestamp: "2026-06-26T18:38:50Z"
+    generation: 4
+    labels:
+      app: api-service
+      pod-template-hash: 5dc6ff48b8
+    name: api-service-5dc6ff48b8
+    namespace: default
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Deployment
+      name: api-service
+      uid: 7c1b4704-894d-45a3-a52c-d26591ba430a
+    resourceVersion: "17486"
+    uid: e9b49f21-fc16-409e-99fa-100d41b9cca1
+  spec:
+    replicas: 0
+    selector:
+      matchLabels:
+        app: api-service
+        pod-template-hash: 5dc6ff48b8
+    template:
+      metadata:
+        annotations:
+          kubectl.kubernetes.io/restartedAt: "2026-06-27T00:38:49+06:00"
+        labels:
+          app: api-service
+          pod-template-hash: 5dc6ff48b8
+      spec:
+        containers:
+        - env:
+          - name: POSTGRES_URL
+            value: postgres://saas:saaspass@postgres:5432/saasdb?sslmode=disable
+          - name: REDIS_ADDR
+            value: redis:6379
+          - name: JWT_SECRET
+            value: SUPER_SECRET_KEY
+          - name: BILLING_SERVICE
+            value: http://billing-engine:5000
+          - name: OTEL_SERVICE_NAME
+            value: api-service
+          - name: OTEL_EXPORTER_OTLP_ENDPOINT
+            value: http://otel-collector.observability.svc.cluster.local:4318
+          - name: OTEL_EXPORTER_OTLP_PROTOCOL
+            value: http/protobuf
+          image: api-service:v4
+          imagePullPolicy: IfNotPresent
+          name: api-service
+          ports:
+          - containerPort: 8080
+            protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    observedGeneration: 4
+    replicas: 0
+- apiVersion: apps/v1
+  kind: ReplicaSet
+  metadata:
+    annotations:
+      deployment.kubernetes.io/desired-replicas: "2"
+      deployment.kubernetes.io/max-replicas: "3"
+      deployment.kubernetes.io/revision: "3"
+    creationTimestamp: "2026-06-26T18:08:48Z"
+    generation: 4
+    labels:
+      app: api-service
+      pod-template-hash: 6c8fc5fb66
+    name: api-service-6c8fc5fb66
+    namespace: default
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Deployment
+      name: api-service
+      uid: 7c1b4704-894d-45a3-a52c-d26591ba430a
+    resourceVersion: "16411"
+    uid: 95f6488d-1431-46cc-a2cb-b4c4847a1684
+  spec:
+    replicas: 0
+    selector:
+      matchLabels:
+        app: api-service
+        pod-template-hash: 6c8fc5fb66
+    template:
+      metadata:
+        annotations:
+          kubectl.kubernetes.io/restartedAt: "2026-06-27T00:08:48+06:00"
+        labels:
+          app: api-service
+          pod-template-hash: 6c8fc5fb66
+      spec:
+        containers:
+        - env:
+          - name: POSTGRES_URL
+            value: postgres://saas:saaspass@postgres:5432/saasdb?sslmode=disable
+          - name: REDIS_ADDR
+            value: redis:6379
+          - name: JWT_SECRET
+            value: SUPER_SECRET_KEY
+          - name: BILLING_SERVICE
+            value: http://billing-engine:5000
+          - name: OTEL_SERVICE_NAME
+            value: api-service
+          - name: OTEL_EXPORTER_OTLP_ENDPOINT
+            value: http://otel-collector.observability.svc.cluster.local:4318
+          - name: OTEL_EXPORTER_OTLP_PROTOCOL
+            value: http/protobuf
+          image: api-service:v4
+          imagePullPolicy: IfNotPresent
+          name: api-service
+          ports:
+          - containerPort: 8080
+            protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    observedGeneration: 4
+    replicas: 0
+- apiVersion: apps/v1
+  kind: ReplicaSet
+  metadata:
+    annotations:
+      deployment.kubernetes.io/desired-replicas: "2"
+      deployment.kubernetes.io/max-replicas: "3"
+      deployment.kubernetes.io/revision: "5"
+    creationTimestamp: "2026-06-26T18:48:28Z"
+    generation: 2
+    labels:
+      app: api-service
+      pod-template-hash: 77ff5bd79
+    name: api-service-77ff5bd79
+    namespace: default
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Deployment
+      name: api-service
+      uid: 7c1b4704-894d-45a3-a52c-d26591ba430a
+    resourceVersion: "113789"
+    uid: 1506cfca-2577-4540-bf1b-83c8fce690e0
+  spec:
+    replicas: 2
+    selector:
+      matchLabels:
+        app: api-service
+        pod-template-hash: 77ff5bd79
+    template:
+      metadata:
+        annotations:
+          kubectl.kubernetes.io/restartedAt: "2026-06-27T00:48:27+06:00"
+        labels:
+          app: api-service
+          pod-template-hash: 77ff5bd79
+      spec:
+        containers:
+        - env:
+          - name: POSTGRES_URL
+            value: postgres://saas:saaspass@postgres:5432/saasdb?sslmode=disable
+          - name: REDIS_ADDR
+            value: redis:6379
+          - name: JWT_SECRET
+            value: SUPER_SECRET_KEY
+          - name: BILLING_SERVICE
+            value: http://billing-engine:5000
+          - name: OTEL_SERVICE_NAME
+            value: api-service
+          - name: OTEL_EXPORTER_OTLP_ENDPOINT
+            value: http://otel-collector.observability.svc.cluster.local:4318
+          - name: OTEL_EXPORTER_OTLP_PROTOCOL
+            value: http/protobuf
+          image: api-service:v4
+          imagePullPolicy: IfNotPresent
+          name: api-service
+          ports:
+          - containerPort: 8080
+            protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    availableReplicas: 2
+    fullyLabeledReplicas: 2
+    observedGeneration: 2
+    readyReplicas: 2
+    replicas: 2
+- apiVersion: apps/v1
+  kind: ReplicaSet
+  metadata:
+    annotations:
+      deployment.kubernetes.io/desired-replicas: "2"
+      deployment.kubernetes.io/max-replicas: "3"
+      deployment.kubernetes.io/revision: "1"
+    creationTimestamp: "2026-06-26T17:47:39Z"
+    generation: 3
+    labels:
+      app: api-service
+      pod-template-hash: 78bd66d6b8
+    name: api-service-78bd66d6b8
+    namespace: default
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Deployment
+      name: api-service
+      uid: 7c1b4704-894d-45a3-a52c-d26591ba430a
+    resourceVersion: "11896"
+    uid: b788032d-ee04-4ec3-a05c-b02271398202
+  spec:
+    replicas: 0
+    selector:
+      matchLabels:
+        app: api-service
+        pod-template-hash: 78bd66d6b8
+    template:
+      metadata:
+        labels:
+          app: api-service
+          pod-template-hash: 78bd66d6b8
+      spec:
+        containers:
+        - env:
+          - name: POSTGRES_URL
+            value: postgres://saas:saaspass@postgres:5432/saasdb?sslmode=disable
+          - name: REDIS_ADDR
+            value: redis:6379
+          - name: JWT_SECRET
+            value: SUPER_SECRET_KEY
+          - name: BILLING_SERVICE
+            value: http://billing-engine:5000
+          - name: OTEL_SERVICE_NAME
+            value: api-service
+          - name: OTEL_EXPORTER_OTLP_ENDPOINT
+            value: http://otel-collector.observability.svc.cluster.local:4318
+          - name: OTEL_EXPORTER_OTLP_PROTOCOL
+            value: http/protobuf
+          image: host.docker.internal:5000/api-service:v4
+          imagePullPolicy: IfNotPresent
+          name: api-service
+          ports:
+          - containerPort: 8080
+            protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    observedGeneration: 3
+    replicas: 0
+- apiVersion: apps/v1
+  kind: ReplicaSet
+  metadata:
+    annotations:
+      deployment.kubernetes.io/desired-replicas: "2"
+      deployment.kubernetes.io/max-replicas: "3"
+      deployment.kubernetes.io/revision: "2"
+    creationTimestamp: "2026-06-26T18:08:33Z"
+    generation: 4
+    labels:
+      app: api-service
+      pod-template-hash: cc78bdd8f
+    name: api-service-cc78bdd8f
+    namespace: default
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Deployment
+      name: api-service
+      uid: 7c1b4704-894d-45a3-a52c-d26591ba430a
+    resourceVersion: "12113"
+    uid: 976709c0-43cb-45c0-9b29-418523e54e61
+  spec:
+    replicas: 0
+    selector:
+      matchLabels:
+        app: api-service
+        pod-template-hash: cc78bdd8f
+    template:
+      metadata:
+        labels:
+          app: api-service
+          pod-template-hash: cc78bdd8f
+      spec:
+        containers:
+        - env:
+          - name: POSTGRES_URL
+            value: postgres://saas:saaspass@postgres:5432/saasdb?sslmode=disable
+          - name: REDIS_ADDR
+            value: redis:6379
+          - name: JWT_SECRET
+            value: SUPER_SECRET_KEY
+          - name: BILLING_SERVICE
+            value: http://billing-engine:5000
+          - name: OTEL_SERVICE_NAME
+            value: api-service
+          - name: OTEL_EXPORTER_OTLP_ENDPOINT
+            value: http://otel-collector.observability.svc.cluster.local:4318
+          - name: OTEL_EXPORTER_OTLP_PROTOCOL
+            value: http/protobuf
+          image: api-service:v4
+          imagePullPolicy: IfNotPresent
+          name: api-service
+          ports:
+          - containerPort: 8080
+            protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    observedGeneration: 4
+    replicas: 0
+- apiVersion: apps/v1
+  kind: ReplicaSet
+  metadata:
+    annotations:
+      deployment.kubernetes.io/desired-replicas: "1"
+      deployment.kubernetes.io/max-replicas: "2"
+      deployment.kubernetes.io/revision: "1"
+    creationTimestamp: "2026-06-26T17:47:39Z"
+    generation: 2
+    labels:
+      app: billing-engine
+      pod-template-hash: 64f9494dd8
+    name: billing-engine-64f9494dd8
+    namespace: default
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Deployment
+      name: billing-engine
+      uid: 8d48186d-a640-4d1e-94ba-83b5360a3f7e
+    resourceVersion: "11983"
+    uid: b58a3616-b783-478b-9eee-a0076c1e3562
+  spec:
+    replicas: 0
+    selector:
+      matchLabels:
+        app: billing-engine
+        pod-template-hash: 64f9494dd8
+    template:
+      metadata:
+        labels:
+          app: billing-engine
+          pod-template-hash: 64f9494dd8
+      spec:
+        containers:
+        - env:
+          - name: OTEL_SERVICE_NAME
+            value: billing-engine
+          - name: OTEL_EXPORTER_OTLP_ENDPOINT
+            value: http://otel-collector.observability.svc.cluster.local:4318
+          - name: OTEL_EXPORTER_OTLP_PROTOCOL
+            value: http/protobuf
+          envFrom:
+          - secretRef:
+              name: stripe-secret
+          image: host.docker.internal:5000/billing-engine:v4
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /health
+              port: 5000
+              scheme: HTTP
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          name: billing-engine
+          ports:
+          - containerPort: 5000
+            protocol: TCP
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /health
+              port: 5000
+              scheme: HTTP
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 1
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    observedGeneration: 2
+    replicas: 0
+- apiVersion: apps/v1
+  kind: ReplicaSet
+  metadata:
+    annotations:
+      deployment.kubernetes.io/desired-replicas: "1"
+      deployment.kubernetes.io/max-replicas: "2"
+      deployment.kubernetes.io/revision: "2"
+    creationTimestamp: "2026-06-26T18:08:33Z"
+    generation: 2
+    labels:
+      app: billing-engine
+      pod-template-hash: 67f488bd77
+    name: billing-engine-67f488bd77
+    namespace: default
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Deployment
+      name: billing-engine
+      uid: 8d48186d-a640-4d1e-94ba-83b5360a3f7e
+    resourceVersion: "14773"
+    uid: 70bf4b34-9812-49a3-b8b7-e0291cfb8510
+  spec:
+    replicas: 0
+    selector:
+      matchLabels:
+        app: billing-engine
+        pod-template-hash: 67f488bd77
+    template:
+      metadata:
+        labels:
+          app: billing-engine
+          pod-template-hash: 67f488bd77
+      spec:
+        containers:
+        - env:
+          - name: OTEL_SERVICE_NAME
+            value: billing-engine
+          - name: OTEL_EXPORTER_OTLP_ENDPOINT
+            value: http://otel-collector.observability.svc.cluster.local:4318
+          - name: OTEL_EXPORTER_OTLP_PROTOCOL
+            value: http/protobuf
+          envFrom:
+          - secretRef:
+              name: stripe-secret
+          image: billing-engine:v4
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /health
+              port: 5000
+              scheme: HTTP
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          name: billing-engine
+          ports:
+          - containerPort: 5000
+            protocol: TCP
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /health
+              port: 5000
+              scheme: HTTP
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 1
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    observedGeneration: 2
+    replicas: 0
+- apiVersion: apps/v1
+  kind: ReplicaSet
+  metadata:
+    annotations:
+      deployment.kubernetes.io/desired-replicas: "1"
+      deployment.kubernetes.io/max-replicas: "2"
+      deployment.kubernetes.io/revision: "3"
+    creationTimestamp: "2026-06-26T18:08:49Z"
+    generation: 3
+    labels:
+      app: billing-engine
+      pod-template-hash: 6b5f686767
+    name: billing-engine-6b5f686767
+    namespace: default
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Deployment
+      name: billing-engine
+      uid: 8d48186d-a640-4d1e-94ba-83b5360a3f7e
+    resourceVersion: "14839"
+    uid: ce731bd1-295a-4b07-846e-6ecdc79a4eb7
+  spec:
+    replicas: 0
+    selector:
+      matchLabels:
+        app: billing-engine
+        pod-template-hash: 6b5f686767
+    template:
+      metadata:
+        annotations:
+          kubectl.kubernetes.io/restartedAt: "2026-06-27T00:08:49+06:00"
+        labels:
+          app: billing-engine
+          pod-template-hash: 6b5f686767
+      spec:
+        containers:
+        - env:
+          - name: OTEL_SERVICE_NAME
+            value: billing-engine
+          - name: OTEL_EXPORTER_OTLP_ENDPOINT
+            value: http://otel-collector.observability.svc.cluster.local:4318
+          - name: OTEL_EXPORTER_OTLP_PROTOCOL
+            value: http/protobuf
+          envFrom:
+          - secretRef:
+              name: stripe-secret
+          image: billing-engine:v4
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /health
+              port: 5000
+              scheme: HTTP
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          name: billing-engine
+          ports:
+          - containerPort: 5000
+            protocol: TCP
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /health
+              port: 5000
+              scheme: HTTP
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 1
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    observedGeneration: 3
+    replicas: 0
+- apiVersion: apps/v1
+  kind: ReplicaSet
+  metadata:
+    annotations:
+      deployment.kubernetes.io/desired-replicas: "1"
+      deployment.kubernetes.io/max-replicas: "2"
+      deployment.kubernetes.io/revision: "4"
+    creationTimestamp: "2026-06-26T18:25:09Z"
+    generation: 2
+    labels:
+      app: billing-engine
+      pod-template-hash: 7db97b4848
+    name: billing-engine-7db97b4848
+    namespace: default
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Deployment
+      name: billing-engine
+      uid: 8d48186d-a640-4d1e-94ba-83b5360a3f7e
+    resourceVersion: "113462"
+    uid: 310c01cd-76de-44c1-8cd4-f6a80606f33c
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        app: billing-engine
+        pod-template-hash: 7db97b4848
+    template:
+      metadata:
+        annotations:
+          kubectl.kubernetes.io/restartedAt: "2026-06-27T00:25:09+06:00"
+        labels:
+          app: billing-engine
+          pod-template-hash: 7db97b4848
+      spec:
+        containers:
+        - env:
+          - name: OTEL_SERVICE_NAME
+            value: billing-engine
+          - name: OTEL_EXPORTER_OTLP_ENDPOINT
+            value: http://otel-collector.observability.svc.cluster.local:4318
+          - name: OTEL_EXPORTER_OTLP_PROTOCOL
+            value: http/protobuf
+          envFrom:
+          - secretRef:
+              name: stripe-secret
+          image: billing-engine:v4
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /health
+              port: 5000
+              scheme: HTTP
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          name: billing-engine
+          ports:
+          - containerPort: 5000
+            protocol: TCP
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /health
+              port: 5000
+              scheme: HTTP
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 1
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    availableReplicas: 1
+    fullyLabeledReplicas: 1
+    observedGeneration: 2
+    readyReplicas: 1
+    replicas: 1
+- apiVersion: apps/v1
+  kind: ReplicaSet
+  metadata:
+    annotations:
+      deployment.kubernetes.io/desired-replicas: "1"
+      deployment.kubernetes.io/max-replicas: "2"
+      deployment.kubernetes.io/revision: "1"
+    creationTimestamp: "2026-06-27T16:19:58Z"
+    generation: 1
+    labels:
+      app: chat
+      pod-template-hash: 67589c557f
+    name: chat-67589c557f
+    namespace: default
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Deployment
+      name: chat
+      uid: bebb3f6a-bf47-4f1b-830a-d053d72540d6
+    resourceVersion: "132863"
+    uid: 480c0d00-d83f-4d07-93e1-f3330826a969
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        app: chat
+        pod-template-hash: 67589c557f
+    template:
+      metadata:
+        labels:
+          app: chat
+          pod-template-hash: 67589c557f
+      spec:
+        containers:
+        - image: nginx:latest
+          imagePullPolicy: Always
+          name: nginx
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    availableReplicas: 1
+    fullyLabeledReplicas: 1
+    observedGeneration: 1
+    readyReplicas: 1
+    replicas: 1
+- apiVersion: apps/v1
+  kind: ReplicaSet
+  metadata:
+    annotations:
+      deployment.kubernetes.io/desired-replicas: "1"
+      deployment.kubernetes.io/max-replicas: "2"
+      deployment.kubernetes.io/revision: "1"
+    creationTimestamp: "2026-06-26T17:47:39Z"
+    generation: 1
+    labels:
+      app: freedomain
+      pod-template-hash: 585fd7f556
+    name: freedomain-585fd7f556
+    namespace: default
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Deployment
+      name: freedomain
+      uid: fdcab25e-5e54-4293-ac4a-932d0bc1afe3
+    resourceVersion: "113414"
+    uid: 5301eb48-5eeb-49c3-8cc5-65d9e99ac7f6
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        app: freedomain
+        pod-template-hash: 585fd7f556
+    template:
+      metadata:
+        labels:
+          app: freedomain
+          pod-template-hash: 585fd7f556
+      spec:
+        containers:
+        - args:
+          - -text=FREE-DOMAIN
+          image: hashicorp/http-echo
+          imagePullPolicy: Always
+          name: freedomain
+          ports:
+          - containerPort: 5678
+            protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    availableReplicas: 1
+    fullyLabeledReplicas: 1
+    observedGeneration: 1
+    readyReplicas: 1
+    replicas: 1
+- apiVersion: apps/v1
+  kind: ReplicaSet
+  metadata:
+    annotations:
+      deployment.kubernetes.io/desired-replicas: "1"
+      deployment.kubernetes.io/max-replicas: "2"
+      deployment.kubernetes.io/revision: "1"
+    creationTimestamp: "2026-06-26T17:47:39Z"
+    generation: 1
+    labels:
+      app: freedomain-ui
+      pod-template-hash: 7d4bc8846f
+    name: freedomain-ui-7d4bc8846f
+    namespace: default
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Deployment
+      name: freedomain-ui
+      uid: 1eb55656-1b40-495c-aa14-269b608f3f2e
+    resourceVersion: "113259"
+    uid: 5b4206e2-7a47-4384-872e-8a91963cbbc9
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        app: freedomain-ui
+        pod-template-hash: 7d4bc8846f
+    template:
+      metadata:
+        labels:
+          app: freedomain-ui
+          pod-template-hash: 7d4bc8846f
+      spec:
+        containers:
+        - image: freedomain-ui:v1
+          imagePullPolicy: IfNotPresent
+          name: freedomain-ui
+          ports:
+          - containerPort: 80
+            protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    availableReplicas: 1
+    fullyLabeledReplicas: 1
+    observedGeneration: 1
+    readyReplicas: 1
+    replicas: 1
+- apiVersion: apps/v1
+  kind: ReplicaSet
+  metadata:
+    annotations:
+      deployment.kubernetes.io/desired-replicas: "1"
+      deployment.kubernetes.io/max-replicas: "2"
+      deployment.kubernetes.io/revision: "1"
+    creationTimestamp: "2026-06-26T17:47:39Z"
+    generation: 2
+    labels:
+      app: freedomain-website
+      pod-template-hash: 568bb56978
+    name: freedomain-website-568bb56978
+    namespace: default
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Deployment
+      name: freedomain-website
+      uid: 1b2c81e5-f7d9-4c66-8db4-429177fb7741
+    resourceVersion: "18632"
+    uid: f74e7b10-8c2a-4588-b06d-6decfdb5d4aa
+  spec:
+    replicas: 0
+    selector:
+      matchLabels:
+        app: freedomain-website
+        pod-template-hash: 568bb56978
+    template:
+      metadata:
+        labels:
+          app: freedomain-website
+          pod-template-hash: 568bb56978
+      spec:
+        containers:
+        - image: freedomain-site:v1
+          imagePullPolicy: IfNotPresent
+          name: freedomain-website
+          ports:
+          - containerPort: 80
+            protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    observedGeneration: 2
+    replicas: 0
+- apiVersion: apps/v1
+  kind: ReplicaSet
+  metadata:
+    annotations:
+      deployment.kubernetes.io/desired-replicas: "1"
+      deployment.kubernetes.io/max-replicas: "2"
+      deployment.kubernetes.io/revision: "5"
+    creationTimestamp: "2026-06-27T05:23:57Z"
+    generation: 1
+    labels:
+      app: freedomain-website
+      pod-template-hash: 57448959ff
+    name: freedomain-website-57448959ff
+    namespace: default
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Deployment
+      name: freedomain-website
+      uid: 1b2c81e5-f7d9-4c66-8db4-429177fb7741
+    resourceVersion: "113372"
+    uid: e1849e67-a4e6-449c-a51e-ba4d856ed014
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        app: freedomain-website
+        pod-template-hash: 57448959ff
+    template:
+      metadata:
+        annotations:
+          kubectl.kubernetes.io/restartedAt: "2026-06-27T11:23:57+06:00"
+        labels:
+          app: freedomain-website
+          pod-template-hash: 57448959ff
+      spec:
+        containers:
+        - image: freedomain-site:v1
+          imagePullPolicy: Never
+          name: freedomain-website
+          ports:
+          - containerPort: 80
+            protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    availableReplicas: 1
+    fullyLabeledReplicas: 1
+    observedGeneration: 1
+    readyReplicas: 1
+    replicas: 1
+- apiVersion: apps/v1
+  kind: ReplicaSet
+  metadata:
+    annotations:
+      deployment.kubernetes.io/desired-replicas: "1"
+      deployment.kubernetes.io/max-replicas: "2"
+      deployment.kubernetes.io/revision: "4"
+    creationTimestamp: "2026-06-27T05:23:47Z"
+    generation: 2
+    labels:
+      app: freedomain-website
+      pod-template-hash: 5cd7ff5ff4
+    name: freedomain-website-5cd7ff5ff4
+    namespace: default
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Deployment
+      name: freedomain-website
+      uid: 1b2c81e5-f7d9-4c66-8db4-429177fb7741
+    resourceVersion: "83156"
+    uid: d0295201-41ff-4497-8ad8-cfb471e60e90
+  spec:
+    replicas: 0
+    selector:
+      matchLabels:
+        app: freedomain-website
+        pod-template-hash: 5cd7ff5ff4
+    template:
+      metadata:
+        annotations:
+          kubectl.kubernetes.io/restartedAt: "2026-06-27T11:12:27+06:00"
+        labels:
+          app: freedomain-website
+          pod-template-hash: 5cd7ff5ff4
+      spec:
+        containers:
+        - image: freedomain-site:v1
+          imagePullPolicy: Never
+          name: freedomain-website
+          ports:
+          - containerPort: 80
+            protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    observedGeneration: 2
+    replicas: 0
+- apiVersion: apps/v1
+  kind: ReplicaSet
+  metadata:
+    annotations:
+      deployment.kubernetes.io/desired-replicas: "1"
+      deployment.kubernetes.io/max-replicas: "2"
+      deployment.kubernetes.io/revision: "3"
+    creationTimestamp: "2026-06-27T05:12:27Z"
+    generation: 2
+    labels:
+      app: freedomain-website
+      pod-template-hash: 6db8886655
+    name: freedomain-website-6db8886655
+    namespace: default
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Deployment
+      name: freedomain-website
+      uid: 1b2c81e5-f7d9-4c66-8db4-429177fb7741
+    resourceVersion: "83025"
+    uid: addd8471-8a33-4ba1-9a63-844039c2b922
+  spec:
+    replicas: 0
+    selector:
+      matchLabels:
+        app: freedomain-website
+        pod-template-hash: 6db8886655
+    template:
+      metadata:
+        annotations:
+          kubectl.kubernetes.io/restartedAt: "2026-06-27T11:12:27+06:00"
+        labels:
+          app: freedomain-website
+          pod-template-hash: 6db8886655
+      spec:
+        containers:
+        - image: freedomain-site:v1
+          imagePullPolicy: IfNotPresent
+          name: freedomain-website
+          ports:
+          - containerPort: 80
+            protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    observedGeneration: 2
+    replicas: 0
+- apiVersion: apps/v1
+  kind: ReplicaSet
+  metadata:
+    annotations:
+      deployment.kubernetes.io/desired-replicas: "1"
+      deployment.kubernetes.io/max-replicas: "2"
+      deployment.kubernetes.io/revision: "2"
+    creationTimestamp: "2026-06-26T18:58:30Z"
+    generation: 2
+    labels:
+      app: freedomain-website
+      pod-template-hash: 7f94f7465f
+    name: freedomain-website-7f94f7465f
+    namespace: default
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Deployment
+      name: freedomain-website
+      uid: 1b2c81e5-f7d9-4c66-8db4-429177fb7741
+    resourceVersion: "81634"
+    uid: 19f49bd2-2cb7-4ab6-af8d-021023fea63c
+  spec:
+    replicas: 0
+    selector:
+      matchLabels:
+        app: freedomain-website
+        pod-template-hash: 7f94f7465f
+    template:
+      metadata:
+        annotations:
+          kubectl.kubernetes.io/restartedAt: "2026-06-27T00:58:30+06:00"
+        labels:
+          app: freedomain-website
+          pod-template-hash: 7f94f7465f
+      spec:
+        containers:
+        - image: freedomain-site:v1
+          imagePullPolicy: IfNotPresent
+          name: freedomain-website
+          ports:
+          - containerPort: 80
+            protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    observedGeneration: 2
+    replicas: 0
+- apiVersion: apps/v1
+  kind: ReplicaSet
+  metadata:
+    annotations:
+      deployment.kubernetes.io/desired-replicas: "1"
+      deployment.kubernetes.io/max-replicas: "2"
+      deployment.kubernetes.io/revision: "4"
+    creationTimestamp: "2026-06-27T05:23:56Z"
+    generation: 1
+    labels:
+      app: live
+      pod-template-hash: 6dd7796d74
+    name: live-6dd7796d74
+    namespace: default
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Deployment
+      name: live
+      uid: 2b38880e-e252-48c8-a530-571cd71d05bd
+    resourceVersion: "113385"
+    uid: fa69eac0-0a41-4cb2-b9c2-b3e37e196110
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        app: live
+        pod-template-hash: 6dd7796d74
+    template:
+      metadata:
+        annotations:
+          kubectl.kubernetes.io/restartedAt: "2026-06-27T11:23:56+06:00"
+        labels:
+          app: live
+          pod-template-hash: 6dd7796d74
+      spec:
+        containers:
+        - image: live:latest
+          imagePullPolicy: Never
+          name: live
+          ports:
+          - containerPort: 80
+            protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    availableReplicas: 1
+    fullyLabeledReplicas: 1
+    observedGeneration: 1
+    readyReplicas: 1
+    replicas: 1
+- apiVersion: apps/v1
+  kind: ReplicaSet
+  metadata:
+    annotations:
+      deployment.kubernetes.io/desired-replicas: "1"
+      deployment.kubernetes.io/max-replicas: "2"
+      deployment.kubernetes.io/revision: "1"
+    creationTimestamp: "2026-06-26T18:08:33Z"
+    generation: 2
+    labels:
+      app: live
+      pod-template-hash: 84f76c7d6
+    name: live-84f76c7d6
+    namespace: default
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Deployment
+      name: live
+      uid: 2b38880e-e252-48c8-a530-571cd71d05bd
+    resourceVersion: "81633"
+    uid: 97d91e99-0dc7-434f-9744-bafc1443ed1b
+  spec:
+    replicas: 0
+    selector:
+      matchLabels:
+        app: live
+        pod-template-hash: 84f76c7d6
+    template:
+      metadata:
+        labels:
+          app: live
+          pod-template-hash: 84f76c7d6
+      spec:
+        containers:
+        - image: live:latest
+          imagePullPolicy: Always
+          name: live
+          ports:
+          - containerPort: 80
+            protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    observedGeneration: 2
+    replicas: 0
+- apiVersion: apps/v1
+  kind: ReplicaSet
+  metadata:
+    annotations:
+      deployment.kubernetes.io/desired-replicas: "1"
+      deployment.kubernetes.io/max-replicas: "2"
+      deployment.kubernetes.io/revision: "3"
+    creationTimestamp: "2026-06-27T05:23:31Z"
+    generation: 2
+    labels:
+      app: live
+      pod-template-hash: 86f74bc886
+    name: live-86f74bc886
+    namespace: default
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Deployment
+      name: live
+      uid: 2b38880e-e252-48c8-a530-571cd71d05bd
+    resourceVersion: "83144"
+    uid: c0f829b2-142e-421a-89c8-66be89ac52bf
+  spec:
+    replicas: 0
+    selector:
+      matchLabels:
+        app: live
+        pod-template-hash: 86f74bc886
+    template:
+      metadata:
+        annotations:
+          kubectl.kubernetes.io/restartedAt: "2026-06-27T11:12:27+06:00"
+        labels:
+          app: live
+          pod-template-hash: 86f74bc886
+      spec:
+        containers:
+        - image: live:latest
+          imagePullPolicy: Never
+          name: live
+          ports:
+          - containerPort: 80
+            protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    observedGeneration: 2
+    replicas: 0
+- apiVersion: apps/v1
+  kind: ReplicaSet
+  metadata:
+    annotations:
+      deployment.kubernetes.io/desired-replicas: "1"
+      deployment.kubernetes.io/max-replicas: "2"
+      deployment.kubernetes.io/revision: "2"
+    creationTimestamp: "2026-06-27T05:12:27Z"
+    generation: 2
+    labels:
+      app: live
+      pod-template-hash: d9759787c
+    name: live-d9759787c
+    namespace: default
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Deployment
+      name: live
+      uid: 2b38880e-e252-48c8-a530-571cd71d05bd
+    resourceVersion: "82954"
+    uid: bc0e68ae-23a8-44c9-b513-dc146211791f
+  spec:
+    replicas: 0
+    selector:
+      matchLabels:
+        app: live
+        pod-template-hash: d9759787c
+    template:
+      metadata:
+        annotations:
+          kubectl.kubernetes.io/restartedAt: "2026-06-27T11:12:27+06:00"
+        labels:
+          app: live
+          pod-template-hash: d9759787c
+      spec:
+        containers:
+        - image: live:latest
+          imagePullPolicy: Always
+          name: live
+          ports:
+          - containerPort: 80
+            protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    observedGeneration: 2
+    replicas: 0
+- apiVersion: apps/v1
+  kind: ReplicaSet
+  metadata:
+    annotations:
+      deployment.kubernetes.io/desired-replicas: "1"
+      deployment.kubernetes.io/max-replicas: "2"
+      deployment.kubernetes.io/revision: "3"
+    creationTimestamp: "2026-06-26T18:08:48Z"
+    generation: 2
+    labels:
+      app: oauth-service
+      pod-template-hash: 55bf8bbc9d
+    name: oauth-service-55bf8bbc9d
+    namespace: default
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Deployment
+      name: oauth-service
+      uid: 984b209f-0907-444d-a03c-986ae25b341b
+    resourceVersion: "113248"
+    uid: 347b6bb3-5bfb-4e0c-afec-c60b33d29e0c
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        app: oauth-service
+        pod-template-hash: 55bf8bbc9d
+    template:
+      metadata:
+        annotations:
+          kubectl.kubernetes.io/restartedAt: "2026-06-27T00:08:48+06:00"
+        labels:
+          app: oauth-service
+          pod-template-hash: 55bf8bbc9d
+      spec:
+        containers:
+        - command:
+          - node
+          - server.js
+          env:
+          - name: NODE_ENV
+            value: production
+          - name: BASE_URL
+            value: https://api.shopnoltd.dpdns.org
+          - name: FRONTEND_URL
+            value: https://domain.shopnoltd.dpdns.org
+          - name: JWT_SECRET
+            valueFrom:
+              secretKeyRef:
+                key: JWT_SECRET
+                name: oauth-secrets
+          - name: SESSION_SECRET
+            valueFrom:
+              secretKeyRef:
+                key: SESSION_SECRET
+                name: oauth-secrets
+          - name: GOOGLE_CLIENT_ID
+            value: 530228436303-2k8sl5mdjfotsvkcqgtcktcb7q2b78fn.apps.googleusercontent.com
+          - name: GOOGLE_CLIENT_SECRET
+            value: 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
+          - name: FACEBOOK_APP_ID
+            value: "1239063184913011"
+          - name: FACEBOOK_APP_SECRET
+            value: 9afa42656338eb1917cdc3ac79c61f2d
+          - name: GITHUB_CLIENT_ID
+            value: Ov23liIa4IFALaMIZ1XP
+          - name: GITHUB_CLIENT_SECRET
+            value: 682ac6a6332f85eda27113ad6e634f51eff0ffe2
+          - name: OTEL_SERVICE_NAME
+            value: oauth-service
+          - name: OTEL_EXPORTER_OTLP_ENDPOINT
+            value: http://otel-collector.observability.svc.cluster.local:4318
+          - name: OTEL_EXPORTER_OTLP_PROTOCOL
+            value: http/protobuf
+          image: oauth-service:1.0.0
+          imagePullPolicy: IfNotPresent
+          name: oauth-service
+          ports:
+          - containerPort: 3000
+            protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    availableReplicas: 1
+    fullyLabeledReplicas: 1
+    observedGeneration: 2
+    readyReplicas: 1
+    replicas: 1
+- apiVersion: apps/v1
+  kind: ReplicaSet
+  metadata:
+    annotations:
+      deployment.kubernetes.io/desired-replicas: "1"
+      deployment.kubernetes.io/max-replicas: "2"
+      deployment.kubernetes.io/revision: "2"
+    creationTimestamp: "2026-06-26T18:08:36Z"
+    generation: 2
+    labels:
+      app: oauth-service
+      pod-template-hash: 69f54b6fdf
+    name: oauth-service-69f54b6fdf
+    namespace: default
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Deployment
+      name: oauth-service
+      uid: 984b209f-0907-444d-a03c-986ae25b341b
+    resourceVersion: "13226"
+    uid: 226b3c60-84e0-4916-8845-91745dce0ffb
+  spec:
+    replicas: 0
+    selector:
+      matchLabels:
+        app: oauth-service
+        pod-template-hash: 69f54b6fdf
+    template:
+      metadata:
+        labels:
+          app: oauth-service
+          pod-template-hash: 69f54b6fdf
+      spec:
+        containers:
+        - command:
+          - node
+          - server.js
+          env:
+          - name: NODE_ENV
+            value: production
+          - name: BASE_URL
+            value: https://api.shopnoltd.dpdns.org
+          - name: FRONTEND_URL
+            value: https://domain.shopnoltd.dpdns.org
+          - name: JWT_SECRET
+            valueFrom:
+              secretKeyRef:
+                key: JWT_SECRET
+                name: oauth-secrets
+          - name: SESSION_SECRET
+            valueFrom:
+              secretKeyRef:
+                key: SESSION_SECRET
+                name: oauth-secrets
+          - name: GOOGLE_CLIENT_ID
+            value: 530228436303-2k8sl5mdjfotsvkcqgtcktcb7q2b78fn.apps.googleusercontent.com
+          - name: GOOGLE_CLIENT_SECRET
+            value: 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
+          - name: FACEBOOK_APP_ID
+            value: "1239063184913011"
+          - name: FACEBOOK_APP_SECRET
+            value: 9afa42656338eb1917cdc3ac79c61f2d
+          - name: GITHUB_CLIENT_ID
+            value: Ov23liIa4IFALaMIZ1XP
+          - name: GITHUB_CLIENT_SECRET
+            value: 682ac6a6332f85eda27113ad6e634f51eff0ffe2
+          - name: OTEL_SERVICE_NAME
+            value: oauth-service
+          - name: OTEL_EXPORTER_OTLP_ENDPOINT
+            value: http://otel-collector.observability.svc.cluster.local:4318
+          - name: OTEL_EXPORTER_OTLP_PROTOCOL
+            value: http/protobuf
+          image: oauth-service:1.0.0
+          imagePullPolicy: IfNotPresent
+          name: oauth-service
+          ports:
+          - containerPort: 3000
+            protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    observedGeneration: 2
+    replicas: 0
+- apiVersion: apps/v1
+  kind: ReplicaSet
+  metadata:
+    annotations:
+      deployment.kubernetes.io/desired-replicas: "1"
+      deployment.kubernetes.io/max-replicas: "2"
+      deployment.kubernetes.io/revision: "1"
+    creationTimestamp: "2026-06-26T17:47:39Z"
+    generation: 2
+    labels:
+      app: oauth-service
+      pod-template-hash: 7f58c676b6
+    name: oauth-service-7f58c676b6
+    namespace: default
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Deployment
+      name: oauth-service
+      uid: 984b209f-0907-444d-a03c-986ae25b341b
+    resourceVersion: "11947"
+    uid: 0c0a44fe-19d7-4e6f-8e71-f2546c777c8f
+  spec:
+    replicas: 0
+    selector:
+      matchLabels:
+        app: oauth-service
+        pod-template-hash: 7f58c676b6
+    template:
+      metadata:
+        labels:
+          app: oauth-service
+          pod-template-hash: 7f58c676b6
+      spec:
+        containers:
+        - command:
+          - node
+          - server.js
+          env:
+          - name: NODE_ENV
+            value: production
+          - name: BASE_URL
+            value: https://api.shopnoltd.dpdns.org
+          - name: FRONTEND_URL
+            value: https://domain.shopnoltd.dpdns.org
+          - name: JWT_SECRET
+            valueFrom:
+              secretKeyRef:
+                key: JWT_SECRET
+                name: oauth-secrets
+          - name: SESSION_SECRET
+            valueFrom:
+              secretKeyRef:
+                key: SESSION_SECRET
+                name: oauth-secrets
+          - name: GOOGLE_CLIENT_ID
+            value: 530228436303-2k8sl5mdjfotsvkcqgtcktcb7q2b78fn.apps.googleusercontent.com
+          - name: GOOGLE_CLIENT_SECRET
+            value: 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
+          - name: FACEBOOK_APP_ID
+            value: "1239063184913011"
+          - name: FACEBOOK_APP_SECRET
+            value: 9afa42656338eb1917cdc3ac79c61f2d
+          - name: GITHUB_CLIENT_ID
+            value: Ov23liIa4IFALaMIZ1XP
+          - name: GITHUB_CLIENT_SECRET
+            value: 682ac6a6332f85eda27113ad6e634f51eff0ffe2
+          - name: OTEL_SERVICE_NAME
+            value: oauth-service
+          - name: OTEL_EXPORTER_OTLP_ENDPOINT
+            value: http://otel-collector.observability.svc.cluster.local:4318
+          - name: OTEL_EXPORTER_OTLP_PROTOCOL
+            value: http/protobuf
+          image: host.docker.internal:5000/oauth-service:1.0.0
+          imagePullPolicy: IfNotPresent
+          name: oauth-service
+          ports:
+          - containerPort: 3000
+            protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    observedGeneration: 2
+    replicas: 0
+- apiVersion: apps/v1
+  kind: ReplicaSet
+  metadata:
+    annotations:
+      deployment.kubernetes.io/desired-replicas: "1"
+      deployment.kubernetes.io/max-replicas: "2"
+      deployment.kubernetes.io/revision: "1"
+    creationTimestamp: "2026-06-26T18:25:51Z"
+    generation: 1
+    labels:
+      app: postgres
+      pod-template-hash: 7b4cbccb6
+    name: postgres-7b4cbccb6
+    namespace: default
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Deployment
+      name: postgres
+      uid: b156d538-2ac8-4c72-8628-30114b62fe35
+    resourceVersion: "113348"
+    uid: 2c29d3a4-66b4-4190-8878-e17965a4687f
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        app: postgres
+        pod-template-hash: 7b4cbccb6
+    template:
+      metadata:
+        labels:
+          app: postgres
+          pod-template-hash: 7b4cbccb6
+      spec:
+        containers:
+        - envFrom:
+          - secretRef:
+              name: postgres-secret
+          image: postgres:16
+          imagePullPolicy: IfNotPresent
+          name: postgres
+          ports:
+          - containerPort: 5432
+            protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /var/lib/postgresql/data
+            name: pgdata
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+        volumes:
+        - name: pgdata
+          persistentVolumeClaim:
+            claimName: postgres-pvc
+  status:
+    availableReplicas: 1
+    fullyLabeledReplicas: 1
+    observedGeneration: 1
+    readyReplicas: 1
+    replicas: 1
+- apiVersion: apps/v1
+  kind: ReplicaSet
+  metadata:
+    annotations:
+      deployment.kubernetes.io/desired-replicas: "1"
+      deployment.kubernetes.io/max-replicas: "2"
+      deployment.kubernetes.io/revision: "1"
+    creationTimestamp: "2026-06-26T18:26:28Z"
+    generation: 1
+    labels:
+      app: redis
+      pod-template-hash: 7c46f4654d
+    name: redis-7c46f4654d
+    namespace: default
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Deployment
+      name: redis
+      uid: d4d03f7f-8ece-46ef-abe7-f61990de435c
+    resourceVersion: "113356"
+    uid: b558159c-3e98-45f9-bc30-de3ec7379cf4
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        app: redis
+        pod-template-hash: 7c46f4654d
+    template:
+      metadata:
+        labels:
+          app: redis
+          pod-template-hash: 7c46f4654d
+      spec:
+        containers:
+        - image: redis:7
+          imagePullPolicy: IfNotPresent
+          name: redis
+          ports:
+          - containerPort: 6379
+            protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    availableReplicas: 1
+    fullyLabeledReplicas: 1
+    observedGeneration: 1
+    readyReplicas: 1
+    replicas: 1
+- apiVersion: apps/v1
+  kind: ReplicaSet
+  metadata:
+    annotations:
+      deployment.kubernetes.io/desired-replicas: "2"
+      deployment.kubernetes.io/max-replicas: "3"
+      deployment.kubernetes.io/revision: "2"
+    creationTimestamp: "2026-06-26T18:08:51Z"
+    generation: 2
+    labels:
+      app: root-app
+      pod-template-hash: 58fdf546c7
+    name: root-app-58fdf546c7
+    namespace: default
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Deployment
+      name: root-app
+      uid: b89ee791-6a51-4000-92a7-492949a928fd
+    resourceVersion: "113307"
+    uid: 2d946f6f-9720-4a84-bee4-89aa215edff2
+  spec:
+    replicas: 2
+    selector:
+      matchLabels:
+        app: root-app
+        pod-template-hash: 58fdf546c7
+    template:
+      metadata:
+        annotations:
+          kubectl.kubernetes.io/restartedAt: "2026-06-27T00:08:51+06:00"
+        labels:
+          app: root-app
+          pod-template-hash: 58fdf546c7
+      spec:
+        containers:
+        - image: shopno-frontend:latest
+          imagePullPolicy: IfNotPresent
+          name: frontend
+          ports:
+          - containerPort: 80
+            protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    availableReplicas: 2
+    fullyLabeledReplicas: 2
+    observedGeneration: 2
+    readyReplicas: 2
+    replicas: 2
+- apiVersion: apps/v1
+  kind: ReplicaSet
+  metadata:
+    annotations:
+      deployment.kubernetes.io/desired-replicas: "2"
+      deployment.kubernetes.io/max-replicas: "3"
+      deployment.kubernetes.io/revision: "1"
+    creationTimestamp: "2026-06-26T17:47:39Z"
+    generation: 3
+    labels:
+      app: root-app
+      pod-template-hash: 785cb4964b
+    name: root-app-785cb4964b
+    namespace: default
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Deployment
+      name: root-app
+      uid: b89ee791-6a51-4000-92a7-492949a928fd
+    resourceVersion: "12139"
+    uid: e984fa6e-5045-4310-896a-b75db38ae1e5
+  spec:
+    replicas: 0
+    selector:
+      matchLabels:
+        app: root-app
+        pod-template-hash: 785cb4964b
+    template:
+      metadata:
+        labels:
+          app: root-app
+          pod-template-hash: 785cb4964b
+      spec:
+        containers:
+        - image: shopno-frontend:latest
+          imagePullPolicy: IfNotPresent
+          name: frontend
+          ports:
+          - containerPort: 80
+            protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    observedGeneration: 3
+    replicas: 0
+- apiVersion: apps/v1
+  kind: ReplicaSet
+  metadata:
+    annotations:
+      deployment.kubernetes.io/desired-replicas: "2"
+      deployment.kubernetes.io/max-replicas: "3"
+      deployment.kubernetes.io/revision: "1"
+    creationTimestamp: "2026-06-26T17:47:39Z"
+    generation: 1
+    labels:
+      app: tenant-router
+      pod-template-hash: 5db869bc8d
+    name: tenant-router-5db869bc8d
+    namespace: default
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Deployment
+      name: tenant-router
+      uid: 5b4b4b5d-2aef-493a-bca1-b8c3a19b7386
+    resourceVersion: "113332"
+    uid: ca8a3c67-2de3-467e-9889-779237f6d6ed
+  spec:
+    replicas: 2
+    selector:
+      matchLabels:
+        app: tenant-router
+        pod-template-hash: 5db869bc8d
+    template:
+      metadata:
+        labels:
+          app: tenant-router
+          pod-template-hash: 5db869bc8d
+      spec:
+        containers:
+        - env:
+          - name: OTEL_SERVICE_NAME
+            value: tenant-router
+          - name: OTEL_EXPORTER_OTLP_ENDPOINT
+            value: http://otel-collector.observability.svc.cluster.local:4318
+          - name: OTEL_EXPORTER_OTLP_PROTOCOL
+            value: http/protobuf
+          image: openresty/openresty:alpine
+          imagePullPolicy: IfNotPresent
+          name: openresty
+          ports:
+          - containerPort: 80
+            protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /usr/local/openresty/nginx/conf/nginx.conf
+            name: nginx-config
+            subPath: nginx.conf
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+        volumes:
+        - configMap:
+            defaultMode: 420
+            name: tenant-router-config
+          name: nginx-config
+  status:
+    availableReplicas: 2
+    fullyLabeledReplicas: 2
+    observedGeneration: 1
+    readyReplicas: 2
+    replicas: 2
+kind: List
+metadata:
+  resourceVersion: ""

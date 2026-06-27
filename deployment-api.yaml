@@ -3,17 +3,17 @@ kind: Deployment
 metadata:
   annotations:
     deployment.kubernetes.io/revision: "2"
-  creationTimestamp: "2026-06-27T16:19:41Z"
-  generation: 3
+  creationTimestamp: "2026-06-27T16:29:48Z"
+  generation: 2
   labels:
     app: api
   name: api
   namespace: default
-  resourceVersion: "132381"
-  uid: 4e697796-4103-4e4e-96a3-77595abbe1a7
+  resourceVersion: "133385"
+  uid: 48cd9ed8-a35e-4905-bea8-3e40d61d8122
 spec:
   progressDeadlineSeconds: 600
-  replicas: 2
+  replicas: 1
   revisionHistoryLimit: 10
   selector:
     matchLabels:
@@ -32,6 +32,10 @@ spec:
       - env:
         - name: PYTHONPATH
           value: /workspace
+        - name: BRAND_NAME
+          value: Shopnoltd
+        - name: COMPANY
+          value: Shopno Database Firm
         image: python:3.11
         imagePullPolicy: IfNotPresent
         name: api
@@ -62,19 +66,19 @@ spec:
         name: app
 status:
   conditions:
-  - lastTransitionTime: "2026-06-27T16:19:41Z"
-    lastUpdateTime: "2026-06-27T16:19:41Z"
+  - lastTransitionTime: "2026-06-27T16:29:48Z"
+    lastUpdateTime: "2026-06-27T16:29:48Z"
     message: Deployment does not have minimum availability.
     reason: MinimumReplicasUnavailable
     status: "False"
     type: Available
-  - lastTransitionTime: "2026-06-27T16:19:41Z"
-    lastUpdateTime: "2026-06-27T16:20:49Z"
-    message: ReplicaSet "api-585996d9df" is progressing.
+  - lastTransitionTime: "2026-06-27T16:29:48Z"
+    lastUpdateTime: "2026-06-27T16:29:49Z"
+    message: ReplicaSet "api-764cc6744" is progressing.
     reason: ReplicaSetUpdated
     status: "True"
     type: Progressing
-  observedGeneration: 3
-  replicas: 3
-  unavailableReplicas: 3
-  updatedReplicas: 2
+  observedGeneration: 2
+  replicas: 2
+  unavailableReplicas: 2
+  updatedReplicas: 1

@@ -9,7 +9,7 @@ metadata:
     app: chat
   name: chat
   namespace: default
-  resourceVersion: "132294"
+  resourceVersion: "132865"
   uid: bebb3f6a-bf47-4f1b-830a-d053d72540d6
 spec:
   progressDeadlineSeconds: 600
@@ -41,20 +41,21 @@ spec:
       securityContext: {}
       terminationGracePeriodSeconds: 30
 status:
+  availableReplicas: 1
   conditions:
-  - lastTransitionTime: "2026-06-27T16:19:58Z"
-    lastUpdateTime: "2026-06-27T16:19:58Z"
-    message: Deployment does not have minimum availability.
-    reason: MinimumReplicasUnavailable
-    status: "False"
+  - lastTransitionTime: "2026-06-27T16:25:37Z"
+    lastUpdateTime: "2026-06-27T16:25:37Z"
+    message: Deployment has minimum availability.
+    reason: MinimumReplicasAvailable
+    status: "True"
     type: Available
   - lastTransitionTime: "2026-06-27T16:19:58Z"
-    lastUpdateTime: "2026-06-27T16:19:58Z"
-    message: ReplicaSet "chat-67589c557f" is progressing.
-    reason: ReplicaSetUpdated
+    lastUpdateTime: "2026-06-27T16:25:37Z"
+    message: ReplicaSet "chat-67589c557f" has successfully progressed.
+    reason: NewReplicaSetAvailable
     status: "True"
     type: Progressing
   observedGeneration: 1
+  readyReplicas: 1
   replicas: 1
-  unavailableReplicas: 1
   updatedReplicas: 1

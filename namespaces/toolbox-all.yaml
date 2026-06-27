@@ -1,0 +1,859 @@
+apiVersion: v1
+items:
+- apiVersion: v1
+  kind: Pod
+  metadata:
+    creationTimestamp: "2026-06-26T18:08:38Z"
+    generateName: ee-ffb549647-
+    generation: 1
+    labels:
+      app: ee
+      pod-template-hash: ffb549647
+    name: ee-ffb549647-4jhjt
+    namespace: toolbox
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: ReplicaSet
+      name: ee-ffb549647
+      uid: ac9c7f06-958d-467b-a396-d907e10f24bc
+    resourceVersion: "133245"
+    uid: 5beb6b50-1b50-4913-9d20-3a9b4f2ae051
+  spec:
+    containers:
+    - image: enketo/enketo-express:latest
+      imagePullPolicy: Always
+      name: ee
+      resources: {}
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-d854m
+        readOnly: true
+    dnsPolicy: ClusterFirst
+    enableServiceLinks: true
+    nodeName: desktop-control-plane
+    preemptionPolicy: PreemptLowerPriority
+    priority: 0
+    restartPolicy: Always
+    schedulerName: default-scheduler
+    securityContext: {}
+    serviceAccount: default
+    serviceAccountName: default
+    terminationGracePeriodSeconds: 30
+    tolerations:
+    - effect: NoExecute
+      key: node.kubernetes.io/not-ready
+      operator: Exists
+      tolerationSeconds: 300
+    - effect: NoExecute
+      key: node.kubernetes.io/unreachable
+      operator: Exists
+      tolerationSeconds: 300
+    volumes:
+    - name: kube-api-access-d854m
+      projected:
+        defaultMode: 420
+        sources:
+        - serviceAccountToken:
+            expirationSeconds: 3607
+            path: token
+        - configMap:
+            items:
+            - key: ca.crt
+              path: ca.crt
+            name: kube-root-ca.crt
+        - downwardAPI:
+            items:
+            - fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+              path: namespace
+  status:
+    conditions:
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T13:14:13Z"
+      observedGeneration: 1
+      status: "True"
+      type: PodReadyToStartContainers
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-26T18:08:38Z"
+      observedGeneration: 1
+      status: "True"
+      type: Initialized
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T14:48:19Z"
+      observedGeneration: 1
+      status: "True"
+      type: Ready
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T14:48:19Z"
+      observedGeneration: 1
+      status: "True"
+      type: ContainersReady
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-26T18:08:38Z"
+      observedGeneration: 1
+      status: "True"
+      type: PodScheduled
+    containerStatuses:
+    - containerID: containerd://e19f6a41be1e67ef3660595ceced4bb43074bc36df969df8ec9a63a491ac6d39
+      image: docker.io/enketo/enketo-express:latest
+      imageID: docker.io/enketo/enketo-express@sha256:47808050ca8f7c79932bc7a7fdb4282263bdfcfb8b380d597e307910d09af368
+      lastState:
+        terminated:
+          containerID: containerd://3e7918aa34f3c4a1bc3d6a9a1659507131ed2fbb46fab295a4eff6bda09403ba
+          exitCode: 1
+          finishedAt: "2026-06-27T14:48:16Z"
+          reason: Error
+          startedAt: "2026-06-27T13:53:00Z"
+      name: ee
+      ready: true
+      resources: {}
+      restartCount: 21
+      started: true
+      state:
+        running:
+          startedAt: "2026-06-27T14:48:18Z"
+      user:
+        linux:
+          gid: 0
+          supplementalGroups:
+          - 0
+          uid: 0
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-d854m
+        readOnly: true
+        recursiveReadOnly: Disabled
+    hostIP: 172.18.0.4
+    hostIPs:
+    - ip: 172.18.0.4
+    - ip: fc00:f853:ccd:e793::4
+    observedGeneration: 1
+    phase: Running
+    podIP: 10.244.0.14
+    podIPs:
+    - ip: 10.244.0.14
+    qosClass: BestEffort
+    startTime: "2026-06-26T18:08:38Z"
+- apiVersion: v1
+  kind: Pod
+  metadata:
+    creationTimestamp: "2026-06-26T18:08:37Z"
+    generateName: kc-8687869bbb-
+    generation: 1
+    labels:
+      app: kc
+      pod-template-hash: 8687869bbb
+    name: kc-8687869bbb-8ks2x
+    namespace: toolbox
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: ReplicaSet
+      name: kc-8687869bbb
+      uid: 21d45acb-c338-469d-99b7-f18330f40be7
+    resourceVersion: "133449"
+    uid: d0d68678-81b5-4841-9976-f047ed9d70d0
+  spec:
+    containers:
+    - env:
+      - name: SITE_NAME
+        value: ShopnoltdToolbox
+      - name: BRANDING_NAME
+        valueFrom:
+          configMapKeyRef:
+            key: APP_NAME
+            name: shopnoltd-toolbox-branding
+      image: kobotoolbox/kobo-central:latest
+      imagePullPolicy: Always
+      name: kc
+      resources: {}
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-r5589
+        readOnly: true
+    dnsPolicy: ClusterFirst
+    enableServiceLinks: true
+    nodeName: desktop-control-plane
+    preemptionPolicy: PreemptLowerPriority
+    priority: 0
+    restartPolicy: Always
+    schedulerName: default-scheduler
+    securityContext: {}
+    serviceAccount: default
+    serviceAccountName: default
+    terminationGracePeriodSeconds: 30
+    tolerations:
+    - effect: NoExecute
+      key: node.kubernetes.io/not-ready
+      operator: Exists
+      tolerationSeconds: 300
+    - effect: NoExecute
+      key: node.kubernetes.io/unreachable
+      operator: Exists
+      tolerationSeconds: 300
+    volumes:
+    - name: kube-api-access-r5589
+      projected:
+        defaultMode: 420
+        sources:
+        - serviceAccountToken:
+            expirationSeconds: 3607
+            path: token
+        - configMap:
+            items:
+            - key: ca.crt
+              path: ca.crt
+            name: kube-root-ca.crt
+        - downwardAPI:
+            items:
+            - fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+              path: namespace
+  status:
+    conditions:
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T13:14:07Z"
+      observedGeneration: 1
+      status: "True"
+      type: PodReadyToStartContainers
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-26T18:08:37Z"
+      observedGeneration: 1
+      status: "True"
+      type: Initialized
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-26T18:08:37Z"
+      message: 'containers with unready status: [kc]'
+      observedGeneration: 1
+      reason: ContainersNotReady
+      status: "False"
+      type: Ready
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-26T18:08:37Z"
+      message: 'containers with unready status: [kc]'
+      observedGeneration: 1
+      reason: ContainersNotReady
+      status: "False"
+      type: ContainersReady
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-26T18:08:37Z"
+      observedGeneration: 1
+      status: "True"
+      type: PodScheduled
+    containerStatuses:
+    - image: kobotoolbox/kobo-central:latest
+      imageID: ""
+      lastState: {}
+      name: kc
+      ready: false
+      restartCount: 0
+      started: false
+      state:
+        waiting:
+          message: 'Back-off pulling image "kobotoolbox/kobo-central:latest": ErrImagePull:
+            failed to pull and unpack image "docker.io/kobotoolbox/kobo-central:latest":
+            failed to resolve reference "docker.io/kobotoolbox/kobo-central:latest":
+            pull access denied, repository does not exist or may require authorization:
+            server message: insufficient_scope: authorization failed'
+          reason: ImagePullBackOff
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-r5589
+        readOnly: true
+        recursiveReadOnly: Disabled
+    hostIP: 172.18.0.4
+    hostIPs:
+    - ip: 172.18.0.4
+    - ip: fc00:f853:ccd:e793::4
+    observedGeneration: 1
+    phase: Pending
+    podIP: 10.244.0.12
+    podIPs:
+    - ip: 10.244.0.12
+    qosClass: BestEffort
+    startTime: "2026-06-26T18:08:37Z"
+- apiVersion: v1
+  kind: Pod
+  metadata:
+    creationTimestamp: "2026-06-26T18:08:37Z"
+    generateName: kf-5b5bdcf49f-
+    generation: 1
+    labels:
+      app: kf
+      pod-template-hash: 5b5bdcf49f
+    name: kf-5b5bdcf49f-bqpkl
+    namespace: toolbox
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: ReplicaSet
+      name: kf-5b5bdcf49f
+      uid: 58e055a0-0611-46e0-bebb-3e1e8c323429
+    resourceVersion: "133439"
+    uid: c78643c8-b09e-46cb-8036-78abdce8fa57
+  spec:
+    containers:
+    - image: kobotoolbox/kobo-formserver:latest
+      imagePullPolicy: Always
+      name: kf
+      resources: {}
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-wl7xp
+        readOnly: true
+    dnsPolicy: ClusterFirst
+    enableServiceLinks: true
+    nodeName: desktop-control-plane
+    preemptionPolicy: PreemptLowerPriority
+    priority: 0
+    restartPolicy: Always
+    schedulerName: default-scheduler
+    securityContext: {}
+    serviceAccount: default
+    serviceAccountName: default
+    terminationGracePeriodSeconds: 30
+    tolerations:
+    - effect: NoExecute
+      key: node.kubernetes.io/not-ready
+      operator: Exists
+      tolerationSeconds: 300
+    - effect: NoExecute
+      key: node.kubernetes.io/unreachable
+      operator: Exists
+      tolerationSeconds: 300
+    volumes:
+    - name: kube-api-access-wl7xp
+      projected:
+        defaultMode: 420
+        sources:
+        - serviceAccountToken:
+            expirationSeconds: 3607
+            path: token
+        - configMap:
+            items:
+            - key: ca.crt
+              path: ca.crt
+            name: kube-root-ca.crt
+        - downwardAPI:
+            items:
+            - fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+              path: namespace
+  status:
+    conditions:
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-27T13:14:06Z"
+      observedGeneration: 1
+      status: "True"
+      type: PodReadyToStartContainers
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-26T18:08:37Z"
+      observedGeneration: 1
+      status: "True"
+      type: Initialized
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-26T18:08:37Z"
+      message: 'containers with unready status: [kf]'
+      observedGeneration: 1
+      reason: ContainersNotReady
+      status: "False"
+      type: Ready
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-26T18:08:37Z"
+      message: 'containers with unready status: [kf]'
+      observedGeneration: 1
+      reason: ContainersNotReady
+      status: "False"
+      type: ContainersReady
+    - lastProbeTime: null
+      lastTransitionTime: "2026-06-26T18:08:37Z"
+      observedGeneration: 1
+      status: "True"
+      type: PodScheduled
+    containerStatuses:
+    - image: kobotoolbox/kobo-formserver:latest
+      imageID: ""
+      lastState: {}
+      name: kf
+      ready: false
+      restartCount: 0
+      started: false
+      state:
+        waiting:
+          message: 'Back-off pulling image "kobotoolbox/kobo-formserver:latest": ErrImagePull:
+            failed to pull and unpack image "docker.io/kobotoolbox/kobo-formserver:latest":
+            failed to resolve reference "docker.io/kobotoolbox/kobo-formserver:latest":
+            pull access denied, repository does not exist or may require authorization:
+            server message: insufficient_scope: authorization failed'
+          reason: ImagePullBackOff
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-wl7xp
+        readOnly: true
+        recursiveReadOnly: Disabled
+    hostIP: 172.18.0.4
+    hostIPs:
+    - ip: 172.18.0.4
+    - ip: fc00:f853:ccd:e793::4
+    observedGeneration: 1
+    phase: Pending
+    podIP: 10.244.0.3
+    podIPs:
+    - ip: 10.244.0.3
+    qosClass: BestEffort
+    startTime: "2026-06-26T18:08:37Z"
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"name":"ee","namespace":"toolbox"},"spec":{"ports":[{"port":80}],"selector":{"app":"ee"}}}
+    creationTimestamp: "2026-06-26T18:08:38Z"
+    name: ee
+    namespace: toolbox
+    resourceVersion: "11834"
+    uid: 7cb5a2ec-e2b2-4dba-a12b-586fc15cf93d
+  spec:
+    clusterIP: 10.96.244.11
+    clusterIPs:
+    - 10.96.244.11
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - port: 80
+      protocol: TCP
+      targetPort: 80
+    selector:
+      app: ee
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"name":"kc","namespace":"toolbox"},"spec":{"ports":[{"port":80}],"selector":{"app":"kc"}}}
+    creationTimestamp: "2026-06-26T18:08:37Z"
+    name: kc
+    namespace: toolbox
+    resourceVersion: "11814"
+    uid: 00e6a5bb-c20c-4380-819d-b0e884d70367
+  spec:
+    clusterIP: 10.96.100.144
+    clusterIPs:
+    - 10.96.100.144
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - port: 80
+      protocol: TCP
+      targetPort: 80
+    selector:
+      app: kc
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"name":"kf","namespace":"toolbox"},"spec":{"ports":[{"port":80}],"selector":{"app":"kf"}}}
+    creationTimestamp: "2026-06-26T18:08:38Z"
+    name: kf
+    namespace: toolbox
+    resourceVersion: "11828"
+    uid: 7f943507-e07a-493d-949f-65c02efde80d
+  spec:
+    clusterIP: 10.96.150.49
+    clusterIPs:
+    - 10.96.150.49
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - port: 80
+      protocol: TCP
+      targetPort: 80
+    selector:
+      app: kf
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    annotations:
+      deployment.kubernetes.io/revision: "1"
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"name":"ee","namespace":"toolbox"},"spec":{"replicas":1,"selector":{"matchLabels":{"app":"ee"}},"template":{"metadata":{"labels":{"app":"ee"}},"spec":{"containers":[{"image":"enketo/enketo-express:latest","name":"ee"}]}}}}
+    creationTimestamp: "2026-06-26T18:08:37Z"
+    generation: 1
+    name: ee
+    namespace: toolbox
+    resourceVersion: "123227"
+    uid: ee5161ec-3a4f-45b7-a2a0-ba12b33982ac
+  spec:
+    progressDeadlineSeconds: 600
+    replicas: 1
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        app: ee
+    strategy:
+      rollingUpdate:
+        maxSurge: 25%
+        maxUnavailable: 25%
+      type: RollingUpdate
+    template:
+      metadata:
+        labels:
+          app: ee
+      spec:
+        containers:
+        - image: enketo/enketo-express:latest
+          imagePullPolicy: Always
+          name: ee
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    availableReplicas: 1
+    conditions:
+    - lastTransitionTime: "2026-06-26T18:08:37Z"
+      lastUpdateTime: "2026-06-26T18:15:16Z"
+      message: ReplicaSet "ee-ffb549647" has successfully progressed.
+      reason: NewReplicaSetAvailable
+      status: "True"
+      type: Progressing
+    - lastTransitionTime: "2026-06-27T14:48:19Z"
+      lastUpdateTime: "2026-06-27T14:48:19Z"
+      message: Deployment has minimum availability.
+      reason: MinimumReplicasAvailable
+      status: "True"
+      type: Available
+    observedGeneration: 1
+    readyReplicas: 1
+    replicas: 1
+    updatedReplicas: 1
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    annotations:
+      deployment.kubernetes.io/revision: "1"
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"name":"kc","namespace":"toolbox"},"spec":{"replicas":1,"selector":{"matchLabels":{"app":"kc"}},"template":{"metadata":{"labels":{"app":"kc"}},"spec":{"containers":[{"env":[{"name":"SITE_NAME","value":"ShopnoltdToolbox"},{"name":"BRANDING_NAME","valueFrom":{"configMapKeyRef":{"key":"APP_NAME","name":"shopnoltd-toolbox-branding"}}}],"image":"kobotoolbox/kobo-central:latest","name":"kc"}]}}}}
+    creationTimestamp: "2026-06-26T18:08:37Z"
+    generation: 1
+    name: kc
+    namespace: toolbox
+    resourceVersion: "14008"
+    uid: 6574f771-3c49-458b-9cec-d1ff53c84970
+  spec:
+    progressDeadlineSeconds: 600
+    replicas: 1
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        app: kc
+    strategy:
+      rollingUpdate:
+        maxSurge: 25%
+        maxUnavailable: 25%
+      type: RollingUpdate
+    template:
+      metadata:
+        labels:
+          app: kc
+      spec:
+        containers:
+        - env:
+          - name: SITE_NAME
+            value: ShopnoltdToolbox
+          - name: BRANDING_NAME
+            valueFrom:
+              configMapKeyRef:
+                key: APP_NAME
+                name: shopnoltd-toolbox-branding
+          image: kobotoolbox/kobo-central:latest
+          imagePullPolicy: Always
+          name: kc
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    conditions:
+    - lastTransitionTime: "2026-06-26T18:08:37Z"
+      lastUpdateTime: "2026-06-26T18:08:37Z"
+      message: Deployment does not have minimum availability.
+      reason: MinimumReplicasUnavailable
+      status: "False"
+      type: Available
+    - lastTransitionTime: "2026-06-26T18:19:06Z"
+      lastUpdateTime: "2026-06-26T18:19:06Z"
+      message: ReplicaSet "kc-8687869bbb" has timed out progressing.
+      reason: ProgressDeadlineExceeded
+      status: "False"
+      type: Progressing
+    observedGeneration: 1
+    replicas: 1
+    unavailableReplicas: 1
+    updatedReplicas: 1
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    annotations:
+      deployment.kubernetes.io/revision: "1"
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"name":"kf","namespace":"toolbox"},"spec":{"replicas":1,"selector":{"matchLabels":{"app":"kf"}},"template":{"metadata":{"labels":{"app":"kf"}},"spec":{"containers":[{"image":"kobotoolbox/kobo-formserver:latest","name":"kf"}]}}}}
+    creationTimestamp: "2026-06-26T18:08:37Z"
+    generation: 1
+    name: kf
+    namespace: toolbox
+    resourceVersion: "14009"
+    uid: b680436f-291a-438b-945d-0ec0195ef560
+  spec:
+    progressDeadlineSeconds: 600
+    replicas: 1
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        app: kf
+    strategy:
+      rollingUpdate:
+        maxSurge: 25%
+        maxUnavailable: 25%
+      type: RollingUpdate
+    template:
+      metadata:
+        labels:
+          app: kf
+      spec:
+        containers:
+        - image: kobotoolbox/kobo-formserver:latest
+          imagePullPolicy: Always
+          name: kf
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    conditions:
+    - lastTransitionTime: "2026-06-26T18:08:37Z"
+      lastUpdateTime: "2026-06-26T18:08:37Z"
+      message: Deployment does not have minimum availability.
+      reason: MinimumReplicasUnavailable
+      status: "False"
+      type: Available
+    - lastTransitionTime: "2026-06-26T18:19:06Z"
+      lastUpdateTime: "2026-06-26T18:19:06Z"
+      message: ReplicaSet "kf-5b5bdcf49f" has timed out progressing.
+      reason: ProgressDeadlineExceeded
+      status: "False"
+      type: Progressing
+    observedGeneration: 1
+    replicas: 1
+    unavailableReplicas: 1
+    updatedReplicas: 1
+- apiVersion: apps/v1
+  kind: ReplicaSet
+  metadata:
+    annotations:
+      deployment.kubernetes.io/desired-replicas: "1"
+      deployment.kubernetes.io/max-replicas: "2"
+      deployment.kubernetes.io/revision: "1"
+    creationTimestamp: "2026-06-26T18:08:37Z"
+    generation: 1
+    labels:
+      app: ee
+      pod-template-hash: ffb549647
+    name: ee-ffb549647
+    namespace: toolbox
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Deployment
+      name: ee
+      uid: ee5161ec-3a4f-45b7-a2a0-ba12b33982ac
+    resourceVersion: "123226"
+    uid: ac9c7f06-958d-467b-a396-d907e10f24bc
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        app: ee
+        pod-template-hash: ffb549647
+    template:
+      metadata:
+        labels:
+          app: ee
+          pod-template-hash: ffb549647
+      spec:
+        containers:
+        - image: enketo/enketo-express:latest
+          imagePullPolicy: Always
+          name: ee
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    availableReplicas: 1
+    fullyLabeledReplicas: 1
+    observedGeneration: 1
+    readyReplicas: 1
+    replicas: 1
+- apiVersion: apps/v1
+  kind: ReplicaSet
+  metadata:
+    annotations:
+      deployment.kubernetes.io/desired-replicas: "1"
+      deployment.kubernetes.io/max-replicas: "2"
+      deployment.kubernetes.io/revision: "1"
+    creationTimestamp: "2026-06-26T18:08:37Z"
+    generation: 1
+    labels:
+      app: kc
+      pod-template-hash: 8687869bbb
+    name: kc-8687869bbb
+    namespace: toolbox
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Deployment
+      name: kc
+      uid: 6574f771-3c49-458b-9cec-d1ff53c84970
+    resourceVersion: "11811"
+    uid: 21d45acb-c338-469d-99b7-f18330f40be7
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        app: kc
+        pod-template-hash: 8687869bbb
+    template:
+      metadata:
+        labels:
+          app: kc
+          pod-template-hash: 8687869bbb
+      spec:
+        containers:
+        - env:
+          - name: SITE_NAME
+            value: ShopnoltdToolbox
+          - name: BRANDING_NAME
+            valueFrom:
+              configMapKeyRef:
+                key: APP_NAME
+                name: shopnoltd-toolbox-branding
+          image: kobotoolbox/kobo-central:latest
+          imagePullPolicy: Always
+          name: kc
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    fullyLabeledReplicas: 1
+    observedGeneration: 1
+    replicas: 1
+- apiVersion: apps/v1
+  kind: ReplicaSet
+  metadata:
+    annotations:
+      deployment.kubernetes.io/desired-replicas: "1"
+      deployment.kubernetes.io/max-replicas: "2"
+      deployment.kubernetes.io/revision: "1"
+    creationTimestamp: "2026-06-26T18:08:37Z"
+    generation: 1
+    labels:
+      app: kf
+      pod-template-hash: 5b5bdcf49f
+    name: kf-5b5bdcf49f
+    namespace: toolbox
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Deployment
+      name: kf
+      uid: b680436f-291a-438b-945d-0ec0195ef560
+    resourceVersion: "11804"
+    uid: 58e055a0-0611-46e0-bebb-3e1e8c323429
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        app: kf
+        pod-template-hash: 5b5bdcf49f
+    template:
+      metadata:
+        labels:
+          app: kf
+          pod-template-hash: 5b5bdcf49f
+      spec:
+        containers:
+        - image: kobotoolbox/kobo-formserver:latest
+          imagePullPolicy: Always
+          name: kf
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    fullyLabeledReplicas: 1
+    observedGeneration: 1
+    replicas: 1
+kind: List
+metadata:
+  resourceVersion: ""
