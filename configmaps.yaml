@@ -1,0 +1,130 @@
+apiVersion: v1
+items:
+- apiVersion: v1
+  data:
+    ca.crt: |
+      -----BEGIN CERTIFICATE-----
+      MIIDBTCCAe2gAwIBAgIIdGJ0bJM5Y1QwDQYJKoZIhvcNAQELBQAwFTETMBEGA1UE
+      AxMKa3ViZXJuZXRlczAeFw0yNjA2MjYxNDM2NTZaFw0zNjA2MjMxNDQxNTZaMBUx
+      EzARBgNVBAMTCmt1YmVybmV0ZXMwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEK
+      AoIBAQDPWpI5zPKAuGnkLW+jnHTHrY7GOeFZh/e4RS+sKOkIX0I32d9KWXPUI4PA
+      O41LGSe8CODEsow0X3IzlMgDeF7sEjv016XCicf/rIoflpBwrgA9vBp1CPvNz+b7
+      uSciYBW32iRzzcGZcG6niRNxSOahCeyih1cZHoUDCVbTx6Shjr0WHJ5XR8lu5DHk
+      BTj22odb45ss9Z/EDwFlPHAi7kjZhEY0nMNHrwCULMZE8UOBLt0lfsQEgJeBagJ3
+      0sOOQ53zcEANlim/Ysg83O2EP6P/4JwhQRvhWYbSgISbMhctvA9ppEb5UIh4JrS1
+      kvhaM2goUZR4Y9GjK+tottqfKw/PAgMBAAGjWTBXMA4GA1UdDwEB/wQEAwICpDAP
+      BgNVHRMBAf8EBTADAQH/MB0GA1UdDgQWBBS3hu9xMCrvruDjHzJ8m/5Qj7EhFTAV
+      BgNVHREEDjAMggprdWJlcm5ldGVzMA0GCSqGSIb3DQEBCwUAA4IBAQC9AY/jBj76
+      c1IUwYmBPePW63rEHW49OzyDQ1Gkl+4VPuNSkifybf1B1CRQXqgHDLE9aCCN9tGk
+      JfCJKuW0L8seOM5KNviVkg7d457E4hMA2OSqUT6GiWvqwTZdNO3iG3JIoPaiqlUD
+      5ofsLhNu4scY8U5xhM/Wb31hZOD/FCNOwe8LuTVmrjuAMjn/0+dgMAHSUFFcSp7M
+      BK51iHSRZ16Ch7t9LzrHm5uSpvDRnzzyxZZCMWocl//aFel16NeUtBt6i7WduzWB
+      H3QaUwiDwTFBsdxOHHXJnddPDrUZ9w2BAQs5RkJhGqBeJSXo0OyzCcVvL6sd5si7
+      20jYa4JOCU15
+      -----END CERTIFICATE-----
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubernetes.io/description: Contains a CA bundle that can be used to verify the
+        kube-apiserver when using internal endpoints such as the internal service
+        IP or kubernetes.default.svc. No other usage is guaranteed across distributions
+        of Kubernetes clusters.
+    creationTimestamp: "2026-06-26T14:42:18Z"
+    name: kube-root-ca.crt
+    namespace: default
+    resourceVersion: "391"
+    uid: f717793b-f6b9-49a2-8558-d55e819cd04e
+- apiVersion: v1
+  data:
+    nginx.conf: |
+      worker_processes 1;
+
+      events {
+          worker_connections 1024;
+      }
+
+      http {
+
+          resolver 10.43.0.10 valid=10s;
+
+          lua_package_path "/usr/local/openresty/lualib/?.lua;;";
+
+          server {
+
+              listen 80;
+              server_name _;
+
+              location / {
+
+                  set $backend "";
+
+                  rewrite_by_lua_block {
+
+                      local redis = require "resty.redis"
+
+                      local red = redis:new()
+                      red:set_timeout(1000)
+
+                      local ok, err = red:connect(
+                          "redis.default.svc.cluster.local",
+                          6379
+                      )
+
+                      if not ok then
+                          ngx.log(ngx.ERR, "redis failed: ", err)
+
+                          ngx.var.backend =
+                              "http://root-app.default.svc.cluster.local:80"
+
+                          return
+                      end
+
+                      local host = ngx.var.host
+
+                      local tenant = host:match("([^%.]+)")
+
+                      if not tenant then
+                          tenant = "root"
+                      end
+
+                      local upstream, err =
+                          red:get("tenant:" .. tenant)
+
+                      if not upstream or upstream == ngx.null then
+                          upstream =
+                              "http://root-app.default.svc.cluster.local:80"
+                      end
+
+                      ngx.log(
+                          ngx.ERR,
+                          "tenant=",
+                          tenant,
+                          " upstream=",
+                          upstream
+                      )
+
+                      ngx.var.backend = upstream
+                  }
+
+                  proxy_http_version 1.1;
+
+                  proxy_set_header Host $host;
+                  proxy_set_header Connection "";
+
+                  proxy_pass $backend;
+              }
+          }
+      }
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","data":{"nginx.conf":"worker_processes 1;\n\nevents {\n    worker_connections 1024;\n}\n\nhttp {\n\n    resolver 10.43.0.10 valid=10s;\n\n    lua_package_path \"/usr/local/openresty/lualib/?.lua;;\";\n\n    server {\n\n        listen 80;\n        server_name _;\n\n        location / {\n\n            set $backend \"\";\n\n            rewrite_by_lua_block {\n\n                local redis = require \"resty.redis\"\n\n                local red = redis:new()\n                red:set_timeout(1000)\n\n                local ok, err = red:connect(\n                    \"redis.default.svc.cluster.local\",\n                    6379\n                )\n\n                if not ok then\n                    ngx.log(ngx.ERR, \"redis failed: \", err)\n\n                    ngx.var.backend =\n                        \"http://root-app.default.svc.cluster.local:80\"\n\n                    return\n                end\n\n                local host = ngx.var.host\n\n                local tenant = host:match(\"([^%.]+)\")\n\n                if not tenant then\n                    tenant = \"root\"\n                end\n\n                local upstream, err =\n                    red:get(\"tenant:\" .. tenant)\n\n                if not upstream or upstream == ngx.null then\n                    upstream =\n                        \"http://root-app.default.svc.cluster.local:80\"\n                end\n\n                ngx.log(\n                    ngx.ERR,\n                    \"tenant=\",\n                    tenant,\n                    \" upstream=\",\n                    upstream\n                )\n\n                ngx.var.backend = upstream\n            }\n\n            proxy_http_version 1.1;\n\n            proxy_set_header Host $host;\n            proxy_set_header Connection \"\";\n\n            proxy_pass $backend;\n        }\n    }\n}\n"},"kind":"ConfigMap","metadata":{"annotations":{},"name":"tenant-router-config","namespace":"default"}}
+    creationTimestamp: "2026-06-26T17:47:39Z"
+    name: tenant-router-config
+    namespace: default
+    resourceVersion: "9073"
+    uid: b49d8444-710c-4b18-8b05-e33c2d4d3e32
+kind: List
+metadata:
+  resourceVersion: ""

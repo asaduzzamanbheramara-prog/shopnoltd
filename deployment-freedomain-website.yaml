@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    deployment.kubernetes.io/revision: "5"
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"name":"freedomain-website","namespace":"default"},"spec":{"replicas":1,"selector":{"matchLabels":{"app":"freedomain-website"}},"template":{"metadata":{"labels":{"app":"freedomain-website"}},"spec":{"containers":[{"image":"freedomain-site:v1","imagePullPolicy":"IfNotPresent","name":"freedomain-website","ports":[{"containerPort":80}]}]}}}}
+  creationTimestamp: "2026-06-26T17:47:39Z"
+  generation: 5
+  name: freedomain-website
+  namespace: default
+  resourceVersion: "113375"
+  uid: 1b2c81e5-f7d9-4c66-8db4-429177fb7741
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: freedomain-website
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/restartedAt: "2026-06-27T11:23:57+06:00"
+      labels:
+        app: freedomain-website
+    spec:
+      containers:
+      - image: freedomain-site:v1
+        imagePullPolicy: Never
+        name: freedomain-website
+        ports:
+        - containerPort: 80
+          protocol: TCP
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+status:
+  availableReplicas: 1
+  conditions:
+  - lastTransitionTime: "2026-06-26T18:58:30Z"
+    lastUpdateTime: "2026-06-27T05:24:00Z"
+    message: ReplicaSet "freedomain-website-57448959ff" has successfully progressed.
+    reason: NewReplicaSetAvailable
+    status: "True"
+    type: Progressing
+  - lastTransitionTime: "2026-06-27T13:14:07Z"
+    lastUpdateTime: "2026-06-27T13:14:07Z"
+    message: Deployment has minimum availability.
+    reason: MinimumReplicasAvailable
+    status: "True"
+    type: Available
+  observedGeneration: 5
+  readyReplicas: 1
+  replicas: 1
+  updatedReplicas: 1

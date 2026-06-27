@@ -1,0 +1,352 @@
+apiVersion: v1
+items:
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"name":"api","namespace":"default"},"spec":{"ports":[{"port":80,"targetPort":8000}],"selector":{"app":"api"}}}
+    creationTimestamp: "2026-06-26T17:47:39Z"
+    name: api
+    namespace: default
+    resourceVersion: "9076"
+    uid: bbe7f5c9-8601-4951-b7ae-c38b7152cc50
+  spec:
+    clusterIP: 10.96.80.227
+    clusterIPs:
+    - 10.96.80.227
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - port: 80
+      protocol: TCP
+      targetPort: 8000
+    selector:
+      app: api
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"name":"api-service","namespace":"default"},"spec":{"ports":[{"port":80,"protocol":"TCP","targetPort":8080}],"selector":{"app":"api-service"},"type":"ClusterIP"}}
+    creationTimestamp: "2026-06-26T18:08:32Z"
+    name: api-service
+    namespace: default
+    resourceVersion: "11616"
+    uid: a318c544-e73b-4b71-a2e2-05c6e8471c3a
+  spec:
+    clusterIP: 10.96.12.233
+    clusterIPs:
+    - 10.96.12.233
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - port: 80
+      protocol: TCP
+      targetPort: 8080
+    selector:
+      app: api-service
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"name":"billing-engine","namespace":"default"},"spec":{"ports":[{"port":5000,"targetPort":5000}],"selector":{"app":"billing-engine"}}}
+    creationTimestamp: "2026-06-26T17:47:39Z"
+    name: billing-engine
+    namespace: default
+    resourceVersion: "9104"
+    uid: ba871b67-53e1-4c5f-83dc-b743219d8143
+  spec:
+    clusterIP: 10.96.145.164
+    clusterIPs:
+    - 10.96.145.164
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - port: 5000
+      protocol: TCP
+      targetPort: 5000
+    selector:
+      app: billing-engine
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"name":"freedomain","namespace":"default"},"spec":{"ports":[{"port":80,"targetPort":5678}],"selector":{"app":"freedomain"}}}
+    creationTimestamp: "2026-06-26T17:47:39Z"
+    name: freedomain
+    namespace: default
+    resourceVersion: "9079"
+    uid: 716df5a1-f258-4dd9-926d-cccc1a72f781
+  spec:
+    clusterIP: 10.96.37.97
+    clusterIPs:
+    - 10.96.37.97
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - port: 80
+      protocol: TCP
+      targetPort: 5678
+    selector:
+      app: freedomain
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"name":"freedomain-ui","namespace":"default"},"spec":{"ports":[{"port":80,"targetPort":80}],"selector":{"app":"freedomain-ui"}}}
+    creationTimestamp: "2026-06-26T17:47:39Z"
+    name: freedomain-ui
+    namespace: default
+    resourceVersion: "9084"
+    uid: 8fedb49d-30f0-473f-9fe3-f16940ac2900
+  spec:
+    clusterIP: 10.96.99.147
+    clusterIPs:
+    - 10.96.99.147
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - port: 80
+      protocol: TCP
+      targetPort: 80
+    selector:
+      app: freedomain-ui
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"name":"freedomain-website","namespace":"default"},"spec":{"ports":[{"port":80,"targetPort":80}],"selector":{"app":"freedomain-website"}}}
+    creationTimestamp: "2026-06-26T17:47:39Z"
+    name: freedomain-website
+    namespace: default
+    resourceVersion: "9088"
+    uid: 3b76729f-cc08-4ea3-bddd-cdc468236141
+  spec:
+    clusterIP: 10.96.26.105
+    clusterIPs:
+    - 10.96.26.105
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - port: 80
+      protocol: TCP
+      targetPort: 80
+    selector:
+      app: freedomain-website
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    creationTimestamp: "2026-06-26T14:42:10Z"
+    labels:
+      component: apiserver
+      provider: kubernetes
+    name: kubernetes
+    namespace: default
+    resourceVersion: "241"
+    uid: f6e4d602-30b8-4362-adb8-7f0b8ab5ed53
+  spec:
+    clusterIP: 10.96.0.1
+    clusterIPs:
+    - 10.96.0.1
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: https
+      port: 443
+      protocol: TCP
+      targetPort: 6443
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"name":"oauth-service","namespace":"default"},"spec":{"ports":[{"port":3000,"targetPort":3000}],"selector":{"app":"oauth-service"},"type":"ClusterIP"}}
+    creationTimestamp: "2026-06-26T17:47:39Z"
+    name: oauth-service
+    namespace: default
+    resourceVersion: "9092"
+    uid: bf15b5b4-2a92-4ea2-962f-0fbc825d44db
+  spec:
+    clusterIP: 10.96.66.111
+    clusterIPs:
+    - 10.96.66.111
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - port: 3000
+      protocol: TCP
+      targetPort: 3000
+    selector:
+      app: oauth-service
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"name":"postgres","namespace":"default"},"spec":{"ports":[{"port":5432,"targetPort":5432}],"selector":{"app":"postgres"}}}
+    creationTimestamp: "2026-06-26T18:25:51Z"
+    name: postgres
+    namespace: default
+    resourceVersion: "14894"
+    uid: d4d49f4d-bbdd-412e-a240-efae0d9eb852
+  spec:
+    clusterIP: 10.96.132.59
+    clusterIPs:
+    - 10.96.132.59
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - port: 5432
+      protocol: TCP
+      targetPort: 5432
+    selector:
+      app: postgres
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"name":"redis","namespace":"default"},"spec":{"ports":[{"port":6379,"targetPort":6379}],"selector":{"app":"redis"}}}
+    creationTimestamp: "2026-06-26T18:26:28Z"
+    name: redis
+    namespace: default
+    resourceVersion: "15018"
+    uid: 5aff169f-e4af-43e1-8bde-a2484f0aff70
+  spec:
+    clusterIP: 10.96.230.127
+    clusterIPs:
+    - 10.96.230.127
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - port: 6379
+      protocol: TCP
+      targetPort: 6379
+    selector:
+      app: redis
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"name":"root-app","namespace":"default"},"spec":{"ports":[{"port":80,"protocol":"TCP","targetPort":80}],"selector":{"app":"root-app"},"type":"ClusterIP"}}
+    creationTimestamp: "2026-06-26T17:47:39Z"
+    name: root-app
+    namespace: default
+    resourceVersion: "9096"
+    uid: 0b604eb3-a736-4e7f-bda8-5823a94095f2
+  spec:
+    clusterIP: 10.96.230.237
+    clusterIPs:
+    - 10.96.230.237
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - port: 80
+      protocol: TCP
+      targetPort: 80
+    selector:
+      app: root-app
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"name":"tenant-router","namespace":"default"},"spec":{"ports":[{"port":80,"targetPort":80}],"selector":{"app":"tenant-router"},"type":"ClusterIP"}}
+    creationTimestamp: "2026-06-26T17:47:39Z"
+    name: tenant-router
+    namespace: default
+    resourceVersion: "9100"
+    uid: 9846ca04-e8ed-4a63-af7b-e909aedb5416
+  spec:
+    clusterIP: 10.96.85.186
+    clusterIPs:
+    - 10.96.85.186
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - port: 80
+      protocol: TCP
+      targetPort: 80
+    selector:
+      app: tenant-router
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+kind: List
+metadata:
+  resourceVersion: ""

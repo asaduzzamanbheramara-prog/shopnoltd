@@ -1,0 +1,19 @@
+# Secrets (don't commit actual values)
+secrets-actual.yaml
+
+# Large files
+*.tar
+*.zip
+
+# Python
+__pycache__/
+*.pyc
+venv/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
