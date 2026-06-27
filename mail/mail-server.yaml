@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mail-server
+  namespace: default
+  labels:
+    app: mail-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mail-server
+  template:
+    metadata:
+      labels:
+        app: mail-server
+    spec:
+      containers:
+      - name: mail-server
+        image: mailu/postfix:2.0
+        ports:
+        - containerPort: 25
+          protocol: TCP
+        - containerPort: 587
+          protocol: TCP
+        - containerPort: 993
+          protocol: TCP
+        env:
+        - name: DOMAIN
+          value: "shopnoltd.dpdns.org"
+        - name: HOSTNAMES
+          value: "mail.shopnoltd.dpdns.org"
+        - name: RELAYHOST
+          value: ""

@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jicofo
+  namespace: meet
+  labels:
+    app: jicofo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jicofo
+  template:
+    metadata:
+      labels:
+        app: jicofo
+    spec:
+      containers:
+      - name: jicofo
+        image: jitsi/jicofo:stable
+        env:
+        - name: XMPP_DOMAIN
+          value: "meet.jitsi"
+        - name: XMPP_AUTH_DOMAIN
+          value: "auth.meet.jitsi"
+        - name: XMPP_INTERNAL_MUC_DOMAIN
+          value: "internal-muc.meet.jitsi"
+        - name: XMPP_SERVER
+          value: "prosody"
+        - name: JICOFO_AUTH_USER
+          value: "focus"
+        - name: JICOFO_AUTH_PASSWORD
+          value: "ShopnoltdJicofo2026"
+        - name: JVB_BREWERY_MUC
+          value: "jvbbrewery"

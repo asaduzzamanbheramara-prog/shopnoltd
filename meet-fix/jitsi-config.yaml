@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: jitsi-config
+  namespace: meet
+data:
+  ENABLE_AUTH: "1"
+  AUTH_TYPE: "internal"
+  XMPP_SERVER: "prosody"
+  XMPP_BOSH_URL_BASE: "http://prosody:5280"
+  XMPP_MUC_DOMAIN: "muc.meet.jitsi"
+  XMPP_INTERNAL_MUC_DOMAIN: "internal-muc.meet.jitsi"
+  XMPP_MODULES: ""
+  XMPP_INTERNAL_DOMAIN: "auth.meet.jitsi"
+  XMPP_RECORDER_DOMAIN: "recorder.meet.jitsi"
+  JICOFO_AUTH_USER: "focus"
+  JICOFO_AUTH_PASSWORD: "ShopnoltdJicofo2026"
+  JICOFO_OPTS: ""
+  JVB_AUTH_USER: "jvb"
+  JVB_AUTH_PASSWORD: "ShopnoltdJvb2026"
+  JVB_BREWERY_MUC: "jvbbrewery"
+  JVB_PORT: "10000"
+  JVB_TCP_PORT: "4443"
+  JVB_TCP_MAPPED_PORT: "4443"
+  JVB_STUN_SERVERS: "stun.l.google.com:19302,stun1.l.google.com:19302"
+  JVB_ENABLE_APIS: "true"
+  PUBLIC_URL: "https://meet.shopnoltd.dpdns.org"

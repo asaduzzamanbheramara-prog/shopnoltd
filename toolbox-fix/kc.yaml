@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kc
+  namespace: toolbox
+  labels:
+    app: kc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kc
+  template:
+    metadata:
+      labels:
+        app: kc
+    spec:
+      containers:
+      - name: kc
+        image: kobotoolbox/kobo-central:latest
+        ports:
+        - containerPort: 80
+        env:
+        - name: KC_DATABASE_URL
+          value: "postgresql://kobo:kobo@postgres:5432/kobotoolbox"
+        - name: KC_DOMAIN
+          value: "https://kc.shopnoltd.dpdns.org"
+        - name: KC_ALLOWED_HOSTS
+          value: "*"
+        - name: BRAND_NAME
+          value: "Shopnoltd"

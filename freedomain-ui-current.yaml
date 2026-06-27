@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    deployment.kubernetes.io/revision: "1"
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"name":"freedomain-ui","namespace":"default"},"spec":{"replicas":1,"selector":{"matchLabels":{"app":"freedomain-ui"}},"template":{"metadata":{"labels":{"app":"freedomain-ui"}},"spec":{"containers":[{"image":"freedomain-ui:v1","imagePullPolicy":"IfNotPresent","name":"freedomain-ui","ports":[{"containerPort":80}]}]}}}}
+  creationTimestamp: "2026-06-26T17:47:39Z"
+  generation: 1
+  name: freedomain-ui
+  namespace: default
+  resourceVersion: "113262"
+  uid: 1eb55656-1b40-495c-aa14-269b608f3f2e
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: freedomain-ui
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: freedomain-ui
+    spec:
+      containers:
+      - image: freedomain-ui:v1
+        imagePullPolicy: IfNotPresent
+        name: freedomain-ui
+        ports:
+        - containerPort: 80
+          protocol: TCP
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+status:
+  availableReplicas: 1
+  conditions:
+  - lastTransitionTime: "2026-06-26T18:21:51Z"
+    lastUpdateTime: "2026-06-26T18:21:51Z"
+    message: ReplicaSet "freedomain-ui-7d4bc8846f" has successfully progressed.
+    reason: NewReplicaSetAvailable
+    status: "True"
+    type: Progressing
+  - lastTransitionTime: "2026-06-27T13:14:02Z"
+    lastUpdateTime: "2026-06-27T13:14:02Z"
+    message: Deployment has minimum availability.
+    reason: MinimumReplicasAvailable
+    status: "True"
+    type: Available
+  observedGeneration: 1
+  readyReplicas: 1
+  replicas: 1
+  updatedReplicas: 1

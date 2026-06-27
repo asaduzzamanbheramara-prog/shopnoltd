@@ -24,3 +24,8 @@ secrets.yaml
 .env
 .env.local
 .env.production
+
+# Secrets (NEVER commit)
+cloudflared/
+*.json.cred
+config/secrets.yaml

@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: shopnoltd-config
+  namespace: default
+data:
+  BRAND_NAME: "Shopnoltd"
+  COMPANY_NAME: "Shopno Database Firm"
+  DOMAIN: "shopnoltd.dpdns.org"
+  TURNSTILE_SITE_KEY: "0x4AAAAAADlJuQGlpqi1EZRQ"
+  RECAPTCHA_SITE_KEY: "6LcVWyAtAAAAAErwmEZU2lHxuwOWTp2Y5RJqvBmS"

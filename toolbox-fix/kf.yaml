@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kf
+  namespace: toolbox
+  labels:
+    app: kf
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kf
+  template:
+    metadata:
+      labels:
+        app: kf
+    spec:
+      containers:
+      - name: kf
+        image: kobotoolbox/kobo-formserver:latest
+        ports:
+        - containerPort: 80
+        env:
+        - name: KF_DATABASE_URL
+          value: "postgresql://kobo:kobo@postgres:5432/kobocat"
+        - name: BRAND_NAME
+          value: "Shopnoltd"

@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prosody
+  namespace: meet
+  labels:
+    app: prosody
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prosody
+  template:
+    metadata:
+      labels:
+        app: prosody
+    spec:
+      containers:
+      - name: prosody
+        image: jitsi/prosody:stable
+        env:
+        - name: AUTH_TYPE
+          value: "internal"
+        - name: XMPP_DOMAIN
+          value: "meet.jitsi"
+        - name: XMPP_AUTH_DOMAIN
+          value: "auth.meet.jitsi"
+        - name: XMPP_INTERNAL_MUC_DOMAIN
+          value: "internal-muc.meet.jitsi"
+        - name: XMPP_MUC_DOMAIN
+          value: "muc.meet.jitsi"
+        - name: XMPP_SERVER
+          value: "prosody"
+        - name: XMPP_BOSH_URL_BASE
+          value: "http://prosody:5280"
+        - name: JICOFO_AUTH_USER
+          value: "focus"
+        - name: JICOFO_AUTH_PASSWORD
+          value: "ShopnoltdJicofo2026"
+        - name: JVB_AUTH_USER
+          value: "jvb"
+        - name: JVB_AUTH_PASSWORD
+          value: "ShopnoltdJvb2026"
+        ports:
+        - containerPort: 5222
+        - containerPort: 5280
