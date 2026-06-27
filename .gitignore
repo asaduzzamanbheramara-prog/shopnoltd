@@ -17,3 +17,10 @@ venv/
 # OS
 .DS_Store
 Thumbs.db
+
+# Real secrets (NEVER commit)
+secrets.yaml
+*.secret
+.env
+.env.local
+.env.production
