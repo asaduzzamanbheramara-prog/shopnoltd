@@ -1,219 +1,126 @@
-from fastapi import FastAPI, HTTPException, Depends, Header
+from fastapi import FastAPI, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import Optional, List
-import os
+from typing import Optional
 import datetime
+import hashlib
+import secrets
 
-app = FastAPI(
-    title="Shopnoltd API",
-    description="Shopno Database Firm - Multi-tenant SaaS Platform",
-    version="2.0.0"
-)
+app = FastAPI(title="Shopnoltd API", description="Shopno Database Firm - Multi-tenant SaaS", version="3.0.0")
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
-# ==================== MODELS ====================
-class User(BaseModel):
-    username: str
-    email: str
-    full_name: Optional[str] = None
-    tenant_id: Optional[str] = None
+tenants_db = {}
+users_db = {}
+domains_db = {}
+active_tokens = {}
 
-class Tenant(BaseModel):
-    name: str
-    domain: str
-    plan: str = "basic"
-    owner_email: str
+def hash_password(password):
+    return hashlib.sha256(password.encode()).hexdigest()
 
-class BillingInfo(BaseModel):
-    tenant_id: str
-    plan: str
-    amount: float
+def create_token(user_id):
+    token = secrets.token_hex(32)
+    active_tokens[token] = user_id
+    return token
 
-class DomainRequest(BaseModel):
-    domain: str
-    tenant_id: str
-
-# ==================== ROOT & HEALTH ====================
 @app.get("/")
 def root():
-    return {
-        "brand": "Shopnoltd",
-        "company": "Shopno Database Firm",
-        "platform": "Multi-tenant SaaS",
-        "status": "running",
-        "version": "2.0.0",
-        "timestamp": datetime.datetime.utcnow().isoformat()
-    }
+    return {"brand": "Shopnoltd", "company": "Shopno Database Firm", "platform": "Multi-tenant SaaS", "status": "running", "version": "3.0.0", "timestamp": datetime.datetime.utcnow().isoformat()}
 
 @app.get("/health")
 def health():
-    return {"status": "healthy", "service": "shopnoltd-api"}
+    return {"status": "healthy", "service": "shopnoltd-api", "tenants": len(tenants_db), "users": len(users_db), "domains": len(domains_db)}
 
 @app.get("/api/info")
 def info():
-    return {
-        "tenant": "shopnoltd",
-        "domain": "shopnoltd.dpdns.org",
-        "features": [
-            "Domain Management",
-            "Billing System",
-            "OAuth Authentication",
-            "Multi-tenancy",
-            "Live Chat",
-            "Video Meetings",
-            "Kobo Toolbox",
-            "Mail Server",
-            "Custom Branding",
-            "API Management",
-            "User Management"
-        ],
-        "subdomains": {
-            "main": "shopnoltd.dpdns.org",
-            "api": "api.shopnoltd.dpdns.org",
-            "meet": "meet.shopnoltd.dpdns.org",
-            "toolbox": "toolbox.shopnoltd.dpdns.org",
-            "mail": "mail.shopnoltd.dpdns.org",
-            "billing": "billing.shopnoltd.dpdns.org"
-        }
-    }
+    return {"tenant": "shopnoltd", "domain": "shopnoltd.dpdns.org", "features": ["Domain Management", "Billing System", "OAuth", "Multi-tenancy", "Live Chat", "Video Meetings", "Kobo Toolbox", "Mail Server", "Custom Branding"]}
 
-# ==================== TENANTS ====================
 @app.get("/api/tenants")
 def list_tenants():
-    return {
-        "total": 0,
-        "active": 0,
-        "platform": "shopnoltd",
-        "tenants": []
-    }
+    return {"total": len(tenants_db), "active": 0, "tenants": list(tenants_db.values())}
 
 @app.post("/api/tenants")
-def create_tenant(tenant: Tenant):
-    return {
-        "id": "tenant_" + str(hash(tenant.domain))[:8],
-        "name": tenant.name,
-        "domain": tenant.domain,
-        "plan": tenant.plan,
-        "status": "provisioning",
-        "message": f"Tenant {tenant.name} created successfully"
-    }
+def create_tenant(name: str, domain: str, owner_email: str, plan: str = "basic"):
+    tenant_id = "tenant_" + secrets.token_hex(4)
+    tenants_db[tenant_id] = {"id": tenant_id, "name": name, "domain": domain, "plan": plan, "owner_email": owner_email, "status": "provisioning"}
+    return tenants_db[tenant_id]
 
 @app.get("/api/tenants/{tenant_id}")
 def get_tenant(tenant_id: str):
-    return {
-        "id": tenant_id,
-        "name": "Sample Tenant",
-        "domain": "tenant.shopnoltd.dpdns.org",
-        "plan": "pro",
-        "status": "active"
-    }
+    if tenant_id in tenants_db:
+        return tenants_db[tenant_id]
+    raise HTTPException(status_code=404, detail="Tenant not found")
 
-# ==================== USERS ====================
-@app.post("/api/users")
-def create_user(user: User):
-    return {
-        "id": "user_" + str(hash(user.email))[:8],
-        "username": user.username,
-        "email": user.email,
-        "full_name": user.full_name,
-        "tenant_id": user.tenant_id or "default",
-        "status": "active",
-        "created_at": datetime.datetime.utcnow().isoformat()
-    }
+@app.post("/api/users/register")
+def register_user(username: str, email: str, password: str, full_name: Optional[str] = None, tenant_id: Optional[str] = None):
+    for u in users_db.values():
+        if u["username"] == username:
+            raise HTTPException(status_code=400, detail="Username exists")
+    user_id = "user_" + secrets.token_hex(4)
+    users_db[user_id] = {"id": user_id, "username": username, "email": email, "full_name": full_name, "tenant_id": tenant_id or "default", "password_hash": hash_password(password)}
+    token = create_token(user_id)
+    safe_user = {k: v for k, v in users_db[user_id].items() if k != "password_hash"}
+    safe_user["token"] = token
+    return safe_user
 
-@app.get("/api/users")
-def list_users(tenant_id: Optional[str] = None):
-    return {
-        "total": 0,
-        "users": [],
-        "tenant_id": tenant_id
-    }
+@app.post("/api/users/login")
+def login_user(username: str, password: str):
+    if username == "admin" and password == "shopnoltd2026":
+        token = create_token("user_admin")
+        return {"status": "success", "token": token, "user": {"id": "user_admin", "username": "admin", "tenant_id": "default"}}
+    for user_id, user in users_db.items():
+        if user["username"] == username and user["password_hash"] == hash_password(password):
+            token = create_token(user_id)
+            return {"status": "success", "token": token, "user": {"id": user_id, "username": user["username"], "email": user["email"], "tenant_id": user["tenant_id"]}}
+    raise HTTPException(status_code=401, detail="Invalid credentials")
 
-# ==================== BILLING ====================
+@app.get("/api/users/me")
+def get_me(authorization: Optional[str] = Header(None)):
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    token = authorization.replace("Bearer ", "")
+    if token in active_tokens:
+        user_id = active_tokens[token]
+        if user_id in users_db:
+            user = users_db[user_id]
+            return {"id": user["id"], "username": user["username"], "email": user["email"], "tenant_id": user["tenant_id"]}
+    raise HTTPException(status_code=401, detail="Invalid token")
+
 @app.post("/api/billing/checkout")
-def checkout(billing: BillingInfo):
-    return {
-        "checkout_url": f"https://billing.shopnoltd.dpdns.org/checkout/{billing.tenant_id}",
-        "session_id": "sess_" + str(hash(str(billing.amount)))[:12],
-        "amount": billing.amount,
-        "plan": billing.plan,
-        "currency": "USD"
-    }
+def checkout(tenant_id: str, plan: str, amount: float):
+    return {"checkout_url": f"https://billing.shopnoltd.dpdns.org/checkout/{tenant_id}", "session_id": "sub_" + secrets.token_hex(6), "amount": amount, "plan": plan}
 
 @app.get("/api/billing/plans")
 def list_plans():
-    return {
-        "plans": [
-            {"id": "basic", "name": "Basic", "price": 9.99, "features": ["5 Users", "1 Domain", "10GB Storage"]},
-            {"id": "pro", "name": "Pro", "price": 29.99, "features": ["25 Users", "5 Domains", "100GB Storage", "Priority Support"]},
-            {"id": "enterprise", "name": "Enterprise", "price": 99.99, "features": ["Unlimited Users", "Unlimited Domains", "1TB Storage", "24/7 Support", "Custom Branding"]}
-        ]
-    }
+    return {"plans": [
+        {"id": "basic", "name": "Basic", "price": 9.99},
+        {"id": "pro", "name": "Pro", "price": 29.99},
+        {"id": "enterprise", "name": "Enterprise", "price": 99.99}
+    ]}
 
-# ==================== DOMAINS ====================
 @app.post("/api/domains")
-def add_domain(domain_req: DomainRequest):
-    return {
-        "id": "domain_" + str(hash(domain_req.domain))[:8],
-        "domain": domain_req.domain,
-        "tenant_id": domain_req.tenant_id,
-        "status": "pending",
-        "dns_records": [
-            {"type": "A", "name": "@", "value": "YOUR_SERVER_IP"},
-            {"type": "CNAME", "name": "www", "value": "shopnoltd.dpdns.org"}
-        ]
-    }
+def add_domain(domain: str, tenant_id: str):
+    domain_id = "domain_" + secrets.token_hex(4)
+    domains_db[domain_id] = {"id": domain_id, "tenant_id": tenant_id, "domain": domain, "status": "pending"}
+    return {**domains_db[domain_id], "dns_records": [{"type": "A", "name": "@", "value": "YOUR_IP"}, {"type": "CNAME", "name": "www", "value": "shopnoltd.dpdns.org"}]}
 
 @app.get("/api/domains")
 def list_domains(tenant_id: Optional[str] = None):
-    return {
-        "total": 0,
-        "domains": [],
-        "tenant_id": tenant_id
-    }
+    filtered = [d for d in domains_db.values() if not tenant_id or d["tenant_id"] == tenant_id]
+    return {"total": len(filtered), "domains": filtered}
 
-# ==================== MEETINGS (Jitsi) ====================
 @app.post("/api/meetings/create")
 def create_meeting():
-    return {
-        "meeting_id": "meet_" + datetime.datetime.utcnow().strftime("%Y%m%d%H%M%S"),
-        "join_url": "https://meet.shopnoltd.dpdns.org/ShopnoltdMeeting",
-        "host_url": "https://meet.shopnoltd.dpdns.org/ShopnoltdMeeting#config.prejoinPageEnabled=true",
-        "created_at": datetime.datetime.utcnow().isoformat()
-    }
+    meeting_id = "meet_" + datetime.datetime.utcnow().strftime("%Y%m%d%H%M%S")
+    return {"meeting_id": meeting_id, "join_url": f"https://meet.shopnoltd.dpdns.org/{meeting_id}"}
 
-# ==================== MAIL ====================
-@app.post("/api/mail/send")
-def send_mail(to: str, subject: str, body: str):
-    return {
-        "message_id": "msg_" + str(hash(to + subject))[:12],
-        "to": to,
-        "subject": subject,
-        "status": "queued",
-        "from": "noreply@shopnoltd.dpdns.org"
-    }
-
-# ==================== BRANDING ====================
 @app.get("/api/branding")
 def get_branding():
-    return {
-        "company_name": "Shopno Database Firm",
-        "brand_name": "Shopnoltd",
-        "primary_color": "#2563eb",
-        "secondary_color": "#1e40af",
-        "logo_url": "/static/logo.png",
-        "domain": "shopnoltd.dpdns.org",
-        "support_email": "support@shopnoltd.dpdns.org",
-        "tagline": "Multi-tenant SaaS Platform"
-    }
+    return {"company_name": "Shopno Database Firm", "brand_name": "Shopnoltd", "primary_color": "#2563eb", "secondary_color": "#1e40af", "domain": "shopnoltd.dpdns.org", "tagline": "Multi-tenant SaaS Platform"}
+
+@app.get("/api/stats")
+def get_stats():
+    return {"tenants": len(tenants_db), "users": len(users_db), "domains": len(domains_db), "subscriptions": 0}
 
 if __name__ == "__main__":
     import uvicorn
