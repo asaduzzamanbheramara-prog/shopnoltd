@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: toolbox-config
+  namespace: toolbox
+
+data:
+  POSTGRES_HOST: postgres.toolbox.svc.cluster.local
+  POSTGRES_PORT: "5432"
+
+  MONGO_HOST: mongo.toolbox.svc.cluster.local
+  MONGO_PORT: "27017"
+
+  REDIS_HOST: redis.toolbox.svc.cluster.local
+  REDIS_PORT: "6379"
+
+  KPI_HOST: kc.toolbox.svc.cluster.local
+  KF_HOST: kf.toolbox.svc.cluster.local
+  EE_HOST: ee.toolbox.svc.cluster.local

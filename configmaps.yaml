@@ -2,6 +2,187 @@ apiVersion: v1
 items:
 - apiVersion: v1
   data:
+    uwsgi.ini: |
+      [uwsgi]
+      # directory structure
+      chdir       = $(KPI_SRC_DIR)
+      logto       = $(KPI_LOGS_DIR)/uwsgi.log
+      # Run the application at a non-root URL path, e.g. http://hostname/KPI_PREFIX.
+      # See http://uwsgi-docs.readthedocs.org/en/latest/Nginx.html#hosting-multiple-apps-in-the-same-process-aka-managing-script-name-and-path-info
+      # This supersedes `wsgi-file = $(KPI_SRC_DIR)/kobo/wsgi.py`.
+      manage-script-name = true
+      mount              = $(KPI_PREFIX)=$(KPI_SRC_DIR)/kobo/wsgi.py
+      # process related settings
+      master              = true
+      harakiri            = $(UWSGI_HARAKIRI)
+      worker-reload-mercy = $(UWSGI_WORKER_RELOAD_MERCY)
+      # monitoring (use with `uwsgitop :1717`, for example)
+      stats = :1717
+      memory-report = true
+      # Overrideable default of 2 uWSGI processes.
+      if-env = UWSGI_WORKERS_COUNT
+      workers = %(_)
+      endif =
+      if-not-env = UWSGI_WORKERS_COUNT
+      workers = 2
+      endif =
+      # activate cheaper mode
+      if-env = UWSGI_CHEAPER_WORKERS_COUNT
+      cheaper-algo = busyness
+      cheaper = %(_)
+      cheaper-initial = %(_)
+      cheaper-step = 1
+      cheaper-overload = 30
+      cheaper-busyness-max = 50
+      cheaper-busyness-min = 25
+      cheaper-busyness-multiplier = 20
+      endif =
+      # stop spawning new workers if total memory consumption grows too large
+      if-env = UWSGI_CHEAPER_RSS_LIMIT_SOFT
+      cheaper-rss-limit-soft = %(_)
+      endif =
+      if-not-env = UWSGI_CHEAPER_RSS_LIMIT_SOFT
+      cheaper-rss-limit-soft = %(2 * 1024 * 1024 * 1024)
+      endif =
+      # respawn processes after serving KPI_UWSGI_MAX_REQUESTS requests (default 5000)
+      if-env = UWSGI_MAX_REQUESTS
+      max-requests = %(_)
+      endif =
+      # respawn workers when their memory consumption grows too large
+      if-env = UWSGI_RELOAD_ON_RSS_MB
+      reload-on-rss = %(_)
+      endif =
+      if-not-env = UWSGI_RELOAD_ON_RSS_MB
+      reload-on-rss = 512
+      endif =
+      http-socket     = 0.0.0.0:8000
+      buffer-size     = 32768
+      listen          = @(/proc/sys/net/core/somaxconn)
+      uid             = $(UWSGI_USER)
+      gid             = $(UWSGI_GROUP)
+      die-on-term     = true
+      # uWSGI does not pass locale information to the application by default
+      env = LC_ALL=en_US.UTF-8
+      # Required for Sentry
+      enable-threads  = true
+      # Custom tweaks
+      single-interpreter = true
+      post-buffering = true
+      ignore-sigpipe = true
+      ignore-write-errors = true
+      disable-write-exception = true
+      vacuum = true
+  kind: ConfigMap
+  metadata:
+    creationTimestamp: "2026-07-06T04:28:25Z"
+    name: kc-uwsgi-ini
+    namespace: toolbox
+    resourceVersion: "659215"
+    uid: 0250763b-3f83-45ef-ab09-9c89d6fdad63
+- apiVersion: v1
+  data:
+    wait_for_mongo.bash: |
+      #!/bin/bash
+      set -e
+      HOST="${MONGO_HOST:-mongo}"
+      # Note: intentionally NOT reading $MONGO_PORT here -- Kubernetes auto-injects
+      # a MONGO_PORT env var for the "mongo" Service (e.g. tcp://10.x.x.x:27017),
+      # which collides with and overrides any value we'd want to default to.
+      PORT=27017
+      echo "Waiting for MongoDB at ${HOST}:${PORT}..."
+      for i in $(seq 1 60); do
+        if (echo > /dev/tcp/${HOST}/${PORT}) >/dev/null 2>&1; then
+          echo "MongoDB is up."
+          exit 0
+        fi
+        sleep 2
+      done
+      echo "Timed out waiting for MongoDB at ${HOST}:${PORT}."
+      exit 1
+    wait_for_postgres.bash: |
+      #!/bin/bash
+      set -e
+      # Parses host/port out of DATABASE_URL, e.g. postgres://user:pass@host:5432/db
+      DB_HOST=$(echo "$DATABASE_URL" | sed -E 's#.*://[^@]*@([^:/]+).*#\1#')
+      DB_PORT=$(echo "$DATABASE_URL" | sed -E 's#.*:([0-9]+)/.*#\1#')
+      DB_PORT="${DB_PORT:-5432}"
+      echo "Waiting for Postgres at ${DB_HOST}:${DB_PORT}..."
+      for i in $(seq 1 60); do
+        if (echo > /dev/tcp/${DB_HOST}/${DB_PORT}) >/dev/null 2>&1; then
+          echo "Postgres is up."
+          exit 0
+        fi
+        sleep 2
+      done
+      echo "Timed out waiting for Postgres at ${DB_HOST}:${DB_PORT}."
+      exit 1
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","data":{"wait_for_mongo.bash":"#!/bin/bash\nset -e\nHOST=\"${MONGO_HOST:-mongo}\"\n# Note: intentionally NOT reading $MONGO_PORT here -- Kubernetes auto-injects\n# a MONGO_PORT env var for the \"mongo\" Service (e.g. tcp://10.x.x.x:27017),\n# which collides with and overrides any value we'd want to default to.\nPORT=27017\necho \"Waiting for MongoDB at ${HOST}:${PORT}...\"\nfor i in $(seq 1 60); do\n  if (echo \u003e /dev/tcp/${HOST}/${PORT}) \u003e/dev/null 2\u003e\u00261; then\n    echo \"MongoDB is up.\"\n    exit 0\n  fi\n  sleep 2\ndone\necho \"Timed out waiting for MongoDB at ${HOST}:${PORT}.\"\nexit 1\n","wait_for_postgres.bash":"#!/bin/bash\nset -e\n# Parses host/port out of DATABASE_URL, e.g. postgres://user:pass@host:5432/db\nDB_HOST=$(echo \"$DATABASE_URL\" | sed -E 's#.*://[^@]*@([^:/]+).*#\\1#')\nDB_PORT=$(echo \"$DATABASE_URL\" | sed -E 's#.*:([0-9]+)/.*#\\1#')\nDB_PORT=\"${DB_PORT:-5432}\"\necho \"Waiting for Postgres at ${DB_HOST}:${DB_PORT}...\"\nfor i in $(seq 1 60); do\n  if (echo \u003e /dev/tcp/${DB_HOST}/${DB_PORT}) \u003e/dev/null 2\u003e\u00261; then\n    echo \"Postgres is up.\"\n    exit 0\n  fi\n  sleep 2\ndone\necho \"Timed out waiting for Postgres at ${DB_HOST}:${DB_PORT}.\"\nexit 1\n"},"kind":"ConfigMap","metadata":{"annotations":{},"name":"kf-init-scripts","namespace":"toolbox"}}
+    creationTimestamp: "2026-07-05T07:52:36Z"
+    name: kf-init-scripts
+    namespace: toolbox
+    resourceVersion: "602192"
+    uid: 038a79a9-da82-49a2-bb95-aee481932532
+- apiVersion: v1
+  data:
+    default.conf: |
+      server {
+          listen 80;
+          location / {
+              include uwsgi_params;
+              uwsgi_pass 127.0.0.1:8000;
+              uwsgi_read_timeout 300;
+              uwsgi_send_timeout 300;
+              client_max_body_size 100m;
+          }
+      }
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","data":{"default.conf":"server {\n    listen 80;\n    location / {\n        include uwsgi_params;\n        uwsgi_pass 127.0.0.1:8000;\n        uwsgi_read_timeout 300;\n        uwsgi_send_timeout 300;\n        client_max_body_size 100m;\n    }\n}\n"},"kind":"ConfigMap","metadata":{"annotations":{},"name":"kf-nginx-conf","namespace":"toolbox"}}
+    creationTimestamp: "2026-06-30T16:18:19Z"
+    name: kf-nginx-conf
+    namespace: toolbox
+    resourceVersion: "301454"
+    uid: 0ac05ed9-332f-43f4-82f2-2f3e8bb2be34
+- apiVersion: v1
+  data:
+    kobocat.ini: |
+      [uwsgi]
+      # directory structure
+      chdir           = $(KOBOCAT_SRC_DIR)
+      module          = onadata.apps.main.wsgi
+      logto           = $(KOBOCAT_LOGS_DIR)/uwsgi.log
+      # process related settings
+      master          = true
+      # Overrideable default of 2 uWSGI processes.
+      if-env = KOBOCAT_UWSGI_PROCESS_COUNT
+      processes = %(_)
+      endif =
+      if-not-env = KOBOCAT_UWSGI_PROCESS_COUNT
+      processes = 2
+      endif =
+      http-socket     = 0.0.0.0:8000
+      buffer-size     = 32768
+      harakiri        = 120
+      uid             = $(UWSGI_USER)
+      gid             = $(UWSGI_GROUP)
+      die-on-term     = true
+      # Required for Raven/Sentry
+      enable-threads  = true
+  kind: ConfigMap
+  metadata:
+    creationTimestamp: "2026-07-06T04:37:38Z"
+    name: kf-uwsgi-ini
+    namespace: toolbox
+    resourceVersion: "660150"
+    uid: c1caa1a6-e0b9-4dcf-be24-a926f9460851
+- apiVersion: v1
+  data:
     ca.crt: |
       -----BEGIN CERTIFICATE-----
       MIIDBTCCAe2gAwIBAgIIdGJ0bJM5Y1QwDQYJKoZIhvcNAQELBQAwFTETMBEGA1UE
@@ -29,102 +210,48 @@ items:
         kube-apiserver when using internal endpoints such as the internal service
         IP or kubernetes.default.svc. No other usage is guaranteed across distributions
         of Kubernetes clusters.
-    creationTimestamp: "2026-06-26T14:42:18Z"
+    creationTimestamp: "2026-06-26T18:08:37Z"
     name: kube-root-ca.crt
-    namespace: default
-    resourceVersion: "391"
-    uid: f717793b-f6b9-49a2-8558-d55e819cd04e
+    namespace: toolbox
+    resourceVersion: "11781"
+    uid: 3bb62c92-07a0-4037-b518-d2d9c6c67dd2
 - apiVersion: v1
   data:
-    nginx.conf: |
-      worker_processes 1;
-
-      events {
-          worker_connections 1024;
-      }
-
-      http {
-
-          resolver 10.43.0.10 valid=10s;
-
-          lua_package_path "/usr/local/openresty/lualib/?.lua;;";
-
-          server {
-
-              listen 80;
-              server_name _;
-
-              location / {
-
-                  set $backend "";
-
-                  rewrite_by_lua_block {
-
-                      local redis = require "resty.redis"
-
-                      local red = redis:new()
-                      red:set_timeout(1000)
-
-                      local ok, err = red:connect(
-                          "redis.default.svc.cluster.local",
-                          6379
-                      )
-
-                      if not ok then
-                          ngx.log(ngx.ERR, "redis failed: ", err)
-
-                          ngx.var.backend =
-                              "http://root-app.default.svc.cluster.local:80"
-
-                          return
-                      end
-
-                      local host = ngx.var.host
-
-                      local tenant = host:match("([^%.]+)")
-
-                      if not tenant then
-                          tenant = "root"
-                      end
-
-                      local upstream, err =
-                          red:get("tenant:" .. tenant)
-
-                      if not upstream or upstream == ngx.null then
-                          upstream =
-                              "http://root-app.default.svc.cluster.local:80"
-                      end
-
-                      ngx.log(
-                          ngx.ERR,
-                          "tenant=",
-                          tenant,
-                          " upstream=",
-                          upstream
-                      )
-
-                      ngx.var.backend = upstream
-                  }
-
-                  proxy_http_version 1.1;
-
-                  proxy_set_header Host $host;
-                  proxy_set_header Connection "";
-
-                  proxy_pass $backend;
-              }
-          }
-      }
+    APP_NAME: ShopnoltdToolbox
+    COMPANY: Shopnoltd
+    LOGO_URL: https://shopnoltd.dpdns.org/assets/logo.png
+    SUPPORT_EMAIL: support@shopnoltd.dpdns.org
   kind: ConfigMap
   metadata:
     annotations:
       kubectl.kubernetes.io/last-applied-configuration: |
-        {"apiVersion":"v1","data":{"nginx.conf":"worker_processes 1;\n\nevents {\n    worker_connections 1024;\n}\n\nhttp {\n\n    resolver 10.43.0.10 valid=10s;\n\n    lua_package_path \"/usr/local/openresty/lualib/?.lua;;\";\n\n    server {\n\n        listen 80;\n        server_name _;\n\n        location / {\n\n            set $backend \"\";\n\n            rewrite_by_lua_block {\n\n                local redis = require \"resty.redis\"\n\n                local red = redis:new()\n                red:set_timeout(1000)\n\n                local ok, err = red:connect(\n                    \"redis.default.svc.cluster.local\",\n                    6379\n                )\n\n                if not ok then\n                    ngx.log(ngx.ERR, \"redis failed: \", err)\n\n                    ngx.var.backend =\n                        \"http://root-app.default.svc.cluster.local:80\"\n\n                    return\n                end\n\n                local host = ngx.var.host\n\n                local tenant = host:match(\"([^%.]+)\")\n\n                if not tenant then\n                    tenant = \"root\"\n                end\n\n                local upstream, err =\n                    red:get(\"tenant:\" .. tenant)\n\n                if not upstream or upstream == ngx.null then\n                    upstream =\n                        \"http://root-app.default.svc.cluster.local:80\"\n                end\n\n                ngx.log(\n                    ngx.ERR,\n                    \"tenant=\",\n                    tenant,\n                    \" upstream=\",\n                    upstream\n                )\n\n                ngx.var.backend = upstream\n            }\n\n            proxy_http_version 1.1;\n\n            proxy_set_header Host $host;\n            proxy_set_header Connection \"\";\n\n            proxy_pass $backend;\n        }\n    }\n}\n"},"kind":"ConfigMap","metadata":{"annotations":{},"name":"tenant-router-config","namespace":"default"}}
-    creationTimestamp: "2026-06-26T17:47:39Z"
-    name: tenant-router-config
-    namespace: default
-    resourceVersion: "9073"
-    uid: b49d8444-710c-4b18-8b05-e33c2d4d3e32
+        {"apiVersion":"v1","data":{"APP_NAME":"ShopnoltdToolbox","COMPANY":"Shopnoltd","LOGO_URL":"https://shopnoltd.dpdns.org/assets/logo.png","SUPPORT_EMAIL":"support@shopnoltd.dpdns.org"},"kind":"ConfigMap","metadata":{"annotations":{},"name":"shopnoltd-toolbox-branding","namespace":"toolbox"}}
+    creationTimestamp: "2026-06-26T18:08:37Z"
+    name: shopnoltd-toolbox-branding
+    namespace: toolbox
+    resourceVersion: "11783"
+    uid: e4151b70-2360-4cf3-87e9-d20b6517983b
+- apiVersion: v1
+  data:
+    EE_HOST: ee.toolbox.svc.cluster.local
+    KF_HOST: kf.toolbox.svc.cluster.local
+    KPI_HOST: kc.toolbox.svc.cluster.local
+    MONGO_HOST: mongo.toolbox.svc.cluster.local
+    MONGO_PORT: "27017"
+    POSTGRES_HOST: postgres.toolbox.svc.cluster.local
+    POSTGRES_PORT: "5432"
+    REDIS_HOST: redis.toolbox.svc.cluster.local
+    REDIS_PORT: "6379"
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","data":{"EE_HOST":"ee.toolbox.svc.cluster.local","KF_HOST":"kf.toolbox.svc.cluster.local","KPI_HOST":"kc.toolbox.svc.cluster.local","MONGO_HOST":"mongo.toolbox.svc.cluster.local","MONGO_PORT":"27017","POSTGRES_HOST":"postgres.toolbox.svc.cluster.local","POSTGRES_PORT":"5432","REDIS_HOST":"redis.toolbox.svc.cluster.local","REDIS_PORT":"6379"},"kind":"ConfigMap","metadata":{"annotations":{},"name":"toolbox-config","namespace":"toolbox"}}
+    creationTimestamp: "2026-07-04T18:03:44Z"
+    name: toolbox-config
+    namespace: toolbox
+    resourceVersion: "652797"
+    uid: 66bd1087-c3aa-472a-8fa7-f7fa9984c944
 kind: List
 metadata:
   resourceVersion: ""

@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Service
+
+metadata:
+  name: ee
+
+  namespace: toolbox
+
+spec:
+
+  selector:
+    app: ee
+
+  ports:
+
+  - name: http
+
+    port: 80
+
+    targetPort: 8005

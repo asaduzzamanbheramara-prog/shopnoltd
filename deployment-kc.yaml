@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kc
+  namespace: toolbox
+  labels:
+    app: kc
+
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: kc
+
+  template:
+    metadata:
+      labels:
+        app: kc
+
+    spec:
+
+      containers:
+
+      - name: kc
+        image: kobotoolbox/kpi:2.023.48
+        imagePullPolicy: IfNotPresent
+
+        ports:
+        - containerPort: 8000
+
+        env:
+
+        - name: DATABASE_URL
+          value: postgis://kobo:kobopass@postgres.default.svc.cluster.local:5432/kobotoolbox
+
+        - name: KPI_DATABASE_URL
+          value: postgis://kobo:kobopass@postgres.default.svc.cluster.local:5432/kobotoolbox
+
+        - name: KC_DATABASE_URL
+          value: postgis://kobo:kobopass@postgres.default.svc.cluster.local:5432/kobocat
+
+        - name: MONGO_DB_URL
+          value: mongodb://mongo.toolbox.svc.cluster.local:27017/kobocat
+
+        - name: REDIS_SESSION_URL
+          value: redis://redis.default.svc.cluster.local:6379/1
+
+        - name: REDIS_CACHE_URL
+          value: redis://redis.default.svc.cluster.local:6379/2
+
+        - name: CACHE_URL
+          value: redis://redis.default.svc.cluster.local:6379/2
+
+        - name: DJANGO_SETTINGS_MODULE
+          value: kobo.settings.prod
+
+        - name: DJANGO_SECRET_KEY
+          value: kobo-secret-key-change-in-production-xyz123
+
+        - name: SERVICE_NAME
+          value: kc
+
+        - name: DJANGO_ALLOWED_HOSTS
+          value: "*"
+
+        - name: PYTHONUNBUFFERED
+          value: "1"
+
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 6
+
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8000
+          initialDelaySeconds: 60
+          periodSeconds: 20
+          timeoutSeconds: 5

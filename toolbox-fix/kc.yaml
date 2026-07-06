@@ -3,8 +3,6 @@ kind: Deployment
 metadata:
   name: kc
   namespace: toolbox
-  labels:
-    app: kc
 spec:
   replicas: 1
   selector:
@@ -17,15 +15,39 @@ spec:
     spec:
       containers:
       - name: kc
-        image: kobotoolbox/kobo-central:latest
-        ports:
-        - containerPort: 80
+        image: kobotoolbox/kpi:2.023.48
+        imagePullPolicy: IfNotPresent
+
         env:
+        - name: DATABASE_URL
+          value: postgis://kobo:kobopass@postgres.default.svc.cluster.local:5432/kobotoolbox
+
+        - name: KPI_DATABASE_URL
+          value: postgis://kobo:kobopass@postgres.default.svc.cluster.local:5432/kobotoolbox
+
         - name: KC_DATABASE_URL
-          value: "postgresql://kobo:kobo@postgres:5432/kobotoolbox"
-        - name: KC_DOMAIN
-          value: "https://kc.shopnoltd.dpdns.org"
-        - name: KC_ALLOWED_HOSTS
+          value: postgis://kobo:kobopass@postgres.default.svc.cluster.local:5432/kobocat
+
+        - name: MONGO_DB_URL
+          value: mongodb://mongo.toolbox.svc.cluster.local:27017/kobocat
+
+        - name: REDIS_SESSION_URL
+          value: redis://redis.default.svc.cluster.local:6379/1
+
+        - name: REDIS_CACHE_URL
+          value: redis://redis.default.svc.cluster.local:6379/2
+
+        - name: CACHE_URL
+          value: redis://redis.default.svc.cluster.local:6379/2
+
+        - name: DJANGO_SETTINGS_MODULE
+          value: kobo.settings.prod
+
+        - name: DJANGO_ALLOWED_HOSTS
           value: "*"
-        - name: BRAND_NAME
-          value: "Shopnoltd"
+
+        - name: PYTHONUNBUFFERED
+          value: "1"
+
+        ports:
+        - containerPort: 8000

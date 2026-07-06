@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    deployment.kubernetes.io/revision: "3"
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"name":"mail-server","namespace":"default"},"spec":{"replicas":1,"selector":{"matchLabels":{"app":"mail-server"}},"template":{"metadata":{"labels":{"app":"mail-server"}},"spec":{"containers":[{"image":"tvial/docker-mailserver:latest","name":"mail-server","ports":[{"containerPort":25}]}]}}}}
+  creationTimestamp: "2026-06-27T17:48:47Z"
+  generation: 3
+  name: mail-server
+  namespace: default
+  resourceVersion: "220063"
+  uid: 8892037b-57f3-4954-9570-bd10ea052834
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: mail-server
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/restartedAt: "2026-06-28T14:14:36+06:00"
+      labels:
+        app: mail-server
+    spec:
+      containers:
+      - env:
+        - name: HOSTNAME
+          value: mail.shopnoltd.com
+        - name: DOMAINNAME
+          value: shopnoltd.com
+        image: tvial/docker-mailserver:latest
+        imagePullPolicy: Always
+        name: mail-server
+        ports:
+        - containerPort: 25
+          protocol: TCP
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+status:
+  conditions:
+  - lastTransitionTime: "2026-06-27T17:48:47Z"
+    lastUpdateTime: "2026-06-28T08:14:48Z"
+    message: ReplicaSet "mail-server-58c898fb7d" has successfully progressed.
+    reason: NewReplicaSetAvailable
+    status: "True"
+    type: Progressing
+  - lastTransitionTime: "2026-06-28T08:37:12Z"
+    lastUpdateTime: "2026-06-28T08:37:12Z"
+    message: Deployment does not have minimum availability.
+    reason: MinimumReplicasUnavailable
+    status: "False"
+    type: Available
+  observedGeneration: 3
+  replicas: 1
+  unavailableReplicas: 1
+  updatedReplicas: 1
