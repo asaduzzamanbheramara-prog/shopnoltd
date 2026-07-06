@@ -1,0 +1,29 @@
+name: Fetch KoBoCollect APK
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    - cron: '0 3 * * 0' # weekly on Sunday at 03:00 UTC
+
+jobs:
+  fetch-apk:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Ensure apks directory exists
+        run: |
+          New-Item -ItemType Directory -Path .\apks -Force
+        shell: pwsh
+
+      - name: Run downloader script
+        run: |
+          pwsh -NoProfile -ExecutionPolicy Bypass -File .\apks\fetch_kobocollect_apk.ps1 -OutDir .\apks
+        shell: pwsh
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kobocollect-apk
+          path: .\apks\*.apk
