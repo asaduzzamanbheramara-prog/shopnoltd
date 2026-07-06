@@ -29,3 +29,6 @@ secrets.yaml
 cloudflared/
 *.json.cred
 config/secrets.yaml
+
+# APKs downloaded for local use; CI stores APKs as workflow artifacts
+apks/*.apk
