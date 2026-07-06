@@ -24,6 +24,6 @@ spec:
         - containerPort: 993
         env:
         - name: HOSTNAME
-          value: "mail.shopnoltd.dpdns.org"
+          value: "mail.shopnoltd.com"
         - name: DOMAINNAME
-          value: "shopnoltd.dpdns.org"
+          value: "shopnoltd.com"

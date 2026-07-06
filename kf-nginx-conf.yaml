@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kf-nginx-conf
+  namespace: toolbox
+data:
+  default.conf: |
+    server {
+        listen 80;
+        location / {
+            include uwsgi_params;
+            uwsgi_pass 127.0.0.1:8000;
+            uwsgi_read_timeout 300;
+            uwsgi_send_timeout 300;
+            client_max_body_size 100m;
+        }
+    }

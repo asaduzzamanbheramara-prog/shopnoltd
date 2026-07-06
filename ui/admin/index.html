@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shopnoltd Admin Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background: #f5f7fa;
+            color: #2c3e50;
+        }
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 250px;
+            height: 100vh;
+            background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+            color: white;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .menu-item {
+            padding: 12px 15px;
+            margin-bottom: 5px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .menu-item:hover { background: rgba(255,255,255,0.1); }
+        .menu-item.active { background: rgba(255,255,255,0.2); }
+        .main-content {
+            margin-left: 250px;
+            padding: 30px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        .header h1 { color: #1e40af; }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border-left: 4px solid #2563eb;
+        }
+        .stat-label {
+            color: #64748b;
+            font-size: 14px;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+        .stat-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #1e40af;
+        }
+        .stat-change {
+            color: #10b981;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
+        }
+        .card h2 {
+            color: #1e40af;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        th {
+            background: #f8fafc;
+            color: #475569;
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+        tr:hover { background: #f8fafc; }
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .badge-success { background: #d1fae5; color: #065f46; }
+        .badge-warning { background: #fef3c7; color: #92400e; }
+        .badge-info { background: #dbeafe; color: #1e40af; }
+        .currency-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        .currency-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+            text-align: center;
+            border: 1px solid #e2e8f0;
+        }
+        .currency-flag { font-size: 32px; margin-bottom: 8px; }
+        .currency-name { font-weight: 600; color: #1e40af; }
+        .currency-rate { color: #64748b; font-size: 14px; margin-top: 5px; }
+        .section { display: none; }
+        .section.active { display: block; }
+        .actions { display: flex; gap: 10px; margin-bottom: 20px; }
+        .btn {
+            padding: 10px 20px;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn:hover { background: #1e40af; }
+        .btn-success { background: #10b981; }
+        .btn-danger { background: #ef4444; }
+        .refresh-btn {
+            background: #10b981;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="logo">🚀 Shopnoltd</div>
+        <div class="menu-item active" onclick="showSection('dashboard')">📊 Dashboard</div>
+        <div class="menu-item" onclick="showSection('wallets')">💰 Wallets</div>
+        <div class="menu-item" onclick="showSection('transactions')">💸 Transactions</div>
+        <div class="menu-item" onclick="showSection('exchange')">💱 Currency Exchange</div>
+        <div class="menu-item" onclick="showSection('gateways')">🌐 Payment Gateways</div>
+        <div class="menu-item" onclick="showSection('kyc')">🆔 KYC</div>
+        <div class="menu-item" onclick="showSection('billing')">📋 Billing Plans</div>
+        <div class="menu-item" onclick="showSection('audit')">📝 Audit Log</div>
+        <div class="menu-item" onclick="showSection('fraud')">🚨 Fraud Detection</div>
+    </div>
+
+    <div class="main-content">
+        <div class="header">
+            <h1>Shopnoltd Admin Dashboard</h1>
+            <button class="refresh-btn" onclick="refreshAll()">🔄 Refresh All</button>
+        </div>
+
+        <!-- Dashboard Section -->
+        <div id="dashboard" class="section active">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Total Wallets</div>
+                    <div class="stat-value" id="stat-wallets">-</div>
+                    <div class="stat-change">↑ Active</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Transactions</div>
+                    <div class="stat-value" id="stat-transactions">-</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Total (USD)</div>
+                    <div class="stat-value" id="stat-total-usd">-</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Currencies</div>
+                    <div class="stat-value" id="stat-currencies">-</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Exchange Orders</div>
+                    <div class="stat-value" id="stat-exchange">-</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Audit Logs</div>
+                    <div class="stat-value" id="stat-audit">-</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>💱 Exchange Rates (Top 10)</h2>
+                <div class="currency-grid" id="rates-grid">Loading...</div>
+            </div>
+
+            <div class="card">
+                <h2>📊 Recent Activity</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Action</th>
+                            <th>User</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody id="audit-table"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Wallets Section -->
+        <div id="wallets" class="section">
+            <div class="card">
+                <h2>💰 Wallet Management</h2>
+                <div class="actions">
+                    <button class="btn btn-success" onclick="createWallet()">+ Create Wallet</button>
+                    <button class="btn" onclick="loadWallets()">🔄 Refresh</button>
+                </div>
+                <table>
+                    <thead>
+                        <tr><th>Wallet ID</th><th>Owner</th><th>Currency</th><th>Balance</th><th>USD Equiv</th><th>Status</th></tr>
+                    </thead>
+                    <tbody id="wallets-table"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Exchange Section -->
+        <div id="exchange" class="section">
+            <div class="card">
+                <h2>💱 Currency Converter</h2>
+                <div style="display: flex; gap: 15px; align-items: end; margin-bottom: 20px;">
+                    <div>
+                        <label>Amount</label>
+                        <input type="number" id="ex-amount" value="100" style="padding: 8px; width: 150px;">
+                    </div>
+                    <div>
+                        <label>From</label>
+                        <select id="ex-from" style="padding: 8px;"></select>
+                    </div>
+                    <div>
+                        <label>To</label>
+                        <select id="ex-to" style="padding: 8px;"></select>
+                    </div>
+                    <button class="btn" onclick="convertCurrency()">Convert</button>
+                </div>
+                <div id="convert-result"></div>
+            </div>
+
+            <div class="card">
+                <h2>💱 All Exchange Rates</h2>
+                <table>
+                    <thead>
+                        <tr><th>Flag</th><th>Currency</th><th>Name</th><th>Symbol</th><th>Rate (1 USD =)</th><th>Rate (1 = USD)</th></tr>
+                    </thead>
+                    <tbody id="all-rates-table"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Other sections -->
+        <div id="transactions" class="section">
+            <div class="card">
+                <h2>💸 Recent Transactions</h2>
+                <table>
+                    <thead><tr><th>ID</th><th>Type</th><th>Amount</th><th>Currency</th><th>Status</th><th>Time</th></tr></thead>
+                    <tbody id="transactions-table"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="gateways" class="section">
+            <div class="card">
+                <h2>🌐 Payment Gateway Test</h2>
+                <div style="display: flex; gap: 15px; margin-bottom: 20px;">
+                    <input type="number" id="gw-amount" value="100" style="padding: 8px;">
+                    <select id="gw-currency" style="padding: 8px;">
+                        <option>USD</option><option>EUR</option><option>BDT</option><option>INR</option>
+                    </select>
+                    <select id="gw-country" style="padding: 8px;">
+                        <option>US</option><option>BD</option><option>GB</option><option>IN</option>
+                    </select>
+                    <select id="gw-method" style="padding: 8px;">
+                        <option value="card">Card</option>
+                        <option value="mobile_money">Mobile Money</option>
+                    </select>
+                    <button class="btn" onclick="testGateway()">Route Payment</button>
+                </div>
+                <div id="gateway-result"></div>
+            </div>
+        </div>
+
+        <div id="kyc" class="section">
+            <div class="card">
+                <h2>🆔 KYC Submissions</h2>
+                <table>
+                    <thead><tr><th>User</th><th>Name</th><th>Country</th><th>Document</th><th>Status</th></tr></thead>
+                    <tbody id="kyc-table"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="billing" class="section">
+            <div class="card">
+                <h2>📋 Subscription Plans</h2>
+                <div id="plans-container"></div>
+            </div>
+        </div>
+
+        <div id="audit" class="section">
+            <div class="card">
+                <h2>📝 Full Audit Log</h2>
+                <table>
+                    <thead><tr><th>Time</th><th>Action</th><th>User</th><th>Details</th></tr></thead>
+                    <tbody id="full-audit-table"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="fraud" class="section">
+            <div class="card">
+                <h2>🚨 Fraud Detection Tester</h2>
+                <div style="display: flex; gap: 15px; margin-bottom: 20px;">
+                    <input type="number" id="fraud-amount" value="15000" style="padding: 8px;">
+                    <select id="fraud-country" style="padding: 8px;">
+                        <option>US</option><option>BD</option><option>XX</option>
+                    </select>
+                    <button class="btn" onclick="checkFraud()">Check Risk</button>
+                </div>
+                <div id="fraud-result"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API = "http://localhost:8000";
+
+        function showSection(id) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            event.target.classList.add('active');
+            if (id === 'dashboard') loadDashboard();
+            if (id === 'wallets') loadWallets();
+            if (id === 'transactions') loadTransactions();
+            if (id === 'exchange') loadExchange();
+            if (id === 'gateways') loadGatewayForm();
+            if (id === 'kyc') loadKYC();
+            if (id === 'billing') loadPlans();
+            if (id === 'audit') loadAudit();
+            if (id === 'fraud') loadFraudForm();
+        }
+
+        async function fetchAPI(url, options = {}) {
+            try {
+                const r = await fetch(url, options);
+                return await r.json();
+            } catch (e) {
+                return { error: e.message };
+            }
+        }
+
+        async function refreshAll() {
+            await loadDashboard();
+            alert('Refreshed!');
+        }
+
+        async function loadDashboard() {
+            const stats = await fetchAPI(API + "/api/stats");
+            document.getElementById('stat-wallets').textContent = stats.wallets || 0;
+            document.getElementById('stat-transactions').textContent = stats.transactions || 0;
+            document.getElementById('stat-total-usd').textContent = "$" + (stats.total_money_usd || 0);
+            document.getElementById('stat-currencies').textContent = stats.currencies_supported || 0;
+            document.getElementById('stat-exchange').textContent = stats.exchange_orders || 0;
+            document.getElementById('stat-audit').textContent = stats.audit_logs || 0;
+
+            const rates = await fetchAPI(API + "/api/exchange/rates");
+            const top = rates.rates.slice(0, 10);
+            document.getElementById('rates-grid').innerHTML = top.map(r => `
+                <div class="currency-card">
+                    <div class="currency-flag">${r.flag || '🌐'}</div>
+                    <div class="currency-name">${r.currency}</div>
+                    <div class="currency-rate">${r.symbol}1 = $${(1/r.rate_to_usd).toFixed(2)}</div>
+                </div>
+            `).join('');
+
+            const audit = await fetchAPI(API + "/api/audit-log?limit=10");
+            document.getElementById('audit-table').innerHTML = (audit.logs || []).map(l => `
+                <tr>
+                    <td>${new Date(l.timestamp).toLocaleTimeString()}</td>
+                    <td><span class="badge badge-info">${l.action}</span></td>
+                    <td>${l.user_id || 'system'}</td>
+                    <td>${JSON.stringify(l.details || {}).substring(0, 80)}</td>
+                </tr>
+            `).join('');
+        }
+
+        async function loadWallets() {
+            // Note: API doesn't have list all wallets, so we'll show stats
+            const stats = await fetchAPI(API + "/api/stats");
+            document.getElementById('wallets-table').innerHTML = `
+                <tr><td colspan="6" style="text-align: center; padding: 30px;">
+                    Total wallets: ${stats.wallets || 0}<br>
+                    <small>Use API endpoints to create/manage individual wallets</small>
+                </td></tr>
+            `;
+        }
+
+        async function createWallet() {
+            const owner = prompt('Owner ID:');
+            const currency = prompt('Currency (USD, BDT, EUR):', 'USD');
+            const balance = parseFloat(prompt('Initial balance:', '100'));
+            if (!owner || !currency) return;
+            const result = await fetchAPI(API + `/api/wallet/create?owner_id=${owner}&currency=${currency}&initial_balance=${balance}`, { method: 'POST' });
+            if (result.wallet_id) {
+                alert('Wallet created: ' + result.wallet_id);
+            } else {
+                alert('Error: ' + JSON.stringify(result));
+            }
+        }
+
+        async function loadExchange() {
+            const rates = await fetchAPI(API + "/api/exchange/rates");
+            const currencies = rates.rates.map(r => r.currency);
+            
+            // Populate selects
+            const fromSelect = document.getElementById('ex-from');
+            const toSelect = document.getElementById('ex-to');
+            fromSelect.innerHTML = currencies.map(c => `<option value="${c}" ${c === 'USD' ? 'selected' : ''}>${c}</option>`).join('');
+            toSelect.innerHTML = currencies.map(c => `<option value="${c}" ${c === 'BDT' ? 'selected' : ''}>${c}</option>`).join('');
+
+            // Show all rates
+            document.getElementById('all-rates-table').innerHTML = rates.rates.map(r => `
+                <tr>
+                    <td style="font-size: 24px;">${r.flag || '🌐'}</td>
+                    <td><strong>${r.currency}</strong></td>
+                    <td>${r.name}</td>
+                    <td>${r.symbol}</td>
+                    <td>${(1/r.rate_to_usd).toFixed(4)}</td>
+                    <td>$${r.rate_to_usd.toFixed(6)}</td>
+                </tr>
+            `).join('');
+        }
+
+        async function convertCurrency() {
+            const amount = document.getElementById('ex-amount').value;
+            const from = document.getElementById('ex-from').value;
+            const to = document.getElementById('ex-to').value;
+            const result = await fetchAPI(API + `/api/exchange/convert?amount=${amount}&from_currency=${from}&to_currency=${to}`);
+            if (result.from && result.to) {
+                document.getElementById('convert-result').innerHTML = `
+                    <div style="background: #f0f9ff; padding: 20px; border-radius: 8px; border-left: 4px solid #2563eb;">
+                        <h3>${result.from.amount} ${result.from.currency} = ${result.to.amount} ${result.to.currency}</h3>
+                        <p>Exchange Rate: 1 ${result.from.currency} = ${result.exchange_rate} ${result.to.currency}</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function testGateway() {
+            const amount = document.getElementById('gw-amount').value;
+            const currency = document.getElementById('gw-currency').value;
+            const country = document.getElementById('gw-country').value;
+            const method = document.getElementById('gw-method').value;
+            const result = await fetchAPI(API + `/api/gateway/route-payment?amount=${amount}&currency=${currency}&country=${country}&method_type=${method}`, { method: 'POST' });
+            document.getElementById('gateway-result').innerHTML = `
+                <div style="background: #f0fdf4; padding: 20px; border-radius: 8px; border-left: 4px solid #10b981;">
+                    <h3>Gateway: ${result.gateway || 'N/A'}</h3>
+                    <p>Fee: ${result.fee_percent}% = ${result.currency} ${result.fee_amount}</p>
+                    <p>Net Amount: ${result.currency} ${result.net_amount}</p>
+                    <p>Success Rate: ${(result.success_rate * 100).toFixed(1)}%</p>
+                </div>
+            `;
+        }
+
+        async function checkFraud() {
+            const amount = document.getElementById('fraud-amount').value;
+            const country = document.getElementById('fraud-country').value;
+            const result = await fetchAPI(API + `/api/fraud/check?transaction_id=test_${Date.now()}&amount=${amount}&user_id=test&country=${country}`, { method: 'POST' });
+            const color = result.risk_level === 'low' ? '#10b981' : result.risk_level === 'medium' ? '#f59e0b' : '#ef4444';
+            document.getElementById('fraud-result').innerHTML = `
+                <div style="background: #f9fafb; padding: 20px; border-radius: 8px; border-left: 4px solid ${color};">
+                    <h3 style="color: ${color};">Risk Level: ${result.risk_level.toUpperCase()}</h3>
+                    <p>Risk Score: ${result.risk_score}</p>
+                    <p>Recommendation: ${result.recommendation}</p>
+                    <p>Flags: ${(result.flags || []).join(', ') || 'None'}</p>
+                </div>
+            `;
+        }
+
+        async function loadPlans() {
+            const data = await fetchAPI(API + "/api/billing/plans");
+            document.getElementById('plans-container').innerHTML = (data.plans || []).map(p => `
+                <div style="border: 1px solid ${p.popular ? '#2563eb' : '#e2e8f0'}; padding: 20px; margin: 10px; border-radius: 8px; background: ${p.popular ? '#f0f9ff' : 'white'};">
+                    <h3>${p.name} - $${p.price}/mo</h3>
+                    <ul>${(p.features || []).map(f => `<li>${f}</li>`).join('')}</ul>
+                    ${p.popular ? '<span class="badge badge-info">POPULAR</span>' : ''}
+                </div>
+            `).join('');
+        }
+
+        // Load dashboard on start
+        loadDashboard();
+        setInterval(loadDashboard, 30000); // Auto-refresh every 30s
+    </script>
+</body>
+</html>

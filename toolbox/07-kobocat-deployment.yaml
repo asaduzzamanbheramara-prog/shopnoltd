@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kf
+  namespace: toolbox
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kf
+  template:
+    metadata:
+      labels:
+        app: kf
+    spec:
+      containers:
+      - name: kf
+        image: kobotoolbox/kobocat:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+        env:
+        - name: DATABASE_URL
+          value: postgis://kobo:kobo_pass@postgres.toolbox.svc.cluster.local:5432/kobodb
+        - name: MONGO_DB_URL
+          value: mongodb://mongo.toolbox.svc.cluster.local:27017/kobocat
+        - name: REDIS_CACHE_URL
+          value: redis://redis.toolbox.svc.cluster.local:6379/2
+        - name: DJANGO_SETTINGS_MODULE
+          value: onadata.settings.prod
+        - name: DJANGO_SECRET_KEY
+          value: y42k8K4M-Ixcc0cGE-f7uLFNMGjrpVs9FK3iQje5UkmdGkWamW9k8Wlx0eoHNaSEQd0
+        - name: PUBLIC_DOMAIN_NAME
+          value: shopnoltd.dpdns.org
+        - name: KOBOFORM_URL
+          value: https://kobo.shopnoltd.dpdns.org
+        - name: KOBOCAT_URL
+          value: https://kf.shopnoltd.dpdns.org
+        - name: USE_X_FORWARDED_HOST
+          value: "True"
+        - name: PUBLIC_REQUEST_SCHEME
+          value: https
+        volumeMounts:
+        - name: kf-init-scripts
+          mountPath: /srv/init
+        - name: nginx-static
+          mountPath: /srv/static_collected
+        - name: kf-media
+          mountPath: /srv/src/kobocat/media
+        - name: kobocat-ini-override
+          mountPath: /srv/src/kobocat/docker/kobocat.ini
+          subPath: kobocat.ini
+      volumes:
+      - name: kf-init-scripts
+        configMap:
+          name: kf-init-scripts
+          defaultMode: 0755
+      - name: nginx-static
+        emptyDir: {}
+      - name: kf-media
+        persistentVolumeClaim:
+          claimName: kf-media-pvc
+      - name: kobocat-ini-override
+        configMap:
+          name: kf-uwsgi-ini
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kf
+  namespace: toolbox
+spec:
+  selector:
+    app: kf
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8000

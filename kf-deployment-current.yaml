@@ -1,0 +1,175 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    deployment.kubernetes.io/revision: "3"
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"labels":{"app":"kf"},"name":"kf","namespace":"toolbox"},"spec":{"replicas":1,"selector":{"matchLabels":{"app":"kf"}},"template":{"metadata":{"labels":{"app":"kf"}},"spec":{"containers":[{"env":[{"name":"DJANGO_SETTINGS_MODULE","value":"kobo.settings.prod"},{"name":"SERVICE_NAME","value":"kpi"},{"name":"DJANGO_SECRET_KEY","value":"kobo-secret-key-change-in-production-xyz123"},{"name":"KPI_DATABASE_URL","value":"postgis://kobo:kobopass@postgres.default.svc.cluster.local:5432/kobotoolbox"},{"name":"KC_DATABASE_URL","value":"postgis://kobo:kobopass@postgres.default.svc.cluster.local:5432/kobocat"},{"name":"DATABASE_URL","value":"postgis://kobo:kobopass@postgres.default.svc.cluster.local:5432/kobotoolbox"},{"name":"KOBOCAT_URL","value":"http://ee.toolbox.svc.cluster.local"},{"name":"KOBOCAT_INTERNAL_URL","value":"http://ee.toolbox.svc.cluster.local"},{"name":"ENKETO_URL","value":"http://ee.toolbox.svc.cluster.local"},{"name":"ENKETO_INTERNAL_URL","value":"http://ee.toolbox.svc.cluster.local"},{"name":"REDIS_SESSION_URL","value":"redis://redis.default.svc.cluster.local:6379/1"},{"name":"REDIS_CACHE_URL","value":"redis://redis.default.svc.cluster.local:6379/2"},{"name":"CACHE_URL","value":"redis://redis.default.svc.cluster.local:6379/2"},{"name":"MONGO_DB_URL","value":"mongodb://mongo.toolbox.svc.cluster.local:27017/kobocat"},{"name":"DJANGO_ALLOWED_HOSTS","value":"*"},{"name":"PYTHONUNBUFFERED","value":"1"},{"name":"KOBO_SUPERUSER_USERNAME","value":"admin"},{"name":"KOBO_SUPERUSER_PASSWORD","value":"AdminPass123"},{"name":"PUBLIC_REQUEST_SCHEME","value":"http"},{"name":"KOBOFORM_URL","value":"http://kf.shopnoltd.dpdns.org"},{"name":"KPI_PREFIX","value":"/"},{"name":"KOBOCAT_RATELIMIT_WHITELIST","value":"10.0.0.0/8"}],"image":"kobotoolbox/kpi:2.023.48","imagePullPolicy":"IfNotPresent","name":"kf","ports":[{"containerPort":8000}],"volumeMounts":[{"mountPath":"/srv/init","name":"init-scripts"},{"mountPath":"/srv/src/kpi/media","name":"kpi-media"},{"mountPath":"/srv/src/kpi/staticfiles","name":"kpi-static"}]}],"initContainers":[{"command":["sh","-c","mkdir -p /srv/init\ncat \u003e /srv/init/wait_for_mongo.bash \u003c\u003c 'SCRIPT'\n#!/bin/bash\nuntil python3 -c \"import socket; socket.create_connection(('mongo.toolbox.svc.cluster.local',27017),timeout=2)\" 2\u003e/dev/null; do\n  sleep 2\ndone\nSCRIPT\ncat \u003e /srv/init/wait_for_postgres.bash \u003c\u003c 'SCRIPT'\n#!/bin/bash\nuntil python3 -c \"import socket; socket.create_connection(('postgres.default.svc.cluster.local',5432),timeout=2)\" 2\u003e/dev/null; do\n  sleep 2\ndone\nSCRIPT\nchmod +x /srv/init/wait_for_mongo.bash /srv/init/wait_for_postgres.bash\nmkdir -p /srv/src/kpi/media\nchmod 777 /srv/src/kpi/media\n"],"image":"busybox","name":"init-scripts","volumeMounts":[{"mountPath":"/srv/init","name":"init-scripts"},{"mountPath":"/srv/src/kpi/media","name":"kpi-media"}]}],"volumes":[{"emptyDir":{},"name":"init-scripts"},{"emptyDir":{},"name":"kpi-media"},{"emptyDir":{},"name":"kpi-static"}]}}}}
+  creationTimestamp: "2026-06-28T11:12:26Z"
+  generation: 3
+  labels:
+    app: kf
+  name: kf
+  namespace: toolbox
+  resourceVersion: "301536"
+  uid: 6d8bc061-99de-4a99-9ea2-5c350b7f2e2c
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: kf
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/restartedAt: "2026-06-30T20:11:49+06:00"
+      labels:
+        app: kf
+    spec:
+      containers:
+      - env:
+        - name: DJANGO_SETTINGS_MODULE
+          value: kobo.settings.prod
+        - name: SERVICE_NAME
+          value: kpi
+        - name: DJANGO_SECRET_KEY
+          value: kobo-secret-key-change-in-production-xyz123
+        - name: KPI_DATABASE_URL
+          value: postgis://kobo:kobopass@postgres.default.svc.cluster.local:5432/kobotoolbox
+        - name: KC_DATABASE_URL
+          value: postgis://kobo:kobopass@postgres.default.svc.cluster.local:5432/kobocat
+        - name: DATABASE_URL
+          value: postgis://kobo:kobopass@postgres.default.svc.cluster.local:5432/kobotoolbox
+        - name: KOBOCAT_URL
+          value: http://ee.toolbox.svc.cluster.local
+        - name: KOBOCAT_INTERNAL_URL
+          value: http://ee.toolbox.svc.cluster.local
+        - name: ENKETO_URL
+          value: http://ee.toolbox.svc.cluster.local
+        - name: ENKETO_INTERNAL_URL
+          value: http://ee.toolbox.svc.cluster.local
+        - name: REDIS_SESSION_URL
+          value: redis://redis.default.svc.cluster.local:6379/1
+        - name: REDIS_CACHE_URL
+          value: redis://redis.default.svc.cluster.local:6379/2
+        - name: CACHE_URL
+          value: redis://redis.default.svc.cluster.local:6379/2
+        - name: MONGO_DB_URL
+          value: mongodb://mongo.toolbox.svc.cluster.local:27017/kobocat
+        - name: DJANGO_ALLOWED_HOSTS
+          value: '*'
+        - name: PYTHONUNBUFFERED
+          value: "1"
+        - name: KOBO_SUPERUSER_USERNAME
+          value: admin
+        - name: KOBO_SUPERUSER_PASSWORD
+          value: AdminPass123
+        - name: PUBLIC_REQUEST_SCHEME
+          value: http
+        - name: KOBOFORM_URL
+          value: http://kf.shopnoltd.dpdns.org
+        - name: KPI_PREFIX
+          value: /
+        - name: KOBOCAT_RATELIMIT_WHITELIST
+          value: 10.0.0.0/8
+        image: kobotoolbox/kpi:2.023.48
+        imagePullPolicy: IfNotPresent
+        name: kf
+        ports:
+        - containerPort: 8000
+          protocol: TCP
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /srv/init
+          name: init-scripts
+        - mountPath: /srv/src/kpi/media
+          name: kpi-media
+        - mountPath: /srv/src/kpi/staticfiles
+          name: kpi-static
+      - image: nginx:latest
+        imagePullPolicy: Always
+        name: nginx
+        ports:
+        - containerPort: 80
+          protocol: TCP
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /etc/nginx/conf.d
+          name: nginx-conf
+      dnsPolicy: ClusterFirst
+      initContainers:
+      - command:
+        - sh
+        - -c
+        - |
+          mkdir -p /srv/init
+          cat > /srv/init/wait_for_mongo.bash << 'SCRIPT'
+          #!/bin/bash
+          until python3 -c "import socket; socket.create_connection(('mongo.toolbox.svc.cluster.local',27017),timeout=2)" 2>/dev/null; do
+            sleep 2
+          done
+          SCRIPT
+          cat > /srv/init/wait_for_postgres.bash << 'SCRIPT'
+          #!/bin/bash
+          until python3 -c "import socket; socket.create_connection(('postgres.default.svc.cluster.local',5432),timeout=2)" 2>/dev/null; do
+            sleep 2
+          done
+          SCRIPT
+          chmod +x /srv/init/wait_for_mongo.bash /srv/init/wait_for_postgres.bash
+          mkdir -p /srv/src/kpi/media
+          chmod 777 /srv/src/kpi/media
+        image: busybox
+        imagePullPolicy: Always
+        name: init-scripts
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /srv/init
+          name: init-scripts
+        - mountPath: /srv/src/kpi/media
+          name: kpi-media
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - emptyDir: {}
+        name: init-scripts
+      - emptyDir: {}
+        name: kpi-media
+      - emptyDir: {}
+        name: kpi-static
+      - configMap:
+          defaultMode: 420
+          name: kf-nginx-conf
+        name: nginx-conf
+status:
+  availableReplicas: 1
+  conditions:
+  - lastTransitionTime: "2026-06-28T11:12:38Z"
+    lastUpdateTime: "2026-06-28T11:12:38Z"
+    message: Deployment has minimum availability.
+    reason: MinimumReplicasAvailable
+    status: "True"
+    type: Available
+  - lastTransitionTime: "2026-06-28T11:12:26Z"
+    lastUpdateTime: "2026-06-30T16:18:42Z"
+    message: ReplicaSet "kf-6b97d55f8b" has successfully progressed.
+    reason: NewReplicaSetAvailable
+    status: "True"
+    type: Progressing
+  observedGeneration: 3
+  readyReplicas: 1
+  replicas: 1
+  updatedReplicas: 1
