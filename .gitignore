@@ -1,37 +1,103 @@
-# Secrets (don't commit actual values)
+###################################
+# Environment and secrets
+###################################
+
+.env
+.env.*
+*.secret
+*secret*.yaml
+secrets.yaml
 secrets-actual.yaml
+config/secrets.yaml
+cloudflared/
+*.json.cred
 
-# Large files
-*.tar
-*.zip
 
+###################################
+# Database files
+###################################
+
+*.sql
+*.dump
+
+
+###################################
 # Python
-__pycache__/
-*.pyc
-venv/
+###################################
 
+__pycache__/
+*.py[cod]
+*.pyo
+venv/
+.venv/
+
+
+###################################
+# Node / Frontend
+###################################
+
+node_modules/
+dist/
+build/
+
+
+###################################
+# Docker
+###################################
+
+*.tar
+*.tar.gz
+
+
+###################################
+# Kubernetes local files
+###################################
+
+kubectl
+
+
+###################################
+# APK files
+###################################
+
+apks/*.apk
+
+
+###################################
 # IDE
+###################################
+
 .vscode/
 .idea/
 
+
+###################################
 # OS
+###################################
+
 .DS_Store
 Thumbs.db
 
-# Real secrets (NEVER commit)
-secrets.yaml
-*.secret
-.env
-.env.local
-.env.production
 
-# Secrets (NEVER commit)
-cloudflared/
-*.json.cred
-config/secrets.yaml
+###################################
+# Generated reports
+###################################
 
-# APKs downloaded for local use; CI stores APKs as workflow artifacts
-apks/*.apk
-*.sql
-*secret*.yaml
+*-REPORT.*
+*-report-*.txt
+check-results-*.txt
+FINAL_*.txt
+COMPLETE_*.txt
+SYSTEM_*.html
+branding-*-report-*.txt
+
+
+###################################
+# Temporary files
+###################################
+
+*.log
+*.tmp
+*.bak
+
 kc-current-state-backup.yaml
