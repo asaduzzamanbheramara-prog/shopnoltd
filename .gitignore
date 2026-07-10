@@ -32,3 +32,6 @@ config/secrets.yaml
 
 # APKs downloaded for local use; CI stores APKs as workflow artifacts
 apks/*.apk
+*.sql
+*secret*.yaml
+kc-current-state-backup.yaml
