@@ -31,7 +31,7 @@ spec:
         app: api
     spec:
       containers:
-      - image: shopnoltd-api:latest
+      - image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-api:latest
         imagePullPolicy: Always
         name: shopnoltd-api
         ports:

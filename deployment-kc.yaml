@@ -24,7 +24,7 @@ spec:
 
       - name: kc
         image: kobotoolbox/kpi:2.023.48
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
 
         ports:
         - containerPort: 8000

@@ -7,12 +7,9 @@ metadata:
 
 
 spec:
-
   replicas: 1
 
-
   selector:
-
     matchLabels:
       app: shopnoltd-ai
 
@@ -20,12 +17,15 @@ spec:
   template:
 
     metadata:
-
       labels:
         app: shopnoltd-ai
 
 
     spec:
+
+      imagePullSecrets:
+      - name: ghcr-secret
+
 
       containers:
 
@@ -50,6 +50,8 @@ kind: Service
 metadata:
 
   name: shopnoltd-ai
+
+  namespace: default
 
 
 spec:

@@ -16,7 +16,7 @@ spec:
       containers:
       - name: kc
         image: kobotoolbox/kpi:2.023.48
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
 
         env:
         - name: DATABASE_URL
