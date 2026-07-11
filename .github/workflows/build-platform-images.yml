@@ -1,0 +1,59 @@
+name: Build Shopnoltd Platform Images
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+
+permissions:
+  contents: read
+  packages: write
+
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+
+    strategy:
+
+      matrix:
+
+        include:
+
+          - name: oauth
+            path: services/oauth-service
+
+          - name: billing-engine
+            path: services/billing-engine
+
+          - name: live
+            path: services/live
+
+
+    steps:
+
+    - uses: actions/checkout@v4
+
+
+    - uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{github.actor}}
+        password: ${{secrets.GITHUB_TOKEN}}
+
+
+    - uses: docker/build-push-action@v6
+      with:
+
+        context: ${{matrix.path}}
+
+        push: true
+
+        tags:
+
+          ghcr.io/${{github.repository_owner}}/shopnoltd-${{matrix.name}}:latest
