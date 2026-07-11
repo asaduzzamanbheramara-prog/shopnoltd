@@ -1,325 +1,91 @@
-name: Build and Push ALL Docker Images to GHCR
+name: Build and Push Shopnoltd Images
+
+# CORRECTED: the previous docker-build.yml built billing-engine, oauth, chat,
+# live, and tenant-router all from shopnoltd-ai-platform/backend/Dockerfile.
+# That Dockerfile only contains the FastAPI app with health/auth/chat
+# routers -- it has no billing, OAuth, or routing logic. Building it under
+# five different names would have pushed five images that all silently run
+# the same wrong app instead of failing loudly.
+#
+# This workflow only builds the 5 services that actually have their own
+# source code and Dockerfile in this repo. The rest genuinely don't have
+# an implementation yet -- see CORRECTIONS-README.md for what's still needed.
 
 on:
   push:
     branches:
       - main
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Extra tag to push (optional, in addition to latest/sha)'
+        required: false
+        default: ''
 
 permissions:
   contents: read
   packages: write
 
 jobs:
-
-  # ============================================================================
-  # FRONTEND & UI SERVICES
-  # ============================================================================
-
-  frontend-build:
-    name: Build Frontend (root-app)
+  build:
+    name: Build ${{ matrix.name }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # root-app / frontend -- real source: app_platform/
+          - name: frontend
+            context: .
+            dockerfile: Dockerfile
+            extra_tag: "latest"
+
+          # api-service -- real source: shopnoltd-ai-platform/backend/
+          - name: api-service
+            context: ./shopnoltd-ai-platform/backend
+            dockerfile: ./shopnoltd-ai-platform/backend/Dockerfile
+            extra_tag: "v4"
+
+          # shopnoltd-ai -- already working, left as-is
+          - name: ai
+            context: ./shopnoltd-ai-platform
+            dockerfile: ./shopnoltd-ai-platform/Dockerfile
+            extra_tag: "latest"
+
+          # freedomain-ui -- real source: ui/
+          - name: freedomain-ui
+            context: ./ui
+            dockerfile: ./ui/Dockerfile
+            extra_tag: "v1"
+
+          # freedomain-website (admin panel) -- real source: ui/admin/
+          - name: freedomain-website
+            context: ./ui/admin
+            dockerfile: ./ui/admin/Dockerfile
+            extra_tag: "v1"
+
     steps:
       - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/login-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/build-push-action@v6
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push ${{ matrix.name }}
+        uses: docker/build-push-action@v6
         with:
-          context: .
-          file: ./Dockerfile
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/shopnoltd-frontend:latest
-            ghcr.io/${{ github.repository_owner }}/shopnoltd-frontend:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-  freedomain-ui-build:
-    name: Build Freedomain UI
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/build-push-action@v6
-        with:
-          context: ./ui
-          file: ./ui/Dockerfile
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/shopnoltd-freedomain-ui:v1
-            ghcr.io/${{ github.repository_owner }}/shopnoltd-freedomain-ui:latest
-            ghcr.io/${{ github.repository_owner }}/shopnoltd-freedomain-ui:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-  freedomain-website-build:
-    name: Build Freedomain Website (Admin)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/build-push-action@v6
-        with:
-          context: ./ui/admin
-          file: ./ui/admin/Dockerfile
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/shopnoltd-freedomain-website:v1
-            ghcr.io/${{ github.repository_owner }}/shopnoltd-freedomain-website:latest
-            ghcr.io/${{ github.repository_owner }}/shopnoltd-freedomain-website:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-  # ============================================================================
-  # BACKEND MICROSERVICES (all from shopnoltd-ai-platform/backend)
-  # ============================================================================
-
-  api-service-build:
-    name: Build API Service
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/build-push-action@v6
-        with:
-          context: ./shopnoltd-ai-platform/backend
-          file: ./shopnoltd-ai-platform/backend/Dockerfile
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/shopnoltd-api-service:v4
-            ghcr.io/${{ github.repository_owner }}/shopnoltd-api-service:latest
-            ghcr.io/${{ github.repository_owner }}/shopnoltd-api-service:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-  billing-engine-build:
-    name: Build Billing Engine
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/build-push-action@v6
-        with:
-          context: ./shopnoltd-ai-platform/backend
-          file: ./shopnoltd-ai-platform/backend/Dockerfile
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/shopnoltd-billing-engine:v4
-            ghcr.io/${{ github.repository_owner }}/shopnoltd-billing-engine:latest
-            ghcr.io/${{ github.repository_owner }}/shopnoltd-billing-engine:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-  oauth-build:
-    name: Build OAuth Service
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/build-push-action@v6
-        with:
-          context: ./shopnoltd-ai-platform/backend
-          file: ./shopnoltd-ai-platform/backend/Dockerfile
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/shopnoltd-oauth:v1
-            ghcr.io/${{ github.repository_owner }}/shopnoltd-oauth:latest
-            ghcr.io/${{ github.repository_owner }}/shopnoltd-oauth:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-  chat-build:
-    name: Build Chat Service
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/build-push-action@v6
-        with:
-          context: ./shopnoltd-ai-platform/backend
-          file: ./shopnoltd-ai-platform/backend/Dockerfile
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/shopnoltd-chat:latest
-            ghcr.io/${{ github.repository_owner }}/shopnoltd-chat:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-  live-build:
-    name: Build Live Service
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/build-push-action@v6
-        with:
-          context: ./shopnoltd-ai-platform/backend
-          file: ./shopnoltd-ai-platform/backend/Dockerfile
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/shopnoltd-live:latest
-            ghcr.io/${{ github.repository_owner }}/shopnoltd-live:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-  tenant-router-build:
-    name: Build Tenant Router
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/build-push-action@v6
-        with:
-          context: ./shopnoltd-ai-platform/backend
-          file: ./shopnoltd-ai-platform/backend/Dockerfile
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/shopnoltd-tenant-router:latest
-            ghcr.io/${{ github.repository_owner }}/shopnoltd-tenant-router:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-  # ============================================================================
-  # LEGACY PYTHON API (compatibility)
-  # ============================================================================
-
-  api-legacy-build:
-    name: Build API Legacy (app_platform)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ./Dockerfile
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/shopnoltd-api:latest
-            ghcr.io/${{ github.repository_owner }}/shopnoltd-api:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-  # ============================================================================
-  # AI PLATFORM
-  # ============================================================================
-
-  ai-build:
-    name: Build AI Platform
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/build-push-action@v6
-        with:
-          context: ./shopnoltd-ai-platform
-          file: ./shopnoltd-ai-platform/Dockerfile
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/shopnoltd-ai:latest
-            ghcr.io/${{ github.repository_owner }}/shopnoltd-ai:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-  # ============================================================================
-  # TOOLBOX SERVICES (KPI, KoBocat Overlays - Branding)
-  # ============================================================================
-
-  kpi-overlay-build:
-    name: Build KPI (Branding Overlay)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/build-push-action@v6
-        with:
-          context: ./branding
-          file: ./branding/Dockerfile.overlay
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/shopnoltd-kpi:v1
-            ghcr.io/${{ github.repository_owner }}/shopnoltd-kpi:latest
-            ghcr.io/${{ github.repository_owner }}/shopnoltd-kpi:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-  kobocat-overlay-build:
-    name: Build KoBocat (Branding Overlay)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/build-push-action@v6
-        with:
-          context: ./branding
-          file: ./branding/Dockerfile.overlay.kobocat
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/shopnoltd-kobocat:v1
-            ghcr.io/${{ github.repository_owner }}/shopnoltd-kobocat:latest
-            ghcr.io/${{ github.repository_owner }}/shopnoltd-kobocat:${{ github.sha }}
+            ghcr.io/${{ github.repository_owner }}/shopnoltd-${{ matrix.name }}:${{ matrix.extra_tag }}
+            ghcr.io/${{ github.repository_owner }}/shopnoltd-${{ matrix.name }}:latest
+            ghcr.io/${{ github.repository_owner }}/shopnoltd-${{ matrix.name }}:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
