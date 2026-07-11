@@ -30,7 +30,7 @@ items:
       - name: COMPANY
         value: Shopno Database Firm
       image: python:3.11
-      imagePullPolicy: IfNotPresent
+      imagePullPolicy: Always
       name: api
       ports:
       - containerPort: 8000
@@ -45,7 +45,7 @@ items:
         name: kube-api-access-vrtnj
         readOnly: true
     - image: python:3.11
-      imagePullPolicy: IfNotPresent
+      imagePullPolicy: Always
       name: python
       resources: {}
       terminationMessagePath: /dev/termination-log
@@ -191,7 +191,7 @@ items:
   spec:
     containers:
     - image: python:3.11
-      imagePullPolicy: IfNotPresent
+      imagePullPolicy: Always
       name: python
       resources: {}
       terminationMessagePath: /dev/termination-log
@@ -353,8 +353,8 @@ items:
         value: http://otel-collector.observability.svc.cluster.local:4318
       - name: OTEL_EXPORTER_OTLP_PROTOCOL
         value: http/protobuf
-      image: api-service:v4
-      imagePullPolicy: IfNotPresent
+      image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-api-service:v4
+      imagePullPolicy: Always
       name: api-service
       ports:
       - containerPort: 8080
@@ -521,8 +521,8 @@ items:
         value: http://otel-collector.observability.svc.cluster.local:4318
       - name: OTEL_EXPORTER_OTLP_PROTOCOL
         value: http/protobuf
-      image: api-service:v4
-      imagePullPolicy: IfNotPresent
+      image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-api-service:v4
+      imagePullPolicy: Always
       name: api-service
       ports:
       - containerPort: 8080
@@ -685,8 +685,8 @@ items:
       envFrom:
       - secretRef:
           name: stripe-secret
-      image: billing-engine:v4
-      imagePullPolicy: IfNotPresent
+      image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-billing-engine:v4
+      imagePullPolicy: Always
       livenessProbe:
         failureThreshold: 3
         httpGet:
@@ -1123,8 +1123,8 @@ items:
     uid: 0b4293d6-b094-429e-b3d7-e2eaf3d6ba82
   spec:
     containers:
-    - image: freedomain-ui:v1
-      imagePullPolicy: IfNotPresent
+    - image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-freedomain-ui:v1
+      imagePullPolicy: Always
       name: freedomain-ui
       ports:
       - containerPort: 80
@@ -1277,7 +1277,7 @@ items:
     uid: f16a4050-e147-4c4a-b800-88d2387f1bdf
   spec:
     containers:
-    - image: freedomain-site:v1
+    - image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-freedomain-website:v1
       imagePullPolicy: Never
       name: freedomain-website
       ports:
@@ -1431,7 +1431,7 @@ items:
     uid: 9974d368-b471-49fa-8252-df23502e505a
   spec:
     containers:
-    - image: live:latest
+    - image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-live:latest
       imagePullPolicy: Never
       name: live
       ports:
@@ -1612,8 +1612,8 @@ items:
         value: http://otel-collector.observability.svc.cluster.local:4318
       - name: OTEL_EXPORTER_OTLP_PROTOCOL
         value: http/protobuf
-      image: oauth-service:1.0.0
-      imagePullPolicy: IfNotPresent
+      image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-oauth:v1
+      imagePullPolicy: Always
       name: oauth-service
       ports:
       - containerPort: 3000
@@ -1767,7 +1767,7 @@ items:
       - secretRef:
           name: postgres-secret
       image: postgres:16
-      imagePullPolicy: IfNotPresent
+      imagePullPolicy: Always
       name: postgres
       ports:
       - containerPort: 5432
@@ -1916,7 +1916,7 @@ items:
   spec:
     containers:
     - image: redis:7
-      imagePullPolicy: IfNotPresent
+      imagePullPolicy: Always
       name: redis
       ports:
       - containerPort: 6379
@@ -2059,8 +2059,8 @@ items:
     uid: 6371b066-98e1-4173-8d81-9da3c1c9bb31
   spec:
     containers:
-    - image: shopno-frontend:latest
-      imagePullPolicy: IfNotPresent
+    - image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-frontend:latest
+      imagePullPolicy: Always
       name: frontend
       ports:
       - containerPort: 80
@@ -2212,8 +2212,8 @@ items:
     uid: 25226c69-8ea8-47c2-94e3-663ffe77f6db
   spec:
     containers:
-    - image: shopno-frontend:latest
-      imagePullPolicy: IfNotPresent
+    - image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-frontend:latest
+      imagePullPolicy: Always
       name: frontend
       ports:
       - containerPort: 80
@@ -2370,8 +2370,8 @@ items:
         value: http://otel-collector.observability.svc.cluster.local:4318
       - name: OTEL_EXPORTER_OTLP_PROTOCOL
         value: http/protobuf
-      image: openresty/openresty:alpine
-      imagePullPolicy: IfNotPresent
+      image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-tenant-router:latest
+      imagePullPolicy: Always
       name: openresty
       ports:
       - containerPort: 80
@@ -2537,8 +2537,8 @@ items:
         value: http://otel-collector.observability.svc.cluster.local:4318
       - name: OTEL_EXPORTER_OTLP_PROTOCOL
         value: http/protobuf
-      image: openresty/openresty:alpine
-      imagePullPolicy: IfNotPresent
+      image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-tenant-router:latest
+      imagePullPolicy: Always
       name: openresty
       ports:
       - containerPort: 80
@@ -3090,7 +3090,7 @@ items:
           - name: COMPANY
             value: Shopno Database Firm
           image: python:3.11
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           name: api
           ports:
           - containerPort: 8000
@@ -3102,7 +3102,7 @@ items:
           - mountPath: /workspace
             name: app
         - image: python:3.11
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           name: python
           resources: {}
           terminationMessagePath: /dev/termination-log
@@ -3183,8 +3183,8 @@ items:
             value: http://otel-collector.observability.svc.cluster.local:4318
           - name: OTEL_EXPORTER_OTLP_PROTOCOL
             value: http/protobuf
-          image: api-service:v4
-          imagePullPolicy: IfNotPresent
+          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-api-service:v4
+          imagePullPolicy: Always
           name: api-service
           ports:
           - containerPort: 8080
@@ -3259,8 +3259,8 @@ items:
           envFrom:
           - secretRef:
               name: stripe-secret
-          image: billing-engine:v4
-          imagePullPolicy: IfNotPresent
+          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-billing-engine:v4
+          imagePullPolicy: Always
           livenessProbe:
             failureThreshold: 3
             httpGet:
@@ -3470,8 +3470,8 @@ items:
           app: freedomain-ui
       spec:
         containers:
-        - image: freedomain-ui:v1
-          imagePullPolicy: IfNotPresent
+        - image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-freedomain-ui:v1
+          imagePullPolicy: Always
           name: freedomain-ui
           ports:
           - containerPort: 80
@@ -3536,7 +3536,7 @@ items:
           app: freedomain-website
       spec:
         containers:
-        - image: freedomain-site:v1
+        - image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-freedomain-website:v1
           imagePullPolicy: Never
           name: freedomain-website
           ports:
@@ -3602,7 +3602,7 @@ items:
           app: live
       spec:
         containers:
-        - image: live:latest
+        - image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-live:latest
           imagePullPolicy: Never
           name: live
           ports:
@@ -3706,8 +3706,8 @@ items:
             value: http://otel-collector.observability.svc.cluster.local:4318
           - name: OTEL_EXPORTER_OTLP_PROTOCOL
             value: http/protobuf
-          image: oauth-service:1.0.0
-          imagePullPolicy: IfNotPresent
+          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-oauth:v1
+          imagePullPolicy: Always
           name: oauth-service
           ports:
           - containerPort: 3000
@@ -3774,7 +3774,7 @@ items:
           - secretRef:
               name: postgres-secret
           image: postgres:16
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           name: postgres
           ports:
           - containerPort: 5432
@@ -3845,7 +3845,7 @@ items:
       spec:
         containers:
         - image: redis:7
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           name: redis
           ports:
           - containerPort: 6379
@@ -3910,8 +3910,8 @@ items:
           app: root-app
       spec:
         containers:
-        - image: shopno-frontend:latest
-          imagePullPolicy: IfNotPresent
+        - image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-frontend:latest
+          imagePullPolicy: Always
           name: frontend
           ports:
           - containerPort: 80
@@ -3981,8 +3981,8 @@ items:
             value: http://otel-collector.observability.svc.cluster.local:4318
           - name: OTEL_EXPORTER_OTLP_PROTOCOL
             value: http/protobuf
-          image: openresty/openresty:alpine
-          imagePullPolicy: IfNotPresent
+          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-tenant-router:latest
+          imagePullPolicy: Always
           name: openresty
           ports:
           - containerPort: 80
@@ -4067,7 +4067,7 @@ items:
           - name: COMPANY
             value: Shopno Database Firm
           image: python:3.11
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           name: api
           ports:
           - containerPort: 8000
@@ -4079,7 +4079,7 @@ items:
           - mountPath: /workspace
             name: app
         - image: python:3.11
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           name: python
           resources: {}
           terminationMessagePath: /dev/termination-log
@@ -4135,7 +4135,7 @@ items:
       spec:
         containers:
         - image: python:3.11
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           name: python
           resources: {}
           terminationMessagePath: /dev/termination-log
@@ -4202,8 +4202,8 @@ items:
             value: http://otel-collector.observability.svc.cluster.local:4318
           - name: OTEL_EXPORTER_OTLP_PROTOCOL
             value: http/protobuf
-          image: api-service:v4
-          imagePullPolicy: IfNotPresent
+          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-api-service:v4
+          imagePullPolicy: Always
           name: api-service
           ports:
           - containerPort: 8080
@@ -4272,8 +4272,8 @@ items:
             value: http://otel-collector.observability.svc.cluster.local:4318
           - name: OTEL_EXPORTER_OTLP_PROTOCOL
             value: http/protobuf
-          image: api-service:v4
-          imagePullPolicy: IfNotPresent
+          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-api-service:v4
+          imagePullPolicy: Always
           name: api-service
           ports:
           - containerPort: 8080
@@ -4342,8 +4342,8 @@ items:
             value: http://otel-collector.observability.svc.cluster.local:4318
           - name: OTEL_EXPORTER_OTLP_PROTOCOL
             value: http/protobuf
-          image: api-service:v4
-          imagePullPolicy: IfNotPresent
+          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-api-service:v4
+          imagePullPolicy: Always
           name: api-service
           ports:
           - containerPort: 8080
@@ -4414,7 +4414,7 @@ items:
           - name: OTEL_EXPORTER_OTLP_PROTOCOL
             value: http/protobuf
           image: host.docker.internal:5000/api-service:v4
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           name: api-service
           ports:
           - containerPort: 8080
@@ -4481,8 +4481,8 @@ items:
             value: http://otel-collector.observability.svc.cluster.local:4318
           - name: OTEL_EXPORTER_OTLP_PROTOCOL
             value: http/protobuf
-          image: api-service:v4
-          imagePullPolicy: IfNotPresent
+          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-api-service:v4
+          imagePullPolicy: Always
           name: api-service
           ports:
           - containerPort: 8080
@@ -4545,7 +4545,7 @@ items:
           - secretRef:
               name: stripe-secret
           image: host.docker.internal:5000/billing-engine:v4
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           livenessProbe:
             failureThreshold: 3
             httpGet:
@@ -4627,8 +4627,8 @@ items:
           envFrom:
           - secretRef:
               name: stripe-secret
-          image: billing-engine:v4
-          imagePullPolicy: IfNotPresent
+          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-billing-engine:v4
+          imagePullPolicy: Always
           livenessProbe:
             failureThreshold: 3
             httpGet:
@@ -4712,8 +4712,8 @@ items:
           envFrom:
           - secretRef:
               name: stripe-secret
-          image: billing-engine:v4
-          imagePullPolicy: IfNotPresent
+          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-billing-engine:v4
+          imagePullPolicy: Always
           livenessProbe:
             failureThreshold: 3
             httpGet:
@@ -4797,8 +4797,8 @@ items:
           envFrom:
           - secretRef:
               name: stripe-secret
-          image: billing-engine:v4
-          imagePullPolicy: IfNotPresent
+          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-billing-engine:v4
+          imagePullPolicy: Always
           livenessProbe:
             failureThreshold: 3
             httpGet:
@@ -4984,8 +4984,8 @@ items:
           pod-template-hash: 7d4bc8846f
       spec:
         containers:
-        - image: freedomain-ui:v1
-          imagePullPolicy: IfNotPresent
+        - image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-freedomain-ui:v1
+          imagePullPolicy: Always
           name: freedomain-ui
           ports:
           - containerPort: 80
@@ -5040,8 +5040,8 @@ items:
           pod-template-hash: 568bb56978
       spec:
         containers:
-        - image: freedomain-site:v1
-          imagePullPolicy: IfNotPresent
+        - image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-freedomain-website:v1
+          imagePullPolicy: Always
           name: freedomain-website
           ports:
           - containerPort: 80
@@ -5095,7 +5095,7 @@ items:
           pod-template-hash: 57448959ff
       spec:
         containers:
-        - image: freedomain-site:v1
+        - image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-freedomain-website:v1
           imagePullPolicy: Never
           name: freedomain-website
           ports:
@@ -5153,7 +5153,7 @@ items:
           pod-template-hash: 5cd7ff5ff4
       spec:
         containers:
-        - image: freedomain-site:v1
+        - image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-freedomain-website:v1
           imagePullPolicy: Never
           name: freedomain-website
           ports:
@@ -5208,8 +5208,8 @@ items:
           pod-template-hash: 6db8886655
       spec:
         containers:
-        - image: freedomain-site:v1
-          imagePullPolicy: IfNotPresent
+        - image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-freedomain-website:v1
+          imagePullPolicy: Always
           name: freedomain-website
           ports:
           - containerPort: 80
@@ -5263,8 +5263,8 @@ items:
           pod-template-hash: 7f94f7465f
       spec:
         containers:
-        - image: freedomain-site:v1
-          imagePullPolicy: IfNotPresent
+        - image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-freedomain-website:v1
+          imagePullPolicy: Always
           name: freedomain-website
           ports:
           - containerPort: 80
@@ -5318,7 +5318,7 @@ items:
           pod-template-hash: 6dd7796d74
       spec:
         containers:
-        - image: live:latest
+        - image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-live:latest
           imagePullPolicy: Never
           name: live
           ports:
@@ -5374,7 +5374,7 @@ items:
           pod-template-hash: 84f76c7d6
       spec:
         containers:
-        - image: live:latest
+        - image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-live:latest
           imagePullPolicy: Always
           name: live
           ports:
@@ -5429,7 +5429,7 @@ items:
           pod-template-hash: 86f74bc886
       spec:
         containers:
-        - image: live:latest
+        - image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-live:latest
           imagePullPolicy: Never
           name: live
           ports:
@@ -5484,7 +5484,7 @@ items:
           pod-template-hash: d9759787c
       spec:
         containers:
-        - image: live:latest
+        - image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-live:latest
           imagePullPolicy: Always
           name: live
           ports:
@@ -5577,8 +5577,8 @@ items:
             value: http://otel-collector.observability.svc.cluster.local:4318
           - name: OTEL_EXPORTER_OTLP_PROTOCOL
             value: http/protobuf
-          image: oauth-service:1.0.0
-          imagePullPolicy: IfNotPresent
+          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-oauth:v1
+          imagePullPolicy: Always
           name: oauth-service
           ports:
           - containerPort: 3000
@@ -5671,8 +5671,8 @@ items:
             value: http://otel-collector.observability.svc.cluster.local:4318
           - name: OTEL_EXPORTER_OTLP_PROTOCOL
             value: http/protobuf
-          image: oauth-service:1.0.0
-          imagePullPolicy: IfNotPresent
+          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-oauth:v1
+          imagePullPolicy: Always
           name: oauth-service
           ports:
           - containerPort: 3000
@@ -5763,7 +5763,7 @@ items:
           - name: OTEL_EXPORTER_OTLP_PROTOCOL
             value: http/protobuf
           image: host.docker.internal:5000/oauth-service:1.0.0
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           name: oauth-service
           ports:
           - containerPort: 3000
@@ -5819,7 +5819,7 @@ items:
           - secretRef:
               name: postgres-secret
           image: postgres:16
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           name: postgres
           ports:
           - containerPort: 5432
@@ -5882,7 +5882,7 @@ items:
       spec:
         containers:
         - image: redis:7
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           name: redis
           ports:
           - containerPort: 6379
@@ -5939,8 +5939,8 @@ items:
           pod-template-hash: 58fdf546c7
       spec:
         containers:
-        - image: shopno-frontend:latest
-          imagePullPolicy: IfNotPresent
+        - image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-frontend:latest
+          imagePullPolicy: Always
           name: frontend
           ports:
           - containerPort: 80
@@ -5995,8 +5995,8 @@ items:
           pod-template-hash: 785cb4964b
       spec:
         containers:
-        - image: shopno-frontend:latest
-          imagePullPolicy: IfNotPresent
+        - image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-frontend:latest
+          imagePullPolicy: Always
           name: frontend
           ports:
           - containerPort: 80
@@ -6055,8 +6055,8 @@ items:
             value: http://otel-collector.observability.svc.cluster.local:4318
           - name: OTEL_EXPORTER_OTLP_PROTOCOL
             value: http/protobuf
-          image: openresty/openresty:alpine
-          imagePullPolicy: IfNotPresent
+          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-tenant-router:latest
+          imagePullPolicy: Always
           name: openresty
           ports:
           - containerPort: 80

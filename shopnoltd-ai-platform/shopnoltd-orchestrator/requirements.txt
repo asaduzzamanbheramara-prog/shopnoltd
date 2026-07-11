@@ -1,0 +1,6 @@
+fastapi>=0.110
+uvicorn[standard]>=0.29
+docker>=7.0
+kubernetes>=29.0
+PyYAML>=6.0
+pydantic>=2.6

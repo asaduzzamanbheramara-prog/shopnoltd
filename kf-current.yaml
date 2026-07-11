@@ -77,7 +77,7 @@ spec:
         - name: KOBOCAT_RATELIMIT_WHITELIST
           value: 10.0.0.0/8
         image: kobotoolbox/kpi:2.023.48
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
         name: kf
         ports:
         - containerPort: 8000

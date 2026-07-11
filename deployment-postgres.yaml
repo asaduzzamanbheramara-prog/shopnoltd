@@ -33,7 +33,7 @@ spec:
         - secretRef:
             name: postgres-secret
         image: postgres:16
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
         name: postgres
         ports:
         - containerPort: 5432

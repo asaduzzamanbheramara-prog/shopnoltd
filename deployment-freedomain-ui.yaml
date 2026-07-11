@@ -29,8 +29,8 @@ spec:
         app: freedomain-ui
     spec:
       containers:
-      - image: freedomain-ui:v1
-        imagePullPolicy: IfNotPresent
+      - image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-freedomain-ui:v1
+        imagePullPolicy: Always
         name: freedomain-ui
         ports:
         - containerPort: 80

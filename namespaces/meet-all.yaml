@@ -23,7 +23,7 @@ items:
   spec:
     containers:
     - image: jitsi/jicofo:stable
-      imagePullPolicy: IfNotPresent
+      imagePullPolicy: Always
       name: jicofo
       resources: {}
       terminationMessagePath: /dev/termination-log
@@ -166,7 +166,7 @@ items:
   spec:
     containers:
     - image: jitsi/jvb:stable
-      imagePullPolicy: IfNotPresent
+      imagePullPolicy: Always
       name: jvb
       ports:
       - containerPort: 10000
@@ -313,7 +313,7 @@ items:
   spec:
     containers:
     - image: jitsi/prosody:stable
-      imagePullPolicy: IfNotPresent
+      imagePullPolicy: Always
       name: prosody
       ports:
       - containerPort: 5222
@@ -460,7 +460,7 @@ items:
   spec:
     containers:
     - image: jitsi/web:stable
-      imagePullPolicy: IfNotPresent
+      imagePullPolicy: Always
       name: web
       ports:
       - containerPort: 80
@@ -669,7 +669,7 @@ items:
       spec:
         containers:
         - image: jitsi/jicofo:stable
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           name: jicofo
           resources: {}
           terminationMessagePath: /dev/termination-log
@@ -729,7 +729,7 @@ items:
       spec:
         containers:
         - image: jitsi/jvb:stable
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           name: jvb
           ports:
           - containerPort: 10000
@@ -792,7 +792,7 @@ items:
       spec:
         containers:
         - image: jitsi/prosody:stable
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           name: prosody
           ports:
           - containerPort: 5222
@@ -855,7 +855,7 @@ items:
       spec:
         containers:
         - image: jitsi/web:stable
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           name: web
           ports:
           - containerPort: 80
@@ -924,7 +924,7 @@ items:
       spec:
         containers:
         - image: jitsi/jicofo:stable
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           name: jicofo
           resources: {}
           terminationMessagePath: /dev/termination-log
@@ -975,7 +975,7 @@ items:
       spec:
         containers:
         - image: jitsi/jvb:stable
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           name: jvb
           ports:
           - containerPort: 10000
@@ -1029,7 +1029,7 @@ items:
       spec:
         containers:
         - image: jitsi/prosody:stable
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           name: prosody
           ports:
           - containerPort: 5222
@@ -1083,7 +1083,7 @@ items:
       spec:
         containers:
         - image: jitsi/web:stable
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           name: web
           ports:
           - containerPort: 80
