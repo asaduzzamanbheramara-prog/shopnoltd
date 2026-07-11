@@ -1,4 +1,4 @@
-name: Build and Push Docker Images to GHCR
+name: Build and Push ALL Docker Images to GHCR
 
 on:
   push:
@@ -12,10 +12,9 @@ permissions:
 jobs:
 
   # ============================================================================
-  # FRONTEND SERVICES
+  # FRONTEND & UI SERVICES
   # ============================================================================
 
-  # Root app frontend (Python Uvicorn + app_platform API)
   frontend-build:
     name: Build Frontend (root-app)
     runs-on: ubuntu-latest
@@ -38,7 +37,6 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  # Freedomain UI (React/Vue app)
   freedomain-ui-build:
     name: Build Freedomain UI
     runs-on: ubuntu-latest
@@ -62,7 +60,6 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  # Freedomain Website / Admin UI
   freedomain-website-build:
     name: Build Freedomain Website (Admin)
     runs-on: ubuntu-latest
@@ -87,10 +84,9 @@ jobs:
           cache-to: type=gha,mode=max
 
   # ============================================================================
-  # BACKEND SERVICES (All from shopnoltd-ai-platform/backend)
+  # BACKEND MICROSERVICES (all from shopnoltd-ai-platform/backend)
   # ============================================================================
 
-  # API Service
   api-service-build:
     name: Build API Service
     runs-on: ubuntu-latest
@@ -114,7 +110,6 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  # Billing Engine (backend with different CMD/entrypoint)
   billing-engine-build:
     name: Build Billing Engine
     runs-on: ubuntu-latest
@@ -138,7 +133,6 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  # OAuth Service (backend)
   oauth-build:
     name: Build OAuth Service
     runs-on: ubuntu-latest
@@ -162,7 +156,6 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  # Chat Service (backend)
   chat-build:
     name: Build Chat Service
     runs-on: ubuntu-latest
@@ -185,7 +178,6 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  # Live Service (backend)
   live-build:
     name: Build Live Service
     runs-on: ubuntu-latest
@@ -208,7 +200,6 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  # Tenant Router (backend)
   tenant-router-build:
     name: Build Tenant Router
     runs-on: ubuntu-latest
@@ -232,12 +223,11 @@ jobs:
           cache-to: type=gha,mode=max
 
   # ============================================================================
-  # LEGACY PYTHON API (from root Dockerfile + app_platform)
+  # LEGACY PYTHON API (compatibility)
   # ============================================================================
 
-  # Legacy API (for deployment-api.yaml, kept for compatibility)
   api-legacy-build:
-    name: Build API (legacy)
+    name: Build API Legacy (app_platform)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -285,7 +275,7 @@ jobs:
           cache-to: type=gha,mode=max
 
   # ============================================================================
-  # KPI BRANDING OVERLAY (builds on kobocat base)
+  # TOOLBOX SERVICES (KPI, KoBocat Overlays - Branding)
   # ============================================================================
 
   kpi-overlay-build:
@@ -305,14 +295,14 @@ jobs:
           file: ./branding/Dockerfile.overlay
           push: true
           tags: |
+            ghcr.io/${{ github.repository_owner }}/shopnoltd-kpi:v1
             ghcr.io/${{ github.repository_owner }}/shopnoltd-kpi:latest
             ghcr.io/${{ github.repository_owner }}/shopnoltd-kpi:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  # Kobocat Overlay
   kobocat-overlay-build:
-    name: Build Kobocat (Branding Overlay)
+    name: Build KoBocat (Branding Overlay)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -328,6 +318,7 @@ jobs:
           file: ./branding/Dockerfile.overlay.kobocat
           push: true
           tags: |
+            ghcr.io/${{ github.repository_owner }}/shopnoltd-kobocat:v1
             ghcr.io/${{ github.repository_owner }}/shopnoltd-kobocat:latest
             ghcr.io/${{ github.repository_owner }}/shopnoltd-kobocat:${{ github.sha }}
           cache-from: type=gha
