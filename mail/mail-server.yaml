@@ -27,8 +27,8 @@ spec:
           protocol: TCP
         env:
         - name: DOMAIN
-          value: "shopnoltd.com"
+          value: "shopnoltd.dpdns.org"
         - name: HOSTNAMES
-          value: "mail.shopnoltd.com"
+          value: "mail.shopnoltd.dpdns.org"
         - name: RELAYHOST
           value: ""

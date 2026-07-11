@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: shopnoltd-ai
+  namespace: default
+
+
+spec:
+
+  replicas: 1
+
+
+  selector:
+
+    matchLabels:
+      app: shopnoltd-ai
+
+
+  template:
+
+    metadata:
+
+      labels:
+        app: shopnoltd-ai
+
+
+    spec:
+
+      containers:
+
+      - name: ai
+
+        image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-ai:latest
+
+        imagePullPolicy: Always
+
+
+        ports:
+
+        - containerPort: 8000
+
+
+
+---
+
+apiVersion: v1
+kind: Service
+
+metadata:
+
+  name: shopnoltd-ai
+
+
+spec:
+
+  selector:
+
+    app: shopnoltd-ai
+
+
+  ports:
+
+  - port: 80
+
+    targetPort: 8000

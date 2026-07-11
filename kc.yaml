@@ -2,15 +2,17 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   annotations:
-    deployment.kubernetes.io/revision: "23"
+    deployment.kubernetes.io/revision: "19"
     kubectl.kubernetes.io/last-applied-configuration: |
-      {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"name":"kc","namespace":"toolbox"},"spec":{"replicas":1,"selector":{"matchLabels":{"app":"kc"}},"template":{"metadata":{"labels":{"app":"kc"}},"spec":{"containers":[{"env":[{"name":"DATABASE_URL","value":"postgis://kobo:kobo_pass@postgres.toolbox.svc.cluster.local:5432/kpidb"},{"name":"KC_DATABASE_URL","value":"postgis://kobo:kobo_pass@postgres.toolbox.svc.cluster.local:5432/kobodb"},{"name":"MONGO_URL","value":"mongodb://mongo.toolbox.svc.cluster.local:27017"},{"name":"REDIS_URL","value":"redis://redis.toolbox.svc.cluster.local:6379"},{"name":"DJANGO_SECRET_KEY","value":"y42k8K4M-Ixcc0cGE-f7uLFNMGjrpVs9FK3iQje5UkmdGkWamW9k8Wlx0eoHNaSEQd0"}],"image":"kobotoolbox/kpi:2.026.12k","name":"kc","ports":[{"containerPort":8000}],"volumeMounts":[{"mountPath":"/srv/src/kpi/media","name":"kc-media"},{"mountPath":"/srv/src/kobocat/media","name":"kf-media"},{"mountPath":"/srv/init","name":"kf-init-scripts"}]}],"volumes":[{"name":"kc-media","persistentVolumeClaim":{"claimName":"kc-media-pvc"}},{"name":"kf-media","persistentVolumeClaim":{"claimName":"kf-media-pvc"}},{"configMap":{"defaultMode":493,"name":"kf-init-scripts"},"name":"kf-init-scripts"}]}}}}
-  creationTimestamp: "2026-07-04T18:03:49Z"
-  generation: 27
+      {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"labels":{"app":"kc"},"name":"kc","namespace":"toolbox"},"spec":{"replicas":1,"selector":{"matchLabels":{"app":"kc"}},"template":{"metadata":{"labels":{"app":"kc"}},"spec":{"containers":[{"env":[{"name":"DATABASE_URL","value":"postgis://kobo:kobopass@postgres.default.svc.cluster.local:5432/kobotoolbox"},{"name":"KPI_DATABASE_URL","value":"postgis://kobo:kobopass@postgres.default.svc.cluster.local:5432/kobotoolbox"},{"name":"KC_DATABASE_URL","value":"postgis://kobo:kobopass@postgres.default.svc.cluster.local:5432/kobocat"},{"name":"MONGO_DB_URL","value":"mongodb://mongo.toolbox.svc.cluster.local:27017/kobocat"},{"name":"REDIS_SESSION_URL","value":"redis://redis.default.svc.cluster.local:6379/1"},{"name":"REDIS_CACHE_URL","value":"redis://redis.default.svc.cluster.local:6379/2"},{"name":"CACHE_URL","value":"redis://redis.default.svc.cluster.local:6379/2"},{"name":"DJANGO_SETTINGS_MODULE","value":"kobo.settings.prod"},{"name":"DJANGO_SECRET_KEY","value":"kobo-secret-key-change-in-production-xyz123"},{"name":"SERVICE_NAME","value":"kc"},{"name":"DJANGO_ALLOWED_HOSTS","value":"*"},{"name":"PYTHONUNBUFFERED","value":"1"}],"image":"kobotoolbox/kpi:2.023.48","imagePullPolicy":"IfNotPresent","livenessProbe":{"httpGet":{"path":"/","port":8000},"initialDelaySeconds":60,"periodSeconds":20,"timeoutSeconds":5},"name":"kc","ports":[{"containerPort":8000}],"readinessProbe":{"failureThreshold":6,"httpGet":{"path":"/","port":8000},"initialDelaySeconds":30,"periodSeconds":10,"timeoutSeconds":5}}]}}}}
+  creationTimestamp: "2026-07-09T10:21:49Z"
+  generation: 23
+  labels:
+    app: kc
   name: kc
   namespace: toolbox
-  resourceVersion: "639957"
-  uid: f8194889-e2f7-4509-8950-bd483d531238
+  resourceVersion: "129640"
+  uid: f1754112-f972-4755-a9f5-7166cccbef95
 spec:
   progressDeadlineSeconds: 600
   replicas: 1
@@ -26,7 +28,7 @@ spec:
   template:
     metadata:
       annotations:
-        kubectl.kubernetes.io/restartedAt: "2026-07-05T18:23:47+06:00"
+        kubectl.kubernetes.io/restartedAt: "2026-07-10T18:28:06+06:00"
       labels:
         app: kc
     spec:
@@ -34,74 +36,96 @@ spec:
       - env:
         - name: DATABASE_URL
           value: postgis://kobo:kobo_pass@postgres.toolbox.svc.cluster.local:5432/kpidb
-        - name: KC_DATABASE_URL
-          value: postgis://kobo:kobo_pass@postgres.toolbox.svc.cluster.local:5432/kobodb
-        - name: MONGO_URL
-          value: mongodb://mongo.toolbox.svc.cluster.local:27017
-        - name: REDIS_URL
-          value: redis://redis.toolbox.svc.cluster.local:6379
-        - name: DJANGO_SECRET_KEY
-          value: y42k8K4M-Ixcc0cGE-f7uLFNMGjrpVs9FK3iQje5UkmdGkWamW9k8Wlx0eoHNaSEQd0
         - name: KPI_DATABASE_URL
           value: postgis://kobo:kobo_pass@postgres.toolbox.svc.cluster.local:5432/kpidb
+        - name: KC_DATABASE_URL
+          value: postgis://kobo:kobo_pass@postgres.toolbox.svc.cluster.local:5432/kobodb
         - name: MONGO_DB_URL
           value: mongodb://mongo.toolbox.svc.cluster.local:27017/kobocat
-        - name: REDIS_CACHE_URL
-          value: redis://redis.toolbox.svc.cluster.local:6379/2
         - name: REDIS_SESSION_URL
           value: redis://redis.toolbox.svc.cluster.local:6379/1
+        - name: REDIS_CACHE_URL
+          value: redis://redis.toolbox.svc.cluster.local:6379/2
         - name: CACHE_URL
           value: redis://redis.toolbox.svc.cluster.local:6379/2
         - name: DJANGO_SETTINGS_MODULE
           value: kobo.settings.prod
-        image: kobotoolbox/kpi:2.026.12k
-        imagePullPolicy: Always
+        - name: DJANGO_SECRET_KEY
+          value: kobo-secret-key-change-in-production-xyz123
+        - name: SERVICE_NAME
+          value: kc
+        - name: DJANGO_ALLOWED_HOSTS
+          value: '*'
+        - name: PYTHONUNBUFFERED
+          value: "1"
+        image: localhost:5000/shopnoltd-kpi:v1
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /
+            port: 8000
+            scheme: HTTP
+          initialDelaySeconds: 60
+          periodSeconds: 20
+          successThreshold: 1
+          timeoutSeconds: 5
         name: kc
         ports:
         - containerPort: 8000
           protocol: TCP
+        readinessProbe:
+          failureThreshold: 6
+          httpGet:
+            path: /
+            port: 8000
+            scheme: HTTP
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 5
         resources: {}
         terminationMessagePath: /dev/termination-log
         terminationMessagePolicy: File
         volumeMounts:
         - mountPath: /srv/src/kpi/media
-          name: kc-media
+          name: kpi-media
         - mountPath: /srv/src/kobocat/media
-          name: kf-media
+          name: kobocat-media
         - mountPath: /srv/init
-          name: kf-init-scripts
+          name: kc-init-scripts
       dnsPolicy: ClusterFirst
       restartPolicy: Always
       schedulerName: default-scheduler
       securityContext: {}
       terminationGracePeriodSeconds: 30
       volumes:
-      - name: kc-media
-        persistentVolumeClaim:
-          claimName: kc-media-pvc
-      - name: kf-media
-        persistentVolumeClaim:
-          claimName: kf-media-pvc
+      - emptyDir: {}
+        name: kpi-media
+      - emptyDir: {}
+        name: kobocat-media
       - configMap:
           defaultMode: 493
-          name: kf-init-scripts
-        name: kf-init-scripts
+          name: kc-init-scripts
+        name: kc-init-scripts
 status:
   availableReplicas: 1
   conditions:
-  - lastTransitionTime: "2026-07-05T14:34:13Z"
-    lastUpdateTime: "2026-07-05T14:34:13Z"
+  - lastTransitionTime: "2026-07-10T12:29:29Z"
+    lastUpdateTime: "2026-07-10T12:29:29Z"
     message: Deployment has minimum availability.
     reason: MinimumReplicasAvailable
     status: "True"
     type: Available
-  - lastTransitionTime: "2026-07-05T08:10:05Z"
-    lastUpdateTime: "2026-07-05T14:39:28Z"
-    message: ReplicaSet "kc-86459c9889" has successfully progressed.
-    reason: NewReplicaSetAvailable
+  - lastTransitionTime: "2026-07-10T12:00:08Z"
+    lastUpdateTime: "2026-07-10T12:29:29Z"
+    message: ReplicaSet "kc-54548c9688" is progressing.
+    reason: ReplicaSetUpdated
     status: "True"
     type: Progressing
-  observedGeneration: 27
+  observedGeneration: 23
   readyReplicas: 1
-  replicas: 1
+  replicas: 2
+  terminatingReplicas: 0
+  unavailableReplicas: 1
   updatedReplicas: 1

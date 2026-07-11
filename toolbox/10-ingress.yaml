@@ -18,6 +18,26 @@ spec:
               number: 80
         path: /
         pathType: Prefix
+  - host: kc.shopnoltd.dpdns.org
+    http:
+      paths:
+      - backend:
+          service:
+            name: kc-service
+            port:
+              number: 80
+        path: /
+        pathType: Prefix
+  - host: enketo.shopnoltd.dpdns.org
+    http:
+      paths:
+      - backend:
+          service:
+            name: ee-service
+            port:
+              number: 80
+        path: /
+        pathType: Prefix
   - host: kobo.local
     http:
       paths:

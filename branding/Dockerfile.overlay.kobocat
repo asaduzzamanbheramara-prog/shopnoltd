@@ -1,0 +1,61 @@
+FROM kobotoolbox/kobocat:latest
+
+
+LABEL maintainer="Shopnoltd"
+LABEL org.opencontainers.image.title="ShopnoltdToolbox KoBoCat"
+
+
+
+# ==============================================================
+# Logos
+# ==============================================================
+
+COPY shopnoapp-logo.svg \
+/srv/src/kobocat/kobocat-template/static/images/kobologo.svg
+
+
+COPY shopnoapp-logo.svg \
+/srv/src/kobocat/kobocat-template/static/images/shopnoltdlogo.svg
+
+
+COPY shopnoapp-logo.svg \
+/srv/src/kobocat/onadata/static/images/kobologo.svg
+
+
+COPY shopnoapp-logo.svg \
+/srv/src/kobocat/onadata/static/images/shopnoltdlogo.svg
+
+
+
+# ==============================================================
+# Replace Branding
+# ==============================================================
+
+RUN find /srv/src/kobocat \
+-type f \
+\( \
+-name "*.html" \
+-o -name "*.js" \
+-o -name "*.jsx" \
+-o -name "*.tsx" \
+-o -name "*.ts" \
+-o -name "*.json" \
+-o -name "*.po" \
+-o -name "*.css" \
+-o -name "*.scss" \
+\) \
+-exec sed -i \
+-e 's/KoboToolbox/ShopnoltdToolbox/g' \
+-e 's/Kobo Toolbox/Shopnoltd Toolbox/g' \
+-e 's/Kobo Collect/Shopnoltd Collect/g' \
+-e 's/KoboCollect/ShopnoltdCollect/g' \
+-e 's/Kobo API/Shopnoltd API/g' \
+-e 's/kobologo\.svg/shopnoltdlogo.svg/g' \
+-e 's/kobologo\.png/shopnoltdlogo.png/g' \
+-e 's#https://support.kobotoolbox.org#https://shopnoltd.dpdns.org#g' \
+-e 's#https://community.kobotoolbox.org#https://shopnoltd.dpdns.org#g' \
+{} + || true
+
+
+
+RUN chmod -R 755 /srv/src/kobocat

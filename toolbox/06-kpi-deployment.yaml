@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: kc
-        image: kobotoolbox/kpi:2.026.12k
+        image: localhost:5000/shopnoltd-kpi:v1
         imagePullPolicy: Always
         ports:
         - containerPort: 8000
