@@ -9,20 +9,18 @@ permissions:
   contents: read
   packages: write
 
-
 jobs:
 
-  api-build:
-
-    name: Build API
-
+  # FIXED: was building context "." with file "./Dockerfile" tagged
+  # "shopnoltd-api" — but deployment-api-service.yaml expects
+  # "shopnoltd-api-service" built from the backend/ source. Root
+  # Dockerfile is actually the frontend (see root-app job below).
+  api-service-build:
+    name: Build api-service
     runs-on: ubuntu-latest
-
     steps:
-
     - name: Checkout
       uses: actions/checkout@v4
-
 
     - name: Login GHCR
       uses: docker/login-action@v3
@@ -31,33 +29,82 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
+    - name: Build api-service image
+      uses: docker/build-push-action@v6
+      with:
+        context: ./shopnoltd-ai-platform/backend
+        file: ./shopnoltd-ai-platform/backend/Dockerfile
+        push: true
+        tags: |
+          ghcr.io/${{ github.repository_owner }}/shopnoltd-api-service:v4
+          ghcr.io/${{ github.repository_owner }}/shopnoltd-api-service:latest
+          ghcr.io/${{ github.repository_owner }}/shopnoltd-api-service:${{ github.sha }}
 
-    - name: Build API Image
+  # NEW: nothing previously built this at all — deployment has been
+  # stuck on ImagePullBackOff since there was no job for it.
+  # ASSUMPTION: same backend/ codebase as api-service, different
+  # entrypoint (billing-engine listens on :5000 vs api-service's :8080).
+  # Confirm this is right — if billing-engine is actually a separate
+  # app, point `context`/`file` at its real location instead.
+  billing-engine-build:
+    name: Build billing-engine
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Login GHCR
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build billing-engine image
+      uses: docker/build-push-action@v6
+      with:
+        context: ./shopnoltd-ai-platform/backend
+        file: ./shopnoltd-ai-platform/backend/Dockerfile
+        push: true
+        tags: |
+          ghcr.io/${{ github.repository_owner }}/shopnoltd-billing-engine:v4
+          ghcr.io/${{ github.repository_owner }}/shopnoltd-billing-engine:latest
+          ghcr.io/${{ github.repository_owner }}/shopnoltd-billing-engine:${{ github.sha }}
+
+  # FIXED: root Dockerfile was being built and tagged "shopnoltd-api"
+  # (wrong — that's what confused api-service above). deployment-root-app.yaml
+  # actually expects "shopnoltd-frontend".
+  root-app-build:
+    name: Build root-app (frontend)
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Login GHCR
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build root-app image
       uses: docker/build-push-action@v6
       with:
         context: .
         file: ./Dockerfile
         push: true
-        tags:
-          |
-          ghcr.io/${{ github.repository_owner }}/shopnoltd-api:latest
-          ghcr.io/${{ github.repository_owner }}/shopnoltd-api:${{ github.sha }}
+        tags: |
+          ghcr.io/${{ github.repository_owner }}/shopnoltd-frontend:latest
+          ghcr.io/${{ github.repository_owner }}/shopnoltd-frontend:${{ github.sha }}
 
-
-
-  ai-build:
-
-    name: Build Shopnoltd AI Platform
-
+  # NEW: nothing previously built this.
+  freedomain-ui-build:
+    name: Build freedomain-ui
     runs-on: ubuntu-latest
-
-
     steps:
-
-
     - name: Checkout
       uses: actions/checkout@v4
-
 
     - name: Login GHCR
       uses: docker/login-action@v3
@@ -66,18 +113,44 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
+    - name: Build freedomain-ui image
+      uses: docker/build-push-action@v6
+      with:
+        context: ./ui
+        file: ./ui/Dockerfile
+        push: true
+        tags: |
+          ghcr.io/${{ github.repository_owner }}/shopnoltd-freedomain-ui:v1
+          ghcr.io/${{ github.repository_owner }}/shopnoltd-freedomain-ui:latest
+          ghcr.io/${{ github.repository_owner }}/shopnoltd-freedomain-ui:${{ github.sha }}
+
+  # UNCHANGED — this one already works correctly, matches deployment-ai.yaml.
+  ai-build:
+    name: Build Shopnoltd AI Platform
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Login GHCR
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Build AI Image
       uses: docker/build-push-action@v6
       with:
-
         context: ./shopnoltd-ai-platform
-
         file: ./shopnoltd-ai-platform/Dockerfile
-
         push: true
-
-        tags:
-          |
+        tags: |
           ghcr.io/${{ github.repository_owner }}/shopnoltd-ai:latest
           ghcr.io/${{ github.repository_owner }}/shopnoltd-ai:${{ github.sha }}
+
+  # oauth-service intentionally NOT included yet — port 3000 (vs 8080/5000
+  # for the Python services) suggests it may be a different codebase
+  # entirely (e.g. Node/Express). Adding a job with the wrong context would
+  # "succeed" while building the wrong thing. See chat for the find/cat
+  # commands needed to confirm its real source location first.
