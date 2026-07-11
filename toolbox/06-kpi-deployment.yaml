@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: kc
-        image: localhost:5000/shopnoltd-kpi:v1
+        image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-kpi:v1
         imagePullPolicy: Always
         ports:
         - containerPort: 8000

@@ -14,7 +14,7 @@ spec:
         app: live
     spec:
       containers:
-      - image: live:latest
+      - image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-live:latest
         imagePullPolicy: Never
         name: live
         ports:

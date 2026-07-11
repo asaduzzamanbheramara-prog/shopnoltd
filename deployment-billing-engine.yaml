@@ -20,8 +20,8 @@ spec:
     spec:
       containers:
       - name: billing-engine
-        image: billing-engine:v4
-        imagePullPolicy: IfNotPresent
+        image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-billing-engine:v4
+        imagePullPolicy: Always
         ports:
         - containerPort: 5000
         envFrom:
