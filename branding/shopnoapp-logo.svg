@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg 
+  width="1024" 
+  height="1024" 
+  viewBox="0 0 1024 1024" 
+  fill="none" 
+  xmlns="http://www.w3.org/2000/svg">
+
+  <!-- Background -->
+  <rect 
+    width="1024" 
+    height="1024" 
+    rx="220" 
+    fill="#0B1220"/>
+
+  <!-- Cloud / Data Platform Icon -->
+  <path 
+    d="M320 620C250 620 200 570 200 500C200 440 245 390 305 380C330 300 400 250 490 250C590 250 670 320 690 420C760 430 820 480 820 560C820 640 750 700 660 700H340C330 700 320 700 320 620Z" 
+    fill="#2563EB"/>
+
+  <path 
+    d="M360 600C310 600 280 570 280 520C280 470 320 440 370 440C390 390 440 360 500 360C570 360 620 410 630 480C680 490 720 520 720 570C720 620 680 650 620 650H370C365 650 360 645 360 600Z" 
+    fill="#38BDF8"/>
+
+  <!-- Brand Text -->
+  <text 
+    x="512" 
+    y="800" 
+    text-anchor="middle" 
+    font-size="82" 
+    font-weight="bold"
+    fill="white" 
+    font-family="Arial, Helvetica, sans-serif">
+    Shopnoltd
+  </text>
+
+  <text 
+    x="512" 
+    y="880" 
+    text-anchor="middle" 
+    font-size="48" 
+    fill="#38BDF8" 
+    font-family="Arial, Helvetica, sans-serif">
+    Toolbox
+  </text>
+
+</svg>

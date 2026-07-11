@@ -1,0 +1,141 @@
+FROM kobotoolbox/kpi:2.026.23a
+
+LABEL maintainer="Shopnoltd"
+LABEL org.opencontainers.image.title="ShopnoltdToolbox KPI"
+
+
+# ==============================================================
+# Shopno Logos
+# ==============================================================
+
+COPY shopnoapp-logo.svg /srv/src/kpi/static/kobologo.svg
+COPY shopnoapp-logo.svg /srv/src/kpi/static/shopnoltdlogo.svg
+
+COPY shopnoapp-logo.svg /srv/src/kpi/jsapp/img/kobologo.svg
+COPY shopnoapp-logo.svg /srv/src/kpi/jsapp/img/shopnoltdlogo.svg
+
+COPY shopnoapp-logo.svg /srv/src/kpi/jsapp/compiled/kobologo.svg
+COPY shopnoapp-logo.svg /srv/src/kpi/jsapp/compiled/shopnoltdlogo.svg
+
+
+# Staticfiles logos
+
+COPY shopnoapp-logo.svg /srv/src/kpi/staticfiles/kobologo.svg
+COPY shopnoapp-logo.svg /srv/src/kpi/staticfiles/shopnoltdlogo.svg
+
+COPY shopnoapp-logo.svg /srv/src/kpi/staticfiles/img/kobologo.svg
+COPY shopnoapp-logo.svg /srv/src/kpi/staticfiles/img/shopnoltdlogo.svg
+
+COPY shopnoapp-logo.svg /srv/src/kpi/staticfiles/compiled/kobologo.svg
+COPY shopnoapp-logo.svg /srv/src/kpi/staticfiles/compiled/shopnoltdlogo.svg
+
+
+# Kobo compatibility
+
+COPY shopnoapp-logo.svg /srv/src/kpi/staticfiles/kobocat/images/kobologo.svg
+
+
+
+# ==============================================================
+# Favicons
+# ==============================================================
+
+COPY favicon-16x16.png /srv/src/kpi/static/favicon-16x16.png
+COPY favicon-32x32.png /srv/src/kpi/static/favicon-32x32.png
+COPY favicon-96x96.png /srv/src/kpi/static/favicon-96x96.png
+COPY apple-icon-180x180.png /srv/src/kpi/static/apple-touch-icon.png
+
+
+
+# ==============================================================
+# Templates
+# ==============================================================
+
+COPY templates/account_base.html \
+/srv/src/kpi/kobo/apps/accounts/templates/account/base.html
+
+
+COPY templates/api.html \
+/srv/src/kpi/kpi/templates/rest_framework/api.html
+
+
+
+# ==============================================================
+# Replace Kobo branding
+# ==============================================================
+
+RUN find /srv/src/kpi \
+-type f \
+\( \
+-name "*.html" \
+-o -name "*.js" \
+-o -name "*.jsx" \
+-o -name "*.ts" \
+-o -name "*.tsx" \
+-o -name "*.json" \
+-o -name "*.py" \
+-o -name "*.po" \
+-o -name "*.scss" \
+-o -name "*.css" \
+\) \
+-exec sed -i \
+-e 's/KoboToolbox/ShopnoltdToolbox/g' \
+-e 's/Kobo Toolbox/Shopnoltd Toolbox/g' \
+-e 's/Kobo Collect/Shopnoltd Collect/g' \
+-e 's/KoboCollect/ShopnoltdCollect/g' \
+-e 's/Kobo API/Shopnoltd API/g' \
+-e 's/kobologo\.svg/shopnoltdlogo.svg/g' \
+-e 's/kobologo\.png/shopnoltdlogo.png/g' \
+-e 's#https://support.kobotoolbox.org#https://shopnoltd.dpdns.org#g' \
+-e 's#https://community.kobotoolbox.org#https://shopnoltd.dpdns.org#g' \
+-e 's#https://academy.kobotoolbox.org#https://shopnoltd.dpdns.org#g' \
+-e 's#https://www.kobotoolbox.org/contact/#https://shopnoltd.dpdns.org#g' \
+-e 's/help@kobotoolbox.org/support@shopnoltd.dpdns.org/g' \
+-e 's/billing@kobotoolbox.org/billing@shopnoltd.dpdns.org/g' \
+{} +
+
+
+
+# ==============================================================
+# Frontend build
+# ==============================================================
+
+WORKDIR /srv/src/kpi
+
+
+# Increase Node.js heap for webpack build
+ENV NODE_OPTIONS="--max-old-space-size=8192"
+
+
+RUN npm install
+
+
+RUN npm run copy-fonts
+
+
+RUN rm -rf staticfiles/compiled
+
+
+RUN npm run build
+
+
+
+# ==============================================================
+# Django static files
+# ==============================================================
+
+RUN python manage.py collectstatic --noinput
+
+
+
+# ==============================================================
+# Permissions
+# ==============================================================
+
+RUN chmod -R 755 /srv/src/kpi/static \
+ && chmod -R 755 /srv/src/kpi/staticfiles \
+ && chmod -R 755 /srv/src/kpi/jsapp
+
+
+
+EXPOSE 8000

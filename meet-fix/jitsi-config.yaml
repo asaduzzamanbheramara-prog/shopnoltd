@@ -24,4 +24,4 @@ data:
   JVB_TCP_MAPPED_PORT: "4443"
   JVB_STUN_SERVERS: "stun.l.google.com:19302,stun1.l.google.com:19302"
   JVB_ENABLE_APIS: "true"
-  PUBLIC_URL: "https://meet.shopnoltd.com"
+  PUBLIC_URL: "https://meet.shopnoltd.dpdns.org"

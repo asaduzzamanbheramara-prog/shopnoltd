@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: kf
-        image: kobotoolbox/kobocat:latest
+        image: localhost:5000/shopnoltd-kobocat:v1
         imagePullPolicy: Always
         ports:
         - containerPort: 8000

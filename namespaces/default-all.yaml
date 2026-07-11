@@ -1581,9 +1581,9 @@ items:
       - name: NODE_ENV
         value: production
       - name: BASE_URL
-        value: https://api.shopnoltd.com
+        value: https://api.shopnoltd.dpdns.org
       - name: FRONTEND_URL
-        value: https://domain.shopnoltd.com
+        value: https://shopnoltd.dpdns.org
       - name: JWT_SECRET
         valueFrom:
           secretKeyRef:
@@ -3641,7 +3641,7 @@ items:
     annotations:
       deployment.kubernetes.io/revision: "3"
       kubectl.kubernetes.io/last-applied-configuration: |
-        {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"name":"oauth-service","namespace":"default"},"spec":{"replicas":1,"selector":{"matchLabels":{"app":"oauth-service"}},"strategy":{"rollingUpdate":{"maxSurge":1,"maxUnavailable":0},"type":"RollingUpdate"},"template":{"metadata":{"labels":{"app":"oauth-service"}},"spec":{"containers":[{"command":["node","server.js"],"env":[{"name":"NODE_ENV","value":"production"},{"name":"BASE_URL","value":"https://api.shopnoltd.com"},{"name":"FRONTEND_URL","value":"https://domain.shopnoltd.com"},{"name":"JWT_SECRET","valueFrom":{"secretKeyRef":{"key":"JWT_SECRET","name":"oauth-secrets"}}},{"name":"SESSION_SECRET","valueFrom":{"secretKeyRef":{"key":"SESSION_SECRET","name":"oauth-secrets"}}},{"name":"GOOGLE_CLIENT_ID","value":"530228436303-2k8sl5mdjfotsvkcqgtcktcb7q2b78fn.apps.googleusercontent.com"},{"name":"GOOGLE_CLIENT_SECRET","value":"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"},{"name":"FACEBOOK_APP_ID","value":"1239063184913011"},{"name":"FACEBOOK_APP_SECRET","value":"9afa42656338eb1917cdc3ac79c61f2d"},{"name":"GITHUB_CLIENT_ID","value":"Ov23liIa4IFALaMIZ1XP"},{"name":"GITHUB_CLIENT_SECRET","value":"682ac6a6332f85eda27113ad6e634f51eff0ffe2"},{"name":"OTEL_SERVICE_NAME","value":"oauth-service"},{"name":"OTEL_EXPORTER_OTLP_ENDPOINT","value":"http://otel-collector.observability.svc.cluster.local:4318"},{"name":"OTEL_EXPORTER_OTLP_PROTOCOL","value":"http/protobuf"}],"image":"oauth-service:1.0.0","imagePullPolicy":"IfNotPresent","name":"oauth-service","ports":[{"containerPort":3000}]}]}}}}
+        {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"name":"oauth-service","namespace":"default"},"spec":{"replicas":1,"selector":{"matchLabels":{"app":"oauth-service"}},"strategy":{"rollingUpdate":{"maxSurge":1,"maxUnavailable":0},"type":"RollingUpdate"},"template":{"metadata":{"labels":{"app":"oauth-service"}},"spec":{"containers":[{"command":["node","server.js"],"env":[{"name":"NODE_ENV","value":"production"},{"name":"BASE_URL","value":"https://api.shopnoltd.dpdns.org"},{"name":"FRONTEND_URL","value":"https://shopnoltd.dpdns.org"},{"name":"JWT_SECRET","valueFrom":{"secretKeyRef":{"key":"JWT_SECRET","name":"oauth-secrets"}}},{"name":"SESSION_SECRET","valueFrom":{"secretKeyRef":{"key":"SESSION_SECRET","name":"oauth-secrets"}}},{"name":"GOOGLE_CLIENT_ID","value":"530228436303-2k8sl5mdjfotsvkcqgtcktcb7q2b78fn.apps.googleusercontent.com"},{"name":"GOOGLE_CLIENT_SECRET","value":"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"},{"name":"FACEBOOK_APP_ID","value":"1239063184913011"},{"name":"FACEBOOK_APP_SECRET","value":"9afa42656338eb1917cdc3ac79c61f2d"},{"name":"GITHUB_CLIENT_ID","value":"Ov23liIa4IFALaMIZ1XP"},{"name":"GITHUB_CLIENT_SECRET","value":"682ac6a6332f85eda27113ad6e634f51eff0ffe2"},{"name":"OTEL_SERVICE_NAME","value":"oauth-service"},{"name":"OTEL_EXPORTER_OTLP_ENDPOINT","value":"http://otel-collector.observability.svc.cluster.local:4318"},{"name":"OTEL_EXPORTER_OTLP_PROTOCOL","value":"http/protobuf"}],"image":"oauth-service:1.0.0","imagePullPolicy":"IfNotPresent","name":"oauth-service","ports":[{"containerPort":3000}]}]}}}}
     creationTimestamp: "2026-06-26T17:47:39Z"
     generation: 3
     name: oauth-service
@@ -3675,9 +3675,9 @@ items:
           - name: NODE_ENV
             value: production
           - name: BASE_URL
-            value: https://api.shopnoltd.com
+            value: https://api.shopnoltd.dpdns.org
           - name: FRONTEND_URL
-            value: https://domain.shopnoltd.com
+            value: https://shopnoltd.dpdns.org
           - name: JWT_SECRET
             valueFrom:
               secretKeyRef:
@@ -5546,9 +5546,9 @@ items:
           - name: NODE_ENV
             value: production
           - name: BASE_URL
-            value: https://api.shopnoltd.com
+            value: https://api.shopnoltd.dpdns.org
           - name: FRONTEND_URL
-            value: https://domain.shopnoltd.com
+            value: https://shopnoltd.dpdns.org
           - name: JWT_SECRET
             valueFrom:
               secretKeyRef:
@@ -5640,9 +5640,9 @@ items:
           - name: NODE_ENV
             value: production
           - name: BASE_URL
-            value: https://api.shopnoltd.com
+            value: https://api.shopnoltd.dpdns.org
           - name: FRONTEND_URL
-            value: https://domain.shopnoltd.com
+            value: https://shopnoltd.dpdns.org
           - name: JWT_SECRET
             valueFrom:
               secretKeyRef:
@@ -5731,9 +5731,9 @@ items:
           - name: NODE_ENV
             value: production
           - name: BASE_URL
-            value: https://api.shopnoltd.com
+            value: https://api.shopnoltd.dpdns.org
           - name: FRONTEND_URL
-            value: https://domain.shopnoltd.com
+            value: https://shopnoltd.dpdns.org
           - name: JWT_SECRET
             valueFrom:
               secretKeyRef:

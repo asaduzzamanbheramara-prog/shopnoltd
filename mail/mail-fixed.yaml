@@ -20,6 +20,6 @@ spec:
         - containerPort: 25
         env:
         - name: HOSTNAME
-          value: "mail.shopnoltd.com"
+          value: "mail.shopnoltd.dpdns.org"
         - name: DOMAINNAME
-          value: "shopnoltd.com"
+          value: "shopnoltd.dpdns.org"

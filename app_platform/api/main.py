@@ -1,9 +1,11 @@
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, Header
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime, timedelta
 import secrets
 import hashlib
 import json
+import os
+import stripe
 
 app = FastAPI(title="Shopnoltd Complete Platform", description="Multi-currency payment platform with exchange", version="5.0.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
@@ -100,6 +102,50 @@ def health():
         "exchange_orders": len(exchange_orders_db),
         "audit_logs": len(audit_log_db)
     }
+
+
+# ==================== STRIPE WEBHOOK ====================
+stripe_api_key = os.getenv("STRIPE_SECRET_KEY")
+stripe_webhook_secret = os.getenv("STRIPE_WEBHOOK_SECRET")
+if stripe_api_key:
+    stripe.api_key = stripe_api_key
+
+
+@app.post("/billing/webhook")
+async def billing_webhook(request: Request, stripe_signature: str = Header(None)):
+    """Receive Stripe webhook events and verify signature using STRIPE_WEBHOOK_SECRET."""
+    payload = await request.body()
+    sig_header = stripe_signature or request.headers.get("Stripe-Signature")
+    if not stripe_webhook_secret:
+        raise HTTPException(status_code=500, detail="Webhook secret not configured")
+    try:
+        event = stripe.Webhook.construct_event(payload=payload, sig_header=sig_header, secret=stripe_webhook_secret)
+    except ValueError:
+        # Invalid payload
+        raise HTTPException(status_code=400, detail="Invalid payload")
+    except stripe.error.SignatureVerificationError:
+        # Invalid signature
+        raise HTTPException(status_code=400, detail="Invalid signature")
+
+    # Handle a few important event types
+    etype = event.get("type")
+    data = event.get("data", {}).get("object", {})
+
+    if etype == "checkout.session.completed":
+        # Example: create user subscription, mark invoice paid, etc.
+        session_id = data.get("id")
+        log_action("stripe_checkout_completed", "system", {"session_id": session_id})
+    elif etype == "invoice.paid":
+        invoice_id = data.get("id")
+        log_action("stripe_invoice_paid", "system", {"invoice_id": invoice_id})
+    elif etype == "payment_intent.succeeded":
+        pi = data.get("id")
+        log_action("stripe_payment_succeeded", "system", {"payment_intent": pi})
+    else:
+        # Generic log for other events
+        log_action("stripe_event", "system", {"event_type": etype})
+
+    return {"received": True}
 
 # ==================== STATS (must come first) ====================
 @app.get("/api/stats")

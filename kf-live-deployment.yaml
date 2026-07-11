@@ -31,7 +31,15 @@ spec:
           value: shopnoltd.dpdns.org
         - name: KOBOCAT_PUBLIC_SUBDOMAIN
           value: kf
-        image: kobotoolbox/kobocat:latest
+        - name: SECURE_PROXY_SSL_HEADER
+          value: "HTTP_X_FORWARDED_PROTO,https"
+        - name: USE_X_FORWARDED_HOST
+          value: "True"
+        - name: SESSION_COOKIE_SECURE
+          value: "True"
+        - name: CSRF_COOKIE_SECURE
+          value: "True"
+        image: localhost:5000/shopnoltd-kobocat:v1
         imagePullPolicy: Always
         name: kf
         ports:
@@ -47,6 +55,9 @@ spec:
         - mountPath: /srv/src/kobocat/docker/kobocat.ini
           name: kobocat-ini-override
           subPath: kobocat.ini
+        - mountPath: /srv/src/kobocat/kobocat-template/templates/registration/login.html
+          name: login-template-override
+          subPath: login.html
       volumes:
       - configMap:
           defaultMode: 493
@@ -60,3 +71,6 @@ spec:
       - name: kobocat-ini-override
         configMap:
           name: kf-uwsgi-ini
+      - name: login-template-override
+        configMap:
+          name: kf-login-template
