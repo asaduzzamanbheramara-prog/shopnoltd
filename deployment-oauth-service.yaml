@@ -69,8 +69,8 @@ spec:
           value: http://otel-collector.observability.svc.cluster.local:4318
         - name: OTEL_EXPORTER_OTLP_PROTOCOL
           value: http/protobuf
-        image: oauth-service:1.0.0
-        imagePullPolicy: IfNotPresent
+        image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-oauth:v1
+        imagePullPolicy: Always
         name: oauth-service
         ports:
         - containerPort: 3000

@@ -58,8 +58,8 @@ spec:
           value: '*'
         - name: PYTHONUNBUFFERED
           value: "1"
-        image: localhost:5000/shopnoltd-kpi:v1
-        imagePullPolicy: IfNotPresent
+        image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-kpi:v1
+        imagePullPolicy: Always
         livenessProbe:
           failureThreshold: 3
           httpGet:

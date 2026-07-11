@@ -31,8 +31,8 @@ spec:
         app: root-app
     spec:
       containers:
-      - image: shopno-frontend:latest
-        imagePullPolicy: IfNotPresent
+      - image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-frontend:latest
+        imagePullPolicy: Always
         name: frontend
         ports:
         - containerPort: 80

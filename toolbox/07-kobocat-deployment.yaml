@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: kf
-        image: localhost:5000/shopnoltd-kobocat:v1
+        image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-kobocat:v1
         imagePullPolicy: Always
         ports:
         - containerPort: 8000

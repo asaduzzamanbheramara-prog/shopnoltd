@@ -1,0 +1,50 @@
+# Declarative source of truth: what SHOULD be running.
+# The orchestrator diffs this against real cluster state and fixes gaps.
+#
+# dockerfile / context are paths relative to config.REPO_ROOT
+# deployment_manifest is the yaml file to apply/patch after the image is built
+services:
+  - name: api-service
+    dockerfile: shopnoltd-ai-platform/backend/Dockerfile
+    context: shopnoltd-ai-platform/backend
+    deployment_name: api-service
+    deployment_manifest: deployment-api-service.yaml
+    container_name: api-service
+    health_path: /health
+
+  - name: billing-engine
+    dockerfile: shopnoltd-ai-platform/backend/Dockerfile
+    context: shopnoltd-ai-platform/backend
+    deployment_name: billing-engine
+    deployment_manifest: deployment-billing-engine.yaml
+    container_name: billing-engine
+    health_path: /health
+
+  - name: oauth-service
+    dockerfile: shopnoltd-ai-platform/backend/Dockerfile
+    context: shopnoltd-ai-platform/backend
+    deployment_name: oauth-service
+    deployment_manifest: deployment-oauth-service.yaml
+    container_name: oauth-service
+    health_path: /health
+
+  - name: root-app
+    dockerfile: Dockerfile
+    context: .
+    deployment_name: root-app
+    deployment_manifest: deployment-root-app.yaml
+    container_name: root-app
+    health_path: /
+
+  - name: freedomain-ui
+    dockerfile: ui/Dockerfile
+    context: ui
+    deployment_name: freedomain-ui
+    deployment_manifest: deployment-freedomain-ui.yaml
+    container_name: freedomain-ui
+    health_path: /
+
+# ConfigMaps that must exist before dependent deployments will start cleanly.
+configmaps:
+  - name: tenant-router-config
+    manifest: configmaps.yaml   # must contain a ConfigMap named tenant-router-config

@@ -36,8 +36,8 @@ spec:
           value: http://otel-collector.observability.svc.cluster.local:4318
         - name: OTEL_EXPORTER_OTLP_PROTOCOL
           value: http/protobuf
-        image: openresty/openresty:alpine
-        imagePullPolicy: IfNotPresent
+        image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-tenant-router:latest
+        imagePullPolicy: Always
         name: openresty
         ports:
         - containerPort: 80
