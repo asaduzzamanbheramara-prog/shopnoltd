@@ -4413,7 +4413,7 @@ items:
             value: http://otel-collector.observability.svc.cluster.local:4318
           - name: OTEL_EXPORTER_OTLP_PROTOCOL
             value: http/protobuf
-          image: host.docker.internal:5000/api-service:v4
+          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-api-service:v4
           imagePullPolicy: Always
           name: api-service
           ports:
@@ -4544,7 +4544,7 @@ items:
           envFrom:
           - secretRef:
               name: stripe-secret
-          image: host.docker.internal:5000/billing-engine:v4
+          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-billing-engine:v4
           imagePullPolicy: Always
           livenessProbe:
             failureThreshold: 3
@@ -5762,7 +5762,7 @@ items:
             value: http://otel-collector.observability.svc.cluster.local:4318
           - name: OTEL_EXPORTER_OTLP_PROTOCOL
             value: http/protobuf
-          image: host.docker.internal:5000/oauth-service:1.0.0
+          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-oauth:v1
           imagePullPolicy: Always
           name: oauth-service
           ports:
