@@ -1,0 +1,5 @@
+./Dockerfile
+./shopnoltd-ai-platform/backend/Dockerfile
+./shopnoltd-ai-platform/Dockerfile
+./ui/admin/Dockerfile
+./ui/Dockerfile

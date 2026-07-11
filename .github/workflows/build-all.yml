@@ -1,0 +1,137 @@
+name: Build & Publish Shopnoltd Images
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - develop
+      - migrate-ghcr-images
+
+  pull_request:
+    branches:
+      - main
+      - master
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_OWNER: ${{ github.repository_owner }}
+
+jobs:
+
+  build:
+    name: Build ${{ matrix.name }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+
+      matrix:
+        include:
+
+          ###################################################################
+          # Replace "context" below with the REAL source directory
+          ###################################################################
+
+          - name: api-service
+            context: apps/api-service
+            dockerfile: Dockerfile
+
+          - name: billing-engine
+            context: apps/billing-engine
+            dockerfile: Dockerfile
+
+          - name: root-app
+            context: apps/root-app
+            dockerfile: Dockerfile
+
+          - name: oauth
+            context: apps/oauth
+            dockerfile: Dockerfile
+
+          - name: tenant-router
+            context: apps/tenant-router
+            dockerfile: Dockerfile
+
+          - name: freedomain
+            context: apps/freedomain
+            dockerfile: Dockerfile
+
+          - name: freedomain-ui
+            context: apps/freedomain-ui
+            dockerfile: Dockerfile
+
+          - name: freedomain-website
+            context: apps/freedomain-website
+            dockerfile: Dockerfile
+
+          - name: chat
+            context: apps/chat
+            dockerfile: Dockerfile
+
+          - name: live
+            context: apps/live
+            dockerfile: Dockerfile
+
+          ###################################################################
+          # Verified from your repository
+          ###################################################################
+
+          - name: ai
+            context: shopnoltd-ai-platform/backend
+            dockerfile: Dockerfile
+
+    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract image metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ghcr.io/${{ github.repository_owner }}/shopnoltd-${{ matrix.name }}
+
+          tags: |
+            type=raw,value=latest
+            type=sha
+            type=ref,event=branch
+            type=ref,event=tag
+
+      - name: Build & Push
+        uses: docker/build-push-action@v6
+
+        with:
+          context: ${{ matrix.context }}
+
+          file: ${{ matrix.context }}/${{ matrix.dockerfile }}
+
+          push: ${{ github.event_name != 'pull_request' }}
+
+          tags: ${{ steps.meta.outputs.tags }}
+
+          labels: ${{ steps.meta.outputs.labels }}
+
+          cache-from: type=gha
+
+          cache-to: type=gha,mode=max

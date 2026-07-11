@@ -1,0 +1,386 @@
+.
+├── ANDROID_APK_DEPLOYMENT_COMPLETE.md
+├── ANDROID_APK_SETUP_GUIDE.md
+├── COMPLETE_FUNCTIONALITY_CHECK_REPORT.html
+├── COMPLETE_FUNCTIONALITY_VERIFICATION.txt
+├── DOCUMENTATION_INDEX.md
+├── Dockerfile
+├── FINAL_COMPREHENSIVE_REPORT.md
+├── FINAL_DEPLOYMENT_SUMMARY.md
+├── FINAL_STATUS_SUMMARY.txt
+├── FINAL_VERIFICATION_CHECKLIST.md
+├── FULL_FUNCTIONALITY_REPORT.md
+├── Get-Process
+├── HONEST_PROBLEM_DIAGNOSIS.md
+├── LIVE_DEPLOYMENT_GUIDE.md
+├── PROJECT_LIVE_STATUS_REPORT.md
+├── QUICK_ACCESS.md
+├── README_START_HERE.md
+├── SYSTEM_VERIFICATION_REPORT.html
+├── VERIFICATION_REPORTS_INDEX.txt
+├── ai-ingress.yaml
+├── api-clean.yaml
+├── apks
+│   ├── KoboCollect-v2025.2.3.apk
+│   ├── README.md
+│   └── fetch_kobocollect_apk.ps1
+├── app_platform
+│   ├── __init__.py
+│   └── api
+│       ├── __init__.py
+│       ├── database.py
+│       ├── main.py
+│       └── schema.sql
+├── autoscaling
+│   ├── hpa-api-service.yaml
+│   └── hpa-billing-engine.yaml
+├── backup.ps1
+├── branding
+│   ├── 1024 × 1024_Logo_Final.png
+│   ├── Dockerfile.overlay
+│   ├── Dockerfile.overlay.kobocat
+│   ├── android-icon-144x144.png
+│   ├── android-icon-192x192.png
+│   ├── android-icon-36x36.png
+│   ├── android-icon-48x48.png
+│   ├── android-icon-72x72.png
+│   ├── android-icon-96x96.png
+│   ├── apple-icon-180x180.png
+│   ├── enketo-image.json
+│   ├── favicon-16x16.png
+│   ├── favicon-32x32.png
+│   ├── favicon-96x96.png
+│   ├── full-branding-check.sh
+│   ├── kobocat
+│   │   ├── images
+│   │   │   ├── kobologo.png
+│   │   │   └── kobologo.svg
+│   │   └── static
+│   │       └── css
+│   ├── kobocat-image.json
+│   ├── kobologo.png
+│   ├── kobologo.svg
+│   ├── kpi-image.json
+│   ├── logo.svg
+│   ├── shopnoapp-logo.jpg
+│   ├── shopnoapp-logo.png
+│   ├── shopnoapp-logo.svg
+│   └── templates
+│       ├── account_base.html
+│       ├── api.html
+│       ├── base_no_static.html
+│       ├── base_simple.html
+│       └── basic.html
+├── branding-full-report-20260708-2140.txt
+├── branding-full-report-20260709-1203.txt
+├── branding-full-report-20260710-2323.txt
+├── branding-public-report-20260708-2141.txt
+├── browser-realistic-check.sh
+├── check-results-20260707-1752.txt
+├── check-results-20260707-1801.txt
+├── check-results-20260707-1813.txt
+├── check-results-20260707-1844.txt
+├── check-results-20260707-1847.txt
+├── check-results-20260707.txt
+├── check-results-20260711-1751.txt
+├── check-results-20260711-1810.txt
+├── cluster-discover.sh
+├── config
+│   ├── configmap.yaml
+│   └── secrets.yaml
+├── configmaps.yaml
+├── deployment-ai.yaml
+├── deployment-api-service.yaml
+├── deployment-api.yaml
+├── deployment-billing-engine.yaml
+├── deployment-chat.yaml
+├── deployment-freedomain-ui.yaml
+├── deployment-freedomain-website.yaml
+├── deployment-freedomain.yaml
+├── deployment-kc.yaml
+├── deployment-live.yaml
+├── deployment-oauth-service.yaml
+├── deployment-postgres.yaml
+├── deployment-redis.yaml
+├── deployment-root-app.yaml
+├── deployment-tenant-router.yaml
+├── docs
+│   └── RUNBOOK.md
+├── ee-current.yaml
+├── final-full-check.sh
+├── freedomain-ui-current.yaml
+├── full-live-check.sh
+├── full-project-check.sh
+├── full-site-check.sh
+├── get-docker.sh
+├── grafana-deployment.yaml
+├── images-list.txt
+├── kc-current-state-backup.yaml
+├── kc-current.yaml
+├── kc-deployment-current-clean.yaml
+├── kc-deployment-current.yaml
+├── kc-deployment.yaml
+├── kc-live.yaml
+├── kc-running.yaml
+├── kc-uv-cache-pvc.yaml
+├── kc-uwsgi-original.ini
+├── kc.yaml
+├── kf-current.yaml
+├── kf-deployment-current-clean.yaml
+├── kf-deployment-current.yaml
+├── kf-export.yaml
+├── kf-live-deployment.yaml
+├── kf-live.yaml
+├── kf-login-template.html
+├── kf-nginx-conf-current.yaml
+├── kf-nginx-conf.yaml
+├── kf-running.yaml
+├── kf-service-current.yaml
+├── kf.yaml
+├── kobodb-2026-07-10.sql
+├── kobodb-backup.sql
+├── kpidb-2026-07-10.sql
+├── kpidb-backup.sql
+├── kubectl
+├── live-service.yaml
+├── mail
+│   ├── fixed.yaml
+│   ├── mail-fixed.yaml
+│   ├── mail-server-fixed.yaml
+│   └── mail-server.yaml
+├── mail-current.yaml
+├── mail-server-current.yaml
+├── meet-config.yaml
+├── meet-fix
+│   ├── jicofo.yaml
+│   ├── jitsi-config.yaml
+│   ├── jvb.yaml
+│   └── prosody.yaml
+├── monitor.ps1
+├── namespaces
+│   ├── default-all.yaml
+│   ├── meet-all.yaml
+│   └── toolbox-all.yaml
+├── new-api.yaml
+├── observability
+│   ├── README.md
+│   └── alerts
+│       └── billing-alerts.yaml
+├── postgres-pvc-default.yaml
+├── postgres-secret-default.yaml
+├── project-tree.txt
+├── prometheus-deployment.yaml
+├── requirements.txt
+├── schema.sql
+├── scripts
+│   ├── apply_secrets_auto.ps1
+│   ├── create_k8s_secrets.ps1
+│   ├── generated_secrets.yaml
+│   ├── rewrite_manifests.ps1
+│   └── test_stripe_webhook.py
+├── secrets-template.yaml
+├── services.yaml
+├── shopnoltd-ai-platform
+│   ├── Dockerfile
+│   ├── LICENSE
+│   ├── Makefile
+│   ├── README.md
+│   ├── __pycache__
+│   │   └── app.cpython-312.pyc
+│   ├── agents
+│   │   ├── __init__.py
+│   │   ├── base_agent.py
+│   │   ├── code_agent.py
+│   │   ├── database_agent.py
+│   │   ├── deployment_agent.py
+│   │   ├── docker_agent.py
+│   │   ├── fix_agent.py
+│   │   ├── github_agent.py
+│   │   ├── kubernetes_agent.py
+│   │   ├── planner.py
+│   │   ├── review_agent.py
+│   │   └── security_agent.py
+│   ├── ai
+│   │   ├── __init__.py
+│   │   ├── chat.py
+│   │   ├── conversation.py
+│   │   ├── embeddings.py
+│   │   ├── llm.py
+│   │   ├── memory
+│   │   │   ├── __init__.py
+│   │   │   ├── history.py
+│   │   │   └── session.py
+│   │   ├── planner.py
+│   │   ├── prompts
+│   │   ├── prompts.py
+│   │   ├── rag
+│   │   ├── rag.py
+│   │   ├── retriever.py
+│   │   └── vectorstore.py
+│   ├── api
+│   │   ├── __init__.py
+│   │   ├── config.py
+│   │   ├── dependencies
+│   │   │   └── __init__.py
+│   │   ├── health.py
+│   │   ├── main.py
+│   │   ├── middleware
+│   │   │   └── __init__.py
+│   │   ├── routers
+│   │   │   ├── __init__.py
+│   │   │   ├── auth.py
+│   │   │   ├── chat.py
+│   │   │   ├── docker.py
+│   │   │   ├── github.py
+│   │   │   ├── kubernetes.py
+│   │   │   └── projects.py
+│   │   └── security.py
+│   ├── app.py
+│   ├── backend
+│   │   ├── Dockerfile
+│   │   ├── __init__.py
+│   │   ├── app
+│   │   │   ├── __init__.py
+│   │   │   ├── ai
+│   │   │   ├── config.py
+│   │   │   ├── core
+│   │   │   ├── database.py
+│   │   │   ├── main.py
+│   │   │   ├── models.py
+│   │   │   ├── routers
+│   │   │   └── schemas.py
+│   │   ├── core
+│   │   │   ├── config.py
+│   │   │   └── settings.py
+│   │   ├── database
+│   │   │   ├── models.py
+│   │   │   └── session.py
+│   │   ├── requirements.txt
+│   │   ├── services
+│   │   │   ├── chat_service.py
+│   │   │   ├── docker_service.py
+│   │   │   ├── github_service.py
+│   │   │   └── kubernetes_service.py
+│   │   ├── tests
+│   │   │   ├── __init__.py
+│   │   │   ├── test_ai_engine.py
+│   │   │   └── test_health.py
+│   │   └── utils
+│   │       └── logger.py
+│   ├── config
+│   │   ├── prompts.py
+│   │   └── settings.py
+│   ├── data
+│   ├── docker-compose.yml
+│   ├── docs
+│   ├── frontend
+│   │   ├── index.html
+│   │   ├── public
+│   │   └── src
+│   │       ├── assets
+│   │       ├── components
+│   │       ├── context
+│   │       ├── hooks
+│   │       ├── pages
+│   │       ├── services
+│   │       └── styles
+│   ├── github
+│   │   ├── __init__.py
+│   │   ├── actions.py
+│   │   ├── client.py
+│   │   ├── clone.py
+│   │   ├── commit.py
+│   │   ├── push.py
+│   │   └── repository.py
+│   ├── helm
+│   │   └── shopnoltd-ai
+│   │       └── {templates}
+│   ├── k8s
+│   │   ├── base
+│   │   ├── deployment.yaml
+│   │   ├── development
+│   │   ├── production
+│   │   └── service.yaml
+│   ├── kubernetes
+│   │   ├── __init__.py
+│   │   ├── deployment.py
+│   │   ├── diagnose.py
+│   │   ├── events.py
+│   │   ├── ingress.py
+│   │   ├── logs.py
+│   │   ├── pods.py
+│   │   └── service.py
+│   ├── logs
+│   ├── models
+│   │   └── chat.py
+│   ├── monitoring
+│   ├── requirements.txt
+│   ├── scripts
+│   │   └── start.sh
+│   ├── services
+│   │   └── github_service.py
+│   ├── shopnoltd-orchestrator
+│   │   ├── README.md
+│   │   ├── __pycache__
+│   │   ├── agents
+│   │   │   ├── __init__.py
+│   │   │   ├── __pycache__
+│   │   │   ├── docker_agent.py
+│   │   │   ├── github_agent.py
+│   │   │   ├── k8s_agent.py
+│   │   │   ├── log_analyzer.py
+│   │   │   └── orchestrator.py
+│   │   ├── config.py
+│   │   ├── main.py
+│   │   ├── models
+│   │   │   ├── __init__.py
+│   │   │   ├── __pycache__
+│   │   │   └── schemas.py
+│   │   ├── requirements.txt
+│   │   └── services.yaml
+│   ├── templates
+│   │   └── deployment.yaml
+│   ├── tests
+│   ├── tools
+│   │   └── kubectl.py
+│   ├── uploads
+│   └── vectorstore
+├── source-code
+│   ├── api-files.txt
+│   └── chat-files.txt
+├── tenant-router-nginx.conf
+├── test.sh
+├── toolbox
+│   ├── 00-namespace.yaml
+│   ├── 01-secret.yaml
+│   ├── 02-configmap.yaml
+│   ├── 03-postgres.yaml
+│   ├── 04-mongo.yaml
+│   ├── 05-redis.yaml
+│   ├── 06-kpi-deployment.yaml
+│   ├── 07-kobocat-deployment.yaml
+│   ├── 08-enketo.yaml
+│   ├── 09-services.yaml
+│   ├── 10-ingress.yaml
+│   ├── 11-pvc.yaml
+│   ├── 12-kf-init-scripts.yaml
+│   ├── 13-ingress-uwsgi.yaml
+│   ├── SSL_PROXY_FIX_SUMMARY.md
+│   ├── kc-uwsgi-original.ini
+│   ├── kf-deployment-export.yaml
+│   ├── kf-uwsgi-original.ini
+│   └── verify-ssl-config.sh
+├── toolbox-fix
+│   ├── kc-fixed.yaml
+│   ├── kc.yaml
+│   └── kf.yaml
+├── ui
+│   ├── Dockerfile
+│   ├── admin
+│   │   ├── Dockerfile
+│   │   └── index.html
+│   └── index.html
+├── wait_for_mongo.bash
+└── wait_for_postgres.bash
+
+83 directories, 301 files

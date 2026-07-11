@@ -32,7 +32,7 @@ spec:
     spec:
       containers:
       - image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-freedomain-website:v1
-        imagePullPolicy: Never
+        imagePullPolicy: IfNotPresent
         name: freedomain-website
         ports:
         - containerPort: 80

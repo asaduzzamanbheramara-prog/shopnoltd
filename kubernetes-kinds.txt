@@ -1,0 +1,289 @@
+./ai-ingress.yaml:kind: Ingress
+./api-clean.yaml:kind: Deployment
+./autoscaling/hpa-api-service.yaml:kind: HorizontalPodAutoscaler
+./autoscaling/hpa-api-service.yaml:    kind: Deployment
+./autoscaling/hpa-billing-engine.yaml:kind: HorizontalPodAutoscaler
+./autoscaling/hpa-billing-engine.yaml:    kind: Deployment
+./config/configmap.yaml:kind: ConfigMap
+./config/secrets.yaml:kind: Secret
+./configmaps.yaml:  kind: ConfigMap
+./configmaps.yaml:  kind: ConfigMap
+./configmaps.yaml:  kind: ConfigMap
+./configmaps.yaml:  kind: ConfigMap
+./configmaps.yaml:  kind: ConfigMap
+./configmaps.yaml:  kind: ConfigMap
+./configmaps.yaml:  kind: ConfigMap
+./configmaps.yaml:kind: List
+./deployment-ai.yaml:kind: Deployment
+./deployment-ai.yaml:kind: Service
+./deployment-api-service.yaml:kind: Deployment
+./deployment-api.yaml:kind: Deployment
+./deployment-billing-engine.yaml:kind: Deployment
+./deployment-chat.yaml:kind: Deployment
+./deployment-freedomain-ui.yaml:kind: Deployment
+./deployment-freedomain-website.yaml:kind: Deployment
+./deployment-freedomain.yaml:kind: Deployment
+./deployment-kc.yaml:kind: Deployment
+./deployment-live.yaml:kind: Deployment
+./deployment-oauth-service.yaml:kind: Deployment
+./deployment-postgres.yaml:kind: Deployment
+./deployment-redis.yaml:kind: Deployment
+./deployment-root-app.yaml:kind: Deployment
+./deployment-tenant-router.yaml:kind: Deployment
+./ee-current.yaml:kind: Deployment
+./freedomain-ui-current.yaml:kind: Deployment
+./grafana-deployment.yaml:kind: Deployment
+./grafana-deployment.yaml:kind: Service
+./kc-current-state-backup.yaml:kind: Deployment
+./kc-current.yaml:kind: Deployment
+./kc-deployment-current-clean.yaml:kind: Deployment
+./kc-deployment-current.yaml:kind: Deployment
+./kc-deployment.yaml:kind: Deployment
+./kc-live.yaml:kind: Deployment
+./kc-running.yaml:kind: Deployment
+./kc-uv-cache-pvc.yaml:kind: PersistentVolumeClaim
+./kc.yaml:kind: Deployment
+./kf-current.yaml:kind: Deployment
+./kf-deployment-current-clean.yaml:kind: Deployment
+./kf-deployment-current.yaml:kind: Deployment
+./kf-export.yaml:kind: Deployment
+./kf-live-deployment.yaml:kind: Deployment
+./kf-live.yaml:kind: Deployment
+./kf-nginx-conf-current.yaml:kind: ConfigMap
+./kf-nginx-conf.yaml:kind: ConfigMap
+./kf-running.yaml:kind: Deployment
+./kf-service-current.yaml:kind: Service
+./kf.yaml:kind: Deployment
+./live-service.yaml:kind: Service
+./mail/fixed.yaml:kind: Deployment
+./mail/mail-fixed.yaml:kind: Deployment
+./mail/mail-server-fixed.yaml:kind: Deployment
+./mail/mail-server.yaml:kind: Deployment
+./mail-current.yaml:kind: Deployment
+./mail-server-current.yaml:kind: Deployment
+./meet-config.yaml:kind: ConfigMap
+./meet-fix/jicofo.yaml:kind: Deployment
+./meet-fix/jitsi-config.yaml:kind: ConfigMap
+./meet-fix/jvb.yaml:kind: Deployment
+./meet-fix/prosody.yaml:kind: Deployment
+./namespaces/default-all.yaml:  kind: Pod
+./namespaces/default-all.yaml:      kind: ReplicaSet
+./namespaces/default-all.yaml:  kind: Pod
+./namespaces/default-all.yaml:      kind: ReplicaSet
+./namespaces/default-all.yaml:  kind: Pod
+./namespaces/default-all.yaml:      kind: ReplicaSet
+./namespaces/default-all.yaml:  kind: Pod
+./namespaces/default-all.yaml:      kind: ReplicaSet
+./namespaces/default-all.yaml:  kind: Pod
+./namespaces/default-all.yaml:      kind: ReplicaSet
+./namespaces/default-all.yaml:  kind: Pod
+./namespaces/default-all.yaml:      kind: ReplicaSet
+./namespaces/default-all.yaml:  kind: Pod
+./namespaces/default-all.yaml:      kind: ReplicaSet
+./namespaces/default-all.yaml:  kind: Pod
+./namespaces/default-all.yaml:      kind: ReplicaSet
+./namespaces/default-all.yaml:  kind: Pod
+./namespaces/default-all.yaml:      kind: ReplicaSet
+./namespaces/default-all.yaml:  kind: Pod
+./namespaces/default-all.yaml:      kind: ReplicaSet
+./namespaces/default-all.yaml:  kind: Pod
+./namespaces/default-all.yaml:      kind: ReplicaSet
+./namespaces/default-all.yaml:  kind: Pod
+./namespaces/default-all.yaml:      kind: ReplicaSet
+./namespaces/default-all.yaml:  kind: Pod
+./namespaces/default-all.yaml:      kind: ReplicaSet
+./namespaces/default-all.yaml:  kind: Pod
+./namespaces/default-all.yaml:      kind: ReplicaSet
+./namespaces/default-all.yaml:  kind: Pod
+./namespaces/default-all.yaml:      kind: ReplicaSet
+./namespaces/default-all.yaml:  kind: Pod
+./namespaces/default-all.yaml:      kind: ReplicaSet
+./namespaces/default-all.yaml:  kind: Pod
+./namespaces/default-all.yaml:      kind: ReplicaSet
+./namespaces/default-all.yaml:  kind: Service
+./namespaces/default-all.yaml:  kind: Service
+./namespaces/default-all.yaml:  kind: Service
+./namespaces/default-all.yaml:  kind: Service
+./namespaces/default-all.yaml:  kind: Service
+./namespaces/default-all.yaml:  kind: Service
+./namespaces/default-all.yaml:  kind: Service
+./namespaces/default-all.yaml:  kind: Service
+./namespaces/default-all.yaml:  kind: Service
+./namespaces/default-all.yaml:  kind: Service
+./namespaces/default-all.yaml:  kind: Service
+./namespaces/default-all.yaml:  kind: Service
+./namespaces/default-all.yaml:  kind: Service
+./namespaces/default-all.yaml:  kind: Deployment
+./namespaces/default-all.yaml:  kind: Deployment
+./namespaces/default-all.yaml:  kind: Deployment
+./namespaces/default-all.yaml:  kind: Deployment
+./namespaces/default-all.yaml:  kind: Deployment
+./namespaces/default-all.yaml:  kind: Deployment
+./namespaces/default-all.yaml:  kind: Deployment
+./namespaces/default-all.yaml:  kind: Deployment
+./namespaces/default-all.yaml:  kind: Deployment
+./namespaces/default-all.yaml:  kind: Deployment
+./namespaces/default-all.yaml:  kind: Deployment
+./namespaces/default-all.yaml:  kind: Deployment
+./namespaces/default-all.yaml:  kind: Deployment
+./namespaces/default-all.yaml:  kind: ReplicaSet
+./namespaces/default-all.yaml:      kind: Deployment
+./namespaces/default-all.yaml:  kind: ReplicaSet
+./namespaces/default-all.yaml:      kind: Deployment
+./namespaces/default-all.yaml:  kind: ReplicaSet
+./namespaces/default-all.yaml:      kind: Deployment
+./namespaces/default-all.yaml:  kind: ReplicaSet
+./namespaces/default-all.yaml:      kind: Deployment
+./namespaces/default-all.yaml:  kind: ReplicaSet
+./namespaces/default-all.yaml:      kind: Deployment
+./namespaces/default-all.yaml:  kind: ReplicaSet
+./namespaces/default-all.yaml:      kind: Deployment
+./namespaces/default-all.yaml:  kind: ReplicaSet
+./namespaces/default-all.yaml:      kind: Deployment
+./namespaces/default-all.yaml:  kind: ReplicaSet
+./namespaces/default-all.yaml:      kind: Deployment
+./namespaces/default-all.yaml:  kind: ReplicaSet
+./namespaces/default-all.yaml:      kind: Deployment
+./namespaces/default-all.yaml:  kind: ReplicaSet
+./namespaces/default-all.yaml:      kind: Deployment
+./namespaces/default-all.yaml:  kind: ReplicaSet
+./namespaces/default-all.yaml:      kind: Deployment
+./namespaces/default-all.yaml:  kind: ReplicaSet
+./namespaces/default-all.yaml:      kind: Deployment
+./namespaces/default-all.yaml:  kind: ReplicaSet
+./namespaces/default-all.yaml:      kind: Deployment
+./namespaces/default-all.yaml:  kind: ReplicaSet
+./namespaces/default-all.yaml:      kind: Deployment
+./namespaces/default-all.yaml:  kind: ReplicaSet
+./namespaces/default-all.yaml:      kind: Deployment
+./namespaces/default-all.yaml:  kind: ReplicaSet
+./namespaces/default-all.yaml:      kind: Deployment
+./namespaces/default-all.yaml:  kind: ReplicaSet
+./namespaces/default-all.yaml:      kind: Deployment
+./namespaces/default-all.yaml:  kind: ReplicaSet
+./namespaces/default-all.yaml:      kind: Deployment
+./namespaces/default-all.yaml:  kind: ReplicaSet
+./namespaces/default-all.yaml:      kind: Deployment
+./namespaces/default-all.yaml:  kind: ReplicaSet
+./namespaces/default-all.yaml:      kind: Deployment
+./namespaces/default-all.yaml:  kind: ReplicaSet
+./namespaces/default-all.yaml:      kind: Deployment
+./namespaces/default-all.yaml:  kind: ReplicaSet
+./namespaces/default-all.yaml:      kind: Deployment
+./namespaces/default-all.yaml:  kind: ReplicaSet
+./namespaces/default-all.yaml:      kind: Deployment
+./namespaces/default-all.yaml:  kind: ReplicaSet
+./namespaces/default-all.yaml:      kind: Deployment
+./namespaces/default-all.yaml:  kind: ReplicaSet
+./namespaces/default-all.yaml:      kind: Deployment
+./namespaces/default-all.yaml:  kind: ReplicaSet
+./namespaces/default-all.yaml:      kind: Deployment
+./namespaces/default-all.yaml:  kind: ReplicaSet
+./namespaces/default-all.yaml:      kind: Deployment
+./namespaces/default-all.yaml:  kind: ReplicaSet
+./namespaces/default-all.yaml:      kind: Deployment
+./namespaces/default-all.yaml:  kind: ReplicaSet
+./namespaces/default-all.yaml:      kind: Deployment
+./namespaces/default-all.yaml:  kind: ReplicaSet
+./namespaces/default-all.yaml:      kind: Deployment
+./namespaces/default-all.yaml:  kind: ReplicaSet
+./namespaces/default-all.yaml:      kind: Deployment
+./namespaces/default-all.yaml:kind: List
+./namespaces/meet-all.yaml:  kind: Pod
+./namespaces/meet-all.yaml:      kind: ReplicaSet
+./namespaces/meet-all.yaml:  kind: Pod
+./namespaces/meet-all.yaml:      kind: ReplicaSet
+./namespaces/meet-all.yaml:  kind: Pod
+./namespaces/meet-all.yaml:      kind: ReplicaSet
+./namespaces/meet-all.yaml:  kind: Pod
+./namespaces/meet-all.yaml:      kind: ReplicaSet
+./namespaces/meet-all.yaml:  kind: Service
+./namespaces/meet-all.yaml:  kind: Service
+./namespaces/meet-all.yaml:  kind: Deployment
+./namespaces/meet-all.yaml:  kind: Deployment
+./namespaces/meet-all.yaml:  kind: Deployment
+./namespaces/meet-all.yaml:  kind: Deployment
+./namespaces/meet-all.yaml:  kind: ReplicaSet
+./namespaces/meet-all.yaml:      kind: Deployment
+./namespaces/meet-all.yaml:  kind: ReplicaSet
+./namespaces/meet-all.yaml:      kind: Deployment
+./namespaces/meet-all.yaml:  kind: ReplicaSet
+./namespaces/meet-all.yaml:      kind: Deployment
+./namespaces/meet-all.yaml:  kind: ReplicaSet
+./namespaces/meet-all.yaml:      kind: Deployment
+./namespaces/meet-all.yaml:kind: List
+./namespaces/toolbox-all.yaml:  kind: Pod
+./namespaces/toolbox-all.yaml:      kind: ReplicaSet
+./namespaces/toolbox-all.yaml:  kind: Pod
+./namespaces/toolbox-all.yaml:      kind: ReplicaSet
+./namespaces/toolbox-all.yaml:  kind: Pod
+./namespaces/toolbox-all.yaml:      kind: ReplicaSet
+./namespaces/toolbox-all.yaml:  kind: Service
+./namespaces/toolbox-all.yaml:  kind: Service
+./namespaces/toolbox-all.yaml:  kind: Service
+./namespaces/toolbox-all.yaml:  kind: Deployment
+./namespaces/toolbox-all.yaml:  kind: Deployment
+./namespaces/toolbox-all.yaml:  kind: Deployment
+./namespaces/toolbox-all.yaml:  kind: ReplicaSet
+./namespaces/toolbox-all.yaml:      kind: Deployment
+./namespaces/toolbox-all.yaml:  kind: ReplicaSet
+./namespaces/toolbox-all.yaml:      kind: Deployment
+./namespaces/toolbox-all.yaml:  kind: ReplicaSet
+./namespaces/toolbox-all.yaml:      kind: Deployment
+./namespaces/toolbox-all.yaml:kind: List
+./new-api.yaml:kind: Deployment
+./observability/alerts/billing-alerts.yaml:kind: PrometheusRule
+./postgres-pvc-default.yaml:kind: PersistentVolumeClaim
+./postgres-secret-default.yaml:kind: Secret
+./prometheus-deployment.yaml:kind: Deployment
+./prometheus-deployment.yaml:kind: Service
+./prometheus-deployment.yaml:kind: ConfigMap
+./scripts/generated_secrets.yaml:kind: Secret
+./scripts/generated_secrets.yaml:kind: Secret
+./scripts/generated_secrets.yaml:kind: Secret
+./secrets-template.yaml:kind: Secret
+./secrets-template.yaml:kind: Secret
+./secrets-template.yaml:kind: Secret
+./services.yaml:  kind: Service
+./services.yaml:  kind: Service
+./services.yaml:  kind: Service
+./services.yaml:  kind: Service
+./services.yaml:  kind: Service
+./services.yaml:  kind: Service
+./services.yaml:  kind: Service
+./services.yaml:  kind: Service
+./services.yaml:  kind: Service
+./services.yaml:  kind: Service
+./services.yaml:  kind: Service
+./services.yaml:  kind: Service
+./services.yaml:kind: List
+./shopnoltd-ai-platform/k8s/deployment.yaml:kind: Deployment
+./shopnoltd-ai-platform/k8s/service.yaml:kind: Service
+./shopnoltd-ai-platform/templates/deployment.yaml:kind: Deployment
+./toolbox/00-namespace.yaml:kind: Namespace
+./toolbox/01-secret.yaml:kind: Secret
+./toolbox/02-configmap.yaml:kind: ConfigMap
+./toolbox/03-postgres.yaml:kind: Deployment
+./toolbox/03-postgres.yaml:kind: Service
+./toolbox/04-mongo.yaml:kind: Deployment
+./toolbox/04-mongo.yaml:kind: Service
+./toolbox/05-redis.yaml:kind: Deployment
+./toolbox/05-redis.yaml:kind: Service
+./toolbox/06-kpi-deployment.yaml:kind: Deployment
+./toolbox/06-kpi-deployment.yaml:kind: Service
+./toolbox/07-kobocat-deployment.yaml:kind: Deployment
+./toolbox/07-kobocat-deployment.yaml:kind: Service
+./toolbox/08-enketo.yaml:kind: Service
+./toolbox/09-services.yaml:kind: Service
+./toolbox/09-services.yaml:kind: Service
+./toolbox/09-services.yaml:kind: Service
+./toolbox/10-ingress.yaml:kind: Ingress
+./toolbox/11-pvc.yaml:kind: PersistentVolumeClaim
+./toolbox/11-pvc.yaml:kind: PersistentVolumeClaim
+./toolbox/11-pvc.yaml:kind: PersistentVolumeClaim
+./toolbox/12-kf-init-scripts.yaml:kind: ConfigMap
+./toolbox/13-ingress-uwsgi.yaml:kind: Ingress
+./toolbox/kf-deployment-export.yaml:kind: Deployment
+./toolbox-fix/kc-fixed.yaml:kind: Deployment
+./toolbox-fix/kc.yaml:kind: Deployment
+./toolbox-fix/kf.yaml:kind: Deployment

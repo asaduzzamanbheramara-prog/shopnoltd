@@ -1,0 +1,183 @@
+./api-clean.yaml:19:      - image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-api:latest
+./deployment-ai.yaml:34:        image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-ai:latest
+./deployment-api-service.yaml:23:        image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-api-service:v4
+./deployment-api.yaml:34:      - image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-api:latest
+./deployment-billing-engine.yaml:23:        image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-billing-engine:v4
+./deployment-chat.yaml:32:      - image: nginx:latest
+./deployment-freedomain-ui.yaml:32:      - image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-freedomain-ui:v1
+./deployment-freedomain-website.yaml:34:      - image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-freedomain-website:v1
+./deployment-freedomain.yaml:34:        image: hashicorp/http-echo
+./deployment-kc.yaml:26:        image: kobotoolbox/kpi:2.023.48
+./deployment-live.yaml:17:      - image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-live:latest
+./deployment-oauth-service.yaml:72:        image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-oauth:v1
+./deployment-postgres.yaml:35:        image: postgres:16
+./deployment-redis.yaml:32:      - image: redis:7
+./deployment-root-app.yaml:34:      - image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-frontend:latest
+./deployment-tenant-router.yaml:39:        image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-tenant-router:latest
+./ee-current.yaml:32:      - image: enketo/enketo-express:latest
+./freedomain-ui-current.yaml:32:      - image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-freedomain-ui:v1
+./grafana-deployment.yaml:18:        image: grafana/grafana:latest
+./kc-current-state-backup.yaml:65:        image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-kpi:v1
+./kc-current.yaml:61:        image: kobotoolbox/kpi:2.023.48
+./kc-deployment-current-clean.yaml:67:        image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-kpi:v1
+./kc-deployment-current.yaml:67:        image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-kpi:v1
+./kc-deployment.yaml:55:        image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-kpi:v1
+./kc-live.yaml:73:        image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-kpi:v1
+./kc-running.yaml:61:        image: kobotoolbox/kpi:2.023.48
+./kc.yaml:61:        image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-kpi:v1
+./kf-current.yaml:117:        image: busybox
+./kf-current.yaml:79:        image: kobotoolbox/kpi:2.023.48
+./kf-deployment-current-clean.yaml:55:        image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-kobocat:v1
+./kf-deployment-current.yaml:55:        image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-kobocat:v1
+./kf-export.yaml:131:        image: busybox
+./kf-export.yaml:81:        image: kobotoolbox/kpi:2.023.48
+./kf-export.yaml:97:      - image: nginx:latest
+./kf-live-deployment.yaml:42:        image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-kobocat:v1
+./kf-live.yaml:55:        image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-kobocat:v1
+./kf-running.yaml:131:        image: busybox
+./kf-running.yaml:81:        image: kobotoolbox/kpi:2.023.48
+./kf-running.yaml:97:      - image: nginx:latest
+./kf.yaml:131:        image: busybox
+./kf.yaml:81:        image: kobotoolbox/kpi:2.023.48
+./kf.yaml:97:      - image: nginx:latest
+./mail-current.yaml:39:        image: tvial/docker-mailserver:latest
+./mail-server-current.yaml:32:      - image: tvial/docker-mailserver:latest
+./mail/fixed.yaml:18:        image: tvial/docker-mailserver:latest
+./mail/mail-fixed.yaml:18:        image: tvial/docker-mailserver:latest
+./mail/mail-server-fixed.yaml:20:        image: tvial/docker-mailserver:latest
+./mail/mail-server.yaml:20:        image: mailu/postfix:2.0
+./meet-fix/jicofo.yaml:20:        image: jitsi/jicofo:stable
+./meet-fix/jvb.yaml:20:        image: jitsi/jvb:stable
+./meet-fix/prosody.yaml:20:        image: jitsi/prosody:stable
+./namespaces/default-all.yaml:1066:      image: docker.io/hashicorp/http-echo:latest
+./namespaces/default-all.yaml:1126:    - image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-freedomain-ui:v1
+./namespaces/default-all.yaml:1207:      image: docker.io/library/freedomain-ui:v1
+./namespaces/default-all.yaml:1280:    - image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-freedomain-website:v1
+./namespaces/default-all.yaml:132:    - image: python:3.11
+./namespaces/default-all.yaml:1361:      image: docker.io/library/freedomain-site:v1
+./namespaces/default-all.yaml:1434:    - image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-live:latest
+./namespaces/default-all.yaml:149:    - image: python:3.11
+./namespaces/default-all.yaml:1515:      image: docker.io/library/live:latest
+./namespaces/default-all.yaml:1615:      image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-oauth:v1
+./namespaces/default-all.yaml:1696:      image: docker.io/library/oauth-service:1.0.0
+./namespaces/default-all.yaml:1769:      image: postgres:16
+./namespaces/default-all.yaml:1855:      image: docker.io/library/postgres:16
+./namespaces/default-all.yaml:1918:    - image: redis:7
+./namespaces/default-all.yaml:193:    - image: python:3.11
+./namespaces/default-all.yaml:1999:      image: docker.io/library/redis:7
+./namespaces/default-all.yaml:2062:    - image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-frontend:latest
+./namespaces/default-all.yaml:2143:      image: docker.io/library/shopno-frontend:latest
+./namespaces/default-all.yaml:2215:    - image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-frontend:latest
+./namespaces/default-all.yaml:2296:      image: docker.io/library/shopno-frontend:latest
+./namespaces/default-all.yaml:2373:      image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-tenant-router:latest
+./namespaces/default-all.yaml:2461:      image: docker.io/openresty/openresty:alpine
+./namespaces/default-all.yaml:2540:      image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-tenant-router:latest
+./namespaces/default-all.yaml:2628:      image: docker.io/openresty/openresty:alpine
+./namespaces/default-all.yaml:275:      image: docker.io/library/python:3.11
+./namespaces/default-all.yaml:3092:          image: python:3.11
+./namespaces/default-all.yaml:3104:        - image: python:3.11
+./namespaces/default-all.yaml:3186:          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-api-service:v4
+./namespaces/default-all.yaml:3262:          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-billing-engine:v4
+./namespaces/default-all.yaml:32:      image: python:3.11
+./namespaces/default-all.yaml:3346:        - image: nginx:latest
+./namespaces/default-all.yaml:3409:          image: hashicorp/http-echo
+./namespaces/default-all.yaml:3473:        - image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-freedomain-ui:v1
+./namespaces/default-all.yaml:3539:        - image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-freedomain-website:v1
+./namespaces/default-all.yaml:356:      image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-api-service:v4
+./namespaces/default-all.yaml:3605:        - image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-live:latest
+./namespaces/default-all.yaml:3709:          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-oauth:v1
+./namespaces/default-all.yaml:3776:          image: postgres:16
+./namespaces/default-all.yaml:3847:        - image: redis:7
+./namespaces/default-all.yaml:3913:        - image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-frontend:latest
+./namespaces/default-all.yaml:3984:          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-tenant-router:latest
+./namespaces/default-all.yaml:4069:          image: python:3.11
+./namespaces/default-all.yaml:4081:        - image: python:3.11
+./namespaces/default-all.yaml:4137:        - image: python:3.11
+./namespaces/default-all.yaml:4205:          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-api-service:v4
+./namespaces/default-all.yaml:4275:          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-api-service:v4
+./namespaces/default-all.yaml:4345:          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-api-service:v4
+./namespaces/default-all.yaml:437:      image: docker.io/library/api-service:v4
+./namespaces/default-all.yaml:4416:          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-api-service:v4
+./namespaces/default-all.yaml:4484:          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-api-service:v4
+./namespaces/default-all.yaml:4547:          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-billing-engine:v4
+./namespaces/default-all.yaml:4630:          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-billing-engine:v4
+./namespaces/default-all.yaml:4715:          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-billing-engine:v4
+./namespaces/default-all.yaml:47:    - image: python:3.11
+./namespaces/default-all.yaml:4800:          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-billing-engine:v4
+./namespaces/default-all.yaml:4876:        - image: nginx:latest
+./namespaces/default-all.yaml:4931:          image: hashicorp/http-echo
+./namespaces/default-all.yaml:4987:        - image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-freedomain-ui:v1
+./namespaces/default-all.yaml:5043:        - image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-freedomain-website:v1
+./namespaces/default-all.yaml:5098:        - image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-freedomain-website:v1
+./namespaces/default-all.yaml:5156:        - image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-freedomain-website:v1
+./namespaces/default-all.yaml:5211:        - image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-freedomain-website:v1
+./namespaces/default-all.yaml:524:      image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-api-service:v4
+./namespaces/default-all.yaml:5266:        - image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-freedomain-website:v1
+./namespaces/default-all.yaml:5321:        - image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-live:latest
+./namespaces/default-all.yaml:5377:        - image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-live:latest
+./namespaces/default-all.yaml:5432:        - image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-live:latest
+./namespaces/default-all.yaml:5487:        - image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-live:latest
+./namespaces/default-all.yaml:5580:          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-oauth:v1
+./namespaces/default-all.yaml:5674:          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-oauth:v1
+./namespaces/default-all.yaml:5765:          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-oauth:v1
+./namespaces/default-all.yaml:5821:          image: postgres:16
+./namespaces/default-all.yaml:5884:        - image: redis:7
+./namespaces/default-all.yaml:5942:        - image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-frontend:latest
+./namespaces/default-all.yaml:5998:        - image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-frontend:latest
+./namespaces/default-all.yaml:6058:          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-tenant-router:latest
+./namespaces/default-all.yaml:605:      image: docker.io/library/api-service:v4
+./namespaces/default-all.yaml:688:      image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-billing-engine:v4
+./namespaces/default-all.yaml:789:      image: docker.io/library/billing-engine:v4
+./namespaces/default-all.yaml:850:    - image: nginx:latest
+./namespaces/default-all.yaml:928:      image: docker.io/library/nginx:latest
+./namespaces/default-all.yaml:985:      image: hashicorp/http-echo
+./namespaces/meet-all.yaml:1031:        - image: jitsi/prosody:stable
+./namespaces/meet-all.yaml:107:      image: docker.io/jitsi/jicofo:stable
+./namespaces/meet-all.yaml:1085:        - image: jitsi/web:stable
+./namespaces/meet-all.yaml:168:    - image: jitsi/jvb:stable
+./namespaces/meet-all.yaml:253:      image: docker.io/jitsi/jvb:stable
+./namespaces/meet-all.yaml:25:    - image: jitsi/jicofo:stable
+./namespaces/meet-all.yaml:315:    - image: jitsi/prosody:stable
+./namespaces/meet-all.yaml:400:      image: docker.io/jitsi/prosody:stable
+./namespaces/meet-all.yaml:462:    - image: jitsi/web:stable
+./namespaces/meet-all.yaml:543:      image: docker.io/jitsi/web:stable
+./namespaces/meet-all.yaml:671:        - image: jitsi/jicofo:stable
+./namespaces/meet-all.yaml:731:        - image: jitsi/jvb:stable
+./namespaces/meet-all.yaml:794:        - image: jitsi/prosody:stable
+./namespaces/meet-all.yaml:857:        - image: jitsi/web:stable
+./namespaces/meet-all.yaml:926:        - image: jitsi/jicofo:stable
+./namespaces/meet-all.yaml:977:        - image: jitsi/jvb:stable
+./namespaces/toolbox-all.yaml:103:      image: docker.io/enketo/enketo-express:latest
+./namespaces/toolbox-all.yaml:172:      image: kobotoolbox/kobo-central:latest
+./namespaces/toolbox-all.yaml:253:    - image: kobotoolbox/kobo-central:latest
+./namespaces/toolbox-all.yaml:25:    - image: enketo/enketo-express:latest
+./namespaces/toolbox-all.yaml:306:    - image: kobotoolbox/kobo-formserver:latest
+./namespaces/toolbox-all.yaml:387:    - image: kobotoolbox/kobo-formserver:latest
+./namespaces/toolbox-all.yaml:536:        - image: enketo/enketo-express:latest
+./namespaces/toolbox-all.yaml:605:          image: kobotoolbox/kobo-central:latest
+./namespaces/toolbox-all.yaml:665:        - image: kobotoolbox/kobo-formserver:latest
+./namespaces/toolbox-all.yaml:730:        - image: enketo/enketo-express:latest
+./namespaces/toolbox-all.yaml:791:          image: kobotoolbox/kobo-central:latest
+./namespaces/toolbox-all.yaml:842:        - image: kobotoolbox/kobo-formserver:latest
+./new-api.yaml:19:      - image: python:3.11
+./prometheus-deployment.yaml:18:        image: prom/prometheus:latest
+./scripts/rewrite_manifests.ps1:24:        image: api-service:v4
+./scripts/rewrite_manifests.ps1:79:        image: billing-engine:v4
+./shopnoltd-ai-platform/docker-compose.yml:25:    image: postgres:16
+./shopnoltd-ai-platform/docker-compose.yml:41:    image: redis:7
+./shopnoltd-ai-platform/shopnoltd-orchestrator/.venv/lib/python3.12/site-packages/pip-24.0.dist-info/METADATA:34:.. image:: https://img.shields.io/pypi/v/pip.svg
+./shopnoltd-ai-platform/shopnoltd-orchestrator/.venv/lib/python3.12/site-packages/pip-24.0.dist-info/METADATA:38:.. image:: https://img.shields.io/pypi/pyversions/pip
+./shopnoltd-ai-platform/shopnoltd-orchestrator/.venv/lib/python3.12/site-packages/pip-24.0.dist-info/METADATA:42:.. image:: https://readthedocs.org/projects/pip/badge/?version=latest
+./shopnoltd-ai-platform/shopnoltd-orchestrator/.venv/lib64/python3.12/site-packages/pip-24.0.dist-info/METADATA:34:.. image:: https://img.shields.io/pypi/v/pip.svg
+./shopnoltd-ai-platform/shopnoltd-orchestrator/.venv/lib64/python3.12/site-packages/pip-24.0.dist-info/METADATA:38:.. image:: https://img.shields.io/pypi/pyversions/pip
+./shopnoltd-ai-platform/shopnoltd-orchestrator/.venv/lib64/python3.12/site-packages/pip-24.0.dist-info/METADATA:42:.. image:: https://readthedocs.org/projects/pip/badge/?version=latest
+./shopnoltd-ai-platform/shopnoltd-orchestrator/agents/k8s_agent.py:65:def patch_deployment_image(deployment_name: str, container_name: str, image: str) -> tuple[bool, str]:
+./toolbox-fix/kc-fixed.yaml:20:        image: kobotoolbox/kpi:2.0.25
+./toolbox-fix/kc.yaml:18:        image: kobotoolbox/kpi:2.023.48
+./toolbox-fix/kf.yaml:20:        image: kobotoolbox/kobo-formserver:latest
+./toolbox/03-postgres.yaml:18:          image: postgis/postgis:15-3.3
+./toolbox/04-mongo.yaml:18:          image: mongo:6
+./toolbox/05-redis.yaml:18:          image: redis:7
+./toolbox/06-kpi-deployment.yaml:18:        image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-kpi:v1
+./toolbox/07-kobocat-deployment.yaml:18:        image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-kobocat:v1
+./toolbox/kf-deployment-export.yaml:55:        image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-kobocat:v1
