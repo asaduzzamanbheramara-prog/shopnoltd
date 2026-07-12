@@ -3,6 +3,7 @@ kind: Deployment
 
 metadata:
   name: oauth-service
+  namespace: oauth
 
 spec:
   replicas: 2
@@ -32,6 +33,7 @@ spec:
         ports:
 
         - containerPort: 8001
+          name: http
 
         env:
 
@@ -43,3 +45,22 @@ spec:
             secretKeyRef:
               name: oauth-secrets
               key: JWT_SECRET
+
+        readinessProbe:
+
+          httpGet:
+            path: /health
+            port: 8001
+
+          initialDelaySeconds: 5
+          periodSeconds: 10
+
+
+        livenessProbe:
+
+          httpGet:
+            path: /health
+            port: 8001
+
+          initialDelaySeconds: 15
+          periodSeconds: 20
