@@ -1,0 +1,16 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: minio
+  namespace: shopno-data
+  labels:
+    app.kubernetes.io/name: minio
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: minio
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s
+      scrapeTimeout: 10s

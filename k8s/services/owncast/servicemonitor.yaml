@@ -1,0 +1,16 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: owncast
+  namespace: shopno-apps
+  labels:
+    app.kubernetes.io/name: owncast
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: owncast
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s
+      scrapeTimeout: 10s
