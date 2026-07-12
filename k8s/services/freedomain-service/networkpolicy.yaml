@@ -1,0 +1,51 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: freedomain-service
+  namespace: shopno-platform
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: freedomain-service
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: shopno-ingress
+        - namespaceSelector:
+            matchLabels:
+              name: shopno-platform
+        - namespaceSelector:
+            matchLabels:
+              name: shopno-monitoring
+      ports:
+        - port: 8080
+          protocol: TCP
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: shopno-data
+        - namespaceSelector:
+            matchLabels:
+              name: shopno-identity
+        - namespaceSelector:
+            matchLabels:
+              name: shopno-monitoring
+        - namespaceSelector:
+            matchLabels:
+              name: kube-system
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 443
+          protocol: TCP
+        - port: 5432
+          protocol: TCP
+        - port: 6379
+          protocol: TCP
+        - port: 9000
+          protocol: TCP

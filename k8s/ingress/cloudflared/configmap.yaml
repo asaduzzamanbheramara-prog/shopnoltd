@@ -10,14 +10,14 @@ data:
     metrics: 0.0.0.0:2000
     no-autoupdate: true
     ingress:
-      # Core Shopnoltd
+      # --- Core Shopnoltd ---
       - hostname: shopnoltd.dpdns.org
         service: http://traefik.traefik.svc.cluster.local:80
       - hostname: api.shopnoltd.dpdns.org
         service: http://traefik.traefik.svc.cluster.local:80
       - hostname: auth.shopnoltd.dpdns.org
         service: http://traefik.traefik.svc.cluster.local:80
-      # KoboToolbox
+      # --- KoboToolbox ---
       - hostname: kf.shopnoltd.dpdns.org
         service: http://traefik.traefik.svc.cluster.local:80
       - hostname: kc.shopnoltd.dpdns.org
@@ -28,27 +28,30 @@ data:
         service: http://traefik.traefik.svc.cluster.local:80
       - hostname: enketo.shopnoltd.dpdns.org
         service: http://traefik.traefik.svc.cluster.local:80
-      # Communication
+      # --- Communication ---
       - hostname: chat.shopnoltd.dpdns.org
         service: http://traefik.traefik.svc.cluster.local:80
       - hostname: meet.shopnoltd.dpdns.org
         service: http://traefik.traefik.svc.cluster.local:80
       - hostname: live.shopnoltd.dpdns.org
         service: http://traefik.traefik.svc.cluster.local:80
-      # Business
+      # --- Business / money ---
       - hostname: billing.shopnoltd.dpdns.org
         service: http://traefik.traefik.svc.cluster.local:80
+      # --- NEW: Business verticals ---
       - hostname: domain.shopnoltd.dpdns.org
-        service: http://traefik.traefik.svc.cluster.local:80
-      - hostname: freedomain.shopnoltd.dpdns.org
-        service: http://traefik.traefik.svc.cluster.local:80
-      - hostname: event.shopnoltd.dpdns.org
         service: http://traefik.traefik.svc.cluster.local:80
       - hostname: interior.shopnoltd.dpdns.org
         service: http://traefik.traefik.svc.cluster.local:80
+      - hostname: event.shopnoltd.dpdns.org
+        service: http://traefik.traefik.svc.cluster.local:80
       - hostname: foundation.shopnoltd.dpdns.org
         service: http://traefik.traefik.svc.cluster.local:80
-      # Observability
+      - hostname: training.shopnoltd.dpdns.org
+        service: http://traefik.traefik.svc.cluster.local:80
+      - hostname: freedomain.shopnoltd.dpdns.org
+        service: http://traefik.traefik.svc.cluster.local:80
+      # --- Observability ---
       - hostname: grafana.shopnoltd.dpdns.org
         service: http://traefik.traefik.svc.cluster.local:80
       - hostname: prometheus.shopnoltd.dpdns.org
@@ -59,12 +62,12 @@ data:
         service: http://traefik.traefik.svc.cluster.local:80
       - hostname: portainer.shopnoltd.dpdns.org
         service: http://traefik.traefik.svc.cluster.local:80
-      # NEW: Android APK + PC client portals
+      # --- NEW: Android & PC portals ---
       - hostname: shopnoltdandroid.shopnoltd.dpdns.org
         service: http://traefik.traefik.svc.cluster.local:80
       - hostname: shopnoltdpc.shopnoltd.dpdns.org
         service: http://traefik.traefik.svc.cluster.local:80
-      # Wildcard (tenant subdomains)
+      # --- Wildcard ---
       - hostname: "*.shopnoltd.dpdns.org"
         service: http://traefik.traefik.svc.cluster.local:80
       - service: http_status:404

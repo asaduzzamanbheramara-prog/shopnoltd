@@ -16,6 +16,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - { service: domain-service,        dockerfile: platform/domain-service/Dockerfile }
+          - { service: interior-service,      dockerfile: platform/interior-service/Dockerfile }
+          - { service: event-service,         dockerfile: platform/event-service/Dockerfile }
+          - { service: foundation-service,    dockerfile: platform/foundation-service/Dockerfile }
+          - { service: training-service,      dockerfile: platform/training-service/Dockerfile }
+          - { service: freedomain-service,    dockerfile: platform/freedomain-service/Dockerfile }
           - { service: api-service,         dockerfile: platform/api-service/Dockerfile }
           - { service: gateway,            dockerfile: platform/gateway/Dockerfile }
           - { service: oauth-service,      dockerfile: platform/oauth-service/Dockerfile }
