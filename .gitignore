@@ -118,3 +118,18 @@ node_modules/
 __pycache__/
 *.pyc
 
+
+# Python environments
+.venv/
+venv/
+env/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# AI data
+*/logs/
+*/uploads/
+*/vectorstore/
+
