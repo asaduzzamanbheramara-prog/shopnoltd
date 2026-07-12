@@ -1,0 +1,10 @@
+./Dockerfile
+./requirements.txt
+./shopnoltd-ai-platform/Dockerfile
+./shopnoltd-ai-platform/backend/Dockerfile
+./shopnoltd-ai-platform/backend/requirements.txt
+./shopnoltd-ai-platform/docker-compose.yml
+./shopnoltd-ai-platform/requirements.txt
+./shopnoltd-ai-platform/shopnoltd-orchestrator/requirements.txt
+./ui/Dockerfile
+./ui/admin/Dockerfile

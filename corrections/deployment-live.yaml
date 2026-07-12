@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: live
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: live
+  template:
+    metadata:
+      labels:
+        app: live
+    spec:
+      containers:
+      - image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-live:latest
+        imagePullPolicy: IfNotPresent
+        name: live
+        ports:
+        - containerPort: 8080
+          protocol: TCP
