@@ -101,3 +101,20 @@ branding-*-report-*.txt
 *.bak
 
 kc-current-state-backup.yaml
+
+# Kubernetes binaries
+kubectl
+
+# Docker
+*.tar
+*.tar.gz
+
+# Environment
+.env
+.env.*
+
+# Build files
+node_modules/
+__pycache__/
+*.pyc
+
