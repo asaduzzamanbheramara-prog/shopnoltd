@@ -1,0 +1,24 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  validate-k8s:
+    name: Validate Kubernetes manifests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup kustomize
+        run: |
+          curl -sL https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.4.3/kustomize_v5.4.3_linux_amd64.tar.gz | tar -xz
+          sudo mv kustomize /usr/local/bin/
+      - name: Validate
+        run: ./scripts/validate-all.sh
+  lint-yaml:
+    name: Lint all YAML
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: yamllint
+        run: pip install --break-system-packages yamllint && yamllint -d "{extends: relaxed, rules: {line-length: disable}}" .
