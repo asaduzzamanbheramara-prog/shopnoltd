@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: cloudflared
+  namespace: shopno-ingress
+spec:
+  type: ClusterIP
+  ports:
+    - name: metrics
+      port: 2000
+      targetPort: 2000
+  selector:
+    app.kubernetes.io/name: cloudflared
