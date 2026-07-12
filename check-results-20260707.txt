@@ -1,0 +1,150 @@
+====================================================================
+  FULL PROJECT LIVE CHECK — Tue Jul  7 16:31:27 +06 2026
+====================================================================
+
+--- 1. Pods Not Running/Ready (real problems only) ---
+NAMESPACE   NAME                        READY   STATUS             RESTARTS   AGE
+default     api-69ddbdfcd8-zncxs        0/1     ImagePullBackOff   0          18h
+default     postgres-784d8cc65b-hn4tc   0/1     Pending            0          18h
+(Completed = expected one-off jobs, not errors)
+
+--- 2. Pods With High Restart Counts (>5) ---
+toolbox/kc-6d75bbf84f-r4dcw  restarts=174
+
+--- 3. All Deployments Status ---
+NAMESPACE            NAME                       READY   UP-TO-DATE   AVAILABLE   AGE
+default              api                        0/1     1            0           18h
+default              postgres                   0/1     1            0           18h
+default              redis                      1/1     1            1           18h
+ingress-nginx        ingress-nginx-controller   1/1     1            1           18h
+kube-system          coredns                    2/2     2            2           19h
+local-path-storage   local-path-provisioner     1/1     1            1           19h
+toolbox              kc                         0/1     1            0           18h
+toolbox              kf                         1/1     1            1           18h
+toolbox              mongo                      1/1     1            1           18h
+toolbox              postgres                   1/1     1            1           18h
+toolbox              redis                      1/1     1            1           18h
+
+--- 4. Named Deployment Checks (per-service) ---
+  toolbox/kc -> ready /1
+  toolbox/kf -> ready 1/1
+  default/postgres -> ready /1
+  toolbox/postgres -> ready 1/1
+  default/redis -> ready 1/1
+  toolbox/redis -> ready 1/1
+  default/api -> ready /1
+
+--- 5. All Ingress Hosts Discovered ---
+toolbox/toolbox-ingress:
+  host=kobo.shopnoltd.dpdns.org
+  host=kc.shopnoltd.dpdns.org
+  host=enketo.shopnoltd.dpdns.org
+  host=kobo.local
+
+--- 6. Ingress Controller Health ---
+ingress-nginx-controller-64fb7f4b45-qtpdh  restarts=1  ready=true
+
+--- 7. End-to-End HTTP Checks (every discovered ingress host) ---
+enketo.shopnoltd.dpdns.org               HTTP 503
+kc.shopnoltd.dpdns.org                   HTTP 503
+kobo.local                               HTTP 404
+kobo.shopnoltd.dpdns.org                 HTTP 503
+
+--- 8. SSL Certificate Expiry Check (per host, port 443) ---
+  enketo.shopnoltd.dpdns.org -> expires Sep 14 15:51:01 2026 GMT
+  kc.shopnoltd.dpdns.org -> expires Sep 14 15:51:01 2026 GMT
+  kobo.local -> no cert found / connection failed (may be HTTP only)
+  kobo.shopnoltd.dpdns.org -> expires Sep 14 15:51:01 2026 GMT
+
+--- 9. Toolbox: Direct Backend Checks (bypass ingress) ---
+kc (KPI) :8000        HTTP 
+kf (KoboCAT) :8000    HTTP 302
+
+--- 10. Datastore Connectivity ---
+  default/postgres -> FAILED
+  default/redis -> OK
+  toolbox/postgres -> OK
+  toolbox/redis -> OK
+
+--- 11. Disk / PVC Usage (postgres-data etc. don't grow unbounded) ---
+NAMESPACE   NAME           STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+toolbox     kc-media-pvc   Bound    pvc-544d15da-0f53-4616-9c10-fe83b5d59bbe   5Gi        RWO            standard       <unset>                 18h
+toolbox     kf-media-pvc   Bound    pvc-a2c81f9b-25e9-43b4-ae1e-a312c1ecf39d   5Gi        RWO            standard       <unset>                 18h
+toolbox     postgres-pvc   Bound    pvc-a40de8da-d6c1-448b-9770-c46cc1914de6   10Gi       RWO            standard       <unset>                 18h
+
+  default/postgres disk usage:
+    (could not read)
+  default/mongo disk usage:
+    (could not read)
+  toolbox/postgres disk usage:
+Filesystem      Size  Used Avail Use% Mounted on
+  toolbox/mongo disk usage:
+Filesystem      Size  Used Avail Use% Mounted on
+
+--- 12. Meet (Jitsi) Stack ---
+
+--- 13. Monitoring Stack ---
+
+--- 14. Recent Error Logs (last 50 lines, filtered) per key deployment ---
+  [toolbox/kc] recent errors:
+          fatal: unable to access 'https://github.com/kobotoolbox/formpack.git/':
+  [toolbox/kf] recent errors:
+    Traceback (most recent call last):
+    OSError: [Errno 98] Address already in use
+    Traceback (most recent call last):
+    OSError: [Errno 98] Address already in use
+    Traceback (most recent call last):
+    OSError: [Errno 98] Address already in use
+    Traceback (most recent call last):
+    OSError: [Errno 98] Address already in use
+    Traceback (most recent call last):
+    OSError: [Errno 98] Address already in use
+
+--- 15. Android APK / Mobile Backend Check ---
+Found apks/ directory:
+total 11316
+drwxrwxrwx 1 shopno shopno     4096 Jul  6 13:59 .
+drwxrwxrwx 1 shopno shopno     4096 Jul  7 16:31 ..
+-rwxrwxrwx 1 shopno shopno 11578993 Jul  6 16:38 KoboCollect-v2025.2.3.apk
+-rwxrwxrwx 1 shopno shopno      751 Jul  6 13:59 README.md
+-rwxrwxrwx 1 shopno shopno     2196 Jul  6 13:58 fetch_kobocollect_apk.ps1
+  Inspecting: ./apks/KoboCollect-v2025.2.3.apk
+  aapt not installed — skipping manifest inspection.
+  Install with: sudo apt install aapt  (or use 'apkanalyzer' from Android SDK)
+  --- Hardcoded URLs inside APK (grep strings) ---
+
+  If you know the mobile app's API base URL(s), test them directly below:
+  (edit MOBILE_API_HOSTS array in this script to add real hosts)
+
+====================================================================
+  SUMMARY:  11 passed / 14 failed
+====================================================================
+  FAIL  Some pods not Running/Succeeded
+  FAIL  Pods with >5 restarts found
+  FAIL  toolbox/kc NOT fully ready (/1)
+  PASS  toolbox/kf ready (1/1)
+  FAIL  default/postgres NOT fully ready (/1)
+  PASS  toolbox/postgres ready (1/1)
+  PASS  default/redis ready (1/1)
+  PASS  toolbox/redis ready (1/1)
+  FAIL  default/api NOT fully ready (/1)
+  FAIL  enketo.shopnoltd.dpdns.org responded HTTP 503 (or timed out)
+  FAIL  kc.shopnoltd.dpdns.org responded HTTP 503 (or timed out)
+  FAIL  kobo.local responded HTTP 404 (or timed out)
+  FAIL  kobo.shopnoltd.dpdns.org responded HTTP 503 (or timed out)
+  PASS  enketo.shopnoltd.dpdns.org cert valid (69 days left)
+  PASS  kc.shopnoltd.dpdns.org cert valid (69 days left)
+  PASS  kobo.shopnoltd.dpdns.org cert valid (69 days left)
+  FAIL  kc backend HTTP 
+  FAIL  kf backend HTTP 302
+  FAIL  default/postgres unreachable
+  PASS  default/redis reachable
+  PASS  toolbox/postgres reachable
+  PASS  toolbox/redis reachable
+  PASS  toolbox/mongo reachable
+  FAIL  toolbox/kc has recent errors in logs
+  FAIL  toolbox/kf has recent errors in logs
+
+====================================================================
+  CHECK COMPLETE — Tue Jul  7 16:31:42 +06 2026
+====================================================================
