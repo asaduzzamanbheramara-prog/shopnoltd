@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: oauth-service
+
+spec:
+  replicas: 2
+
+  selector:
+    matchLabels:
+      app: oauth-service
+
+  template:
+    metadata:
+      labels:
+        app: oauth-service
+
+    spec:
+
+      imagePullSecrets:
+      - name: ghcr-secret
+
+      containers:
+
+      - name: oauth-service
+
+        image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-oauth:latest
+
+        imagePullPolicy: Always
+
+        ports:
+
+        - containerPort: 8001
+
+        env:
+
+        - name: PORT
+          value: "8001"
+
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: oauth-secrets
+              key: JWT_SECRET
