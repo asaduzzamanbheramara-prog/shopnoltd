@@ -1,0 +1,42 @@
+# syntax=docker/dockerfile:1.7
+# Multi-stage Android APK builder for Shopnoltd branded apps.
+# ARG: BASE_IMAGE (e.g. kobotoolbox/kobocollect-build), APP_CODE, PACKAGE_NAME
+ARG BASE_IMAGE=eclipse-temurin:17-jdk
+FROM ubuntu:22.04 AS base
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    openjdk-17-jdk-headless wget unzip git ca-certificates curl xz-utils \
+    && rm -rf /var/lib/apt/lists/*
+ENV ANDROID_HOME=/opt/android-sdk
+ENV ANDROID_SDK_ROOT=/opt/android-sdk
+ENV PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$ANDROID_HOME/build-tools/34.0.0
+RUN mkdir -p $ANDROID_HOME/cmdline-tools && \
+    cd $ANDROID_HOME/cmdline-tools && \
+    wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O cmd.zip && \
+    unzip -q cmd.zip && \
+    mv cmdline-tools latest && \
+    rm cmd.zip && \
+    yes | sdkmanager --licenses >/dev/null && \
+    sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0" >/dev/null
+
+FROM base AS builder
+ARG BASE_IMAGE
+ARG APP_CODE
+ARG PACKAGE_NAME
+WORKDIR /src
+# Clone the upstream mobile project. Each matrix entry sets BASE_IMAGE / APP_CODE.
+RUN git clone --depth=1 https://github.com/${{ matrix.upstream }}.git /src/upstream
+WORKDIR /src/upstream
+# Apply Shopnoltd branding overlays
+COPY branding/logos/ app/src/main/res/drawable-xxxhdpi/ 2>/dev/null || true
+COPY branding/icons/  app/src/main/res/ 2>/dev/null || true
+# Rename package
+RUN find . -name "AndroidManifest.xml" -exec sed -i "s/com.kobocollect/$PACKAGE_NAME/g; s/com.chatwoot/$PACKAGE_NAME/g; s/org.jitsi.meet/$PACKAGE_NAME/g; s/com.owncast/$PACKAGE_NAME/g; s/com.nextcloud.client/$PACKAGE_NAME/g; s/com.fsck.k9/$PACKAGE_NAME/g" {} \;
+# Replace strings
+RUN find . -name "strings.xml" -exec sed -i "s/KoboCollect/Shopnoltd Survey/g; s/Chatwoot/Shopnoltd Chat/g; s/Jitsi Meet/Shopnoltd Meet/g; s/Owncast/Shopnoltd Live/g; s/Nextcloud/Shopnoltd Drive/g; s/K-9 Mail/Shopnoltd Mail/g" {} \;
+RUN ./gradlew --no-daemon assembleRelease 2>/dev/null || ./gradlew --no-daemon assembleDebug
+
+FROM scratch
+ARG APP_CODE
+COPY --from=builder /src/upstream/app/build/outputs/apk/release/*.apk /apk/${APP_CODE}.apk
+COPY --from=builder /src/upstream/app/build/outputs/apk/debug/*.apk   /apk/${APP_CODE}-debug.apk
