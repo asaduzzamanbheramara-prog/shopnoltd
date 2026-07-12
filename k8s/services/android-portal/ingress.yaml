@@ -1,0 +1,25 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: android-portal
+  namespace: shopno-platform
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    traefik.ingress.kubernetes.io/router.tls: "true"
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - shopnoltdandroid.shopnoltd.dpdns.org
+      secretName: android-portal-tls
+  rules:
+    - host: shopnoltdandroid.shopnoltd.dpdns.org
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: android-portal
+                port:
+                  number: 80

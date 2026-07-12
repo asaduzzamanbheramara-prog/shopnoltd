@@ -37,6 +37,8 @@ jobs:
           - { service: ai-platform,        dockerfile: platform/ai-platform/Dockerfile }
           - { service: admin-portal,       dockerfile: platform/admin-portal/Dockerfile }
           - { service: web-portal,         dockerfile: platform/web-portal/Dockerfile }
+          - { service: android-portal,     dockerfile: platform/android-portal/Dockerfile }
+          - { service: pc-portal,          dockerfile: platform/pc-portal/Dockerfile }
     permissions:
       contents: read
       packages: write

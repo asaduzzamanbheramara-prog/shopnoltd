@@ -21,5 +21,3 @@ commonLabels:
   app.kubernetes.io/name: grafana
   app.kubernetes.io/part-of: shopnoltd
 
-components:
-  - ../../components/service-monitor-conditional

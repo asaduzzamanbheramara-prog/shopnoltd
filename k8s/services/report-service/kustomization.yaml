@@ -21,5 +21,3 @@ commonLabels:
   app.kubernetes.io/name: report-service
   app.kubernetes.io/part-of: shopnoltd
 
-components:
-  - ../../components/service-monitor-conditional
