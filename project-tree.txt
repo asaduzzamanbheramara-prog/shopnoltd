@@ -1,386 +1,664 @@
 .
-├── ANDROID_APK_DEPLOYMENT_COMPLETE.md
-├── ANDROID_APK_SETUP_GUIDE.md
-├── COMPLETE_FUNCTIONALITY_CHECK_REPORT.html
-├── COMPLETE_FUNCTIONALITY_VERIFICATION.txt
-├── DOCUMENTATION_INDEX.md
-├── Dockerfile
-├── FINAL_COMPREHENSIVE_REPORT.md
-├── FINAL_DEPLOYMENT_SUMMARY.md
-├── FINAL_STATUS_SUMMARY.txt
-├── FINAL_VERIFICATION_CHECKLIST.md
-├── FULL_FUNCTIONALITY_REPORT.md
-├── Get-Process
-├── HONEST_PROBLEM_DIAGNOSIS.md
-├── LIVE_DEPLOYMENT_GUIDE.md
-├── PROJECT_LIVE_STATUS_REPORT.md
-├── QUICK_ACCESS.md
-├── README_START_HERE.md
-├── SYSTEM_VERIFICATION_REPORT.html
-├── VERIFICATION_REPORTS_INDEX.txt
-├── ai-ingress.yaml
-├── api-clean.yaml
-├── apks
-│   ├── KoboCollect-v2025.2.3.apk
-│   ├── README.md
-│   └── fetch_kobocollect_apk.ps1
-├── app_platform
-│   ├── __init__.py
-│   └── api
-│       ├── __init__.py
-│       ├── database.py
-│       ├── main.py
-│       └── schema.sql
-├── autoscaling
-│   ├── hpa-api-service.yaml
-│   └── hpa-billing-engine.yaml
-├── backup.ps1
-├── branding
-│   ├── 1024 × 1024_Logo_Final.png
-│   ├── Dockerfile.overlay
-│   ├── Dockerfile.overlay.kobocat
-│   ├── android-icon-144x144.png
-│   ├── android-icon-192x192.png
-│   ├── android-icon-36x36.png
-│   ├── android-icon-48x48.png
-│   ├── android-icon-72x72.png
-│   ├── android-icon-96x96.png
-│   ├── apple-icon-180x180.png
-│   ├── enketo-image.json
-│   ├── favicon-16x16.png
-│   ├── favicon-32x32.png
-│   ├── favicon-96x96.png
-│   ├── full-branding-check.sh
-│   ├── kobocat
-│   │   ├── images
-│   │   │   ├── kobologo.png
-│   │   │   └── kobologo.svg
-│   │   └── static
-│   │       └── css
-│   ├── kobocat-image.json
-│   ├── kobologo.png
-│   ├── kobologo.svg
-│   ├── kpi-image.json
-│   ├── logo.svg
-│   ├── shopnoapp-logo.jpg
-│   ├── shopnoapp-logo.png
-│   ├── shopnoapp-logo.svg
-│   └── templates
-│       ├── account_base.html
-│       ├── api.html
-│       ├── base_no_static.html
-│       ├── base_simple.html
-│       └── basic.html
-├── branding-full-report-20260708-2140.txt
-├── branding-full-report-20260709-1203.txt
-├── branding-full-report-20260710-2323.txt
-├── branding-public-report-20260708-2141.txt
-├── browser-realistic-check.sh
-├── check-results-20260707-1752.txt
-├── check-results-20260707-1801.txt
-├── check-results-20260707-1813.txt
-├── check-results-20260707-1844.txt
-├── check-results-20260707-1847.txt
-├── check-results-20260707.txt
-├── check-results-20260711-1751.txt
-├── check-results-20260711-1810.txt
-├── cluster-discover.sh
-├── config
-│   ├── configmap.yaml
-│   └── secrets.yaml
-├── configmaps.yaml
-├── deployment-ai.yaml
-├── deployment-api-service.yaml
-├── deployment-api.yaml
-├── deployment-billing-engine.yaml
-├── deployment-chat.yaml
-├── deployment-freedomain-ui.yaml
-├── deployment-freedomain-website.yaml
-├── deployment-freedomain.yaml
-├── deployment-kc.yaml
-├── deployment-live.yaml
-├── deployment-oauth-service.yaml
-├── deployment-postgres.yaml
-├── deployment-redis.yaml
-├── deployment-root-app.yaml
-├── deployment-tenant-router.yaml
-├── docs
-│   └── RUNBOOK.md
-├── ee-current.yaml
-├── final-full-check.sh
-├── freedomain-ui-current.yaml
-├── full-live-check.sh
-├── full-project-check.sh
-├── full-site-check.sh
-├── get-docker.sh
-├── grafana-deployment.yaml
-├── images-list.txt
-├── kc-current-state-backup.yaml
-├── kc-current.yaml
-├── kc-deployment-current-clean.yaml
-├── kc-deployment-current.yaml
-├── kc-deployment.yaml
-├── kc-live.yaml
-├── kc-running.yaml
-├── kc-uv-cache-pvc.yaml
-├── kc-uwsgi-original.ini
-├── kc.yaml
-├── kf-current.yaml
-├── kf-deployment-current-clean.yaml
-├── kf-deployment-current.yaml
-├── kf-export.yaml
-├── kf-live-deployment.yaml
-├── kf-live.yaml
-├── kf-login-template.html
-├── kf-nginx-conf-current.yaml
-├── kf-nginx-conf.yaml
-├── kf-running.yaml
-├── kf-service-current.yaml
-├── kf.yaml
-├── kobodb-2026-07-10.sql
-├── kobodb-backup.sql
-├── kpidb-2026-07-10.sql
-├── kpidb-backup.sql
-├── kubectl
-├── live-service.yaml
-├── mail
-│   ├── fixed.yaml
-│   ├── mail-fixed.yaml
-│   ├── mail-server-fixed.yaml
-│   └── mail-server.yaml
-├── mail-current.yaml
-├── mail-server-current.yaml
-├── meet-config.yaml
-├── meet-fix
-│   ├── jicofo.yaml
-│   ├── jitsi-config.yaml
-│   ├── jvb.yaml
-│   └── prosody.yaml
-├── monitor.ps1
-├── namespaces
-│   ├── default-all.yaml
-│   ├── meet-all.yaml
-│   └── toolbox-all.yaml
-├── new-api.yaml
-├── observability
-│   ├── README.md
-│   └── alerts
-│       └── billing-alerts.yaml
-├── postgres-pvc-default.yaml
-├── postgres-secret-default.yaml
-├── project-tree.txt
-├── prometheus-deployment.yaml
-├── requirements.txt
-├── schema.sql
-├── scripts
-│   ├── apply_secrets_auto.ps1
-│   ├── create_k8s_secrets.ps1
-│   ├── generated_secrets.yaml
-│   ├── rewrite_manifests.ps1
-│   └── test_stripe_webhook.py
-├── secrets-template.yaml
-├── services.yaml
-├── shopnoltd-ai-platform
-│   ├── Dockerfile
-│   ├── LICENSE
-│   ├── Makefile
-│   ├── README.md
-│   ├── __pycache__
-│   │   └── app.cpython-312.pyc
-│   ├── agents
-│   │   ├── __init__.py
-│   │   ├── base_agent.py
-│   │   ├── code_agent.py
-│   │   ├── database_agent.py
-│   │   ├── deployment_agent.py
-│   │   ├── docker_agent.py
-│   │   ├── fix_agent.py
-│   │   ├── github_agent.py
-│   │   ├── kubernetes_agent.py
-│   │   ├── planner.py
-│   │   ├── review_agent.py
-│   │   └── security_agent.py
-│   ├── ai
-│   │   ├── __init__.py
-│   │   ├── chat.py
-│   │   ├── conversation.py
-│   │   ├── embeddings.py
-│   │   ├── llm.py
-│   │   ├── memory
-│   │   │   ├── __init__.py
-│   │   │   ├── history.py
-│   │   │   └── session.py
-│   │   ├── planner.py
-│   │   ├── prompts
-│   │   ├── prompts.py
-│   │   ├── rag
-│   │   ├── rag.py
-│   │   ├── retriever.py
-│   │   └── vectorstore.py
-│   ├── api
-│   │   ├── __init__.py
-│   │   ├── config.py
-│   │   ├── dependencies
-│   │   │   └── __init__.py
-│   │   ├── health.py
-│   │   ├── main.py
-│   │   ├── middleware
-│   │   │   └── __init__.py
-│   │   ├── routers
-│   │   │   ├── __init__.py
-│   │   │   ├── auth.py
-│   │   │   ├── chat.py
-│   │   │   ├── docker.py
-│   │   │   ├── github.py
-│   │   │   ├── kubernetes.py
-│   │   │   └── projects.py
-│   │   └── security.py
-│   ├── app.py
-│   ├── backend
-│   │   ├── Dockerfile
-│   │   ├── __init__.py
-│   │   ├── app
-│   │   │   ├── __init__.py
-│   │   │   ├── ai
-│   │   │   ├── config.py
-│   │   │   ├── core
-│   │   │   ├── database.py
-│   │   │   ├── main.py
-│   │   │   ├── models.py
-│   │   │   ├── routers
-│   │   │   └── schemas.py
-│   │   ├── core
-│   │   │   ├── config.py
-│   │   │   └── settings.py
-│   │   ├── database
-│   │   │   ├── models.py
-│   │   │   └── session.py
-│   │   ├── requirements.txt
-│   │   ├── services
-│   │   │   ├── chat_service.py
-│   │   │   ├── docker_service.py
-│   │   │   ├── github_service.py
-│   │   │   └── kubernetes_service.py
-│   │   ├── tests
-│   │   │   ├── __init__.py
-│   │   │   ├── test_ai_engine.py
-│   │   │   └── test_health.py
-│   │   └── utils
-│   │       └── logger.py
-│   ├── config
-│   │   ├── prompts.py
-│   │   └── settings.py
-│   ├── data
-│   ├── docker-compose.yml
-│   ├── docs
-│   ├── frontend
-│   │   ├── index.html
-│   │   ├── public
-│   │   └── src
-│   │       ├── assets
-│   │       ├── components
-│   │       ├── context
-│   │       ├── hooks
-│   │       ├── pages
-│   │       ├── services
-│   │       └── styles
-│   ├── github
-│   │   ├── __init__.py
-│   │   ├── actions.py
-│   │   ├── client.py
-│   │   ├── clone.py
-│   │   ├── commit.py
-│   │   ├── push.py
-│   │   └── repository.py
-│   ├── helm
-│   │   └── shopnoltd-ai
-│   │       └── {templates}
-│   ├── k8s
-│   │   ├── base
-│   │   ├── deployment.yaml
-│   │   ├── development
-│   │   ├── production
-│   │   └── service.yaml
-│   ├── kubernetes
-│   │   ├── __init__.py
-│   │   ├── deployment.py
-│   │   ├── diagnose.py
-│   │   ├── events.py
-│   │   ├── ingress.py
-│   │   ├── logs.py
-│   │   ├── pods.py
-│   │   └── service.py
-│   ├── logs
-│   ├── models
-│   │   └── chat.py
-│   ├── monitoring
-│   ├── requirements.txt
-│   ├── scripts
-│   │   └── start.sh
-│   ├── services
-│   │   └── github_service.py
-│   ├── shopnoltd-orchestrator
-│   │   ├── README.md
-│   │   ├── __pycache__
-│   │   ├── agents
-│   │   │   ├── __init__.py
-│   │   │   ├── __pycache__
-│   │   │   ├── docker_agent.py
-│   │   │   ├── github_agent.py
-│   │   │   ├── k8s_agent.py
-│   │   │   ├── log_analyzer.py
-│   │   │   └── orchestrator.py
-│   │   ├── config.py
-│   │   ├── main.py
-│   │   ├── models
-│   │   │   ├── __init__.py
-│   │   │   ├── __pycache__
-│   │   │   └── schemas.py
-│   │   ├── requirements.txt
-│   │   └── services.yaml
-│   ├── templates
-│   │   └── deployment.yaml
-│   ├── tests
-│   ├── tools
-│   │   └── kubectl.py
-│   ├── uploads
-│   └── vectorstore
-├── source-code
-│   ├── api-files.txt
-│   └── chat-files.txt
-├── tenant-router-nginx.conf
-├── test.sh
-├── toolbox
-│   ├── 00-namespace.yaml
-│   ├── 01-secret.yaml
-│   ├── 02-configmap.yaml
-│   ├── 03-postgres.yaml
-│   ├── 04-mongo.yaml
-│   ├── 05-redis.yaml
-│   ├── 06-kpi-deployment.yaml
-│   ├── 07-kobocat-deployment.yaml
-│   ├── 08-enketo.yaml
-│   ├── 09-services.yaml
-│   ├── 10-ingress.yaml
-│   ├── 11-pvc.yaml
-│   ├── 12-kf-init-scripts.yaml
-│   ├── 13-ingress-uwsgi.yaml
-│   ├── SSL_PROXY_FIX_SUMMARY.md
-│   ├── kc-uwsgi-original.ini
-│   ├── kf-deployment-export.yaml
-│   ├── kf-uwsgi-original.ini
-│   └── verify-ssl-config.sh
-├── toolbox-fix
-│   ├── kc-fixed.yaml
-│   ├── kc.yaml
-│   └── kf.yaml
-├── ui
-│   ├── Dockerfile
-│   ├── admin
-│   │   ├── Dockerfile
-│   │   └── index.html
-│   └── index.html
-├── wait_for_mongo.bash
-└── wait_for_postgres.bash
-
-83 directories, 301 files
+./.cloudflaredconfig.yml
+./.git
+./.git/COMMIT_EDITMSG
+./.git/FETCH_HEAD
+./.git/HEAD
+./.git/ORIG_HEAD
+./.git/config
+./.git/description
+./.git/filter-repo
+./.git/filter-repo/already_ran
+./.git/filter-repo/changed-refs
+./.git/filter-repo/commit-map
+./.git/filter-repo/first-changed-commits
+./.git/filter-repo/ref-map
+./.git/filter-repo/suboptimal-issues
+./.git/hooks
+./.git/hooks/applypatch-msg.sample
+./.git/hooks/commit-msg.sample
+./.git/hooks/fsmonitor-watchman.sample
+./.git/hooks/post-update.sample
+./.git/hooks/pre-applypatch.sample
+./.git/hooks/pre-commit.sample
+./.git/hooks/pre-merge-commit.sample
+./.git/hooks/pre-push.sample
+./.git/hooks/pre-rebase.sample
+./.git/hooks/pre-receive.sample
+./.git/hooks/prepare-commit-msg.sample
+./.git/hooks/push-to-checkout.sample
+./.git/hooks/sendemail-validate.sample
+./.git/hooks/update.sample
+./.git/index
+./.git/info
+./.git/info/exclude
+./.git/info/refs
+./.git/logs
+./.git/logs/HEAD
+./.git/logs/refs
+./.git/objects
+./.git/objects/00
+./.git/objects/01
+./.git/objects/02
+./.git/objects/03
+./.git/objects/04
+./.git/objects/05
+./.git/objects/06
+./.git/objects/07
+./.git/objects/08
+./.git/objects/09
+./.git/objects/0a
+./.git/objects/0b
+./.git/objects/0c
+./.git/objects/0d
+./.git/objects/0e
+./.git/objects/0f
+./.git/objects/11
+./.git/objects/12
+./.git/objects/13
+./.git/objects/14
+./.git/objects/15
+./.git/objects/16
+./.git/objects/17
+./.git/objects/19
+./.git/objects/1b
+./.git/objects/1c
+./.git/objects/1d
+./.git/objects/1e
+./.git/objects/1f
+./.git/objects/20
+./.git/objects/21
+./.git/objects/22
+./.git/objects/23
+./.git/objects/24
+./.git/objects/25
+./.git/objects/26
+./.git/objects/27
+./.git/objects/2a
+./.git/objects/2b
+./.git/objects/2c
+./.git/objects/2d
+./.git/objects/2e
+./.git/objects/2f
+./.git/objects/31
+./.git/objects/33
+./.git/objects/34
+./.git/objects/35
+./.git/objects/36
+./.git/objects/37
+./.git/objects/38
+./.git/objects/39
+./.git/objects/3a
+./.git/objects/3b
+./.git/objects/3d
+./.git/objects/3e
+./.git/objects/3f
+./.git/objects/40
+./.git/objects/41
+./.git/objects/42
+./.git/objects/43
+./.git/objects/45
+./.git/objects/46
+./.git/objects/47
+./.git/objects/48
+./.git/objects/49
+./.git/objects/4a
+./.git/objects/4b
+./.git/objects/4c
+./.git/objects/4d
+./.git/objects/4e
+./.git/objects/4f
+./.git/objects/50
+./.git/objects/51
+./.git/objects/53
+./.git/objects/54
+./.git/objects/55
+./.git/objects/57
+./.git/objects/58
+./.git/objects/59
+./.git/objects/5a
+./.git/objects/5b
+./.git/objects/5d
+./.git/objects/5e
+./.git/objects/5f
+./.git/objects/60
+./.git/objects/61
+./.git/objects/62
+./.git/objects/63
+./.git/objects/64
+./.git/objects/65
+./.git/objects/66
+./.git/objects/67
+./.git/objects/68
+./.git/objects/6a
+./.git/objects/6b
+./.git/objects/6c
+./.git/objects/6d
+./.git/objects/6e
+./.git/objects/6f
+./.git/objects/70
+./.git/objects/71
+./.git/objects/72
+./.git/objects/73
+./.git/objects/74
+./.git/objects/75
+./.git/objects/76
+./.git/objects/77
+./.git/objects/78
+./.git/objects/79
+./.git/objects/7a
+./.git/objects/7b
+./.git/objects/7c
+./.git/objects/7d
+./.git/objects/7e
+./.git/objects/7f
+./.git/objects/80
+./.git/objects/81
+./.git/objects/82
+./.git/objects/83
+./.git/objects/85
+./.git/objects/86
+./.git/objects/87
+./.git/objects/88
+./.git/objects/89
+./.git/objects/8a
+./.git/objects/8c
+./.git/objects/8d
+./.git/objects/8e
+./.git/objects/8f
+./.git/objects/90
+./.git/objects/91
+./.git/objects/92
+./.git/objects/94
+./.git/objects/95
+./.git/objects/96
+./.git/objects/97
+./.git/objects/98
+./.git/objects/99
+./.git/objects/9b
+./.git/objects/9c
+./.git/objects/9d
+./.git/objects/9e
+./.git/objects/9f
+./.git/objects/a1
+./.git/objects/a3
+./.git/objects/a4
+./.git/objects/a5
+./.git/objects/a6
+./.git/objects/a7
+./.git/objects/a8
+./.git/objects/aa
+./.git/objects/ab
+./.git/objects/ac
+./.git/objects/ad
+./.git/objects/ae
+./.git/objects/af
+./.git/objects/b0
+./.git/objects/b1
+./.git/objects/b2
+./.git/objects/b3
+./.git/objects/b4
+./.git/objects/b5
+./.git/objects/b6
+./.git/objects/b7
+./.git/objects/b9
+./.git/objects/ba
+./.git/objects/bb
+./.git/objects/bd
+./.git/objects/be
+./.git/objects/bf
+./.git/objects/bitmap-ref-tips_tr7su5
+./.git/objects/c0
+./.git/objects/c1
+./.git/objects/c2
+./.git/objects/c3
+./.git/objects/c4
+./.git/objects/c5
+./.git/objects/c6
+./.git/objects/c7
+./.git/objects/c9
+./.git/objects/cb
+./.git/objects/cc
+./.git/objects/cd
+./.git/objects/ce
+./.git/objects/cf
+./.git/objects/d0
+./.git/objects/d1
+./.git/objects/d3
+./.git/objects/d4
+./.git/objects/d5
+./.git/objects/d6
+./.git/objects/d7
+./.git/objects/d8
+./.git/objects/d9
+./.git/objects/da
+./.git/objects/db
+./.git/objects/dc
+./.git/objects/de
+./.git/objects/df
+./.git/objects/e0
+./.git/objects/e1
+./.git/objects/e2
+./.git/objects/e3
+./.git/objects/e4
+./.git/objects/e5
+./.git/objects/e6
+./.git/objects/e8
+./.git/objects/e9
+./.git/objects/eb
+./.git/objects/ec
+./.git/objects/ed
+./.git/objects/ee
+./.git/objects/ef
+./.git/objects/f0
+./.git/objects/f1
+./.git/objects/f2
+./.git/objects/f3
+./.git/objects/f5
+./.git/objects/f6
+./.git/objects/f7
+./.git/objects/f8
+./.git/objects/f9
+./.git/objects/fa
+./.git/objects/fb
+./.git/objects/fc
+./.git/objects/fd
+./.git/objects/fe
+./.git/objects/ff
+./.git/objects/info
+./.git/objects/maintenance.lock
+./.git/objects/pack
+./.git/packed-refs
+./.git/refs
+./.git/refs/heads
+./.git/refs/original
+./.git/refs/remotes
+./.git/refs/tags
+./.github
+./.github/workflows
+./.github/workflows/build-all.yml
+./.github/workflows/build-images.yml
+./.github/workflows/build-platform-images.yml
+./.github/workflows/docker-build.yml
+./.github/workflows/fetch_apk.yml
+./.gitignore
+./ANDROID_APK_DEPLOYMENT_COMPLETE.md
+./ANDROID_APK_SETUP_GUIDE.md
+./COMPLETE_FUNCTIONALITY_CHECK_REPORT.html
+./COMPLETE_FUNCTIONALITY_VERIFICATION.txt
+./DOCUMENTATION_INDEX.md
+./Dockerfile
+./FINAL_COMPREHENSIVE_REPORT.md
+./FINAL_DEPLOYMENT_SUMMARY.md
+./FINAL_STATUS_SUMMARY.txt
+./FINAL_VERIFICATION_CHECKLIST.md
+./FULL_FUNCTIONALITY_REPORT.md
+./Get-Process
+./HONEST_PROBLEM_DIAGNOSIS.md
+./LIVE_DEPLOYMENT_GUIDE.md
+./PROJECT_LIVE_STATUS_REPORT.md
+./QUICK_ACCESS.md
+./README_START_HERE.md
+./SYSTEM_VERIFICATION_REPORT.html
+./VERIFICATION_REPORTS_INDEX.txt
+./ai-ingress.yaml
+./api-clean.yaml
+./apks
+./apks/KoboCollect-v2025.2.3.apk
+./apks/README.md
+./apks/fetch_kobocollect_apk.ps1
+./app_platform
+./app_platform/__init__.py
+./app_platform/api
+./app_platform/api/__init__.py
+./app_platform/api/database.py
+./app_platform/api/main.py
+./app_platform/api/schema.sql
+./autoscaling
+./autoscaling/hpa-api-service.yaml
+./autoscaling/hpa-billing-engine.yaml
+./backup.ps1
+./billing-engine
+./billing-engine/.env.example
+./billing-engine/Dockerfile
+./billing-engine/README.md
+./billing-engine/app
+./billing-engine/app/__init__.py
+./billing-engine/app/config.py
+./billing-engine/app/database.py
+./billing-engine/app/fx.py
+./billing-engine/app/gateways
+./billing-engine/app/main.py
+./billing-engine/app/models.py
+./billing-engine/deployment-billing-engine-v6.yaml
+./billing-engine/requirements.txt
+./branding
+./branding-full-report-20260708-2140.txt
+./branding-full-report-20260709-1203.txt
+./branding-full-report-20260710-2323.txt
+./branding-public-report-20260708-2141.txt
+./branding/1024 × 1024_Logo_Final.png
+./branding/Dockerfile.overlay
+./branding/Dockerfile.overlay.kobocat
+./branding/android-icon-144x144.png
+./branding/android-icon-192x192.png
+./branding/android-icon-36x36.png
+./branding/android-icon-48x48.png
+./branding/android-icon-72x72.png
+./branding/android-icon-96x96.png
+./branding/apple-icon-180x180.png
+./branding/enketo-image.json
+./branding/favicon-16x16.png
+./branding/favicon-32x32.png
+./branding/favicon-96x96.png
+./branding/full-branding-check.sh
+./branding/kobocat
+./branding/kobocat-image.json
+./branding/kobocat/images
+./branding/kobocat/static
+./branding/kobologo.png
+./branding/kobologo.svg
+./branding/kpi-image.json
+./branding/logo.svg
+./branding/shopnoapp-logo.jpg
+./branding/shopnoapp-logo.png
+./branding/shopnoapp-logo.svg
+./branding/templates
+./branding/templates/account_base.html
+./branding/templates/api.html
+./branding/templates/base_no_static.html
+./branding/templates/base_simple.html
+./branding/templates/basic.html
+./browser-realistic-check.sh
+./build-contexts.txt
+./check-results-20260707-1752.txt
+./check-results-20260707-1801.txt
+./check-results-20260707-1813.txt
+./check-results-20260707-1844.txt
+./check-results-20260707-1847.txt
+./check-results-20260707.txt
+./check-results-20260711-1751.txt
+./check-results-20260711-1810.txt
+./cleanup
+./cleanup/delete_candidates.txt
+./cleanup/full-cleanup-report.txt
+./cluster-discover.sh
+./config
+./config/configmap.yaml
+./config/secrets.yaml
+./configmaps.yaml
+./corrections
+./corrections/.github
+./corrections/.github/workflows
+./corrections/CORRECTIONS-README.md
+./corrections/deployment-live.yaml
+./corrections/deployment-tenant-router-configmap.yaml
+./corrections/k8s-manifests
+./corrections/start-tunnel.ps1
+./corrections/watchdog.ps1
+./deployment-ai.yaml
+./deployment-api-service.yaml
+./deployment-api.yaml
+./deployment-billing-engine.yaml
+./deployment-chat.yaml
+./deployment-freedomain-ui.yaml
+./deployment-freedomain-website.yaml
+./deployment-freedomain.yaml
+./deployment-kc.yaml
+./deployment-live.yaml
+./deployment-oauth-service.yaml
+./deployment-postgres.yaml
+./deployment-redis.yaml
+./deployment-root-app.yaml
+./deployment-tenant-router-configmap.yaml
+./deployment-tenant-router.yaml
+./directories.txt
+./dockerfile-summary.txt
+./dockerfiles.txt
+./docs
+./docs/RUNBOOK.md
+./ee-current.yaml
+./final-full-check.sh
+./freedomain-ui-current.yaml
+./full-live-check.sh
+./full-project-check.sh
+./full-site-check.sh
+./get-docker.sh
+./grafana-deployment.yaml
+./images-list.txt
+./images-used.txt
+./kc-current-state-backup.yaml
+./kc-current.yaml
+./kc-deployment-current-clean.yaml
+./kc-deployment-current.yaml
+./kc-deployment.yaml
+./kc-live.yaml
+./kc-running.yaml
+./kc-uv-cache-pvc.yaml
+./kc-uwsgi-original.ini
+./kc.yaml
+./kf-current.yaml
+./kf-deployment-current-clean.yaml
+./kf-deployment-current.yaml
+./kf-export.yaml
+./kf-live-deployment.yaml
+./kf-live.yaml
+./kf-login-template.html
+./kf-nginx-conf-current.yaml
+./kf-nginx-conf.yaml
+./kf-running.yaml
+./kf-service-current.yaml
+./kf.yaml
+./kobodb-2026-07-10.sql
+./kobodb-backup.sql
+./kpidb-2026-07-10.sql
+./kpidb-backup.sql
+./kubectl
+./kubernetes-kinds.txt
+./live-service.yaml
+./mail
+./mail-current.yaml
+./mail-server-current.yaml
+./mail/fixed.yaml
+./mail/mail-fixed.yaml
+./mail/mail-server-fixed.yaml
+./mail/mail-server.yaml
+./meet-config.yaml
+./meet-fix
+./meet-fix/jicofo.yaml
+./meet-fix/jitsi-config.yaml
+./meet-fix/jvb.yaml
+./meet-fix/prosody.yaml
+./monitor.ps1
+./namespaces
+./namespaces/default-all.yaml
+./namespaces/meet-all.yaml
+./namespaces/toolbox-all.yaml
+./new-api.yaml
+./observability
+./observability/README.md
+./observability/alerts
+./observability/alerts/billing-alerts.yaml
+./postgres-pvc-default.yaml
+./postgres-secret-default.yaml
+./project-tree.txt
+./prometheus-deployment.yaml
+./requirements.txt
+./running-api.yaml
+./schema.sql
+./scripts
+./scripts/apply_secrets_auto.ps1
+./scripts/create_k8s_secrets.ps1
+./scripts/generated_secrets.yaml
+./scripts/rewrite_manifests.ps1
+./scripts/test_stripe_webhook.py
+./secrets-template.yaml
+./services
+./services.yaml
+./services/billing-engine
+./services/billing-engine/Dockerfile
+./services/billing-engine/requirements.txt
+./services/billing-engine/worker.py
+./services/live
+./services/live/Dockerfile
+./services/live/app.py
+./services/oauth-service
+./services/oauth-service/Dockerfile
+./services/oauth-service/package.json
+./services/oauth-service/server.js
+./shopnoltd-ai-platform
+./shopnoltd-ai-platform/.env.example
+./shopnoltd-ai-platform/.gitignore
+./shopnoltd-ai-platform/Dockerfile
+./shopnoltd-ai-platform/LICENSE
+./shopnoltd-ai-platform/Makefile
+./shopnoltd-ai-platform/README.md
+./shopnoltd-ai-platform/__pycache__
+./shopnoltd-ai-platform/__pycache__/app.cpython-312.pyc
+./shopnoltd-ai-platform/agents
+./shopnoltd-ai-platform/agents/__init__.py
+./shopnoltd-ai-platform/agents/base_agent.py
+./shopnoltd-ai-platform/agents/code_agent.py
+./shopnoltd-ai-platform/agents/database_agent.py
+./shopnoltd-ai-platform/agents/deployment_agent.py
+./shopnoltd-ai-platform/agents/docker_agent.py
+./shopnoltd-ai-platform/agents/fix_agent.py
+./shopnoltd-ai-platform/agents/github_agent.py
+./shopnoltd-ai-platform/agents/kubernetes_agent.py
+./shopnoltd-ai-platform/agents/planner.py
+./shopnoltd-ai-platform/agents/review_agent.py
+./shopnoltd-ai-platform/agents/security_agent.py
+./shopnoltd-ai-platform/ai
+./shopnoltd-ai-platform/ai/__init__.py
+./shopnoltd-ai-platform/ai/chat.py
+./shopnoltd-ai-platform/ai/conversation.py
+./shopnoltd-ai-platform/ai/embeddings.py
+./shopnoltd-ai-platform/ai/llm.py
+./shopnoltd-ai-platform/ai/memory
+./shopnoltd-ai-platform/ai/planner.py
+./shopnoltd-ai-platform/ai/prompts
+./shopnoltd-ai-platform/ai/prompts.py
+./shopnoltd-ai-platform/ai/rag
+./shopnoltd-ai-platform/ai/rag.py
+./shopnoltd-ai-platform/ai/retriever.py
+./shopnoltd-ai-platform/ai/vectorstore.py
+./shopnoltd-ai-platform/api
+./shopnoltd-ai-platform/api/__init__.py
+./shopnoltd-ai-platform/api/config.py
+./shopnoltd-ai-platform/api/dependencies
+./shopnoltd-ai-platform/api/health.py
+./shopnoltd-ai-platform/api/main.py
+./shopnoltd-ai-platform/api/middleware
+./shopnoltd-ai-platform/api/routers
+./shopnoltd-ai-platform/api/security.py
+./shopnoltd-ai-platform/app.py
+./shopnoltd-ai-platform/backend
+./shopnoltd-ai-platform/backend/.env.example
+./shopnoltd-ai-platform/backend/Dockerfile
+./shopnoltd-ai-platform/backend/__init__.py
+./shopnoltd-ai-platform/backend/app
+./shopnoltd-ai-platform/backend/core
+./shopnoltd-ai-platform/backend/database
+./shopnoltd-ai-platform/backend/requirements.txt
+./shopnoltd-ai-platform/backend/services
+./shopnoltd-ai-platform/backend/tests
+./shopnoltd-ai-platform/backend/utils
+./shopnoltd-ai-platform/config
+./shopnoltd-ai-platform/config/prompts.py
+./shopnoltd-ai-platform/config/settings.py
+./shopnoltd-ai-platform/data
+./shopnoltd-ai-platform/docker-compose.yml
+./shopnoltd-ai-platform/docs
+./shopnoltd-ai-platform/frontend
+./shopnoltd-ai-platform/frontend/index.html
+./shopnoltd-ai-platform/frontend/public
+./shopnoltd-ai-platform/frontend/src
+./shopnoltd-ai-platform/github
+./shopnoltd-ai-platform/github/__init__.py
+./shopnoltd-ai-platform/github/actions.py
+./shopnoltd-ai-platform/github/client.py
+./shopnoltd-ai-platform/github/clone.py
+./shopnoltd-ai-platform/github/commit.py
+./shopnoltd-ai-platform/github/push.py
+./shopnoltd-ai-platform/github/repository.py
+./shopnoltd-ai-platform/helm
+./shopnoltd-ai-platform/helm/shopnoltd-ai
+./shopnoltd-ai-platform/k8s
+./shopnoltd-ai-platform/k8s/base
+./shopnoltd-ai-platform/k8s/deployment.yaml
+./shopnoltd-ai-platform/k8s/development
+./shopnoltd-ai-platform/k8s/production
+./shopnoltd-ai-platform/k8s/service.yaml
+./shopnoltd-ai-platform/kubernetes
+./shopnoltd-ai-platform/kubernetes/__init__.py
+./shopnoltd-ai-platform/kubernetes/deployment.py
+./shopnoltd-ai-platform/kubernetes/diagnose.py
+./shopnoltd-ai-platform/kubernetes/events.py
+./shopnoltd-ai-platform/kubernetes/ingress.py
+./shopnoltd-ai-platform/kubernetes/logs.py
+./shopnoltd-ai-platform/kubernetes/pods.py
+./shopnoltd-ai-platform/kubernetes/service.py
+./shopnoltd-ai-platform/logs
+./shopnoltd-ai-platform/models
+./shopnoltd-ai-platform/models/chat.py
+./shopnoltd-ai-platform/monitoring
+./shopnoltd-ai-platform/requirements.txt
+./shopnoltd-ai-platform/scripts
+./shopnoltd-ai-platform/scripts/start.sh
+./shopnoltd-ai-platform/services
+./shopnoltd-ai-platform/services/github_service.py
+./shopnoltd-ai-platform/shopnoltd-orchestrator
+./shopnoltd-ai-platform/shopnoltd-orchestrator/.venv
+./shopnoltd-ai-platform/shopnoltd-orchestrator/README.md
+./shopnoltd-ai-platform/shopnoltd-orchestrator/__pycache__
+./shopnoltd-ai-platform/shopnoltd-orchestrator/agents
+./shopnoltd-ai-platform/shopnoltd-orchestrator/config.py
+./shopnoltd-ai-platform/shopnoltd-orchestrator/main.py
+./shopnoltd-ai-platform/shopnoltd-orchestrator/models
+./shopnoltd-ai-platform/shopnoltd-orchestrator/requirements.txt
+./shopnoltd-ai-platform/shopnoltd-orchestrator/services.yaml
+./shopnoltd-ai-platform/templates
+./shopnoltd-ai-platform/templates/deployment.yaml
+./shopnoltd-ai-platform/tests
+./shopnoltd-ai-platform/tools
+./shopnoltd-ai-platform/tools/kubectl.py
+./shopnoltd-ai-platform/uploads
+./shopnoltd-ai-platform/vectorstore
+./shopnoltd-source.tar.gz
+./source-code
+./source-code/api-files.txt
+./source-code/chat-files.txt
+./tenant-router-nginx.conf
+./test.sh
+./toolbox
+./toolbox-fix
+./toolbox-fix/kc-fixed.yaml
+./toolbox-fix/kc.yaml
+./toolbox-fix/kf.yaml
+./toolbox/00-namespace.yaml
+./toolbox/01-secret.yaml
+./toolbox/02-configmap.yaml
+./toolbox/03-postgres.yaml
+./toolbox/04-mongo.yaml
+./toolbox/05-redis.yaml
+./toolbox/06-kpi-deployment.yaml
+./toolbox/07-kobocat-deployment.yaml
+./toolbox/08-enketo.yaml
+./toolbox/09-services.yaml
+./toolbox/10-ingress.yaml
+./toolbox/11-pvc.yaml
+./toolbox/12-kf-init-scripts.yaml
+./toolbox/13-ingress-uwsgi.yaml
+./toolbox/SSL_PROXY_FIX_SUMMARY.md
+./toolbox/kc-uwsgi-original.ini
+./toolbox/kf-deployment-export.yaml
+./toolbox/kf-uwsgi-original.ini
+./toolbox/verify-ssl-config.sh
+./ui
+./ui/Dockerfile
+./ui/admin
+./ui/admin/Dockerfile
+./ui/admin/index.html
+./ui/index.html
+./wait_for_mongo.bash
+./wait_for_postgres.bash

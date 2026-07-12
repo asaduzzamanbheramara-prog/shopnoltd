@@ -1,91 +1,107 @@
 name: Build and Push Shopnoltd Images
 
-# CORRECTED: the previous docker-build.yml built billing-engine, oauth, chat,
-# live, and tenant-router all from shopnoltd-ai-platform/backend/Dockerfile.
-# That Dockerfile only contains the FastAPI app with health/auth/chat
-# routers -- it has no billing, OAuth, or routing logic. Building it under
-# five different names would have pushed five images that all silently run
-# the same wrong app instead of failing loudly.
-#
-# This workflow only builds the 5 services that actually have their own
-# source code and Dockerfile in this repo. The rest genuinely don't have
-# an implementation yet -- see CORRECTIONS-README.md for what's still needed.
-
 on:
   push:
     branches:
       - main
+
   workflow_dispatch:
-    inputs:
-      tag:
-        description: 'Extra tag to push (optional, in addition to latest/sha)'
-        required: false
-        default: ''
 
 permissions:
   contents: read
   packages: write
 
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: shopnoltd
+
 jobs:
+
   build:
-    name: Build ${{ matrix.name }}
+
     runs-on: ubuntu-latest
+
     strategy:
+
       fail-fast: false
+
       matrix:
+
         include:
-          # root-app / frontend -- real source: app_platform/
+
           - name: frontend
             context: .
             dockerfile: Dockerfile
-            extra_tag: "latest"
+            tag: latest
 
-          # api-service -- real source: shopnoltd-ai-platform/backend/
           - name: api-service
             context: ./shopnoltd-ai-platform/backend
             dockerfile: ./shopnoltd-ai-platform/backend/Dockerfile
-            extra_tag: "v4"
+            tag: v4
 
-          # shopnoltd-ai -- already working, left as-is
           - name: ai
             context: ./shopnoltd-ai-platform
             dockerfile: ./shopnoltd-ai-platform/Dockerfile
-            extra_tag: "latest"
+            tag: latest
 
-          # freedomain-ui -- real source: ui/
           - name: freedomain-ui
             context: ./ui
             dockerfile: ./ui/Dockerfile
-            extra_tag: "v1"
+            tag: v1
 
-          # freedomain-website (admin panel) -- real source: ui/admin/
           - name: freedomain-website
             context: ./ui/admin
             dockerfile: ./ui/admin/Dockerfile
-            extra_tag: "v1"
+            tag: v1
+
+          - name: billing-engine
+            context: ./billing-engine
+            dockerfile: ./billing-engine/Dockerfile
+            tag: v6
+
+          - name: oauth
+            context: ./services/oauth-service
+            dockerfile: ./services/oauth-service/Dockerfile
+            tag: v1
+
+          - name: live
+            context: ./services/live
+            dockerfile: ./services/live/Dockerfile
+            tag: v1
 
     steps:
+
       - uses: actions/checkout@v4
 
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set up Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: Build and Push
 
-      - name: Build and push ${{ matrix.name }}
         uses: docker/build-push-action@v6
+
         with:
+
           context: ${{ matrix.context }}
+
           file: ${{ matrix.dockerfile }}
+
           push: true
+
           tags: |
-            ghcr.io/${{ github.repository_owner }}/shopnoltd-${{ matrix.name }}:${{ matrix.extra_tag }}
+
+            ghcr.io/${{ github.repository_owner }}/shopnoltd-${{ matrix.name }}:${{ matrix.tag }}
+
             ghcr.io/${{ github.repository_owner }}/shopnoltd-${{ matrix.name }}:latest
+
             ghcr.io/${{ github.repository_owner }}/shopnoltd-${{ matrix.name }}:${{ github.sha }}
+
           cache-from: type=gha
+
           cache-to: type=gha,mode=max

@@ -1,5 +1,13 @@
 ./Dockerfile
-./shopnoltd-ai-platform/backend/Dockerfile
+./billing-engine/Dockerfile
+./branding/Dockerfile.overlay
+./branding/Dockerfile.overlay.kobocat
+./dockerfile-summary.txt
+./dockerfiles.txt
+./services/billing-engine/Dockerfile
+./services/live/Dockerfile
+./services/oauth-service/Dockerfile
 ./shopnoltd-ai-platform/Dockerfile
-./ui/admin/Dockerfile
+./shopnoltd-ai-platform/backend/Dockerfile
 ./ui/Dockerfile
+./ui/admin/Dockerfile
