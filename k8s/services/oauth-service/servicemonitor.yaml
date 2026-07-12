@@ -1,0 +1,16 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: oauth-service
+  namespace: shopno-identity
+  labels:
+    app.kubernetes.io/name: oauth-service
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: oauth-service
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s
+      scrapeTimeout: 10s

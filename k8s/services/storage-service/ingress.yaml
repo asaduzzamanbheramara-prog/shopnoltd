@@ -1,0 +1,27 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: storage-service
+  namespace: shopno-platform
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    traefik.ingress.kubernetes.io/router.tls: "true"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - storage-service.shopnoltd.com
+      secretName: storage-service-tls
+  rules:
+    - host: storage-service.shopnoltd.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: storage-service
+                port:
+                  number: 80

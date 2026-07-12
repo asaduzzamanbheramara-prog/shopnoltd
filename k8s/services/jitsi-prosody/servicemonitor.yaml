@@ -1,0 +1,16 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: jitsi-prosody
+  namespace: shopno-apps
+  labels:
+    app.kubernetes.io/name: jitsi-prosody
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: jitsi-prosody
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s
+      scrapeTimeout: 10s

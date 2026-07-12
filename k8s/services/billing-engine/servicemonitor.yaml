@@ -1,0 +1,16 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: billing-engine
+  namespace: shopno-payments
+  labels:
+    app.kubernetes.io/name: billing-engine
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: billing-engine
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s
+      scrapeTimeout: 10s

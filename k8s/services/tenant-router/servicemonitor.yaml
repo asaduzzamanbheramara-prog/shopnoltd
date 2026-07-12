@@ -1,0 +1,16 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: tenant-router
+  namespace: shopno-platform
+  labels:
+    app.kubernetes.io/name: tenant-router
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: tenant-router
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s
+      scrapeTimeout: 10s
