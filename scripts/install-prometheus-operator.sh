@@ -1,34 +1,43 @@
 #!/usr/bin/env bash
 set -euo pipefail
-# Install Prometheus Operator using the stripped bundle (no huge annotations).
-echo "==> Installing Prometheus Operator (stripped bundle)..."
-kubectl apply -f https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/v0.74.0/stripped-down-crds.yaml
-kubectl apply -f https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/v0.74.0/bundle.yaml
 
-# Some CRDs hit the 256KB annotation cap on etcd, so we use the stripped-down
-# version of those that fit. Fall back to manual serviceMonitor CRD if needed.
-kubectl apply -f - <<'EOF'
-apiVersion: apiextensions.k8s.io/v1
-kind: CustomResourceDefinition
-metadata:
-  name: servicemonitors.monitoring.coreos.com
-spec:
-  group: monitoring.coreos.com
-  scope: Namespaced
-  names:
-    kind: ServiceMonitor
-    listKind: ServiceMonitorList
-    singular: servicemonitor
-    plural: servicemonitors
-  versions:
-    - name: v1
-      served: true
-      storage: true
-      schema:
-        openAPIV3Schema:
-          type: object
-          x-kubernetes-preserve-unknown-fields: true
-EOF
+echo "==> Downloading Prometheus Operator bundle..."
+curl -sL https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/v0.74.0/bundle.yaml -o /tmp/prom-bundle.yaml
 
-kubectl -n default wait --for=condition=Available --timeout=180s deploy/prometheus-operator
+# Strip the giant annotation block on each CRD so they fit etcd's 256KB cap.
+python3 - <<'PY'
+import re, sys
+with open("/tmp/prom-bundle.yaml") as f:
+    text = f.read()
+
+# Drop the "controller-gen.kubebuilder.io/version" giant annotation block.
+# Replace it with minimal annotations.
+text = re.sub(
+    r"controller-gen.kubebuilder.io/version: v0\.16\.3\n",
+    "",
+    text,
+)
+
+# Drop the entire description annotation block (the biggest offender).
+text = re.sub(
+    r"description: >-\n(?:[ \t]+.+\n)+",
+    "",
+    text,
+    flags=re.MULTILINE,
+)
+
+# Apply
+with open("/tmp/prom-bundle.yaml", "w") as f:
+    f.write(text)
+print("Bundle trimmed.")
+PY
+
+echo "==> Applying trimmed bundle..."
+kubectl apply -f /tmp/prom-bundle.yaml
+
+# Apply the deployment separately (some users only want the CRDs).
+kubectl apply -f https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/v0.74.0/example/prometheus-operator.yaml
+
+echo "==> Waiting for operator..."
+kubectl -n default wait --for=condition=Available --timeout=300s deploy/prometheus-operator
 echo "✅ Prometheus Operator ready."
