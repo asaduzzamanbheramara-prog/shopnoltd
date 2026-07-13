@@ -1,7 +1,7 @@
 """Traefik forwardAuth endpoint."""
 from fastapi import APIRouter, Request
 router = APIRouter()
-@router.all("")
+@router.api_route("", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"])
 async def verify(request: Request):
     auth = request.headers.get("authorization", "")
     if not auth.startswith("Bearer "):

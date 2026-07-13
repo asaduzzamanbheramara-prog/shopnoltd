@@ -9,7 +9,13 @@ redis==5.2.0
 httpx==0.27.2
 stripe==11.1.0
 paypalrestsdk==1.13.3
-binance-pay==0.0.6
+# NOTE: no `binance-pay` package exists on PyPI (0.0.6 doesn't resolve). Not needed —
+# app/providers/binance_pay.py implements Binance Pay's HMAC signing directly via
+# httpx/hmac/hashlib, no SDK required.
+# NOTE: Razorpay is implemented via direct async REST calls in
+# app/providers/razorpay.py (the official `razorpay` SDK is sync and would block
+# the event loop), so no razorpay package is listed here either.
+cryptography==43.0.3
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 python-multipart==0.0.17

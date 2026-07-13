@@ -26,6 +26,15 @@ class Settings(BaseSettings):
     bkash_app_secret: str = ""
     nagad_merchant_id: str = ""
     nagad_merchant_key: str = ""
+    nagad_merchant_private_key: str = ""
+    nagad_pg_public_key: str = ""
+    nagad_sandbox: bool = True
+    razorpay_key_id: str = ""
+    razorpay_key_secret: str = ""
+    sslcommerz_store_id: str = ""
+    sslcommerz_store_password: str = ""
+    sslcommerz_sandbox: bool = True
+    base_callback_url: str = "https://api.shopnoltd.dpdns.org"
     rocket_merchant_id: str = ""
     rocket_merchant_key: str = ""
     admin_approval_required: bool = True
