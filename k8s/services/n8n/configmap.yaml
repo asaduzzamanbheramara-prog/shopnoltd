@@ -16,5 +16,5 @@ data:
   POSTGRES_HOST: "postgres.data.svc.cluster.local"
   POSTGRES_PORT: "5432"
   MINIO_ENDPOINT: "minio.data.svc.cluster.local:9000"
-  KEYCLOAK_ISSUER: "https://auth.shopnoltd.com/realms/shopnoltd"
+  KEYCLOAK_ISSUER: "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
   KEYCLOAK_CLIENT_ID: "n8n"

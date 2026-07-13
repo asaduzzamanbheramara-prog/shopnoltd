@@ -12,10 +12,10 @@ spec:
   ingressClassName: traefik
   tls:
     - hosts:
-        - loki.shopnoltd.com
+        - loki.shopnoltd.dpdns.org
       secretName: loki-tls
   rules:
-    - host: loki.shopnoltd.com
+    - host: loki.shopnoltd.dpdns.org
       http:
         paths:
           - path: /

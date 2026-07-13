@@ -12,10 +12,10 @@ spec:
   ingressClassName: traefik
   tls:
     - hosts:
-        - scheduler-service.shopnoltd.com
+        - scheduler-service.shopnoltd.dpdns.org
       secretName: scheduler-service-tls
   rules:
-    - host: scheduler-service.shopnoltd.com
+    - host: scheduler-service.shopnoltd.dpdns.org
       http:
         paths:
           - path: /

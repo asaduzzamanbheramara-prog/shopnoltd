@@ -12,10 +12,10 @@ spec:
   ingressClassName: traefik
   tls:
     - hosts:
-        - jitsi-jvb.shopnoltd.com
+        - jitsi-jvb.shopnoltd.dpdns.org
       secretName: jitsi-jvb-tls
   rules:
-    - host: jitsi-jvb.shopnoltd.com
+    - host: jitsi-jvb.shopnoltd.dpdns.org
       http:
         paths:
           - path: /

@@ -12,10 +12,10 @@ spec:
   ingressClassName: traefik
   tls:
     - hosts:
-        - ai-platform.shopnoltd.com
+        - ai-platform.shopnoltd.dpdns.org
       secretName: ai-platform-tls
   rules:
-    - host: ai-platform.shopnoltd.com
+    - host: ai-platform.shopnoltd.dpdns.org
       http:
         paths:
           - path: /

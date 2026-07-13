@@ -12,10 +12,10 @@ spec:
   ingressClassName: traefik
   tls:
     - hosts:
-        - keycloak.shopnoltd.com
+        - keycloak.shopnoltd.dpdns.org
       secretName: keycloak-tls
   rules:
-    - host: keycloak.shopnoltd.com
+    - host: keycloak.shopnoltd.dpdns.org
       http:
         paths:
           - path: /

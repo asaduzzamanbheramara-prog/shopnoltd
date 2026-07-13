@@ -12,10 +12,10 @@ spec:
   ingressClassName: traefik
   tls:
     - hosts:
-        - superset.shopnoltd.com
+        - superset.shopnoltd.dpdns.org
       secretName: superset-tls
   rules:
-    - host: superset.shopnoltd.com
+    - host: superset.shopnoltd.dpdns.org
       http:
         paths:
           - path: /

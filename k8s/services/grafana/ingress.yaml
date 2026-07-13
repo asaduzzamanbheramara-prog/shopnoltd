@@ -12,10 +12,10 @@ spec:
   ingressClassName: traefik
   tls:
     - hosts:
-        - grafana.shopnoltd.com
+        - grafana.shopnoltd.dpdns.org
       secretName: grafana-tls
   rules:
-    - host: grafana.shopnoltd.com
+    - host: grafana.shopnoltd.dpdns.org
       http:
         paths:
           - path: /

@@ -12,10 +12,10 @@ spec:
   ingressClassName: traefik
   tls:
     - hosts:
-        - license-service.shopnoltd.com
+        - license-service.shopnoltd.dpdns.org
       secretName: license-service-tls
   rules:
-    - host: license-service.shopnoltd.com
+    - host: license-service.shopnoltd.dpdns.org
       http:
         paths:
           - path: /

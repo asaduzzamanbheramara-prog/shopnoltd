@@ -12,10 +12,10 @@ spec:
   ingressClassName: traefik
   tls:
     - hosts:
-        - tenant-router.shopnoltd.com
+        - tenant-router.shopnoltd.dpdns.org
       secretName: tenant-router-tls
   rules:
-    - host: tenant-router.shopnoltd.com
+    - host: tenant-router.shopnoltd.dpdns.org
       http:
         paths:
           - path: /

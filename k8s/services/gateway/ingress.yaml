@@ -12,10 +12,10 @@ spec:
   ingressClassName: traefik
   tls:
     - hosts:
-        - gateway.shopnoltd.com
+        - gateway.shopnoltd.dpdns.org
       secretName: gateway-tls
   rules:
-    - host: gateway.shopnoltd.com
+    - host: gateway.shopnoltd.dpdns.org
       http:
         paths:
           - path: /

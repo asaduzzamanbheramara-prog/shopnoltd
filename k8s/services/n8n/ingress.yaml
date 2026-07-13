@@ -12,10 +12,10 @@ spec:
   ingressClassName: traefik
   tls:
     - hosts:
-        - n8n.shopnoltd.com
+        - n8n.shopnoltd.dpdns.org
       secretName: n8n-tls
   rules:
-    - host: n8n.shopnoltd.com
+    - host: n8n.shopnoltd.dpdns.org
       http:
         paths:
           - path: /

@@ -12,10 +12,10 @@ spec:
   ingressClassName: traefik
   tls:
     - hosts:
-        - kobotoolbox.shopnoltd.com
+        - kobotoolbox.shopnoltd.dpdns.org
       secretName: kobotoolbox-tls
   rules:
-    - host: kobotoolbox.shopnoltd.com
+    - host: kobotoolbox.shopnoltd.dpdns.org
       http:
         paths:
           - path: /

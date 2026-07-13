@@ -12,10 +12,10 @@ spec:
   ingressClassName: traefik
   tls:
     - hosts:
-        - chatwoot.shopnoltd.com
+        - chatwoot.shopnoltd.dpdns.org
       secretName: chatwoot-tls
   rules:
-    - host: chatwoot.shopnoltd.com
+    - host: chatwoot.shopnoltd.dpdns.org
       http:
         paths:
           - path: /

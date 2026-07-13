@@ -12,10 +12,10 @@ spec:
   ingressClassName: traefik
   tls:
     - hosts:
-        - worker-service.shopnoltd.com
+        - worker-service.shopnoltd.dpdns.org
       secretName: worker-service-tls
   rules:
-    - host: worker-service.shopnoltd.com
+    - host: worker-service.shopnoltd.dpdns.org
       http:
         paths:
           - path: /
