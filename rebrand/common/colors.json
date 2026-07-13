@@ -1,0 +1,44 @@
+{
+  "_comment": "Brand palette for Shopnoltd. Mirrors branding/shopnoapp-logo.svg and branding/colors/. Consumed by the APK overlay (res/values/colors.xml), the NSIS installer (branding.nsh), the in-app splash gradient, and the EXE installer graphics.",
+  "brand": {
+    "name": "Shopnoltd",
+    "product": {
+      "apk": {
+        "name": "Shopno Store",
+        "short": "Shopno",
+        "package": "com.shopnoltd.store",
+        "tagline": "Apps for everything you do with Shopnoltd."
+      },
+      "exe": {
+        "name": "Shopno Login",
+        "short": "ShopnoLogin",
+        "package": "Shopnoltd.ShopnoLogin",
+        "publisher": "Shopnoltd Ltd",
+        "tagline": "Sign in to every Shopnoltd service with one click."
+      }
+    }
+  },
+  "primary": {
+    "background": "#0B1220",
+    "primary":    "#2563EB",
+    "secondary":  "#38BDF8",
+    "on_primary": "#FFFFFF",
+    "on_background": "#F4F6FB"
+  },
+  "supporting": {
+    "surface":        "#111827",
+    "surface_alt":    "#1F2937",
+    "border":         "#374151",
+    "muted":          "#94A3B8",
+    "success":        "#22C55E",
+    "warning":        "#F59E0B",
+    "danger":         "#EF4444",
+    "link":           "#60A5FA"
+  },
+  "_apkpure_swap": {
+    "_comment": "When apply_overlay.py walks the APKPure APK, it looks for these source-color tokens and rewrites them. Keep the keys here in sync with the upstream APKPure theme if the colors ever change.",
+    "apkpure_primary":   "#FF6F00",
+    "apkpure_secondary": "#0B84FF",
+    "apkpure_accent":    "#FFB300"
+  }
+}

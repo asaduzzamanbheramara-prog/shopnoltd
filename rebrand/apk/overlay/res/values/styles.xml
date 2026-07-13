@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!--
+      Shopno app theme. Replaces the APKPure default theme at runtime;
+      declared in the manifest as `@style/AppTheme.Shopno`.
+    -->
+    <style name="AppTheme.Shopno" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/shopno_blue</item>
+        <item name="colorPrimaryDark">@color/shopno_navy</item>
+        <item name="colorAccent">@color/shopno_sky</item>
+        <item name="colorOnPrimary">@color/shopno_white</item>
+        <item name="android:colorBackground">@color/shopno_navy</item>
+        <item name="android:windowBackground">@color/shopno_navy</item>
+        <item name="android:statusBarColor" tools:targetApi="lollipop">@color/shopno_navy</item>
+        <item name="android:navigationBarColor" tools:targetApi="lollipop">@color/shopno_navy</item>
+        <item name="android:textColorPrimary">@color/shopno_white</item>
+        <item name="android:textColorSecondary">@color/shopno_muted</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+
+    <style name="AppTheme.Shopno.Splash" parent="AppTheme.Shopno">
+        <item name="android:windowBackground">@drawable/ic_launcher_background</item>
+    </style>
+
+    <!-- APKPure-style names preserved for compatibility. -->
+    <style name="APKPure.Theme" parent="AppTheme.Shopno" />
+    <style name="APKPure.Theme.Splash" parent="AppTheme.Shopno.Splash" />
+</resources>
