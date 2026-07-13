@@ -12,10 +12,10 @@ spec:
   ingressClassName: traefik
   tls:
     - hosts:
-        - postgres.shopnoltd.com
+        - postgres.shopnoltd.dpdns.org
       secretName: postgres-tls
   rules:
-    - host: postgres.shopnoltd.com
+    - host: postgres.shopnoltd.dpdns.org
       http:
         paths:
           - path: /healthz

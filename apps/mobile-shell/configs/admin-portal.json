@@ -1,0 +1,6 @@
+{
+  "appId": "org.shopnoltd.admin",
+  "appName": "Shopnoltd Admin",
+  "webDir": "www",
+  "server": { "url": "https://admin-portal.shopnoltd.dpdns.org", "cleartext": false }
+}

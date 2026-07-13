@@ -12,10 +12,10 @@ spec:
   ingressClassName: traefik
   tls:
     - hosts:
-        - gitea.shopnoltd.com
+        - gitea.shopnoltd.dpdns.org
       secretName: gitea-tls
   rules:
-    - host: gitea.shopnoltd.com
+    - host: gitea.shopnoltd.dpdns.org
       http:
         paths:
           - path: /

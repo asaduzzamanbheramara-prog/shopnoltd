@@ -4,7 +4,7 @@ export default function Dashboard() {
   useEffect(() => {
     const t = localStorage.getItem('shopno_token')
     if (!t) return
-    fetch('/api/v1/me', { headers: { Authorization: `Bearer ${t}` } }).then(r => r.json()).then(setMe)
+    fetch('/api/v1/users/me', { headers: { Authorization: `Bearer ${t}` } }).then(r => r.json()).then(setMe)
   }, [])
   if (!me) return <div style={{ padding: 32 }}>Please log in.</div>
   return (

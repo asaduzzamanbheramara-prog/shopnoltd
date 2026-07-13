@@ -12,10 +12,10 @@ spec:
   ingressClassName: traefik
   tls:
     - hosts:
-        - redis.shopnoltd.com
+        - redis.shopnoltd.dpdns.org
       secretName: redis-tls
   rules:
-    - host: redis.shopnoltd.com
+    - host: redis.shopnoltd.dpdns.org
       http:
         paths:
           - path: /healthz

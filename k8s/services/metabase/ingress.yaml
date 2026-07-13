@@ -12,10 +12,10 @@ spec:
   ingressClassName: traefik
   tls:
     - hosts:
-        - metabase.shopnoltd.com
+        - metabase.shopnoltd.dpdns.org
       secretName: metabase-tls
   rules:
-    - host: metabase.shopnoltd.com
+    - host: metabase.shopnoltd.dpdns.org
       http:
         paths:
           - path: /

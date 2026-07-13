@@ -1,0 +1,19 @@
+{
+  "name": "shopnoltd-mobile-shell",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "sync:web": "node scripts/select-config.js web-portal && npx cap sync",
+    "sync:admin": "node scripts/select-config.js admin-portal && npx cap sync",
+    "open:android": "npx cap open android",
+    "open:ios": "npx cap open ios"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.1.2"
+  },
+  "dependencies": {
+    "@capacitor/core": "^6.1.2",
+    "@capacitor/android": "^6.1.2",
+    "@capacitor/ios": "^6.1.2"
+  }
+}

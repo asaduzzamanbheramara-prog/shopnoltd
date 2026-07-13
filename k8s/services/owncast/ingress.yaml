@@ -12,10 +12,10 @@ spec:
   ingressClassName: traefik
   tls:
     - hosts:
-        - owncast.shopnoltd.com
+        - owncast.shopnoltd.dpdns.org
       secretName: owncast-tls
   rules:
-    - host: owncast.shopnoltd.com
+    - host: owncast.shopnoltd.dpdns.org
       http:
         paths:
           - path: /

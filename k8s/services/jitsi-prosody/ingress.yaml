@@ -12,10 +12,10 @@ spec:
   ingressClassName: traefik
   tls:
     - hosts:
-        - jitsi-prosody.shopnoltd.com
+        - jitsi-prosody.shopnoltd.dpdns.org
       secretName: jitsi-prosody-tls
   rules:
-    - host: jitsi-prosody.shopnoltd.com
+    - host: jitsi-prosody.shopnoltd.dpdns.org
       http:
         paths:
           - path: /

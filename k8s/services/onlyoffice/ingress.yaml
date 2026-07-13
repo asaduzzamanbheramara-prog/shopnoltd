@@ -12,10 +12,10 @@ spec:
   ingressClassName: traefik
   tls:
     - hosts:
-        - onlyoffice.shopnoltd.com
+        - onlyoffice.shopnoltd.dpdns.org
       secretName: onlyoffice-tls
   rules:
-    - host: onlyoffice.shopnoltd.com
+    - host: onlyoffice.shopnoltd.dpdns.org
       http:
         paths:
           - path: /

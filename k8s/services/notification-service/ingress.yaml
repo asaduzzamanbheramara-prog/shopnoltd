@@ -12,10 +12,10 @@ spec:
   ingressClassName: traefik
   tls:
     - hosts:
-        - notification-service.shopnoltd.com
+        - notification-service.shopnoltd.dpdns.org
       secretName: notification-service-tls
   rules:
-    - host: notification-service.shopnoltd.com
+    - host: notification-service.shopnoltd.dpdns.org
       http:
         paths:
           - path: /

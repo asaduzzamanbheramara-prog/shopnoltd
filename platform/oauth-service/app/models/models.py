@@ -21,3 +21,15 @@ class Tenant(Base):
     settings = Column(JSON, default=dict)
     active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+class Customer(Base):
+    __tablename__ = "customers"
+    id = Column(String(64), primary_key=True, default=lambda: str(uuid.uuid4()))
+    tenant_id = Column(String(64), index=True, nullable=False)
+    keycloak_id = Column(String(64), unique=True, nullable=False, index=True)
+    email = Column(String(256), nullable=False)
+    name = Column(String(256))
+    phone = Column(String(64))
+    billing_address = Column(JSON, default=dict)
+    preferences = Column(JSON, default=dict)
+    active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)

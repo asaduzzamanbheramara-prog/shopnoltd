@@ -12,10 +12,10 @@ spec:
   ingressClassName: traefik
   tls:
     - hosts:
-        - jitsi-jicofo.shopnoltd.com
+        - jitsi-jicofo.shopnoltd.dpdns.org
       secretName: jitsi-jicofo-tls
   rules:
-    - host: jitsi-jicofo.shopnoltd.com
+    - host: jitsi-jicofo.shopnoltd.dpdns.org
       http:
         paths:
           - path: /health

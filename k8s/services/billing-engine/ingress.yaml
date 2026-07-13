@@ -12,10 +12,10 @@ spec:
   ingressClassName: traefik
   tls:
     - hosts:
-        - billing-engine.shopnoltd.com
+        - billing-engine.shopnoltd.dpdns.org
       secretName: billing-engine-tls
   rules:
-    - host: billing-engine.shopnoltd.com
+    - host: billing-engine.shopnoltd.dpdns.org
       http:
         paths:
           - path: /

@@ -12,10 +12,10 @@ spec:
   ingressClassName: traefik
   tls:
     - hosts:
-        - payment-service.shopnoltd.com
+        - payment-service.shopnoltd.dpdns.org
       secretName: payment-service-tls
   rules:
-    - host: payment-service.shopnoltd.com
+    - host: payment-service.shopnoltd.dpdns.org
       http:
         paths:
           - path: /

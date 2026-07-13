@@ -12,10 +12,10 @@ spec:
   ingressClassName: traefik
   tls:
     - hosts:
-        - alertmanager.shopnoltd.com
+        - alertmanager.shopnoltd.dpdns.org
       secretName: alertmanager-tls
   rules:
-    - host: alertmanager.shopnoltd.com
+    - host: alertmanager.shopnoltd.dpdns.org
       http:
         paths:
           - path: /

@@ -12,10 +12,10 @@ spec:
   ingressClassName: traefik
   tls:
     - hosts:
-        - prometheus.shopnoltd.com
+        - prometheus.shopnoltd.dpdns.org
       secretName: prometheus-tls
   rules:
-    - host: prometheus.shopnoltd.com
+    - host: prometheus.shopnoltd.dpdns.org
       http:
         paths:
           - path: /

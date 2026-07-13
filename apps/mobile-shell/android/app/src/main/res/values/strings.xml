@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Shopnoltd</string>
+    <string name="title_activity_main">Shopnoltd</string>
+    <string name="package_name">org.shopnoltd.app</string>
+    <string name="custom_url_scheme">org.shopnoltd.app</string>
+</resources>

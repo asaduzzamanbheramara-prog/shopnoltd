@@ -12,10 +12,10 @@ spec:
   ingressClassName: traefik
   tls:
     - hosts:
-        - api-service.shopnoltd.com
+        - api-service.shopnoltd.dpdns.org
       secretName: api-service-tls
   rules:
-    - host: api-service.shopnoltd.com
+    - host: api-service.shopnoltd.dpdns.org
       http:
         paths:
           - path: /

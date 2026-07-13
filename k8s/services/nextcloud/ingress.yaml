@@ -12,10 +12,10 @@ spec:
   ingressClassName: traefik
   tls:
     - hosts:
-        - nextcloud.shopnoltd.com
+        - nextcloud.shopnoltd.dpdns.org
       secretName: nextcloud-tls
   rules:
-    - host: nextcloud.shopnoltd.com
+    - host: nextcloud.shopnoltd.dpdns.org
       http:
         paths:
           - path: /

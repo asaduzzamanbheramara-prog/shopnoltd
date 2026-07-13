@@ -12,10 +12,10 @@ spec:
   ingressClassName: traefik
   tls:
     - hosts:
-        - admin-portal.shopnoltd.com
+        - admin-portal.shopnoltd.dpdns.org
       secretName: admin-portal-tls
   rules:
-    - host: admin-portal.shopnoltd.com
+    - host: admin-portal.shopnoltd.dpdns.org
       http:
         paths:
           - path: /

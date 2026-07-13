@@ -12,10 +12,10 @@ spec:
   ingressClassName: traefik
   tls:
     - hosts:
-        - minio.shopnoltd.com
+        - minio.shopnoltd.dpdns.org
       secretName: minio-tls
   rules:
-    - host: minio.shopnoltd.com
+    - host: minio.shopnoltd.dpdns.org
       http:
         paths:
           - path: /

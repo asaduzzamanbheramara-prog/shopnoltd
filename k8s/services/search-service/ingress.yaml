@@ -12,10 +12,10 @@ spec:
   ingressClassName: traefik
   tls:
     - hosts:
-        - search-service.shopnoltd.com
+        - search-service.shopnoltd.dpdns.org
       secretName: search-service-tls
   rules:
-    - host: search-service.shopnoltd.com
+    - host: search-service.shopnoltd.dpdns.org
       http:
         paths:
           - path: /

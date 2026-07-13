@@ -1,0 +1,6 @@
+{
+  "title": "Shopnoltd Admin",
+  "url": "https://admin-portal.shopnoltd.dpdns.org",
+  "allowedHostSuffix": "shopnoltd.dpdns.org",
+  "appId": "org.shopnoltd.admin"
+}
