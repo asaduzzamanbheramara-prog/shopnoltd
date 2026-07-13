@@ -1,4 +1,5 @@
 """Web-push via VAPID. Falls back to FCM if FCM key set."""
+import json
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from app.core.security import verify_token
@@ -21,7 +22,7 @@ async def notify(body: NotifyIn, user=Depends(current_user)):
     # Use pywebpush if configured; else return 501
     try:
         from pywebpush import webpush, WebPushException
-        webpush(body.subscription.model_dump(), json.dumps={"title": body.title, "body": body.body})
+        webpush(body.subscription.model_dump(), data=json.dumps({"title": body.title, "body": body.body}))
         return {"ok": True}
     except Exception as e:
         raise HTTPException(501, f"web push not configured: {e}")
