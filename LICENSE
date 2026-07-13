@@ -1,0 +1,15 @@
+PLACEHOLDER — REPLACE BEFORE PUBLIC RELEASE
+
+Copyright (c) 2026 Shopno Ltd. All rights reserved.
+
+No license is currently granted to any party to use, copy, modify, merge,
+publish, distribute, sublicense, or sell copies of this software, in whole
+or in part, without prior written permission from Shopno Ltd.
+
+This file is a placeholder inserted because the repository's LICENSE file
+was empty. Replace it with your actual choice once decided — e.g. a
+standard proprietary license if this stays closed-source, or MIT/Apache-2.0/
+AGPL if parts of it are meant to be genuinely open source. Note that some
+components in this repo (the KoboToolbox-based branding under `branding/`)
+carry their own upstream licenses that must be respected regardless of what
+you choose for your own code.
