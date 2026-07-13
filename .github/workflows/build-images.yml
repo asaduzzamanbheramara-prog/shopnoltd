@@ -4,9 +4,9 @@ on:
   push:
     branches: [main]
     paths:
-      - 'Dockerfile'
-      - 'branding/**'
-      - 'source-code/**'
+      - "Dockerfile"
+      - "branding/**"
+      - "source-code/**"
   workflow_dispatch:
 
 jobs:
