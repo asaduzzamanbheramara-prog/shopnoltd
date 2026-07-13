@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Overlay AndroidManifest.xml — the source of truth for the rebranded APK's
+  identity. apply_overlay.py reads the package / label / icon / theme
+  attributes from this file and rewrites the apktool-decoded manifest
+  in place.
+
+  Note: this is the *decoded* (text) form. apktool will re-encode it to
+  binary AXML on `apktool b`.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.shopnoltd.store"
+    android:versionCode="1"
+    android:versionName="0.1.0"
+    platformBuildVersionCode="34"
+    platformBuildVersionName="14">
+
+    <!-- Minimum SDK stays at whatever APKPure ships; we only override
+         branding. Adjust here if the rebrand ever needs a higher min. -->
+    <uses-sdk
+        android:minSdkVersion="21"
+        android:targetSdkVersion="34" />
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="29" />
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+
+    <application
+        android:label="Shopno Store"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:theme="@style/AppTheme.Shopno"
+        android:hardwareAccelerated="true"
+        android:allowBackup="false"
+        android:supportsRtl="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="false"
+        android:usesCleartextTraffic="false">
+
+        <meta-data
+            android:name="shopnoltd.rebrand.version"
+            android:value="0.1.0" />
+        <meta-data
+            android:name="shopnoltd.rebrand.source"
+            android:value="apkpure" />
+        <meta-data
+            android:name="shopnoltd.rebrand.endpoints"
+            android:value="file:///android_asset/endhosts.json" />
+
+        <!-- Activities are copied from the upstream APKPure manifest by
+             apply_overlay.py; we only override the top-level attributes
+             here. The rebrand keeps the launchers and intent filters
+             that make APKPure work. -->
+
+    </application>
+</manifest>

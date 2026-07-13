@@ -1,0 +1,130 @@
+# shopnoltd endpoints — single source of truth for the rebranded apps.
+#
+# The APK rebrand bakes the `services` map into an in-app store catalog
+# (`endhosts.json`) so users see the right Shopnoltd properties on first launch.
+# The EXE rebrand reads the same map to populate its SSO service picker.
+#
+# Adding or renaming a service: edit this file, re-run the rebrand workflow.
+# The `internal` block is not shipped to end users — it is used by the
+# k8s tenant router and is included here for cross-reference only.
+shopnoltd:
+  base_url: https://shopnoltd.dpdns.org
+  organization: Shopnoltd
+  legal_name: Shopnoltd Ltd
+  support_email: support@shopnoltd.dpdns.org
+  privacy_url: https://shopnoltd.dpdns.org/privacy
+  terms_url: https://shopnoltd.dpdns.org/terms
+  services:
+    - id: portal
+      label: Shopno Portal
+      url: https://portal.shopnoltd.dpdns.org
+      upstream: apps/gitea # or any web shell we serve at the portal host
+      icon: portal
+      description: The Shopnoltd home — sign in, manage your account, browse all apps.
+    - id: auth
+      label: Shopno Sign In
+      url: https://auth.shopnoltd.dpdns.org
+      upstream: apps/keycloak
+      icon: shield
+      description: Single sign-on for every Shopnoltd service. Your one account, every app.
+    - id: store
+      label: Shopno Store
+      url: https://store.shopnoltd.dpdns.org
+      upstream: rebrand/apk
+      icon: store
+      description: The Shopnoltd app store — install Shopno apps on every device.
+    - id: mail
+      label: Shopno Mail
+      url: https://mail.shopnoltd.dpdns.org
+      upstream: apps/mailcow
+      icon: mail
+      description: Mail, contacts, and calendars for Shopnoltd.
+    - id: chat
+      label: Shopno Chat
+      url: https://chat.shopnoltd.dpdns.org
+      upstream: apps/chatwoot
+      icon: chat
+      description: Team chat and customer conversations.
+    - id: meet
+      label: Shopno Meet
+      url: https://meet.shopnoltd.dpdns.org
+      upstream: apps/jitsi
+      icon: meet
+      description: Encrypted video meetings and screen sharing.
+    - id: files
+      label: Shopno Files
+      url: https://files.shopnoltd.dpdns.org
+      upstream: apps/nextcloud
+      icon: files
+      description: Cloud storage, file sharing, and sync.
+    - id: docs
+      label: Shopno Docs
+      url: https://docs.shopnoltd.dpdns.org
+      upstream: apps/onlyoffice
+      icon: docs
+      description: Collaborative documents, spreadsheets, and presentations.
+    - id: code
+      label: Shopno Code
+      url: https://code.shopnoltd.dpdns.org
+      upstream: apps/gitea
+      icon: code
+      description: Source code hosting and review.
+    - id: code-ide
+      label: Shopno Code IDE
+      url: https://ide.code.shopnoltd.dpdns.org
+      upstream: apps/code-server
+      icon: code
+      description: VS Code in your browser, signed in to your Shopno Code account.
+    - id: monitor
+      label: Shopno Monitor
+      url: https://monitor.shopnoltd.dpdns.org
+      upstream: apps/grafana
+      icon: monitor
+      description: Dashboards for your services and infrastructure.
+    - id: logs
+      label: Shopno Logs
+      url: https://logs.shopnoltd.dpdns.org
+      upstream: apps/loki
+      icon: logs
+      description: Searchable log aggregation.
+    - id: alerts
+      label: Shopno Alerts
+      url: https://alerts.shopnoltd.dpdns.org
+      upstream: apps/alertmanager
+      icon: alerts
+      description: Alert routing and silences.
+    - id: stream
+      label: Shopno Stream
+      url: https://stream.shopnoltd.dpdns.org
+      upstream: apps/owncast
+      icon: stream
+      description: Live video streaming for events and broadcasts.
+    - id: search
+      label: Shopno Search
+      url: https://search.shopnoltd.dpdns.org
+      upstream: apps/opensearch
+      icon: search
+      description: Unified search across Shopnoltd.
+    - id: bi
+      label: Shopno BI
+      url: https://bi.shopnoltd.dpdns.org
+      upstream: apps/metabase
+      icon: bi
+      description: Business intelligence and analytics.
+    - id: forms
+      label: Shopno Forms
+      url: https://forms.shopnoltd.dpdns.org
+      upstream: apps/kobotoolbox
+      icon: forms
+      description: Build and run data collection forms in the field.
+    - id: workflow
+      label: Shopno Workflow
+      url: https://workflow.shopnoltd.dpdns.org
+      upstream: apps/n8n
+      icon: workflow
+      description: Automate work across Shopnoltd and your other tools.
+  # Internal hosts — used by the k8s tenant router, NOT exposed to end users.
+  internal:
+    tenant_router: http://tenant-router.default.svc.cluster.local
+    keycloak_internal: http://keycloak.keycloak.svc.cluster.local
+    redis: redis://redis.default.svc.cluster.local:6379

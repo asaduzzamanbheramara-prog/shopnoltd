@@ -1,0 +1,22 @@
+# Generated signing material — never commit the actual keystore / certs.
+*.jks
+*.keystore
+keystore/
+cert.pem
+key.pem
+*.p12
+*.pfx
+
+# Working trees created at build time.
+apk-decoded/
+exe-extracted/
+unsigned.apk
+aligned.apk
+shopno-store-*.apk
+shopnoltd-store-*.apk
+ShopnoStore-*.apk
+ShopnoLoginSetup-*.exe
+ShopnoLogin-*.exe
+out/
+build/
+.cache/

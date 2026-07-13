@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Overlay colors.xml — Shopno brand palette. Mirrors rebrand/common/colors.json
+      and branding/shopnoapp-logo.svg.
+
+      The decoded APKPure colors.xml is patched by apply_overlay.py via
+      the swap table in colors.json (which rewrites the upstream APKPure
+      color tokens to these values). This file is the canonical
+      declaration so a fresh build has consistent values from the start.
+    -->
+    <color name="shopno_navy">#FF0B1220</color>
+    <color name="shopno_blue">#FF2563EB</color>
+    <color name="shopno_sky">#FF38BDF8</color>
+    <color name="shopno_white">#FFFFFFFF</color>
+
+    <color name="shopno_surface">#FF111827</color>
+    <color name="shopno_surface_alt">#FF1F2937</color>
+    <color name="shopno_border">#FF374151</color>
+    <color name="shopno_muted">#FF94A3B8</color>
+
+    <color name="shopno_success">#FF22C55E</color>
+    <color name="shopno_warning">#FFF59E0B</color>
+    <color name="shopno_danger">#FFEF4444</color>
+    <color name="shopno_link">#FF60A5FA</color>
+
+    <!-- APKPure color tokens, redefined to Shopno values. The original
+         names are preserved so APKPure's smali that does
+         `R.color.apkpure_*` still resolves. -->
+    <color name="apkpure_primary">#FF2563EB</color>
+    <color name="apkpure_primary_dark">#FF0B1220</color>
+    <color name="apkpure_accent">#FF38BDF8</color>
+    <color name="apkpure_background">#FF0B1220</color>
+    <color name="apkpure_text">#FFF4F6FB</color>
+    <color name="apkpure_text_secondary">#FF94A3B8</color>
+    <color name="apkpure_divider">#FF374151</color>
+    <color name="apkpure_action">#FF38BDF8</color>
+    <color name="apkpure_action_pressed">#FF2563EB</color>
+    <color name="apkpure_card">#FF111827</color>
+</resources>

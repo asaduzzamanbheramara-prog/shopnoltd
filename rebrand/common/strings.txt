@@ -1,0 +1,59 @@
+# APKPure → Shopno string swap table.
+#
+# apply_overlay.py reads this file and rewrites matching byte sequences in:
+#   - AndroidManifest.xml (apktool-decoded XML form)
+#   - res/values/strings.xml
+#   - any other res/values/*.xml that contains the source string
+#   - smali string constants under smali*/**/*.smali
+#
+# The "context" column is informational only — it tells future maintainers
+# why each entry is here. The actual swap is plain byte equality (case-
+# sensitive). Put longer / more specific strings first so they win over
+# the shorter substrings during replacement.
+#
+# How it works: for every line, the script does a literal `s/from/to/g`
+# over the apktool-decoded tree, then re-encodes on `apktool b`. Long
+# strings are matched in order, so "APKPure APK" (more specific) is
+# replaced before the bare "APKPure" token.
+
+# --- Product / brand naming ---
+APKPure APK|Shopno APK
+APKPure Store|Shopno Store
+APKPure Official|Shopno Official
+APKPure App Store|Shopno App Store
+APKPure Version|Shopno Version
+APKPure|Shopno
+APK Pure|Shopno Store
+apkpure|shopno
+
+# --- Domains / store endpoints ---
+# These are the URLs APKPure's UI uses to fetch its catalog. We point
+# the store at our own infrastructure so the rebranded client surfaces
+# Shopnoltd apps instead of upstream APKPure apps.
+apkpure.com|shopnoltd.dpdns.org
+www.apkpure.com|store.shopnoltd.dpdns.org
+api.apkpure.com|api.store.shopnoltd.dpdns.org
+cdn.apkpure.com|cdn.store.shopnoltd.dpdns.org
+static.apkpure.com|static.store.shopnoltd.dpdns.org
+img.utdstc.com|static.store.shopnoltd.dpdns.org
+
+# --- Legal / company ---
+APKPure Team|Shopnoltd Ltd
+APKPure Co., Ltd.|Shopnoltd Ltd
+support@apkpure.com|support@shopnoltd.dpdns.org
+www.apkpure.com/privacy|shopnoltd.dpdns.org/privacy
+www.apkpure.com/tos|shopnoltd.dpdns.org/terms
+
+# --- Package paths (in smali, used as class-path fragments) ---
+com/apkpure|com/shopnoltd/store
+com/apkpureclient|com/shopnoltd/store/client
+com/apkpure/service|com/shopnoltd/store/service
+
+# --- "Download APK" / "Install" UI strings ---
+# These show up in the APKPure client UI. We keep the action verbs, only
+# the noun changes so the user-facing language stays natural.
+Download APK|Download
+Install APK|Install
+Free Download|Install
+Update Now|Update
+Get It Now|Get for Shopno

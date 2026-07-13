@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Overlay strings — Shopno Store branding. The decoded APKPure
+      strings.xml is patched by apply_overlay.py via the strings.txt
+      swap table; this file provides the canonical copy of the new
+      strings so they live in the resource table for runtime lookups
+      (Shopno-themed dialogs, About screens, etc.).
+    -->
+    <string name="app_name">Shopno Store</string>
+    <string name="app_tagline">Apps for everything you do with Shopnoltd.</string>
+    <string name="app_company">Shopnoltd Ltd</string>
+    <string name="app_support_email">support@shopnoltd.dpdns.org</string>
+    <string name="app_website">https://shopnoltd.dpdns.org</string>
+    <string name="app_privacy_url">https://shopnoltd.dpdns.org/privacy</string>
+    <string name="app_terms_url">https://shopnoltd.dpdns.org/terms</string>
+
+    <!-- Endpoints — used at runtime for the SSO / "Open in browser" feature -->
+    <string name="endpoints_asset">endhosts.json</string>
+    <string name="endpoints_base_url">https://shopnoltd.dpdns.org</string>
+
+    <!-- UI strings that APKPure showed with the APKPure brand; we override
+         them with Shopno-flavoured copy. Keep the original `name=`
+         attributes stable so APKPure's smali that looks up
+         R.string.<name> still resolves. -->
+    <string name="apkpure_app_name">Shopno Store</string>
+    <string name="apkpure_app_introduction">Apps for everything you do with Shopnoltd.</string>
+    <string name="apkpure_app_company">Shopnoltd Ltd</string>
+    <string name="apkpure_app_email">support@shopnoltd.dpdns.org</string>
+    <string name="apkpure_app_website">https://shopnoltd.dpdns.org</string>
+    <string name="apkpure_app_privacy">https://shopnoltd.dpdns.org/privacy</string>
+    <string name="apkpure_app_terms">https://shopnoltd.dpdns.org/terms</string>
+
+    <!-- Catalog of in-app services, mirroring common/endpoints.yaml.
+         The structured catalog lives in assets/endhosts.json; these
+         strings back any "Open in browser" / "Learn more" buttons
+         that need a single service at a time. -->
+    <string name="service_label_portal">Shopno Portal</string>
+    <string name="service_url_portal">https://portal.shopnoltd.dpdns.org</string>
+
+    <string name="service_label_auth">Shopno Sign In</string>
+    <string name="service_url_auth">https://auth.shopnoltd.dpdns.org</string>
+
+    <string name="service_label_store">Shopno Store</string>
+    <string name="service_url_store">https://store.shopnoltd.dpdns.org</string>
+
+    <string name="service_label_mail">Shopno Mail</string>
+    <string name="service_url_mail">https://mail.shopnoltd.dpdns.org</string>
+
+    <string name="service_label_chat">Shopno Chat</string>
+    <string name="service_url_chat">https://chat.shopnoltd.dpdns.org</string>
+
+    <string name="service_label_meet">Shopno Meet</string>
+    <string name="service_url_meet">https://meet.shopnoltd.dpdns.org</string>
+
+    <string name="service_label_files">Shopno Files</string>
+    <string name="service_url_files">https://files.shopnoltd.dpdns.org</string>
+
+    <string name="service_label_docs">Shopno Docs</string>
+    <string name="service_url_docs">https://docs.shopnoltd.dpdns.org</string>
+
+    <string name="service_label_code">Shopno Code</string>
+    <string name="service_url_code">https://code.shopnoltd.dpdns.org</string>
+
+    <string name="service_label_monitor">Shopno Monitor</string>
+    <string name="service_url_monitor">https://monitor.shopnoltd.dpdns.org</string>
+
+    <string name="service_label_logs">Shopno Logs</string>
+    <string name="service_url_logs">https://logs.shopnoltd.dpdns.org</string>
+
+    <string name="service_label_alerts">Shopno Alerts</string>
+    <string name="service_url_alerts">https://alerts.shopnoltd.dpdns.org</string>
+
+    <string name="service_label_stream">Shopno Stream</string>
+    <string name="service_url_stream">https://stream.shopnoltd.dpdns.org</string>
+
+    <string name="service_label_search">Shopno Search</string>
+    <string name="service_url_search">https://search.shopnoltd.dpdns.org</string>
+
+    <string name="service_label_bi">Shopno BI</string>
+    <string name="service_url_bi">https://bi.shopnoltd.dpdns.org</string>
+
+    <string name="service_label_forms">Shopno Forms</string>
+    <string name="service_url_forms">https://forms.shopnoltd.dpdns.org</string>
+
+    <string name="service_label_workflow">Shopno Workflow</string>
+    <string name="service_url_workflow">https://workflow.shopnoltd.dpdns.org</string>
+</resources>

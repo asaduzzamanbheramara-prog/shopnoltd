@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Default endhosts.json — the in-app store catalog.
+
+  This file is regenerated on every CI run by apply_overlay.py from
+  rebrand/common/endpoints.yaml. The committed copy here is the
+  canonical "what users see on first launch before the catalog
+  backend is reachable" baseline.
+
+  The runtime app reads it from the APK's assets/ folder.
+-->
+{
+  "schema_version": 1,
+  "brand": "Shopnoltd",
+  "name": "Shopno Store",
+  "base_url": "https://shopnoltd.dpdns.org",
+  "support_email": "support@shopnoltd.dpdns.org",
+  "privacy_url": "https://shopnoltd.dpdns.org/privacy",
+  "terms_url": "https://shopnoltd.dpdns.org/terms",
+  "services": [
+    {"id": "portal",   "label": "Shopno Portal",   "url": "https://portal.shopnoltd.dpdns.org",   "icon": "portal",   "description": "The Shopnoltd home — sign in, manage your account, browse all apps."},
+    {"id": "auth",     "label": "Shopno Sign In",  "url": "https://auth.shopnoltd.dpdns.org",     "icon": "shield",   "description": "Single sign-on for every Shopnoltd service. Your one account, every app."},
+    {"id": "store",    "label": "Shopno Store",    "url": "https://store.shopnoltd.dpdns.org",    "icon": "store",    "description": "The Shopnoltd app store — install Shopno apps on every device."},
+    {"id": "mail",     "label": "Shopno Mail",     "url": "https://mail.shopnoltd.dpdns.org",     "icon": "mail",     "description": "Mail, contacts, and calendars for Shopnoltd."},
+    {"id": "chat",     "label": "Shopno Chat",     "url": "https://chat.shopnoltd.dpdns.org",     "icon": "chat",     "description": "Team chat and customer conversations."},
+    {"id": "meet",     "label": "Shopno Meet",     "url": "https://meet.shopnoltd.dpdns.org",     "icon": "meet",     "description": "Encrypted video meetings and screen sharing."},
+    {"id": "files",    "label": "Shopno Files",    "url": "https://files.shopnoltd.dpdns.org",    "icon": "files",    "description": "Cloud storage, file sharing, and sync."},
+    {"id": "docs",     "label": "Shopno Docs",     "url": "https://docs.shopnoltd.dpdns.org",     "icon": "docs",     "description": "Collaborative documents, spreadsheets, and presentations."},
+    {"id": "code",     "label": "Shopno Code",     "url": "https://code.shopnoltd.dpdns.org",     "icon": "code",     "description": "Source code hosting and review."},
+    {"id": "code-ide", "label": "Shopno Code IDE", "url": "https://ide.code.shopnoltd.dpdns.org", "icon": "code",     "description": "VS Code in your browser, signed in to your Shopno Code account."},
+    {"id": "monitor",  "label": "Shopno Monitor",  "url": "https://monitor.shopnoltd.dpdns.org",  "icon": "monitor",  "description": "Dashboards for your services and infrastructure."},
+    {"id": "logs",     "label": "Shopno Logs",     "url": "https://logs.shopnoltd.dpdns.org",     "icon": "logs",     "description": "Searchable log aggregation."},
+    {"id": "alerts",   "label": "Shopno Alerts",   "url": "https://alerts.shopnoltd.dpdns.org",   "icon": "alerts",   "description": "Alert routing and silences."},
+    {"id": "stream",   "label": "Shopno Stream",   "url": "https://stream.shopnoltd.dpdns.org",   "icon": "stream",   "description": "Live video streaming for events and broadcasts."},
+    {"id": "search",   "label": "Shopno Search",   "url": "https://search.shopnoltd.dpdns.org",   "icon": "search",   "description": "Unified search across Shopnoltd."},
+    {"id": "bi",       "label": "Shopno BI",       "url": "https://bi.shopnoltd.dpdns.org",       "icon": "bi",       "description": "Business intelligence and analytics."},
+    {"id": "forms",    "label": "Shopno Forms",    "url": "https://forms.shopnoltd.dpdns.org",    "icon": "forms",    "description": "Build and run data collection forms in the field."},
+    {"id": "workflow", "label": "Shopno Workflow", "url": "https://workflow.shopnoltd.dpdns.org", "icon": "workflow", "description": "Automate work across Shopnoltd and your other tools."}
+  ]
+}
