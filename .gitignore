@@ -133,3 +133,5 @@ __pycache__/
 */uploads/
 */vectorstore/
 
+release-assets/
+*.exe
