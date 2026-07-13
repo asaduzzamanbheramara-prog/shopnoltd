@@ -7,7 +7,6 @@ from app.models.models import Wallet, Transaction, TxType, TxStatus
 from app.schemas.schemas import DepositIn, TxOut
 from app.providers.registry import get_provider
 from app.core.config import settings
-from app.providers.exchange_client import convert_if_needed
 import uuid
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 router = APIRouter()

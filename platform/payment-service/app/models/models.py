@@ -8,7 +8,7 @@ from app.core.db import Base
 
 class TxStatus(str, enum.Enum): pending = "pending"; processing = "processing"; completed = "completed"; failed = "failed"; cancelled = "cancelled"; requires_approval = "requires_approval"
 class TxType(str, enum.Enum): deposit = "deposit"; withdrawal = "withdrawal"; transfer = "transfer"; fee = "fee"; refund = "refund"; exchange = "exchange"; subscription = "subscription"
-class PaymentMethod(str, enum.Enum): stripe = "stripe"; paypal = "paypal"; binance = "binance"; payeer = "payeer"; bkash = "bkash"; nagad = "nagad"; rocket = "rocket"; bank = "bank"; manual = "manual"; btc = "btc"; eth = "eth"; usdt = "usdt"; bnb = "bnb"; sol = "sol"; trx = "trx"
+class PaymentMethod(str, enum.Enum): stripe = "stripe"; paypal = "paypal"; binance = "binance"; payeer = "payeer"; bkash = "bkash"; nagad = "nagad"; rocket = "rocket"; bank = "bank"; manual = "manual"; btc = "btc"; eth = "eth"; usdt = "usdt"; bnb = "bnb"; sol = "sol"; trx = "trx"; razorpay = "razorpay"; sslcommerz = "sslcommerz"
 
 class Wallet(Base):
     __tablename__ = "wallets"
