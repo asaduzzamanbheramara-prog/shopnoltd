@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: kc
-        image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-kpi:v1
+        image: kobotoolbox/kpi:2.023.48
         imagePullPolicy: Always
         ports:
         - containerPort: 8000
