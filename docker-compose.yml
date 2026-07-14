@@ -1,5 +1,3 @@
-version: "3.9"
-
 # Shopno Ltd — core platform compose
 # This wires up the services that already have real code in platform/*.
 # Services that only contain a Dockerfile stub (e.g. api-service, tenant-router)
@@ -15,10 +13,14 @@ services:
       POSTGRES_DB: shopno
       POSTGRES_USER: shopno
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      # One DB per service — created automatically on first boot by the
+      # init script below (only runs against an empty pgdata volume).
+      POSTGRES_MULTIPLE_DATABASES: gateway,auth,oauth,domains,payments,storage
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - ./scripts/postgres-init:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U shopno"]
       interval: 10s
@@ -46,65 +48,118 @@ services:
 
   # ---------- core services (real code in platform/) ----------
   gateway:
-    build: ./platform/gateway
+    image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/gateway:latest
     restart: unless-stopped
     env_file: [.env]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://shopno:${POSTGRES_PASSWORD:-changeme}@postgres:5432/gateway
+      REDIS_URL: redis://redis:6379/0
+      CORS_ORIGINS: http://localhost:3100,http://localhost:3101
     ports:
       - "8000:8000"
-    depends_on: [postgres, redis]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
 
   auth-service:
-    build: ./platform/auth-service
+    image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/auth-service:latest
     restart: unless-stopped
     env_file: [.env]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://shopno:${POSTGRES_PASSWORD:-changeme}@postgres:5432/auth
+      REDIS_URL: redis://redis:6379/0
+      CORS_ORIGINS: http://localhost:3100,http://localhost:3101
     ports:
       - "8081:8080"
-    depends_on: [postgres, redis]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
 
   oauth-service:
-    build: ./platform/oauth-service
+    image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/oauth-service:latest
     restart: unless-stopped
     env_file: [.env]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://shopno:${POSTGRES_PASSWORD:-changeme}@postgres:5432/oauth
+      REDIS_URL: redis://redis:6379/0
+      CORS_ORIGINS: http://localhost:3100,http://localhost:3101
     ports:
       - "3001:3000"
-    depends_on: [postgres, redis]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
 
   domain-service:
-    build: ./platform/domain-service
+    image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/domain-service:latest
     restart: unless-stopped
     env_file: [.env]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://shopno:${POSTGRES_PASSWORD:-changeme}@postgres:5432/domains
+      REDIS_URL: redis://redis:6379/0
+      CORS_ORIGINS: http://localhost:3100,http://localhost:3101
     ports:
       - "8082:8080"
-    depends_on: [postgres, redis]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
     # NOTE: also needs a PowerDNS instance reachable via POWERDNS_API_URL — not
     # included here yet, see README "Known gaps".
 
   payment-service:
-    build: ./platform/payment-service
+    image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/payment-service:latest
     restart: unless-stopped
     env_file: [.env]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://shopno:${POSTGRES_PASSWORD:-changeme}@postgres:5432/payments
+      REDIS_URL: redis://redis:6379/0
+      CORS_ORIGINS: http://localhost:3100,http://localhost:3101
     ports:
       - "8083:8080"
-    depends_on: [postgres, redis]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
 
   storage-service:
-    build: ./platform/storage-service
+    image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/storage-service:latest
     restart: unless-stopped
     env_file: [.env]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://shopno:${POSTGRES_PASSWORD:-changeme}@postgres:5432/storage
+      REDIS_URL: redis://redis:6379/0
+      CORS_ORIGINS: http://localhost:3100,http://localhost:3101
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-shopno}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-changeme123}
     ports:
       - "8084:8080"
-    depends_on: [postgres, redis, minio]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      minio:
+        condition: service_started
 
   # ---------- frontends ----------
   admin-portal:
-    build: ./platform/admin-portal
+    image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/admin-portal:latest
     restart: unless-stopped
     ports:
       - "3100:3000"
     depends_on: [gateway]
 
   web-portal:
-    build: ./platform/web-portal
+    image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/web-portal:latest
     restart: unless-stopped
     ports:
       - "3101:3000"
