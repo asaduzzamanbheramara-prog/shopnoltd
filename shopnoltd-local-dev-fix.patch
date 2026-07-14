@@ -1,0 +1,221 @@
+diff --git a/.env.example b/.env.example
+new file mode 100644
+index 0000000..6e6fb35
+--- /dev/null
++++ b/.env.example
+@@ -0,0 +1,31 @@
++# Copy this file to .env for local development:
++#   cp .env.example .env
++# docker-compose.yml requires a .env file to exist (env_file: [.env]) even
++# if you leave every value at its default below.
++
++# ---------- shared infra credentials ----------
++POSTGRES_PASSWORD=changeme
++MINIO_ROOT_USER=shopno
++MINIO_ROOT_PASSWORD=changeme123
++
++# ---------- auth / oauth ----------
++JWT_SECRET=dev-only-change-me
++SESSION_SECRET=dev-only-change-me
++KEYCLOAK_ADMIN_PASSWORD=CHANGE_ME
++
++# ---------- payment-service (leave blank for local/demo mode) ----------
++# Any gateway left blank runs the payment-service in demo mode; nothing is
++# faked as "live" data. Fill in real sandbox keys only when you need to test
++# an actual payment provider.
++STRIPE_SECRET_KEY=
++STRIPE_WEBHOOK_SECRET=
++PAYPAL_CLIENT_ID=
++PAYPAL_SECRET=
++RAZORPAY_KEY_ID=
++RAZORPAY_KEY_SECRET=
++SSLCOMMERZ_STORE_ID=
++SSLCOMMERZ_STORE_PASSWORD=
++BKASH_APP_KEY=
++BKASH_APP_SECRET=
++NAGAD_MERCHANT_ID=
++NAGAD_MERCHANT_KEY=
+diff --git a/.gitignore b/.gitignore
+index ad93378..b71e9d8 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -4,6 +4,7 @@
+ 
+ .env
+ .env.*
++!.env.example
+ *.secret
+ *secret*.yaml
+ secrets.yaml
+@@ -112,6 +113,7 @@ kubectl
+ # Environment
+ .env
+ .env.*
++!.env.example
+ 
+ # Build files
+ node_modules/
+@@ -135,3 +137,4 @@ __pycache__/
+ 
+ release-assets/
+ *.exe
++APKPure_3.20.7402_apkpure.com.apk
+diff --git a/docker-compose.yml b/docker-compose.yml
+index 05d77b9..5199f4b 100644
+--- a/docker-compose.yml
++++ b/docker-compose.yml
+@@ -15,10 +15,14 @@ services:
+       POSTGRES_DB: shopno
+       POSTGRES_USER: shopno
+       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
++      # One DB per service — created automatically on first boot by the
++      # init script below (only runs against an empty pgdata volume).
++      POSTGRES_MULTIPLE_DATABASES: gateway,auth,oauth,domains,payments,storage
+     ports:
+       - "5432:5432"
+     volumes:
+       - pgdata:/var/lib/postgresql/data
++      - ./scripts/postgres-init:/docker-entrypoint-initdb.d
+     healthcheck:
+       test: ["CMD-SHELL", "pg_isready -U shopno"]
+       interval: 10s
+@@ -49,33 +53,65 @@ services:
+     build: ./platform/gateway
+     restart: unless-stopped
+     env_file: [.env]
++    environment:
++      DATABASE_URL: postgresql+asyncpg://shopno:${POSTGRES_PASSWORD:-changeme}@postgres:5432/gateway
++      REDIS_URL: redis://redis:6379/0
++      CORS_ORIGINS: http://localhost:3100,http://localhost:3101
+     ports:
+       - "8000:8000"
+-    depends_on: [postgres, redis]
++    depends_on:
++      postgres:
++        condition: service_healthy
++      redis:
++        condition: service_started
+ 
+   auth-service:
+     build: ./platform/auth-service
+     restart: unless-stopped
+     env_file: [.env]
++    environment:
++      DATABASE_URL: postgresql+asyncpg://shopno:${POSTGRES_PASSWORD:-changeme}@postgres:5432/auth
++      REDIS_URL: redis://redis:6379/0
++      CORS_ORIGINS: http://localhost:3100,http://localhost:3101
+     ports:
+       - "8081:8080"
+-    depends_on: [postgres, redis]
++    depends_on:
++      postgres:
++        condition: service_healthy
++      redis:
++        condition: service_started
+ 
+   oauth-service:
+     build: ./platform/oauth-service
+     restart: unless-stopped
+     env_file: [.env]
++    environment:
++      DATABASE_URL: postgresql+asyncpg://shopno:${POSTGRES_PASSWORD:-changeme}@postgres:5432/oauth
++      REDIS_URL: redis://redis:6379/0
++      CORS_ORIGINS: http://localhost:3100,http://localhost:3101
+     ports:
+       - "3001:3000"
+-    depends_on: [postgres, redis]
++    depends_on:
++      postgres:
++        condition: service_healthy
++      redis:
++        condition: service_started
+ 
+   domain-service:
+     build: ./platform/domain-service
+     restart: unless-stopped
+     env_file: [.env]
++    environment:
++      DATABASE_URL: postgresql+asyncpg://shopno:${POSTGRES_PASSWORD:-changeme}@postgres:5432/domains
++      REDIS_URL: redis://redis:6379/0
++      CORS_ORIGINS: http://localhost:3100,http://localhost:3101
+     ports:
+       - "8082:8080"
+-    depends_on: [postgres, redis]
++    depends_on:
++      postgres:
++        condition: service_healthy
++      redis:
++        condition: service_started
+     # NOTE: also needs a PowerDNS instance reachable via POWERDNS_API_URL — not
+     # included here yet, see README "Known gaps".
+ 
+@@ -83,17 +119,38 @@ services:
+     build: ./platform/payment-service
+     restart: unless-stopped
+     env_file: [.env]
++    environment:
++      DATABASE_URL: postgresql+asyncpg://shopno:${POSTGRES_PASSWORD:-changeme}@postgres:5432/payments
++      REDIS_URL: redis://redis:6379/0
++      CORS_ORIGINS: http://localhost:3100,http://localhost:3101
+     ports:
+       - "8083:8080"
+-    depends_on: [postgres, redis]
++    depends_on:
++      postgres:
++        condition: service_healthy
++      redis:
++        condition: service_started
+ 
+   storage-service:
+     build: ./platform/storage-service
+     restart: unless-stopped
+     env_file: [.env]
++    environment:
++      DATABASE_URL: postgresql+asyncpg://shopno:${POSTGRES_PASSWORD:-changeme}@postgres:5432/storage
++      REDIS_URL: redis://redis:6379/0
++      CORS_ORIGINS: http://localhost:3100,http://localhost:3101
++      MINIO_ENDPOINT: minio:9000
++      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-shopno}
++      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-changeme123}
+     ports:
+       - "8084:8080"
+-    depends_on: [postgres, redis, minio]
++    depends_on:
++      postgres:
++        condition: service_healthy
++      redis:
++        condition: service_started
++      minio:
++        condition: service_started
+ 
+   # ---------- frontends ----------
+   admin-portal:
+diff --git a/scripts/postgres-init/init-multiple-dbs.sh b/scripts/postgres-init/init-multiple-dbs.sh
+new file mode 100755
+index 0000000..eda31b3
+--- /dev/null
++++ b/scripts/postgres-init/init-multiple-dbs.sh
+@@ -0,0 +1,23 @@
++#!/bin/bash
++# Creates one Postgres database per microservice on first container start.
++# Triggered automatically by the official postgres image via
++# /docker-entrypoint-initdb.d/*.sh — only runs against an empty data volume.
++set -e
++set -u
++
++function create_database() {
++  local database=$1
++  echo "Creating database '$database'"
++  psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" <<-EOSQL
++    SELECT 'CREATE DATABASE $database'
++    WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '$database')\gexec
++EOSQL
++}
++
++if [ -n "${POSTGRES_MULTIPLE_DATABASES:-}" ]; then
++  echo "Multiple database creation requested: $POSTGRES_MULTIPLE_DATABASES"
++  for db in $(echo "$POSTGRES_MULTIPLE_DATABASES" | tr ',' ' '); do
++    create_database "$db"
++  done
++  echo "Multiple databases created"
++fi
