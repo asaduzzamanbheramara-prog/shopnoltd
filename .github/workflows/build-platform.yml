@@ -4,7 +4,9 @@ on:
     branches: [main]
     paths:
       - 'platform/**'
+      - 'shared/**'
       - '.github/workflows/build-platform.yml'
+  workflow_dispatch:
 env:
   REGISTRY: ghcr.io
   IMAGE_PREFIX: ${{ github.repository_owner }}/shopnoltd
