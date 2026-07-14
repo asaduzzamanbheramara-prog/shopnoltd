@@ -46,7 +46,7 @@ services:
     volumes:
       - miniodata:/data
 
-  # ---------- core services (real code in platform/) ----------
+  # ---------- core services (prebuilt images from GHCR) ----------
   gateway:
     image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/gateway:latest
     restart: unless-stopped

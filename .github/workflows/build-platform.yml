@@ -52,29 +52,6 @@ jobs:
           - { service: live-service,       dockerfile: platform/live-service/Dockerfile }
           - { service: mail-service,       dockerfile: platform/mail-service/Dockerfile }
           - { service: social-service,     dockerfile: platform/social-service/Dockerfile }
-          - { service: api-service,         dockerfile: platform/api-service/Dockerfile }
-          - { service: gateway,            dockerfile: platform/gateway/Dockerfile }
-          - { service: oauth-service,      dockerfile: platform/oauth-service/Dockerfile }
-          - { service: tenant-router,      dockerfile: platform/tenant-router/Dockerfile }
-          - { service: billing-engine,     dockerfile: platform/billing-engine/Dockerfile }
-          - { service: analytics-service,  dockerfile: platform/analytics-service/Dockerfile }
-          - { service: search-service,     dockerfile: platform/search-service/Dockerfile }
-          - { service: storage-service,    dockerfile: platform/storage-service/Dockerfile }
-          - { service: notification-service,dockerfile: platform/notification-service/Dockerfile }
-          - { service: scheduler-service,  dockerfile: platform/scheduler-service/Dockerfile }
-          - { service: worker-service,     dockerfile: platform/worker-service/Dockerfile }
-          - { service: payment-service,    dockerfile: platform/payment-service/Dockerfile }
-          - { service: exchange-service,   dockerfile: platform/exchange-service/Dockerfile }
-          - { service: auth-service,       dockerfile: platform/auth-service/Dockerfile }
-          - { service: audit-service,      dockerfile: platform/audit-service/Dockerfile }
-          - { service: report-service,     dockerfile: platform/report-service/Dockerfile }
-          - { service: license-service,    dockerfile: platform/license-service/Dockerfile }
-          - { service: mobile-api,         dockerfile: platform/mobile-api/Dockerfile }
-          - { service: ai-platform,        dockerfile: platform/ai-platform/Dockerfile }
-          - { service: admin-portal,       dockerfile: platform/admin-portal/Dockerfile }
-          - { service: web-portal,         dockerfile: platform/web-portal/Dockerfile }
-          - { service: android-portal,     dockerfile: platform/android-portal/Dockerfile }
-          - { service: pc-portal,          dockerfile: platform/pc-portal/Dockerfile }
     permissions:
       contents: read
       packages: write
