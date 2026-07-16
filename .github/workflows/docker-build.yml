@@ -27,8 +27,8 @@ jobs:
             tag: latest
 
           - name: api-service
-            context: ./api-service
-            dockerfile: ./api-service/Dockerfile
+            context: ./ai-platform/backend
+            dockerfile: ./ai-platform/backend/Dockerfile
             tag: v4
 
           - name: ai
