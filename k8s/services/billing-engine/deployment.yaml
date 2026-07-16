@@ -23,7 +23,7 @@ spec:
       containers:
       - name: billing-engine
         image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-billing-engine:v6
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
 
         ports:
         - containerPort: 5000
