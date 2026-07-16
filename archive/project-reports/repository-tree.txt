@@ -1,0 +1,1120 @@
+.
+├── CHANGELOG.md
+├── Dockerfile
+├── LICENSE
+├── README.md
+├── ai-platform
+│   ├── Dockerfile
+│   ├── LICENSE
+│   ├── Makefile
+│   ├── README.md
+│   ├── __pycache__
+│   │   └── app.cpython-312.pyc
+│   ├── agents
+│   │   ├── __init__.py
+│   │   ├── base_agent.py
+│   │   ├── code_agent.py
+│   │   ├── database_agent.py
+│   │   ├── deployment_agent.py
+│   │   ├── docker_agent.py
+│   │   ├── fix_agent.py
+│   │   ├── github_agent.py
+│   │   ├── kubernetes_agent.py
+│   │   ├── planner.py
+│   │   ├── review_agent.py
+│   │   └── security_agent.py
+│   ├── ai
+│   │   ├── __init__.py
+│   │   ├── chat.py
+│   │   ├── conversation.py
+│   │   ├── embeddings.py
+│   │   ├── llm.py
+│   │   ├── loaders
+│   │   ├── memory
+│   │   ├── planner.py
+│   │   ├── prompts
+│   │   ├── prompts.py
+│   │   ├── rag
+│   │   ├── rag.py
+│   │   ├── retriever.py
+│   │   ├── vector
+│   │   └── vectorstore.py
+│   ├── api
+│   │   ├── __init__.py
+│   │   ├── __pycache__
+│   │   ├── config.py
+│   │   ├── dependencies
+│   │   ├── health.py
+│   │   ├── main.py
+│   │   ├── middleware
+│   │   ├── routers
+│   │   └── security.py
+│   ├── app.py
+│   ├── backend
+│   │   ├── Dockerfile
+│   │   ├── __init__.py
+│   │   ├── __pycache__
+│   │   ├── app
+│   │   ├── connectors
+│   │   ├── core
+│   │   ├── database
+│   │   ├── providers
+│   │   ├── requirements.txt
+│   │   ├── services
+│   │   ├── tests
+│   │   ├── tools
+│   │   └── utils
+│   ├── config
+│   │   ├── prompts.py
+│   │   └── settings.py
+│   ├── docker-compose.yml
+│   ├── docs
+│   ├── frontend
+│   │   ├── index.html
+│   │   ├── public
+│   │   └── src
+│   ├── github
+│   │   ├── __init__.py
+│   │   ├── actions.py
+│   │   ├── client.py
+│   │   ├── clone.py
+│   │   ├── commit.py
+│   │   ├── push.py
+│   │   └── repository.py
+│   ├── helm
+│   │   └── shopnoltd-ai
+│   ├── k8s
+│   │   ├── base
+│   │   ├── deployment.yaml
+│   │   ├── development
+│   │   ├── production
+│   │   └── service.yaml
+│   ├── kubernetes
+│   │   ├── __init__.py
+│   │   ├── deployment.py
+│   │   ├── diagnose.py
+│   │   ├── events.py
+│   │   ├── ingress.py
+│   │   ├── logs.py
+│   │   ├── pods.py
+│   │   └── service.py
+│   ├── models
+│   │   └── chat.py
+│   ├── monitoring
+│   ├── requirements.lock
+│   ├── requirements.txt
+│   ├── scripts
+│   │   └── start.sh
+│   ├── services
+│   │   ├── code
+│   │   ├── github_service.py
+│   │   ├── pdf
+│   │   └── support
+│   ├── shopnoltd-orchestrator
+│   │   ├── README.md
+│   │   ├── __pycache__
+│   │   ├── agents
+│   │   ├── config.py
+│   │   ├── main.py
+│   │   ├── models
+│   │   ├── requirements.txt
+│   │   └── services.yaml
+│   ├── templates
+│   │   └── deployment.yaml
+│   ├── tests
+│   └── tools
+│       └── kubectl.py
+├── analytics-service
+│   └── Dockerfile
+├── api-service
+│   ├── Dockerfile
+│   ├── api-files.txt
+│   └── chat-files.txt
+├── apks
+│   ├── KoboCollect-v2025.2.3.apk
+│   ├── README.md
+│   └── fetch_kobocollect_apk.ps1
+├── app_platform
+│   ├── __init__.py
+│   └── api
+│       ├── __init__.py
+│       ├── database.py
+│       ├── main.py
+│       └── schema.sql
+├── apply-fixes.sh
+├── apps
+│   ├── README.md
+│   ├── alertmanager
+│   │   ├── config
+│   │   ├── docker
+│   │   ├── docs
+│   │   ├── helm
+│   │   ├── k8s
+│   │   ├── src
+│   │   └── tests
+│   ├── chatwoot
+│   │   ├── config
+│   │   ├── docker
+│   │   ├── docs
+│   │   ├── helm
+│   │   ├── k8s
+│   │   ├── src
+│   │   └── tests
+│   ├── code-server
+│   │   ├── config
+│   │   ├── docker
+│   │   ├── docs
+│   │   ├── helm
+│   │   ├── k8s
+│   │   ├── src
+│   │   └── tests
+│   ├── desktop-shell
+│   │   ├── electron-builder.admin.json
+│   │   ├── electron-builder.web.json
+│   │   ├── package-lock.json
+│   │   ├── package.json
+│   │   ├── scripts
+│   │   └── src
+│   ├── gitea
+│   │   ├── config
+│   │   ├── docker
+│   │   ├── docs
+│   │   ├── helm
+│   │   ├── k8s
+│   │   ├── src
+│   │   └── tests
+│   ├── grafana
+│   │   ├── config
+│   │   ├── docker
+│   │   ├── docs
+│   │   ├── helm
+│   │   ├── k8s
+│   │   ├── src
+│   │   └── tests
+│   ├── jitsi
+│   │   ├── config
+│   │   ├── docker
+│   │   ├── docs
+│   │   ├── helm
+│   │   ├── k8s
+│   │   ├── src
+│   │   └── tests
+│   ├── keycloak
+│   │   ├── config
+│   │   ├── docker
+│   │   ├── docs
+│   │   ├── helm
+│   │   ├── k8s
+│   │   ├── src
+│   │   └── tests
+│   ├── kobotoolbox
+│   │   ├── config
+│   │   ├── docker
+│   │   ├── docs
+│   │   ├── helm
+│   │   ├── k8s
+│   │   ├── src
+│   │   └── tests
+│   ├── loki
+│   │   ├── config
+│   │   ├── docker
+│   │   ├── docs
+│   │   ├── helm
+│   │   ├── k8s
+│   │   ├── src
+│   │   └── tests
+│   ├── mailcow
+│   │   ├── config
+│   │   ├── docker
+│   │   ├── docs
+│   │   ├── helm
+│   │   ├── k8s
+│   │   ├── src
+│   │   └── tests
+│   ├── mailu
+│   │   ├── config
+│   │   ├── docker
+│   │   ├── docs
+│   │   ├── helm
+│   │   ├── k8s
+│   │   ├── src
+│   │   └── tests
+│   ├── metabase
+│   │   ├── config
+│   │   ├── docker
+│   │   ├── docs
+│   │   ├── helm
+│   │   ├── k8s
+│   │   ├── src
+│   │   └── tests
+│   ├── minio
+│   │   ├── config
+│   │   ├── docker
+│   │   ├── docs
+│   │   ├── helm
+│   │   ├── k8s
+│   │   ├── src
+│   │   └── tests
+│   ├── mobile-shell
+│   │   ├── android
+│   │   ├── configs
+│   │   ├── ios
+│   │   ├── package-lock.json
+│   │   ├── package.json
+│   │   ├── resources
+│   │   ├── scripts
+│   │   └── www
+│   ├── n8n
+│   │   ├── config
+│   │   ├── docker
+│   │   ├── docs
+│   │   ├── helm
+│   │   ├── k8s
+│   │   ├── src
+│   │   └── tests
+│   ├── nextcloud
+│   │   ├── config
+│   │   ├── docker
+│   │   ├── docs
+│   │   ├── helm
+│   │   ├── k8s
+│   │   ├── src
+│   │   └── tests
+│   ├── onlyoffice
+│   │   ├── config
+│   │   ├── docker
+│   │   ├── docs
+│   │   ├── helm
+│   │   ├── k8s
+│   │   ├── src
+│   │   └── tests
+│   ├── opensearch
+│   │   ├── config
+│   │   ├── docker
+│   │   ├── docs
+│   │   ├── helm
+│   │   ├── k8s
+│   │   ├── src
+│   │   └── tests
+│   ├── owncast
+│   │   ├── config
+│   │   ├── docker
+│   │   ├── docs
+│   │   ├── helm
+│   │   ├── k8s
+│   │   ├── src
+│   │   └── tests
+│   ├── postgres
+│   │   ├── config
+│   │   ├── docker
+│   │   ├── docs
+│   │   ├── helm
+│   │   ├── k8s
+│   │   ├── src
+│   │   └── tests
+│   ├── prometheus
+│   │   ├── config
+│   │   ├── docker
+│   │   ├── docs
+│   │   ├── helm
+│   │   ├── k8s
+│   │   ├── src
+│   │   └── tests
+│   ├── redis
+│   │   ├── config
+│   │   ├── docker
+│   │   ├── docs
+│   │   ├── helm
+│   │   ├── k8s
+│   │   ├── src
+│   │   └── tests
+│   └── superset
+│       ├── config
+│       ├── docker
+│       ├── docs
+│       ├── helm
+│       ├── k8s
+│       ├── src
+│       └── tests
+├── archive
+│   ├── mail
+│   ├── namespaces
+│   │   ├── default-all.yaml
+│   │   ├── meet-all.yaml
+│   │   └── toolbox-all.yaml
+│   ├── services
+│   │   ├── billing-engine
+│   │   ├── live
+│   │   └── oauth-service
+│   ├── shopnoltd-ai-platform
+│   ├── source-code
+│   └── ui
+├── automation
+│   ├── backup
+│   ├── github-actions
+│   ├── installers
+│   ├── restore
+│   ├── scripts
+│   └── upgrades
+├── autoscaling
+│   ├── hpa-api-service.yaml
+│   └── hpa-billing-engine.yaml
+├── backups
+├── billing-engine
+│   ├── Dockerfile
+│   ├── README.md
+│   ├── app
+│   │   ├── __init__.py
+│   │   ├── config.py
+│   │   ├── database.py
+│   │   ├── fx.py
+│   │   ├── gateways
+│   │   ├── main.py
+│   │   └── models.py
+│   ├── deployment-billing-engine-v6.yaml
+│   └── requirements.txt
+├── branding
+│   ├── 1024 × 1024_Logo_Final.png
+│   ├── Dockerfile.overlay
+│   ├── Dockerfile.overlay.kobocat
+│   ├── android-icon-144x144.png
+│   ├── android-icon-192x192.png
+│   ├── android-icon-36x36.png
+│   ├── android-icon-48x48.png
+│   ├── android-icon-72x72.png
+│   ├── android-icon-96x96.png
+│   ├── apple-icon-180x180.png
+│   ├── colors
+│   ├── email
+│   ├── enketo-image.json
+│   ├── favicon-16x16.png
+│   ├── favicon-32x32.png
+│   ├── favicon-96x96.png
+│   ├── favicons
+│   ├── fonts
+│   ├── full-branding-check.sh
+│   ├── icons
+│   ├── kobocat
+│   │   ├── images
+│   │   └── static
+│   ├── kobocat-image.json
+│   ├── kobologo.png
+│   ├── kobologo.svg
+│   ├── kpi-image.json
+│   ├── logo.svg
+│   ├── logos
+│   ├── shopnoapp-logo.jpg
+│   ├── shopnoapp-logo.png
+│   ├── shopnoapp-logo.svg
+│   ├── splash
+│   └── templates
+│       ├── account_base.html
+│       ├── api.html
+│       ├── base_no_static.html
+│       ├── base_simple.html
+│       └── basic.html
+├── chat-service
+│   └── Dockerfile
+├── cleanup
+│   ├── delete_candidates.txt
+│   └── full-cleanup-report.txt
+├── config
+│   ├── configmap.yaml
+│   └── secrets.yaml
+├── configmaps.yaml
+├── configs
+│   ├── cloudflare
+│   ├── dns
+│   ├── nginx
+│   ├── oauth
+│   ├── smtp
+│   └── traefik
+├── corrections
+│   ├── CORRECTIONS-README.md
+│   ├── deployment-live.yaml
+│   ├── deployment-tenant-router-configmap.yaml
+│   ├── k8s-manifests
+│   ├── start-tunnel.ps1
+│   └── watchdog.ps1
+├── deployments
+│   ├── development
+│   ├── production
+│   └── staging
+├── docker-compose.yml
+├── dockerfiles.txt
+├── docs
+│   ├── API_GAPS.md
+│   ├── RBAC_AND_ADMIN.md
+│   ├── RUNBOOK.md
+│   ├── SECRETS.md
+│   ├── SERVICE_TOPOLOGY.md
+│   ├── SOCIAL_LOGIN.md
+│   ├── api
+│   ├── architecture
+│   ├── deployment
+│   ├── developer
+│   ├── integrations
+│   ├── operations
+│   ├── reports
+│   │   ├── ANDROID_APK_DEPLOYMENT_COMPLETE.md
+│   │   ├── ANDROID_APK_SETUP_GUIDE.md
+│   │   ├── COMPLETE_FUNCTIONALITY_CHECK_REPORT.html
+│   │   ├── COMPLETE_FUNCTIONALITY_VERIFICATION.txt
+│   │   ├── DOCUMENTATION_INDEX.md
+│   │   ├── FINAL_COMPREHENSIVE_REPORT.md
+│   │   ├── FINAL_DEPLOYMENT_SUMMARY.md
+│   │   ├── FINAL_STATUS_SUMMARY.txt
+│   │   ├── FINAL_VERIFICATION_CHECKLIST.md
+│   │   ├── FULL_FUNCTIONALITY_REPORT.md
+│   │   ├── HONEST_PROBLEM_DIAGNOSIS.md
+│   │   ├── LIVE_DEPLOYMENT_GUIDE.md
+│   │   ├── PROJECT_LIVE_STATUS_REPORT.md
+│   │   ├── QUICK_ACCESS.md
+│   │   ├── README_START_HERE.md
+│   │   ├── SYSTEM_VERIFICATION_REPORT.html
+│   │   ├── VERIFICATION_REPORTS_INDEX.txt
+│   │   ├── branding-full-report-20260708-2140.txt
+│   │   ├── branding-full-report-20260709-1203.txt
+│   │   ├── branding-full-report-20260710-2323.txt
+│   │   ├── branding-public-report-20260708-2141.txt
+│   │   ├── build-contexts.txt
+│   │   ├── check-results-20260707-1752.txt
+│   │   ├── check-results-20260707-1801.txt
+│   │   ├── check-results-20260707-1813.txt
+│   │   ├── check-results-20260707-1844.txt
+│   │   ├── check-results-20260707-1847.txt
+│   │   ├── check-results-20260707.txt
+│   │   ├── check-results-20260711-1751.txt
+│   │   ├── check-results-20260711-1810.txt
+│   │   ├── directories.txt
+│   │   ├── dockerfile-summary.txt
+│   │   ├── dockerfiles.txt
+│   │   ├── images-list.txt
+│   │   ├── images-used.txt
+│   │   ├── kf-login-template.html
+│   │   ├── kubernetes-kinds.txt
+│   │   ├── project-tree.txt
+│   │   ├── requirements.txt
+│   │   └── yaml-files.txt
+│   └── user-guides
+├── echo
+├── empty-files.txt
+├── frontend
+│   ├── Dockerfile
+│   ├── admin
+│   │   ├── Dockerfile
+│   │   └── index.html
+│   └── index.html
+├── gateway
+├── go-files.txt
+├── gomod-files.txt
+├── infrastructure
+│   ├── backups
+│   ├── cert-manager
+│   ├── helm
+│   ├── ingress
+│   ├── kubernetes
+│   ├── logging
+│   ├── minio
+│   ├── monitoring
+│   ├── opensearch
+│   ├── postgres
+│   ├── redis
+│   └── traefik
+├── install.cmd
+├── javascript-files.txt
+├── k8s
+│   ├── base
+│   │   ├── api-service.yaml
+│   │   ├── billing-engine.yaml
+│   │   └── oauth-service.yaml
+│   ├── cert-manager
+│   │   └── letsencrypt-prod-issuer.yaml
+│   ├── cloudflared
+│   │   ├── configmap.yaml
+│   │   ├── deployment.yaml
+│   │   └── namespace.yaml
+│   ├── components
+│   │   └── service-monitor-conditional
+│   ├── databases
+│   │   ├── backups
+│   │   └── base
+│   ├── ingress
+│   │   └── cloudflared
+│   ├── kustomization.yaml
+│   ├── legacy
+│   │   ├── deployment-ai.yaml
+│   │   ├── deployment-api-service.yaml
+│   │   ├── deployment-api.yaml
+│   │   ├── deployment-billing-engine.yaml
+│   │   ├── deployment-chat.yaml
+│   │   ├── deployment-freedomain-ui.yaml
+│   │   ├── deployment-freedomain-website.yaml
+│   │   ├── deployment-freedomain.yaml
+│   │   ├── deployment-kc.yaml
+│   │   ├── deployment-live.yaml
+│   │   ├── deployment-oauth-service.yaml
+│   │   ├── deployment-postgres.yaml
+│   │   ├── deployment-redis.yaml
+│   │   ├── deployment-root-app.yaml
+│   │   ├── deployment-tenant-router-configmap.yaml
+│   │   ├── deployment-tenant-router.yaml
+│   │   ├── ee-current.yaml
+│   │   ├── freedomain-ui-current.yaml
+│   │   ├── kc-current.yaml
+│   │   ├── kc-deployment-current.yaml
+│   │   ├── kc-live.yaml
+│   │   ├── kc-running.yaml
+│   │   ├── kf-current.yaml
+│   │   ├── kf-deployment-current.yaml
+│   │   ├── kf-live.yaml
+│   │   ├── kf-nginx-conf-current.yaml
+│   │   ├── kf-running.yaml
+│   │   ├── kf-service-current.yaml
+│   │   ├── mail-current.yaml
+│   │   ├── mail-server-current.yaml
+│   │   └── root-migration
+│   ├── namespaces
+│   │   ├── shopno-apps.yaml
+│   │   ├── shopno-data.yaml
+│   │   ├── shopno-identity.yaml
+│   │   ├── shopno-ingress.yaml
+│   │   ├── shopno-monitoring.yaml
+│   │   ├── shopno-payments.yaml
+│   │   └── shopno-platform.yaml
+│   ├── secrets
+│   ├── services
+│   │   ├── admin-portal
+│   │   ├── ai-platform
+│   │   ├── alertmanager
+│   │   ├── analytics-service
+│   │   ├── android-portal
+│   │   ├── api-service
+│   │   ├── audit-service
+│   │   ├── auth-service
+│   │   ├── billing-engine
+│   │   ├── chatwoot
+│   │   ├── code-server
+│   │   ├── domain-service
+│   │   ├── event-service
+│   │   ├── exchange-service
+│   │   ├── foundation-service
+│   │   ├── freedomain-service
+│   │   ├── gateway
+│   │   ├── gitea
+│   │   ├── grafana
+│   │   ├── interior-service
+│   │   ├── jitsi-jicofo
+│   │   ├── jitsi-jvb
+│   │   ├── jitsi-prosody
+│   │   ├── jitsi-web
+│   │   ├── keycloak
+│   │   ├── kobotoolbox
+│   │   ├── license-service
+│   │   ├── loki
+│   │   ├── metabase
+│   │   ├── minio
+│   │   ├── mobile-api
+│   │   ├── n8n
+│   │   ├── nextcloud
+│   │   ├── notification-service
+│   │   ├── oauth-service
+│   │   ├── onlyoffice
+│   │   ├── opensearch
+│   │   ├── owncast
+│   │   ├── payment-service
+│   │   ├── pc-portal
+│   │   ├── postgres
+│   │   ├── prometheus
+│   │   ├── redis
+│   │   ├── report-service
+│   │   ├── scheduler-service
+│   │   ├── search-service
+│   │   ├── storage-service
+│   │   ├── superset
+│   │   ├── tenant-router
+│   │   ├── training-service
+│   │   ├── web-portal
+│   │   └── worker-service
+│   └── storage
+├── kc-uwsgi-original.ini
+├── kc.yaml
+├── live-service
+│   └── Dockerfile
+├── mail-service
+│   ├── Dockerfile
+│   ├── fixed.yaml
+│   ├── mail-fixed.yaml
+│   ├── mail-server-fixed.yaml
+│   └── mail-server.yaml
+├── meet-config.yaml
+├── meet-fix
+│   ├── jicofo.yaml
+│   ├── jitsi-config.yaml
+│   ├── jvb.yaml
+│   └── prosody.yaml
+├── meet-service
+│   └── Dockerfile
+├── mobile
+│   ├── Dockerfile.android
+│   ├── android
+│   ├── branding
+│   ├── flutter
+│   └── release
+├── monitoring
+├── notification-service
+│   └── Dockerfile
+├── oauth-service
+│   ├── Dockerfile
+│   ├── README.md
+│   ├── k8s
+│   │   ├── deployment.yaml
+│   │   └── service.yaml
+│   ├── package.json
+│   ├── server.js
+│   └── src
+│       ├── app.js
+│       ├── config
+│       ├── middleware
+│       ├── routes
+│       └── services
+├── observability
+│   ├── README.md
+│   └── alerts
+│       └── billing-alerts.yaml
+├── package-files.txt
+├── platform
+│   ├── admin-portal
+│   │   ├── Dockerfile
+│   │   ├── config
+│   │   ├── docker
+│   │   ├── docs
+│   │   ├── helm
+│   │   ├── index.html
+│   │   ├── k8s
+│   │   ├── nginx.conf
+│   │   ├── package-lock.json
+│   │   ├── package.json
+│   │   ├── src
+│   │   ├── tests
+│   │   └── vite.config.js
+│   ├── ai-platform
+│   │   ├── Dockerfile
+│   │   ├── app
+│   │   ├── config
+│   │   ├── docker
+│   │   ├── docs
+│   │   ├── helm
+│   │   ├── k8s
+│   │   ├── requirements.txt
+│   │   ├── src
+│   │   └── tests
+│   ├── analytics-service
+│   │   ├── Dockerfile
+│   │   ├── app
+│   │   ├── config
+│   │   ├── docker
+│   │   ├── docs
+│   │   ├── helm
+│   │   ├── k8s
+│   │   ├── requirements.txt
+│   │   ├── src
+│   │   └── tests
+│   ├── android-portal
+│   │   ├── Dockerfile
+│   │   ├── index.html
+│   │   ├── manifest.json
+│   │   └── nginx.conf
+│   ├── api-service
+│   │   ├── Dockerfile
+│   │   ├── app
+│   │   ├── config
+│   │   ├── docker
+│   │   ├── docs
+│   │   ├── helm
+│   │   ├── k8s
+│   │   ├── requirements.txt
+│   │   ├── src
+│   │   └── tests
+│   ├── audit-service
+│   │   ├── Dockerfile
+│   │   ├── app
+│   │   ├── config
+│   │   ├── docker
+│   │   ├── docs
+│   │   ├── helm
+│   │   ├── k8s
+│   │   ├── requirements.txt
+│   │   ├── src
+│   │   └── tests
+│   ├── auth-service
+│   │   ├── Dockerfile
+│   │   ├── app
+│   │   ├── config
+│   │   ├── docker
+│   │   ├── docs
+│   │   ├── helm
+│   │   ├── k8s
+│   │   ├── requirements.txt
+│   │   ├── src
+│   │   └── tests
+│   ├── billing-engine
+│   │   ├── app
+│   │   ├── config
+│   │   ├── docker
+│   │   ├── docs
+│   │   ├── helm
+│   │   ├── k8s
+│   │   ├── src
+│   │   └── tests
+│   ├── domain-service
+│   │   ├── Dockerfile
+│   │   ├── app
+│   │   └── requirements.txt
+│   ├── event-service
+│   │   ├── Dockerfile
+│   │   ├── app
+│   │   └── requirements.txt
+│   ├── exchange-service
+│   │   ├── app
+│   │   ├── config
+│   │   ├── docker
+│   │   ├── docs
+│   │   ├── helm
+│   │   ├── k8s
+│   │   ├── src
+│   │   └── tests
+│   ├── foundation-service
+│   │   ├── Dockerfile
+│   │   ├── app
+│   │   └── requirements.txt
+│   ├── freedomain-service
+│   │   ├── Dockerfile
+│   │   ├── app
+│   │   └── requirements.txt
+│   ├── gateway
+│   │   ├── Dockerfile
+│   │   ├── app
+│   │   ├── config
+│   │   ├── docker
+│   │   ├── docs
+│   │   ├── helm
+│   │   ├── k8s
+│   │   ├── requirements.txt
+│   │   ├── src
+│   │   └── tests
+│   ├── interior-service
+│   │   ├── Dockerfile
+│   │   ├── app
+│   │   └── requirements.txt
+│   ├── license-service
+│   │   ├── Dockerfile
+│   │   ├── app
+│   │   ├── config
+│   │   ├── docker
+│   │   ├── docs
+│   │   ├── helm
+│   │   ├── k8s
+│   │   ├── requirements.txt
+│   │   ├── src
+│   │   └── tests
+│   ├── live-service
+│   │   ├── Dockerfile
+│   │   ├── app
+│   │   └── requirements.txt
+│   ├── mail-service
+│   │   ├── Dockerfile
+│   │   ├── app
+│   │   └── requirements.txt
+│   ├── meet-service
+│   │   ├── Dockerfile
+│   │   ├── app
+│   │   └── requirements.txt
+│   ├── messaging-service
+│   │   ├── Dockerfile
+│   │   ├── app
+│   │   └── requirements.txt
+│   ├── mobile-api
+│   │   ├── Dockerfile
+│   │   ├── app
+│   │   ├── config
+│   │   ├── docker
+│   │   ├── docs
+│   │   ├── helm
+│   │   ├── k8s
+│   │   ├── requirements.txt
+│   │   ├── src
+│   │   └── tests
+│   ├── notification-service
+│   │   ├── Dockerfile
+│   │   ├── app
+│   │   ├── config
+│   │   ├── docker
+│   │   ├── docs
+│   │   ├── helm
+│   │   ├── k8s
+│   │   ├── requirements.txt
+│   │   ├── src
+│   │   └── tests
+│   ├── oauth-service
+│   │   ├── Dockerfile
+│   │   ├── app
+│   │   ├── config
+│   │   ├── docker
+│   │   ├── docs
+│   │   ├── helm
+│   │   ├── k8s
+│   │   ├── requirements.txt
+│   │   ├── src
+│   │   └── tests
+│   ├── payment-service
+│   │   ├── Dockerfile
+│   │   ├── alembic.ini
+│   │   ├── app
+│   │   ├── config
+│   │   ├── docker
+│   │   ├── docs
+│   │   ├── helm
+│   │   ├── k8s
+│   │   ├── migrations
+│   │   ├── requirements.txt
+│   │   ├── src
+│   │   └── tests
+│   ├── pc-portal
+│   ├── report-service
+│   │   ├── Dockerfile
+│   │   ├── app
+│   │   ├── config
+│   │   ├── docker
+│   │   ├── docs
+│   │   ├── helm
+│   │   ├── k8s
+│   │   ├── requirements.txt
+│   │   ├── src
+│   │   └── tests
+│   ├── scheduler-service
+│   │   ├── Dockerfile
+│   │   ├── app
+│   │   ├── config
+│   │   ├── docker
+│   │   ├── docs
+│   │   ├── helm
+│   │   ├── k8s
+│   │   ├── requirements.txt
+│   │   ├── src
+│   │   └── tests
+│   ├── search-service
+│   │   ├── Dockerfile
+│   │   ├── app
+│   │   ├── config
+│   │   ├── docker
+│   │   ├── docs
+│   │   ├── helm
+│   │   ├── k8s
+│   │   ├── requirements.txt
+│   │   ├── src
+│   │   └── tests
+│   ├── social-service
+│   │   ├── Dockerfile
+│   │   ├── app
+│   │   └── requirements.txt
+│   ├── storage-service
+│   │   ├── Dockerfile
+│   │   ├── app
+│   │   ├── config
+│   │   ├── docker
+│   │   ├── docs
+│   │   ├── helm
+│   │   ├── k8s
+│   │   ├── requirements.txt
+│   │   ├── src
+│   │   └── tests
+│   ├── tenant-router
+│   │   ├── Dockerfile
+│   │   ├── app
+│   │   ├── config
+│   │   ├── docker
+│   │   ├── docs
+│   │   ├── helm
+│   │   ├── k8s
+│   │   ├── requirements.txt
+│   │   ├── src
+│   │   └── tests
+│   ├── training-service
+│   │   ├── Dockerfile
+│   │   ├── app
+│   │   └── requirements.txt
+│   ├── web-portal
+│   │   ├── Dockerfile
+│   │   ├── config
+│   │   ├── docker
+│   │   ├── docs
+│   │   ├── helm
+│   │   ├── index.html
+│   │   ├── k8s
+│   │   ├── nginx.conf
+│   │   ├── package-lock.json
+│   │   ├── package.json
+│   │   ├── public
+│   │   ├── src
+│   │   └── tests
+│   └── worker-service
+│       ├── Dockerfile
+│       ├── app
+│       ├── config
+│       ├── docker
+│       ├── docs
+│       ├── helm
+│       ├── k8s
+│       ├── requirements.txt
+│       ├── src
+│       └── tests
+├── python-build-files.txt
+├── python-files.txt
+├── rebrand
+│   ├── Dockerfile
+│   ├── README.md
+│   ├── apk
+│   │   ├── build.sh
+│   │   ├── overlay
+│   │   └── scripts
+│   ├── common
+│   │   ├── colors.json
+│   │   ├── endpoints.yaml
+│   │   ├── keystore
+│   │   └── strings.txt
+│   └── exe
+│       └── overlay
+├── release-assets
+│   └── OmniloginSetup-x64-8.9.12.exe
+├── reports
+│   └── genai-integration-analysis.txt
+├── repository-tree.txt
+├── requirements.lock
+├── scheduler-service
+│   └── Dockerfile
+├── scripts
+│   ├── apply_secrets_auto.ps1
+│   ├── backup.ps1
+│   ├── browser-realistic-check.sh
+│   ├── cluster-bootstrap.sh
+│   ├── cluster-discover.sh
+│   ├── create_k8s_secrets.ps1
+│   ├── deploy-all.sh
+│   ├── deploy-service.sh
+│   ├── final-full-check.sh
+│   ├── full-live-check.sh
+│   ├── full-project-check.sh
+│   ├── full-site-check.sh
+│   ├── generate_missing_secrets.py
+│   ├── generated_secrets.yaml
+│   ├── get-docker.sh
+│   ├── install-prometheus-operator.sh
+│   ├── k8s-template.sh
+│   ├── monitor.ps1
+│   ├── postgres-init
+│   │   └── init-multiple-dbs.sh
+│   ├── preflight-check.sh
+│   ├── rewrite_manifests.ps1
+│   ├── seed
+│   │   ├── 01-payment-service.sh
+│   │   ├── 02-exchange-billing.sh
+│   │   ├── all-services.py
+│   │   ├── seed-all.py
+│   │   ├── seed-business-verticals.py
+│   │   └── seed-final.py
+│   ├── seed-platform.sh
+│   ├── setup_rbac_roles.py
+│   ├── setup_social_login.py
+│   ├── setup_web_portal_client.py
+│   ├── test.sh
+│   ├── test_stripe_webhook.py
+│   ├── validate-all.sh
+│   ├── verify_deployment.py
+│   ├── wait_for_mongo.bash
+│   └── wait_for_postgres.bash
+├── search-service
+│   └── Dockerfile
+├── secrets-template.yaml
+├── services.yaml
+├── shared
+│   ├── libraries
+│   │   └── python
+│   ├── protobuf
+│   ├── sdk
+│   └── ui-components
+├── shopnoltd-local-dev-fix.patch
+├── shopnoltd-source.tar.gz
+├── storage
+│   └── ai
+│       ├── data
+│       ├── logs
+│       ├── uploads
+│       └── vectorstore
+├── storage-service
+│   └── Dockerfile
+├── tenant-router
+│   └── Dockerfile
+├── tenant-router-nginx.conf
+├── tests
+│   ├── e2e
+│   ├── integration
+│   ├── load
+│   ├── security
+│   └── unit
+├── toolbox
+│   ├── 00-namespace.yaml
+│   ├── 01-secret.yaml
+│   ├── 02-configmap.yaml
+│   ├── 03-postgres.yaml
+│   ├── 04-mongo.yaml
+│   ├── 05-redis.yaml
+│   ├── 06-kpi-deployment.yaml
+│   ├── 06-kpi-deployment.yaml.bak
+│   ├── 07-kobocat-deployment.yaml
+│   ├── 08-enketo.yaml
+│   ├── 09-services.yaml
+│   ├── 10-ingress.yaml
+│   ├── 11-pvc.yaml
+│   ├── 12-kf-init-scripts.yaml
+│   ├── 13-ingress-uwsgi.yaml
+│   ├── SSL_PROXY_FIX_SUMMARY.md
+│   ├── kc-uwsgi-original.ini
+│   ├── kf-deployment-export.yaml
+│   ├── kf-uwsgi-original.ini
+│   └── verify-ssl-config.sh
+├── toolbox-fix
+│   ├── kc-fixed.yaml
+│   ├── kc.yaml
+│   └── kf.yaml
+├── tools
+├── vendor
+│   └── genai-stack
+│       ├── CONTRIBUTING.md
+│       ├── LICENSE
+│       ├── api.Dockerfile
+│       ├── api.py
+│       ├── bot.Dockerfile
+│       ├── bot.py
+│       ├── chains.py
+│       ├── docker-compose.yml
+│       ├── embedding_model
+│       ├── env.example
+│       ├── front-end
+│       ├── front-end.Dockerfile
+│       ├── images
+│       ├── install_ollama.sh
+│       ├── loader.Dockerfile
+│       ├── loader.py
+│       ├── pdf_bot.Dockerfile
+│       ├── pdf_bot.py
+│       ├── pull_model.Dockerfile
+│       ├── readme.md
+│       ├── requirements.txt
+│       ├── running_on_wsl.md
+│       └── utils.py
+├── worker-service
+│   └── Dockerfile
+└── yaml-files.txt
+
+668 directories, 450 files
