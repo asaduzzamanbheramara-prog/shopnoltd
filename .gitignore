@@ -139,3 +139,10 @@ release-assets/
 *.exe
 APKPure_3.20.7402_apkpure.com.apk
 kustomize.save
+
+
+*.db
+*.sqlite
+*.sqlite3
+*.tar.gz
+archive/
