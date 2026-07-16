@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-
   workflow_dispatch:
 
 permissions:
@@ -16,43 +15,26 @@ env:
   IMAGE_PREFIX: shopnoltd
 
 jobs:
-
   build:
-
     runs-on: ubuntu-latest
-
     strategy:
-
       fail-fast: false
-
       matrix:
-
         include:
-
           - name: frontend
             context: .
             dockerfile: Dockerfile
             tag: latest
 
           - name: api-service
-            context: ./shopnoltd-ai-platform/backend
-            dockerfile: ./shopnoltd-ai-platform/backend/Dockerfile
+            context: ./api-service
+            dockerfile: ./api-service/Dockerfile
             tag: v4
 
           - name: ai
-            context: ./shopnoltd-ai-platform
-            dockerfile: ./shopnoltd-ai-platform/Dockerfile
+            context: ./ai-platform
+            dockerfile: ./ai-platform/Dockerfile
             tag: latest
-
-          - name: freedomain-ui
-            context: ./ui
-            dockerfile: ./ui/Dockerfile
-            tag: v1
-
-          - name: freedomain-website
-            context: ./ui/admin
-            dockerfile: ./ui/admin/Dockerfile
-            tag: v1
 
           - name: billing-engine
             context: ./billing-engine
@@ -60,48 +42,54 @@ jobs:
             tag: v6
 
           - name: oauth
-            context: ./services/oauth-service
-            dockerfile: ./services/oauth-service/Dockerfile
+            context: ./oauth-service
+            dockerfile: ./oauth-service/Dockerfile
             tag: v1
 
           - name: live
-            context: ./services/live
-            dockerfile: ./services/live/Dockerfile
+            context: ./live-service
+            dockerfile: ./live-service/Dockerfile
             tag: v1
 
-    steps:
+          # --- freedomain-ui / freedomain-website: DISABLED ---
+          # No source folder exists at ./ui or ./ui/admin (confirmed: `ls ui/`
+          # -> "No such file or directory"). A `find` hit ./archive/ui, which
+          # MAY be the real source that got moved/archived - unconfirmed.
+          # Re-enable these two matrix entries once you've verified whether
+          # ./archive/ui is genuinely the buildable source (and if so, move
+          # it back out of archive/ rather than building straight from
+          # there), or point at wherever the real source actually lives.
+          #
+          # - name: freedomain-ui
+          #   context: ./ui
+          #   dockerfile: ./ui/Dockerfile
+          #   tag: v1
+          #
+          # - name: freedomain-website
+          #   context: ./ui/admin
+          #   dockerfile: ./ui/admin/Dockerfile
+          #   tag: v1
 
+    steps:
       - uses: actions/checkout@v4
 
       - uses: docker/setup-buildx-action@v3
 
       - uses: docker/login-action@v3
-
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and Push
-
         uses: docker/build-push-action@v6
-
         with:
-
           context: ${{ matrix.context }}
-
           file: ${{ matrix.dockerfile }}
-
           push: true
-
           tags: |
-
             ghcr.io/${{ github.repository_owner }}/shopnoltd-${{ matrix.name }}:${{ matrix.tag }}
-
             ghcr.io/${{ github.repository_owner }}/shopnoltd-${{ matrix.name }}:latest
-
             ghcr.io/${{ github.repository_owner }}/shopnoltd-${{ matrix.name }}:${{ github.sha }}
-
           cache-from: type=gha
-
           cache-to: type=gha,mode=max

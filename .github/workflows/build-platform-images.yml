@@ -1,9 +1,7 @@
-name: Build Shopnoltd Platform Images
+name: "[DISABLED] Build Shopnoltd Platform Images (redundant, wrong paths, superseded by docker-build.yml)"
 
 on:
   push:
-    branches:
-      - main
   workflow_dispatch:
 
 
