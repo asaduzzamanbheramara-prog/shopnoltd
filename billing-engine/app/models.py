@@ -1,6 +1,7 @@
 import uuid
 from datetime import datetime
 
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy import (
     Column,
     String,
@@ -28,9 +29,9 @@ class User(Base):
 
     # Matches PostgreSQL schema exactly
 
-    id = Column(String, primary_key=True)
+    id = Column(UUID(as_uuid=True), primary_key=True)
 
-    tenant_id = Column(String, nullable=True)
+    tenant_id = Column(UUID(as_uuid=True), nullable=True)
 
     email = Column(String, unique=True, nullable=False)
 
@@ -48,9 +49,9 @@ class User(Base):
 class Wallet(Base):
     __tablename__ = "wallets"
 
-    id = Column(String, primary_key=True)
+    id = Column(String, primary_key=True, default=lambda: gen_id("wal"))
 
-    user_id = Column(String, ForeignKey("users.id"), nullable=False)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
 
     currency = Column(String(3), default="BDT")
 
@@ -66,9 +67,9 @@ class Wallet(Base):
 class Transaction(Base):
     __tablename__ = "transactions"
 
-    id = Column(String, primary_key=True)
+    id = Column(String, primary_key=True, default=lambda: gen_id("txn"))
 
-    user_id = Column(String, ForeignKey("users.id"))
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
 
     gateway = Column(String)
 
@@ -84,9 +85,9 @@ class Transaction(Base):
 
     raw_response = Column(Text)
 
-    created_at = Column(DateTime)
+    created_at = Column(DateTime, default=datetime.utcnow)
 
-    updated_at = Column(DateTime)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
 # ----------------------------------------------------------
@@ -96,9 +97,9 @@ class Transaction(Base):
 class PaymentMethod(Base):
     __tablename__ = "payment_methods"
 
-    id = Column(String, primary_key=True)
+    id = Column(String, primary_key=True, default=lambda: gen_id("pm"))
 
-    user_id = Column(String, ForeignKey("users.id"))
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
 
     gateway = Column(String)
 
@@ -106,7 +107,7 @@ class PaymentMethod(Base):
 
     gateway_token = Column(Text)
 
-    created_at = Column(DateTime)
+    created_at = Column(DateTime, default=datetime.utcnow)
 
 
 # ----------------------------------------------------------
@@ -116,7 +117,7 @@ class PaymentMethod(Base):
 class Subscription(Base):
     __tablename__ = "subscriptions"
 
-    id = Column(String, primary_key=True)
+    id = Column(String, primary_key=True, default=lambda: gen_id("sub"))
 
     tenant_id = Column(String)
 
@@ -144,4 +145,25 @@ class AuditLog(Base):
 
     details = Column(Text)
 
-    created_at = Column(DateTime)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class WalletLedgerEntry(Base):
+    __tablename__ = "wallet_ledger_entries"
+
+    id = Column(UUID(as_uuid=True), primary_key=True)
+
+    user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id"),
+        nullable=False,
+        index=True,
+    )
+    currency = Column(String(3), nullable=False)
+    entry_type = Column(String, nullable=False)  # deposit|deduction|fine|refund|adjustment_credit|adjustment_debit
+    amount = Column(Float, nullable=False)        # signed: positive=credit, negative=debit
+    balance_after = Column(Float, nullable=False)
+    reason = Column(Text, nullable=False)
+    reference = Column(String, nullable=True)
+    created_by = Column(String, nullable=True)     # admin/service actor id, if applicable
+    created_at = Column(DateTime, default=datetime.utcnow)
