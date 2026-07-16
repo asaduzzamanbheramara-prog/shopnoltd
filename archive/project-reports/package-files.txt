@@ -1,0 +1,7 @@
+./apps/desktop-shell/package.json
+./apps/mobile-shell/package.json
+./archive/services/oauth-service/package.json
+./oauth-service/package.json
+./platform/admin-portal/package.json
+./platform/web-portal/package.json
+./vendor/genai-stack/front-end/package.json
