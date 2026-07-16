@@ -9,13 +9,14 @@ from sqlalchemy.orm import Session
 
 from app import config, fx
 from app.database import Base, engine, get_db
-from app.models import User, Wallet, Transaction, AuditLog
+from app.models import User, Wallet, Transaction, AuditLog, WalletLedgerEntry
 from app.gateways import get_gateway, REGISTRY, payoneer_payouts
+from app.ledger import apply_ledger_entry, InsufficientBalanceError
+from app.security import require_internal_key
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("billing-engine")
 
-Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="Shopnoltd Billing Engine",
@@ -23,6 +24,12 @@ app = FastAPI(
     version="6.0.0",
 )
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+
+
+@app.on_event("startup")
+def startup():
+    Base.metadata.create_all(bind=engine)
+    logger.info("Database initialized.")
 
 
 def log_action(db: Session, action: str, user_id: Optional[str], details: dict):
@@ -182,9 +189,14 @@ def _complete_transaction(db: Session, gateway_reference: str, gateway: str, sta
     txn.status = status
     db.commit()
     if status == "completed":
-        wallet = get_or_create_wallet(db, txn.user_id, txn.currency)
-        wallet.balance += amount if amount is not None else txn.amount
-        db.commit()
+        apply_ledger_entry(
+            db, txn.user_id, txn.currency,
+            delta=amount if amount is not None else txn.amount,
+            entry_type="deposit",
+            reason=f"Payment completed via {gateway}",
+            reference=txn.id,
+            allow_negative=True,  # deposits are always additive, never blocked
+        )
     log_action(db, "webhook_processed", txn.user_id, {"gateway": gateway, "status": status})
     return txn
 
@@ -268,6 +280,92 @@ def get_wallet(email: str, currency: str = "BDT", db: Session = Depends(get_db))
     wallet = get_or_create_wallet(db, user.id, currency)
     return {"user_id": user.id, "currency": wallet.currency, "balance": wallet.balance}
 
+class DeductRequest(BaseModel):
+    email: str
+    amount: float
+    currency: str = "BDT"
+    reason: str
+    reference: Optional[str] = None
+
+
+@app.post("/wallet/deduct", dependencies=[Depends(require_internal_key)])
+def deduct_wallet(req: DeductRequest, db: Session = Depends(get_db)):
+    user = get_or_create_user(db, req.email)
+    try:
+        entry = apply_ledger_entry(
+            db, user.id, req.currency.upper(), delta=-abs(req.amount),
+            entry_type="deduction", reason=req.reason, reference=req.reference,
+        )
+    except InsufficientBalanceError as e:
+        raise HTTPException(402, str(e))
+    log_action(db, "wallet_deducted", user.id, {"amount": req.amount, "reason": req.reason})
+    return {"balance_after": entry.balance_after, "ledger_entry_id": entry.id}
+
+
+class FineRequest(BaseModel):
+    email: str
+    amount: float
+    currency: str = "BDT"
+    reason: str
+    reference: Optional[str] = None
+    allow_negative_balance: bool = False
+
+
+@app.post("/wallet/fine", dependencies=[Depends(require_internal_key)])
+def fine_wallet(req: FineRequest, db: Session = Depends(get_db)):
+    user = get_or_create_user(db, req.email)
+    try:
+        entry = apply_ledger_entry(
+            db, user.id, req.currency.upper(), delta=-abs(req.amount),
+            entry_type="fine", reason=req.reason, reference=req.reference,
+            allow_negative=req.allow_negative_balance,
+        )
+    except InsufficientBalanceError as e:
+        raise HTTPException(402, str(e))
+    log_action(db, "wallet_fined", user.id, {"amount": req.amount, "reason": req.reason})
+    return {"balance_after": entry.balance_after, "ledger_entry_id": entry.id}
+
+
+class AdjustRequest(BaseModel):
+    email: str
+    amount: float
+    currency: str = "BDT"
+    reason: str
+
+
+@app.post("/wallet/adjust", dependencies=[Depends(require_internal_key)])
+def adjust_wallet(req: AdjustRequest, db: Session = Depends(get_db)):
+    user = get_or_create_user(db, req.email)
+    entry = apply_ledger_entry(
+        db, user.id, req.currency.upper(), delta=req.amount,
+        entry_type="adjustment_credit" if req.amount >= 0 else "adjustment_debit",
+        reason=req.reason, allow_negative=True,
+    )
+    log_action(db, "wallet_adjusted", user.id, {"amount": req.amount, "reason": req.reason})
+    return {"balance_after": entry.balance_after, "ledger_entry_id": entry.id}
+
+
+@app.get("/wallet/{email}/ledger")
+def get_wallet_ledger(email: str, currency: str = "BDT", limit: int = 50, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        raise HTTPException(404, "User not found")
+    entries = (
+        db.query(WalletLedgerEntry)
+        .filter(WalletLedgerEntry.user_id == user.id, WalletLedgerEntry.currency == currency.upper())
+        .order_by(WalletLedgerEntry.created_at.desc())
+        .limit(limit)
+        .all()
+    )
+    return [
+        {
+            "id": e.id, "entry_type": e.entry_type, "amount": e.amount,
+            "balance_after": e.balance_after, "reason": e.reason,
+            "reference": e.reference, "created_at": e.created_at.isoformat(),
+        }
+        for e in entries
+    ]
+
 
 @app.get("/transactions/{email}")
 def get_transactions(email: str, db: Session = Depends(get_db)):
@@ -278,7 +376,7 @@ def get_transactions(email: str, db: Session = Depends(get_db)):
     return [
         {
             "id": t.id, "gateway": t.gateway, "amount": t.amount, "currency": t.currency,
-            "status": t.status, "is_demo": t.is_demo, "created_at": t.created_at.isoformat(),
+            "status": t.status, "is_demo": t.is_demo, "created_at": t.created_at.isoformat() if t.created_at else None,
         }
         for t in txns
     ]

@@ -10,12 +10,20 @@ rate" the way the old prototype did.
 """
 import os
 
+from dotenv import load_dotenv
+load_dotenv()  # reads .env for local dev; in Docker/K8s, real env vars take priority and this is a harmless no-op
+
 
 def _env(name: str, default: str = "") -> str:
     return os.getenv(name, default).strip()
 
 
 DATABASE_URL = _env("DATABASE_URL", "sqlite:///./billing.db")
+
+# ---------------------------------------------------------------------------
+# Internal service auth (protects /wallet/deduct, /wallet/fine, /wallet/adjust)
+# ---------------------------------------------------------------------------
+INTERNAL_API_KEY = _env("INTERNAL_API_KEY")
 
 # ---------------------------------------------------------------------------
 # Stripe (cards, wallets - global)
