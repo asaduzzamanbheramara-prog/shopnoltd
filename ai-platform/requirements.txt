@@ -16,4 +16,9 @@ openai
 jinja2
 python-multipart
 passlib[bcrypt]
-python-jose
+python-jose[cryptography]==3.3.0
+langchain
+langchain-community
+langchain-openai
+langchain-chroma
+tiktoken
