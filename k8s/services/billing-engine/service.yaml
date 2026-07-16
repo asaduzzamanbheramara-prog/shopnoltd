@@ -10,7 +10,7 @@ spec:
   ports:
     - name: http
       port: 80
-      targetPort: http
+      targetPort: 5000
       protocol: TCP
   selector:
     app.kubernetes.io/name: billing-engine
