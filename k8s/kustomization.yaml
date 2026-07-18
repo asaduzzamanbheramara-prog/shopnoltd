@@ -1,62 +1,62 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
+
+
+
+
+
+
 resources:
-  - namespaces/shopno-platform.yaml
-  - namespaces/shopno-apps.yaml
-  - namespaces/shopno-data.yaml
-  - namespaces/shopno-identity.yaml
-  - namespaces/shopno-monitoring.yaml
-  - namespaces/shopno-payments.yaml
-  - namespaces/shopno-ingress.yaml
-
-  - services/api-service
-  - services/gateway
-  - services/web-portal
-  - services/admin-portal
-  - services/tenant-router
-  - services/auth-service
-  - services/oauth-service
-  - services/billing-engine
-  - services/domain-service
-  - services/freedomain-service
-  - services/mobile-api
-  - services/search-service
-  - services/storage-service
-  - services/notification-service
-  - services/report-service
-  - services/analytics-service
-  - services/worker-service
-  - services/training-service
-  - services/license-service
-  - services/audit-service
-  - services/event-service
-  - services/foundation-service
-  - services/interior-service
-  - services/android-portal
-  - services/ai-platform
-
-  - services/postgres
-  - services/redis
-  - services/minio
-  - services/opensearch
-
-  - services/grafana
-  - services/prometheus
-  - services/loki
-  - services/alertmanager
-
-  - services/keycloak
-
-  - services/chatwoot
-  - services/gitea
-  - services/code-server
-  - services/nextcloud
-  - services/onlyoffice
-  - services/kobotoolbox
-  - services/metabase
-  - services/n8n
-  - services/owncast
-  - services/superset
-
-  - ingress/cloudflared
+- namespaces/shopno-platform.yaml
+- namespaces/shopno-apps.yaml
+- namespaces/shopno-data.yaml
+- namespaces/shopno-identity.yaml
+- namespaces/shopno-monitoring.yaml
+- namespaces/shopno-payments.yaml
+- namespaces/shopno-ingress.yaml
+- services/api-service
+- services/gateway
+- services/web-portal
+- services/admin-portal
+- services/tenant-router
+- services/auth-service
+- services/oauth-service
+- services/billing-engine
+- services/domain-service
+- services/freedomain-service
+- services/mobile-api
+- services/search-service
+- services/storage-service
+- services/notification-service
+- services/report-service
+- services/analytics-service
+- services/worker-service
+- services/training-service
+- services/license-service
+- services/audit-service
+- services/event-service
+- services/foundation-service
+- services/interior-service
+- services/android-portal
+- services/ai-platform
+- services/postgres
+- services/redis
+- services/minio
+- services/opensearch
+- services/grafana
+- services/prometheus
+- services/loki
+- services/alertmanager
+- services/keycloak
+- services/chatwoot
+- services/gitea
+- services/code-server
+- services/nextcloud
+- services/onlyoffice
+- services/kobotoolbox
+- services/metabase
+- services/n8n
+- services/owncast
+- services/superset
+- ingress/cloudflared

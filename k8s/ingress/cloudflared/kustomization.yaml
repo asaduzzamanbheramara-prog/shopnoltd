@@ -2,8 +2,8 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: shopno-ingress
 resources:
-  - deployment.yaml
-  - configmap.yaml
-  - secret.yaml
-  - rbac.yaml
-  - service.yaml
+- deployment.yaml
+- configmap.yaml
+- secret.yaml
+- rbac.yaml
+- service.yaml

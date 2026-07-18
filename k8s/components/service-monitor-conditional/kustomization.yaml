@@ -5,4 +5,4 @@ kind: Component
 # When the prometheus-operator is installed, the SM resource becomes valid
 # and is registered automatically.
 resources:
-  - servicemonitor-conditional.yaml
+- servicemonitor-conditional.yaml
