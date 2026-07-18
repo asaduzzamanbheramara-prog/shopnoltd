@@ -9,7 +9,9 @@ If what's actually wanted is "let a customer pay their order with Payoneer",
 that isn't something Payoneer's API supports - Stripe/PayPal/crypto cover the
 "customer pays us" side already.
 """
+
 import requests
+
 from app import config
 
 BASE_URLS = {
@@ -28,7 +30,9 @@ class PayoneerPayouts:
     def send_payout(self, payee_id: str, amount: float, currency: str, description: str) -> dict:
         if not self.enabled:
             return {
-                "gateway": self.name, "is_demo": True, "status": "pending",
+                "gateway": self.name,
+                "is_demo": True,
+                "status": "pending",
                 "note": "Payoneer not configured (missing program id / API credentials) - running in demo mode.",
             }
         resp = requests.post(
@@ -44,4 +48,9 @@ class PayoneerPayouts:
         )
         resp.raise_for_status()
         data = resp.json()
-        return {"gateway": self.name, "is_demo": False, "status": data.get("status", "submitted"), "raw": data}
+        return {
+            "gateway": self.name,
+            "is_demo": False,
+            "status": data.get("status", "submitted"),
+            "raw": data,
+        }

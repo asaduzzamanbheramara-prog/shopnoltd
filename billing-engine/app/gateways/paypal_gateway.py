@@ -1,7 +1,9 @@
 import uuid
+
 import requests
+
 from app import config
-from app.gateways.base import PaymentGateway, GatewayResult
+from app.gateways.base import GatewayResult, PaymentGateway
 
 BASE_URLS = {"sandbox": "https://api-m.sandbox.paypal.com", "live": "https://api-m.paypal.com"}
 
@@ -23,10 +25,14 @@ class PayPalGateway(PaymentGateway):
         resp.raise_for_status()
         return resp.json()["access_token"]
 
-    def create_payment(self, amount: float, currency: str, reference: str, **kwargs) -> GatewayResult:
+    def create_payment(
+        self, amount: float, currency: str, reference: str, **kwargs
+    ) -> GatewayResult:
         if not self.enabled:
             return GatewayResult(
-                gateway=self.name, is_demo=True, status="pending",
+                gateway=self.name,
+                is_demo=True,
+                status="pending",
                 gateway_reference=f"demo_order_{uuid.uuid4().hex[:12]}",
                 redirect_url=None,
                 note="PayPal not configured (missing PAYPAL_CLIENT_ID/SECRET) - running in demo mode.",
@@ -37,23 +43,35 @@ class PayPalGateway(PaymentGateway):
             headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
             json={
                 "intent": "CAPTURE",
-                "purchase_units": [{
-                    "reference_id": reference,
-                    "amount": {"currency_code": currency.upper(), "value": f"{amount:.2f}"},
-                }],
+                "purchase_units": [
+                    {
+                        "reference_id": reference,
+                        "amount": {"currency_code": currency.upper(), "value": f"{amount:.2f}"},
+                    }
+                ],
                 "application_context": {
-                    "return_url": kwargs.get("success_url", f"{config.BASE_CALLBACK_URL}/checkout/success?ref={reference}"),
-                    "cancel_url": kwargs.get("cancel_url", f"{config.BASE_CALLBACK_URL}/checkout/cancel?ref={reference}"),
+                    "return_url": kwargs.get(
+                        "success_url",
+                        f"{config.BASE_CALLBACK_URL}/checkout/success?ref={reference}",
+                    ),
+                    "cancel_url": kwargs.get(
+                        "cancel_url", f"{config.BASE_CALLBACK_URL}/checkout/cancel?ref={reference}"
+                    ),
                 },
             },
             timeout=15,
         )
         resp.raise_for_status()
         data = resp.json()
-        approve_link = next((l["href"] for l in data.get("links", []) if l["rel"] == "approve"), None)
+        approve_link = next(
+            (l["href"] for l in data.get("links", []) if l["rel"] == "approve"), None
+        )
         return GatewayResult(
-            gateway=self.name, is_demo=False, status="pending",
-            gateway_reference=data["id"], redirect_url=approve_link,
+            gateway=self.name,
+            is_demo=False,
+            status="pending",
+            gateway_reference=data["id"],
+            redirect_url=approve_link,
         )
 
     def capture_order(self, order_id: str) -> dict:

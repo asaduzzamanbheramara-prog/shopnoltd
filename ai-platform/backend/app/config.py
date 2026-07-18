@@ -2,6 +2,7 @@
 Central configuration for the Shopnoltd AI Platform backend.
 Values are loaded from environment variables (see .env.example).
 """
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 

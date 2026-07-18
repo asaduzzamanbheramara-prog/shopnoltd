@@ -1,15 +1,5 @@
 class BaseAgent:
+    name = "BaseAgent"
 
-    name="BaseAgent"
-
-    def execute(self,task):
-
-        return {
-
-            "agent":self.name,
-
-            "task":task,
-
-            "status":"completed"
-
-        }
+    def execute(self, task):
+        return {"agent": self.name, "task": task, "status": "completed"}

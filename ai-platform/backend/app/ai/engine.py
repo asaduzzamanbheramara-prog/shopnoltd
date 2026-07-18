@@ -4,6 +4,7 @@ it makes, feeds the results back, and loops until Claude produces a final
 text answer (or the iteration cap is hit, as a safety valve against runaway
 tool loops).
 """
+
 from app.ai.client import MODEL, client
 from app.ai.prompts import get_system_prompt
 from app.ai.tools import execute_tool, get_tool_definitions
@@ -12,9 +13,7 @@ MAX_TOOL_ITERATIONS = 5
 MAX_TOKENS = 1024
 
 
-def run_conversation(
-    messages: list[dict], mode: str = "default"
-) -> tuple[str, list[dict]]:
+def run_conversation(messages: list[dict], mode: str = "default") -> tuple[str, list[dict]]:
     """
     messages: [{"role": "user"|"assistant", "content": "..."}]
     Returns (final_text, full_message_log) — the log includes any
@@ -37,9 +36,7 @@ def run_conversation(
         working_messages.append({"role": "assistant", "content": assistant_blocks})
 
         if response.stop_reason != "tool_use":
-            final_text = "".join(
-                block.text for block in response.content if block.type == "text"
-            )
+            final_text = "".join(block.text for block in response.content if block.type == "text")
             return final_text, working_messages
 
         tool_results = []

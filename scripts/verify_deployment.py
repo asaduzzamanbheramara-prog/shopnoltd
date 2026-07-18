@@ -10,6 +10,7 @@ Usage:
     python3 scripts/verify_deployment.py
     python3 scripts/verify_deployment.py --json report.json   # machine-readable
 """
+
 import argparse
 import json
 import re
@@ -28,12 +29,27 @@ ROOT = Path(__file__).resolve().parent.parent
 # a few specific per-page checks worth calling out by name.
 SPECIFIC_CHECKS = {
     "web-portal": [
-        ("/", ["logo.svg", 'href="/login"', 'href="/register"', 'href="/blog"', 'href="/plugins"', 'href="/pricing"']),
+        (
+            "/",
+            [
+                "logo.svg",
+                'href="/login"',
+                'href="/register"',
+                'href="/blog"',
+                'href="/plugins"',
+                'href="/pricing"',
+            ],
+        ),
     ],
     "api-service": [("/health", None)],
     "billing-engine": [("/health", None)],
     "oauth-service": [("/health", None)],
-    "keycloak": [("/realms/shopnoltd/.well-known/openid-configuration", ["authorization_endpoint", "token_endpoint"])],
+    "keycloak": [
+        (
+            "/realms/shopnoltd/.well-known/openid-configuration",
+            ["authorization_endpoint", "token_endpoint"],
+        )
+    ],
 }
 
 
@@ -62,17 +78,43 @@ def check(service, host, path, must_contain, timeout=10):
                     missing.append(needle)
                     ok = False
         return {
-            "service": service, "host": host, "path": path, "url": url,
-            "status": r.status_code, "ms": elapsed, "ok": ok,
+            "service": service,
+            "host": host,
+            "path": path,
+            "url": url,
+            "status": r.status_code,
+            "ms": elapsed,
+            "ok": ok,
             "missing": missing,
             "redirected_to": r.url if r.url != url else None,
         }
     except requests.exceptions.SSLError as e:
-        return {"service": service, "host": host, "path": path, "url": url, "ok": False, "error": f"TLS error: {e}"}
+        return {
+            "service": service,
+            "host": host,
+            "path": path,
+            "url": url,
+            "ok": False,
+            "error": f"TLS error: {e}",
+        }
     except requests.exceptions.ConnectionError as e:
-        return {"service": service, "host": host, "path": path, "url": url, "ok": False, "error": f"Unreachable: {e}"}
+        return {
+            "service": service,
+            "host": host,
+            "path": path,
+            "url": url,
+            "ok": False,
+            "error": f"Unreachable: {e}",
+        }
     except requests.exceptions.Timeout:
-        return {"service": service, "host": host, "path": path, "url": url, "ok": False, "error": f"Timed out after {timeout}s"}
+        return {
+            "service": service,
+            "host": host,
+            "path": path,
+            "url": url,
+            "ok": False,
+            "error": f"Timed out after {timeout}s",
+        }
 
 
 def main():
@@ -99,7 +141,11 @@ def main():
     print(f"Checked {len(results)} endpoints across {len(hosts)} services\n")
     for r in results:
         mark = "OK  " if r.get("ok") else "FAIL"
-        detail = r.get("error") or (f"missing: {r['missing']}" if r.get("missing") else f"{r.get('status')} in {r.get('ms')}ms")
+        detail = r.get("error") or (
+            f"missing: {r['missing']}"
+            if r.get("missing")
+            else f"{r.get('status')} in {r.get('ms')}ms"
+        )
         print(f"[{mark}] {r['service']:20s} {r['url']:55s} {detail}")
 
     print(f"\n{len(passed)} passed, {len(failed)} failed")

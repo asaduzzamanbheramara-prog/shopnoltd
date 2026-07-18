@@ -1,7 +1,11 @@
-from sqlalchemy import Column, String, DateTime, Integer, Text, JSON, Float
 import uuid
 from datetime import datetime
+
+from sqlalchemy import JSON, Column, DateTime, Float, Integer, String, Text
+
 from app.core.db import Base
+
+
 class Course(Base):
     __tablename__ = "courses"
     id = Column(String(64), primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -16,6 +20,8 @@ class Course(Base):
     cover_image = Column(String(512))
     published = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
 class Lesson(Base):
     __tablename__ = "lessons"
     id = Column(String(64), primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -26,6 +32,8 @@ class Lesson(Base):
     video_url = Column(String(512))
     duration_min = Column(Integer, default=0)
     resources = Column(JSON, default=list)
+
+
 class Enrollment(Base):
     __tablename__ = "enrollments"
     id = Column(String(64), primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -35,6 +43,8 @@ class Enrollment(Base):
     progress_pct = Column(Float, default=0)
     enrolled_at = Column(DateTime, default=datetime.utcnow)
     completed_at = Column(DateTime)
+
+
 class Quiz(Base):
     __tablename__ = "quizzes"
     id = Column(String(64), primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -43,6 +53,8 @@ class Quiz(Base):
     title = Column(String(256))
     questions = Column(JSON, default=list)  # [{q, choices, correct}]
     passing_score = Column(Integer, default=70)
+
+
 class QuizAttempt(Base):
     __tablename__ = "quiz_attempts"
     id = Column(String(64), primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -52,6 +64,8 @@ class QuizAttempt(Base):
     passed = Column(Integer, default=0)
     answers = Column(JSON, default=dict)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
 class Certificate(Base):
     __tablename__ = "certificates"
     id = Column(String(64), primary_key=True, default=lambda: str(uuid.uuid4()))

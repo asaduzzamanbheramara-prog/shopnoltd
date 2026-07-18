@@ -8,8 +8,9 @@ for the duration of the transaction, so two concurrent requests touching the
 same wallet serialize instead of racing (the classic lost-update bug you'd
 otherwise get from `wallet.balance += amount` under concurrent webhooks).
 """
-from typing import Optional
+
 from decimal import Decimal
+
 from sqlalchemy.orm import Session
 
 from app.models import Wallet, WalletLedgerEntry
@@ -26,8 +27,8 @@ def apply_ledger_entry(
     delta: float,
     entry_type: str,
     reason: str,
-    reference: Optional[str] = None,
-    created_by: Optional[str] = None,
+    reference: str | None = None,
+    created_by: str | None = None,
     allow_negative: bool = False,
 ) -> WalletLedgerEntry:
     """

@@ -5,12 +5,14 @@ Nagad signs/encrypts every request with RSA keypairs exchanged with Nagad
 during merchant onboarding (your private key + Nagad's public key).
 Requires the `cryptography` package (already in requirements.txt).
 """
+
 import base64
 import datetime
 import uuid
+
 import httpx
-from app.providers.base import BaseProvider
 from app.core.config import settings
+from app.providers.base import BaseProvider
 
 BASE_URLS = {
     True: "http://sandbox.mynagad.com:10080/remote-payment-gateway-1.0/api/dfs",
@@ -28,15 +30,18 @@ class NagadProvider(BaseProvider):
     def _sign(self, data: str) -> str:
         from cryptography.hazmat.primitives import hashes, serialization
         from cryptography.hazmat.primitives.asymmetric import padding
+
         private_key = serialization.load_pem_private_key(
-            settings.nagad_merchant_private_key.encode(), password=None,
+            settings.nagad_merchant_private_key.encode(),
+            password=None,
         )
         signature = private_key.sign(data.encode(), padding.PKCS1v15(), hashes.SHA256())
         return base64.b64encode(signature).decode()
 
     def _encrypt(self, data: str) -> str:
-        from cryptography.hazmat.primitives.asymmetric import padding
         from cryptography.hazmat.primitives import serialization
+        from cryptography.hazmat.primitives.asymmetric import padding
+
         public_key = serialization.load_pem_public_key(settings.nagad_pg_public_key.encode())
         encrypted = public_key.encrypt(data.encode(), padding.PKCS1v15())
         return base64.b64encode(encrypted).decode()
@@ -101,12 +106,15 @@ class NagadProvider(BaseProvider):
         }
 
     async def create_withdrawal(self, tx, destination, **kwargs):
-        raise NotImplementedError("Nagad payouts not supported via this API; use manual withdrawal with admin approval")
+        raise NotImplementedError(
+            "Nagad payouts not supported via this API; use manual withdrawal with admin approval"
+        )
 
     async def verify_webhook(self, request_body: bytes, headers: dict) -> dict:
         # Nagad redirects to merchantCallbackURL with payment_ref_id & status query params;
         # the caller must then call get_status() to confirm before trusting this.
         import json
+
         return json.loads(request_body) if request_body else {}
 
     async def get_status(self, external_id: str) -> str:

@@ -1,7 +1,9 @@
 import uuid
+
 import requests
+
 from app import config
-from app.gateways.base import PaymentGateway, GatewayResult
+from app.gateways.base import GatewayResult, PaymentGateway
 
 API_URLS = {
     True: "https://sandbox.sslcommerz.com/gwprocess/v4/api.php",
@@ -20,10 +22,14 @@ class SSLCommerzGateway(PaymentGateway):
         self.enabled = config.SSLCOMMERZ_ENABLED
         self.sandbox = config.SSLCOMMERZ_SANDBOX
 
-    def create_payment(self, amount: float, currency: str, reference: str, **kwargs) -> GatewayResult:
+    def create_payment(
+        self, amount: float, currency: str, reference: str, **kwargs
+    ) -> GatewayResult:
         if not self.enabled:
             return GatewayResult(
-                gateway=self.name, is_demo=True, status="pending",
+                gateway=self.name,
+                is_demo=True,
+                status="pending",
                 gateway_reference=f"demo_ssl_{uuid.uuid4().hex[:12]}",
                 redirect_url=None,
                 note="SSLCommerz not configured (missing store id/password) - running in demo mode.",
@@ -34,9 +40,15 @@ class SSLCommerzGateway(PaymentGateway):
             "total_amount": f"{amount:.2f}",
             "currency": currency.upper(),
             "tran_id": reference,
-            "success_url": kwargs.get("success_url", f"{config.BASE_CALLBACK_URL}/webhook/sslcommerz/success"),
-            "fail_url": kwargs.get("fail_url", f"{config.BASE_CALLBACK_URL}/webhook/sslcommerz/fail"),
-            "cancel_url": kwargs.get("cancel_url", f"{config.BASE_CALLBACK_URL}/webhook/sslcommerz/cancel"),
+            "success_url": kwargs.get(
+                "success_url", f"{config.BASE_CALLBACK_URL}/webhook/sslcommerz/success"
+            ),
+            "fail_url": kwargs.get(
+                "fail_url", f"{config.BASE_CALLBACK_URL}/webhook/sslcommerz/fail"
+            ),
+            "cancel_url": kwargs.get(
+                "cancel_url", f"{config.BASE_CALLBACK_URL}/webhook/sslcommerz/cancel"
+            ),
             "cus_name": kwargs.get("customer_name", "Shopnoltd Customer"),
             "cus_email": kwargs.get("customer_email", "customer@example.com"),
             "cus_add1": kwargs.get("customer_address", "N/A"),
@@ -50,9 +62,11 @@ class SSLCommerzGateway(PaymentGateway):
         resp.raise_for_status()
         data = resp.json()
         return GatewayResult(
-            gateway=self.name, is_demo=False,
+            gateway=self.name,
+            is_demo=False,
             status="pending" if data.get("status") == "SUCCESS" else "failed",
-            gateway_reference=reference, redirect_url=data.get("GatewayPageURL"),
+            gateway_reference=reference,
+            redirect_url=data.get("GatewayPageURL"),
             raw=data,
         )
 

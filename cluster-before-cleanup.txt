@@ -1,0 +1,380 @@
+NAMESPACE            NAME                                                READY   STATUS             RESTARTS          AGE
+cert-manager         pod/cert-manager-7d7556bb77-7rp59                   1/1     Running            73 (52m ago)      3d21h
+cert-manager         pod/cert-manager-cainjector-55df947f44-hjzxs        1/1     Running            22 (4h29m ago)    3d21h
+cert-manager         pod/cert-manager-webhook-59f666746b-s4wrj           1/1     Running            23 (4h20m ago)    3d21h
+cloudflared          pod/cloudflared-5c4fdd7d7d-lgpt2                    1/1     Running            2 (27h ago)       28h
+cloudflared          pod/cloudflared-5c4fdd7d7d-wv22c                    1/1     Running            2 (27h ago)       31h
+ingress-nginx        pod/ingress-nginx-controller-54754544b9-hxsrs       1/1     Running            17 (4h20m ago)    2d
+kube-system          pod/coredns-589f44dc88-69cks                        1/1     Running            34 (4h45m ago)    7d3h
+kube-system          pod/coredns-589f44dc88-sl4rq                        1/1     Running            33 (18h ago)      7d3h
+kube-system          pod/etcd-desktop-control-plane                      1/1     Running            0                 27h
+kube-system          pod/kindnet-zcgrz                                   1/1     Running            29 (27h ago)      7d3h
+kube-system          pod/kube-apiserver-desktop-control-plane            1/1     Running            1                 27h
+kube-system          pod/kube-controller-manager-desktop-control-plane   1/1     Running            66 (4h21m ago)    7d3h
+kube-system          pod/kube-proxy-57vcv                                1/1     Running            29 (27h ago)      7d3h
+kube-system          pod/kube-scheduler-desktop-control-plane            1/1     Running            68 (4h22m ago)    7d3h
+local-path-storage   pod/local-path-provisioner-855c7b7774-5wnjt         1/1     Running            53 (27h ago)      7d3h
+oauth                pod/oauth-service-d85f8c8b9-sfsd4                   1/1     Running            27 (4h18m ago)    3d23h
+oauth                pod/oauth-service-d85f8c8b9-vkmxw                   1/1     Running            23 (4h39m ago)    3d23h
+shopno-apps          pod/chatwoot-d57496567-k6cwx                        0/1     ImagePullBackOff   0                 31h
+shopno-apps          pod/code-server-5656564dc5-nd8tv                    0/1     InvalidImageName   0                 31h
+shopno-apps          pod/gitea-6c66b89bff-m8mqn                          0/1     CrashLoopBackOff   346 (54s ago)     31h
+shopno-apps          pod/kobotoolbox-86b6db49dc-8mrhd                    0/1     ImagePullBackOff   0                 31h
+shopno-apps          pod/metabase-6f59c954df-ppt2r                       0/1     CrashLoopBackOff   320 (4m47s ago)   31h
+shopno-apps          pod/n8n-ff44ddcb5-grkll                             0/1     Running            345 (37s ago)     31h
+shopno-apps          pod/nextcloud-69779d8666-j4d5c                      0/1     CrashLoopBackOff   346 (92s ago)     31h
+shopno-apps          pod/onlyoffice-7b78857955-4rjhj                     0/1     CrashLoopBackOff   352 (3m4s ago)    31h
+shopno-apps          pod/owncast-5c98669b7d-g4zgg                        0/1     CrashLoopBackOff   327 (119s ago)    31h
+shopno-apps          pod/superset-5c6bb6b6c-hk879                        0/1     CrashLoopBackOff   344 (2m4s ago)    31h
+shopno-data          pod/minio-5f9c6d94df-2dgd9                          0/1     CrashLoopBackOff   336 (62s ago)     31h
+shopno-data          pod/opensearch-5fff66c6-296mm                       0/1     CrashLoopBackOff   334 (18s ago)     31h
+shopno-data          pod/postgres-859547c546-jvzcb                       1/1     Running            0                 22h
+shopno-data          pod/postgres-platform-migration-rkwll               0/1     Completed          0                 21h
+shopno-data          pod/redis-5db494d986-qtshx                          0/1     CrashLoopBackOff   289 (35s ago)     31h
+shopno-identity      pod/auth-service-5584b65495-9xblr                   0/1     ImagePullBackOff   0                 31h
+shopno-identity      pod/keycloak-786b4f5c59-ttnvk                       0/1     CrashLoopBackOff   329 (31s ago)     31h
+shopno-identity      pod/oauth-service-5cfcb9f487-47d95                  0/1     ImagePullBackOff   0                 31h
+shopno-monitoring    pod/alertmanager-7cddf4f6f5-8xfxp                   0/1     Running            323 (6m57s ago)   31h
+shopno-monitoring    pod/cm-acme-http-solver-65q2j                       1/1     Running            5 (27h ago)       32h
+shopno-monitoring    pod/cm-acme-http-solver-xvpqw                       1/1     Running            6 (27h ago)       32h
+shopno-monitoring    pod/grafana-56547bbc85-krncj                        1/1     Running            11 (4h18m ago)    31h
+shopno-monitoring    pod/loki-59f8f9bb7-cwr72                            0/1     CrashLoopBackOff   333 (108s ago)    31h
+shopno-monitoring    pod/prometheus-7cd75f955-lglmg                      0/1     CrashLoopBackOff   331 (3m22s ago)   31h
+shopno-payments      pod/billing-engine-68bb86db57-w2t5n                 1/1     Running            0                 39m
+shopno-platform      pod/admin-portal-7747954cdf-snzh4                   0/1     ImagePullBackOff   0                 31h
+shopno-platform      pod/ai-platform-558f77976c-2krwg                    0/1     ImagePullBackOff   0                 31h
+shopno-platform      pod/analytics-service-8fd86d59-bhrvw                0/1     ImagePullBackOff   0                 31h
+shopno-platform      pod/android-portal-86d5f964c-xhgph                  0/1     ImagePullBackOff   0                 31h
+shopno-platform      pod/api-service-6bb458c96c-pc8gd                    0/1     ImagePullBackOff   0                 31h
+shopno-platform      pod/audit-service-99857b79f-2tzt6                   0/1     ImagePullBackOff   0                 31h
+shopno-platform      pod/domain-service-86c864dc6c-4dlzm                 0/1     CrashLoopBackOff   330 (69s ago)     31h
+shopno-platform      pod/event-service-5bc798b57f-rnfk2                  0/1     CrashLoopBackOff   329 (4m15s ago)   31h
+shopno-platform      pod/foundation-service-6645658c89-2xjhr             0/1     CrashLoopBackOff   332 (85s ago)     31h
+shopno-platform      pod/freedomain-service-6d856d5687-psmmd             0/1     CrashLoopBackOff   329 (84s ago)     31h
+shopno-platform      pod/gateway-7dd78d98dc-6lcxt                        0/1     ImagePullBackOff   0                 31h
+shopno-platform      pod/interior-service-7f775f7b4c-7xrpc               0/1     CrashLoopBackOff   331 (83s ago)     31h
+shopno-platform      pod/license-service-79464864b7-4mlns                0/1     ImagePullBackOff   0                 31h
+shopno-platform      pod/mobile-api-54b4bd6889-pv77h                     0/1     ImagePullBackOff   0                 31h
+shopno-platform      pod/notification-service-5589f578b5-5x924           0/1     ImagePullBackOff   0                 31h
+shopno-platform      pod/report-service-5978d8d787-q872k                 0/1     ImagePullBackOff   0                 31h
+shopno-platform      pod/search-service-56897dc59-d6qpv                  0/1     ImagePullBackOff   0                 31h
+shopno-platform      pod/storage-service-8685b6fc47-q5m2p                0/1     ImagePullBackOff   0                 31h
+shopno-platform      pod/tenant-router-74857db84c-kvzvw                  0/1     ImagePullBackOff   0                 31h
+shopno-platform      pod/training-service-559f79c5f9-wh882               0/1     CrashLoopBackOff   330 (2m1s ago)    31h
+shopno-platform      pod/web-portal-f4d9c7599-9q5jq                      0/1     ImagePullBackOff   0                 31h
+shopno-platform      pod/worker-service-566877995-455vm                  0/1     ImagePullBackOff   0                 31h
+toolbox              pod/ee-9fb9fcd99-t8jgf                              0/1     CrashLoopBackOff   396 (93s ago)     44h
+toolbox              pod/kc-6775444fbc-9bbgq                             1/1     Running            11 (27h ago)      2d2h
+toolbox              pod/kf-559584d689-8fs5x                             1/1     Running            5 (27h ago)       2d1h
+toolbox              pod/mongo-6d56f44b79-k48kj                          1/1     Running            10 (27h ago)      5d2h
+toolbox              pod/postgres-78bd879c79-kg27b                       1/1     Running            11 (27h ago)      5d2h
+toolbox              pod/redis-859c948549-r4pn9                          1/1     Running            10 (27h ago)      5d2h
+
+NAMESPACE           NAME                                         TYPE           CLUSTER-IP      EXTERNAL-IP   PORT(S)                        AGE
+cert-manager        service/cert-manager                         ClusterIP      10.96.25.131    <none>        9402/TCP                       3d21h
+cert-manager        service/cert-manager-webhook                 ClusterIP      10.96.187.167   <none>        443/TCP                        3d21h
+default             service/kubernetes                           ClusterIP      10.96.0.1       <none>        443/TCP                        7d3h
+ingress-nginx       service/ingress-nginx-controller             LoadBalancer   10.96.247.46    172.18.0.5    80:32480/TCP,443:32473/TCP     2d
+ingress-nginx       service/ingress-nginx-controller-admission   ClusterIP      10.96.118.216   <none>        443/TCP                        2d
+kube-system         service/kube-dns                             ClusterIP      10.96.0.10      <none>        53/UDP,53/TCP,9153/TCP         7d3h
+kube-system         service/kubelet                              ClusterIP      None            <none>        10250/TCP,10255/TCP,4194/TCP   3d21h
+oauth               service/oauth-service                        ClusterIP      10.96.197.222   <none>        80/TCP                         4d
+shopno-apps         service/chatwoot                             ClusterIP      10.96.180.211   <none>        80/TCP                         35h
+shopno-apps         service/code-server                          ClusterIP      10.96.114.55    <none>        80/TCP                         35h
+shopno-apps         service/gitea                                ClusterIP      10.96.21.74     <none>        80/TCP                         35h
+shopno-apps         service/kobotoolbox                          ClusterIP      10.96.114.212   <none>        80/TCP                         35h
+shopno-apps         service/metabase                             ClusterIP      10.96.51.55     <none>        80/TCP                         35h
+shopno-apps         service/n8n                                  ClusterIP      10.96.169.148   <none>        80/TCP                         35h
+shopno-apps         service/nextcloud                            ClusterIP      10.96.127.186   <none>        80/TCP                         35h
+shopno-apps         service/onlyoffice                           ClusterIP      10.96.17.25     <none>        80/TCP                         35h
+shopno-apps         service/owncast                              ClusterIP      10.96.12.241    <none>        80/TCP                         35h
+shopno-apps         service/superset                             ClusterIP      10.96.15.71     <none>        80/TCP                         35h
+shopno-data         service/minio                                ClusterIP      10.96.140.92    <none>        80/TCP                         35h
+shopno-data         service/opensearch                           ClusterIP      10.96.56.157    <none>        80/TCP                         35h
+shopno-data         service/postgres                             ClusterIP      10.96.155.44    <none>        5432/TCP                       35h
+shopno-data         service/redis                                ClusterIP      10.96.84.242    <none>        80/TCP                         35h
+shopno-identity     service/auth-service                         ClusterIP      10.96.255.238   <none>        80/TCP                         35h
+shopno-identity     service/keycloak                             ClusterIP      10.96.70.199    <none>        80/TCP                         35h
+shopno-identity     service/oauth-service                        ClusterIP      10.96.151.190   <none>        80/TCP                         35h
+shopno-ingress      service/cloudflared                          ClusterIP      10.96.238.110   <none>        2000/TCP                       35h
+shopno-monitoring   service/alertmanager                         ClusterIP      10.96.70.157    <none>        80/TCP                         35h
+shopno-monitoring   service/cm-acme-http-solver-ffjjv            NodePort       10.96.55.43     <none>        8089:32299/TCP                 32h
+shopno-monitoring   service/cm-acme-http-solver-vv4zw            NodePort       10.96.107.92    <none>        8089:32209/TCP                 32h
+shopno-monitoring   service/grafana                              ClusterIP      10.96.47.82     <none>        80/TCP                         35h
+shopno-monitoring   service/loki                                 ClusterIP      10.96.10.208    <none>        80/TCP                         35h
+shopno-monitoring   service/prometheus                           ClusterIP      10.96.36.99     <none>        80/TCP                         35h
+shopno-payments     service/billing-engine                       ClusterIP      10.96.172.102   <none>        80/TCP                         35h
+shopno-platform     service/admin-portal                         ClusterIP      10.96.254.22    <none>        80/TCP                         35h
+shopno-platform     service/ai-platform                          ClusterIP      10.96.69.64     <none>        80/TCP                         35h
+shopno-platform     service/analytics-service                    ClusterIP      10.96.210.51    <none>        80/TCP                         35h
+shopno-platform     service/android-portal                       ClusterIP      10.96.121.126   <none>        80/TCP                         35h
+shopno-platform     service/api-service                          ClusterIP      10.96.54.109    <none>        80/TCP                         35h
+shopno-platform     service/audit-service                        ClusterIP      10.96.202.104   <none>        80/TCP                         35h
+shopno-platform     service/domain-service                       ClusterIP      10.96.253.156   <none>        80/TCP                         35h
+shopno-platform     service/event-service                        ClusterIP      10.96.34.173    <none>        80/TCP                         35h
+shopno-platform     service/foundation-service                   ClusterIP      10.96.37.99     <none>        80/TCP                         35h
+shopno-platform     service/freedomain-service                   ClusterIP      10.96.15.184    <none>        80/TCP                         35h
+shopno-platform     service/gateway                              ClusterIP      10.96.14.63     <none>        80/TCP                         35h
+shopno-platform     service/interior-service                     ClusterIP      10.96.55.110    <none>        80/TCP                         35h
+shopno-platform     service/license-service                      ClusterIP      10.96.185.32    <none>        80/TCP                         35h
+shopno-platform     service/mobile-api                           ClusterIP      10.96.87.138    <none>        80/TCP                         35h
+shopno-platform     service/notification-service                 ClusterIP      10.96.230.149   <none>        80/TCP                         35h
+shopno-platform     service/report-service                       ClusterIP      10.96.238.231   <none>        80/TCP                         35h
+shopno-platform     service/search-service                       ClusterIP      10.96.65.127    <none>        80/TCP                         35h
+shopno-platform     service/storage-service                      ClusterIP      10.96.220.151   <none>        80/TCP                         35h
+shopno-platform     service/tenant-router                        ClusterIP      10.96.241.165   <none>        80/TCP                         35h
+shopno-platform     service/training-service                     ClusterIP      10.96.198.64    <none>        80/TCP                         35h
+shopno-platform     service/web-portal                           ClusterIP      10.96.45.228    <none>        80/TCP                         35h
+shopno-platform     service/worker-service                       ClusterIP      10.96.102.108   <none>        80/TCP                         35h
+toolbox             service/ee                                   ClusterIP      10.96.46.156    <none>        80/TCP                         7d3h
+toolbox             service/ee-service                           ClusterIP      10.96.135.72    <none>        80/TCP                         7d3h
+toolbox             service/kc                                   ClusterIP      10.96.27.174    <none>        80/TCP                         7d3h
+toolbox             service/kc-service                           ClusterIP      10.96.161.74    <none>        80/TCP                         7d3h
+toolbox             service/kf                                   ClusterIP      10.96.43.31     <none>        80/TCP                         7d3h
+toolbox             service/kf-service                           ClusterIP      10.96.10.21     <none>        80/TCP                         7d3h
+toolbox             service/mongo                                ClusterIP      10.96.239.22    <none>        27017/TCP                      7d3h
+toolbox             service/postgres                             ClusterIP      10.96.40.161    <none>        5432/TCP                       7d3h
+toolbox             service/redis                                ClusterIP      10.96.171.179   <none>        6379/TCP                       7d3h
+
+NAMESPACE     NAME                        DESIRED   CURRENT   READY   UP-TO-DATE   AVAILABLE   NODE SELECTOR            AGE
+kube-system   daemonset.apps/kindnet      1         1         1       1            1           kubernetes.io/os=linux   7d3h
+kube-system   daemonset.apps/kube-proxy   1         1         1       1            1           kubernetes.io/os=linux   7d3h
+
+NAMESPACE            NAME                                       READY   UP-TO-DATE   AVAILABLE   AGE
+cert-manager         deployment.apps/cert-manager               1/1     1            1           3d21h
+cert-manager         deployment.apps/cert-manager-cainjector    1/1     1            1           3d21h
+cert-manager         deployment.apps/cert-manager-webhook       1/1     1            1           3d21h
+cloudflared          deployment.apps/cloudflared                2/2     2            2           36h
+ingress-nginx        deployment.apps/ingress-nginx-controller   1/1     1            1           2d
+kube-system          deployment.apps/coredns                    2/2     2            2           7d3h
+local-path-storage   deployment.apps/local-path-provisioner     1/1     1            1           7d3h
+oauth                deployment.apps/oauth-service              2/2     2            2           4d
+shopno-apps          deployment.apps/chatwoot                   0/1     1            0           31h
+shopno-apps          deployment.apps/code-server                0/1     1            0           31h
+shopno-apps          deployment.apps/gitea                      0/1     1            0           31h
+shopno-apps          deployment.apps/jitsi-jicofo               0/1     0            0           31h
+shopno-apps          deployment.apps/jitsi-jvb                  0/1     0            0           31h
+shopno-apps          deployment.apps/jitsi-prosody              0/1     0            0           31h
+shopno-apps          deployment.apps/jitsi-web                  0/1     0            0           31h
+shopno-apps          deployment.apps/kobotoolbox                0/1     1            0           31h
+shopno-apps          deployment.apps/metabase                   0/1     1            0           31h
+shopno-apps          deployment.apps/n8n                        0/1     1            0           31h
+shopno-apps          deployment.apps/nextcloud                  0/1     1            0           31h
+shopno-apps          deployment.apps/onlyoffice                 0/1     1            0           31h
+shopno-apps          deployment.apps/owncast                    0/1     1            0           31h
+shopno-apps          deployment.apps/superset                   0/1     1            0           31h
+shopno-data          deployment.apps/minio                      0/1     1            0           31h
+shopno-data          deployment.apps/opensearch                 0/1     1            0           31h
+shopno-data          deployment.apps/postgres                   1/1     1            1           22h
+shopno-data          deployment.apps/redis                      0/1     1            0           31h
+shopno-identity      deployment.apps/auth-service               0/1     1            0           31h
+shopno-identity      deployment.apps/keycloak                   0/1     1            0           31h
+shopno-identity      deployment.apps/oauth-service              0/1     1            0           31h
+shopno-monitoring    deployment.apps/alertmanager               0/1     1            0           31h
+shopno-monitoring    deployment.apps/grafana                    1/1     1            1           31h
+shopno-monitoring    deployment.apps/loki                       0/1     1            0           31h
+shopno-monitoring    deployment.apps/prometheus                 0/1     1            0           31h
+shopno-payments      deployment.apps/billing-engine             1/1     1            1           31h
+shopno-payments      deployment.apps/exchange-service           0/1     0            0           31h
+shopno-payments      deployment.apps/payment-service            0/1     0            0           31h
+shopno-platform      deployment.apps/admin-portal               0/1     1            0           31h
+shopno-platform      deployment.apps/ai-platform                0/1     1            0           31h
+shopno-platform      deployment.apps/analytics-service          0/1     1            0           31h
+shopno-platform      deployment.apps/android-portal             0/1     1            0           31h
+shopno-platform      deployment.apps/api-service                0/1     1            0           31h
+shopno-platform      deployment.apps/audit-service              0/1     1            0           31h
+shopno-platform      deployment.apps/domain-service             0/1     1            0           31h
+shopno-platform      deployment.apps/event-service              0/1     1            0           31h
+shopno-platform      deployment.apps/foundation-service         0/1     1            0           31h
+shopno-platform      deployment.apps/freedomain-service         0/1     1            0           31h
+shopno-platform      deployment.apps/gateway                    0/1     1            0           31h
+shopno-platform      deployment.apps/interior-service           0/1     1            0           31h
+shopno-platform      deployment.apps/license-service            0/1     1            0           31h
+shopno-platform      deployment.apps/mobile-api                 0/1     1            0           31h
+shopno-platform      deployment.apps/notification-service       0/1     1            0           31h
+shopno-platform      deployment.apps/pc-portal                  0/1     0            0           31h
+shopno-platform      deployment.apps/report-service             0/1     1            0           31h
+shopno-platform      deployment.apps/scheduler-service          0/1     0            0           31h
+shopno-platform      deployment.apps/search-service             0/1     1            0           31h
+shopno-platform      deployment.apps/storage-service            0/1     1            0           31h
+shopno-platform      deployment.apps/tenant-router              0/1     1            0           31h
+shopno-platform      deployment.apps/training-service           0/1     1            0           31h
+shopno-platform      deployment.apps/web-portal                 0/1     1            0           31h
+shopno-platform      deployment.apps/worker-service             0/1     1            0           31h
+toolbox              deployment.apps/ee                         0/1     1            0           6d3h
+toolbox              deployment.apps/kc                         1/1     1            1           7d3h
+toolbox              deployment.apps/kf                         1/1     1            1           7d3h
+toolbox              deployment.apps/mongo                      1/1     1            1           7d3h
+toolbox              deployment.apps/postgres                   1/1     1            1           7d3h
+toolbox              deployment.apps/redis                      1/1     1            1           7d3h
+
+NAMESPACE            NAME                                                  DESIRED   CURRENT   READY   AGE
+cert-manager         replicaset.apps/cert-manager-7d7556bb77               1         1         1       3d21h
+cert-manager         replicaset.apps/cert-manager-cainjector-55df947f44    1         1         1       3d21h
+cert-manager         replicaset.apps/cert-manager-webhook-59f666746b       1         1         1       3d21h
+cloudflared          replicaset.apps/cloudflared-54c97ddf97                0         0         0       35h
+cloudflared          replicaset.apps/cloudflared-5876c5cf8f                0         0         0       36h
+cloudflared          replicaset.apps/cloudflared-5c4fdd7d7d                2         2         2       31h
+cloudflared          replicaset.apps/cloudflared-668568bc7f                0         0         0       36h
+cloudflared          replicaset.apps/cloudflared-7c8755655                 0         0         0       35h
+ingress-nginx        replicaset.apps/ingress-nginx-controller-54754544b9   1         1         1       2d
+kube-system          replicaset.apps/coredns-589f44dc88                    2         2         2       7d3h
+local-path-storage   replicaset.apps/local-path-provisioner-855c7b7774     1         1         1       7d3h
+oauth                replicaset.apps/oauth-service-5fd75789c8              0         0         0       4d
+oauth                replicaset.apps/oauth-service-6747fc7666              0         0         0       3d23h
+oauth                replicaset.apps/oauth-service-75fd8c5548              0         0         0       4d
+oauth                replicaset.apps/oauth-service-7b7b474d9               0         0         0       4d
+oauth                replicaset.apps/oauth-service-c697656dd               0         0         0       3d23h
+oauth                replicaset.apps/oauth-service-cc599c776               0         0         0       4d
+oauth                replicaset.apps/oauth-service-d85f8c8b9               2         2         2       3d23h
+shopno-apps          replicaset.apps/chatwoot-d57496567                    1         1         0       31h
+shopno-apps          replicaset.apps/code-server-5656564dc5                1         1         0       31h
+shopno-apps          replicaset.apps/gitea-6c66b89bff                      1         1         0       31h
+shopno-apps          replicaset.apps/jitsi-jicofo-6784dcb88b               1         0         0       31h
+shopno-apps          replicaset.apps/jitsi-jvb-5f5d68b9bb                  1         0         0       31h
+shopno-apps          replicaset.apps/jitsi-prosody-56f866844               1         0         0       31h
+shopno-apps          replicaset.apps/jitsi-web-5744447b64                  1         0         0       31h
+shopno-apps          replicaset.apps/kobotoolbox-86b6db49dc                1         1         0       31h
+shopno-apps          replicaset.apps/metabase-6f59c954df                   1         1         0       31h
+shopno-apps          replicaset.apps/n8n-ff44ddcb5                         1         1         0       31h
+shopno-apps          replicaset.apps/nextcloud-69779d8666                  1         1         0       31h
+shopno-apps          replicaset.apps/onlyoffice-7b78857955                 1         1         0       31h
+shopno-apps          replicaset.apps/owncast-5c98669b7d                    1         1         0       31h
+shopno-apps          replicaset.apps/superset-5c6bb6b6c                    1         1         0       31h
+shopno-data          replicaset.apps/minio-5f9c6d94df                      1         1         0       31h
+shopno-data          replicaset.apps/opensearch-5fff66c6                   1         1         0       31h
+shopno-data          replicaset.apps/postgres-859547c546                   1         1         1       22h
+shopno-data          replicaset.apps/redis-5db494d986                      1         1         0       31h
+shopno-identity      replicaset.apps/auth-service-5584b65495               1         1         0       31h
+shopno-identity      replicaset.apps/keycloak-786b4f5c59                   1         1         0       31h
+shopno-identity      replicaset.apps/oauth-service-5cfcb9f487              1         1         0       31h
+shopno-monitoring    replicaset.apps/alertmanager-7cddf4f6f5               1         1         0       31h
+shopno-monitoring    replicaset.apps/grafana-56547bbc85                    1         1         1       31h
+shopno-monitoring    replicaset.apps/loki-59f8f9bb7                        1         1         0       31h
+shopno-monitoring    replicaset.apps/prometheus-7cd75f955                  1         1         0       31h
+shopno-payments      replicaset.apps/billing-engine-68bb86db57             1         1         1       39m
+shopno-payments      replicaset.apps/exchange-service-68675b76d9           1         0         0       31h
+shopno-payments      replicaset.apps/payment-service-d49c4979              1         0         0       31h
+shopno-platform      replicaset.apps/admin-portal-7747954cdf               1         1         0       31h
+shopno-platform      replicaset.apps/ai-platform-558f77976c                1         1         0       31h
+shopno-platform      replicaset.apps/analytics-service-8fd86d59            1         1         0       31h
+shopno-platform      replicaset.apps/android-portal-86d5f964c              1         1         0       31h
+shopno-platform      replicaset.apps/api-service-6bb458c96c                1         1         0       31h
+shopno-platform      replicaset.apps/audit-service-99857b79f               1         1         0       31h
+shopno-platform      replicaset.apps/domain-service-86c864dc6c             1         1         0       31h
+shopno-platform      replicaset.apps/event-service-5bc798b57f              1         1         0       31h
+shopno-platform      replicaset.apps/foundation-service-6645658c89         1         1         0       31h
+shopno-platform      replicaset.apps/freedomain-service-6d856d5687         1         1         0       31h
+shopno-platform      replicaset.apps/gateway-7dd78d98dc                    1         1         0       31h
+shopno-platform      replicaset.apps/interior-service-7f775f7b4c           1         1         0       31h
+shopno-platform      replicaset.apps/license-service-79464864b7            1         1         0       31h
+shopno-platform      replicaset.apps/mobile-api-54b4bd6889                 1         1         0       31h
+shopno-platform      replicaset.apps/notification-service-5589f578b5       1         1         0       31h
+shopno-platform      replicaset.apps/pc-portal-5f4f9c49dc                  1         0         0       31h
+shopno-platform      replicaset.apps/report-service-5978d8d787             1         1         0       31h
+shopno-platform      replicaset.apps/scheduler-service-6bd5c5567           1         0         0       31h
+shopno-platform      replicaset.apps/search-service-56897dc59              1         1         0       31h
+shopno-platform      replicaset.apps/storage-service-8685b6fc47            1         1         0       31h
+shopno-platform      replicaset.apps/tenant-router-74857db84c              1         1         0       31h
+shopno-platform      replicaset.apps/training-service-559f79c5f9           1         1         0       31h
+shopno-platform      replicaset.apps/web-portal-f4d9c7599                  1         1         0       31h
+shopno-platform      replicaset.apps/worker-service-566877995              1         1         0       31h
+toolbox              replicaset.apps/ee-5ccbbfb85d                         0         0         0       5d3h
+toolbox              replicaset.apps/ee-5fb59f8949                         0         0         0       5d2h
+toolbox              replicaset.apps/ee-786fbb6c57                         0         0         0       6d3h
+toolbox              replicaset.apps/ee-7945cc6497                         0         0         0       44h
+toolbox              replicaset.apps/ee-7dd6c6f4cb                         0         0         0       5d2h
+toolbox              replicaset.apps/ee-7fd4d48785                         0         0         0       2d2h
+toolbox              replicaset.apps/ee-9fb9fcd99                          1         1         0       44h
+toolbox              replicaset.apps/kc-54897d59b9                         0         0         0       2d22h
+toolbox              replicaset.apps/kc-654b95f685                         0         0         0       2d22h
+toolbox              replicaset.apps/kc-658d4d748c                         0         0         0       2d22h
+toolbox              replicaset.apps/kc-6775444fbc                         1         1         1       2d2h
+toolbox              replicaset.apps/kc-748d49db87                         0         0         0       2d20h
+toolbox              replicaset.apps/kc-7585899dcb                         0         0         0       2d19h
+toolbox              replicaset.apps/kc-7658fb4cff                         0         0         0       2d22h
+toolbox              replicaset.apps/kc-7bc867847f                         0         0         0       2d21h
+toolbox              replicaset.apps/kc-7c47f8d9d8                         0         0         0       2d20h
+toolbox              replicaset.apps/kc-d7b46c869                          0         0         0       2d20h
+toolbox              replicaset.apps/kc-dc77fc6cf                          0         0         0       6d1h
+toolbox              replicaset.apps/kf-5579d5fbd4                         0         0         0       5d2h
+toolbox              replicaset.apps/kf-559584d689                         1         1         1       2d2h
+toolbox              replicaset.apps/kf-574f7bfdd                          0         0         0       2d21h
+toolbox              replicaset.apps/kf-5d5994bb5b                         0         0         0       2d1h
+toolbox              replicaset.apps/kf-5dc8f5d66f                         0         0         0       2d19h
+toolbox              replicaset.apps/kf-6c466f5c5d                         0         0         0       2d23h
+toolbox              replicaset.apps/kf-7f98bf8476                         0         0         0       2d18h
+toolbox              replicaset.apps/kf-846b9b7554                         0         0         0       2d19h
+toolbox              replicaset.apps/kf-867cf4c998                         0         0         0       5d3h
+toolbox              replicaset.apps/kf-9984bfc69                          0         0         0       5d2h
+toolbox              replicaset.apps/kf-cdb4cbf64                          0         0         0       2d23h
+toolbox              replicaset.apps/mongo-65478b5c4f                      0         0         0       5d3h
+toolbox              replicaset.apps/mongo-67b69c6f84                      0         0         0       7d3h
+toolbox              replicaset.apps/mongo-6d56f44b79                      1         1         1       5d2h
+toolbox              replicaset.apps/mongo-b4fb6b448                       0         0         0       5d2h
+toolbox              replicaset.apps/postgres-78bd879c79                   1         1         1       5d2h
+toolbox              replicaset.apps/postgres-7b79754d                     0         0         0       7d3h
+toolbox              replicaset.apps/postgres-8577c5d794                   0         0         0       5d2h
+toolbox              replicaset.apps/postgres-859c79c8fc                   0         0         0       5d3h
+toolbox              replicaset.apps/redis-56c9d5db58                      0         0         0       7d3h
+toolbox              replicaset.apps/redis-78c69db49b                      0         0         0       5d2h
+toolbox              replicaset.apps/redis-859c948549                      1         1         1       5d2h
+toolbox              replicaset.apps/redis-cdd5b7967                       0         0         0       5d3h
+
+NAMESPACE           NAME                                                       REFERENCE                         TARGETS                                     MINPODS   MAXPODS   REPLICAS   AGE
+default             horizontalpodautoscaler.autoscaling/api-service-hpa        Deployment/api-service            cpu: <unknown>/60%                          2         10        2          4d22h
+shopno-apps         horizontalpodautoscaler.autoscaling/chatwoot               Deployment/chatwoot               cpu: <unknown>/70%, memory: <unknown>/80%   1         3         1          35h
+shopno-apps         horizontalpodautoscaler.autoscaling/code-server            Deployment/code-server            cpu: <unknown>/70%, memory: <unknown>/80%   1         3         1          35h
+shopno-apps         horizontalpodautoscaler.autoscaling/gitea                  Deployment/gitea                  cpu: <unknown>/70%, memory: <unknown>/80%   1         3         1          35h
+shopno-apps         horizontalpodautoscaler.autoscaling/jitsi-jicofo           Deployment/jitsi-jicofo           cpu: <unknown>/70%, memory: <unknown>/80%   1         3         1          31h
+shopno-apps         horizontalpodautoscaler.autoscaling/jitsi-jvb              Deployment/jitsi-jvb              cpu: <unknown>/70%, memory: <unknown>/80%   1         3         1          31h
+shopno-apps         horizontalpodautoscaler.autoscaling/jitsi-prosody          Deployment/jitsi-prosody          cpu: <unknown>/70%, memory: <unknown>/80%   1         3         1          31h
+shopno-apps         horizontalpodautoscaler.autoscaling/jitsi-web              Deployment/jitsi-web              cpu: <unknown>/70%, memory: <unknown>/80%   1         3         1          31h
+shopno-apps         horizontalpodautoscaler.autoscaling/kobotoolbox            Deployment/kobotoolbox            cpu: <unknown>/70%, memory: <unknown>/80%   1         3         1          35h
+shopno-apps         horizontalpodautoscaler.autoscaling/metabase               Deployment/metabase               cpu: <unknown>/70%, memory: <unknown>/80%   1         3         1          35h
+shopno-apps         horizontalpodautoscaler.autoscaling/n8n                    Deployment/n8n                    cpu: <unknown>/70%, memory: <unknown>/80%   1         3         1          35h
+shopno-apps         horizontalpodautoscaler.autoscaling/nextcloud              Deployment/nextcloud              cpu: <unknown>/70%, memory: <unknown>/80%   1         3         1          35h
+shopno-apps         horizontalpodautoscaler.autoscaling/onlyoffice             Deployment/onlyoffice             cpu: <unknown>/70%, memory: <unknown>/80%   1         3         1          35h
+shopno-apps         horizontalpodautoscaler.autoscaling/owncast                Deployment/owncast                cpu: <unknown>/70%, memory: <unknown>/80%   1         3         1          35h
+shopno-apps         horizontalpodautoscaler.autoscaling/superset               Deployment/superset               cpu: <unknown>/70%, memory: <unknown>/80%   1         3         1          35h
+shopno-data         horizontalpodautoscaler.autoscaling/minio                  Deployment/minio                  cpu: <unknown>/70%, memory: <unknown>/80%   1         3         1          35h
+shopno-data         horizontalpodautoscaler.autoscaling/opensearch             Deployment/opensearch             cpu: <unknown>/70%, memory: <unknown>/80%   1         3         1          35h
+shopno-data         horizontalpodautoscaler.autoscaling/postgres               Deployment/postgres               cpu: <unknown>/70%, memory: <unknown>/80%   1         3         1          35h
+shopno-data         horizontalpodautoscaler.autoscaling/redis                  Deployment/redis                  cpu: <unknown>/70%, memory: <unknown>/80%   1         3         1          35h
+shopno-identity     horizontalpodautoscaler.autoscaling/auth-service           Deployment/auth-service           cpu: <unknown>/70%, memory: <unknown>/80%   1         3         1          35h
+shopno-identity     horizontalpodautoscaler.autoscaling/keycloak               Deployment/keycloak               cpu: <unknown>/70%, memory: <unknown>/80%   1         3         1          35h
+shopno-identity     horizontalpodautoscaler.autoscaling/oauth-service          Deployment/oauth-service          cpu: <unknown>/70%, memory: <unknown>/80%   1         3         1          35h
+shopno-monitoring   horizontalpodautoscaler.autoscaling/alertmanager           Deployment/alertmanager           cpu: <unknown>/70%, memory: <unknown>/80%   1         3         1          35h
+shopno-monitoring   horizontalpodautoscaler.autoscaling/grafana                Deployment/grafana                cpu: <unknown>/70%, memory: <unknown>/80%   1         3         1          35h
+shopno-monitoring   horizontalpodautoscaler.autoscaling/loki                   Deployment/loki                   cpu: <unknown>/70%, memory: <unknown>/80%   1         3         1          35h
+shopno-monitoring   horizontalpodautoscaler.autoscaling/prometheus             Deployment/prometheus             cpu: <unknown>/70%, memory: <unknown>/80%   1         3         1          35h
+shopno-payments     horizontalpodautoscaler.autoscaling/billing-engine         Deployment/billing-engine         cpu: <unknown>/70%, memory: <unknown>/80%   1         3         1          35h
+shopno-payments     horizontalpodautoscaler.autoscaling/exchange-service       Deployment/exchange-service       cpu: <unknown>/70%, memory: <unknown>/80%   1         3         1          31h
+shopno-payments     horizontalpodautoscaler.autoscaling/payment-service        Deployment/payment-service        cpu: <unknown>/70%, memory: <unknown>/80%   1         3         1          31h
+shopno-platform     horizontalpodautoscaler.autoscaling/admin-portal           Deployment/admin-portal           cpu: <unknown>/70%, memory: <unknown>/80%   1         3         1          35h
+shopno-platform     horizontalpodautoscaler.autoscaling/ai-platform            Deployment/ai-platform            cpu: <unknown>/70%, memory: <unknown>/80%   1         3         1          35h
+shopno-platform     horizontalpodautoscaler.autoscaling/analytics-service      Deployment/analytics-service      cpu: <unknown>/70%, memory: <unknown>/80%   1         3         1          35h
+shopno-platform     horizontalpodautoscaler.autoscaling/android-portal         Deployment/android-portal         cpu: <unknown>/70%, memory: <unknown>/80%   1         3         1          35h
+shopno-platform     horizontalpodautoscaler.autoscaling/api-service            Deployment/api-service            cpu: <unknown>/70%, memory: <unknown>/80%   1         3         1          35h
+shopno-platform     horizontalpodautoscaler.autoscaling/audit-service          Deployment/audit-service          cpu: <unknown>/70%, memory: <unknown>/80%   1         3         1          35h
+shopno-platform     horizontalpodautoscaler.autoscaling/domain-service         Deployment/domain-service         cpu: <unknown>/70%, memory: <unknown>/80%   1         3         1          35h
+shopno-platform     horizontalpodautoscaler.autoscaling/event-service          Deployment/event-service          cpu: <unknown>/70%, memory: <unknown>/80%   1         3         1          35h
+shopno-platform     horizontalpodautoscaler.autoscaling/foundation-service     Deployment/foundation-service     cpu: <unknown>/70%, memory: <unknown>/80%   1         3         1          35h
+shopno-platform     horizontalpodautoscaler.autoscaling/freedomain-service     Deployment/freedomain-service     cpu: <unknown>/70%, memory: <unknown>/80%   1         3         1          35h
+shopno-platform     horizontalpodautoscaler.autoscaling/gateway                Deployment/gateway                cpu: <unknown>/70%, memory: <unknown>/80%   1         3         1          35h
+shopno-platform     horizontalpodautoscaler.autoscaling/interior-service       Deployment/interior-service       cpu: <unknown>/70%, memory: <unknown>/80%   1         3         1          35h
+shopno-platform     horizontalpodautoscaler.autoscaling/license-service        Deployment/license-service        cpu: <unknown>/70%, memory: <unknown>/80%   1         3         1          35h
+shopno-platform     horizontalpodautoscaler.autoscaling/mobile-api             Deployment/mobile-api             cpu: <unknown>/70%, memory: <unknown>/80%   1         3         1          35h
+shopno-platform     horizontalpodautoscaler.autoscaling/notification-service   Deployment/notification-service   cpu: <unknown>/70%, memory: <unknown>/80%   1         3         1          35h
+shopno-platform     horizontalpodautoscaler.autoscaling/pc-portal              Deployment/pc-portal              cpu: <unknown>/70%, memory: <unknown>/80%   1         3         1          31h
+shopno-platform     horizontalpodautoscaler.autoscaling/report-service         Deployment/report-service         cpu: <unknown>/70%, memory: <unknown>/80%   1         3         1          35h
+shopno-platform     horizontalpodautoscaler.autoscaling/scheduler-service      Deployment/scheduler-service      cpu: <unknown>/70%, memory: <unknown>/80%   1         3         1          31h
+shopno-platform     horizontalpodautoscaler.autoscaling/search-service         Deployment/search-service         cpu: <unknown>/70%, memory: <unknown>/80%   1         3         1          35h
+shopno-platform     horizontalpodautoscaler.autoscaling/storage-service        Deployment/storage-service        cpu: <unknown>/70%, memory: <unknown>/80%   1         3         1          35h
+shopno-platform     horizontalpodautoscaler.autoscaling/tenant-router          Deployment/tenant-router          cpu: <unknown>/70%, memory: <unknown>/80%   1         3         1          35h
+shopno-platform     horizontalpodautoscaler.autoscaling/training-service       Deployment/training-service       cpu: <unknown>/70%, memory: <unknown>/80%   1         3         1          35h
+shopno-platform     horizontalpodautoscaler.autoscaling/web-portal             Deployment/web-portal             cpu: <unknown>/70%, memory: <unknown>/80%   1         3         1          35h
+shopno-platform     horizontalpodautoscaler.autoscaling/worker-service         Deployment/worker-service         cpu: <unknown>/70%, memory: <unknown>/80%   1         3         1          35h
+
+NAMESPACE     NAME                                    STATUS     COMPLETIONS   DURATION   AGE
+shopno-data   job.batch/postgres-platform-migration   Complete   1/1           10s        21h

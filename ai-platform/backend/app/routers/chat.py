@@ -1,12 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.ai.engine import run_conversation
 from app.core.deps import get_current_user
 from app.database import get_db
 from app.models import ChatSession, Message, User
 from app.schemas import ChatResponse, ChatSessionOut, MessageCreate, MessageOut
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 

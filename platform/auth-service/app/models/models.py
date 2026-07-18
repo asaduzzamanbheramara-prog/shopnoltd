@@ -1,7 +1,11 @@
-from sqlalchemy import Column, String, DateTime, Boolean
 import uuid
 from datetime import datetime
+
+from sqlalchemy import Boolean, Column, DateTime, String
+
 from app.core.db import Base
+
+
 class Session(Base):
     __tablename__ = "sessions"
     id = Column(String(64), primary_key=True, default=lambda: str(uuid.uuid4()))

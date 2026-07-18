@@ -1,1 +1,2 @@
-def diagnose(): return "ok"
+def diagnose():
+    return "ok"

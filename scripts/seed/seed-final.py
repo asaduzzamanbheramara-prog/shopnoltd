@@ -1,17 +1,25 @@
 """Final block: api, gateway, oauth, tenant-router, auth, mobile-api,
 scheduler, worker, storage, admin-portal, web-portal + mobile APK CI."""
+
 import os
+
 ROOT = "/mnt/c/Users/asadu/PROJECTS/shopnoltd"
+
 
 def W(p, c):
     fp = os.path.join(ROOT, p)
     os.makedirs(os.path.dirname(fp), exist_ok=True)
-    if not c.endswith("\n"): c += "\n"
-    with open(fp, "w") as f: f.write(c)
+    if not c.endswith("\n"):
+        c += "\n"
+    with open(fp, "w") as f:
+        f.write(c)
+
 
 def py_service(name, title, port=8080, db=None, routers="", extra_reqs=""):
     db = db or name.replace("-", "_")
-    W(f"platform/{name}/Dockerfile", f"""FROM python:3.12-slim
+    W(
+        f"platform/{name}/Dockerfile",
+        f"""FROM python:3.12-slim
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1
 RUN groupadd -g 10001 shopno && useradd -u 10001 -g shopno -d /app -s /sbin/nologin shopno
 WORKDIR /app
@@ -23,8 +31,11 @@ USER shopno
 EXPOSE {port}
 HEALTHCHECK CMD python -c "import urllib.request;urllib.request.urlopen('http://127.0.0.1:{port}/healthz').read()"
 CMD ["uvicorn","app.main:app","--host","0.0.0.0","--port","{port}","--proxy-headers","--forwarded-allow-ips","*"]
-""")
-    W(f"platform/{name}/requirements.txt", """fastapi==0.115.4
+""",
+    )
+    W(
+        f"platform/{name}/requirements.txt",
+        """fastapi==0.115.4
 uvicorn[standard]==0.32.0
 pydantic==2.9.2
 pydantic-settings==2.6.1
@@ -34,11 +45,26 @@ redis==5.2.0
 httpx==0.27.2
 prometheus-client==0.21.0
 structlog==24.4.0
-""" + extra_reqs)
+"""
+        + extra_reqs,
+    )
     W(f"platform/{name}/app/__init__.py", "")
-    for d in ("core","api","models","schemas","providers","workers","migrations","routers","db","services"):
+    for d in (
+        "core",
+        "api",
+        "models",
+        "schemas",
+        "providers",
+        "workers",
+        "migrations",
+        "routers",
+        "db",
+        "services",
+    ):
         W(f"platform/{name}/app/{d}/__init__.py", "")
-    W(f"platform/{name}/app/core/config.py", f'''from pydantic_settings import BaseSettings
+    W(
+        f"platform/{name}/app/core/config.py",
+        f"""from pydantic_settings import BaseSettings
 from typing import List
 class Settings(BaseSettings):
     app_name: str = "shopnoltd-{name}"
@@ -52,19 +78,28 @@ class Settings(BaseSettings):
     def cors_origins_list(self) -> List[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
 settings = Settings()
-''')
-    W(f"platform/{name}/app/core/db.py", '''from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+""",
+    )
+    W(
+        f"platform/{name}/app/core/db.py",
+        """from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import declarative_base, sessionmaker
 from app.core.config import settings
 engine = create_async_engine(settings.database_url, pool_size=10, max_overflow=20, pool_pre_ping=True)
 Base = declarative_base()
 SessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
-''')
-    W(f"platform/{name}/app/core/redis_client.py", '''from redis.asyncio import Redis
+""",
+    )
+    W(
+        f"platform/{name}/app/core/redis_client.py",
+        """from redis.asyncio import Redis
 from app.core.config import settings
 redis_client = Redis.from_url(settings.redis_url, decode_responses=True)
-''')
-    W(f"platform/{name}/app/core/security.py", '''import httpx
+""",
+    )
+    W(
+        f"platform/{name}/app/core/security.py",
+        """import httpx
 from jose import jwt, JWTError
 from app.core.config import settings
 _jwks_cache = None
@@ -87,8 +122,11 @@ async def verify_token_admin(token: str) -> dict:
     u = await verify_token(token)
     if "admin" not in u.get("roles", []): raise PermissionError("admin only")
     return u
-''')
-    W(f"platform/{name}/app/main.py", f'''"""Shopnoltd {title}."""
+""",
+    )
+    W(
+        f"platform/{name}/app/main.py",
+        f'''"""Shopnoltd {title}."""
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -134,16 +172,28 @@ async def readyz():
 @app.get("/metrics", include_in_schema=False)
 def metrics():
     return Response(generate_latest(), media_type="text/plain; version=0.0.4")
-''')
+''',
+    )
+
 
 def router(modname, prefix, tag):
     return f'app.include_router(__import__("app.api.{modname}", fromlist=["router"]).router, prefix="{prefix}", tags=["{tag}"])\n'
 
+
 # ----------------- API-SERVICE (Unified BFF + GraphQL) -----------------
-py_service("api-service", "Unified API Service", port=8080, db="api",
-    routers=router("v1","/api/v1","v1") + router("graphql","/graphql","graphql") + router("health","/","health"),
-    extra_reqs="strawberry-graphql==0.246.2\n")
-W("platform/api-service/app/schemas/schemas.py", '''from pydantic import BaseModel
+py_service(
+    "api-service",
+    "Unified API Service",
+    port=8080,
+    db="api",
+    routers=router("v1", "/api/v1", "v1")
+    + router("graphql", "/graphql", "graphql")
+    + router("health", "/", "health"),
+    extra_reqs="strawberry-graphql==0.246.2\n",
+)
+W(
+    "platform/api-service/app/schemas/schemas.py",
+    """from pydantic import BaseModel
 class HealthAll(BaseModel):
     api_service: str
     auth: str
@@ -154,8 +204,11 @@ class HealthAll(BaseModel):
     messaging: str
     notification: str
     storage: str
-''')
-W("platform/api-service/app/services/services.py", '''"""Upstream service health checker."""
+""",
+)
+W(
+    "platform/api-service/app/services/services.py",
+    '''"""Upstream service health checker."""
 import httpx, asyncio
 SERVICES = {
     "auth":        "http://oauth-service.shopno-identity.svc.cluster.local:8080",
@@ -179,8 +232,11 @@ async def health() -> dict:
             return name, f"down:{e.__class__.__name__}"
     results = await asyncio.gather(*[check(n, u) for n, u in SERVICES.items()])
     return {n: s for n, s in results}
-''')
-W("platform/api-service/app/api/health.py", '''from fastapi import APIRouter
+''',
+)
+W(
+    "platform/api-service/app/api/health.py",
+    """from fastapi import APIRouter
 from app.services.services import health
 router = APIRouter()
 @router.get("/services")
@@ -190,8 +246,11 @@ async def services():
 async def cluster():
     h = await health()
     return {"status": "ok" if all(v == "ok" for v in h.values()) else "degraded", "services": h}
-''')
-W("platform/api-service/app/api/v1.py", '''"""Versioned REST facade that aggregates downstream services."""
+""",
+)
+W(
+    "platform/api-service/app/api/v1.py",
+    '''"""Versioned REST facade that aggregates downstream services."""
 from fastapi import APIRouter, Depends, HTTPException
 import httpx
 from app.core.security import verify_token
@@ -227,8 +286,11 @@ async def subscription(creds: HTTPAuthorizationCredentials = Depends(bearer)):
 @router.get("/rate/{frm}/{to}")
 async def rate(frm: str, to: str, creds: HTTPAuthorizationCredentials = Depends(bearer)):
     return await call("GET", f"http://exchange-service.shopno-payments.svc.cluster.local:8080/api/v1/rates/{frm}/{to}", creds.credentials)
-''')
-W("platform/api-service/app/api/graphql.py", '''import strawberry
+''',
+)
+W(
+    "platform/api-service/app/api/graphql.py",
+    """import strawberry
 from fastapi import APIRouter
 from strawberry.fastapi import GraphQLRouter
 @strawberry.type
@@ -247,12 +309,20 @@ class Query:
 schema = strawberry.Schema(query=Query)
 router = APIRouter()
 router.include_router(GraphQLRouter(schema), prefix="")
-''')
+""",
+)
 
 # ----------------- GATEWAY (Traefik dynamic config generator) -----------------
-py_service("gateway", "API Gateway", port=8000, db="gateway",
-    routers=router("routes","/api/routes","routes"))
-W("platform/gateway/app/api/routes.py", '''"""Generates Traefik dynamic config from the live service registry."""
+py_service(
+    "gateway",
+    "API Gateway",
+    port=8000,
+    db="gateway",
+    routers=router("routes", "/api/routes", "routes"),
+)
+W(
+    "platform/gateway/app/api/routes.py",
+    '''"""Generates Traefik dynamic config from the live service registry."""
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException
 from app.core.security import verify_token_admin
@@ -290,12 +360,23 @@ async def traefik_config():
 @router.get("/list")
 async def list_routes(user=Depends(admin)):
     return [{"service": s, "url": u, "host": HOSTS.get(s, "")} for s, u in SERVICES.items()]
-''')
+''',
+)
 
 # ----------------- OAUTH-SERVICE (OIDC broker + Keycloak admin) -----------------
-py_service("oauth-service", "OAuth Service", port=3000, db="oauth",
-    routers=router("users","/api/v1/users","users") + router("tenants","/api/v1/tenants","tenants") + router("roles","/api/v1/roles","roles") + router("verify","/api/v1/verify","verify"))
-W("platform/oauth-service/requirements.txt", """fastapi==0.115.4
+py_service(
+    "oauth-service",
+    "OAuth Service",
+    port=3000,
+    db="oauth",
+    routers=router("users", "/api/v1/users", "users")
+    + router("tenants", "/api/v1/tenants", "tenants")
+    + router("roles", "/api/v1/roles", "roles")
+    + router("verify", "/api/v1/verify", "verify"),
+)
+W(
+    "platform/oauth-service/requirements.txt",
+    """fastapi==0.115.4
 uvicorn[standard]==0.32.0
 pydantic==2.9.2
 pydantic-settings==2.6.1
@@ -306,8 +387,11 @@ httpx==0.27.2
 python-keycloak==4.7.0
 prometheus-client==0.21.0
 structlog==24.4.0
-""")
-W("platform/oauth-service/app/core/config.py", '''from pydantic_settings import BaseSettings
+""",
+)
+W(
+    "platform/oauth-service/app/core/config.py",
+    """from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     app_name: str = "shopnoltd-oauth-service"
     database_url: str = "postgresql+asyncpg://shopno:shopno@postgres.data.svc.cluster.local:5432/oauth"
@@ -321,8 +405,11 @@ class Settings(BaseSettings):
     @property
     def cors_origins_list(self): return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
 settings = Settings()
-''')
-W("platform/oauth-service/app/models/models.py", '''from sqlalchemy import Column, String, DateTime, JSON, Boolean
+""",
+)
+W(
+    "platform/oauth-service/app/models/models.py",
+    """from sqlalchemy import Column, String, DateTime, JSON, Boolean
 import uuid
 from datetime import datetime
 from app.core.db import Base
@@ -345,8 +432,11 @@ class Tenant(Base):
     settings = Column(JSON, default=dict)
     active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
-''')
-W("platform/oauth-service/app/schemas/schemas.py", '''from pydantic import BaseModel
+""",
+)
+W(
+    "platform/oauth-service/app/schemas/schemas.py",
+    """from pydantic import BaseModel
 from typing import Optional
 class UserIn(BaseModel):
     email: str; name: str = ""; password: str = ""; tenant_id: Optional[str] = None
@@ -358,8 +448,11 @@ class TenantIn(BaseModel):
 class TenantOut(BaseModel):
     id: str; name: str; subdomain: str; plan: str
     class Config: from_attributes = True
-''')
-W("platform/oauth-service/app/api/users.py", '''import httpx
+""",
+)
+W(
+    "platform/oauth-service/app/api/users.py",
+    """import httpx
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -405,8 +498,11 @@ async def me(creds: HTTPAuthorizationCredentials = Depends(bearer), s: AsyncSess
     u = (await s.execute(select(UserMirror).where(UserMirror.keycloak_id == payload["sub"]))).scalar_one_or_none()
     if not u: return {"id": payload["sub"], "email": payload.get("email"), "tenant_id": payload.get("tenant_id"), "roles": payload.get("roles", [])}
     return UserOut(id=u.id, email=u.email, name=u.name, tenant_id=u.tenant_id, roles=u.roles or [])
-''')
-W("platform/oauth-service/app/api/tenants.py", '''import httpx
+""",
+)
+W(
+    "platform/oauth-service/app/api/tenants.py",
+    """import httpx
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -435,8 +531,11 @@ async def by_subdomain(subdomain: str, s: AsyncSession = Depends(db)):
     t = (await s.execute(select(Tenant).where(Tenant.subdomain == subdomain))).scalar_one_or_none()
     if not t: raise HTTPException(404, "tenant not found")
     return TenantOut(id=t.id, name=t.name, subdomain=t.subdomain, plan=t.plan)
-''')
-W("platform/oauth-service/app/api/roles.py", '''import httpx
+""",
+)
+W(
+    "platform/oauth-service/app/api/roles.py",
+    """import httpx
 from fastapi import APIRouter, Depends, HTTPException
 from app.core.config import settings
 from app.core.security import verify_token_admin
@@ -463,8 +562,11 @@ async def create(name: str, description: str = "", user=Depends(admin)):
         r = await c.post(f"{ADMIN_URL}/roles", headers={"Authorization": f"Bearer {tok}"}, json={"name": name, "description": description})
     if r.status_code == 409: raise HTTPException(409, "role exists")
     r.raise_for_status(); return {"name": name}
-''')
-W("platform/oauth-service/app/api/verify.py", '''"""Traefik forwardAuth endpoint."""
+""",
+)
+W(
+    "platform/oauth-service/app/api/verify.py",
+    '''"""Traefik forwardAuth endpoint."""
 from fastapi import APIRouter, Request
 router = APIRouter()
 @router.all("")
@@ -484,12 +586,20 @@ async def verify(request: Request):
     except Exception:
         from fastapi.responses import Response
         return Response(status_code=401)
-''')
+''',
+)
 
 # ----------------- TENANT-ROUTER -----------------
-py_service("tenant-router", "Tenant Router", port=8080, db="router",
-    routers=router("tenants","/api/v1/tenants","tenants"))
-W("platform/tenant-router/app/core/config.py", '''from pydantic_settings import BaseSettings
+py_service(
+    "tenant-router",
+    "Tenant Router",
+    port=8080,
+    db="router",
+    routers=router("tenants", "/api/v1/tenants", "tenants"),
+)
+W(
+    "platform/tenant-router/app/core/config.py",
+    """from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     app_name: str = "shopnoltd-tenant-router"
     database_url: str = "postgresql+asyncpg://shopno:shopno@postgres.data.svc.cluster.local:5432/router"
@@ -498,8 +608,11 @@ class Settings(BaseSettings):
     keycloak_audience: str = "tenant-router"
     base_domain: str = "shopnoltd.dpdns.org"
 settings = Settings()
-''')
-W("platform/tenant-router/app/models/models.py", '''from sqlalchemy import Column, String, DateTime, Boolean, Integer
+""",
+)
+W(
+    "platform/tenant-router/app/models/models.py",
+    """from sqlalchemy import Column, String, DateTime, Boolean, Integer
 import uuid
 from datetime import datetime
 from app.core.db import Base
@@ -514,16 +627,22 @@ class TenantRoute(Base):
     user_quota = Column(Integer, default=10)
     active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
-''')
-W("platform/tenant-router/app/schemas/schemas.py", '''from pydantic import BaseModel
+""",
+)
+W(
+    "platform/tenant-router/app/schemas/schemas.py",
+    """from pydantic import BaseModel
 class TenantRouteIn(BaseModel):
     subdomain: str; tenant_id: str; plan: str = "free"
     storage_quota_gb: int = 10; user_quota: int = 10
 class TenantRouteOut(BaseModel):
     subdomain: str; tenant_id: str; namespace: str; plan: str
     storage_quota_gb: int; user_quota: int; active: bool
-''')
-W("platform/tenant-router/app/api/tenants.py", '''from fastapi import APIRouter, Depends, HTTPException
+""",
+)
+W(
+    "platform/tenant-router/app/api/tenants.py",
+    """from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.core.db import SessionLocal
@@ -555,12 +674,21 @@ async def by_host(subdomain: str, s: AsyncSession = Depends(db)):
 async def list_(user=Depends(admin), s: AsyncSession = Depends(db)):
     res = await s.execute(select(TenantRoute))
     return [TenantRouteOut(subdomain=r.subdomain, tenant_id=r.tenant_id, namespace=r.namespace, plan=r.plan, storage_quota_gb=r.storage_quota_gb, user_quota=r.user_quota, active=r.active) for r in res.scalars().all()]
-''')
+""",
+)
 
 # ----------------- AUTH-SERVICE -----------------
-py_service("auth-service", "Auth Service", port=8080, db="auth",
-    routers=router("auth","/api/v1/auth","auth") + router("sessions","/api/v1/sessions","sessions"))
-W("platform/auth-service/app/core/config.py", '''from pydantic_settings import BaseSettings
+py_service(
+    "auth-service",
+    "Auth Service",
+    port=8080,
+    db="auth",
+    routers=router("auth", "/api/v1/auth", "auth")
+    + router("sessions", "/api/v1/sessions", "sessions"),
+)
+W(
+    "platform/auth-service/app/core/config.py",
+    """from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     app_name: str = "shopnoltd-auth-service"
     database_url: str = "postgresql+asyncpg://shopno:shopno@postgres.data.svc.cluster.local:5432/auth"
@@ -572,8 +700,11 @@ class Settings(BaseSettings):
     @property
     def cors_origins_list(self): return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
 settings = Settings()
-''')
-W("platform/auth-service/app/models/models.py", '''from sqlalchemy import Column, String, DateTime, Boolean
+""",
+)
+W(
+    "platform/auth-service/app/models/models.py",
+    """from sqlalchemy import Column, String, DateTime, Boolean
 import uuid
 from datetime import datetime
 from app.core.db import Base
@@ -588,8 +719,11 @@ class Session(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     last_seen = Column(DateTime, default=datetime.utcnow)
     revoked_at = Column(DateTime)
-''')
-W("platform/auth-service/app/schemas/schemas.py", '''from pydantic import BaseModel
+""",
+)
+W(
+    "platform/auth-service/app/schemas/schemas.py",
+    """from pydantic import BaseModel
 class LoginIn(BaseModel):
     email: str
     password: str
@@ -599,8 +733,11 @@ class LoginOut(BaseModel):
     refresh_token: str
     expires_in: int
     session_id: str
-''')
-W("platform/auth-service/app/api/auth.py", '''import httpx
+""",
+)
+W(
+    "platform/auth-service/app/api/auth.py",
+    """import httpx
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -640,8 +777,11 @@ async def logout(creds: HTTPAuthorizationCredentials = Depends(bearer), s: Async
         sess.active = False; sess.revoked_at = datetime.utcnow()
     await s.commit()
     return {"ok": True}
-''')
-W("platform/auth-service/app/api/sessions.py", '''from datetime import datetime
+""",
+)
+W(
+    "platform/auth-service/app/api/sessions.py",
+    """from datetime import datetime
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -665,12 +805,22 @@ async def revoke(sess_id: str, user=Depends(current_user), s: AsyncSession = Dep
     sess.active = False; sess.revoked_at = datetime.utcnow()
     await s.commit()
     return {"ok": True}
-''')
+""",
+)
 
 # ----------------- MOBILE-API (BFF for mobile) -----------------
-py_service("mobile-api", "Mobile API", port=8080, db="mobile",
-    routers=router("apps","/api/v1/apps","apps") + router("updates","/api/v1/updates","updates") + router("config","/api/v1/config","config"))
-W("platform/mobile-api/app/models/models.py", '''from sqlalchemy import Column, String, DateTime, Integer, JSON
+py_service(
+    "mobile-api",
+    "Mobile API",
+    port=8080,
+    db="mobile",
+    routers=router("apps", "/api/v1/apps", "apps")
+    + router("updates", "/api/v1/updates", "updates")
+    + router("config", "/api/v1/config", "config"),
+)
+W(
+    "platform/mobile-api/app/models/models.py",
+    """from sqlalchemy import Column, String, DateTime, Integer, JSON
 import uuid
 from datetime import datetime
 from app.core.db import Base
@@ -693,8 +843,11 @@ class AppConfig(Base):
     code = Column(String(64), unique=True, nullable=False)
     data = Column(JSON, default=dict)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-''')
-W("platform/mobile-api/app/schemas/schemas.py", '''from pydantic import BaseModel
+""",
+)
+W(
+    "platform/mobile-api/app/schemas/schemas.py",
+    """from pydantic import BaseModel
 class ReleaseIn(BaseModel):
     code: str; version: str; build: int; apk_path: str
     sha256: str; size_bytes: int
@@ -706,8 +859,11 @@ class ReleaseOut(BaseModel):
     release_notes: str; published_at: str
 class ConfigIn(BaseModel):
     code: str; data: dict
-''')
-W("platform/mobile-api/app/api/apps.py", '''from fastapi import APIRouter, Depends, HTTPException, Query
+""",
+)
+W(
+    "platform/mobile-api/app/api/apps.py",
+    '''from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
 from app.core.db import SessionLocal
@@ -742,8 +898,11 @@ async def publish(body: ReleaseIn, user=Depends(admin), s: AsyncSession = Depend
     r = AppRelease(**body.model_dump())
     s.add(r); await s.commit()
     return {"id": r.id, "version": r.version}
-''')
-W("platform/mobile-api/app/api/updates.py", '''from fastapi import APIRouter, Depends
+''',
+)
+W(
+    "platform/mobile-api/app/api/updates.py",
+    """from fastapi import APIRouter, Depends
 from app.core.security import verify_token
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 router = APIRouter(); bearer = HTTPBearer()
@@ -765,8 +924,11 @@ async def check(code: str, version: str, build: int, user=Depends(current_user))
         if r.version != version or r.build > build:
             return {"update_available": True, "force": bool(r.force_update), "latest": ReleaseOut(code=r.code, version=r.version, build=r.build, apk_url=r.apk_path, sha256=r.sha256, size_bytes=r.size_bytes, min_os_version=r.min_os_version, force_update=bool(r.force_update), release_notes=r.release_notes or "", published_at=r.created_at.isoformat()).model_dump()}
     return {"update_available": False}
-''')
-W("platform/mobile-api/app/api/config.py", '''from fastapi import APIRouter, Depends, HTTPException
+""",
+)
+W(
+    "platform/mobile-api/app/api/config.py",
+    """from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.core.db import SessionLocal
@@ -791,21 +953,32 @@ async def set_(body: ConfigIn, user=Depends(admin), s: AsyncSession = Depends(db
     else: s.add(AppConfig(code=body.code, data=body.data))
     await s.commit()
     return {"ok": True, "code": body.code}
-''')
+""",
+)
 
 # ----------------- SCHEDULER-SERVICE (APScheduler) -----------------
-py_service("scheduler-service", "Scheduler Service", port=8080, db="scheduler",
-    routers=router("jobs","/api/v1/jobs","jobs"),
-    extra_reqs="apscheduler==3.10.4\n")
-W("platform/scheduler-service/app/core/scheduler.py", '''from apscheduler.schedulers.asyncio import AsyncIOScheduler
+py_service(
+    "scheduler-service",
+    "Scheduler Service",
+    port=8080,
+    db="scheduler",
+    routers=router("jobs", "/api/v1/jobs", "jobs"),
+    extra_reqs="apscheduler==3.10.4\n",
+)
+W(
+    "platform/scheduler-service/app/core/scheduler.py",
+    """from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 import httpx
 scheduler = AsyncIOScheduler()
 async def http_job(url: str, method: str = "POST", body: dict = None):
     async with httpx.AsyncClient(timeout=30) as c:
         await c.request(method, url, json=body)
-''')
-W("platform/scheduler-service/app/models/models.py", '''from sqlalchemy import Column, String, DateTime, JSON, Integer
+""",
+)
+W(
+    "platform/scheduler-service/app/models/models.py",
+    """from sqlalchemy import Column, String, DateTime, JSON, Integer
 import uuid
 from datetime import datetime
 from app.core.db import Base
@@ -821,16 +994,22 @@ class Job(Base):
     last_run = Column(DateTime)
     last_status = Column(Integer)
     created_at = Column(DateTime, default=datetime.utcnow)
-''')
-W("platform/scheduler-service/app/schemas/schemas.py", '''from pydantic import BaseModel
+""",
+)
+W(
+    "platform/scheduler-service/app/schemas/schemas.py",
+    """from pydantic import BaseModel
 class JobIn(BaseModel):
     name: str; cron: str; url: str
     method: str = "POST"; body: dict = {}
 class JobOut(BaseModel):
     id: str; name: str; cron: str; url: str
     active: bool; last_run: str | None; last_status: int | None
-''')
-W("platform/scheduler-service/app/api/jobs.py", '''from datetime import datetime
+""",
+)
+W(
+    "platform/scheduler-service/app/api/jobs.py",
+    """from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException
 from apscheduler.triggers.cron import CronTrigger
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -874,13 +1053,21 @@ async def remove(job_id: str, user=Depends(admin), s: AsyncSession = Depends(db)
     except Exception: pass
     await s.delete(j); await s.commit()
     return {"ok": True}
-''')
+""",
+)
 
 # ----------------- WORKER-SERVICE (Arq) -----------------
-py_service("worker-service", "Worker Service", port=8080, db="worker",
-    routers=router("tasks","/api/v1/tasks","tasks"),
-    extra_reqs="arq==0.25.0\n")
-W("platform/worker-service/app/models/models.py", '''from sqlalchemy import Column, String, DateTime, JSON, Integer
+py_service(
+    "worker-service",
+    "Worker Service",
+    port=8080,
+    db="worker",
+    routers=router("tasks", "/api/v1/tasks", "tasks"),
+    extra_reqs="arq==0.25.0\n",
+)
+W(
+    "platform/worker-service/app/models/models.py",
+    """from sqlalchemy import Column, String, DateTime, JSON, Integer
 import uuid
 from datetime import datetime
 from app.core.db import Base
@@ -896,15 +1083,21 @@ class Task(Base):
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
     started_at = Column(DateTime)
     finished_at = Column(DateTime)
-''')
-W("platform/worker-service/app/schemas/schemas.py", '''from pydantic import BaseModel
+""",
+)
+W(
+    "platform/worker-service/app/schemas/schemas.py",
+    """from pydantic import BaseModel
 class TaskIn(BaseModel):
     name: str; args: dict = {}
 class TaskOut(BaseModel):
     id: str; name: str; status: str; result: dict | None
     created_at: str; started_at: str | None; finished_at: str | None
-''')
-W("platform/worker-service/app/api/tasks.py", '''from datetime import datetime
+""",
+)
+W(
+    "platform/worker-service/app/api/tasks.py",
+    """from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -960,13 +1153,22 @@ async def status(task_id: str, user=Depends(current_user), s: AsyncSession = Dep
 async def list_(user=Depends(current_user), s: AsyncSession = Depends(db), limit: int = 50):
     res = await s.execute(select(Task).order_by(Task.created_at.desc()).limit(limit))
     return [TaskOut(id=t.id, name=t.name, status=t.status, result=t.result, created_at=t.created_at.isoformat(), started_at=t.started_at.isoformat() if t.started_at else None, finished_at=t.finished_at.isoformat() if t.finished_at else None) for t in res.scalars().all()]
-''')
+""",
+)
 
 # ----------------- STORAGE-SERVICE (S3 over MinIO) -----------------
-py_service("storage-service", "Storage Service", port=9000, db="storage",
-    routers=router("buckets","/api/v1/buckets","buckets") + router("objects","/api/v1/objects","objects"),
-    extra_reqs="minio==7.2.8\n")
-W("platform/storage-service/app/core/config.py", '''from pydantic_settings import BaseSettings
+py_service(
+    "storage-service",
+    "Storage Service",
+    port=9000,
+    db="storage",
+    routers=router("buckets", "/api/v1/buckets", "buckets")
+    + router("objects", "/api/v1/objects", "objects"),
+    extra_reqs="minio==7.2.8\n",
+)
+W(
+    "platform/storage-service/app/core/config.py",
+    """from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     app_name: str = "shopnoltd-storage-service"
     database_url: str = "postgresql+asyncpg://shopno:shopno@postgres.data.svc.cluster.local:5432/storage"
@@ -980,8 +1182,11 @@ class Settings(BaseSettings):
     @property
     def cors_origins_list(self): return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
 settings = Settings()
-''')
-W("platform/storage-service/app/models/models.py", '''from sqlalchemy import Column, String, DateTime, Integer
+""",
+)
+W(
+    "platform/storage-service/app/models/models.py",
+    """from sqlalchemy import Column, String, DateTime, Integer
 import uuid
 from datetime import datetime
 from app.core.db import Base
@@ -1000,12 +1205,18 @@ class Object(Base):
     size = Column(Integer, default=0)
     content_type = Column(String(64))
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
-''')
-W("platform/storage-service/app/core/minio_client.py", '''from minio import Minio
+""",
+)
+W(
+    "platform/storage-service/app/core/minio_client.py",
+    """from minio import Minio
 from app.core.config import settings
 client = Minio(settings.minio_endpoint, access_key=settings.minio_access_key, secret_key=settings.minio_secret_key, secure=settings.minio_secure)
-''')
-W("platform/storage-service/app/api/buckets.py", '''from fastapi import APIRouter, Depends, HTTPException
+""",
+)
+W(
+    "platform/storage-service/app/api/buckets.py",
+    """from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.core.db import SessionLocal
@@ -1029,8 +1240,11 @@ async def create(name: str, purpose: str = "general", user=Depends(admin), s: As
 async def list_(user=Depends(admin), s: AsyncSession = Depends(db)):
     res = await s.execute(select(Bucket))
     return [{"name": b.name, "purpose": b.purpose} for b in res.scalars().all()]
-''')
-W("platform/storage-service/app/api/objects.py", '''import io, hashlib, secrets
+""",
+)
+W(
+    "platform/storage-service/app/api/objects.py",
+    """import io, hashlib, secrets
 from datetime import timedelta
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -1062,10 +1276,13 @@ async def presign(bucket: str, key: str, user=Depends(current_user)):
 @router.delete("/{bucket}/{key:path}")
 async def delete(bucket: str, key: str, user=Depends(current_user)):
     client.remove_object(bucket, key); return {"ok": True}
-''')
+""",
+)
 
 # ----------------- ADMIN-PORTAL (React) -----------------
-W("platform/admin-portal/Dockerfile", """FROM node:20-alpine AS build
+W(
+    "platform/admin-portal/Dockerfile",
+    """FROM node:20-alpine AS build
 WORKDIR /app
 COPY platform/admin-portal/package.json platform/admin-portal/package-lock.json* ./
 RUN npm ci || npm install
@@ -1076,8 +1293,11 @@ COPY --from=build /app/dist /usr/share/nginx/html
 COPY platform/admin-portal/nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 3000
 HEALTHCHECK CMD wget -qO- http://127.0.0.1:3000/healthz || exit 1
-""")
-W("platform/admin-portal/package.json", """{
+""",
+)
+W(
+    "platform/admin-portal/package.json",
+    """{
   "name": "shopnoltd-admin-portal",
   "version": "0.1.0",
   "private": true,
@@ -1100,24 +1320,33 @@ W("platform/admin-portal/package.json", """{
     "vite": "^5.4.10"
   }
 }
-""")
-W("platform/admin-portal/nginx.conf", """server {
+""",
+)
+W(
+    "platform/admin-portal/nginx.conf",
+    """server {
   listen 3000;
   server_name _;
   root /usr/share/nginx/html;
   location = /healthz { return 200 "ok"; add_header Content-Type text/plain; }
   location / { try_files $uri $uri/ /index.html; }
 }
-""")
-W("platform/admin-portal/vite.config.js", """import { defineConfig } from 'vite'
+""",
+)
+W(
+    "platform/admin-portal/vite.config.js",
+    """import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: { host: '0.0.0.0', port: 5173, proxy: { '/api': 'http://api-service.shopno-platform.svc.cluster.local:8080' } },
   build: { outDir: 'dist' }
 })
-""")
-W("platform/admin-portal/index.html", """<!doctype html>
+""",
+)
+W(
+    "platform/admin-portal/index.html",
+    """<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -1130,8 +1359,11 @@ W("platform/admin-portal/index.html", """<!doctype html>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
-""")
-W("platform/admin-portal/src/main.jsx", """import React from 'react'
+""",
+)
+W(
+    "platform/admin-portal/src/main.jsx",
+    """import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -1182,8 +1414,11 @@ function App() {
   )
 }
 ReactDOM.createRoot(document.getElementById('root')).render(<App />)
-""")
-W("platform/admin-portal/src/api.js", """import axios from 'axios'
+""",
+)
+W(
+    "platform/admin-portal/src/api.js",
+    """import axios from 'axios'
 const baseURL = '/api'
 export const api = axios.create({ baseURL })
 api.interceptors.request.use(c => {
@@ -1191,8 +1426,11 @@ api.interceptors.request.use(c => {
   if (tok) c.headers.Authorization = `Bearer ${tok}`
   return c
 })
-""")
-W("platform/admin-portal/src/pages/Dashboard.jsx", """import { useQuery } from '@tanstack/react-query'
+""",
+)
+W(
+    "platform/admin-portal/src/pages/Dashboard.jsx",
+    """import { useQuery } from '@tanstack/react-query'
 import { api } from '../api'
 export default function Dashboard() {
   const { data, isLoading } = useQuery({ queryKey: ['services'], queryFn: () => api.get('/services').then(r => r.data) })
@@ -1212,8 +1450,11 @@ export default function Dashboard() {
     </div>
   )
 }
-""")
-W("platform/admin-portal/src/pages/Users.jsx", """import { useQuery } from '@tanstack/react-query'
+""",
+)
+W(
+    "platform/admin-portal/src/pages/Users.jsx",
+    """import { useQuery } from '@tanstack/react-query'
 import { api } from '../api'
 export default function Users() {
   const { data, isLoading } = useQuery({ queryKey: ['users'], queryFn: () => api.get('/users').then(r => r.data) })
@@ -1236,8 +1477,11 @@ export default function Users() {
     </div>
   )
 }
-""")
-W("platform/admin-portal/src/pages/Payments.jsx", """import { useQuery } from '@tanstack/react-query'
+""",
+)
+W(
+    "platform/admin-portal/src/pages/Payments.jsx",
+    """import { useQuery } from '@tanstack/react-query'
 import { api } from '../api'
 export default function Payments() {
   const { data, isLoading } = useQuery({ queryKey: ['pending'], queryFn: () => api.get('/admin/pending').then(r => r.data) })
@@ -1250,38 +1494,53 @@ export default function Payments() {
     </div>
   )
 }
-""")
-W("platform/admin-portal/src/pages/Tenants.jsx", """import { useQuery } from '@tanstack/react-query'
+""",
+)
+W(
+    "platform/admin-portal/src/pages/Tenants.jsx",
+    """import { useQuery } from '@tanstack/react-query'
 import { api } from '../api'
 export default function Tenants() {
   const { data } = useQuery({ queryKey: ['tenants'], queryFn: () => api.get('/tenants').then(r => r.data) })
   return <div><h1>Tenants</h1><pre style={{ background: 'white', padding: 20, borderRadius: 12 }}>{JSON.stringify(data, null, 2)}</pre></div>
 }
-""")
-W("platform/admin-portal/src/pages/Plans.jsx", """import { useQuery } from '@tanstack/react-query'
+""",
+)
+W(
+    "platform/admin-portal/src/pages/Plans.jsx",
+    """import { useQuery } from '@tanstack/react-query'
 import { api } from '../api'
 export default function Plans() {
   const { data } = useQuery({ queryKey: ['plans'], queryFn: () => api.get('/plans').then(r => r.data) })
   return <div><h1>Subscription Plans</h1><pre style={{ background: 'white', padding: 20, borderRadius: 12 }}>{JSON.stringify(data, null, 2)}</pre></div>
 }
-""")
-W("platform/admin-portal/src/pages/Streams.jsx", """import { useQuery } from '@tanstack/react-query'
+""",
+)
+W(
+    "platform/admin-portal/src/pages/Streams.jsx",
+    """import { useQuery } from '@tanstack/react-query'
 import { api } from '../api'
 export default function Streams() {
   const { data } = useQuery({ queryKey: ['streams'], queryFn: () => api.get('/streams').then(r => r.data) })
   return <div><h1>Live Streams</h1><pre style={{ background: 'white', padding: 20, borderRadius: 12 }}>{JSON.stringify(data, null, 2)}</pre></div>
 }
-""")
-W("platform/admin-portal/src/pages/AppReleases.jsx", """import { useQuery } from '@tanstack/react-query'
+""",
+)
+W(
+    "platform/admin-portal/src/pages/AppReleases.jsx",
+    """import { useQuery } from '@tanstack/react-query'
 import { api } from '../api'
 export default function AppReleases() {
   const { data } = useQuery({ queryKey: ['releases'], queryFn: () => api.get('/releases').then(r => r.data) })
   return <div><h1>App Releases</h1><pre style={{ background: 'white', padding: 20, borderRadius: 12 }}>{JSON.stringify(data, null, 2)}</pre></div>
 }
-""")
+""",
+)
 
 # ----------------- WEB-PORTAL (Customer React site) -----------------
-W("platform/web-portal/Dockerfile", """FROM node:20-alpine AS build
+W(
+    "platform/web-portal/Dockerfile",
+    """FROM node:20-alpine AS build
 WORKDIR /app
 COPY platform/web-portal/package.json platform/web-portal/package-lock.json* ./
 RUN npm ci || npm install
@@ -1292,8 +1551,11 @@ COPY --from=build /app/dist /usr/share/nginx/html
 COPY platform/web-portal/nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 3000
 HEALTHCHECK CMD wget -qO- http://127.0.0.1:3000/healthz || exit 1
-""")
-W("platform/web-portal/package.json", """{
+""",
+)
+W(
+    "platform/web-portal/package.json",
+    """{
   "name": "shopnoltd-web-portal",
   "version": "0.1.0",
   "private": true,
@@ -1309,16 +1571,22 @@ W("platform/web-portal/package.json", """{
     "vite": "^5.4.10"
   }
 }
-""")
-W("platform/web-portal/nginx.conf", """server {
+""",
+)
+W(
+    "platform/web-portal/nginx.conf",
+    """server {
   listen 3000;
   server_name _;
   root /usr/share/nginx/html;
   location = /healthz { return 200 "ok"; add_header Content-Type text/plain; }
   location / { try_files $uri $uri/ /index.html; }
 }
-""")
-W("platform/web-portal/index.html", """<!doctype html>
+""",
+)
+W(
+    "platform/web-portal/index.html",
+    """<!doctype html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -1332,8 +1600,11 @@ W("platform/web-portal/index.html", """<!doctype html>
   <script type="module" src="/src/main.jsx"></script>
 </body>
 </html>
-""")
-W("platform/web-portal/src/main.jsx", """import React from 'react'
+""",
+)
+W(
+    "platform/web-portal/src/main.jsx",
+    """import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
 import Home from './pages/Home'
@@ -1364,8 +1635,11 @@ function App() {
   )
 }
 ReactDOM.createRoot(document.getElementById('root')).render(<App />)
-""")
-W("platform/web-portal/src/pages/Home.jsx", """export default function Home() {
+""",
+)
+W(
+    "platform/web-portal/src/pages/Home.jsx",
+    """export default function Home() {
   return (
     <div style={{ maxWidth: 960, margin: '0 auto', padding: 32, fontFamily: 'system-ui, sans-serif' }}>
       <h1 style={{ color: '#0ea5e9', fontSize: 48 }}>All your tools. One platform.</h1>
@@ -1392,8 +1666,11 @@ W("platform/web-portal/src/pages/Home.jsx", """export default function Home() {
     </div>
   )
 }
-""")
-W("platform/web-portal/src/pages/Pricing.jsx", """export default function Pricing() {
+""",
+)
+W(
+    "platform/web-portal/src/pages/Pricing.jsx",
+    """export default function Pricing() {
   const plans = [
     { name: 'Free',    price: 0,    features: ['1 user', '1 GB storage', 'Community support'] },
     { name: 'Starter', price: 9,    features: ['5 users', '50 GB storage', 'Email support'] },
@@ -1417,8 +1694,11 @@ W("platform/web-portal/src/pages/Pricing.jsx", """export default function Pricin
     </div>
   )
 }
-""")
-W("platform/web-portal/src/pages/Login.jsx", """import { useState } from 'react'
+""",
+)
+W(
+    "platform/web-portal/src/pages/Login.jsx",
+    """import { useState } from 'react'
 export default function Login() {
   const [email, setEmail] = useState('')
   const [pw, setPw] = useState('')
@@ -1437,8 +1717,11 @@ export default function Login() {
     </form>
   )
 }
-""")
-W("platform/web-portal/src/pages/Dashboard.jsx", """import { useEffect, useState } from 'react'
+""",
+)
+W(
+    "platform/web-portal/src/pages/Dashboard.jsx",
+    """import { useEffect, useState } from 'react'
 export default function Dashboard() {
   const [me, setMe] = useState(null)
   useEffect(() => {
@@ -1455,10 +1738,13 @@ export default function Dashboard() {
     </div>
   )
 }
-""")
+""",
+)
 
 # ----------------- .github/workflows/build-mobile.yml (Android APKs) -----------------
-W(".github/workflows/build-mobile.yml", """name: Build Android APKs
+W(
+    ".github/workflows/build-mobile.yml",
+    """name: Build Android APKs
 on:
   push:
     branches: [main]
@@ -1525,8 +1811,11 @@ jobs:
           name: ${{ matrix.app }}-apk
           path: dist/${{ matrix.app }}.apk
           if-no-files-found: warn
-""")
-W("mobile/Dockerfile.android", """# syntax=docker/dockerfile:1.7
+""",
+)
+W(
+    "mobile/Dockerfile.android",
+    """# syntax=docker/dockerfile:1.7
 # Multi-stage Android APK builder for Shopnoltd branded apps.
 # ARG: BASE_IMAGE (e.g. kobotoolbox/kobocollect-build), APP_CODE, PACKAGE_NAME
 ARG BASE_IMAGE=eclipse-temurin:17-jdk
@@ -1568,10 +1857,12 @@ FROM scratch
 ARG APP_CODE
 COPY --from=builder /src/upstream/app/build/outputs/apk/release/*.apk /apk/${APP_CODE}.apk
 COPY --from=builder /src/upstream/app/build/outputs/apk/debug/*.apk   /apk/${APP_CODE}-debug.apk
-""")
+""",
+)
 
 # ----------------- Update CI to include new services in build matrix -----------------
 import re
+
 wf = os.path.join(ROOT, ".github/workflows/build-platform.yml")
 if os.path.exists(wf):
     txt = open(wf).read()
@@ -1604,7 +1895,12 @@ if os.path.exists(wf):
           - { service: live-service,       dockerfile: platform/live-service/Dockerfile }
           - { service: mail-service,       dockerfile: platform/mail-service/Dockerfile }
           - { service: social-service,     dockerfile: platform/social-service/Dockerfile }"""
-    txt = re.sub(r"matrix:\s*\n\s*include:\s*\n", "matrix:\n        include:\n" + new_entries + "\n", txt, count=1)
+    txt = re.sub(
+        r"matrix:\s*\n\s*include:\s*\n",
+        "matrix:\n        include:\n" + new_entries + "\n",
+        txt,
+        count=1,
+    )
     open(wf, "w").write(txt)
 
 print("✅ final 11 platform services + mobile APK CI seeded")

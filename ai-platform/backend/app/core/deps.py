@@ -3,13 +3,13 @@ Shared FastAPI dependencies. get_current_user extracts and validates the
 bearer token, then loads the corresponding user — used by any endpoint that
 requires authentication.
 """
-from fastapi import Depends, HTTPException
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import decode_access_token
 from app.database import get_db
 from app.models import User
+from fastapi import Depends, HTTPException
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from sqlalchemy.ext.asyncio import AsyncSession
 
 bearer_scheme = HTTPBearer()
 

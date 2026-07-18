@@ -1,9 +1,11 @@
 import base64
 import datetime
 import uuid
+
 import requests
+
 from app import config
-from app.gateways.base import PaymentGateway, GatewayResult
+from app.gateways.base import GatewayResult, PaymentGateway
 
 BASE_URLS = {
     True: "http://sandbox.mynagad.com:10080/remote-payment-gateway-1.0/api/dfs",
@@ -17,6 +19,7 @@ class NagadGateway(PaymentGateway):
     Nagad during merchant onboarding (your private key + Nagad's public key). The
     cryptography package is required for the real flow: pip install cryptography
     """
+
     name = "nagad"
 
     def __init__(self):
@@ -27,23 +30,30 @@ class NagadGateway(PaymentGateway):
     def _sign(self, data: str) -> str:
         from cryptography.hazmat.primitives import hashes, serialization
         from cryptography.hazmat.primitives.asymmetric import padding
+
         private_key = serialization.load_pem_private_key(
-            config.NAGAD_MERCHANT_PRIVATE_KEY.encode(), password=None,
+            config.NAGAD_MERCHANT_PRIVATE_KEY.encode(),
+            password=None,
         )
         signature = private_key.sign(data.encode(), padding.PKCS1v15(), hashes.SHA256())
         return base64.b64encode(signature).decode()
 
     def _encrypt(self, data: str) -> str:
+        from cryptography.hazmat.primitives import serialization
         from cryptography.hazmat.primitives.asymmetric import padding
-        from cryptography.hazmat.primitives import hashes, serialization
+
         public_key = serialization.load_pem_public_key(config.NAGAD_PG_PUBLIC_KEY.encode())
         encrypted = public_key.encrypt(data.encode(), padding.PKCS1v15())
         return base64.b64encode(encrypted).decode()
 
-    def create_payment(self, amount: float, currency: str, reference: str, **kwargs) -> GatewayResult:
+    def create_payment(
+        self, amount: float, currency: str, reference: str, **kwargs
+    ) -> GatewayResult:
         if not self.enabled:
             return GatewayResult(
-                gateway=self.name, is_demo=True, status="pending",
+                gateway=self.name,
+                is_demo=True,
+                status="pending",
                 gateway_reference=f"demo_nagad_{uuid.uuid4().hex[:12]}",
                 redirect_url=None,
                 note="Nagad not configured (missing merchant id/RSA keys) - running in demo mode.",
@@ -65,7 +75,9 @@ class NagadGateway(PaymentGateway):
         }
         init_resp = requests.post(
             f"{self.base_url}/check-out/initialize/{config.NAGAD_MERCHANT_ID}/{order_id}",
-            json=init_payload, headers={"X-KM-IP-V4": customer_ip, "X-KM-Client-Type": "PC_WEB"}, timeout=15,
+            json=init_payload,
+            headers={"X-KM-IP-V4": customer_ip, "X-KM-Client-Type": "PC_WEB"},
+            timeout=15,
         )
         init_resp.raise_for_status()
         init_data = init_resp.json()
@@ -84,13 +96,18 @@ class NagadGateway(PaymentGateway):
         }
         complete_resp = requests.post(
             f"{self.base_url}/check-out/complete/{payment_ref_id}",
-            json=complete_payload, headers={"X-KM-IP-V4": customer_ip, "X-KM-Client-Type": "PC_WEB"}, timeout=15,
+            json=complete_payload,
+            headers={"X-KM-IP-V4": customer_ip, "X-KM-Client-Type": "PC_WEB"},
+            timeout=15,
         )
         complete_resp.raise_for_status()
         complete_data = complete_resp.json()
         return GatewayResult(
-            gateway=self.name, is_demo=False, status="pending",
-            gateway_reference=payment_ref_id, redirect_url=complete_data.get("callBackUrl"),
+            gateway=self.name,
+            is_demo=False,
+            status="pending",
+            gateway_reference=payment_ref_id,
+            redirect_url=complete_data.get("callBackUrl"),
             raw=complete_data,
         )
 

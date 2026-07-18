@@ -11,11 +11,12 @@ Usage:
     export WEB_PORTAL_ORIGIN=https://web-portal.shopnoltd.dpdns.org
     python3 scripts/setup_web_portal_client.py
 """
+
+import json
 import os
 import sys
-import json
-import urllib.request
 import urllib.error
+import urllib.request
 
 KEYCLOAK_URL = os.environ.get("KEYCLOAK_URL", "https://auth.shopnoltd.dpdns.org").rstrip("/")
 REALM = os.environ.get("KEYCLOAK_REALM", "shopnoltd")
@@ -47,7 +48,9 @@ def get_admin_token():
     if not ADMIN_PASSWORD:
         sys.exit("Set KEYCLOAK_ADMIN_PASSWORD before running this script.")
     body = f"grant_type=password&client_id=admin-cli&username={ADMIN_USER}&password={ADMIN_PASSWORD}".encode()
-    req = urllib.request.Request(f"{KEYCLOAK_URL}/realms/master/protocol/openid-connect/token", data=body, method="POST")
+    req = urllib.request.Request(
+        f"{KEYCLOAK_URL}/realms/master/protocol/openid-connect/token", data=body, method="POST"
+    )
     req.add_header("Content-Type", "application/x-www-form-urlencoded")
     try:
         with urllib.request.urlopen(req) as resp:
@@ -61,7 +64,7 @@ def main():
     code, clients = http("GET", f"/admin/realms/{REALM}/clients?clientId={CLIENT_ID}", token)
     payload = {
         "clientId": CLIENT_ID,
-        "publicClient": True,          # no client secret -- PKCE handles proof of possession
+        "publicClient": True,  # no client secret -- PKCE handles proof of possession
         "protocol": "openid-connect",
         "standardFlowEnabled": True,
         "directAccessGrantsEnabled": False,
@@ -75,15 +78,23 @@ def main():
     if clients:
         client_uuid = clients[0]["id"]
         code, resp = http("PUT", f"/admin/realms/{REALM}/clients/{client_uuid}", token, payload)
-        print(f"[{'OK' if code == 204 else 'FAIL'}] updated existing '{CLIENT_ID}' client (HTTP {code})" + ("" if code == 204 else f": {resp}"))
+        print(
+            f"[{'OK' if code == 204 else 'FAIL'}] updated existing '{CLIENT_ID}' client (HTTP {code})"
+            + ("" if code == 204 else f": {resp}")
+        )
     else:
         code, resp = http("POST", f"/admin/realms/{REALM}/clients", token, payload)
-        print(f"[{'OK' if code == 201 else 'FAIL'}] created '{CLIENT_ID}' client (HTTP {code})" + ("" if code == 201 else f": {resp}"))
+        print(
+            f"[{'OK' if code == 201 else 'FAIL'}] created '{CLIENT_ID}' client (HTTP {code})"
+            + ("" if code == 201 else f": {resp}")
+        )
 
     if code not in (201, 204):
         sys.exit(1)
     print(f"\nRedirect URIs registered: {ORIGIN}/callback")
-    print("If your web-portal build uses a different origin/domain, re-run with WEB_PORTAL_ORIGIN set to it.")
+    print(
+        "If your web-portal build uses a different origin/domain, re-run with WEB_PORTAL_ORIGIN set to it."
+    )
 
 
 if __name__ == "__main__":

@@ -1,7 +1,11 @@
-from sqlalchemy import Column, String, DateTime, JSON, Boolean
 import uuid
 from datetime import datetime
+
+from sqlalchemy import JSON, Boolean, Column, DateTime, String
+
 from app.core.db import Base
+
+
 class UserMirror(Base):
     __tablename__ = "users"
     id = Column(String(64), primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -12,6 +16,8 @@ class UserMirror(Base):
     roles = Column(JSON, default=list)
     active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
 class Tenant(Base):
     __tablename__ = "tenants"
     id = Column(String(64), primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -21,6 +27,8 @@ class Tenant(Base):
     settings = Column(JSON, default=dict)
     active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
 class Customer(Base):
     __tablename__ = "customers"
     id = Column(String(64), primary_key=True, default=lambda: str(uuid.uuid4()))

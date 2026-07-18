@@ -1,9 +1,13 @@
 import os
-import psycopg2
-from psycopg2.extras import RealDictCursor
 from contextlib import contextmanager
 
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://shopnoltd:Shopnoltd2026DB@postgres-prod:5432/shopnoltd")
+import psycopg2
+from psycopg2.extras import RealDictCursor
+
+DATABASE_URL = os.getenv(
+    "DATABASE_URL", "postgresql://shopnoltd:Shopnoltd2026DB@postgres-prod:5432/shopnoltd"
+)
+
 
 @contextmanager
 def get_db():
@@ -18,6 +22,7 @@ def get_db():
     finally:
         conn.close()
 
+
 def query(sql, params=None, fetch=True):
     with get_db() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
@@ -26,9 +31,11 @@ def query(sql, params=None, fetch=True):
                 return cur.fetchall()
             return None
 
+
 def query_one(sql, params=None):
     result = query(sql, params)
     return result[0] if result else None
+
 
 def execute(sql, params=None):
     with get_db() as conn:

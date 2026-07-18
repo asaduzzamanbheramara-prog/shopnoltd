@@ -1,12 +1,15 @@
 """Configuration loaded from env."""
+
 from pydantic_settings import BaseSettings
-from typing import List
+
 
 class Settings(BaseSettings):
     app_name: str = "shopnoltd-payment-service"
     env: str = "production"
     version: str = "0.1.0"
-    database_url: str = "postgresql+asyncpg://shopno:shopno@postgres.data.svc.cluster.local:5432/payments"
+    database_url: str = (
+        "postgresql+asyncpg://shopno:shopno@postgres.data.svc.cluster.local:5432/payments"
+    )
     redis_url: str = "redis://redis.data.svc.cluster.local:6379/0"
     cors_origins: str = "https://*.shopnoltd.dpdns.org"
     keycloak_issuer: str = "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
@@ -43,8 +46,10 @@ class Settings(BaseSettings):
     min_withdrawal: float = 5.0
     max_withdrawal: float = 50000.0
     platform_fee_pct: float = 1.5
+
     @property
-    def cors_origins_list(self) -> List[str]: return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+    def cors_origins_list(self) -> list[str]:
+        return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+
 
 settings = Settings()
-

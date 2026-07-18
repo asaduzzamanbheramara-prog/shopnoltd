@@ -19,12 +19,14 @@ Usage:
 
 Idempotent: re-running updates existing providers instead of failing.
 """
+
+import json
 import os
 import sys
-import json
-import yaml
-import urllib.request
 import urllib.error
+import urllib.request
+
+import yaml
 
 KEYCLOAK_URL = os.environ.get("KEYCLOAK_URL", "https://auth.shopnoltd.dpdns.org").rstrip("/")
 REALM = os.environ.get("KEYCLOAK_REALM", "shopnoltd")
@@ -69,7 +71,9 @@ def get_admin_token():
 
 
 def upsert_idp(token, alias, provider_id, config):
-    status, existing = http("GET", f"/admin/realms/{REALM}/identity-provider/instances/{alias}", token)
+    status, existing = http(
+        "GET", f"/admin/realms/{REALM}/identity-provider/instances/{alias}", token
+    )
     payload = {
         "alias": alias,
         "providerId": provider_id,
@@ -80,13 +84,19 @@ def upsert_idp(token, alias, provider_id, config):
         "config": config,
     }
     if status == 200:
-        code, resp = http("PUT", f"/admin/realms/{REALM}/identity-provider/instances/{alias}", token, payload)
+        code, resp = http(
+            "PUT", f"/admin/realms/{REALM}/identity-provider/instances/{alias}", token, payload
+        )
         action = "updated"
     else:
-        code, resp = http("POST", f"/admin/realms/{REALM}/identity-provider/instances", token, payload)
+        code, resp = http(
+            "POST", f"/admin/realms/{REALM}/identity-provider/instances", token, payload
+        )
         action = "created"
     ok = code in (200, 201, 204)
-    print(f"[{'OK' if ok else 'FAIL'}] {alias} {action} (HTTP {code})" + ("" if ok else f": {resp}"))
+    print(
+        f"[{'OK' if ok else 'FAIL'}] {alias} {action} (HTTP {code})" + ("" if ok else f": {resp}")
+    )
     return ok
 
 
@@ -100,26 +110,47 @@ def main():
     results = []
 
     if creds.get("google", {}).get("client_id"):
-        results.append(upsert_idp(token, "google", "google", {
-            "clientId": creds["google"]["client_id"],
-            "clientSecret": creds["google"]["client_secret"],
-            "defaultScope": "openid profile email",
-            "useJwksUrl": "true",
-        }))
+        results.append(
+            upsert_idp(
+                token,
+                "google",
+                "google",
+                {
+                    "clientId": creds["google"]["client_id"],
+                    "clientSecret": creds["google"]["client_secret"],
+                    "defaultScope": "openid profile email",
+                    "useJwksUrl": "true",
+                },
+            )
+        )
 
     if creds.get("facebook", {}).get("app_id"):
-        results.append(upsert_idp(token, "facebook", "facebook", {
-            "clientId": creds["facebook"]["app_id"],
-            "clientSecret": creds["facebook"]["app_secret"],
-            "defaultScope": "email public_profile",
-        }))
+        results.append(
+            upsert_idp(
+                token,
+                "facebook",
+                "facebook",
+                {
+                    "clientId": creds["facebook"]["app_id"],
+                    "clientSecret": creds["facebook"]["app_secret"],
+                    "defaultScope": "email public_profile",
+                },
+            )
+        )
 
     if creds.get("github", {}).get("client_id"):
-        results.append(upsert_idp(token, "github", "github", {
-            "clientId": creds["github"]["client_id"],
-            "clientSecret": creds["github"]["client_secret"],
-            "defaultScope": "user:email",
-        }))
+        results.append(
+            upsert_idp(
+                token,
+                "github",
+                "github",
+                {
+                    "clientId": creds["github"]["client_id"],
+                    "clientSecret": creds["github"]["client_secret"],
+                    "defaultScope": "user:email",
+                },
+            )
+        )
 
     if not all(results):
         sys.exit(1)

@@ -1,18 +1,19 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy import (
-    Column,
-    String,
-    Float,
-    DateTime,
     Boolean,
+    Column,
+    DateTime,
+    Float,
     ForeignKey,
-    Text,
     Integer,
     Numeric,
+    String,
+    Text,
 )
+from sqlalchemy.dialects.postgresql import UUID
+
 from app.database import Base
 
 
@@ -23,6 +24,7 @@ def gen_id(prefix: str):
 # ----------------------------------------------------------
 # USERS
 # ----------------------------------------------------------
+
 
 class User(Base):
     __tablename__ = "users"
@@ -46,6 +48,7 @@ class User(Base):
 # WALLETS
 # ----------------------------------------------------------
 
+
 class Wallet(Base):
     __tablename__ = "wallets"
 
@@ -63,6 +66,7 @@ class Wallet(Base):
 # ----------------------------------------------------------
 # TRANSACTIONS
 # ----------------------------------------------------------
+
 
 class Transaction(Base):
     __tablename__ = "transactions"
@@ -94,6 +98,7 @@ class Transaction(Base):
 # PAYMENT METHODS
 # ----------------------------------------------------------
 
+
 class PaymentMethod(Base):
     __tablename__ = "payment_methods"
 
@@ -114,6 +119,7 @@ class PaymentMethod(Base):
 # SUBSCRIPTIONS
 # ----------------------------------------------------------
 
+
 class Subscription(Base):
     __tablename__ = "subscriptions"
 
@@ -133,6 +139,7 @@ class Subscription(Base):
 # ----------------------------------------------------------
 # AUDIT LOG
 # ----------------------------------------------------------
+
 
 class AuditLog(Base):
     __tablename__ = "audit_log"
@@ -160,10 +167,12 @@ class WalletLedgerEntry(Base):
         index=True,
     )
     currency = Column(String(3), nullable=False)
-    entry_type = Column(String, nullable=False)  # deposit|deduction|fine|refund|adjustment_credit|adjustment_debit
-    amount = Column(Float, nullable=False)        # signed: positive=credit, negative=debit
+    entry_type = Column(
+        String, nullable=False
+    )  # deposit|deduction|fine|refund|adjustment_credit|adjustment_debit
+    amount = Column(Float, nullable=False)  # signed: positive=credit, negative=debit
     balance_after = Column(Float, nullable=False)
     reason = Column(Text, nullable=False)
     reference = Column(String, nullable=True)
-    created_by = Column(String, nullable=True)     # admin/service actor id, if applicable
+    created_by = Column(String, nullable=True)  # admin/service actor id, if applicable
     created_at = Column(DateTime, default=datetime.utcnow)

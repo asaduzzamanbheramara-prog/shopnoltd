@@ -1,13 +1,17 @@
 """Shopnoltd Training Service."""
+
 from contextlib import asynccontextmanager
+
+import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from prometheus_client import generate_latest
 from starlette.responses import Response
-import structlog
+
 from app.core.config import settings
-from app.core.db import engine, Base
+from app.core.db import Base, engine
 from app.core.redis_client import redis_client
+
 log = structlog.get_logger()
 
 
@@ -23,13 +27,38 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Shopnoltd Training Service", version="0.1.0", lifespan=lifespan)
-app.add_middleware(CORSMiddleware, allow_origins=settings.cors_origins_list, allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
-app.include_router(__import__("app.api.courses", fromlist=["router"]).router, prefix="/api/v1/courses", tags=["courses"])
-app.include_router(__import__("app.api.lessons", fromlist=["router"]).router, prefix="/api/v1/lessons", tags=["lessons"])
-app.include_router(__import__("app.api.enrollments", fromlist=["router"]).router, prefix="/api/v1/enrollments", tags=["enrollments"])
-app.include_router(__import__("app.api.quizzes", fromlist=["router"]).router, prefix="/api/v1/quizzes", tags=["quizzes"])
-app.include_router(__import__("app.api.certificates", fromlist=["router"]).router, prefix="/api/v1/certificates", tags=["certificates"])
-
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.cors_origins_list,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+app.include_router(
+    __import__("app.api.courses", fromlist=["router"]).router,
+    prefix="/api/v1/courses",
+    tags=["courses"],
+)
+app.include_router(
+    __import__("app.api.lessons", fromlist=["router"]).router,
+    prefix="/api/v1/lessons",
+    tags=["lessons"],
+)
+app.include_router(
+    __import__("app.api.enrollments", fromlist=["router"]).router,
+    prefix="/api/v1/enrollments",
+    tags=["enrollments"],
+)
+app.include_router(
+    __import__("app.api.quizzes", fromlist=["router"]).router,
+    prefix="/api/v1/quizzes",
+    tags=["quizzes"],
+)
+app.include_router(
+    __import__("app.api.certificates", fromlist=["router"]).router,
+    prefix="/api/v1/certificates",
+    tags=["certificates"],
+)
 
 
 @app.get("/healthz", include_in_schema=False)
@@ -40,6 +69,7 @@ async def healthz():
 @app.get("/readyz", include_in_schema=False)
 async def readyz():
     from sqlalchemy import text
+
     async with engine.connect() as c:
         await c.execute(text("SELECT 1"))
     await redis_client.ping()

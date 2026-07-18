@@ -34,7 +34,6 @@ from __future__ import annotations
 
 import argparse
 import io
-import os
 import struct
 import sys
 import zlib
@@ -58,21 +57,21 @@ except ImportError:
 #   multiple-screens/screen-desities#density-independent-pixels
 # ---------------------------------------------------------------------------
 ANDROID_MIPMAP = {
-    "mipmap-mdpi":    48,
-    "mipmap-hdpi":    72,
-    "mipmap-xhdpi":   96,
-    "mipmap-xxhdpi":  144,
+    "mipmap-mdpi": 48,
+    "mipmap-hdpi": 72,
+    "mipmap-xhdpi": 96,
+    "mipmap-xxhdpi": 144,
     "mipmap-xxxhdpi": 192,
 }
 
 ADAPTIVE_BG_SIZE = 432  # 432x432 is the Android adaptive-icon spec.
 
-NSIS_HEADER_W,  NSIS_HEADER_H  = 150, 57
+NSIS_HEADER_W, NSIS_HEADER_H = 150, 57
 NSIS_SIDEBAR_W, NSIS_SIDEBAR_H = 164, 314
 
-SHOPNO_BG    = (0x0B, 0x12, 0x20, 0xFF)  # navy
-SHOPNO_BLUE  = (0x25, 0x63, 0xEB, 0xFF)
-SHOPNO_SKY   = (0x38, 0xBD, 0xF8, 0xFF)
+SHOPNO_BG = (0x0B, 0x12, 0x20, 0xFF)  # navy
+SHOPNO_BLUE = (0x25, 0x63, 0xEB, 0xFF)
+SHOPNO_SKY = (0x38, 0xBD, 0xF8, 0xFF)
 SHOPNO_WHITE = (0xFF, 0xFF, 0xFF, 0xFF)
 
 
@@ -83,7 +82,8 @@ SHOPNO_WHITE = (0xFF, 0xFF, 0xFF, 0xFF)
 def _png_chunk(tag: bytes, data: bytes) -> bytes:
     return (
         struct.pack(">I", len(data))
-        + tag + data
+        + tag
+        + data
         + struct.pack(">I", zlib.crc32(tag + data) & 0xFFFFFFFF)
     )
 
@@ -92,14 +92,12 @@ def write_png_rgba(path: Path, width: int, height: int, pixels: bytes) -> None:
     """Write an RGBA 8-bit PNG. `pixels` is row-major, length w*h*4."""
     if len(pixels) != width * height * 4:
         raise ValueError(
-            f"pixel buffer size mismatch: got {len(pixels)}, "
-            f"expected {width*height*4}"
+            f"pixel buffer size mismatch: got {len(pixels)}, " f"expected {width*height*4}"
         )
     sig = b"\x89PNG\r\n\x1a\n"
     ihdr = struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0)
     # filter byte 0 (None) at the start of each scanline
-    raw = b"".join(b"\x00" + pixels[y*width*4:(y+1)*width*4]
-                   for y in range(height))
+    raw = b"".join(b"\x00" + pixels[y * width * 4 : (y + 1) * width * 4] for y in range(height))
     idat = zlib.compress(raw, 9)
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("wb") as f:
@@ -122,23 +120,22 @@ def flat_rounded_square(size: int, fg: tuple, bg: tuple) -> bytes:
         for x in range(size):
             # corner centres
             inside = True
-            if (x < r and y < r and
-                    (r - x) ** 2 + (r - y) ** 2 > r_sq):
+            if x < r and y < r and (r - x) ** 2 + (r - y) ** 2 > r_sq:
                 inside = False
-            elif (x >= size - r and y < r and
-                  (x - (size - r - 1)) ** 2 + (r - y) ** 2 > r_sq):
+            elif x >= size - r and y < r and (x - (size - r - 1)) ** 2 + (r - y) ** 2 > r_sq:
                 inside = False
-            elif (x < r and y >= size - r and
-                  (r - x) ** 2 + (y - (size - r - 1)) ** 2 > r_sq):
+            elif x < r and y >= size - r and (r - x) ** 2 + (y - (size - r - 1)) ** 2 > r_sq:
                 inside = False
-            elif (x >= size - r and y >= size - r and
-                  (x - (size - r - 1)) ** 2 +
-                  (y - (size - r - 1)) ** 2 > r_sq):
+            elif (
+                x >= size - r
+                and y >= size - r
+                and (x - (size - r - 1)) ** 2 + (y - (size - r - 1)) ** 2 > r_sq
+            ):
                 inside = False
             if not inside:
                 continue
             off = (y * size + x) * 4
-            px[off:off+4] = bytes(fg)
+            px[off : off + 4] = bytes(fg)
     return bytes(px)
 
 
@@ -151,7 +148,7 @@ def flat_round_icon(size: int, fg: tuple) -> bytes:
         for x in range(size):
             if (x - cx) ** 2 + (y - cy) ** 2 <= r * r:
                 off = (y * size + x) * 4
-                px[off:off+4] = bytes(fg)
+                px[off : off + 4] = bytes(fg)
     return bytes(px)
 
 
@@ -179,11 +176,11 @@ def flat_bmp(width: int, height: int, fg: tuple, bg: tuple) -> bytes:
     bmp += struct.pack("<I", file_size)
     bmp += struct.pack("<HH", 0, 0)  # reserved
     bmp += struct.pack("<I", 14 + 40)  # pixel data offset
-    bmp += struct.pack("<I", 40)       # DIB header size
+    bmp += struct.pack("<I", 40)  # DIB header size
     bmp += struct.pack("<i", width)
     bmp += struct.pack("<i", -height)  # negative => top-down rows
-    bmp += struct.pack("<HH", 1, 24)   # planes, bpp
-    bmp += struct.pack("<I", 0)        # compression = BI_RGB
+    bmp += struct.pack("<HH", 1, 24)  # planes, bpp
+    bmp += struct.pack("<I", 0)  # compression = BI_RGB
     bmp += struct.pack("<I", len(pixel_data))
     bmp += struct.pack("<ii", 2835, 2835)  # ~72 DPI in pixels-per-metre
     bmp += struct.pack("<II", 0, 0)  # colours in palette
@@ -198,9 +195,7 @@ def render_with_pillow(svg_path: Path, size: int) -> Image.Image:
     """Rasterize SVG to RGBA PIL Image at the given size."""
     if cairosvg is None or Image is None:
         raise RuntimeError("cairosvg + Pillow required for SVG rendering")
-    png_bytes = cairosvg.svg2png(url=str(svg_path),
-                                 output_width=size,
-                                 output_height=size)
+    png_bytes = cairosvg.svg2png(url=str(svg_path), output_width=size, output_height=size)
     return Image.open(io.BytesIO(png_bytes)).convert("RGBA")
 
 
@@ -240,16 +235,20 @@ def generate_android_mipmaps(svg_path: Path, res_out: Path) -> list[Path]:
         for folder, size in ANDROID_MIPMAP.items():
             write_png_rgba(
                 res_out / folder / "ic_launcher.png",
-                size, size,
+                size,
+                size,
                 flat_rounded_square(size, SHOPNO_BLUE, (0, 0, 0, 0)),
             )
             write_png_rgba(
                 res_out / folder / "ic_launcher_round.png",
-                size, size,
+                size,
+                size,
                 flat_round_icon(size, SHOPNO_BLUE),
             )
-            outputs += [res_out / folder / "ic_launcher.png",
-                        res_out / folder / "ic_launcher_round.png"]
+            outputs += [
+                res_out / folder / "ic_launcher.png",
+                res_out / folder / "ic_launcher_round.png",
+            ]
     return outputs
 
 
@@ -259,27 +258,31 @@ def generate_adaptive_icons(svg_path: Path, res_out: Path) -> list[Path]:
     if cairosvg is not None and Image is not None:
         fg = render_with_pillow(svg_path, ADAPTIVE_BG_SIZE)
         # background: full bleed navy
-        bg = Image.new("RGBA",
-                       (ADAPTIVE_BG_SIZE, ADAPTIVE_BG_SIZE),
-                       SHOPNO_BG)
+        bg = Image.new("RGBA", (ADAPTIVE_BG_SIZE, ADAPTIVE_BG_SIZE), SHOPNO_BG)
         # foreground: 50% safe zone already in the SVG canvas
         save_pil_as_png(fg, res_out / "drawable" / "ic_launcher_foreground.png")
         save_pil_as_png(bg, res_out / "drawable" / "ic_launcher_background.png")
-        outputs += [res_out / "drawable" / "ic_launcher_foreground.png",
-                    res_out / "drawable" / "ic_launcher_background.png"]
+        outputs += [
+            res_out / "drawable" / "ic_launcher_foreground.png",
+            res_out / "drawable" / "ic_launcher_background.png",
+        ]
     else:
         write_png_rgba(
             res_out / "drawable" / "ic_launcher_foreground.png",
-            ADAPTIVE_BG_SIZE, ADAPTIVE_BG_SIZE,
+            ADAPTIVE_BG_SIZE,
+            ADAPTIVE_BG_SIZE,
             flat_rounded_square(ADAPTIVE_BG_SIZE, SHOPNO_BLUE, (0, 0, 0, 0)),
         )
         write_png_rgba(
             res_out / "drawable" / "ic_launcher_background.png",
-            ADAPTIVE_BG_SIZE, ADAPTIVE_BG_SIZE,
+            ADAPTIVE_BG_SIZE,
+            ADAPTIVE_BG_SIZE,
             bytes(SHOPNO_BG) * (ADAPTIVE_BG_SIZE * ADAPTIVE_BG_SIZE),
         )
-        outputs += [res_out / "drawable" / "ic_launcher_foreground.png",
-                    res_out / "drawable" / "ic_launcher_background.png"]
+        outputs += [
+            res_out / "drawable" / "ic_launcher_foreground.png",
+            res_out / "drawable" / "ic_launcher_background.png",
+        ]
     return outputs
 
 
@@ -302,7 +305,7 @@ def write_adaptive_manifest(res_out: Path) -> list[Path]:
             '<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">\n'
             '    <background android:drawable="@drawable/ic_launcher_background"/>\n'
             '    <foreground android:drawable="@drawable/ic_launcher_foreground"/>\n'
-            '</adaptive-icon>\n',
+            "</adaptive-icon>\n",
             encoding="utf-8",
         )
         paths.append(p)
@@ -315,20 +318,20 @@ def generate_nsis_bmps(svg_path: Path, exe_overlay: Path) -> list[Path]:
     paths: list[Path] = []
     if cairosvg is not None and Image is not None:
         for name, w, h in [
-            ("InstallHeader.bmp",  NSIS_HEADER_W,  NSIS_HEADER_H),
+            ("InstallHeader.bmp", NSIS_HEADER_W, NSIS_HEADER_H),
             ("InstallSidebar.bmp", NSIS_SIDEBAR_W, NSIS_SIDEBAR_H),
         ]:
             img = render_with_pillow(svg_path, max(w, h))
             # crop centre
             left = (img.size[0] - w) // 2
-            top  = (img.size[1] - h) // 2
+            top = (img.size[1] - h) // 2
             cropped = img.crop((left, top, left + w, top + h)).convert("RGB")
             out = exe_overlay / name
             cropped.save(out, format="BMP")
             paths.append(out)
     else:
         for name, w, h in [
-            ("InstallHeader.bmp",  NSIS_HEADER_W,  NSIS_HEADER_H),
+            ("InstallHeader.bmp", NSIS_HEADER_W, NSIS_HEADER_H),
             ("InstallSidebar.bmp", NSIS_SIDEBAR_W, NSIS_SIDEBAR_H),
         ]:
             data = flat_bmp(w, h, SHOPNO_SKY, SHOPNO_BG)
@@ -343,12 +346,11 @@ def generate_nsis_bmps(svg_path: Path, exe_overlay: Path) -> list[Path]:
 # ---------------------------------------------------------------------------
 def main() -> int:
     p = argparse.ArgumentParser(description=__doc__.splitlines()[1])
-    p.add_argument("--src", required=True, type=Path,
-                   help="source SVG (e.g. branding/shopnoapp-logo.svg)")
-    p.add_argument("--out", required=True, type=Path,
-                   help="output res/ dir (APK overlay)")
-    p.add_argument("--exe-overlay", type=Path,
-                   help="output dir for NSIS installer BMPs (optional)")
+    p.add_argument(
+        "--src", required=True, type=Path, help="source SVG (e.g. branding/shopnoapp-logo.svg)"
+    )
+    p.add_argument("--out", required=True, type=Path, help="output res/ dir (APK overlay)")
+    p.add_argument("--exe-overlay", type=Path, help="output dir for NSIS installer BMPs (optional)")
     args = p.parse_args()
 
     if not args.src.is_file():
@@ -367,11 +369,11 @@ def main() -> int:
     mipmaps = generate_android_mipmaps(args.src, args.out)
     print(f"      wrote {len(mipmaps)} mipmap PNGs")
 
-    print(f"[2/4] generating adaptive-icon foreground/background")
+    print("[2/4] generating adaptive-icon foreground/background")
     adaptive = generate_adaptive_icons(args.src, args.out)
     print(f"      wrote {len(adaptive)} adaptive-icon PNGs")
 
-    print(f"[3/4] writing adaptive-icon XML manifests")
+    print("[3/4] writing adaptive-icon XML manifests")
     manifests = write_adaptive_manifest(args.out)
     print(f"      wrote {len(manifests)} anydpi-v26 XMLs")
 

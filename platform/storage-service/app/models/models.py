@@ -1,7 +1,11 @@
-from sqlalchemy import Column, String, DateTime, Integer
 import uuid
 from datetime import datetime
+
+from sqlalchemy import Column, DateTime, Integer, String
+
 from app.core.db import Base
+
+
 class Bucket(Base):
     __tablename__ = "buckets"
     id = Column(String(64), primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -9,6 +13,8 @@ class Bucket(Base):
     name = Column(String(64), nullable=False, unique=True)
     purpose = Column(String(64), default="general")
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
 class Object(Base):
     __tablename__ = "objects"
     id = Column(String(64), primary_key=True, default=lambda: str(uuid.uuid4()))

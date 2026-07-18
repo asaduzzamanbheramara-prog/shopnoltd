@@ -9,14 +9,16 @@ the others. State for a running job lives in memory (JOBS dict) so the
 API layer can poll progress; for production use, swap that dict for
 Redis (you already have Redis running in the cluster).
 """
-import uuid
+
 import time
+import uuid
+from datetime import UTC, datetime
+
 import yaml
-from datetime import datetime, timezone
+from models.schemas import FixReport, ServiceConfig, ServiceRunLog, StepStatus
 
 import config
-from agents import github_agent, docker_agent, k8s_agent, log_analyzer
-from models.schemas import ServiceConfig, ServiceRunLog, FixReport, StepStatus
+from agents import docker_agent, github_agent, k8s_agent, log_analyzer
 
 JOBS: dict[str, FixReport] = {}
 
@@ -31,7 +33,7 @@ def _load_service_configs() -> tuple[list[ServiceConfig], list[dict]]:
 
 def start_fix_job() -> str:
     job_id = str(uuid.uuid4())[:8]
-    report = FixReport(job_id=job_id, started_at=datetime.now(timezone.utc).isoformat())
+    report = FixReport(job_id=job_id, started_at=datetime.now(UTC).isoformat())
     JOBS[job_id] = report
     _run_fix(job_id)  # NOTE: caller (main.py) runs this as a background task
     return job_id
@@ -52,8 +54,8 @@ def _run_fix(job_id: str) -> None:
             ok, msg = k8s_agent.apply_manifest(cm["manifest"])
             report.notes.append(
                 f"ConfigMap '{cm['name']}' missing -> applied {cm['manifest']}: {msg}"
-                if ok else
-                f"ConfigMap '{cm['name']}' missing and failed to apply: {msg}"
+                if ok
+                else f"ConfigMap '{cm['name']}' missing and failed to apply: {msg}"
             )
 
     # Step 1: get a commit SHA to tag images with, for traceability.
@@ -77,12 +79,14 @@ def _run_fix(job_id: str) -> None:
         _fix_one_service(svc, sha, run_log)
 
     any_failed = any(
-        s.build == StepStatus.FAILED or s.push == StepStatus.FAILED
-        or s.apply == StepStatus.FAILED or s.rollout == StepStatus.FAILED
+        s.build == StepStatus.FAILED
+        or s.push == StepStatus.FAILED
+        or s.apply == StepStatus.FAILED
+        or s.rollout == StepStatus.FAILED
         for s in report.services
     )
     report.overall_status = StepStatus.FAILED if any_failed else StepStatus.SUCCESS
-    report.finished_at = datetime.now(timezone.utc).isoformat()
+    report.finished_at = datetime.now(UTC).isoformat()
 
 
 def _fix_one_service(svc: ServiceConfig, sha: str, run_log: ServiceRunLog) -> None:
@@ -152,4 +156,6 @@ def _fix_one_service(svc: ServiceConfig, sha: str, run_log: ServiceRunLog) -> No
             return
 
     run_log.healthy = StepStatus.FAILED
-    run_log.last_error = run_log.last_error or f"Exhausted {config.MAX_RETRIES_PER_SERVICE} attempts"
+    run_log.last_error = (
+        run_log.last_error or f"Exhausted {config.MAX_RETRIES_PER_SERVICE} attempts"
+    )

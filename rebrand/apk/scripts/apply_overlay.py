@@ -39,21 +39,20 @@ import os
 import re
 import shutil
 import sys
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable
 
 try:
     import yaml  # PyYAML
 except ImportError:
-    sys.stderr.write(
-        "apply_overlay.py requires PyYAML. Install with: pip install pyyaml\n"
-    )
+    sys.stderr.write("apply_overlay.py requires PyYAML. Install with: pip install pyyaml\n")
     sys.exit(2)
 
 
 # ---------------------------------------------------------------------------
 # overlay copy
 # ---------------------------------------------------------------------------
+
 
 def copy_overlay(overlay_dir: Path, src_dir: Path) -> int:
     """
@@ -183,6 +182,7 @@ def apply_swaps(targets: Iterable[Path], swaps: list[tuple[str, str]]) -> dict[s
 # color rewrite (res/values/colors.xml)
 # ---------------------------------------------------------------------------
 
+
 def apply_colors(src_dir: Path, colors: dict, swap_colors: dict) -> int:
     """
     Replace any of the APKPure color tokens we know about with the
@@ -206,6 +206,7 @@ def apply_colors(src_dir: Path, colors: dict, swap_colors: dict) -> int:
 # ---------------------------------------------------------------------------
 # endhosts.json — the in-app store catalog
 # ---------------------------------------------------------------------------
+
 
 def build_endhosts(endpoints_yaml: Path, out_path: Path) -> int:
     """
@@ -245,20 +246,20 @@ def build_endhosts(endpoints_yaml: Path, out_path: Path) -> int:
 # main
 # ---------------------------------------------------------------------------
 
+
 def main() -> int:
     p = argparse.ArgumentParser(description=__doc__.splitlines()[1])
-    p.add_argument("--src", required=True, type=Path,
-                   help="apktool-decoded APK directory")
-    p.add_argument("--overlay", required=True, type=Path,
-                   help="overlay files to copy in")
-    p.add_argument("--endpoints", required=True, type=Path,
-                   help="endpoints.yaml (source of truth)")
-    p.add_argument("--endhosts-out", required=True, type=Path,
-                   help="where to write the generated endhosts.json")
-    p.add_argument("--colors", type=Path,
-                   help="colors.json (Shopno + APKPure swap table)")
-    p.add_argument("--strings", type=Path,
-                   help="strings.txt (from|to swap table)")
+    p.add_argument("--src", required=True, type=Path, help="apktool-decoded APK directory")
+    p.add_argument("--overlay", required=True, type=Path, help="overlay files to copy in")
+    p.add_argument("--endpoints", required=True, type=Path, help="endpoints.yaml (source of truth)")
+    p.add_argument(
+        "--endhosts-out",
+        required=True,
+        type=Path,
+        help="where to write the generated endhosts.json",
+    )
+    p.add_argument("--colors", type=Path, help="colors.json (Shopno + APKPure swap table)")
+    p.add_argument("--strings", type=Path, help="strings.txt (from|to swap table)")
     args = p.parse_args()
 
     src: Path = args.src.resolve()
@@ -273,7 +274,7 @@ def main() -> int:
     copied = copy_overlay(args.overlay, src)
     print(f"      copied {copied} files")
 
-    print(f"[2/5] patching AndroidManifest.xml (package, label, icon, theme)")
+    print("[2/5] patching AndroidManifest.xml (package, label, icon, theme)")
     overlay_manifest = args.overlay / MANIFEST_PATH
     if overlay_manifest.is_file():
         # Overlay supplies the canonical values. Pull them out of the
@@ -293,19 +294,18 @@ def main() -> int:
             theme=m_theme.group(1) if m_theme else "@style/AppTheme.Shopno",
         )
     else:
-        sys.stderr.write("warning: overlay has no AndroidManifest.xml; "
-                         "skipping manifest patch\n")
+        sys.stderr.write(
+            "warning: overlay has no AndroidManifest.xml; " "skipping manifest patch\n"
+        )
 
     if args.strings and args.strings.is_file():
         print(f"[3/5] applying string swaps from {args.strings}")
         swaps = parse_swap_table(args.strings)
         targets = list(iter_swap_targets(src))
-        print(f"      walking {len(targets)} target files for "
-              f"{len(swaps)} swap pairs")
+        print(f"      walking {len(targets)} target files for " f"{len(swaps)} swap pairs")
         hits = apply_swaps(targets, swaps)
         total_hits = sum(hits.values())
-        print(f"      made {total_hits} replacements across "
-              f"{len(hits)} files")
+        print(f"      made {total_hits} replacements across " f"{len(hits)} files")
     else:
         print("[3/5] no --strings file, skipping")
 

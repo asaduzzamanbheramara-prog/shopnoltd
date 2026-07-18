@@ -1,7 +1,11 @@
-from sqlalchemy import Column, String, DateTime, Integer, JSON, Float
 import uuid
 from datetime import datetime
+
+from sqlalchemy import JSON, Column, DateTime, Float, Integer, String
+
 from app.core.db import Base
+
+
 class Project(Base):
     __tablename__ = "interior_projects"
     id = Column(String(64), primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -12,6 +16,8 @@ class Project(Base):
     style = Column(String(64), default="modern")
     budget = Column(Float, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
 class Model3D(Base):
     __tablename__ = "interior_models"
     id = Column(String(64), primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -22,6 +28,8 @@ class Model3D(Base):
     thumbnail = Column(String(512))
     size_bytes = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
 class Room(Base):
     __tablename__ = "interior_rooms"
     id = Column(String(64), primary_key=True, default=lambda: str(uuid.uuid4()))

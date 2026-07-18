@@ -2,13 +2,15 @@
 official `razorpay` SDK, since that SDK is synchronous and would block the
 event loop. Same API Razorpay's SDK wraps: https://razorpay.com/docs/api/
 """
-import hmac
+
 import hashlib
+import hmac
 import json
 import uuid
+
 import httpx
-from app.providers.base import BaseProvider
 from app.core.config import settings
+from app.providers.base import BaseProvider
 
 BASE_URL = "https://api.razorpay.com/v1"
 
@@ -45,7 +47,9 @@ class RazorpayProvider(BaseProvider):
         }
 
     async def create_withdrawal(self, tx, destination, **kwargs):
-        raise NotImplementedError("Razorpay payouts require RazorpayX; use manual withdrawal with admin approval")
+        raise NotImplementedError(
+            "Razorpay payouts require RazorpayX; use manual withdrawal with admin approval"
+        )
 
     async def verify_webhook(self, request_body: bytes, headers: dict) -> dict:
         if not self.enabled:

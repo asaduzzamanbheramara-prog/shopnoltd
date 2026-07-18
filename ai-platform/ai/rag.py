@@ -1,1 +1,2 @@
-def retrieve(q): return []
+def retrieve(q):
+    return []

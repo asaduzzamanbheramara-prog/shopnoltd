@@ -8,28 +8,44 @@ because an external FX provider had a blip -- but every response says
 whether the numbers are `"live": true` or `"live": false, "stale_since": ...`
 so nobody mistakes a fallback for a fresh rate.
 """
+
 import time
+
 import requests
+
 from app import config
 
 # Static snapshot used only if the live API has never succeeded yet.
 _FALLBACK_RATES = {
-    "USD": 1.0, "EUR": 0.92, "GBP": 0.79, "BDT": 109.5, "INR": 83.2, "JPY": 149.5,
-    "CNY": 7.24, "AUD": 1.52, "CAD": 1.37, "SGD": 1.34, "MYR": 4.72, "PKR": 278.5,
-    "LKR": 308.0, "NPR": 133.0, "AED": 3.67, "SAR": 3.75,
+    "USD": 1.0,
+    "EUR": 0.92,
+    "GBP": 0.79,
+    "BDT": 109.5,
+    "INR": 83.2,
+    "JPY": 149.5,
+    "CNY": 7.24,
+    "AUD": 1.52,
+    "CAD": 1.37,
+    "SGD": 1.34,
+    "MYR": 4.72,
+    "PKR": 278.5,
+    "LKR": 308.0,
+    "NPR": 133.0,
+    "AED": 3.67,
+    "SAR": 3.75,
 }
 
 CURRENCY_INFO = {
-    "USD": {"name": "US Dollar", "symbol": "$", "flag": "\U0001F1FA\U0001F1F8"},
-    "EUR": {"name": "Euro", "symbol": "\u20ac", "flag": "\U0001F1EA\U0001F1FA"},
-    "GBP": {"name": "British Pound", "symbol": "\u00a3", "flag": "\U0001F1EC\U0001F1E7"},
-    "BDT": {"name": "Bangladeshi Taka", "symbol": "\u09f3", "flag": "\U0001F1E7\U0001F1E9"},
-    "INR": {"name": "Indian Rupee", "symbol": "\u20b9", "flag": "\U0001F1EE\U0001F1F3"},
-    "JPY": {"name": "Japanese Yen", "symbol": "\u00a5", "flag": "\U0001F1EF\U0001F1F5"},
-    "CNY": {"name": "Chinese Yuan", "symbol": "\u00a5", "flag": "\U0001F1E8\U0001F1F3"},
-    "AUD": {"name": "Australian Dollar", "symbol": "A$", "flag": "\U0001F1E6\U0001F1FA"},
-    "CAD": {"name": "Canadian Dollar", "symbol": "C$", "flag": "\U0001F1E8\U0001F1E6"},
-    "SGD": {"name": "Singapore Dollar", "symbol": "S$", "flag": "\U0001F1F8\U0001F1EC"},
+    "USD": {"name": "US Dollar", "symbol": "$", "flag": "\U0001f1fa\U0001f1f8"},
+    "EUR": {"name": "Euro", "symbol": "\u20ac", "flag": "\U0001f1ea\U0001f1fa"},
+    "GBP": {"name": "British Pound", "symbol": "\u00a3", "flag": "\U0001f1ec\U0001f1e7"},
+    "BDT": {"name": "Bangladeshi Taka", "symbol": "\u09f3", "flag": "\U0001f1e7\U0001f1e9"},
+    "INR": {"name": "Indian Rupee", "symbol": "\u20b9", "flag": "\U0001f1ee\U0001f1f3"},
+    "JPY": {"name": "Japanese Yen", "symbol": "\u00a5", "flag": "\U0001f1ef\U0001f1f5"},
+    "CNY": {"name": "Chinese Yuan", "symbol": "\u00a5", "flag": "\U0001f1e8\U0001f1f3"},
+    "AUD": {"name": "Australian Dollar", "symbol": "A$", "flag": "\U0001f1e6\U0001f1fa"},
+    "CAD": {"name": "Canadian Dollar", "symbol": "C$", "flag": "\U0001f1e8\U0001f1e6"},
+    "SGD": {"name": "Singapore Dollar", "symbol": "S$", "flag": "\U0001f1f8\U0001f1ec"},
 }
 
 _cache = {"rates": dict(_FALLBACK_RATES), "fetched_at": None, "live": False}
@@ -49,8 +65,12 @@ def _fetch_live_rates() -> dict:
 def get_rates() -> dict:
     """Returns {"rates": {...}, "live": bool, "fetched_at": iso_or_None}."""
     if not config.EXCHANGE_RATE_LIVE_ENABLED:
-        return {"rates": _cache["rates"], "live": False, "fetched_at": None,
-                "note": "EXCHANGE_RATE_API_KEY not set - using a static snapshot, not live rates."}
+        return {
+            "rates": _cache["rates"],
+            "live": False,
+            "fetched_at": None,
+            "note": "EXCHANGE_RATE_API_KEY not set - using a static snapshot, not live rates.",
+        }
 
     stale = (
         _cache["fetched_at"] is None

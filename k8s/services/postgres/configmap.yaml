@@ -3,18 +3,38 @@ kind: ConfigMap
 metadata:
   name: postgres-config
   namespace: shopno-data
+  labels:
+    app.kubernetes.io/name: postgres
+    app.kubernetes.io/part-of: shopnoltd
+    app.kubernetes.io/component: database
+
 data:
-  APP_NAME: "postgres"
-  APP_PORT: "5432"
-  LOG_LEVEL: "info"
-  LOG_FORMAT: "json"
-  ENV: "production"
-  PATH_PREFIX: "/healthz"
-  OTEL_EXPORTER_OTLP_ENDPOINT: "http://tempo.observability.svc.cluster.local:4317"
-  REDIS_HOST: "redis.data.svc.cluster.local"
-  REDIS_PORT: "6379"
-  POSTGRES_HOST: "postgres.data.svc.cluster.local"
-  POSTGRES_PORT: "5432"
-  MINIO_ENDPOINT: "minio.data.svc.cluster.local:9000"
-  KEYCLOAK_ISSUER: "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
-  KEYCLOAK_CLIENT_ID: "postgres"
+  # PostgreSQL runtime configuration
+
+  POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.UTF-8"
+
+  PGDATA: "/var/lib/postgresql/data/pgdata"
+
+  # Connection defaults
+  PGPORT: "5432"
+
+  # Shopnoltd platform identification
+  PLATFORM_NAME: "shopnoltd"
+  PLATFORM_MODE: "multi-tenant"
+
+  # Tenant architecture
+  TENANT_DATABASE_MODE: "schema"
+
+  # Performance baseline
+  POSTGRES_MAX_CONNECTIONS: "200"
+
+  POSTGRES_SHARED_BUFFERS: "256MB"
+
+  POSTGRES_EFFECTIVE_CACHE_SIZE: "1GB"
+
+  POSTGRES_WORK_MEM: "16MB"
+
+  POSTGRES_MAINTENANCE_WORK_MEM: "128MB"
+
+  # Timezone
+  TZ: "UTC"

@@ -5,14 +5,14 @@ Milestone 1 scope: FastAPI app, config, Docker, PostgreSQL, basic auth.
 Later milestones (see README) add the AI engine, RAG, GitHub integration,
 Kubernetes/Docker assistants, and the React frontend.
 """
-from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
 
 from app.config import settings
 from app.database import init_models
 from app.routers import auth, chat, health
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 
 @asynccontextmanager

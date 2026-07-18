@@ -1,7 +1,11 @@
-from sqlalchemy import Column, String, DateTime, Boolean, Integer
 import uuid
 from datetime import datetime
+
+from sqlalchemy import Boolean, Column, DateTime, Integer, String
+
 from app.core.db import Base
+
+
 class Stream(Base):
     __tablename__ = "streams"
     id = Column(String(64), primary_key=True, default=lambda: str(uuid.uuid4()))

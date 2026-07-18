@@ -1,10 +1,12 @@
 """SSLCommerz — ported from billing-engine/app/gateways/sslcommerz_gateway.py
 to payment-service's async BaseProvider interface.
 """
+
 import uuid
+
 import httpx
-from app.providers.base import BaseProvider
 from app.core.config import settings
+from app.providers.base import BaseProvider
 
 API_URLS = {
     True: "https://sandbox.sslcommerz.com/gwprocess/v4/api.php",
@@ -36,7 +38,8 @@ class SSLCommerzProvider(BaseProvider):
             "total_amount": f"{float(tx.amount):.2f}",
             "currency": tx.currency.upper(),
             "tran_id": reference,
-            "success_url": return_url or f"{settings.base_callback_url}/api/v1/webhooks/sslcommerz/success",
+            "success_url": return_url
+            or f"{settings.base_callback_url}/api/v1/webhooks/sslcommerz/success",
             "fail_url": f"{settings.base_callback_url}/api/v1/webhooks/sslcommerz/fail",
             "cancel_url": f"{settings.base_callback_url}/api/v1/webhooks/sslcommerz/cancel",
             "cus_name": kwargs.get("customer_name", "Shopnoltd Customer"),
@@ -59,12 +62,15 @@ class SSLCommerzProvider(BaseProvider):
         }
 
     async def create_withdrawal(self, tx, destination, **kwargs):
-        raise NotImplementedError("SSLCommerz payouts not supported via this API; use manual withdrawal with admin approval")
+        raise NotImplementedError(
+            "SSLCommerz payouts not supported via this API; use manual withdrawal with admin approval"
+        )
 
     async def verify_webhook(self, request_body: bytes, headers: dict) -> dict:
         # SSLCommerz posts form-encoded IPN data; must additionally call
         # get_status() (val_id validation) before trusting this.
         import urllib.parse
+
         return dict(urllib.parse.parse_qsl(request_body.decode())) if request_body else {}
 
     async def get_status(self, external_id: str) -> str:

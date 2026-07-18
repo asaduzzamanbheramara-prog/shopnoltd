@@ -1,12 +1,8 @@
 from fastapi import FastAPI
 
-app=FastAPI()
+app = FastAPI()
 
 
 @app.get("/health")
 def health():
-
-    return {
-        "status":"ok",
-        "service":"live"
-    }
+    return {"status": "ok", "service": "live"}

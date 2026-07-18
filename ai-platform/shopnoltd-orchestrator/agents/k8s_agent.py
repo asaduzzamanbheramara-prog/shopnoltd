@@ -3,10 +3,13 @@ Kubernetes agent. Wraps the official python client so the orchestrator
 never shells out to `kubectl` (fewer moving parts, real error objects
 instead of parsed stdout).
 """
+
 import time
-import yaml
 from pathlib import Path
-from kubernetes import client, config as kconfig
+
+import yaml
+from kubernetes import client
+from kubernetes import config as kconfig
 from kubernetes.client.rest import ApiException
 from kubernetes.utils import create_from_yaml
 
@@ -62,15 +65,13 @@ def _patch_existing(path: Path) -> tuple[bool, str]:
         return False, f"K8s API error on patch: {e.reason}"
 
 
-def patch_deployment_image(deployment_name: str, container_name: str, image: str) -> tuple[bool, str]:
+def patch_deployment_image(
+    deployment_name: str, container_name: str, image: str
+) -> tuple[bool, str]:
     load_k8s_config()
     apps_v1 = client.AppsV1Api()
     patch = {
-        "spec": {
-            "template": {
-                "spec": {"containers": [{"name": container_name, "image": image}]}
-            }
-        }
+        "spec": {"template": {"spec": {"containers": [{"name": container_name, "image": image}]}}}
     }
     try:
         apps_v1.patch_namespaced_deployment(deployment_name, config.K8S_NAMESPACE, patch)
@@ -112,12 +113,14 @@ def get_pod_statuses(deployment_name: str) -> list[dict]:
         for c in cs:
             if c.state and c.state.waiting:
                 waiting_reason = c.state.waiting.reason
-        results.append({
-            "name": pod.metadata.name,
-            "phase": pod.status.phase,
-            "waiting_reason": waiting_reason,
-            "restart_count": sum(c.restart_count for c in cs) if cs else 0,
-        })
+        results.append(
+            {
+                "name": pod.metadata.name,
+                "phase": pod.status.phase,
+                "waiting_reason": waiting_reason,
+                "restart_count": sum(c.restart_count for c in cs) if cs else 0,
+            }
+        )
     return results
 
 

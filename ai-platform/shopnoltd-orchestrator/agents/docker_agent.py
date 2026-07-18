@@ -6,9 +6,12 @@ remote DOCKER_HOST. If the orchestrator itself runs inside Kubernetes
 without a Docker daemon available, swap this module's build_image() for
 a Kaniko Job instead (see README "Running builds inside the cluster").
 """
+
 import os
+
 import docker
-from docker.errors import BuildError, APIError
+from docker.errors import APIError, BuildError
+
 import config
 
 

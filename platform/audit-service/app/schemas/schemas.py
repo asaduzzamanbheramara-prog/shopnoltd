@@ -1,4 +1,6 @@
 from pydantic import BaseModel
+
+
 class LogIn(BaseModel):
     action: str
     resource: str = None

@@ -1,7 +1,11 @@
-from sqlalchemy import Column, String, DateTime
 import uuid
 from datetime import datetime
+
+from sqlalchemy import Column, DateTime, String
+
 from app.core.db import Base
+
+
 class Report(Base):
     __tablename__ = "reports"
     id = Column(String(64), primary_key=True, default=lambda: str(uuid.uuid4()))

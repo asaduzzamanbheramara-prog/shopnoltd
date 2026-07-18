@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.core.db import SessionLocal
 from app.core.security import require_tenant_access
 from app.models.models import Tenant
-from app.schemas.schemas import TenantSettingsPatch, TenantSettingsOut
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from app.schemas.schemas import TenantSettingsOut, TenantSettingsPatch
 
 router = APIRouter()
 bearer = HTTPBearer()
@@ -18,7 +19,12 @@ async def db():
 
 def _out(t: Tenant) -> TenantSettingsOut:
     s = t.settings or {}
-    return TenantSettingsOut(tenant_id=t.id, theme=s.get("theme", {}), texts=s.get("texts", {}), plugins=s.get("plugins", {}))
+    return TenantSettingsOut(
+        tenant_id=t.id,
+        theme=s.get("theme", {}),
+        texts=s.get("texts", {}),
+        plugins=s.get("plugins", {}),
+    )
 
 
 @router.get("/{tenant_id}/settings", response_model=TenantSettingsOut)
@@ -31,7 +37,12 @@ async def get(tenant_id: str, s: AsyncSession = Depends(db)):
 
 
 @router.patch("/{tenant_id}/settings", response_model=TenantSettingsOut)
-async def update(tenant_id: str, body: TenantSettingsPatch, creds: HTTPAuthorizationCredentials = Depends(bearer), s: AsyncSession = Depends(db)):
+async def update(
+    tenant_id: str,
+    body: TenantSettingsPatch,
+    creds: HTTPAuthorizationCredentials = Depends(bearer),
+    s: AsyncSession = Depends(db),
+):
     """platform_admin or tenant_owner only. Only the keys present in the
     request body are merged in -- omit a key to leave it untouched, send an
     empty object ({}) to clear it."""
@@ -47,5 +58,6 @@ async def update(tenant_id: str, body: TenantSettingsPatch, creds: HTTPAuthoriza
     if body.plugins is not None:
         current["plugins"] = {**current.get("plugins", {}), **body.plugins}
     t.settings = current
-    await s.commit(); await s.refresh(t)
+    await s.commit()
+    await s.refresh(t)
     return _out(t)
