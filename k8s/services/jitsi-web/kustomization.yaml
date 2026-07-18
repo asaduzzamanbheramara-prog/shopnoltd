@@ -20,4 +20,6 @@ labels:
 - includeSelectors: true
   pairs:
     app.kubernetes.io/name: jitsi-web
+- includeSelectors: false
+  pairs:
     app.kubernetes.io/part-of: shopnoltd
