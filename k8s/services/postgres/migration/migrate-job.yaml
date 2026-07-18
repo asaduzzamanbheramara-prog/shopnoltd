@@ -1,0 +1,88 @@
+apiVersion: batch/v1
+kind: Job
+
+metadata:
+  name: postgres-platform-migration
+  namespace: shopno-data
+
+
+spec:
+
+  backoffLimit: 3
+
+  template:
+
+    spec:
+
+      restartPolicy: Never
+
+
+      containers:
+
+      - name: migration
+
+        image: postgres:16
+
+
+        envFrom:
+
+        - secretRef:
+            name: postgres-secret
+
+
+        command:
+
+        - /bin/bash
+
+        - -c
+
+        - |
+
+          export PGPASSWORD=$POSTGRES_PASSWORD
+
+
+          until pg_isready \
+          -h $POSTGRES_HOST \
+          -p $POSTGRES_PORT \
+          -U $POSTGRES_USER
+          do
+            sleep 3
+          done
+
+
+          echo "Running database migration"
+
+
+          for file in /sql/*.sql
+          do
+
+            echo "Executing $file"
+
+
+            psql \
+            -h $POSTGRES_HOST \
+            -p $POSTGRES_PORT \
+            -U $POSTGRES_USER \
+            -d $POSTGRES_DB \
+            -f $file || true
+
+
+          done
+
+
+          echo "Migration finished"
+
+
+        volumeMounts:
+
+        - name: sql
+          mountPath: /sql
+
+
+      volumes:
+
+      - name: sql
+
+        configMap:
+
+          name: postgres-platform-migrations

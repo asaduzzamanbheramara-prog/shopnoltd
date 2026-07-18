@@ -12,10 +12,12 @@ Trigger a full fix:
     curl -X POST http://localhost:8080/fix
     curl http://localhost:8080/fix/<job_id>
 """
-from fastapi import FastAPI, BackgroundTasks, HTTPException
-from fastapi.responses import PlainTextResponse
 
-from agents import orchestrator, k8s_agent
+from datetime import UTC
+
+from agents import k8s_agent, orchestrator
+from fastapi import BackgroundTasks, FastAPI, HTTPException
+from fastapi.responses import PlainTextResponse
 
 app = FastAPI(title="Shopnoltd AI", version="2.0.0")
 
@@ -41,13 +43,12 @@ def trigger_fix(background_tasks: BackgroundTasks):
     Runs in the background; poll /fix/{job_id} for progress.
     """
     import uuid
-    from datetime import datetime, timezone
+    from datetime import datetime
+
     from models.schemas import FixReport
 
     job_id = str(uuid.uuid4())[:8]
-    orchestrator.JOBS[job_id] = FixReport(
-        job_id=job_id, started_at=datetime.now(timezone.utc).isoformat()
-    )
+    orchestrator.JOBS[job_id] = FixReport(job_id=job_id, started_at=datetime.now(UTC).isoformat())
     background_tasks.add_task(orchestrator._run_fix, job_id)
     return {"job_id": job_id, "status": "started"}
 

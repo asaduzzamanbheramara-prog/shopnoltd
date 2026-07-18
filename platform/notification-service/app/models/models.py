@@ -1,9 +1,26 @@
-from sqlalchemy import Column, String, DateTime, JSON, Enum, Text
-import uuid, enum
+import enum
+import uuid
 from datetime import datetime
+
+from sqlalchemy import JSON, Column, DateTime, Enum, String, Text
+
 from app.core.db import Base
-class NStatus(str, enum.Enum): pending="pending"; sent="sent"; failed="failed"; queued="queued"
-class NChannel(str, enum.Enum): email="email"; sms="sms"; push="push"; webhook="webhook"
+
+
+class NStatus(str, enum.Enum):
+    pending = "pending"
+    sent = "sent"
+    failed = "failed"
+    queued = "queued"
+
+
+class NChannel(str, enum.Enum):
+    email = "email"
+    sms = "sms"
+    push = "push"
+    webhook = "webhook"
+
+
 class Notification(Base):
     __tablename__ = "notifications"
     id = Column(String(64), primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -18,6 +35,8 @@ class Notification(Base):
     error = Column(Text)
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
     sent_at = Column(DateTime)
+
+
 class Template(Base):
     __tablename__ = "templates"
     id = Column(String(64), primary_key=True, default=lambda: str(uuid.uuid4()))

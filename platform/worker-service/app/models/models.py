@@ -1,7 +1,11 @@
-from sqlalchemy import Column, String, DateTime, JSON, Integer
 import uuid
 from datetime import datetime
+
+from sqlalchemy import JSON, Column, DateTime, Integer, String
+
 from app.core.db import Base
+
+
 class Task(Base):
     __tablename__ = "tasks"
     id = Column(String(64), primary_key=True, default=lambda: str(uuid.uuid4()))

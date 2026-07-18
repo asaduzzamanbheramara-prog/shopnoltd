@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-platform-migrations
+  namespace: shopno-data
+
+data:
+
+  run-migrations.sh: |
+    #!/bin/bash
+    set -e
+
+    export PGPASSWORD=$POSTGRES_PASSWORD
+
+    echo "Running Shopnoltd database migration"
+
+    for file in /sql/*.sql
+    do
+        echo "Executing $file"
+        psql \
+        -h postgres \
+        -U $POSTGRES_USER \
+        -d postgres \
+        -f $file || true
+    done
+
+    echo "Migration completed"

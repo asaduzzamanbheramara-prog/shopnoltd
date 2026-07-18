@@ -1,7 +1,9 @@
 import uuid
+
 import requests
+
 from app import config
-from app.gateways.base import PaymentGateway, GatewayResult
+from app.gateways.base import GatewayResult, PaymentGateway
 
 BASE_URLS = {
     True: "https://tokenized.sandbox.bka.sh/v1.2.0-beta",
@@ -41,10 +43,14 @@ class BkashGateway(PaymentGateway):
         self._token = data["id_token"]
         return self._token
 
-    def create_payment(self, amount: float, currency: str, reference: str, **kwargs) -> GatewayResult:
+    def create_payment(
+        self, amount: float, currency: str, reference: str, **kwargs
+    ) -> GatewayResult:
         if not self.enabled:
             return GatewayResult(
-                gateway=self.name, is_demo=True, status="pending",
+                gateway=self.name,
+                is_demo=True,
+                status="pending",
                 gateway_reference=f"demo_bkash_{uuid.uuid4().hex[:12]}",
                 redirect_url=None,
                 note="bKash not configured (missing app key/secret/username/password) - running in demo mode.",
@@ -69,8 +75,11 @@ class BkashGateway(PaymentGateway):
         resp.raise_for_status()
         data = resp.json()
         return GatewayResult(
-            gateway=self.name, is_demo=False, status="pending",
-            gateway_reference=data.get("paymentID"), redirect_url=data.get("bkashURL"),
+            gateway=self.name,
+            is_demo=False,
+            status="pending",
+            gateway_reference=data.get("paymentID"),
+            redirect_url=data.get("bkashURL"),
             raw=data,
         )
 

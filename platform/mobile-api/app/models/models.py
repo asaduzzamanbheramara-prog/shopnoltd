@@ -1,7 +1,11 @@
-from sqlalchemy import Column, String, DateTime, Integer, JSON
 import uuid
 from datetime import datetime
+
+from sqlalchemy import JSON, Column, DateTime, Integer, String
+
 from app.core.db import Base
+
+
 class AppRelease(Base):
     __tablename__ = "app_releases"
     id = Column(String(64), primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -15,6 +19,8 @@ class AppRelease(Base):
     release_notes = Column(String)
     force_update = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
+
+
 class AppConfig(Base):
     __tablename__ = "app_config"
     id = Column(String(64), primary_key=True, default=lambda: str(uuid.uuid4()))

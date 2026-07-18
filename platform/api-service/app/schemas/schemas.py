@@ -1,4 +1,6 @@
 from pydantic import BaseModel
+
+
 class HealthAll(BaseModel):
     api_service: str
     auth: str

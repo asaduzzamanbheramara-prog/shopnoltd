@@ -1,7 +1,11 @@
-from sqlalchemy import Column, String, DateTime, Integer, Float, Text
 import uuid
 from datetime import datetime
+
+from sqlalchemy import Column, DateTime, Float, Integer, String, Text
+
 from app.core.db import Base
+
+
 class Donor(Base):
     __tablename__ = "donors"
     id = Column(String(64), primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -12,6 +16,8 @@ class Donor(Base):
     is_anonymous = Column(Integer, default=0)
     total_donated = Column(Float, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
 class Donation(Base):
     __tablename__ = "donations"
     id = Column(String(64), primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -24,6 +30,8 @@ class Donation(Base):
     status = Column(String(16), default="pending")  # pending, completed, refunded
     receipt_no = Column(String(32))
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
+
+
 class Campaign(Base):
     __tablename__ = "campaigns"
     id = Column(String(64), primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -35,6 +43,8 @@ class Campaign(Base):
     starts_at = Column(DateTime, default=datetime.utcnow)
     ends_at = Column(DateTime)
     active = Column(Integer, default=1)
+
+
 class Grant(Base):
     __tablename__ = "grants"
     id = Column(String(64), primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -46,6 +56,8 @@ class Grant(Base):
     status = Column(String(16), default="open")  # open, awarded, closed
     description = Column(Text)
     deadline = Column(DateTime)
+
+
 class Beneficiary(Base):
     __tablename__ = "beneficiaries"
     id = Column(String(64), primary_key=True, default=lambda: str(uuid.uuid4()))

@@ -2,8 +2,9 @@
 Repo agent. Keeps a local checkout in sync and reports the commit SHA
 used to tag images, so every build is traceable back to a commit.
 """
+
 import subprocess
-from pathlib import Path
+
 import config
 
 
@@ -26,7 +27,9 @@ def ensure_repo_current() -> str:
 
     sha = subprocess.run(
         ["git", "-C", str(root), "rev-parse", "--short", "HEAD"],
-        check=True, capture_output=True, text=True,
+        check=True,
+        capture_output=True,
+        text=True,
     ).stdout.strip()
     return sha
 

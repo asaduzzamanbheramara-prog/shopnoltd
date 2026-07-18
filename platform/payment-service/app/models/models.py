@@ -1,14 +1,52 @@
 """SQLAlchemy models for payments."""
-from sqlalchemy import Column, String, Numeric, DateTime, ForeignKey, Enum, Boolean, Index
-from sqlalchemy.dialects.postgresql import UUID, JSONB
-from sqlalchemy.orm import relationship
-import uuid, enum
-from datetime import datetime
-from app.core.db import Base
 
-class TxStatus(str, enum.Enum): pending = "pending"; processing = "processing"; completed = "completed"; failed = "failed"; cancelled = "cancelled"; requires_approval = "requires_approval"
-class TxType(str, enum.Enum): deposit = "deposit"; withdrawal = "withdrawal"; transfer = "transfer"; fee = "fee"; refund = "refund"; exchange = "exchange"; subscription = "subscription"
-class PaymentMethod(str, enum.Enum): stripe = "stripe"; paypal = "paypal"; binance = "binance"; payeer = "payeer"; bkash = "bkash"; nagad = "nagad"; rocket = "rocket"; bank = "bank"; manual = "manual"; btc = "btc"; eth = "eth"; usdt = "usdt"; bnb = "bnb"; sol = "sol"; trx = "trx"; razorpay = "razorpay"; sslcommerz = "sslcommerz"
+import enum
+import uuid
+from datetime import datetime
+
+from app.core.db import Base
+from sqlalchemy import Column, DateTime, Enum, ForeignKey, Index, Numeric, String
+from sqlalchemy.dialects.postgresql import JSONB, UUID
+
+
+class TxStatus(str, enum.Enum):
+    pending = "pending"
+    processing = "processing"
+    completed = "completed"
+    failed = "failed"
+    cancelled = "cancelled"
+    requires_approval = "requires_approval"
+
+
+class TxType(str, enum.Enum):
+    deposit = "deposit"
+    withdrawal = "withdrawal"
+    transfer = "transfer"
+    fee = "fee"
+    refund = "refund"
+    exchange = "exchange"
+    subscription = "subscription"
+
+
+class PaymentMethod(str, enum.Enum):
+    stripe = "stripe"
+    paypal = "paypal"
+    binance = "binance"
+    payeer = "payeer"
+    bkash = "bkash"
+    nagad = "nagad"
+    rocket = "rocket"
+    bank = "bank"
+    manual = "manual"
+    btc = "btc"
+    eth = "eth"
+    usdt = "usdt"
+    bnb = "bnb"
+    sol = "sol"
+    trx = "trx"
+    razorpay = "razorpay"
+    sslcommerz = "sslcommerz"
+
 
 class Wallet(Base):
     __tablename__ = "wallets"
@@ -21,6 +59,7 @@ class Wallet(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     __table_args__ = (Index("ix_wallet_user_currency", "user_id", "currency", unique=True),)
+
 
 class Transaction(Base):
     __tablename__ = "transactions"
@@ -39,4 +78,3 @@ class Transaction(Base):
     approved_by = Column(String(64), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
     completed_at = Column(DateTime, nullable=True)
-

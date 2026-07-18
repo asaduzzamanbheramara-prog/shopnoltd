@@ -1,1 +1,2 @@
-class VectorStore: pass
+class VectorStore:
+    pass

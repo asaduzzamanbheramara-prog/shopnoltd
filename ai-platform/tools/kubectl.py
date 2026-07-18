@@ -1,2 +1,2 @@
 def version():
-    return 'kubectl wrapper placeholder'
+    return "kubectl wrapper placeholder"

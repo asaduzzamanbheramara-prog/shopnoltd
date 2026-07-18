@@ -1,7 +1,11 @@
-from sqlalchemy import Column, String, DateTime, Integer, Float, Boolean, Text
 import uuid
 from datetime import datetime
+
+from sqlalchemy import Boolean, Column, DateTime, Float, Integer, String, Text
+
 from app.core.db import Base
+
+
 class Event(Base):
     __tablename__ = "events"
     id = Column(String(64), primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -17,6 +21,8 @@ class Event(Base):
     is_online = Column(Boolean, default=False)
     cover_image = Column(String(512))
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
 class Session(Base):
     __tablename__ = "event_sessions"
     id = Column(String(64), primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -27,6 +33,8 @@ class Session(Base):
     ends_at = Column(DateTime, nullable=False)
     track = Column(String(64))
     room = Column(String(64))
+
+
 class Ticket(Base):
     __tablename__ = "event_tickets"
     id = Column(String(64), primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -38,6 +46,8 @@ class Ticket(Base):
     status = Column(String(16), default="valid")  # valid, used, cancelled
     price = Column(Float, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
 class Speaker(Base):
     __tablename__ = "event_speakers"
     id = Column(String(64), primary_key=True, default=lambda: str(uuid.uuid4()))

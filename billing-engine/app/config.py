@@ -8,9 +8,11 @@ required credentials are missing, so the API always tells the truth about
 whether a given payment is real or simulated -- it never fakes a "success
 rate" the way the old prototype did.
 """
+
 import os
 
 from dotenv import load_dotenv
+
 load_dotenv()  # reads .env for local dev; in Docker/K8s, real env vars take priority and this is a harmless no-op
 
 
@@ -99,7 +101,9 @@ PAYONEER_ENABLED = bool(PAYONEER_PROGRAM_ID and PAYONEER_API_USERNAME and PAYONE
 # ---------------------------------------------------------------------------
 # Live exchange rates
 # ---------------------------------------------------------------------------
-EXCHANGE_RATE_API_KEY = _env("EXCHANGE_RATE_API_KEY")  # exchangerate.host / openexchangerates.org key
+EXCHANGE_RATE_API_KEY = _env(
+    "EXCHANGE_RATE_API_KEY"
+)  # exchangerate.host / openexchangerates.org key
 EXCHANGE_RATE_LIVE_ENABLED = bool(EXCHANGE_RATE_API_KEY)
 EXCHANGE_RATE_CACHE_SECONDS = int(_env("EXCHANGE_RATE_CACHE_SECONDS", "3600"))
 

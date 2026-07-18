@@ -2,18 +2,27 @@
 All use official upstream open-source images, all built in GitHub CI,
 all branded as Shopnoltd. Each gets a complete k8s + Dockerfile + source.
 """
-import os, re
+
+import os
+import re
+
 ROOT = "/mnt/c/Users/asadu/PROJECTS/shopnoltd"
+
 
 def W(p, c):
     fp = os.path.join(ROOT, p)
     os.makedirs(os.path.dirname(fp), exist_ok=True)
-    if not c.endswith("\n"): c += "\n"
-    with open(fp, "w") as f: f.write(c)
+    if not c.endswith("\n"):
+        c += "\n"
+    with open(fp, "w") as f:
+        f.write(c)
+
 
 def py_service(name, title, port=8080, db=None, routers="", extra_reqs=""):
     db = db or name.replace("-", "_")
-    W(f"platform/{name}/Dockerfile", f"""FROM python:3.12-slim
+    W(
+        f"platform/{name}/Dockerfile",
+        f"""FROM python:3.12-slim
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1
 RUN groupadd -g 10001 shopno && useradd -u 10001 -g shopno -d /app -s /sbin/nologin shopno
 WORKDIR /app
@@ -25,8 +34,11 @@ USER shopno
 EXPOSE {port}
 HEALTHCHECK CMD python -c "import urllib.request;urllib.request.urlopen('http://127.0.0.1:{port}/healthz').read()"
 CMD ["uvicorn","app.main:app","--host","0.0.0.0","--port","{port}","--proxy-headers","--forwarded-allow-ips","*"]
-""")
-    W(f"platform/{name}/requirements.txt", """fastapi==0.115.4
+""",
+    )
+    W(
+        f"platform/{name}/requirements.txt",
+        """fastapi==0.115.4
 uvicorn[standard]==0.32.0
 pydantic==2.9.2
 pydantic-settings==2.6.1
@@ -36,11 +48,15 @@ redis==5.2.0
 httpx==0.27.2
 prometheus-client==0.21.0
 structlog==24.4.0
-""" + extra_reqs)
+"""
+        + extra_reqs,
+    )
     W(f"platform/{name}/app/__init__.py", "")
-    for d in ("core","api","models","schemas"):
+    for d in ("core", "api", "models", "schemas"):
         W(f"platform/{name}/app/{d}/__init__.py", "")
-    W(f"platform/{name}/app/core/config.py", f'''from pydantic_settings import BaseSettings
+    W(
+        f"platform/{name}/app/core/config.py",
+        f"""from pydantic_settings import BaseSettings
 from typing import List
 class Settings(BaseSettings):
     app_name: str = "shopnoltd-{name}"
@@ -54,19 +70,28 @@ class Settings(BaseSettings):
     def cors_origins_list(self) -> List[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
 settings = Settings()
-''')
-    W(f"platform/{name}/app/core/db.py", '''from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+""",
+    )
+    W(
+        f"platform/{name}/app/core/db.py",
+        """from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import declarative_base, sessionmaker
 from app.core.config import settings
 engine = create_async_engine(settings.database_url, pool_size=10, max_overflow=20, pool_pre_ping=True)
 Base = declarative_base()
 SessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
-''')
-    W(f"platform/{name}/app/core/redis_client.py", '''from redis.asyncio import Redis
+""",
+    )
+    W(
+        f"platform/{name}/app/core/redis_client.py",
+        """from redis.asyncio import Redis
 from app.core.config import settings
 redis_client = Redis.from_url(settings.redis_url, decode_responses=True)
-''')
-    W(f"platform/{name}/app/core/security.py", '''import httpx
+""",
+    )
+    W(
+        f"platform/{name}/app/core/security.py",
+        """import httpx
 from jose import jwt, JWTError
 from app.core.config import settings
 _jwks_cache = None
@@ -89,8 +114,11 @@ async def verify_token_admin(token: str) -> dict:
     u = await verify_token(token)
     if "admin" not in u.get("roles", []): raise PermissionError("admin only")
     return u
-''')
-    W(f"platform/{name}/app/main.py", f'''"""Shopnoltd {title}."""
+""",
+    )
+    W(
+        f"platform/{name}/app/main.py",
+        f'''"""Shopnoltd {title}."""
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -136,17 +164,28 @@ async def readyz():
 @app.get("/metrics", include_in_schema=False)
 def metrics():
     return Response(generate_latest(), media_type="text/plain; version=0.0.4")
-''')
+''',
+    )
+
 
 def router(modname, prefix, tag):
     return f'app.include_router(__import__("app.api.{modname}", fromlist=["router"]).router, prefix="{prefix}", tags=["{tag}"])\n'
 
+
 # ============================================================
 # 1) DOMAIN SERVICE (PowerDNS + PowerAdmin bridge)
 # ============================================================
-py_service("domain-service", "Domain Service", db="domains",
-    routers=router("zones","/api/v1/zones","zones") + router("records","/api/v1/records","records") + router("registrars","/api/v1/registrars","registrars"))
-W("platform/domain-service/requirements.txt", """fastapi==0.115.4
+py_service(
+    "domain-service",
+    "Domain Service",
+    db="domains",
+    routers=router("zones", "/api/v1/zones", "zones")
+    + router("records", "/api/v1/records", "records")
+    + router("registrars", "/api/v1/registrars", "registrars"),
+)
+W(
+    "platform/domain-service/requirements.txt",
+    """fastapi==0.115.4
 uvicorn[standard]==0.32.0
 pydantic==2.9.2
 pydantic-settings==2.6.1
@@ -157,8 +196,11 @@ httpx==0.27.2
 dnspython==2.7.0
 prometheus-client==0.21.0
 structlog==24.4.0
-""")
-W("platform/domain-service/app/core/config.py", '''from pydantic_settings import BaseSettings
+""",
+)
+W(
+    "platform/domain-service/app/core/config.py",
+    """from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     app_name: str = "shopnoltd-domain-service"
     database_url: str = "postgresql+asyncpg://shopno:shopno@postgres.data.svc.cluster.local:5432/domains"
@@ -170,8 +212,11 @@ class Settings(BaseSettings):
     @property
     def cors_origins_list(self): return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
 settings = Settings()
-''')
-W("platform/domain-service/app/models/models.py", '''from sqlalchemy import Column, String, DateTime, Integer, Boolean
+""",
+)
+W(
+    "platform/domain-service/app/models/models.py",
+    """from sqlalchemy import Column, String, DateTime, Integer, Boolean
 import uuid
 from datetime import datetime
 from app.core.db import Base
@@ -201,8 +246,11 @@ class Registrar(Base):
     api_key = Column(String(256))
     api_secret = Column(String(256))
     enabled = Column(Boolean, default=True)
-''')
-W("platform/domain-service/app/schemas/schemas.py", '''from pydantic import BaseModel
+""",
+)
+W(
+    "platform/domain-service/app/schemas/schemas.py",
+    """from pydantic import BaseModel
 class ZoneIn(BaseModel):
     name: str
     kind: str = "MASTER"
@@ -213,16 +261,22 @@ class RecordIn(BaseModel):
     content: str
     ttl: int = 3600
     priority: int = 0
-''')
-W("platform/domain-service/app/core/powerdns.py", '''import httpx
+""",
+)
+W(
+    "platform/domain-service/app/core/powerdns.py",
+    """import httpx
 from app.core.config import settings
 async def pdns_call(method: str, path: str, **kw) -> dict:
     headers = {"X-API-Key": settings.powerdns_key}
     async with httpx.AsyncClient(timeout=15) as c:
         r = await c.request(method, f"{settings.powerdns_api}{path}", headers=headers, **kw)
     r.raise_for_status(); return r.json() if r.text else {}
-''')
-W("platform/domain-service/app/api/zones.py", '''from fastapi import APIRouter, Depends, HTTPException
+""",
+)
+W(
+    "platform/domain-service/app/api/zones.py",
+    """from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.core.db import SessionLocal
@@ -256,8 +310,11 @@ async def delete_zone(zone_id: str, user=Depends(admin), s: AsyncSession = Depen
     except Exception: pass
     await s.delete(z); await s.commit()
     return {"ok": True}
-''')
-W("platform/domain-service/app/api/records.py", '''from fastapi import APIRouter, Depends, HTTPException
+""",
+)
+W(
+    "platform/domain-service/app/api/records.py",
+    """from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.core.db import SessionLocal
@@ -285,8 +342,11 @@ async def create_record(body: RecordIn, user=Depends(admin), s: AsyncSession = D
 async def list_records(zone_id: str, s: AsyncSession = Depends(db)):
     res = await s.execute(select(Record).where(Record.zone_id == zone_id))
     return [{"id": r.id, "name": r.name, "type": r.type, "content": r.content, "ttl": r.ttl} for r in res.scalars().all()]
-''')
-W("platform/domain-service/app/api/registrars.py", '''from fastapi import APIRouter, Depends
+""",
+)
+W(
+    "platform/domain-service/app/api/registrars.py",
+    """from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.core.db import SessionLocal
@@ -302,14 +362,23 @@ async def admin(creds: HTTPAuthorizationCredentials = Depends(bearer)):
 async def list_registrars(user=Depends(admin), s: AsyncSession = Depends(db)):
     res = await s.execute(select(Registrar))
     return [{"id": r.id, "name": r.name, "enabled": r.enabled} for r in res.scalars().all()]
-''')
+""",
+)
 
 # ============================================================
 # 2) INTERIOR SERVICE (3D / design / floor plan management)
 # ============================================================
-py_service("interior-service", "Interior Service", db="interior",
-    routers=router("projects","/api/v1/projects","projects") + router("models","/api/v1/models","models") + router("rooms","/api/v1/rooms","rooms"))
-W("platform/interior-service/requirements.txt", """fastapi==0.115.4
+py_service(
+    "interior-service",
+    "Interior Service",
+    db="interior",
+    routers=router("projects", "/api/v1/projects", "projects")
+    + router("models", "/api/v1/models", "models")
+    + router("rooms", "/api/v1/rooms", "rooms"),
+)
+W(
+    "platform/interior-service/requirements.txt",
+    """fastapi==0.115.4
 uvicorn[standard]==0.32.0
 pydantic==2.9.2
 sqlalchemy==2.0.36
@@ -320,8 +389,11 @@ pillow==10.4.0
 trimesh==4.4.7
 prometheus-client==0.21.0
 structlog==24.4.0
-""")
-W("platform/interior-service/app/models/models.py", '''from sqlalchemy import Column, String, DateTime, Integer, JSON, Float
+""",
+)
+W(
+    "platform/interior-service/app/models/models.py",
+    """from sqlalchemy import Column, String, DateTime, Integer, JSON, Float
 import uuid
 from datetime import datetime
 from app.core.db import Base
@@ -355,15 +427,21 @@ class Room(Base):
     height_m = Column(Float, default=2.7)
     color = Column(String(16), default="#ffffff")
     furniture = Column(JSON, default=list)
-''')
-W("platform/interior-service/app/schemas/schemas.py", '''from pydantic import BaseModel
+""",
+)
+W(
+    "platform/interior-service/app/schemas/schemas.py",
+    """from pydantic import BaseModel
 from typing import Optional
 class ProjectIn(BaseModel):
     name: str; description: Optional[str] = ""; style: str = "modern"; budget: float = 0
 class RoomIn(BaseModel):
     name: str; width_m: float = 4; length_m: float = 5; height_m: float = 2.7; color: str = "#ffffff"
-''')
-W("platform/interior-service/app/api/projects.py", '''from fastapi import APIRouter, Depends, HTTPException
+""",
+)
+W(
+    "platform/interior-service/app/api/projects.py",
+    """from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.core.db import SessionLocal
@@ -390,8 +468,11 @@ async def get(proj_id: str, user=Depends(current_user), s: AsyncSession = Depend
     p = (await s.execute(select(Project).where(Project.id == proj_id, Project.user_id == user["sub"]))).scalar_one_or_none()
     if not p: raise HTTPException(404, "not found")
     return {"id": p.id, "name": p.name, "description": p.description, "style": p.style, "budget": p.budget}
-''')
-W("platform/interior-service/app/api/models.py", '''from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+""",
+)
+W(
+    "platform/interior-service/app/api/models.py",
+    """from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.core.db import SessionLocal
@@ -420,8 +501,11 @@ async def upload(project_id: str, name: str, fmt: str, file: UploadFile = File(.
 async def list_models(project_id: str, s: AsyncSession = Depends(db)):
     res = await s.execute(select(Model3D).where(Model3D.project_id == project_id))
     return [{"id": m.id, "name": m.name, "format": m.format, "size": m.size_bytes, "url": f"http://storage-service.shopno-platform.svc.cluster.local:9000/api/v1/objects/{m.file_path}/url"} for m in res.scalars().all()]
-''')
-W("platform/interior-service/app/api/rooms.py", '''from fastapi import APIRouter, Depends, HTTPException
+""",
+)
+W(
+    "platform/interior-service/app/api/rooms.py",
+    """from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.core.db import SessionLocal
@@ -445,14 +529,24 @@ async def add(project_id: str, body: RoomIn, user=Depends(current_user), s: Asyn
 async def list_rooms(project_id: str, s: AsyncSession = Depends(db)):
     res = await s.execute(select(Room).where(Room.project_id == project_id))
     return [{"id": r.id, "name": r.name, "w": r.width_m, "l": r.length_m, "h": r.height_m, "color": r.color, "area_m2": r.width_m * r.length_m} for r in res.scalars().all()]
-''')
+""",
+)
 
 # ============================================================
 # 3) EVENT SERVICE (Open Event Server style)
 # ============================================================
-py_service("event-service", "Event Service", db="events",
-    routers=router("events","/api/v1/events","events") + router("sessions","/api/v1/sessions","sessions") + router("tickets","/api/v1/tickets","tickets") + router("speakers","/api/v1/speakers","speakers"))
-W("platform/event-service/requirements.txt", """fastapi==0.115.4
+py_service(
+    "event-service",
+    "Event Service",
+    db="events",
+    routers=router("events", "/api/v1/events", "events")
+    + router("sessions", "/api/v1/sessions", "sessions")
+    + router("tickets", "/api/v1/tickets", "tickets")
+    + router("speakers", "/api/v1/speakers", "speakers"),
+)
+W(
+    "platform/event-service/requirements.txt",
+    """fastapi==0.115.4
 uvicorn[standard]==0.32.0
 pydantic==2.9.2
 sqlalchemy==2.0.36
@@ -462,8 +556,11 @@ httpx==0.27.2
 qrcode==7.4.2
 prometheus-client==0.21.0
 structlog==24.4.0
-""")
-W("platform/event-service/app/models/models.py", '''from sqlalchemy import Column, String, DateTime, Integer, Float, Boolean, Text
+""",
+)
+W(
+    "platform/event-service/app/models/models.py",
+    """from sqlalchemy import Column, String, DateTime, Integer, Float, Boolean, Text
 import uuid
 from datetime import datetime
 from app.core.db import Base
@@ -511,8 +608,11 @@ class Speaker(Base):
     bio = Column(Text)
     photo = Column(String(512))
     company = Column(String(128))
-''')
-W("platform/event-service/app/schemas/schemas.py", '''from pydantic import BaseModel
+""",
+)
+W(
+    "platform/event-service/app/schemas/schemas.py",
+    """from pydantic import BaseModel
 from datetime import datetime
 class EventIn(BaseModel):
     name: str; description: str = ""; venue: str = ""; starts_at: datetime; ends_at: datetime
@@ -524,8 +624,11 @@ class TicketIn(BaseModel):
     name: str; email: str
 class SpeakerIn(BaseModel):
     name: str; bio: str = ""; company: str = ""; photo: str = ""
-''')
-W("platform/event-service/app/api/events.py", '''from fastapi import APIRouter, Depends, HTTPException
+""",
+)
+W(
+    "platform/event-service/app/api/events.py",
+    """from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.core.db import SessionLocal
@@ -552,8 +655,11 @@ async def get(event_id: str, s: AsyncSession = Depends(db)):
     e = (await s.execute(select(Event).where(Event.id == event_id))).scalar_one_or_none()
     if not e: raise HTTPException(404, "not found")
     return {"id": e.id, "name": e.name, "venue": e.venue, "starts_at": e.starts_at.isoformat(), "ends_at": e.ends_at.isoformat(), "description": e.description, "is_online": e.is_online}
-''')
-W("platform/event-service/app/api/sessions.py", '''from fastapi import APIRouter, Depends, HTTPException
+""",
+)
+W(
+    "platform/event-service/app/api/sessions.py",
+    """from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.core.db import SessionLocal
@@ -577,8 +683,11 @@ async def add(event_id: str, body: SessionIn, user=Depends(current_user), s: Asy
 async def list_sessions(event_id: str, s: AsyncSession = Depends(db)):
     res = await s.execute(select(EventSession).where(EventSession.event_id == event_id).order_by(EventSession.starts_at.asc()))
     return [{"id": x.id, "title": x.title, "starts_at": x.starts_at.isoformat(), "ends_at": x.ends_at.isoformat(), "track": x.track, "room": x.room} for x in res.scalars().all()]
-''')
-W("platform/event-service/app/api/tickets.py", '''import qrcode, io, base64
+""",
+)
+W(
+    "platform/event-service/app/api/tickets.py",
+    """import qrcode, io, base64
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -605,8 +714,11 @@ async def register(event_id: str, body: TicketIn, user=Depends(current_user), s:
 async def my(user=Depends(current_user), s: AsyncSession = Depends(db)):
     res = await s.execute(select(Ticket).where(Ticket.user_id == user["sub"]))
     return [{"id": t.id, "event_id": t.event_id, "name": t.name, "status": t.status, "qr": t.qr_code} for t in res.scalars().all()]
-''')
-W("platform/event-service/app/api/speakers.py", '''from fastapi import APIRouter, Depends, HTTPException
+""",
+)
+W(
+    "platform/event-service/app/api/speakers.py",
+    """from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.core.db import SessionLocal
@@ -630,14 +742,25 @@ async def add(event_id: str, body: SpeakerIn, user=Depends(current_user), s: Asy
 async def list_speakers(event_id: str, s: AsyncSession = Depends(db)):
     res = await s.execute(select(Speaker).where(Speaker.event_id == event_id))
     return [{"id": sp.id, "name": sp.name, "bio": sp.bio, "company": sp.company, "photo": sp.photo} for sp in res.scalars().all()]
-''')
+""",
+)
 
 # ============================================================
 # 4) FOUNDATION SERVICE (CiviCRM-style NGO / Foundation platform)
 # ============================================================
-py_service("foundation-service", "Foundation Service", db="foundation",
-    routers=router("donors","/api/v1/donors","donors") + router("donations","/api/v1/donations","donations") + router("grants","/api/v1/grants","grants") + router("beneficiaries","/api/v1/beneficiaries","beneficiaries") + router("campaigns","/api/v1/campaigns","campaigns"))
-W("platform/foundation-service/requirements.txt", """fastapi==0.115.4
+py_service(
+    "foundation-service",
+    "Foundation Service",
+    db="foundation",
+    routers=router("donors", "/api/v1/donors", "donors")
+    + router("donations", "/api/v1/donations", "donations")
+    + router("grants", "/api/v1/grants", "grants")
+    + router("beneficiaries", "/api/v1/beneficiaries", "beneficiaries")
+    + router("campaigns", "/api/v1/campaigns", "campaigns"),
+)
+W(
+    "platform/foundation-service/requirements.txt",
+    """fastapi==0.115.4
 uvicorn[standard]==0.32.0
 pydantic==2.9.2
 sqlalchemy==2.0.36
@@ -646,8 +769,11 @@ redis==5.2.0
 httpx==0.27.2
 prometheus-client==0.21.0
 structlog==24.4.0
-""")
-W("platform/foundation-service/app/models/models.py", '''from sqlalchemy import Column, String, DateTime, Integer, Float, Text
+""",
+)
+W(
+    "platform/foundation-service/app/models/models.py",
+    """from sqlalchemy import Column, String, DateTime, Integer, Float, Text
 import uuid
 from datetime import datetime
 from app.core.db import Base
@@ -705,8 +831,11 @@ class Beneficiary(Base):
     notes = Column(Text)
     aid_received = Column(Float, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
-''')
-W("platform/foundation-service/app/schemas/schemas.py", '''from pydantic import BaseModel
+""",
+)
+W(
+    "platform/foundation-service/app/schemas/schemas.py",
+    """from pydantic import BaseModel
 from datetime import datetime
 class DonorIn(BaseModel):
     name: str; email: str = ""; phone: str = ""; is_anonymous: bool = False
@@ -718,8 +847,11 @@ class GrantIn(BaseModel):
     name: str; funder: str = ""; amount: float = 0; currency: str = "USD"; description: str = ""; deadline: datetime | None = None
 class BeneficiaryIn(BaseModel):
     name: str; type: str = "individual"; location: str = ""; notes: str = ""
-''')
-W("platform/foundation-service/app/api/donors.py", '''from fastapi import APIRouter, Depends, HTTPException
+""",
+)
+W(
+    "platform/foundation-service/app/api/donors.py",
+    """from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from app.core.db import SessionLocal
@@ -741,8 +873,11 @@ async def create(body: DonorIn, user=Depends(current_user), s: AsyncSession = De
 async def list_(user=Depends(current_user), s: AsyncSession = Depends(db)):
     res = await s.execute(select(Donor).where(Donor.tenant_id == user.get("tenant_id","default")))
     return [{"id": d.id, "name": d.name, "email": d.email, "total_donated": d.total_donated} for d in res.scalars().all()]
-''')
-W("platform/foundation-service/app/api/donations.py", '''import secrets
+""",
+)
+W(
+    "platform/foundation-service/app/api/donations.py",
+    """import secrets
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -771,8 +906,11 @@ async def donate(body: DonationIn, user=Depends(current_user), s: AsyncSession =
 async def list_(user=Depends(current_user), s: AsyncSession = Depends(db)):
     res = await s.execute(select(Donation).where(Donation.tenant_id == user.get("tenant_id","default")).order_by(Donation.created_at.desc()).limit(200))
     return [{"id": d.id, "donor_id": d.donor_id, "amount": d.amount, "currency": d.currency, "method": d.method, "status": d.status, "receipt_no": d.receipt_no, "created_at": d.created_at.isoformat()} for d in res.scalars().all()]
-''')
-W("platform/foundation-service/app/api/campaigns.py", '''from fastapi import APIRouter, Depends
+""",
+)
+W(
+    "platform/foundation-service/app/api/campaigns.py",
+    """from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.core.db import SessionLocal
@@ -794,8 +932,11 @@ async def create(body: CampaignIn, user=Depends(current_user), s: AsyncSession =
 async def list_(s: AsyncSession = Depends(db)):
     res = await s.execute(select(Campaign).where(Campaign.active == 1))
     return [{"id": c.id, "name": c.name, "goal": c.goal_amount, "raised": c.raised_amount, "progress_pct": (c.raised_amount / c.goal_amount * 100) if c.goal_amount else 0} for c in res.scalars().all()]
-''')
-W("platform/foundation-service/app/api/grants.py", '''from fastapi import APIRouter, Depends, HTTPException
+""",
+)
+W(
+    "platform/foundation-service/app/api/grants.py",
+    """from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.core.db import SessionLocal
@@ -817,8 +958,11 @@ async def create(body: GrantIn, user=Depends(current_user), s: AsyncSession = De
 async def list_(s: AsyncSession = Depends(db)):
     res = await s.execute(select(Grant).order_by(Grant.deadline.asc()))
     return [{"id": g.id, "name": g.name, "funder": g.funder, "amount": g.amount, "currency": g.currency, "status": g.status, "deadline": g.deadline.isoformat() if g.deadline else None} for g in res.scalars().all()]
-''')
-W("platform/foundation-service/app/api/beneficiaries.py", '''from fastapi import APIRouter, Depends, HTTPException
+""",
+)
+W(
+    "platform/foundation-service/app/api/beneficiaries.py",
+    """from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.core.db import SessionLocal
@@ -840,14 +984,25 @@ async def create(body: BeneficiaryIn, user=Depends(current_user), s: AsyncSessio
 async def list_(user=Depends(current_user), s: AsyncSession = Depends(db)):
     res = await s.execute(select(Beneficiary).where(Beneficiary.tenant_id == user.get("tenant_id","default")))
     return [{"id": b.id, "name": b.name, "type": b.type, "location": b.location, "aid_received": b.aid_received} for b in res.scalars().all()]
-''')
+""",
+)
 
 # ============================================================
 # 5) TRAINING SERVICE (LMS - Open edX / Moodle style)
 # ============================================================
-py_service("training-service", "Training Service", db="training",
-    routers=router("courses","/api/v1/courses","courses") + router("lessons","/api/v1/lessons","lessons") + router("enrollments","/api/v1/enrollments","enrollments") + router("quizzes","/api/v1/quizzes","quizzes") + router("certificates","/api/v1/certificates","certificates"))
-W("platform/training-service/requirements.txt", """fastapi==0.115.4
+py_service(
+    "training-service",
+    "Training Service",
+    db="training",
+    routers=router("courses", "/api/v1/courses", "courses")
+    + router("lessons", "/api/v1/lessons", "lessons")
+    + router("enrollments", "/api/v1/enrollments", "enrollments")
+    + router("quizzes", "/api/v1/quizzes", "quizzes")
+    + router("certificates", "/api/v1/certificates", "certificates"),
+)
+W(
+    "platform/training-service/requirements.txt",
+    """fastapi==0.115.4
 uvicorn[standard]==0.32.0
 pydantic==2.9.2
 sqlalchemy==2.0.36
@@ -857,8 +1012,11 @@ httpx==0.27.2
 reportlab==4.2.5
 prometheus-client==0.21.0
 structlog==24.4.0
-""")
-W("platform/training-service/app/models/models.py", '''from sqlalchemy import Column, String, DateTime, Integer, Text, JSON, Float
+""",
+)
+W(
+    "platform/training-service/app/models/models.py",
+    """from sqlalchemy import Column, String, DateTime, Integer, Text, JSON, Float
 import uuid
 from datetime import datetime
 from app.core.db import Base
@@ -920,8 +1078,11 @@ class Certificate(Base):
     course_id = Column(String(64), nullable=False, index=True)
     serial = Column(String(64), unique=True, nullable=False)
     issued_at = Column(DateTime, default=datetime.utcnow)
-''')
-W("platform/training-service/app/schemas/schemas.py", '''from pydantic import BaseModel
+""",
+)
+W(
+    "platform/training-service/app/schemas/schemas.py",
+    """from pydantic import BaseModel
 from typing import Optional
 class CourseIn(BaseModel):
     code: str; title: str; description: str = ""
@@ -934,8 +1095,11 @@ class QuizIn(BaseModel):
     questions: list; passing_score: int = 70
 class QuizSubmit(BaseModel):
     quiz_id: str; answers: dict
-''')
-W("platform/training-service/app/api/courses.py", '''from fastapi import APIRouter, Depends, HTTPException
+""",
+)
+W(
+    "platform/training-service/app/api/courses.py",
+    """from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.core.db import SessionLocal
@@ -969,8 +1133,11 @@ async def publish(code: str, user=Depends(current_user), s: AsyncSession = Depen
     c.published = 1
     await s.commit()
     return {"published": True}
-''')
-W("platform/training-service/app/api/lessons.py", '''from fastapi import APIRouter, Depends, HTTPException
+""",
+)
+W(
+    "platform/training-service/app/api/lessons.py",
+    """from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.core.db import SessionLocal
@@ -994,8 +1161,11 @@ async def add(body: LessonIn, user=Depends(current_user), s: AsyncSession = Depe
 async def list_lessons(course_id: str, s: AsyncSession = Depends(db)):
     res = await s.execute(select(Lesson).where(Lesson.course_id == course_id).order_by(Lesson.idx.asc()))
     return [{"id": l.id, "idx": l.idx, "title": l.title, "video_url": l.video_url, "duration_min": l.duration_min} for l in res.scalars().all()]
-''')
-W("platform/training-service/app/api/enrollments.py", '''from datetime import datetime
+""",
+)
+W(
+    "platform/training-service/app/api/enrollments.py",
+    """from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -1030,8 +1200,11 @@ async def update_progress(enrollment_id: str, progress_pct: float, user=Depends(
 async def my(user=Depends(current_user), s: AsyncSession = Depends(db)):
     res = await s.execute(select(Enrollment).where(Enrollment.user_id == user["sub"]))
     return [{"id": e.id, "course_id": e.course_id, "status": e.status, "progress_pct": e.progress_pct, "enrolled_at": e.enrolled_at.isoformat()} for e in res.scalars().all()]
-''')
-W("platform/training-service/app/api/quizzes.py", '''from fastapi import APIRouter, Depends, HTTPException
+""",
+)
+W(
+    "platform/training-service/app/api/quizzes.py",
+    """from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.core.db import SessionLocal
@@ -1067,8 +1240,11 @@ async def submit(body: QuizSubmit, user=Depends(current_user), s: AsyncSession =
     a = QuizAttempt(quiz_id=q.id, user_id=user["sub"], score=score, passed=passed, answers=body.answers)
     s.add(a); await s.commit()
     return {"score": score, "passed": bool(passed), "correct": correct, "total": total}
-''')
-W("platform/training-service/app/api/certificates.py", '''import io, secrets
+""",
+)
+W(
+    "platform/training-service/app/api/certificates.py",
+    """import io, secrets
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import Response
@@ -1113,14 +1289,21 @@ async def pdf(serial: str, s: AsyncSession = Depends(db)):
     p.drawCentredString(4.25*inch, 2.7*inch, f"Issued: {cert.issued_at.strftime('%Y-%m-%d')}")
     p.showPage(); p.save()
     return Response(buf.getvalue(), media_type="application/pdf", headers={"Content-Disposition": f"attachment; filename={serial}.pdf"})
-''')
+""",
+)
 
 # ============================================================
 # 6) FREEDOMAIN SERVICE (Free subdomain service)
 # ============================================================
-py_service("freedomain-service", "Free Domain Service", db="freedomain",
-    routers=router("domains","/api/v1/domains","domains"))
-W("platform/freedomain-service/requirements.txt", """fastapi==0.115.4
+py_service(
+    "freedomain-service",
+    "Free Domain Service",
+    db="freedomain",
+    routers=router("domains", "/api/v1/domains", "domains"),
+)
+W(
+    "platform/freedomain-service/requirements.txt",
+    """fastapi==0.115.4
 uvicorn[standard]==0.32.0
 pydantic==2.9.2
 sqlalchemy==2.0.36
@@ -1130,8 +1313,11 @@ httpx==0.27.2
 dnspython==2.7.0
 prometheus-client==0.21.0
 structlog==24.4.0
-""")
-W("platform/freedomain-service/app/core/config.py", '''from pydantic_settings import BaseSettings
+""",
+)
+W(
+    "platform/freedomain-service/app/core/config.py",
+    """from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     app_name: str = "shopnoltd-freedomain-service"
     database_url: str = "postgresql+asyncpg://shopno:shopno@postgres.data.svc.cluster.local:5432/freedomain"
@@ -1143,8 +1329,11 @@ class Settings(BaseSettings):
     @property
     def cors_origins_list(self): return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
 settings = Settings()
-''')
-W("platform/freedomain-service/app/models/models.py", '''from sqlalchemy import Column, String, DateTime, Integer
+""",
+)
+W(
+    "platform/freedomain-service/app/models/models.py",
+    """from sqlalchemy import Column, String, DateTime, Integer
 import uuid
 from datetime import datetime
 from app.core.db import Base
@@ -1159,14 +1348,20 @@ class FreeDomain(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     last_check = Column(DateTime)
     last_status = Column(String(16))
-''')
-W("platform/freedomain-service/app/schemas/schemas.py", '''from pydantic import BaseModel
+""",
+)
+W(
+    "platform/freedomain-service/app/schemas/schemas.py",
+    """from pydantic import BaseModel
 class RegisterIn(BaseModel):
     subdomain: str
     target: str
     record_type: str = "CNAME"
-''')
-W("platform/freedomain-service/app/api/domains.py", '''import re
+""",
+)
+W(
+    "platform/freedomain-service/app/api/domains.py",
+    """import re
 import httpx
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException
@@ -1219,21 +1414,34 @@ async def delete(dom_id: str, user=Depends(current_user), s: AsyncSession = Depe
     fd.active = 0
     await s.commit()
     return {"ok": True}
-''')
+""",
+)
 
 # ============================================================
 # Generate k8s base manifests for each new service
 # ============================================================
 import subprocess
-new_services = ["domain-service","interior-service","event-service","foundation-service","training-service","freedomain-service"]
+
+new_services = [
+    "domain-service",
+    "interior-service",
+    "event-service",
+    "foundation-service",
+    "training-service",
+    "freedomain-service",
+]
 for svc in new_services:
     image = f"ghcr.io/asaduzzamanbheramara-prog/shopnoltd/{svc}"
-    subprocess.run(["bash","scripts/k8s-template.sh", svc, "shopno-platform", image, "8080", "/"], check=False)
+    subprocess.run(
+        ["bash", "scripts/k8s-template.sh", svc, "shopno-platform", image, "8080", "/"], check=False
+    )
 
 # ============================================================
 # Update cloudflared configmap to include ALL the new hostnames
 # ============================================================
-W("k8s/ingress/cloudflared/configmap.yaml", """apiVersion: v1
+W(
+    "k8s/ingress/cloudflared/configmap.yaml",
+    """apiVersion: v1
 kind: ConfigMap
 metadata:
   name: cloudflared-config
@@ -1306,21 +1514,24 @@ data:
       - hostname: "*.shopnoltd.dpdns.org"
         service: http://traefik.traefik.svc.cluster.local:80
       - service: http_status:404
-""")
+""",
+)
 
 # ============================================================
 # Update ingresses for the new services (CNAMEs via Traefik)
 # ============================================================
 new_ingresses = {
-    "domain-service":      "domain.shopnoltd.dpdns.org",
-    "interior-service":    "interior.shopnoltd.dpdns.org",
-    "event-service":       "event.shopnoltd.dpdns.org",
-    "foundation-service":  "foundation.shopnoltd.dpdns.org",
-    "training-service":    "training.shopnoltd.dpdns.org",
-    "freedomain-service":  "freedomain.shopnoltd.dpdns.org",
+    "domain-service": "domain.shopnoltd.dpdns.org",
+    "interior-service": "interior.shopnoltd.dpdns.org",
+    "event-service": "event.shopnoltd.dpdns.org",
+    "foundation-service": "foundation.shopnoltd.dpdns.org",
+    "training-service": "training.shopnoltd.dpdns.org",
+    "freedomain-service": "freedomain.shopnoltd.dpdns.org",
 }
 for svc, host in new_ingresses.items():
-    W(f"k8s/services/{svc}/ingress.yaml", f"""apiVersion: networking.k8s.io/v1
+    W(
+        f"k8s/services/{svc}/ingress.yaml",
+        f"""apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: {svc}
@@ -1345,7 +1556,8 @@ spec:
                 name: {svc}
                 port:
                   number: 80
-""")
+""",
+    )
 
 # ============================================================
 # Update build matrix to include the new services
@@ -1367,8 +1579,16 @@ open(wf, "w").write(txt)
 gi = os.path.join(ROOT, ".gitignore")
 if os.path.exists(gi):
     content = open(gi).read()
-    for k in ("platform/domain-service","platform/interior-service","platform/event-service","platform/foundation-service","platform/training-service","platform/freedomain-service"):
-        if k not in content: pass
+    for k in (
+        "platform/domain-service",
+        "platform/interior-service",
+        "platform/event-service",
+        "platform/foundation-service",
+        "platform/training-service",
+        "platform/freedomain-service",
+    ):
+        if k not in content:
+            pass
     open(gi, "w").write(content)
 
 print("✅ All 5 missing business verticals + freedomain seeded")

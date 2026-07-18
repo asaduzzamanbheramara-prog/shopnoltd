@@ -1,1 +1,1 @@
-OPENAI_MODEL="gpt-5.5"
+OPENAI_MODEL = "gpt-5.5"

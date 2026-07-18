@@ -2,8 +2,8 @@
 Thin wrapper around the Anthropic client so the rest of the codebase never
 imports the SDK directly — makes it easy to swap models or add retries later.
 """
-import anthropic
 
+import anthropic
 from app.config import settings
 
 MODEL = "claude-sonnet-4-6"

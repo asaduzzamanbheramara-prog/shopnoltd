@@ -1,11 +1,11 @@
-from app.gateways.stripe_gateway import StripeGateway
+from app.gateways.bkash_gateway import BkashGateway
+from app.gateways.crypto_gateway import CryptoGateway
+from app.gateways.nagad_gateway import NagadGateway
+from app.gateways.payoneer_payouts import PayoneerPayouts
 from app.gateways.paypal_gateway import PayPalGateway
 from app.gateways.razorpay_gateway import RazorpayGateway
 from app.gateways.sslcommerz_gateway import SSLCommerzGateway
-from app.gateways.bkash_gateway import BkashGateway
-from app.gateways.nagad_gateway import NagadGateway
-from app.gateways.crypto_gateway import CryptoGateway
-from app.gateways.payoneer_payouts import PayoneerPayouts
+from app.gateways.stripe_gateway import StripeGateway
 
 REGISTRY = {
     "stripe": StripeGateway(),

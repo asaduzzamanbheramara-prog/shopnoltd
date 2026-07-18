@@ -10,8 +10,9 @@ call it autonomously during a conversation.
 This milestone ships one deliberately harmless example tool
 (get_current_time) to prove the framework works end-to-end.
 """
-from datetime import datetime, timezone
-from typing import Callable
+
+from collections.abc import Callable
+from datetime import UTC, datetime
 
 TOOL_REGISTRY: dict[str, dict] = {}
 
@@ -39,7 +40,7 @@ def tool(name: str, description: str, input_schema: dict):
     input_schema={"type": "object", "properties": {}, "required": []},
 )
 def get_current_time(**_kwargs) -> dict:
-    return {"utc_time": datetime.now(timezone.utc).isoformat()}
+    return {"utc_time": datetime.now(UTC).isoformat()}
 
 
 def get_tool_definitions() -> list[dict]:

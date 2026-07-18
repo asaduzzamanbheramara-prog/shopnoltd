@@ -1,50 +1,56 @@
 # Declarative source of truth: what SHOULD be running.
 # The orchestrator diffs this against real cluster state and fixes gaps.
 #
-# dockerfile / context are paths relative to config.REPO_ROOT
-# deployment_manifest is the yaml file to apply/patch after the image is built
+# Rebuilt 2026-07-15 against verified `kubectl get deployments -n default`
+# output and confirmed Dockerfile locations. Only services with BOTH a real
+# Dockerfile in this repo AND a live deployment are included. See notes at
+# the bottom for what was deliberately left out and why.
+
 services:
-  - name: api-service
-    dockerfile: shopnoltd-ai-platform/backend/Dockerfile
-    context: shopnoltd-ai-platform/backend
-    deployment_name: api-service
-    deployment_manifest: deployment-api-service.yaml
-    container_name: api-service
-    health_path: /health
-
   - name: billing-engine
-    dockerfile: shopnoltd-ai-platform/backend/Dockerfile
-    context: shopnoltd-ai-platform/backend
+    dockerfile: billing-engine/Dockerfile
+    context: billing-engine
     deployment_name: billing-engine
-    deployment_manifest: deployment-billing-engine.yaml
-    container_name: billing-engine
+    deployment_manifest: billing-engine/deployment-billing-engine-v6.yaml
+    container_name: billing-engine   # CONFIRM: check `grep -B2 image: billing-engine/deployment-billing-engine-v6.yaml`
     health_path: /health
 
-  - name: oauth-service
-    dockerfile: shopnoltd-ai-platform/backend/Dockerfile
-    context: shopnoltd-ai-platform/backend
-    deployment_name: oauth-service
-    deployment_manifest: deployment-oauth-service.yaml
-    container_name: oauth-service
+  - name: api-service
+    dockerfile: api-service/Dockerfile
+    context: api-service
+    deployment_name: api-service
+    deployment_manifest: k8s/legacy/deployment-api-service.yaml
+    container_name: api-service   # CONFIRM: check `grep -B2 image: k8s/legacy/deployment-api-service.yaml`
     health_path: /health
 
   - name: root-app
-    dockerfile: Dockerfile
-    context: .
+    dockerfile: frontend/Dockerfile
+    context: frontend
     deployment_name: root-app
-    deployment_manifest: deployment-root-app.yaml
-    container_name: root-app
-    health_path: /
-
-  - name: freedomain-ui
-    dockerfile: ui/Dockerfile
-    context: ui
-    deployment_name: freedomain-ui
-    deployment_manifest: deployment-freedomain-ui.yaml
-    container_name: freedomain-ui
+    deployment_manifest: k8s/legacy/deployment-root-app.yaml
+    container_name: frontend   # confirmed via grep: "name: frontend"
     health_path: /
 
 # ConfigMaps that must exist before dependent deployments will start cleanly.
 configmaps:
   - name: tenant-router-config
     manifest: configmaps.yaml   # must contain a ConfigMap named tenant-router-config
+
+# --- Deliberately excluded, and why ---------------------------------------
+#
+# oauth-service   - Dockerfile exists (Node/Express), but NOT in the live
+#                   cluster (`kubectl get deployments` has no entry for it).
+#                   Adding it here means the orchestrator's first "fix" would
+#                   be a first-ever deploy, not a heal. Add back once you've
+#                   deployed it once manually and confirmed it's stable.
+#
+# freedomain-ui   - Live in cluster (image shopnoltd-freedomain-ui:v1) but
+#                   NO SOURCE FOLDER EXISTS in this repo. Nothing to build
+#                   from. Either the source lives elsewhere, was built
+#                   manually and never committed, or was deleted. Track this
+#                   down before adding it - until then the orchestrator can
+#                   only watch/report on it, never rebuild it.
+#
+# chat            - Live, but running bare `nginx:latest` / `hashicorp/http-
+# freedomain      - echo` placeholders, not real application images yet.
+#                   Nothing to build until real apps replace these.

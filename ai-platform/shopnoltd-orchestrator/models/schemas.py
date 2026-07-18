@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Optional, List
+
 from pydantic import BaseModel
 
 
@@ -29,15 +29,15 @@ class ServiceRunLog(BaseModel):
     rollout: StepStatus = StepStatus.PENDING
     healthy: StepStatus = StepStatus.PENDING
     attempts: int = 0
-    last_error: Optional[str] = None
-    detected_issue: Optional[str] = None
-    image_tag: Optional[str] = None
+    last_error: str | None = None
+    detected_issue: str | None = None
+    image_tag: str | None = None
 
 
 class FixReport(BaseModel):
     job_id: str
     started_at: str
-    finished_at: Optional[str] = None
+    finished_at: str | None = None
     overall_status: StepStatus = StepStatus.RUNNING
-    services: List[ServiceRunLog] = []
-    notes: List[str] = []
+    services: list[ServiceRunLog] = []
+    notes: list[str] = []

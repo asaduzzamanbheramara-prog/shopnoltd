@@ -18,17 +18,15 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import math
-import sys
 from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageFilter
+from PIL import Image, ImageDraw
 
 # Brand palette (mirrors branding/shopnoapp-logo.svg exactly)
-NAVY    = (11, 18, 32, 255)     # #0B1220
-BLUE    = (37, 99, 235, 255)    # #2563EB
-SKY     = (56, 189, 248, 255)   # #38BDF8
-WHITE   = (255, 255, 255, 255)
+NAVY = (11, 18, 32, 255)  # #0B1220
+BLUE = (37, 99, 235, 255)  # #2563EB
+SKY = (56, 189, 248, 255)  # #38BDF8
+WHITE = (255, 255, 255, 255)
 
 
 def _rounded_rect(draw: ImageDraw.ImageDraw, box, radius, fill):
@@ -61,9 +59,7 @@ def _draw_cloud(img: ImageDraw.ImageDraw, box, fill, scale=1.0):
     p4 = (x0 + 0.85 * w, y0 + 0.35 * h)
     p5 = (x0 + 0.95 * w, y0 + 0.55 * h)
     base = (x0 + 0.05 * w, y0 + 0.90 * h)
-    pts = [base, p1, p2, p3, p4, p5,
-           (x0 + 0.95 * w, y0 + 0.90 * h),
-           base]
+    pts = [base, p1, p2, p3, p4, p5, (x0 + 0.95 * w, y0 + 0.90 * h), base]
     img.polygon(pts, fill=fill)
 
 
@@ -82,21 +78,26 @@ def render_logo(size: int, *, transparent: bool = False) -> Image.Image:
 
     # outer cloud
     cloud_box = (
-        int(0.10 * size), int(0.30 * size),
-        int(0.90 * size), int(0.75 * size),
+        int(0.10 * size),
+        int(0.30 * size),
+        int(0.90 * size),
+        int(0.75 * size),
     )
     _draw_cloud(d, cloud_box, BLUE)
 
     # inner sky-blue cloud, offset up-right
     inner_box = (
-        int(0.18 * size), int(0.40 * size),
-        int(0.78 * size), int(0.70 * size),
+        int(0.18 * size),
+        int(0.40 * size),
+        int(0.78 * size),
+        int(0.70 * size),
     )
     _draw_cloud(d, inner_box, SKY)
 
     # wordmark — "Shopno" / "Toolbox"
     try:
         from PIL import ImageFont
+
         # default to a system font; falls back to PIL's default bitmap font
         for path in [
             "C:/Windows/Fonts/segoeuib.ttf",
@@ -117,11 +118,11 @@ def render_logo(size: int, *, transparent: bool = False) -> Image.Image:
         small = ImageFont.load_default()
 
     main = "Shopno"
-    sub  = "Toolbox"
+    sub = "Toolbox"
     main_w = d.textlength(main, font=bold) if hasattr(d, "textlength") else bold.getlength(main)
-    sub_w  = d.textlength(sub,  font=small) if hasattr(d, "textlength") else small.getlength(sub)
+    sub_w = d.textlength(sub, font=small) if hasattr(d, "textlength") else small.getlength(sub)
     d.text(((size - main_w) / 2, int(size * 0.78)), main, font=bold, fill=WHITE)
-    d.text(((size - sub_w)  / 2, int(size * 0.85)), sub,  font=small, fill=SKY)
+    d.text(((size - sub_w) / 2, int(size * 0.85)), sub, font=small, fill=SKY)
 
     return img
 
@@ -151,17 +152,15 @@ def apply_adaptive_foreground_safe(img: Image.Image) -> Image.Image:
 
 def main() -> int:
     p = argparse.ArgumentParser(description=__doc__.splitlines()[1])
-    p.add_argument("--out", required=True, type=Path,
-                   help="output res/ dir (APK overlay)")
-    p.add_argument("--exe-overlay", type=Path,
-                   help="output dir for NSIS installer BMPs (optional)")
+    p.add_argument("--out", required=True, type=Path, help="output res/ dir (APK overlay)")
+    p.add_argument("--exe-overlay", type=Path, help="output dir for NSIS installer BMPs (optional)")
     args = p.parse_args()
 
     ANDROID_MIPMAP = {
-        "mipmap-mdpi":    48,
-        "mipmap-hdpi":    72,
-        "mipmap-xhdpi":   96,
-        "mipmap-xxhdpi":  144,
+        "mipmap-mdpi": 48,
+        "mipmap-hdpi": 72,
+        "mipmap-xhdpi": 96,
+        "mipmap-xxhdpi": 144,
         "mipmap-xxxhdpi": 192,
     }
     ADAPTIVE_SIZE = 432
@@ -179,7 +178,7 @@ def main() -> int:
         print(f"      {sq.relative_to(args.out)} ({size}x{size})")
         print(f"      {rd.relative_to(args.out)} ({size}x{size})")
 
-    print(f"[2/4] generating adaptive-icon assets")
+    print("[2/4] generating adaptive-icon assets")
     fg_src = render_logo(ADAPTIVE_SIZE, transparent=True)
     fg = apply_adaptive_foreground_safe(fg_src)
     bg = Image.new("RGBA", (ADAPTIVE_SIZE, ADAPTIVE_SIZE), NAVY)
@@ -192,7 +191,7 @@ def main() -> int:
     print(f"      drawable/ic_launcher_foreground.png ({ADAPTIVE_SIZE}x{ADAPTIVE_SIZE})")
     print(f"      drawable/ic_launcher_background.png ({ADAPTIVE_SIZE}x{ADAPTIVE_SIZE})")
 
-    print(f"[3/4] writing anydpi-v26 adaptive-icon XMLs")
+    print("[3/4] writing anydpi-v26 adaptive-icon XMLs")
     for name in ("ic_launcher.xml", "ic_launcher_round.xml"):
         out = args.out / "mipmap-anydpi-v26" / name
         out.parent.mkdir(parents=True, exist_ok=True)
@@ -201,7 +200,7 @@ def main() -> int:
             '<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">\n'
             '    <background android:drawable="@drawable/ic_launcher_background"/>\n'
             '    <foreground android:drawable="@drawable/ic_launcher_foreground"/>\n'
-            '</adaptive-icon>\n',
+            "</adaptive-icon>\n",
             encoding="utf-8",
         )
         print(f"      mipmap-anydpi-v26/{name}")
@@ -210,13 +209,13 @@ def main() -> int:
         print(f"[4/4] generating NSIS installer BMPs -> {args.exe_overlay}")
         args.exe_overlay.mkdir(parents=True, exist_ok=True)
         for name, w, h in [
-            ("InstallHeader.bmp",  150, 57),
+            ("InstallHeader.bmp", 150, 57),
             ("InstallSidebar.bmp", 164, 314),
         ]:
             big = render_logo(max(w, h) * 2)
             # crop to NSIS dimensions
             left = (big.size[0] - w * 2) // 2
-            top  = (big.size[1] - h * 2) // 2
+            top = (big.size[1] - h * 2) // 2
             cropped = big.crop((left, top, left + w * 2, top + h * 2))
             cropped = cropped.resize((w, h), Image.LANCZOS)
             out = args.exe_overlay / name

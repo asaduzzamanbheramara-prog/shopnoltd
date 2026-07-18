@@ -8,6 +8,7 @@ table is faster, cheaper, and more predictable than an LLM round-trip.
 The RAG/LLM agent (agents/llm_agent.py, not yet wired in) is the right
 place for *novel* application errors this table doesn't recognize.
 """
+
 from dataclasses import dataclass
 
 
@@ -31,7 +32,7 @@ def diagnose(pod_status: dict, log_tail: str) -> Diagnosis:
         if "connection refused" in log_tail_lower and "5432" in log_tail_lower:
             return Diagnosis(
                 issue="App can't reach Postgres (connection refused on 5432) — "
-                      "likely DB not ready yet or wrong service DNS name",
+                "likely DB not ready yet or wrong service DNS name",
                 action="wait",
             )
         if "connection refused" in log_tail_lower and "6379" in log_tail_lower:

@@ -4,5 +4,5 @@ metadata:
   name: shopno-data
   labels:
     app.kubernetes.io/part-of: shopnoltd
-    pod-security.kubernetes.io/enforce: restricted
-    pod-security.kubernetes.io/audit: restricted
+    app.kubernetes.io/component: database
+    environment: production

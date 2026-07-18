@@ -1,4 +1,6 @@
 from pydantic import BaseModel
+
+
 class RegisterIn(BaseModel):
     subdomain: str
     target: str

@@ -1,1 +1,1 @@
-SYSTEM_PROMPT="You are a DevOps assistant."
+SYSTEM_PROMPT = "You are a DevOps assistant."

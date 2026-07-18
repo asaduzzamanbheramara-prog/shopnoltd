@@ -1,7 +1,11 @@
-from sqlalchemy import Column, String, DateTime, Boolean, Integer
 import uuid
 from datetime import datetime
+
+from sqlalchemy import Boolean, Column, DateTime, Integer, String
+
 from app.core.db import Base
+
+
 class TenantRoute(Base):
     __tablename__ = "tenant_routes"
     id = Column(String(64), primary_key=True, default=lambda: str(uuid.uuid4()))

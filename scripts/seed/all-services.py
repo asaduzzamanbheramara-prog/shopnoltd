@@ -1,8 +1,11 @@
 """Shopnoltd platform services - master seed.
 Generates complete, runnable source for every Shopnoltd service.
 """
-import os, textwrap
+
+import os
+
 ROOT = "/mnt/c/Users/asadu/PROJECTS/shopnoltd"
+
 
 def write(rel_path, content):
     p = os.path.join(ROOT, rel_path)
@@ -12,9 +15,12 @@ def write(rel_path, content):
     with open(p, "w") as f:
         f.write(content)
 
+
 # Helper: standard FastAPI service skeleton
 def fastapi_service(name, title, port=8080, db="main", extra_routers=("", "")):
-    write(f"platform/{name}/Dockerfile", f"""FROM python:3.12-slim
+    write(
+        f"platform/{name}/Dockerfile",
+        f"""FROM python:3.12-slim
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1
 RUN groupadd -g 10001 shopno && useradd -u 10001 -g shopno -d /app -s /sbin/nologin shopno
 WORKDIR /app
@@ -26,8 +32,11 @@ USER shopno
 EXPOSE {port}
 HEALTHCHECK CMD python -c "import urllib.request;urllib.request.urlopen('http://127.0.0.1:{port}/healthz').read()"
 CMD ["uvicorn","app.main:app","--host","0.0.0.0","--port","{port}","--proxy-headers","--forwarded-allow-ips","*"]
-""")
-    write(f"platform/{name}/requirements.txt", """fastapi==0.115.4
+""",
+    )
+    write(
+        f"platform/{name}/requirements.txt",
+        """fastapi==0.115.4
 uvicorn[standard]==0.32.0
 pydantic==2.9.2
 pydantic-settings==2.6.1
@@ -38,7 +47,8 @@ httpx==0.27.2
 prometheus-client==0.21.0
 structlog==24.4.0
 tenacity==9.0.0
-""")
+""",
+    )
     main = f'''"""Shopnoltd {title}."""
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
@@ -91,7 +101,9 @@ def metrics():
     write(f"platform/{name}/app/__init__.py", "")
     for d in ("core", "api", "models", "schemas"):
         write(f"platform/{name}/app/{d}/__init__.py", "")
-    write(f"platform/{name}/app/core/config.py", f'''from pydantic_settings import BaseSettings
+    write(
+        f"platform/{name}/app/core/config.py",
+        f"""from pydantic_settings import BaseSettings
 from typing import List
 class Settings(BaseSettings):
     app_name: str = "{name}"
@@ -103,26 +115,44 @@ class Settings(BaseSettings):
     def cors_origins_list(self) -> List[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
 settings = Settings()
-''')
-    write(f"platform/{name}/app/core/db.py", '''from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+""",
+    )
+    write(
+        f"platform/{name}/app/core/db.py",
+        """from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import declarative_base, sessionmaker
 from app.core.config import settings
 engine = create_async_engine(settings.database_url, pool_size=10, max_overflow=20, pool_pre_ping=True)
 Base = declarative_base()
 SessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
-''')
-    write(f"platform/{name}/app/core/redis_client.py", '''from redis.asyncio import Redis
+""",
+    )
+    write(
+        f"platform/{name}/app/core/redis_client.py",
+        """from redis.asyncio import Redis
 from app.core.config import settings
 redis_client = Redis.from_url(settings.redis_url, decode_responses=True)
-''')
+""",
+    )
+
 
 # ---------- NOTIFICATION-SERVICE (email, SMS, push) ----------
-fastapi_service("notification-service", "Notification Service", port=8080, db="notifications",
-    extra_routers=("", '''app.include_router(__import__("app.api.notifications", fromlist=["router"]).router, prefix="/api/v1/notifications", tags=["notifications"])
+fastapi_service(
+    "notification-service",
+    "Notification Service",
+    port=8080,
+    db="notifications",
+    extra_routers=(
+        "",
+        """app.include_router(__import__("app.api.notifications", fromlist=["router"]).router, prefix="/api/v1/notifications", tags=["notifications"])
 app.include_router(__import__("app.api.templates", fromlist=["router"]).router, prefix="/api/v1/templates", tags=["templates"])
 app.include_router(__import__("app.api.push", fromlist=["router"]).router, prefix="/api/v1/push", tags=["push"])
-'''))
-write("platform/notification-service/requirements.txt", """fastapi==0.115.4
+""",
+    ),
+)
+write(
+    "platform/notification-service/requirements.txt",
+    """fastapi==0.115.4
 uvicorn[standard]==0.32.0
 pydantic==2.9.2
 pydantic-settings==2.6.1
@@ -135,8 +165,11 @@ emails==0.6.0
 jinja2==3.1.4
 prometheus-client==0.21.0
 structlog==24.4.0
-""")
-write("platform/notification-service/app/core/security.py", '''import httpx
+""",
+)
+write(
+    "platform/notification-service/app/core/security.py",
+    """import httpx
 from jose import jwt, JWTError
 from app.core.config import settings
 _jwks_cache = None
@@ -155,8 +188,11 @@ async def verify_token(token: str) -> dict:
         return jwt.decode(token, key, algorithms=[key["alg"]], audience=settings.keycloak_audience, options={"verify_aud": True})
     except (JWTError, StopIteration) as e:
         raise ValueError(f"invalid token: {e}")
-''')
-write("platform/notification-service/app/core/config.py", '''from pydantic_settings import BaseSettings
+""",
+)
+write(
+    "platform/notification-service/app/core/config.py",
+    """from pydantic_settings import BaseSettings
 from typing import List
 class Settings(BaseSettings):
     app_name: str = "shopnoltd-notification-service"
@@ -178,8 +214,11 @@ class Settings(BaseSettings):
     def cors_origins_list(self) -> List[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
 settings = Settings()
-''')
-write("platform/notification-service/app/models/models.py", '''from sqlalchemy import Column, String, DateTime, JSON, Enum, Text
+""",
+)
+write(
+    "platform/notification-service/app/models/models.py",
+    """from sqlalchemy import Column, String, DateTime, JSON, Enum, Text
 import uuid, enum
 from datetime import datetime
 from app.core.db import Base
@@ -209,8 +248,11 @@ class Template(Base):
     body = Column(Text, nullable=False)
     locale = Column(String(8), default="en")
     variables = Column(JSON, default=list)
-''')
-write("platform/notification-service/app/schemas/schemas.py", '''from pydantic import BaseModel, Field
+""",
+)
+write(
+    "platform/notification-service/app/schemas/schemas.py",
+    """from pydantic import BaseModel, Field
 from typing import Optional
 from app.models.models import NChannel
 class SendIn(BaseModel):
@@ -229,8 +271,11 @@ class TemplateIn(BaseModel):
     code: str; name: str; channel: NChannel
     subject: Optional[str] = None; body: str
     variables: list = []
-''')
-write("platform/notification-service/app/api/notifications.py", '''import asyncio
+""",
+)
+write(
+    "platform/notification-service/app/api/notifications.py",
+    """import asyncio
 import aiosmtplib
 from email.message import EmailMessage
 import httpx
@@ -301,8 +346,11 @@ async def send(body: SendIn, background: BackgroundTasks, user=Depends(current_u
 async def my_notifications(user=Depends(current_user), s: AsyncSession = Depends(db), limit: int = 50):
     res = await s.execute(select(Notification).where(Notification.user_id == user["sub"]).order_by(Notification.created_at.desc()).limit(limit))
     return [Out(id=n.id, channel=n.channel.value, status=n.status.value, recipient=n.recipient, created_at=n.created_at.isoformat(), sent_at=n.sent_at.isoformat() if n.sent_at else None) for n in res.scalars().all()]
-''')
-write("platform/notification-service/app/api/templates.py", '''from fastapi import APIRouter, Depends, HTTPException
+""",
+)
+write(
+    "platform/notification-service/app/api/templates.py",
+    """from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.core.db import SessionLocal
@@ -333,8 +381,11 @@ async def render(code: str, variables: dict, s: AsyncSession = Depends(db)):
     t = res.scalar_one_or_none()
     if not t: raise HTTPException(404, "template not found")
     return {"subject": t.subject, "body": J(t.body).render(**variables)}
-''')
-write("platform/notification-service/app/api/push.py", '''"""Web-push via VAPID. Falls back to FCM if FCM key set."""
+""",
+)
+write(
+    "platform/notification-service/app/api/push.py",
+    '''"""Web-push via VAPID. Falls back to FCM if FCM key set."""
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from app.core.security import verify_token
@@ -361,17 +412,28 @@ async def notify(body: NotifyIn, user=Depends(current_user)):
         return {"ok": True}
     except Exception as e:
         raise HTTPException(501, f"web push not configured: {e}")
-''')
+''',
+)
 
 # ---------- SOCIAL-SERVICE (posts, shares, likes, follows) ----------
-fastapi_service("social-service", "Social Service", port=8080, db="social",
-    extra_routers=("", '''app.include_router(__import__("app.api.posts", fromlist=["router"]).router, prefix="/api/v1/posts", tags=["posts"])
+fastapi_service(
+    "social-service",
+    "Social Service",
+    port=8080,
+    db="social",
+    extra_routers=(
+        "",
+        """app.include_router(__import__("app.api.posts", fromlist=["router"]).router, prefix="/api/v1/posts", tags=["posts"])
 app.include_router(__import__("app.api.feed", fromlist=["router"]).router, prefix="/api/v1/feed", tags=["feed"])
 app.include_router(__import__("app.api.likes", fromlist=["router"]).router, prefix="/api/v1/likes", tags=["likes"])
 app.include_router(__import__("app.api.shares", fromlist=["router"]).router, prefix="/api/v1/shares", tags=["shares"])
 app.include_router(__import__("app.api.follows", fromlist=["router"]).router, prefix="/api/v1/follows", tags=["follows"])
-'''))
-write("platform/social-service/requirements.txt", """fastapi==0.115.4
+""",
+    ),
+)
+write(
+    "platform/social-service/requirements.txt",
+    """fastapi==0.115.4
 uvicorn[standard]==0.32.0
 pydantic==2.9.2
 pydantic-settings==2.6.1
@@ -381,8 +443,11 @@ redis==5.2.0
 httpx==0.27.2
 prometheus-client==0.21.0
 structlog==24.4.0
-""")
-write("platform/social-service/app/core/security.py", '''import httpx
+""",
+)
+write(
+    "platform/social-service/app/core/security.py",
+    """import httpx
 from jose import jwt, JWTError
 from app.core.config import settings
 _jwks_cache = None
@@ -401,8 +466,11 @@ async def verify_token(token: str) -> dict:
         return jwt.decode(token, key, algorithms=[key["alg"]], audience=settings.keycloak_audience, options={"verify_aud": True})
     except (JWTError, StopIteration) as e:
         raise ValueError(f"invalid token: {e}")
-''')
-write("platform/social-service/app/core/config.py", '''from pydantic_settings import BaseSettings
+""",
+)
+write(
+    "platform/social-service/app/core/config.py",
+    """from pydantic_settings import BaseSettings
 from typing import List
 class Settings(BaseSettings):
     app_name: str = "shopnoltd-social-service"
@@ -416,8 +484,11 @@ class Settings(BaseSettings):
     def cors_origins_list(self) -> List[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
 settings = Settings()
-''')
-write("platform/social-service/app/models/models.py", '''from sqlalchemy import Column, String, DateTime, Text, ForeignKey, Index, Integer
+""",
+)
+write(
+    "platform/social-service/app/models/models.py",
+    """from sqlalchemy import Column, String, DateTime, Text, ForeignKey, Index, Integer
 import uuid
 from datetime import datetime
 from app.core.db import Base
@@ -466,8 +537,11 @@ class Comment(Base):
     user_id = Column(String(64), nullable=False, index=True)
     body = Column(Text, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
-''')
-write("platform/social-service/app/schemas/schemas.py", '''from pydantic import BaseModel, Field
+""",
+)
+write(
+    "platform/social-service/app/schemas/schemas.py",
+    """from pydantic import BaseModel, Field
 from typing import Optional
 class PostIn(BaseModel):
     content: str = Field(min_length=1, max_length=5000)
@@ -482,8 +556,11 @@ class CommentIn(BaseModel):
     body: str = Field(min_length=1, max_length=2000)
 class ShareIn(BaseModel):
     target: str = "internal"
-''')
-write("platform/social-service/app/api/posts.py", '''import uuid
+""",
+)
+write(
+    "platform/social-service/app/api/posts.py",
+    """import uuid
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -536,8 +613,11 @@ async def add_comment(post_id: str, body: CommentIn, user=Depends(current_user),
 async def list_comments(post_id: str, s: AsyncSession = Depends(db)):
     res = await s.execute(select(Comment).where(Comment.post_id == post_id).order_by(Comment.created_at.asc()))
     return [{"id":c.id,"user_id":c.user_id,"body":c.body,"created_at":c.created_at.isoformat()} for c in res.scalars().all()]
-''')
-write("platform/social-service/app/api/feed.py", '''from fastapi import APIRouter, Depends, Query
+""",
+)
+write(
+    "platform/social-service/app/api/feed.py",
+    """from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc, or_, and_
 from app.core.db import SessionLocal
@@ -561,8 +641,11 @@ async def my_feed(user=Depends(current_user), s: AsyncSession = Depends(db), lim
     followees = [r[0] for r in f.all()] + [user["sub"]]
     res = await s.execute(select(Post).where(Post.user_id.in_(followees), Post.visibility.in_(["public","tenant","friends"])).order_by(desc(Post.published_at)).limit(limit).offset(offset))
     return [PostOut(id=p.id, user_id=p.user_id, content=p.content, media=p.media or [], visibility=p.visibility, published_at=p.published_at.isoformat(), like_count=p.like_count, share_count=p.share_count, comment_count=p.comment_count) for p in res.scalars().all()]
-''')
-write("platform/social-service/app/api/likes.py", '''from fastapi import APIRouter, Depends, HTTPException
+""",
+)
+write(
+    "platform/social-service/app/api/likes.py",
+    """from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.core.db import SessionLocal
@@ -598,8 +681,11 @@ async def unlike(post_id: str, user=Depends(current_user), s: AsyncSession = Dep
 async def likers(post_id: str, s: AsyncSession = Depends(db)):
     res = await s.execute(select(Like).where(Like.post_id == post_id))
     return [{"user_id": l.user_id, "created_at": l.created_at.isoformat()} for l in res.scalars().all()]
-''')
-write("platform/social-service/app/api/shares.py", '''from fastapi import APIRouter, Depends, HTTPException
+""",
+)
+write(
+    "platform/social-service/app/api/shares.py",
+    """from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.core.db import SessionLocal
@@ -627,8 +713,11 @@ async def share(post_id: str, body: ShareIn, user=Depends(current_user), s: Asyn
 async def sharers(post_id: str, s: AsyncSession = Depends(db)):
     res = await s.execute(select(Share).where(Share.post_id == post_id))
     return [{"user_id": sh.user_id, "target": sh.target, "created_at": sh.created_at.isoformat()} for sh in res.scalars().all()]
-''')
-write("platform/social-service/app/api/follows.py", '''from fastapi import APIRouter, Depends, HTTPException
+""",
+)
+write(
+    "platform/social-service/app/api/follows.py",
+    """from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.core.db import SessionLocal
@@ -663,6 +752,7 @@ async def following(user=Depends(current_user), s: AsyncSession = Depends(db)):
 async def followers(user=Depends(current_user), s: AsyncSession = Depends(db)):
     res = await s.execute(select(Follow).where(Follow.followee_id == user["sub"]))
     return [r.follower_id for r in res.scalars().all()]
-''')
+""",
+)
 
 print("✅ social-service + notification-service seeded")

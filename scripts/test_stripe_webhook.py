@@ -4,6 +4,7 @@ import hmac
 import json
 import os
 import time
+
 import requests
 
 
@@ -14,8 +15,15 @@ def compute_stripe_signature(payload: str, secret: str, timestamp: int) -> str:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Send a signed Stripe webhook event to a Shopnoltd billing webhook endpoint.")
-    parser.add_argument("--url", default=os.getenv("SHOPNOLTD_WEBHOOK_URL", "https://billing.shopnoltd.dpdns.org/billing/webhook"))
+    parser = argparse.ArgumentParser(
+        description="Send a signed Stripe webhook event to a Shopnoltd billing webhook endpoint."
+    )
+    parser.add_argument(
+        "--url",
+        default=os.getenv(
+            "SHOPNOLTD_WEBHOOK_URL", "https://billing.shopnoltd.dpdns.org/billing/webhook"
+        ),
+    )
     parser.add_argument("--secret", default=os.getenv("STRIPE_WEBHOOK_SECRET"))
     args = parser.parse_args()
 
@@ -32,18 +40,15 @@ def main():
                 "amount_total": 4999,
                 "currency": "usd",
                 "customer_email": "test@example.com",
-                "payment_status": "paid"
+                "payment_status": "paid",
             }
         },
-        "created": int(time.time())
+        "created": int(time.time()),
     }
     payload = json.dumps(event)
     signature = compute_stripe_signature(payload, args.secret, int(time.time()))
 
-    headers = {
-        "Content-Type": "application/json",
-        "Stripe-Signature": signature
-    }
+    headers = {"Content-Type": "application/json", "Stripe-Signature": signature}
 
     response = requests.post(args.url, headers=headers, data=payload)
     print(f"POST {args.url} -> {response.status_code}")

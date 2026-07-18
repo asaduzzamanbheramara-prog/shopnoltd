@@ -14,8 +14,9 @@ This script inspects each deployment.yaml to find:
 ...and emits a `secret.yaml` template (placeholder values only, never real
 secrets) for each referenced Secret object, grouped by service directory.
 """
+
 import os
-import sys
+
 import yaml
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -34,12 +35,7 @@ def find_secret_refs(deployment_docs):
     for doc in deployment_docs:
         if not doc or doc.get("kind") != "Deployment":
             continue
-        containers = (
-            doc.get("spec", {})
-            .get("template", {})
-            .get("spec", {})
-            .get("containers", [])
-        )
+        containers = doc.get("spec", {}).get("template", {}).get("spec", {}).get("containers", [])
         for c in containers:
             for ef in c.get("envFrom", []) or []:
                 name = ef.get("secretRef", {}).get("name")

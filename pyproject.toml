@@ -1,0 +1,16 @@
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+exclude = ["**/migrations/**", "**/__pycache__/**", ".venv", "venv"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "UP", "B"]  # errors, pyflakes, isort, warnings, pyupgrade, bugbear
+ignore = [
+    "E501",  # line length handled by formatter
+    "E701",  # multiple statements on one line (colon) -- intentional compact style
+    "E702",  # multiple statements on one line (semicolon) -- intentional compact style
+    "B008",  # Depends() in defaults -- this IS the correct FastAPI pattern
+]
+
+[tool.ruff.format]
+quote-style = "double"

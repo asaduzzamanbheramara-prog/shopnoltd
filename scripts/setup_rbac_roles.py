@@ -12,11 +12,12 @@ Usage:
     export KEYCLOAK_ADMIN_PASSWORD='...'
     python3 scripts/setup_rbac_roles.py
 """
+
+import json
 import os
 import sys
-import json
-import urllib.request
 import urllib.error
+import urllib.request
 
 KEYCLOAK_URL = os.environ.get("KEYCLOAK_URL", "https://auth.shopnoltd.dpdns.org").rstrip("/")
 REALM = os.environ.get("KEYCLOAK_REALM", "shopnoltd")
@@ -52,7 +53,9 @@ def get_admin_token():
     if not ADMIN_PASSWORD:
         sys.exit("Set KEYCLOAK_ADMIN_PASSWORD before running this script.")
     body = f"grant_type=password&client_id=admin-cli&username={ADMIN_USER}&password={ADMIN_PASSWORD}".encode()
-    req = urllib.request.Request(f"{KEYCLOAK_URL}/realms/master/protocol/openid-connect/token", data=body, method="POST")
+    req = urllib.request.Request(
+        f"{KEYCLOAK_URL}/realms/master/protocol/openid-connect/token", data=body, method="POST"
+    )
     req.add_header("Content-Type", "application/x-www-form-urlencoded")
     try:
         with urllib.request.urlopen(req) as resp:
@@ -69,8 +72,16 @@ def main():
         if code == 200:
             print(f"[SKIP] role '{name}' already exists")
             continue
-        code, resp = http("POST", f"/admin/realms/{REALM}/roles", token, {"name": name, "description": description})
-        print(f"[{'OK' if code in (201,) else 'FAIL'}] create role '{name}' (HTTP {code})" + ("" if code == 201 else f": {resp}"))
+        code, resp = http(
+            "POST",
+            f"/admin/realms/{REALM}/roles",
+            token,
+            {"name": name, "description": description},
+        )
+        print(
+            f"[{'OK' if code in (201,) else 'FAIL'}] create role '{name}' (HTTP {code})"
+            + ("" if code == 201 else f": {resp}")
+        )
 
     # Ensure realm roles are exposed in the token as a flat "roles" claim.
     # Keycloak's built-in "realm roles" client scope maps to "realm_access.roles"
@@ -79,13 +90,17 @@ def main():
     code, scopes = http("GET", f"/admin/realms/{REALM}/client-scopes", token)
     realm_roles_scope = next((s for s in (scopes or []) if s.get("name") == "roles"), None)
     if not realm_roles_scope:
-        print("[WARN] couldn't find the built-in 'roles' client scope -- add the "
-              "'roles' claim mapper manually in the Keycloak admin console "
-              "(Client Scopes -> roles -> Mappers -> Add mapper -> User Realm Role, "
-              "Token Claim Name = roles, Multivalued = On).")
+        print(
+            "[WARN] couldn't find the built-in 'roles' client scope -- add the "
+            "'roles' claim mapper manually in the Keycloak admin console "
+            "(Client Scopes -> roles -> Mappers -> Add mapper -> User Realm Role, "
+            "Token Claim Name = roles, Multivalued = On)."
+        )
         return
     scope_id = realm_roles_scope["id"]
-    code, mappers = http("GET", f"/admin/realms/{REALM}/client-scopes/{scope_id}/protocol-mappers/models", token)
+    code, mappers = http(
+        "GET", f"/admin/realms/{REALM}/client-scopes/{scope_id}/protocol-mappers/models", token
+    )
     if any(m.get("name") == "flat-roles" for m in (mappers or [])):
         print("[SKIP] 'flat-roles' mapper already exists")
     else:
@@ -102,15 +117,27 @@ def main():
                 "userinfo.token.claim": "true",
             },
         }
-        code, resp = http("POST", f"/admin/realms/{REALM}/client-scopes/{scope_id}/protocol-mappers/models", token, mapper)
-        print(f"[{'OK' if code in (201,) else 'FAIL'}] create 'flat-roles' mapper (HTTP {code})" + ("" if code == 201 else f": {resp}"))
+        code, resp = http(
+            "POST",
+            f"/admin/realms/{REALM}/client-scopes/{scope_id}/protocol-mappers/models",
+            token,
+            mapper,
+        )
+        print(
+            f"[{'OK' if code in (201,) else 'FAIL'}] create 'flat-roles' mapper (HTTP {code})"
+            + ("" if code == 201 else f": {resp}")
+        )
 
     print("\nDone. Assign roles to users with:")
-    print("  PUT /admin/realms/{realm}/users/{user-id}/role-mappings/realm  "
-          "body=[{\"id\":\"<role-id>\",\"name\":\"tenant_owner\"}]")
-    print("For tenant_owner/customer, also set a 'tenant_id' user attribute "
-          "and add a matching user-attribute mapper (Token Claim Name = tenant_id) "
-          "so it lands in the token the same way.")
+    print(
+        "  PUT /admin/realms/{realm}/users/{user-id}/role-mappings/realm  "
+        'body=[{"id":"<role-id>","name":"tenant_owner"}]'
+    )
+    print(
+        "For tenant_owner/customer, also set a 'tenant_id' user attribute "
+        "and add a matching user-attribute mapper (Token Claim Name = tenant_id) "
+        "so it lands in the token the same way."
+    )
 
 
 if __name__ == "__main__":
