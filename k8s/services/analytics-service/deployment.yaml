@@ -35,7 +35,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: analytics-service
-          image: ghcr.io/shopnoltd/analytics-service:latest
+          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/analytics-service:latest
           imagePullPolicy: IfNotPresent
           ports:
             - name: http

@@ -35,7 +35,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: search-service
-          image: ghcr.io/shopnoltd/search-service:latest
+          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/search-service:latest
           imagePullPolicy: IfNotPresent
           ports:
             - name: http

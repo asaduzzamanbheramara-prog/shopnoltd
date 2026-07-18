@@ -1,4 +1,3 @@
-from typing import Optional
 import secrets
 from datetime import datetime, timedelta
 
@@ -71,7 +70,7 @@ async def create(body: RoomIn, user=Depends(current_user), s: AsyncSession = Dep
 @router.get("/{name}/join", response_model=RoomOut)
 async def join(
     name: str,
-    password: Optional[str] = None,
+    password: str | None = None,
     user=Depends(current_user),
     s: AsyncSession = Depends(db),
 ):

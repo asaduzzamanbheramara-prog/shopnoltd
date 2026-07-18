@@ -35,7 +35,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: tenant-router
-          image: ghcr.io/shopnoltd/tenant-router:latest
+          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/tenant-router:latest
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
