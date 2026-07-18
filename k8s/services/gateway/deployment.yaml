@@ -35,7 +35,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: gateway
-          image: ghcr.io/shopnoltd/gateway:latest
+          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/gateway:latest
           imagePullPolicy: IfNotPresent
           ports:
             - name: http

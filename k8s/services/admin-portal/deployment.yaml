@@ -35,7 +35,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: admin-portal
-          image: ghcr.io/shopnoltd/admin-portal:latest
+          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/admin-portal:latest
           imagePullPolicy: IfNotPresent
           ports:
             - name: http

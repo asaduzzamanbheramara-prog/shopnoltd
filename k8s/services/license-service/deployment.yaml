@@ -35,7 +35,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: license-service
-          image: ghcr.io/shopnoltd/license-service:latest
+          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/license-service:latest
           imagePullPolicy: IfNotPresent
           ports:
             - name: http

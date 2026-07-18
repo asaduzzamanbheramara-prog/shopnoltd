@@ -35,7 +35,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: notification-service
-          image: ghcr.io/shopnoltd/notification-service:latest
+          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/notification-service:latest
           imagePullPolicy: IfNotPresent
           ports:
             - name: http

@@ -1,0 +1,627 @@
+===== DATE =====
+Sat Jul 18 18:43:13 +06 2026
+
+===== GIT =====
+On branch main
+Your branch is up to date with 'origin/main'.
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   k8s/services/admin-portal/configmap.yaml
+	modified:   k8s/services/admin-portal/deployment.yaml
+	modified:   k8s/services/ai-platform/configmap.yaml
+	modified:   k8s/services/ai-platform/deployment.yaml
+	modified:   k8s/services/alertmanager/configmap.yaml
+	modified:   k8s/services/analytics-service/configmap.yaml
+	modified:   k8s/services/analytics-service/deployment.yaml
+	modified:   k8s/services/android-portal/configmap.yaml
+	modified:   k8s/services/api-service/configmap.yaml
+	modified:   k8s/services/api-service/deployment.yaml
+	modified:   k8s/services/audit-service/configmap.yaml
+	modified:   k8s/services/audit-service/deployment.yaml
+	modified:   k8s/services/auth-service/configmap.yaml
+	modified:   k8s/services/auth-service/deployment.yaml
+	modified:   k8s/services/billing-engine/configmap.yaml
+	modified:   k8s/services/chatwoot/configmap.yaml
+	modified:   k8s/services/code-server/configmap.yaml
+	modified:   k8s/services/domain-service/configmap.yaml
+	modified:   k8s/services/event-service/configmap.yaml
+	modified:   k8s/services/exchange-service/configmap.yaml
+	modified:   k8s/services/exchange-service/deployment.yaml
+	modified:   k8s/services/foundation-service/configmap.yaml
+	modified:   k8s/services/freedomain-service/configmap.yaml
+	modified:   k8s/services/gateway/configmap.yaml
+	modified:   k8s/services/gateway/deployment.yaml
+	modified:   k8s/services/gitea/configmap.yaml
+	modified:   k8s/services/grafana/configmap.yaml
+	modified:   k8s/services/interior-service/configmap.yaml
+	modified:   k8s/services/jitsi-jicofo/configmap.yaml
+	modified:   k8s/services/jitsi-jvb/configmap.yaml
+	modified:   k8s/services/jitsi-prosody/configmap.yaml
+	modified:   k8s/services/jitsi-web/configmap.yaml
+	modified:   k8s/services/keycloak/configmap.yaml
+	modified:   k8s/services/kobotoolbox/configmap.yaml
+	modified:   k8s/services/license-service/configmap.yaml
+	modified:   k8s/services/license-service/deployment.yaml
+	modified:   k8s/services/loki/configmap.yaml
+	modified:   k8s/services/metabase/configmap.yaml
+	modified:   k8s/services/minio/configmap.yaml
+	modified:   k8s/services/mobile-api/configmap.yaml
+	modified:   k8s/services/mobile-api/deployment.yaml
+	modified:   k8s/services/n8n/configmap.yaml
+	modified:   k8s/services/nextcloud/configmap.yaml
+	modified:   k8s/services/notification-service/configmap.yaml
+	modified:   k8s/services/notification-service/deployment.yaml
+	modified:   k8s/services/oauth-service/configmap.yaml
+	modified:   k8s/services/oauth-service/deployment.yaml
+	modified:   k8s/services/onlyoffice/configmap.yaml
+	modified:   k8s/services/opensearch/configmap.yaml
+	modified:   k8s/services/owncast/configmap.yaml
+	modified:   k8s/services/payment-service/configmap.yaml
+	modified:   k8s/services/payment-service/deployment.yaml
+	modified:   k8s/services/pc-portal/configmap.yaml
+	modified:   k8s/services/prometheus/configmap.yaml
+	modified:   k8s/services/redis/configmap.yaml
+	modified:   k8s/services/report-service/configmap.yaml
+	modified:   k8s/services/report-service/deployment.yaml
+	modified:   k8s/services/scheduler-service/configmap.yaml
+	modified:   k8s/services/scheduler-service/deployment.yaml
+	modified:   k8s/services/search-service/configmap.yaml
+	modified:   k8s/services/search-service/deployment.yaml
+	modified:   k8s/services/storage-service/configmap.yaml
+	modified:   k8s/services/storage-service/deployment.yaml
+	modified:   k8s/services/superset/configmap.yaml
+	modified:   k8s/services/tenant-router/configmap.yaml
+	modified:   k8s/services/tenant-router/deployment.yaml
+	modified:   k8s/services/training-service/configmap.yaml
+	modified:   k8s/services/web-portal/configmap.yaml
+	modified:   k8s/services/web-portal/deployment.yaml
+	modified:   k8s/services/worker-service/configmap.yaml
+	modified:   k8s/services/worker-service/deployment.yaml
+	modified:   platform/meet-service/app/api/rooms.py
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	--replicas=1
+	reports/
+
+
+It took 84.41 seconds to enumerate untracked files.
+See 'git help status' for information on how to improve this.
+
+no changes added to commit (use "git add" and/or "git commit -a")
+
+===== PYTHON =====
+Python 3.12.3
+
+===== DOCKER =====
+CONTAINER ID   IMAGE                                              COMMAND                  CREATED       STATUS                 PORTS                                      NAMES
+a565045454f3   envoyproxy/envoy:v1.36.4                           "/docker-entrypoint.…"   5 hours ago   Up 2 hours             0.0.0.0:80->80/tcp, 0.0.0.0:443->443/tcp   kindccm-BJYJSRAHC3IJPKHONKFUMYNDFAUFGYBZCUG7IF7R
+339ba8894197   docker/desktop-cloud-provider-kind:v0.5.0          "/bin/cloud-provider…"   9 days ago    Up 2 hours             2375-2376/tcp                              kind-cloud-provider
+b74efb3cdd39   docker/desktop-containerd-registry-mirror:v0.0.3   "/bin/registry"          9 days ago    Up 2 hours (healthy)                                              kind-registry-mirror
+177a07f34e1d   kindest/node:v1.36.1                               "/usr/local/bin/entr…"   9 days ago    Up 2 hours             127.0.0.1:62230->6443/tcp                  desktop-control-plane
+
+===== KUBERNETES =====
+Unable to connect to the server: net/http: TLS handshake timeout
+
+===== EMPTY FILES =====
+./--replicas=1
+./.cloudflaredconfig.yml
+./.git/logs/refs/heads/migrate-ghcr-images
+./.git/logs/refs/remotes/origin/migrate-ghcr-images
+./.git/objects/maintenance.lock
+./.github/workflows/deploy-k8s.yml
+./.github/workflows/security-scan.yml
+./.venv/lib/python3.12/site-packages/aiohappyeyeballs/py.typed
+./.venv/lib/python3.12/site-packages/aiosignal/py.typed
+./.venv/lib/python3.12/site-packages/altair/py.typed
+./.venv/lib/python3.12/site-packages/annotated_doc/py.typed
+./.venv/lib/python3.12/site-packages/annotated_types/py.typed
+./.venv/lib/python3.12/site-packages/anyio/py.typed
+./.venv/lib/python3.12/site-packages/anyio/streams/__init__.py
+./.venv/lib/python3.12/site-packages/anyio/_backends/__init__.py
+./.venv/lib/python3.12/site-packages/anyio/_core/__init__.py
+./.venv/lib/python3.12/site-packages/attr/py.typed
+./.venv/lib/python3.12/site-packages/attrs/py.typed
+./.venv/lib/python3.12/site-packages/bcrypt/py.typed
+./.venv/lib/python3.12/site-packages/blinker/py.typed
+./.venv/lib/python3.12/site-packages/boto3/resources/__init__.py
+./.venv/lib/python3.12/site-packages/boto3-1.43.49.dist-info/REQUESTED
+./.venv/lib/python3.12/site-packages/botocore/vendored/__init__.py
+./.venv/lib/python3.12/site-packages/bs4/py.typed
+./.venv/lib/python3.12/site-packages/build/py.typed
+./.venv/lib/python3.12/site-packages/build/_compat/__init__.py
+./.venv/lib/python3.12/site-packages/cachetools/py.typed
+./.venv/lib/python3.12/site-packages/certifi/py.typed
+./.venv/lib/python3.12/site-packages/charset_normalizer/py.typed
+./.venv/lib/python3.12/site-packages/chromadb/cli/__init__.py
+./.venv/lib/python3.12/site-packages/chromadb/db/impl/__init__.py
+./.venv/lib/python3.12/site-packages/chromadb/execution/__init__.py
+./.venv/lib/python3.12/site-packages/chromadb/migrations/__init__.py
+./.venv/lib/python3.12/site-packages/chromadb/proto/__init__.py
+./.venv/lib/python3.12/site-packages/chromadb/py.typed
+./.venv/lib/python3.12/site-packages/chromadb/segment/impl/manager/cache/__init__.py
+./.venv/lib/python3.12/site-packages/chromadb/segment/impl/manager/__init__.py
+./.venv/lib/python3.12/site-packages/chromadb/segment/impl/__init__.py
+./.venv/lib/python3.12/site-packages/chromadb/telemetry/__init__.py
+./.venv/lib/python3.12/site-packages/chromadb/test/client/__init__.py
+./.venv/lib/python3.12/site-packages/chromadb/test/__init__.py
+./.venv/lib/python3.12/site-packages/chromadb-1.5.9.dist-info/REQUESTED
+./.venv/lib/python3.12/site-packages/click/py.typed
+./.venv/lib/python3.12/site-packages/cryptography/py.typed
+./.venv/lib/python3.12/site-packages/distro/py.typed
+./.venv/lib/python3.12/site-packages/docker/models/__init__.py
+./.venv/lib/python3.12/site-packages/docker-7.2.0.dist-info/REQUESTED
+./.venv/lib/python3.12/site-packages/durationpy/py.typed
+./.venv/lib/python3.12/site-packages/fastapi/dependencies/__init__.py
+./.venv/lib/python3.12/site-packages/fastapi/openapi/__init__.py
+./.venv/lib/python3.12/site-packages/fastapi/py.typed
+./.venv/lib/python3.12/site-packages/fastapi-0.139.0.dist-info/REQUESTED
+./.venv/lib/python3.12/site-packages/filelock/py.typed
+./.venv/lib/python3.12/site-packages/fsspec/implementations/__init__.py
+./.venv/lib/python3.12/site-packages/git/py.typed
+./.venv/lib/python3.12/site-packages/gitdb/utils/__init__.py
+./.venv/lib/python3.12/site-packages/github/py.typed
+./.venv/lib/python3.12/site-packages/gitpython-3.1.51.dist-info/REQUESTED
+./.venv/lib/python3.12/site-packages/google/auth/crypt/_helpers.py
+./.venv/lib/python3.12/site-packages/google/genai/tests/interactions/__init__.py
+./.venv/lib/python3.12/site-packages/google/protobuf/compiler/__init__.py
+./.venv/lib/python3.12/site-packages/google/protobuf/pyext/__init__.py
+./.venv/lib/python3.12/site-packages/google/protobuf/testdata/__init__.py
+./.venv/lib/python3.12/site-packages/google/protobuf/util/__init__.py
+./.venv/lib/python3.12/site-packages/greenlet/platform/__init__.py
+./.venv/lib/python3.12/site-packages/httpcore/py.typed
+./.venv/lib/python3.12/site-packages/httpcore/_backends/__init__.py
+./.venv/lib/python3.12/site-packages/httptools/py.typed
+./.venv/lib/python3.12/site-packages/httpx/py.typed
+./.venv/lib/python3.12/site-packages/httpx-0.28.1.dist-info/REQUESTED
+./.venv/lib/python3.12/site-packages/httpx_sse/py.typed
+./.venv/lib/python3.12/site-packages/huggingface_hub/inference/_generated/__init__.py
+./.venv/lib/python3.12/site-packages/huggingface_hub/inference/_mcp/__init__.py
+./.venv/lib/python3.12/site-packages/huggingface_hub/inference/__init__.py
+./.venv/lib/python3.12/site-packages/huggingface_hub/py.typed
+./.venv/lib/python3.12/site-packages/idna/py.typed
+./.venv/lib/python3.12/site-packages/importlib_resources/compat/__init__.py
+./.venv/lib/python3.12/site-packages/importlib_resources/future/__init__.py
+./.venv/lib/python3.12/site-packages/importlib_resources/py.typed
+./.venv/lib/python3.12/site-packages/importlib_resources/tests/compat/__init__.py
+./.venv/lib/python3.12/site-packages/importlib_resources/tests/__init__.py
+./.venv/lib/python3.12/site-packages/itsdangerous/py.typed
+./.venv/lib/python3.12/site-packages/jinja2/py.typed
+./.venv/lib/python3.12/site-packages/jinja2-3.1.6.dist-info/REQUESTED
+./.venv/lib/python3.12/site-packages/jiter/py.typed
+./.venv/lib/python3.12/site-packages/jsonschema/tests/typing/__init__.py
+./.venv/lib/python3.12/site-packages/jsonschema/tests/__init__.py
+./.venv/lib/python3.12/site-packages/jsonschema_specifications/tests/__init__.py
+./.venv/lib/python3.12/site-packages/json_repair/py.typed
+./.venv/lib/python3.12/site-packages/jwt/py.typed
+./.venv/lib/python3.12/site-packages/kubernetes-36.0.3.dist-info/REQUESTED
+./.venv/lib/python3.12/site-packages/langchain/py.typed
+./.venv/lib/python3.12/site-packages/langchain-1.3.13.dist-info/REQUESTED
+./.venv/lib/python3.12/site-packages/langchain_aws/document_compressors/__init__.py
+./.venv/lib/python3.12/site-packages/langchain_aws/py.typed
+./.venv/lib/python3.12/site-packages/langchain_aws-1.6.2.dist-info/REQUESTED
+./.venv/lib/python3.12/site-packages/langchain_chroma/py.typed
+./.venv/lib/python3.12/site-packages/langchain_chroma-1.1.0.dist-info/REQUESTED
+./.venv/lib/python3.12/site-packages/langchain_classic/adapters/__init__.py
+./.venv/lib/python3.12/site-packages/langchain_classic/agents/agent_toolkits/amadeus/__init__.py
+./.venv/lib/python3.12/site-packages/langchain_classic/agents/agent_toolkits/clickup/__init__.py
+./.venv/lib/python3.12/site-packages/langchain_classic/agents/agent_toolkits/conversational_retrieval/__init__.py
+./.venv/lib/python3.12/site-packages/langchain_classic/agents/agent_toolkits/nla/__init__.py
+./.venv/lib/python3.12/site-packages/langchain_classic/agents/chat/__init__.py
+./.venv/lib/python3.12/site-packages/langchain_classic/agents/json_chat/__init__.py
+./.venv/lib/python3.12/site-packages/langchain_classic/agents/openai_functions_agent/__init__.py
+./.venv/lib/python3.12/site-packages/langchain_classic/agents/openai_functions_multi_agent/__init__.py
+./.venv/lib/python3.12/site-packages/langchain_classic/agents/openai_tools/__init__.py
+./.venv/lib/python3.12/site-packages/langchain_classic/agents/structured_chat/__init__.py
+./.venv/lib/python3.12/site-packages/langchain_classic/agents/tool_calling_agent/__init__.py
+./.venv/lib/python3.12/site-packages/langchain_classic/agents/xml/__init__.py
+./.venv/lib/python3.12/site-packages/langchain_classic/chains/api/openapi/__init__.py
+./.venv/lib/python3.12/site-packages/langchain_classic/chains/chat_vector_db/__init__.py
+./.venv/lib/python3.12/site-packages/langchain_classic/chains/graph_qa/__init__.py
+./.venv/lib/python3.12/site-packages/langchain_classic/chains/qa_generation/__init__.py
+./.venv/lib/python3.12/site-packages/langchain_classic/evaluation/exact_match/__init__.py
+./.venv/lib/python3.12/site-packages/langchain_classic/evaluation/parsing/__init__.py
+./.venv/lib/python3.12/site-packages/langchain_classic/evaluation/regex_match/__init__.py
+./.venv/lib/python3.12/site-packages/langchain_classic/py.typed
+./.venv/lib/python3.12/site-packages/langchain_classic/retrievers/self_query/__init__.py
+./.venv/lib/python3.12/site-packages/langchain_classic/schema/callbacks/tracers/__init__.py
+./.venv/lib/python3.12/site-packages/langchain_classic/schema/callbacks/__init__.py
+./.venv/lib/python3.12/site-packages/langchain_classic/tools/ainetwork/__init__.py
+./.venv/lib/python3.12/site-packages/langchain_classic/tools/bearly/__init__.py
+./.venv/lib/python3.12/site-packages/langchain_classic/tools/brave_search/__init__.py
+./.venv/lib/python3.12/site-packages/langchain_classic/tools/clickup/__init__.py
+./.venv/lib/python3.12/site-packages/langchain_classic/tools/e2b_data_analysis/__init__.py
+./.venv/lib/python3.12/site-packages/langchain_classic/tools/nasa/__init__.py
+./.venv/lib/python3.12/site-packages/langchain_classic/tools/openapi/utils/__init__.py
+./.venv/lib/python3.12/site-packages/langchain_classic/tools/openapi/__init__.py
+./.venv/lib/python3.12/site-packages/langchain_classic/tools/reddit_search/__init__.py
+./.venv/lib/python3.12/site-packages/langchain_classic/tools/searx_search/__init__.py
+./.venv/lib/python3.12/site-packages/langchain_classic/tools/youtube/__init__.py
+./.venv/lib/python3.12/site-packages/langchain_community/agents/__init__.py
+./.venv/lib/python3.12/site-packages/langchain_community/agent_toolkits/amadeus/__init__.py
+./.venv/lib/python3.12/site-packages/langchain_community/agent_toolkits/clickup/__init__.py
+./.venv/lib/python3.12/site-packages/langchain_community/agent_toolkits/nla/__init__.py
+./.venv/lib/python3.12/site-packages/langchain_community/chains/openapi/__init__.py
+./.venv/lib/python3.12/site-packages/langchain_community/chains/pebblo_retrieval/__init__.py
+./.venv/lib/python3.12/site-packages/langchain_community/memory/__init__.py
+./.venv/lib/python3.12/site-packages/langchain_community/py.typed
+./.venv/lib/python3.12/site-packages/langchain_community/query_constructors/__init__.py
+./.venv/lib/python3.12/site-packages/langchain_community/tools/ainetwork/__init__.py
+./.venv/lib/python3.12/site-packages/langchain_community/tools/bearly/__init__.py
+./.venv/lib/python3.12/site-packages/langchain_community/tools/brave_search/__init__.py
+./.venv/lib/python3.12/site-packages/langchain_community/tools/clickup/__init__.py
+./.venv/lib/python3.12/site-packages/langchain_community/tools/e2b_data_analysis/__init__.py
+./.venv/lib/python3.12/site-packages/langchain_community/tools/mojeek_search/__init__.py
+./.venv/lib/python3.12/site-packages/langchain_community/tools/nasa/__init__.py
+./.venv/lib/python3.12/site-packages/langchain_community/tools/openapi/utils/__init__.py
+./.venv/lib/python3.12/site-packages/langchain_community/tools/openapi/__init__.py
+./.venv/lib/python3.12/site-packages/langchain_community/tools/riza/__init__.py
+./.venv/lib/python3.12/site-packages/langchain_community/tools/searx_search/__init__.py
+./.venv/lib/python3.12/site-packages/langchain_community/tools/youtube/__init__.py
+./.venv/lib/python3.12/site-packages/langchain_community-0.4.2.dist-info/REQUESTED
+./.venv/lib/python3.12/site-packages/langchain_core/py.typed
+./.venv/lib/python3.12/site-packages/langchain_google_genai/py.typed
+./.venv/lib/python3.12/site-packages/langchain_google_genai-4.2.7.dist-info/REQUESTED
+./.venv/lib/python3.12/site-packages/langchain_huggingface/py.typed
+./.venv/lib/python3.12/site-packages/langchain_huggingface/tests/integration_tests/__init__.py
+./.venv/lib/python3.12/site-packages/langchain_huggingface/tests/__init__.py
+./.venv/lib/python3.12/site-packages/langchain_huggingface-1.2.2.dist-info/REQUESTED
+./.venv/lib/python3.12/site-packages/langchain_neo4j/chains/graph_qa/__init__.py
+./.venv/lib/python3.12/site-packages/langchain_neo4j/chains/__init__.py
+./.venv/lib/python3.12/site-packages/langchain_neo4j/chat_message_histories/__init__.py
+./.venv/lib/python3.12/site-packages/langchain_neo4j/checkpoint/py.typed
+./.venv/lib/python3.12/site-packages/langchain_neo4j/graphs/__init__.py
+./.venv/lib/python3.12/site-packages/langchain_neo4j/graph_transformers/__init__.py
+./.venv/lib/python3.12/site-packages/langchain_neo4j/py.typed
+./.venv/lib/python3.12/site-packages/langchain_neo4j/query_constructors/__init__.py
+./.venv/lib/python3.12/site-packages/langchain_neo4j/vectorstores/__init__.py
+./.venv/lib/python3.12/site-packages/langchain_neo4j-0.10.0.dist-info/REQUESTED
+./.venv/lib/python3.12/site-packages/langchain_ollama/py.typed
+./.venv/lib/python3.12/site-packages/langchain_ollama-1.1.0.dist-info/REQUESTED
+./.venv/lib/python3.12/site-packages/langchain_openai/py.typed
+./.venv/lib/python3.12/site-packages/langchain_openai-1.3.5.dist-info/REQUESTED
+./.venv/lib/python3.12/site-packages/langchain_protocol/py.typed
+./.venv/lib/python3.12/site-packages/langchain_text_splitters/py.typed
+./.venv/lib/python3.12/site-packages/langgraph/cache/base/py.typed
+./.venv/lib/python3.12/site-packages/langgraph/checkpoint/base/py.typed
+./.venv/lib/python3.12/site-packages/langgraph/checkpoint/memory/py.typed
+./.venv/lib/python3.12/site-packages/langgraph/checkpoint/serde/py.typed
+./.venv/lib/python3.12/site-packages/langgraph/checkpoint/serde/__init__.py
+./.venv/lib/python3.12/site-packages/langgraph/prebuilt/py.typed
+./.venv/lib/python3.12/site-packages/langgraph/pregel/_config.py
+./.venv/lib/python3.12/site-packages/langgraph/py.typed
+./.venv/lib/python3.12/site-packages/langgraph/store/base/py.typed
+./.venv/lib/python3.12/site-packages/langgraph/store/memory/py.typed
+./.venv/lib/python3.12/site-packages/langgraph_sdk/py.typed
+./.venv/lib/python3.12/site-packages/langsmith/py.typed
+./.venv/lib/python3.12/site-packages/langsmith/_internal/__init__.py
+./.venv/lib/python3.12/site-packages/langsmith/_openapi_client/py.typed
+./.venv/lib/python3.12/site-packages/markdown_it/cli/__init__.py
+./.venv/lib/python3.12/site-packages/markdown_it/common/__init__.py
+./.venv/lib/python3.12/site-packages/markupsafe/py.typed
+./.venv/lib/python3.12/site-packages/mmh3/py.typed
+./.venv/lib/python3.12/site-packages/nacl/py.typed
+./.venv/lib/python3.12/site-packages/narwhals/py.typed
+./.venv/lib/python3.12/site-packages/narwhals/testing/asserts/__init__.py
+./.venv/lib/python3.12/site-packages/narwhals/_arrow/__init__.py
+./.venv/lib/python3.12/site-packages/narwhals/_dask/__init__.py
+./.venv/lib/python3.12/site-packages/narwhals/_duckdb/__init__.py
+./.venv/lib/python3.12/site-packages/narwhals/_ibis/__init__.py
+./.venv/lib/python3.12/site-packages/narwhals/_interchange/__init__.py
+./.venv/lib/python3.12/site-packages/narwhals/_pandas_like/__init__.py
+./.venv/lib/python3.12/site-packages/narwhals/_polars/__init__.py
+./.venv/lib/python3.12/site-packages/neo4j/py.typed
+./.venv/lib/python3.12/site-packages/neo4j-6.2.0.dist-info/REQUESTED
+./.venv/lib/python3.12/site-packages/neo4j_graphrag/experimental/components/text_splitters/__init__.py
+./.venv/lib/python3.12/site-packages/neo4j_graphrag/experimental/pipeline/types/__init__.py
+./.venv/lib/python3.12/site-packages/neo4j_graphrag/experimental/__init__.py
+./.venv/lib/python3.12/site-packages/neo4j_graphrag/py.typed
+./.venv/lib/python3.12/site-packages/neo4j_graphrag/utils/__init__.py
+./.venv/lib/python3.12/site-packages/numpy/core/_dtype.pyi
+./.venv/lib/python3.12/site-packages/numpy/core/_dtype_ctypes.pyi
+./.venv/lib/python3.12/site-packages/numpy/fft/tests/__init__.py
+./.venv/lib/python3.12/site-packages/numpy/lib/tests/__init__.py
+./.venv/lib/python3.12/site-packages/numpy/linalg/tests/__init__.py
+./.venv/lib/python3.12/site-packages/numpy/ma/tests/__init__.py
+./.venv/lib/python3.12/site-packages/numpy/matrixlib/tests/__init__.py
+./.venv/lib/python3.12/site-packages/numpy/polynomial/tests/__init__.py
+./.venv/lib/python3.12/site-packages/numpy/py.typed
+./.venv/lib/python3.12/site-packages/numpy/random/tests/data/__init__.py
+./.venv/lib/python3.12/site-packages/numpy/random/tests/__init__.py
+./.venv/lib/python3.12/site-packages/numpy/testing/tests/__init__.py
+./.venv/lib/python3.12/site-packages/numpy/testing/_private/__init__.py
+./.venv/lib/python3.12/site-packages/numpy/testing/_private/__init__.pyi
+./.venv/lib/python3.12/site-packages/numpy/tests/__init__.py
+./.venv/lib/python3.12/site-packages/numpy/typing/tests/__init__.py
+./.venv/lib/python3.12/site-packages/numpy/_pyinstaller/__init__.py
+./.venv/lib/python3.12/site-packages/numpy/_pyinstaller/__init__.pyi
+./.venv/lib/python3.12/site-packages/oauthlib/openid/connect/core/__init__.py
+./.venv/lib/python3.12/site-packages/oauthlib/openid/connect/__init__.py
+./.venv/lib/python3.12/site-packages/ollama/py.typed
+./.venv/lib/python3.12/site-packages/onnxruntime/quantization/CalTableFlatBuffers/__init__.py
+./.venv/lib/python3.12/site-packages/onnxruntime/tools/mobile_helpers/__init__.py
+./.venv/lib/python3.12/site-packages/onnxruntime/tools/ort_format_model/ort_flatbuffers_py/__init__.py
+./.venv/lib/python3.12/site-packages/onnxruntime/tools/qdq_helpers/__init__.py
+./.venv/lib/python3.12/site-packages/openai/py.typed
+find: ‘./.venv/lib/python3.12/site-packages/openai/types/responses/__pycache__/response_input.cpython-312.pyc’: Cannot allocate memory
+find: ‘./.venv/lib/python3.12/site-packages/openai/types/responses/__pycache__/response_input_file.cpython-312.pyc’: Cannot allocate memory
+./.venv/lib/python3.12/site-packages/openai-2.45.0.dist-info/REQUESTED
+./.venv/lib/python3.12/site-packages/opentelemetry/attributes/py.typed
+./.venv/lib/python3.12/site-packages/opentelemetry/baggage/py.typed
+./.venv/lib/python3.12/site-packages/opentelemetry/context/py.typed
+./.venv/lib/python3.12/site-packages/opentelemetry/environment_variables/py.typed
+./.venv/lib/python3.12/site-packages/opentelemetry/exporter/otlp/proto/common/py.typed
+./.venv/lib/python3.12/site-packages/opentelemetry/exporter/otlp/proto/grpc/py.typed
+./.venv/lib/python3.12/site-packages/opentelemetry/metrics/py.typed
+./.venv/lib/python3.12/site-packages/opentelemetry/propagate/py.typed
+./.venv/lib/python3.12/site-packages/opentelemetry/propagators/py.typed
+./.venv/lib/python3.12/site-packages/opentelemetry/proto/collector/metrics/v1/__init__.py
+./.venv/lib/python3.12/site-packages/opentelemetry/proto/collector/metrics/__init__.py
+./.venv/lib/python3.12/site-packages/opentelemetry/proto/collector/trace/v1/__init__.py
+./.venv/lib/python3.12/site-packages/opentelemetry/proto/collector/trace/__init__.py
+./.venv/lib/python3.12/site-packages/opentelemetry/proto/collector/__init__.py
+./.venv/lib/python3.12/site-packages/opentelemetry/proto/common/v1/__init__.py
+./.venv/lib/python3.12/site-packages/opentelemetry/proto/common/__init__.py
+./.venv/lib/python3.12/site-packages/opentelemetry/proto/metrics/v1/__init__.py
+./.venv/lib/python3.12/site-packages/opentelemetry/proto/metrics/__init__.py
+./.venv/lib/python3.12/site-packages/opentelemetry/proto/py.typed
+./.venv/lib/python3.12/site-packages/opentelemetry/proto/resource/v1/__init__.py
+./.venv/lib/python3.12/site-packages/opentelemetry/proto/resource/__init__.py
+./.venv/lib/python3.12/site-packages/opentelemetry/proto/trace/v1/__init__.py
+./.venv/lib/python3.12/site-packages/opentelemetry/proto/trace/__init__.py
+./.venv/lib/python3.12/site-packages/opentelemetry/proto/__init__.py
+./.venv/lib/python3.12/site-packages/opentelemetry/py.typed
+./.venv/lib/python3.12/site-packages/opentelemetry/sdk/metrics/_internal/exponential_histogram/__init__.py
+./.venv/lib/python3.12/site-packages/opentelemetry/sdk/py.typed
+./.venv/lib/python3.12/site-packages/opentelemetry/semconv/attributes/__init__.py
+./.venv/lib/python3.12/site-packages/opentelemetry/semconv/py.typed
+./.venv/lib/python3.12/site-packages/opentelemetry/semconv/__init__.py
+./.venv/lib/python3.12/site-packages/opentelemetry/trace/py.typed
+./.venv/lib/python3.12/site-packages/opentelemetry/util/py.typed
+./.venv/lib/python3.12/site-packages/opentelemetry/version/py.typed
+./.venv/lib/python3.12/site-packages/opentelemetry/_events/py.typed
+./.venv/lib/python3.12/site-packages/opentelemetry/_logs/py.typed
+./.venv/lib/python3.12/site-packages/orjson/py.typed
+./.venv/lib/python3.12/site-packages/ormsgpack/py.typed
+./.venv/lib/python3.12/site-packages/overrides/py.typed
+./.venv/lib/python3.12/site-packages/packaging/py.typed
+./.venv/lib/python3.12/site-packages/pandas/core/computation/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/core/dtypes/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/core/indexes/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/core/interchange/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/core/methods/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/core/reshape/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/core/sparse/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/core/tools/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/core/util/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/core/_numba/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/core/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/api/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/apply/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/arithmetic/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/arrays/boolean/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/arrays/categorical/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/arrays/datetimes/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/arrays/floating/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/arrays/integer/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/arrays/interval/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/arrays/masked/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/arrays/numpy_/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/arrays/period/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/arrays/sparse/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/arrays/string_/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/arrays/timedeltas/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/arrays/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/base/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/computation/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/config/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/construction/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/copy_view/index/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/copy_view/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/dtypes/cast/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/dtypes/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/extension/uuid/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/extension/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/frame/constructors/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/frame/indexing/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/frame/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/generic/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/groupby/aggregate/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/groupby/methods/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/groupby/transform/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/indexes/base_class/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/indexes/categorical/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/indexes/datetimelike_/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/indexes/datetimes/methods/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/indexes/datetimes/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/indexes/interval/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/indexes/multi/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/indexes/numeric/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/indexes/object/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/indexes/period/methods/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/indexes/period/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/indexes/ranges/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/indexes/string/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/indexes/timedeltas/methods/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/indexes/timedeltas/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/indexes/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/indexing/interval/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/indexing/multiindex/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/indexing/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/interchange/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/internals/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/io/excel/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/io/formats/style/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/io/formats/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/io/json/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/io/parser/common/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/io/parser/dtypes/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/io/parser/usecols/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/io/parser/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/io/pytables/common.py
+./.venv/lib/python3.12/site-packages/pandas/tests/io/pytables/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/io/sas/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/io/xml/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/io/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/libs/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/plotting/frame/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/plotting/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/resample/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/reshape/concat/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/reshape/merge/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/reshape/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/scalar/interval/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/scalar/period/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/scalar/timedelta/methods/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/scalar/timedelta/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/scalar/timestamp/methods/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/scalar/timestamp/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/scalar/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/series/accessors/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/series/indexing/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/series/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/tools/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/tseries/frequencies/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/tseries/holiday/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/tseries/offsets/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/tseries/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/tslibs/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/util/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/window/moments/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/window/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/tests/__init__.py
+./.venv/lib/python3.12/site-packages/pandas/_libs/window/__init__.py
+./.venv/lib/python3.12/site-packages/passlib-1.7.4.dist-info/REQUESTED
+./.venv/lib/python3.12/site-packages/PIL/py.typed
+./.venv/lib/python3.12/site-packages/pip/_internal/operations/build/__init__.py
+./.venv/lib/python3.12/site-packages/pip/_internal/operations/__init__.py
+./.venv/lib/python3.12/site-packages/pip/_internal/resolution/legacy/__init__.py
+./.venv/lib/python3.12/site-packages/pip/_internal/resolution/resolvelib/__init__.py
+./.venv/lib/python3.12/site-packages/pip/_internal/resolution/__init__.py
+./.venv/lib/python3.12/site-packages/pip/_internal/utils/__init__.py
+./.venv/lib/python3.12/site-packages/pip/_vendor/cachecontrol/py.typed
+./.venv/lib/python3.12/site-packages/pip/_vendor/certifi/py.typed
+./.venv/lib/python3.12/site-packages/pip/_vendor/distro/py.typed
+./.venv/lib/python3.12/site-packages/pip/_vendor/idna/py.typed
+./.venv/lib/python3.12/site-packages/pip/_vendor/packaging/py.typed
+./.venv/lib/python3.12/site-packages/pip/_vendor/platformdirs/py.typed
+./.venv/lib/python3.12/site-packages/pip/_vendor/pyproject_hooks/py.typed
+./.venv/lib/python3.12/site-packages/pip/_vendor/resolvelib/py.typed
+./.venv/lib/python3.12/site-packages/pip/_vendor/rich/py.typed
+./.venv/lib/python3.12/site-packages/pip/_vendor/truststore/py.typed
+./.venv/lib/python3.12/site-packages/pip/_vendor/urllib3/contrib/__init__.py
+./.venv/lib/python3.12/site-packages/pip-26.1.2.dist-info/REQUESTED
+./.venv/lib/python3.12/site-packages/psycopg2_binary-2.9.12.dist-info/REQUESTED
+./.venv/lib/python3.12/site-packages/pyarrow/includes/__init__.pxd
+./.venv/lib/python3.12/site-packages/pyarrow/tests/__init__.py
+./.venv/lib/python3.12/site-packages/pybase64/py.typed
+./.venv/lib/python3.12/site-packages/pydantic/deprecated/__init__.py
+./.venv/lib/python3.12/site-packages/pydantic/py.typed
+./.venv/lib/python3.12/site-packages/pydantic/v1/py.typed
+./.venv/lib/python3.12/site-packages/pydantic/_internal/__init__.py
+./.venv/lib/python3.12/site-packages/pydantic-2.13.4.dist-info/REQUESTED
+./.venv/lib/python3.12/site-packages/pydantic_core/py.typed
+./.venv/lib/python3.12/site-packages/pydantic_settings/py.typed
+./.venv/lib/python3.12/site-packages/pydeck/io/__init__.py
+./.venv/lib/python3.12/site-packages/pydeck/nbextension/static/.gitkeep
+./.venv/lib/python3.12/site-packages/pygithub-2.9.1.dist-info/REQUESTED
+./.venv/lib/python3.12/site-packages/pypdf/py.typed
+./.venv/lib/python3.12/site-packages/PyPDF2/py.typed
+./.venv/lib/python3.12/site-packages/pypdf2-3.0.1.dist-info/REQUESTED
+./.venv/lib/python3.12/site-packages/pypika/clickhouse/__init__.py
+./.venv/lib/python3.12/site-packages/pyproject_hooks/py.typed
+./.venv/lib/python3.12/site-packages/python_dotenv-1.2.2.dist-info/REQUESTED
+./.venv/lib/python3.12/site-packages/python_jose-3.5.0.dist-info/REQUESTED
+./.venv/lib/python3.12/site-packages/python_multipart/py.typed
+./.venv/lib/python3.12/site-packages/python_multipart-0.0.32.dist-info/REQUESTED
+./.venv/lib/python3.12/site-packages/redis/asyncio/http/__init__.py
+./.venv/lib/python3.12/site-packages/redis/asyncio/multidb/__init__.py
+./.venv/lib/python3.12/site-packages/redis/auth/__init__.py
+./.venv/lib/python3.12/site-packages/redis/http/__init__.py
+./.venv/lib/python3.12/site-packages/redis/multidb/__init__.py
+./.venv/lib/python3.12/site-packages/redis/py.typed
+./.venv/lib/python3.12/site-packages/redis-8.0.1.dist-info/REQUESTED
+./.venv/lib/python3.12/site-packages/referencing/py.typed
+./.venv/lib/python3.12/site-packages/referencing/tests/__init__.py
+./.venv/lib/python3.12/site-packages/requests/py.typed
+./.venv/lib/python3.12/site-packages/requests-2.34.2.dist-info/REQUESTED
+./.venv/lib/python3.12/site-packages/requests_toolbelt/auth/__init__.py
+./.venv/lib/python3.12/site-packages/requests_toolbelt/cookies/__init__.py
+./.venv/lib/python3.12/site-packages/requests_toolbelt/downloadutils/__init__.py
+./.venv/lib/python3.12/site-packages/requests_toolbelt/utils/__init__.py
+./.venv/lib/python3.12/site-packages/rich/py.typed
+./.venv/lib/python3.12/site-packages/rpds/py.typed
+./.venv/lib/python3.12/site-packages/scipy/cluster/hierarchy/tests/__init__.py
+./.venv/lib/python3.12/site-packages/scipy/cluster/vq/tests/__init__.py
+./.venv/lib/python3.12/site-packages/scipy/constants/tests/__init__.py
+./.venv/lib/python3.12/site-packages/scipy/datasets/tests/__init__.py
+./.venv/lib/python3.12/site-packages/scipy/differentiate/tests/__init__.py
+./.venv/lib/python3.12/site-packages/scipy/fft/tests/__init__.py
+./.venv/lib/python3.12/site-packages/scipy/fft/_duccfft/tests/__init__.py
+./.venv/lib/python3.12/site-packages/scipy/fftpack/tests/__init__.py
+./.venv/lib/python3.12/site-packages/scipy/integrate/tests/__init__.py
+./.venv/lib/python3.12/site-packages/scipy/integrate/_ivp/tests/__init__.py
+./.venv/lib/python3.12/site-packages/scipy/interpolate/tests/__init__.py
+./.venv/lib/python3.12/site-packages/scipy/io/arff/tests/__init__.py
+./.venv/lib/python3.12/site-packages/scipy/io/matlab/tests/__init__.py
+./.venv/lib/python3.12/site-packages/scipy/io/tests/__init__.py
+./.venv/lib/python3.12/site-packages/scipy/io/_harwell_boeing/tests/__init__.py
+./.venv/lib/python3.12/site-packages/scipy/linalg/tests/__init__.py
+./.venv/lib/python3.12/site-packages/scipy/odr/tests/__init__.py
+./.venv/lib/python3.12/site-packages/scipy/optimize/tests/__init__.py
+./.venv/lib/python3.12/site-packages/scipy/optimize/_highspy/__init__.py
+./.venv/lib/python3.12/site-packages/scipy/optimize/_shgo_lib/__init__.py
+./.venv/lib/python3.12/site-packages/scipy/optimize/_trustregion_constr/tests/__init__.py
+./.venv/lib/python3.12/site-packages/scipy/signal/tests/__init__.py
+./.venv/lib/python3.12/site-packages/scipy/sparse/csgraph/tests/__init__.py
+./.venv/lib/python3.12/site-packages/scipy/sparse/linalg/tests/__init__.py
+./.venv/lib/python3.12/site-packages/scipy/sparse/linalg/_dsolve/tests/__init__.py
+./.venv/lib/python3.12/site-packages/scipy/sparse/linalg/_eigen/arpack/tests/__init__.py
+./.venv/lib/python3.12/site-packages/scipy/sparse/linalg/_eigen/lobpcg/tests/__init__.py
+./.venv/lib/python3.12/site-packages/scipy/sparse/linalg/_eigen/tests/__init__.py
+./.venv/lib/python3.12/site-packages/scipy/sparse/linalg/_isolve/tests/__init__.py
+./.venv/lib/python3.12/site-packages/scipy/sparse/tests/__init__.py
+./.venv/lib/python3.12/site-packages/scipy/spatial/tests/__init__.py
+./.venv/lib/python3.12/site-packages/scipy/spatial/transform/tests/__init__.py
+./.venv/lib/python3.12/site-packages/scipy/special/tests/data/__init__.py
+./.venv/lib/python3.12/site-packages/scipy/special/tests/__init__.py
+./.venv/lib/python3.12/site-packages/scipy/special/_precompute/__init__.py
+./.venv/lib/python3.12/site-packages/scipy/stats/tests/__init__.py
+./.venv/lib/python3.12/site-packages/scipy/stats/_unuran/__init__.py
+./.venv/lib/python3.12/site-packages/scipy/_external/array_api_compat/dask/__init__.py
+./.venv/lib/python3.12/site-packages/scipy/_external/pyprima/cobyla/__init__.py
+./.venv/lib/python3.12/site-packages/scipy/_external/pyprima/common/__init__.py
+./.venv/lib/python3.12/site-packages/scipy/_lib/tests/__init__.py
+./.venv/lib/python3.12/site-packages/setuptools/compat/__init__.py
+./.venv/lib/python3.12/site-packages/setuptools/tests/compat/__init__.py
+./.venv/lib/python3.12/site-packages/setuptools/tests/config/__init__.py
+./.venv/lib/python3.12/site-packages/setuptools/tests/integration/__init__.py
+./.venv/lib/python3.12/site-packages/setuptools/_distutils/tests/compat/__init__.py
+./.venv/lib/python3.12/site-packages/setuptools/_distutils/tests/test_versionpredicate.py
+./.venv/lib/python3.12/site-packages/setuptools/_vendor/.lock
+./.venv/lib/python3.12/site-packages/setuptools/_vendor/autocommand-2.2.2.dist-info/REQUESTED
+./.venv/lib/python3.12/site-packages/setuptools/_vendor/backports/tarfile/compat/__init__.py
+./.venv/lib/python3.12/site-packages/setuptools/_vendor/backports.tarfile-1.2.0.dist-info/REQUESTED
+./.venv/lib/python3.12/site-packages/setuptools/_vendor/importlib_metadata/compat/__init__.py
+./.venv/lib/python3.12/site-packages/setuptools/_vendor/importlib_metadata/py.typed
+./.venv/lib/python3.12/site-packages/setuptools/_vendor/importlib_metadata-8.7.1.dist-info/REQUESTED
+./.venv/lib/python3.12/site-packages/setuptools/_vendor/jaraco/context/py.typed
+./.venv/lib/python3.12/site-packages/setuptools/_vendor/jaraco/functools/py.typed
+./.venv/lib/python3.12/site-packages/setuptools/_vendor/jaraco.text-4.0.0.dist-info/REQUESTED
+./.venv/lib/python3.12/site-packages/setuptools/_vendor/jaraco_context-6.1.0.dist-info/REQUESTED
+./.venv/lib/python3.12/site-packages/setuptools/_vendor/jaraco_functools-4.4.0.dist-info/REQUESTED
+./.venv/lib/python3.12/site-packages/setuptools/_vendor/more_itertools/py.typed
+./.venv/lib/python3.12/site-packages/setuptools/_vendor/more_itertools-10.8.0.dist-info/REQUESTED
+./.venv/lib/python3.12/site-packages/setuptools/_vendor/packaging/py.typed
+./.venv/lib/python3.12/site-packages/setuptools/_vendor/packaging-26.0.dist-info/REQUESTED
+./.venv/lib/python3.12/site-packages/setuptools/_vendor/platformdirs/py.typed
+./.venv/lib/python3.12/site-packages/setuptools/_vendor/platformdirs-4.4.0.dist-info/REQUESTED
+./.venv/lib/python3.12/site-packages/setuptools/_vendor/tomli-2.4.0.dist-info/REQUESTED
+./.venv/lib/python3.12/site-packages/setuptools/_vendor/wheel-0.46.3.dist-info/REQUESTED
+./.venv/lib/python3.12/site-packages/setuptools/_vendor/zipp/compat/__init__.py
+./.venv/lib/python3.12/site-packages/setuptools/_vendor/zipp-3.23.0.dist-info/REQUESTED
+./.venv/lib/python3.12/site-packages/setuptools-83.0.0.dist-info/REQUESTED
+./.venv/lib/python3.12/site-packages/smmap/test/__init__.py
+./.venv/lib/python3.12/
