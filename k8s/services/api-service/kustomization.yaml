@@ -4,19 +4,20 @@ kind: Kustomization
 namespace: shopno-platform
 
 resources:
-  - serviceaccount.yaml
-  - configmap.yaml
-  - secret.yaml
-  - pvc.yaml
-  - deployment.yaml
-  - service.yaml
-  - ingress.yaml
-  - hpa.yaml
-  - networkpolicy.yaml
-  - poddisruptionbudget.yaml
-  - servicemonitor.yaml
+- serviceaccount.yaml
+- configmap.yaml
+- secret.yaml
+- pvc.yaml
+- deployment.yaml
+- service.yaml
+- ingress.yaml
+- hpa.yaml
+- networkpolicy.yaml
+- poddisruptionbudget.yaml
+- servicemonitor.yaml
 
-commonLabels:
-  app.kubernetes.io/name: api-service
-  app.kubernetes.io/part-of: shopnoltd
-
+labels:
+- includeSelectors: true
+  pairs:
+    app.kubernetes.io/name: api-service
+    app.kubernetes.io/part-of: shopnoltd
