@@ -1,5 +1,4 @@
 import strawberry
-from fastapi import APIRouter
 from strawberry.fastapi import GraphQLRouter
 
 
@@ -24,5 +23,5 @@ class Query:
 
 
 schema = strawberry.Schema(query=Query)
-router = APIRouter()
-router.include_router(GraphQLRouter(schema), prefix="")
+
+router = GraphQLRouter(schema)
