@@ -52,6 +52,7 @@ jobs:
           - { service: live-service,       dockerfile: platform/live-service/Dockerfile }
           - { service: mail-service,       dockerfile: platform/mail-service/Dockerfile }
           - { service: social-service,     dockerfile: platform/social-service/Dockerfile }
+          - { service: keycloak,           dockerfile: platform/keycloak/Dockerfile }
     permissions:
       contents: read
       packages: write
