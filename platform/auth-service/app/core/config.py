@@ -2,6 +2,7 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
+    env: str = "production"
     app_name: str = "shopnoltd-auth-service"
     database_url: str = (
         "postgresql+asyncpg://shopno:shopno@postgres.data.svc.cluster.local:5432/auth"
