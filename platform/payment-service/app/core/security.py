@@ -2,7 +2,7 @@
 
 import httpx
 from app.core.config import settings
-from jose import JWTError, jwt
+from shopno_core.security.jwt import JWTError, jwt
 
 _jwks_cache = None
 
