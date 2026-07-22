@@ -6,11 +6,11 @@ import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from prometheus_client import generate_latest
+from shopno_core.database.redis import redis_client
 from starlette.responses import Response
 
 from app.core.config import settings
 from app.core.db import Base, engine
-from app.core.redis_client import redis_client
 
 log = structlog.get_logger()
 

@@ -1,0 +1,5003 @@
+===== TREE =====
+k8s/archive/legacy-default-billing-engine.yaml
+k8s/base/api-service.yaml
+k8s/base/billing-engine.yaml
+k8s/base/oauth-service.yaml
+k8s/cert-manager/letsencrypt-prod-issuer.yaml
+k8s/cloudflared/configmap.yaml
+k8s/cloudflared/deployment.yaml
+k8s/cloudflared/namespace.yaml
+k8s/components/service-monitor-conditional/kustomization.yaml
+k8s/components/service-monitor-conditional/servicemonitor-conditional.yaml
+k8s/databases/backups/kobodb-2026-07-10.sql
+k8s/databases/backups/kobodb-backup.sql
+k8s/databases/backups/kpidb-2026-07-10.sql
+k8s/databases/backups/kpidb-backup.sql
+k8s/databases/base/postgres-pvc-default.yaml
+k8s/databases/base/postgres-secret-default.yaml
+k8s/databases/base/schema.sql
+k8s/ingress/cloudflared/configmap.yaml
+k8s/ingress/cloudflared/deployment.yaml
+k8s/ingress/cloudflared/kustomization.yaml
+k8s/ingress/cloudflared/rbac.yaml
+k8s/ingress/cloudflared/secret.yaml
+k8s/ingress/cloudflared/service.yaml
+k8s/kustomization.yaml
+k8s/legacy/deployment-ai.yaml
+k8s/legacy/deployment-api-service.yaml
+k8s/legacy/deployment-api.yaml
+k8s/legacy/deployment-chat.yaml
+k8s/legacy/deployment-freedomain-ui.yaml
+k8s/legacy/deployment-freedomain-website.yaml
+k8s/legacy/deployment-freedomain.yaml
+k8s/legacy/deployment-kc.yaml
+k8s/legacy/deployment-live.yaml
+k8s/legacy/deployment-oauth-service.yaml
+k8s/legacy/deployment-postgres.yaml
+k8s/legacy/deployment-redis.yaml
+k8s/legacy/deployment-root-app.yaml
+k8s/legacy/deployment-tenant-router-configmap.yaml
+k8s/legacy/deployment-tenant-router.yaml
+k8s/legacy/ee-current.yaml
+k8s/legacy/freedomain-ui-current.yaml
+k8s/legacy/kc-current.yaml
+k8s/legacy/kc-deployment-current.yaml
+k8s/legacy/kc-live.yaml
+k8s/legacy/kc-running.yaml
+k8s/legacy/kf-current.yaml
+k8s/legacy/kf-deployment-current.yaml
+k8s/legacy/kf-live.yaml
+k8s/legacy/kf-nginx-conf-current.yaml
+k8s/legacy/kf-running.yaml
+k8s/legacy/kf-service-current.yaml
+k8s/legacy/mail-current.yaml
+k8s/legacy/mail-server-current.yaml
+k8s/legacy/root-migration/ai-ingress.yaml
+k8s/legacy/root-migration/api-clean.yaml
+k8s/legacy/root-migration/current-oauth.yaml
+k8s/legacy/root-migration/grafana-deployment.yaml
+k8s/legacy/root-migration/kc-current-state-backup.yaml
+k8s/legacy/root-migration/kc-deployment-current-clean.yaml
+k8s/legacy/root-migration/kc-deployment.yaml
+k8s/legacy/root-migration/kc-uv-cache-pvc.yaml
+k8s/legacy/root-migration/kc.yaml
+k8s/legacy/root-migration/kf-deployment-current-clean.yaml
+k8s/legacy/root-migration/kf-export.yaml
+k8s/legacy/root-migration/kf-live-deployment.yaml
+k8s/legacy/root-migration/kf-nginx-conf.yaml
+k8s/legacy/root-migration/kf.yaml
+k8s/legacy/root-migration/kustomization.yaml
+k8s/legacy/root-migration/live-service.yaml
+k8s/legacy/root-migration/new-api.yaml
+k8s/legacy/root-migration/prometheus-deployment.yaml
+k8s/legacy/root-migration/running-api.yaml
+k8s/namespaces/shopno-apps.yaml
+k8s/namespaces/shopno-data.yaml
+k8s/namespaces/shopno-identity.yaml
+k8s/namespaces/shopno-ingress.yaml
+k8s/namespaces/shopno-monitoring.yaml
+k8s/namespaces/shopno-payments.yaml
+k8s/namespaces/shopno-platform.yaml
+k8s/services/admin-portal/configmap.yaml
+k8s/services/admin-portal/deployment.yaml
+k8s/services/admin-portal/hpa.yaml
+k8s/services/admin-portal/ingress.yaml
+k8s/services/admin-portal/kustomization.yaml
+k8s/services/admin-portal/namespace.yaml
+k8s/services/admin-portal/networkpolicy.yaml
+k8s/services/admin-portal/poddisruptionbudget.yaml
+k8s/services/admin-portal/pvc.yaml
+k8s/services/admin-portal/secret.yaml
+k8s/services/admin-portal/service.yaml
+k8s/services/admin-portal/serviceaccount.yaml
+k8s/services/admin-portal/servicemonitor.yaml
+k8s/services/ai-platform/configmap.yaml
+k8s/services/ai-platform/deployment.yaml
+k8s/services/ai-platform/hpa.yaml
+k8s/services/ai-platform/ingress.yaml
+k8s/services/ai-platform/kustomization.yaml
+k8s/services/ai-platform/namespace.yaml
+k8s/services/ai-platform/networkpolicy.yaml
+k8s/services/ai-platform/poddisruptionbudget.yaml
+k8s/services/ai-platform/pvc.yaml
+k8s/services/ai-platform/secret.yaml
+k8s/services/ai-platform/service.yaml
+k8s/services/ai-platform/serviceaccount.yaml
+k8s/services/ai-platform/servicemonitor.yaml
+k8s/services/alertmanager/configmap.yaml
+k8s/services/alertmanager/deployment.yaml
+k8s/services/alertmanager/hpa.yaml
+k8s/services/alertmanager/ingress.yaml
+k8s/services/alertmanager/kustomization.yaml
+k8s/services/alertmanager/namespace.yaml
+k8s/services/alertmanager/networkpolicy.yaml
+k8s/services/alertmanager/poddisruptionbudget.yaml
+k8s/services/alertmanager/pvc.yaml
+k8s/services/alertmanager/secret.yaml
+k8s/services/alertmanager/service.yaml
+k8s/services/alertmanager/serviceaccount.yaml
+k8s/services/alertmanager/servicemonitor.yaml
+k8s/services/analytics-service/configmap.yaml
+k8s/services/analytics-service/deployment.yaml
+k8s/services/analytics-service/hpa.yaml
+k8s/services/analytics-service/ingress.yaml
+k8s/services/analytics-service/kustomization.yaml
+k8s/services/analytics-service/namespace.yaml
+k8s/services/analytics-service/networkpolicy.yaml
+k8s/services/analytics-service/poddisruptionbudget.yaml
+k8s/services/analytics-service/pvc.yaml
+k8s/services/analytics-service/secret.yaml
+k8s/services/analytics-service/service.yaml
+k8s/services/analytics-service/serviceaccount.yaml
+k8s/services/analytics-service/servicemonitor.yaml
+k8s/services/android-portal/configmap.yaml
+k8s/services/android-portal/deployment.yaml
+k8s/services/android-portal/hpa.yaml
+k8s/services/android-portal/ingress.yaml
+k8s/services/android-portal/kustomization.yaml
+k8s/services/android-portal/namespace.yaml
+k8s/services/android-portal/networkpolicy.yaml
+k8s/services/android-portal/poddisruptionbudget.yaml
+k8s/services/android-portal/pvc.yaml
+k8s/services/android-portal/secret.yaml
+k8s/services/android-portal/service.yaml
+k8s/services/android-portal/serviceaccount.yaml
+k8s/services/android-portal/servicemonitor.yaml
+k8s/services/api-service/configmap.yaml
+k8s/services/api-service/deployment.yaml
+k8s/services/api-service/hpa.yaml
+k8s/services/api-service/ingress.yaml
+k8s/services/api-service/kustomization.yaml
+k8s/services/api-service/namespace.yaml
+k8s/services/api-service/networkpolicy.yaml
+k8s/services/api-service/poddisruptionbudget.yaml
+k8s/services/api-service/pvc.yaml
+k8s/services/api-service/secret.yaml
+k8s/services/api-service/service.yaml
+k8s/services/api-service/serviceaccount.yaml
+k8s/services/api-service/servicemonitor.yaml
+k8s/services/audit-service/configmap.yaml
+k8s/services/audit-service/deployment.yaml
+k8s/services/audit-service/hpa.yaml
+k8s/services/audit-service/ingress.yaml
+k8s/services/audit-service/kustomization.yaml
+k8s/services/audit-service/namespace.yaml
+k8s/services/audit-service/networkpolicy.yaml
+k8s/services/audit-service/poddisruptionbudget.yaml
+k8s/services/audit-service/pvc.yaml
+k8s/services/audit-service/secret.yaml
+k8s/services/audit-service/service.yaml
+k8s/services/audit-service/serviceaccount.yaml
+k8s/services/audit-service/servicemonitor.yaml
+k8s/services/auth-service/configmap.yaml
+k8s/services/auth-service/deployment.yaml
+k8s/services/auth-service/hpa.yaml
+k8s/services/auth-service/ingress.yaml
+k8s/services/auth-service/kustomization.yaml
+k8s/services/auth-service/namespace.yaml
+k8s/services/auth-service/networkpolicy.yaml
+k8s/services/auth-service/poddisruptionbudget.yaml
+k8s/services/auth-service/pvc.yaml
+k8s/services/auth-service/secret.yaml
+k8s/services/auth-service/service.yaml
+k8s/services/auth-service/serviceaccount.yaml
+k8s/services/auth-service/servicemonitor.yaml
+k8s/services/billing-engine/configmap.yaml
+k8s/services/billing-engine/deployment.yaml
+k8s/services/billing-engine/hpa.yaml
+k8s/services/billing-engine/ingress.yaml
+k8s/services/billing-engine/kustomization.yaml
+k8s/services/billing-engine/namespace.yaml
+k8s/services/billing-engine/networkpolicy.yaml
+k8s/services/billing-engine/poddisruptionbudget.yaml
+k8s/services/billing-engine/pvc.yaml
+k8s/services/billing-engine/secret.yaml
+k8s/services/billing-engine/service.yaml
+k8s/services/billing-engine/serviceaccount.yaml
+k8s/services/billing-engine/servicemonitor.yaml
+k8s/services/chatwoot/configmap.yaml
+k8s/services/chatwoot/deployment.yaml
+k8s/services/chatwoot/hpa.yaml
+k8s/services/chatwoot/ingress.yaml
+k8s/services/chatwoot/kustomization.yaml
+k8s/services/chatwoot/namespace.yaml
+k8s/services/chatwoot/networkpolicy.yaml
+k8s/services/chatwoot/poddisruptionbudget.yaml
+k8s/services/chatwoot/pvc.yaml
+k8s/services/chatwoot/secret.yaml
+k8s/services/chatwoot/service.yaml
+k8s/services/chatwoot/serviceaccount.yaml
+k8s/services/chatwoot/servicemonitor.yaml
+k8s/services/code-server/configmap.yaml
+k8s/services/code-server/deployment.yaml
+k8s/services/code-server/hpa.yaml
+k8s/services/code-server/ingress.yaml
+k8s/services/code-server/kustomization.yaml
+k8s/services/code-server/namespace.yaml
+k8s/services/code-server/networkpolicy.yaml
+k8s/services/code-server/poddisruptionbudget.yaml
+k8s/services/code-server/pvc.yaml
+k8s/services/code-server/secret.yaml
+k8s/services/code-server/service.yaml
+k8s/services/code-server/serviceaccount.yaml
+k8s/services/code-server/servicemonitor.yaml
+k8s/services/domain-service/configmap.yaml
+k8s/services/domain-service/deployment.yaml
+k8s/services/domain-service/hpa.yaml
+k8s/services/domain-service/ingress.yaml
+k8s/services/domain-service/kustomization.yaml
+k8s/services/domain-service/namespace.yaml
+k8s/services/domain-service/networkpolicy.yaml
+k8s/services/domain-service/poddisruptionbudget.yaml
+k8s/services/domain-service/pvc.yaml
+k8s/services/domain-service/secret.yaml
+k8s/services/domain-service/service.yaml
+k8s/services/domain-service/serviceaccount.yaml
+k8s/services/domain-service/servicemonitor.yaml
+k8s/services/event-service/configmap.yaml
+k8s/services/event-service/deployment.yaml
+k8s/services/event-service/hpa.yaml
+k8s/services/event-service/ingress.yaml
+k8s/services/event-service/kustomization.yaml
+k8s/services/event-service/namespace.yaml
+k8s/services/event-service/networkpolicy.yaml
+k8s/services/event-service/poddisruptionbudget.yaml
+k8s/services/event-service/pvc.yaml
+k8s/services/event-service/secret.yaml
+k8s/services/event-service/service.yaml
+k8s/services/event-service/serviceaccount.yaml
+k8s/services/event-service/servicemonitor.yaml
+k8s/services/exchange-service/configmap.yaml
+k8s/services/exchange-service/deployment.yaml
+k8s/services/exchange-service/hpa.yaml
+k8s/services/exchange-service/ingress.yaml
+k8s/services/exchange-service/kustomization.yaml
+k8s/services/exchange-service/namespace.yaml
+k8s/services/exchange-service/networkpolicy.yaml
+k8s/services/exchange-service/poddisruptionbudget.yaml
+k8s/services/exchange-service/pvc.yaml
+k8s/services/exchange-service/secret.yaml
+k8s/services/exchange-service/service.yaml
+k8s/services/exchange-service/serviceaccount.yaml
+k8s/services/exchange-service/servicemonitor.yaml
+k8s/services/foundation-service/configmap.yaml
+k8s/services/foundation-service/deployment.yaml
+k8s/services/foundation-service/hpa.yaml
+k8s/services/foundation-service/ingress.yaml
+k8s/services/foundation-service/kustomization.yaml
+k8s/services/foundation-service/namespace.yaml
+k8s/services/foundation-service/networkpolicy.yaml
+k8s/services/foundation-service/poddisruptionbudget.yaml
+k8s/services/foundation-service/pvc.yaml
+k8s/services/foundation-service/secret.yaml
+k8s/services/foundation-service/service.yaml
+k8s/services/foundation-service/serviceaccount.yaml
+k8s/services/foundation-service/servicemonitor.yaml
+k8s/services/freedomain-service/configmap.yaml
+k8s/services/freedomain-service/deployment.yaml
+k8s/services/freedomain-service/hpa.yaml
+k8s/services/freedomain-service/ingress.yaml
+k8s/services/freedomain-service/kustomization.yaml
+k8s/services/freedomain-service/namespace.yaml
+k8s/services/freedomain-service/networkpolicy.yaml
+k8s/services/freedomain-service/poddisruptionbudget.yaml
+k8s/services/freedomain-service/pvc.yaml
+k8s/services/freedomain-service/secret.yaml
+k8s/services/freedomain-service/service.yaml
+k8s/services/freedomain-service/serviceaccount.yaml
+k8s/services/freedomain-service/servicemonitor.yaml
+k8s/services/gateway/configmap.yaml
+k8s/services/gateway/deployment.yaml
+k8s/services/gateway/hpa.yaml
+k8s/services/gateway/ingress.yaml
+k8s/services/gateway/kustomization.yaml
+k8s/services/gateway/namespace.yaml
+k8s/services/gateway/networkpolicy.yaml
+k8s/services/gateway/poddisruptionbudget.yaml
+k8s/services/gateway/pvc.yaml
+k8s/services/gateway/secret.yaml
+k8s/services/gateway/service.yaml
+k8s/services/gateway/serviceaccount.yaml
+k8s/services/gateway/servicemonitor.yaml
+k8s/services/gitea/configmap.yaml
+k8s/services/gitea/deployment.yaml
+k8s/services/gitea/hpa.yaml
+k8s/services/gitea/ingress.yaml
+k8s/services/gitea/kustomization.yaml
+k8s/services/gitea/namespace.yaml
+k8s/services/gitea/networkpolicy.yaml
+k8s/services/gitea/poddisruptionbudget.yaml
+k8s/services/gitea/pvc.yaml
+k8s/services/gitea/secret.yaml
+k8s/services/gitea/service.yaml
+k8s/services/gitea/serviceaccount.yaml
+k8s/services/gitea/servicemonitor.yaml
+k8s/services/grafana/configmap.yaml
+k8s/services/grafana/deployment.yaml
+k8s/services/grafana/hpa.yaml
+k8s/services/grafana/ingress.yaml
+k8s/services/grafana/kustomization.yaml
+k8s/services/grafana/namespace.yaml
+k8s/services/grafana/networkpolicy.yaml
+k8s/services/grafana/poddisruptionbudget.yaml
+k8s/services/grafana/pvc.yaml
+k8s/services/grafana/secret.yaml
+k8s/services/grafana/service.yaml
+k8s/services/grafana/serviceaccount.yaml
+k8s/services/grafana/servicemonitor.yaml
+k8s/services/interior-service/configmap.yaml
+k8s/services/interior-service/deployment.yaml
+k8s/services/interior-service/hpa.yaml
+k8s/services/interior-service/ingress.yaml
+k8s/services/interior-service/kustomization.yaml
+k8s/services/interior-service/namespace.yaml
+k8s/services/interior-service/networkpolicy.yaml
+k8s/services/interior-service/poddisruptionbudget.yaml
+k8s/services/interior-service/pvc.yaml
+k8s/services/interior-service/secret.yaml
+k8s/services/interior-service/service.yaml
+k8s/services/interior-service/serviceaccount.yaml
+k8s/services/interior-service/servicemonitor.yaml
+k8s/services/jitsi-jicofo/configmap.yaml
+k8s/services/jitsi-jicofo/deployment.yaml
+k8s/services/jitsi-jicofo/hpa.yaml
+k8s/services/jitsi-jicofo/ingress.yaml
+k8s/services/jitsi-jicofo/kustomization.yaml
+k8s/services/jitsi-jicofo/namespace.yaml
+k8s/services/jitsi-jicofo/networkpolicy.yaml
+k8s/services/jitsi-jicofo/poddisruptionbudget.yaml
+k8s/services/jitsi-jicofo/pvc.yaml
+k8s/services/jitsi-jicofo/secret.yaml
+k8s/services/jitsi-jicofo/service.yaml
+k8s/services/jitsi-jicofo/serviceaccount.yaml
+k8s/services/jitsi-jicofo/servicemonitor.yaml
+k8s/services/jitsi-jvb/configmap.yaml
+k8s/services/jitsi-jvb/deployment.yaml
+k8s/services/jitsi-jvb/hpa.yaml
+k8s/services/jitsi-jvb/ingress.yaml
+k8s/services/jitsi-jvb/kustomization.yaml
+k8s/services/jitsi-jvb/namespace.yaml
+k8s/services/jitsi-jvb/networkpolicy.yaml
+k8s/services/jitsi-jvb/poddisruptionbudget.yaml
+k8s/services/jitsi-jvb/pvc.yaml
+k8s/services/jitsi-jvb/secret.yaml
+k8s/services/jitsi-jvb/service.yaml
+k8s/services/jitsi-jvb/serviceaccount.yaml
+k8s/services/jitsi-jvb/servicemonitor.yaml
+k8s/services/jitsi-prosody/configmap.yaml
+k8s/services/jitsi-prosody/deployment.yaml
+k8s/services/jitsi-prosody/hpa.yaml
+k8s/services/jitsi-prosody/ingress.yaml
+k8s/services/jitsi-prosody/kustomization.yaml
+k8s/services/jitsi-prosody/namespace.yaml
+k8s/services/jitsi-prosody/networkpolicy.yaml
+k8s/services/jitsi-prosody/poddisruptionbudget.yaml
+k8s/services/jitsi-prosody/pvc.yaml
+k8s/services/jitsi-prosody/secret.yaml
+k8s/services/jitsi-prosody/service.yaml
+k8s/services/jitsi-prosody/serviceaccount.yaml
+k8s/services/jitsi-prosody/servicemonitor.yaml
+k8s/services/jitsi-web/configmap.yaml
+k8s/services/jitsi-web/deployment.yaml
+k8s/services/jitsi-web/hpa.yaml
+k8s/services/jitsi-web/ingress.yaml
+k8s/services/jitsi-web/kustomization.yaml
+k8s/services/jitsi-web/namespace.yaml
+k8s/services/jitsi-web/networkpolicy.yaml
+k8s/services/jitsi-web/poddisruptionbudget.yaml
+k8s/services/jitsi-web/pvc.yaml
+k8s/services/jitsi-web/secret.yaml
+k8s/services/jitsi-web/service.yaml
+k8s/services/jitsi-web/serviceaccount.yaml
+k8s/services/jitsi-web/servicemonitor.yaml
+k8s/services/keycloak/configmap.yaml
+k8s/services/keycloak/deployment.yaml
+k8s/services/keycloak/hpa.yaml
+k8s/services/keycloak/ingress.yaml
+k8s/services/keycloak/kustomization.yaml
+k8s/services/keycloak/namespace.yaml
+k8s/services/keycloak/networkpolicy.yaml
+k8s/services/keycloak/poddisruptionbudget.yaml
+k8s/services/keycloak/pvc.yaml
+k8s/services/keycloak/secret.yaml
+k8s/services/keycloak/service.yaml
+k8s/services/keycloak/serviceaccount.yaml
+k8s/services/keycloak/servicemonitor.yaml
+k8s/services/kobotoolbox/configmap.yaml
+k8s/services/kobotoolbox/deployment.yaml
+k8s/services/kobotoolbox/hpa.yaml
+k8s/services/kobotoolbox/ingress.yaml
+k8s/services/kobotoolbox/kustomization.yaml
+k8s/services/kobotoolbox/namespace.yaml
+k8s/services/kobotoolbox/networkpolicy.yaml
+k8s/services/kobotoolbox/poddisruptionbudget.yaml
+k8s/services/kobotoolbox/pvc.yaml
+k8s/services/kobotoolbox/secret.yaml
+k8s/services/kobotoolbox/service.yaml
+k8s/services/kobotoolbox/serviceaccount.yaml
+k8s/services/kobotoolbox/servicemonitor.yaml
+k8s/services/license-service/configmap.yaml
+k8s/services/license-service/deployment.yaml
+k8s/services/license-service/hpa.yaml
+k8s/services/license-service/ingress.yaml
+k8s/services/license-service/kustomization.yaml
+k8s/services/license-service/namespace.yaml
+k8s/services/license-service/networkpolicy.yaml
+k8s/services/license-service/poddisruptionbudget.yaml
+k8s/services/license-service/pvc.yaml
+k8s/services/license-service/secret.yaml
+k8s/services/license-service/service.yaml
+k8s/services/license-service/serviceaccount.yaml
+k8s/services/license-service/servicemonitor.yaml
+k8s/services/loki/configmap.yaml
+k8s/services/loki/deployment.yaml
+k8s/services/loki/hpa.yaml
+k8s/services/loki/ingress.yaml
+k8s/services/loki/kustomization.yaml
+k8s/services/loki/namespace.yaml
+k8s/services/loki/networkpolicy.yaml
+k8s/services/loki/poddisruptionbudget.yaml
+k8s/services/loki/pvc.yaml
+k8s/services/loki/secret.yaml
+k8s/services/loki/service.yaml
+k8s/services/loki/serviceaccount.yaml
+k8s/services/loki/servicemonitor.yaml
+k8s/services/metabase/configmap.yaml
+k8s/services/metabase/deployment.yaml
+k8s/services/metabase/hpa.yaml
+k8s/services/metabase/ingress.yaml
+k8s/services/metabase/kustomization.yaml
+k8s/services/metabase/namespace.yaml
+k8s/services/metabase/networkpolicy.yaml
+k8s/services/metabase/poddisruptionbudget.yaml
+k8s/services/metabase/pvc.yaml
+k8s/services/metabase/secret.yaml
+k8s/services/metabase/service.yaml
+k8s/services/metabase/serviceaccount.yaml
+k8s/services/metabase/servicemonitor.yaml
+k8s/services/minio/configmap.yaml
+k8s/services/minio/deployment.yaml
+k8s/services/minio/hpa.yaml
+k8s/services/minio/ingress.yaml
+k8s/services/minio/kustomization.yaml
+k8s/services/minio/namespace.yaml
+k8s/services/minio/networkpolicy.yaml
+k8s/services/minio/poddisruptionbudget.yaml
+k8s/services/minio/pvc.yaml
+k8s/services/minio/secret.yaml
+k8s/services/minio/service.yaml
+k8s/services/minio/serviceaccount.yaml
+k8s/services/minio/servicemonitor.yaml
+k8s/services/mobile-api/configmap.yaml
+k8s/services/mobile-api/deployment.yaml
+k8s/services/mobile-api/hpa.yaml
+k8s/services/mobile-api/ingress.yaml
+k8s/services/mobile-api/kustomization.yaml
+k8s/services/mobile-api/namespace.yaml
+k8s/services/mobile-api/networkpolicy.yaml
+k8s/services/mobile-api/poddisruptionbudget.yaml
+k8s/services/mobile-api/pvc.yaml
+k8s/services/mobile-api/secret.yaml
+k8s/services/mobile-api/service.yaml
+k8s/services/mobile-api/serviceaccount.yaml
+k8s/services/mobile-api/servicemonitor.yaml
+k8s/services/n8n/configmap.yaml
+k8s/services/n8n/deployment.yaml
+k8s/services/n8n/hpa.yaml
+k8s/services/n8n/ingress.yaml
+k8s/services/n8n/kustomization.yaml
+k8s/services/n8n/namespace.yaml
+k8s/services/n8n/networkpolicy.yaml
+k8s/services/n8n/poddisruptionbudget.yaml
+k8s/services/n8n/pvc.yaml
+k8s/services/n8n/secret.yaml
+k8s/services/n8n/service.yaml
+k8s/services/n8n/serviceaccount.yaml
+k8s/services/n8n/servicemonitor.yaml
+k8s/services/nextcloud/configmap.yaml
+k8s/services/nextcloud/deployment.yaml
+k8s/services/nextcloud/hpa.yaml
+k8s/services/nextcloud/ingress.yaml
+k8s/services/nextcloud/kustomization.yaml
+k8s/services/nextcloud/namespace.yaml
+k8s/services/nextcloud/networkpolicy.yaml
+k8s/services/nextcloud/poddisruptionbudget.yaml
+k8s/services/nextcloud/pvc.yaml
+k8s/services/nextcloud/secret.yaml
+k8s/services/nextcloud/service.yaml
+k8s/services/nextcloud/serviceaccount.yaml
+k8s/services/nextcloud/servicemonitor.yaml
+k8s/services/notification-service/configmap.yaml
+k8s/services/notification-service/deployment.yaml
+k8s/services/notification-service/hpa.yaml
+k8s/services/notification-service/ingress.yaml
+k8s/services/notification-service/kustomization.yaml
+k8s/services/notification-service/namespace.yaml
+k8s/services/notification-service/networkpolicy.yaml
+k8s/services/notification-service/poddisruptionbudget.yaml
+k8s/services/notification-service/pvc.yaml
+k8s/services/notification-service/secret.yaml
+k8s/services/notification-service/service.yaml
+k8s/services/notification-service/serviceaccount.yaml
+k8s/services/notification-service/servicemonitor.yaml
+k8s/services/oauth-service/configmap.yaml
+k8s/services/oauth-service/deployment.yaml
+k8s/services/oauth-service/hpa.yaml
+k8s/services/oauth-service/ingress.yaml
+k8s/services/oauth-service/kustomization.yaml
+k8s/services/oauth-service/namespace.yaml
+k8s/services/oauth-service/networkpolicy.yaml
+k8s/services/oauth-service/poddisruptionbudget.yaml
+k8s/services/oauth-service/pvc.yaml
+k8s/services/oauth-service/secret.yaml
+k8s/services/oauth-service/service.yaml
+k8s/services/oauth-service/serviceaccount.yaml
+k8s/services/oauth-service/servicemonitor.yaml
+k8s/services/onlyoffice/configmap.yaml
+k8s/services/onlyoffice/deployment.yaml
+k8s/services/onlyoffice/hpa.yaml
+k8s/services/onlyoffice/ingress.yaml
+k8s/services/onlyoffice/kustomization.yaml
+k8s/services/onlyoffice/namespace.yaml
+k8s/services/onlyoffice/networkpolicy.yaml
+k8s/services/onlyoffice/poddisruptionbudget.yaml
+k8s/services/onlyoffice/pvc.yaml
+k8s/services/onlyoffice/secret.yaml
+k8s/services/onlyoffice/service.yaml
+k8s/services/onlyoffice/serviceaccount.yaml
+k8s/services/onlyoffice/servicemonitor.yaml
+k8s/services/opensearch/configmap.yaml
+k8s/services/opensearch/deployment.yaml
+k8s/services/opensearch/hpa.yaml
+k8s/services/opensearch/ingress.yaml
+k8s/services/opensearch/kustomization.yaml
+k8s/services/opensearch/namespace.yaml
+k8s/services/opensearch/networkpolicy.yaml
+k8s/services/opensearch/poddisruptionbudget.yaml
+k8s/services/opensearch/pvc.yaml
+k8s/services/opensearch/secret.yaml
+k8s/services/opensearch/service.yaml
+k8s/services/opensearch/serviceaccount.yaml
+k8s/services/opensearch/servicemonitor.yaml
+k8s/services/owncast/configmap.yaml
+k8s/services/owncast/deployment.yaml
+k8s/services/owncast/hpa.yaml
+k8s/services/owncast/ingress.yaml
+k8s/services/owncast/kustomization.yaml
+k8s/services/owncast/namespace.yaml
+k8s/services/owncast/networkpolicy.yaml
+k8s/services/owncast/poddisruptionbudget.yaml
+k8s/services/owncast/pvc.yaml
+k8s/services/owncast/secret.yaml
+k8s/services/owncast/service.yaml
+k8s/services/owncast/serviceaccount.yaml
+k8s/services/owncast/servicemonitor.yaml
+k8s/services/payment-service/configmap.yaml
+k8s/services/payment-service/deployment.yaml
+k8s/services/payment-service/hpa.yaml
+k8s/services/payment-service/ingress.yaml
+k8s/services/payment-service/kustomization.yaml
+k8s/services/payment-service/namespace.yaml
+k8s/services/payment-service/networkpolicy.yaml
+k8s/services/payment-service/poddisruptionbudget.yaml
+k8s/services/payment-service/pvc.yaml
+k8s/services/payment-service/secret.yaml
+k8s/services/payment-service/service.yaml
+k8s/services/payment-service/serviceaccount.yaml
+k8s/services/payment-service/servicemonitor.yaml
+k8s/services/pc-portal/configmap.yaml
+k8s/services/pc-portal/deployment.yaml
+k8s/services/pc-portal/hpa.yaml
+k8s/services/pc-portal/ingress.yaml
+k8s/services/pc-portal/kustomization.yaml
+k8s/services/pc-portal/namespace.yaml
+k8s/services/pc-portal/networkpolicy.yaml
+k8s/services/pc-portal/poddisruptionbudget.yaml
+k8s/services/pc-portal/pvc.yaml
+k8s/services/pc-portal/secret.yaml
+k8s/services/pc-portal/service.yaml
+k8s/services/pc-portal/serviceaccount.yaml
+k8s/services/pc-portal/servicemonitor.yaml
+k8s/services/postgres/README.md
+k8s/services/postgres/backup-cronjob.yaml
+k8s/services/postgres/configmap.yaml
+k8s/services/postgres/deployment.yaml
+k8s/services/postgres/hpa.yaml
+k8s/services/postgres/ingress.yaml
+k8s/services/postgres/initdb/001-create-platform-database.sql
+k8s/services/postgres/initdb/002-create-roles.sql
+k8s/services/postgres/initdb/003-platform-schema.sql
+k8s/services/postgres/initdb/004-tenant-template.sql
+k8s/services/postgres/initdb/005-functions.sql
+k8s/services/postgres/initdb/006-seed-data.sql
+k8s/services/postgres/kustomization.yaml
+k8s/services/postgres/migration/migrate-job.yaml
+k8s/services/postgres/migration/sql-configmap.yaml
+k8s/services/postgres/migrations/v2/007-platform-expansion.sql
+k8s/services/postgres/migrations/v2/008-billing-engine.sql
+k8s/services/postgres/migrations/v2/009-wallet-ledger.sql
+k8s/services/postgres/migrations/v2/010-fix-billing-id-types.sql
+k8s/services/postgres/namespace.yaml
+k8s/services/postgres/networkpolicy.yaml
+k8s/services/postgres/poddisruptionbudget.yaml
+k8s/services/postgres/pvc.yaml
+k8s/services/postgres/restore-job.yaml
+k8s/services/postgres/scripts/backup.sh
+k8s/services/postgres/scripts/create-tenant.sh
+k8s/services/postgres/scripts/restore.sh
+k8s/services/postgres/secret.yaml
+k8s/services/postgres/service.yaml
+k8s/services/postgres/serviceaccount.yaml
+k8s/services/postgres/servicemonitor.yaml
+k8s/services/prometheus/configmap.yaml
+k8s/services/prometheus/deployment.yaml
+k8s/services/prometheus/hpa.yaml
+k8s/services/prometheus/ingress.yaml
+k8s/services/prometheus/kustomization.yaml
+k8s/services/prometheus/namespace.yaml
+k8s/services/prometheus/networkpolicy.yaml
+k8s/services/prometheus/poddisruptionbudget.yaml
+k8s/services/prometheus/pvc.yaml
+k8s/services/prometheus/secret.yaml
+k8s/services/prometheus/service.yaml
+k8s/services/prometheus/serviceaccount.yaml
+k8s/services/prometheus/servicemonitor.yaml
+k8s/services/redis/configmap.yaml
+k8s/services/redis/deployment.yaml
+k8s/services/redis/hpa.yaml
+k8s/services/redis/ingress.yaml
+k8s/services/redis/kustomization.yaml
+k8s/services/redis/namespace.yaml
+k8s/services/redis/networkpolicy.yaml
+k8s/services/redis/poddisruptionbudget.yaml
+k8s/services/redis/pvc.yaml
+k8s/services/redis/secret.yaml
+k8s/services/redis/service.yaml
+k8s/services/redis/serviceaccount.yaml
+k8s/services/redis/servicemonitor.yaml
+k8s/services/report-service/configmap.yaml
+k8s/services/report-service/deployment.yaml
+k8s/services/report-service/hpa.yaml
+k8s/services/report-service/ingress.yaml
+k8s/services/report-service/kustomization.yaml
+k8s/services/report-service/namespace.yaml
+k8s/services/report-service/networkpolicy.yaml
+k8s/services/report-service/poddisruptionbudget.yaml
+k8s/services/report-service/pvc.yaml
+k8s/services/report-service/secret.yaml
+k8s/services/report-service/service.yaml
+k8s/services/report-service/serviceaccount.yaml
+k8s/services/report-service/servicemonitor.yaml
+k8s/services/scheduler-service/configmap.yaml
+k8s/services/scheduler-service/deployment.yaml
+k8s/services/scheduler-service/hpa.yaml
+k8s/services/scheduler-service/ingress.yaml
+k8s/services/scheduler-service/kustomization.yaml
+k8s/services/scheduler-service/namespace.yaml
+k8s/services/scheduler-service/networkpolicy.yaml
+k8s/services/scheduler-service/poddisruptionbudget.yaml
+k8s/services/scheduler-service/pvc.yaml
+k8s/services/scheduler-service/secret.yaml
+k8s/services/scheduler-service/service.yaml
+k8s/services/scheduler-service/serviceaccount.yaml
+k8s/services/scheduler-service/servicemonitor.yaml
+k8s/services/search-service/configmap.yaml
+k8s/services/search-service/deployment.yaml
+k8s/services/search-service/hpa.yaml
+k8s/services/search-service/ingress.yaml
+k8s/services/search-service/kustomization.yaml
+k8s/services/search-service/namespace.yaml
+k8s/services/search-service/networkpolicy.yaml
+k8s/services/search-service/poddisruptionbudget.yaml
+k8s/services/search-service/pvc.yaml
+k8s/services/search-service/secret.yaml
+k8s/services/search-service/service.yaml
+k8s/services/search-service/serviceaccount.yaml
+k8s/services/search-service/servicemonitor.yaml
+k8s/services/storage-service/configmap.yaml
+k8s/services/storage-service/deployment.yaml
+k8s/services/storage-service/hpa.yaml
+k8s/services/storage-service/ingress.yaml
+k8s/services/storage-service/kustomization.yaml
+k8s/services/storage-service/namespace.yaml
+k8s/services/storage-service/networkpolicy.yaml
+k8s/services/storage-service/poddisruptionbudget.yaml
+k8s/services/storage-service/pvc.yaml
+k8s/services/storage-service/secret.yaml
+k8s/services/storage-service/service.yaml
+k8s/services/storage-service/serviceaccount.yaml
+k8s/services/storage-service/servicemonitor.yaml
+k8s/services/superset/configmap.yaml
+k8s/services/superset/deployment.yaml
+k8s/services/superset/hpa.yaml
+k8s/services/superset/ingress.yaml
+k8s/services/superset/kustomization.yaml
+k8s/services/superset/namespace.yaml
+k8s/services/superset/networkpolicy.yaml
+k8s/services/superset/poddisruptionbudget.yaml
+k8s/services/superset/pvc.yaml
+k8s/services/superset/secret.yaml
+k8s/services/superset/service.yaml
+k8s/services/superset/serviceaccount.yaml
+k8s/services/superset/servicemonitor.yaml
+k8s/services/tenant-router/configmap.yaml
+k8s/services/tenant-router/deployment.yaml
+k8s/services/tenant-router/hpa.yaml
+k8s/services/tenant-router/ingress.yaml
+k8s/services/tenant-router/kustomization.yaml
+k8s/services/tenant-router/namespace.yaml
+k8s/services/tenant-router/networkpolicy.yaml
+k8s/services/tenant-router/poddisruptionbudget.yaml
+k8s/services/tenant-router/pvc.yaml
+k8s/services/tenant-router/secret.yaml
+k8s/services/tenant-router/service.yaml
+k8s/services/tenant-router/serviceaccount.yaml
+k8s/services/tenant-router/servicemonitor.yaml
+k8s/services/training-service/configmap.yaml
+k8s/services/training-service/deployment.yaml
+k8s/services/training-service/hpa.yaml
+k8s/services/training-service/ingress.yaml
+k8s/services/training-service/kustomization.yaml
+k8s/services/training-service/namespace.yaml
+k8s/services/training-service/networkpolicy.yaml
+k8s/services/training-service/poddisruptionbudget.yaml
+k8s/services/training-service/pvc.yaml
+k8s/services/training-service/secret.yaml
+k8s/services/training-service/service.yaml
+k8s/services/training-service/serviceaccount.yaml
+k8s/services/training-service/servicemonitor.yaml
+k8s/services/web-portal/configmap.yaml
+k8s/services/web-portal/deployment.yaml
+k8s/services/web-portal/hpa.yaml
+k8s/services/web-portal/ingress.yaml
+k8s/services/web-portal/kustomization.yaml
+k8s/services/web-portal/namespace.yaml
+k8s/services/web-portal/networkpolicy.yaml
+k8s/services/web-portal/poddisruptionbudget.yaml
+k8s/services/web-portal/pvc.yaml
+k8s/services/web-portal/secret.yaml
+k8s/services/web-portal/service.yaml
+k8s/services/web-portal/serviceaccount.yaml
+k8s/services/web-portal/servicemonitor.yaml
+k8s/services/worker-service/configmap.yaml
+k8s/services/worker-service/deployment.yaml
+k8s/services/worker-service/hpa.yaml
+k8s/services/worker-service/ingress.yaml
+k8s/services/worker-service/kustomization.yaml
+k8s/services/worker-service/namespace.yaml
+k8s/services/worker-service/networkpolicy.yaml
+k8s/services/worker-service/poddisruptionbudget.yaml
+k8s/services/worker-service/pvc.yaml
+k8s/services/worker-service/secret.yaml
+k8s/services/worker-service/service.yaml
+k8s/services/worker-service/serviceaccount.yaml
+k8s/services/worker-service/servicemonitor.yaml
+
+===== SECRETS =====
+### ./config/secrets.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: shopnoltd-secrets
+  namespace: default
+type: Opaque
+data:
+  # These are base64 encoded values - replace with your actual base64 encoded secrets
+  TURNSTILE_SECRET_KEY: "MHg0QUFBQUFBRGxKdVRHbHBRaXExRVpSUSM="
+  RECAPTCHA_SECRET_KEY: "NkxjVld5QXRUQUFBQUFGb3JOR1d0RU01c2kxYWl5Wl9nVDdnZC1XSlkj"
+  GITHUB_CLIENT_SECRET: "NjgyYWM2YTYzMzJmODVlZGEyNzExM2FkNmU2MzRmNTFlZmYwZmZlMiM="
+  GOOGLE_CLIENT_SECRET: "R09DU1BYLUVjbXV5d2xPVkN2U2xENnhDNGY0c1JqTXVKTkoj"
+
+### ./k8s/databases/base/postgres-secret-default.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgres-secret
+  namespace: default
+type: Opaque
+stringData:
+  POSTGRES_USER: kobo
+  POSTGRES_PASSWORD: kobopass
+  POSTGRES_DB: kobotoolbox
+
+### ./k8s/ingress/cloudflared/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cloudflared-creds
+  namespace: shopno-ingress
+type: Opaque
+stringData:
+  credentials.json: |
+    REPLACE_WITH_YOUR_TUNNEL_CREDENTIALS_JSON
+
+### ./k8s/services/admin-portal/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: admin-portal-secret
+  namespace: shopno-platform
+type: Opaque
+stringData:
+  # Replace with sealed-secrets in production
+  DATABASE_PASSWORD: "CHANGE_ME_DB_PASSWORD"
+  REDIS_PASSWORD: "CHANGE_ME_REDIS_PASSWORD"
+  MINIO_SECRET_KEY: "CHANGE_ME_MINIO_SECRET"
+  KEYCLOAK_CLIENT_SECRET: "CHANGE_ME_KEYCLOAK_SECRET"
+  JWT_SIGNING_KEY: "CHANGE_ME_JWT_KEY"
+
+### ./k8s/services/ai-platform/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ai-platform-secret
+  namespace: shopno-platform
+type: Opaque
+stringData:
+  # Replace with sealed-secrets in production
+  DATABASE_PASSWORD: "CHANGE_ME_DB_PASSWORD"
+  REDIS_PASSWORD: "CHANGE_ME_REDIS_PASSWORD"
+  MINIO_SECRET_KEY: "CHANGE_ME_MINIO_SECRET"
+  KEYCLOAK_CLIENT_SECRET: "CHANGE_ME_KEYCLOAK_SECRET"
+  JWT_SIGNING_KEY: "CHANGE_ME_JWT_KEY"
+
+### ./k8s/services/alertmanager/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: alertmanager-secret
+  namespace: shopno-monitoring
+type: Opaque
+stringData:
+  # Replace with sealed-secrets in production
+  DATABASE_PASSWORD: "CHANGE_ME_DB_PASSWORD"
+  REDIS_PASSWORD: "CHANGE_ME_REDIS_PASSWORD"
+  MINIO_SECRET_KEY: "CHANGE_ME_MINIO_SECRET"
+  KEYCLOAK_CLIENT_SECRET: "CHANGE_ME_KEYCLOAK_SECRET"
+  JWT_SIGNING_KEY: "CHANGE_ME_JWT_KEY"
+
+### ./k8s/services/analytics-service/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: analytics-service-secret
+  namespace: shopno-platform
+type: Opaque
+stringData:
+  # Replace with sealed-secrets in production
+  DATABASE_PASSWORD: "CHANGE_ME_DB_PASSWORD"
+  REDIS_PASSWORD: "CHANGE_ME_REDIS_PASSWORD"
+  MINIO_SECRET_KEY: "CHANGE_ME_MINIO_SECRET"
+  KEYCLOAK_CLIENT_SECRET: "CHANGE_ME_KEYCLOAK_SECRET"
+  JWT_SIGNING_KEY: "CHANGE_ME_JWT_KEY"
+
+### ./k8s/services/android-portal/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: android-portal-secret
+  namespace: shopno-platform
+type: Opaque
+stringData:
+  # Replace with sealed-secrets in production
+  DATABASE_PASSWORD: "CHANGE_ME_DB_PASSWORD"
+  REDIS_PASSWORD: "CHANGE_ME_REDIS_PASSWORD"
+  MINIO_SECRET_KEY: "CHANGE_ME_MINIO_SECRET"
+  KEYCLOAK_CLIENT_SECRET: "CHANGE_ME_KEYCLOAK_SECRET"
+  JWT_SIGNING_KEY: "CHANGE_ME_JWT_KEY"
+
+### ./k8s/services/api-service/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: api-service-secret
+  namespace: shopno-platform
+type: Opaque
+stringData:
+  # Replace with sealed-secrets in production
+  DATABASE_PASSWORD: "CHANGE_ME_DB_PASSWORD"
+  REDIS_PASSWORD: "CHANGE_ME_REDIS_PASSWORD"
+  MINIO_SECRET_KEY: "CHANGE_ME_MINIO_SECRET"
+  KEYCLOAK_CLIENT_SECRET: "CHANGE_ME_KEYCLOAK_SECRET"
+  JWT_SIGNING_KEY: "CHANGE_ME_JWT_KEY"
+
+### ./k8s/services/audit-service/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: audit-service-secret
+  namespace: shopno-platform
+type: Opaque
+stringData:
+  # Replace with sealed-secrets in production
+  DATABASE_PASSWORD: "CHANGE_ME_DB_PASSWORD"
+  REDIS_PASSWORD: "CHANGE_ME_REDIS_PASSWORD"
+  MINIO_SECRET_KEY: "CHANGE_ME_MINIO_SECRET"
+  KEYCLOAK_CLIENT_SECRET: "CHANGE_ME_KEYCLOAK_SECRET"
+  JWT_SIGNING_KEY: "CHANGE_ME_JWT_KEY"
+
+### ./k8s/services/auth-service/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: auth-service-secret
+  namespace: shopno-identity
+type: Opaque
+stringData:
+  # Replace with sealed-secrets in production
+  DATABASE_PASSWORD: "CHANGE_ME_DB_PASSWORD"
+  REDIS_PASSWORD: "CHANGE_ME_REDIS_PASSWORD"
+  MINIO_SECRET_KEY: "CHANGE_ME_MINIO_SECRET"
+  KEYCLOAK_CLIENT_SECRET: "CHANGE_ME_KEYCLOAK_SECRET"
+  JWT_SIGNING_KEY: "CHANGE_ME_JWT_KEY"
+
+### ./k8s/services/billing-engine/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: billing-engine-secret
+  namespace: shopno-payments
+type: Opaque
+stringData:
+  # Replace with sealed-secrets in production
+  DATABASE_PASSWORD: "CHANGE_ME_DB_PASSWORD"
+  REDIS_PASSWORD: "CHANGE_ME_REDIS_PASSWORD"
+  MINIO_SECRET_KEY: "CHANGE_ME_MINIO_SECRET"
+  KEYCLOAK_CLIENT_SECRET: "CHANGE_ME_KEYCLOAK_SECRET"
+  JWT_SIGNING_KEY: "CHANGE_ME_JWT_KEY"
+
+### ./k8s/services/chatwoot/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: chatwoot-secret
+  namespace: shopno-apps
+type: Opaque
+stringData:
+  # Replace with sealed-secrets in production
+  DATABASE_PASSWORD: "CHANGE_ME_DB_PASSWORD"
+  REDIS_PASSWORD: "CHANGE_ME_REDIS_PASSWORD"
+  MINIO_SECRET_KEY: "CHANGE_ME_MINIO_SECRET"
+  KEYCLOAK_CLIENT_SECRET: "CHANGE_ME_KEYCLOAK_SECRET"
+  JWT_SIGNING_KEY: "CHANGE_ME_JWT_KEY"
+
+### ./k8s/services/code-server/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: code-server-secret
+  namespace: shopno-apps
+type: Opaque
+stringData:
+  # Replace with sealed-secrets in production
+  DATABASE_PASSWORD: "CHANGE_ME_DB_PASSWORD"
+  REDIS_PASSWORD: "CHANGE_ME_REDIS_PASSWORD"
+  MINIO_SECRET_KEY: "CHANGE_ME_MINIO_SECRET"
+  KEYCLOAK_CLIENT_SECRET: "CHANGE_ME_KEYCLOAK_SECRET"
+  JWT_SIGNING_KEY: "CHANGE_ME_JWT_KEY"
+
+### ./k8s/services/domain-service/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: domain-service-secret
+  namespace: shopno-platform
+type: Opaque
+stringData:
+  # Replace with sealed-secrets in production
+  DATABASE_PASSWORD: "CHANGE_ME_DB_PASSWORD"
+  REDIS_PASSWORD: "CHANGE_ME_REDIS_PASSWORD"
+  MINIO_SECRET_KEY: "CHANGE_ME_MINIO_SECRET"
+  KEYCLOAK_CLIENT_SECRET: "CHANGE_ME_KEYCLOAK_SECRET"
+  JWT_SIGNING_KEY: "CHANGE_ME_JWT_KEY"
+
+### ./k8s/services/event-service/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: event-service-secret
+  namespace: shopno-platform
+type: Opaque
+stringData:
+  # Replace with sealed-secrets in production
+  DATABASE_PASSWORD: "CHANGE_ME_DB_PASSWORD"
+  REDIS_PASSWORD: "CHANGE_ME_REDIS_PASSWORD"
+  MINIO_SECRET_KEY: "CHANGE_ME_MINIO_SECRET"
+  KEYCLOAK_CLIENT_SECRET: "CHANGE_ME_KEYCLOAK_SECRET"
+  JWT_SIGNING_KEY: "CHANGE_ME_JWT_KEY"
+
+### ./k8s/services/exchange-service/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: exchange-service-secret
+  namespace: shopno-payments
+type: Opaque
+stringData:
+  # Replace with sealed-secrets in production
+  DATABASE_PASSWORD: "CHANGE_ME_DB_PASSWORD"
+  REDIS_PASSWORD: "CHANGE_ME_REDIS_PASSWORD"
+  MINIO_SECRET_KEY: "CHANGE_ME_MINIO_SECRET"
+  KEYCLOAK_CLIENT_SECRET: "CHANGE_ME_KEYCLOAK_SECRET"
+  JWT_SIGNING_KEY: "CHANGE_ME_JWT_KEY"
+
+### ./k8s/services/foundation-service/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: foundation-service-secret
+  namespace: shopno-platform
+type: Opaque
+stringData:
+  # Replace with sealed-secrets in production
+  DATABASE_PASSWORD: "CHANGE_ME_DB_PASSWORD"
+  REDIS_PASSWORD: "CHANGE_ME_REDIS_PASSWORD"
+  MINIO_SECRET_KEY: "CHANGE_ME_MINIO_SECRET"
+  KEYCLOAK_CLIENT_SECRET: "CHANGE_ME_KEYCLOAK_SECRET"
+  JWT_SIGNING_KEY: "CHANGE_ME_JWT_KEY"
+
+### ./k8s/services/freedomain-service/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: freedomain-service-secret
+  namespace: shopno-platform
+type: Opaque
+stringData:
+  # Replace with sealed-secrets in production
+  DATABASE_PASSWORD: "CHANGE_ME_DB_PASSWORD"
+  REDIS_PASSWORD: "CHANGE_ME_REDIS_PASSWORD"
+  MINIO_SECRET_KEY: "CHANGE_ME_MINIO_SECRET"
+  KEYCLOAK_CLIENT_SECRET: "CHANGE_ME_KEYCLOAK_SECRET"
+  JWT_SIGNING_KEY: "CHANGE_ME_JWT_KEY"
+
+### ./k8s/services/gateway/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: gateway-secret
+  namespace: shopno-platform
+type: Opaque
+stringData:
+  # Replace with sealed-secrets in production
+  DATABASE_PASSWORD: "CHANGE_ME_DB_PASSWORD"
+  REDIS_PASSWORD: "CHANGE_ME_REDIS_PASSWORD"
+  MINIO_SECRET_KEY: "CHANGE_ME_MINIO_SECRET"
+  KEYCLOAK_CLIENT_SECRET: "CHANGE_ME_KEYCLOAK_SECRET"
+  JWT_SIGNING_KEY: "CHANGE_ME_JWT_KEY"
+
+### ./k8s/services/gitea/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: gitea-secret
+  namespace: shopno-apps
+type: Opaque
+stringData:
+  # Replace with sealed-secrets in production
+  DATABASE_PASSWORD: "CHANGE_ME_DB_PASSWORD"
+  REDIS_PASSWORD: "CHANGE_ME_REDIS_PASSWORD"
+  MINIO_SECRET_KEY: "CHANGE_ME_MINIO_SECRET"
+  KEYCLOAK_CLIENT_SECRET: "CHANGE_ME_KEYCLOAK_SECRET"
+  JWT_SIGNING_KEY: "CHANGE_ME_JWT_KEY"
+
+### ./k8s/services/grafana/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: grafana-secret
+  namespace: shopno-monitoring
+type: Opaque
+stringData:
+  # Replace with sealed-secrets in production
+  DATABASE_PASSWORD: "CHANGE_ME_DB_PASSWORD"
+  REDIS_PASSWORD: "CHANGE_ME_REDIS_PASSWORD"
+  MINIO_SECRET_KEY: "CHANGE_ME_MINIO_SECRET"
+  KEYCLOAK_CLIENT_SECRET: "CHANGE_ME_KEYCLOAK_SECRET"
+  JWT_SIGNING_KEY: "CHANGE_ME_JWT_KEY"
+
+### ./k8s/services/interior-service/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: interior-service-secret
+  namespace: shopno-platform
+type: Opaque
+stringData:
+  # Replace with sealed-secrets in production
+  DATABASE_PASSWORD: "CHANGE_ME_DB_PASSWORD"
+  REDIS_PASSWORD: "CHANGE_ME_REDIS_PASSWORD"
+  MINIO_SECRET_KEY: "CHANGE_ME_MINIO_SECRET"
+  KEYCLOAK_CLIENT_SECRET: "CHANGE_ME_KEYCLOAK_SECRET"
+  JWT_SIGNING_KEY: "CHANGE_ME_JWT_KEY"
+
+### ./k8s/services/jitsi-jicofo/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: jitsi-jicofo-secret
+  namespace: shopno-apps
+type: Opaque
+stringData:
+  # Replace with sealed-secrets in production
+  DATABASE_PASSWORD: "CHANGE_ME_DB_PASSWORD"
+  REDIS_PASSWORD: "CHANGE_ME_REDIS_PASSWORD"
+  MINIO_SECRET_KEY: "CHANGE_ME_MINIO_SECRET"
+  KEYCLOAK_CLIENT_SECRET: "CHANGE_ME_KEYCLOAK_SECRET"
+  JWT_SIGNING_KEY: "CHANGE_ME_JWT_KEY"
+
+### ./k8s/services/jitsi-jvb/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: jitsi-jvb-secret
+  namespace: shopno-apps
+type: Opaque
+stringData:
+  # Replace with sealed-secrets in production
+  DATABASE_PASSWORD: "CHANGE_ME_DB_PASSWORD"
+  REDIS_PASSWORD: "CHANGE_ME_REDIS_PASSWORD"
+  MINIO_SECRET_KEY: "CHANGE_ME_MINIO_SECRET"
+  KEYCLOAK_CLIENT_SECRET: "CHANGE_ME_KEYCLOAK_SECRET"
+  JWT_SIGNING_KEY: "CHANGE_ME_JWT_KEY"
+
+### ./k8s/services/jitsi-prosody/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: jitsi-prosody-secret
+  namespace: shopno-apps
+type: Opaque
+stringData:
+  # Replace with sealed-secrets in production
+  DATABASE_PASSWORD: "CHANGE_ME_DB_PASSWORD"
+  REDIS_PASSWORD: "CHANGE_ME_REDIS_PASSWORD"
+  MINIO_SECRET_KEY: "CHANGE_ME_MINIO_SECRET"
+  KEYCLOAK_CLIENT_SECRET: "CHANGE_ME_KEYCLOAK_SECRET"
+  JWT_SIGNING_KEY: "CHANGE_ME_JWT_KEY"
+
+### ./k8s/services/jitsi-web/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: jitsi-web-secret
+  namespace: shopno-apps
+type: Opaque
+stringData:
+  # Replace with sealed-secrets in production
+  DATABASE_PASSWORD: "CHANGE_ME_DB_PASSWORD"
+  REDIS_PASSWORD: "CHANGE_ME_REDIS_PASSWORD"
+  MINIO_SECRET_KEY: "CHANGE_ME_MINIO_SECRET"
+  KEYCLOAK_CLIENT_SECRET: "CHANGE_ME_KEYCLOAK_SECRET"
+  JWT_SIGNING_KEY: "CHANGE_ME_JWT_KEY"
+
+### ./k8s/services/keycloak/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: keycloak-secret
+  namespace: shopno-identity
+
+type: Opaque
+
+stringData:
+  KC_DB_PASSWORD: "KeycloakDBPassword123!"
+  KC_BOOTSTRAP_ADMIN_PASSWORD: "AdminPassword123!"
+
+### ./k8s/services/kobotoolbox/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: kobotoolbox-secret
+  namespace: shopno-apps
+type: Opaque
+stringData:
+  # Replace with sealed-secrets in production
+  DATABASE_PASSWORD: "CHANGE_ME_DB_PASSWORD"
+  REDIS_PASSWORD: "CHANGE_ME_REDIS_PASSWORD"
+  MINIO_SECRET_KEY: "CHANGE_ME_MINIO_SECRET"
+  KEYCLOAK_CLIENT_SECRET: "CHANGE_ME_KEYCLOAK_SECRET"
+  JWT_SIGNING_KEY: "CHANGE_ME_JWT_KEY"
+
+### ./k8s/services/license-service/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: license-service-secret
+  namespace: shopno-platform
+type: Opaque
+stringData:
+  # Replace with sealed-secrets in production
+  DATABASE_PASSWORD: "CHANGE_ME_DB_PASSWORD"
+  REDIS_PASSWORD: "CHANGE_ME_REDIS_PASSWORD"
+  MINIO_SECRET_KEY: "CHANGE_ME_MINIO_SECRET"
+  KEYCLOAK_CLIENT_SECRET: "CHANGE_ME_KEYCLOAK_SECRET"
+  JWT_SIGNING_KEY: "CHANGE_ME_JWT_KEY"
+
+### ./k8s/services/loki/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: loki-secret
+  namespace: shopno-monitoring
+type: Opaque
+stringData:
+  # Replace with sealed-secrets in production
+  DATABASE_PASSWORD: "CHANGE_ME_DB_PASSWORD"
+  REDIS_PASSWORD: "CHANGE_ME_REDIS_PASSWORD"
+  MINIO_SECRET_KEY: "CHANGE_ME_MINIO_SECRET"
+  KEYCLOAK_CLIENT_SECRET: "CHANGE_ME_KEYCLOAK_SECRET"
+  JWT_SIGNING_KEY: "CHANGE_ME_JWT_KEY"
+
+### ./k8s/services/metabase/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: metabase-secret
+  namespace: shopno-apps
+type: Opaque
+stringData:
+  # Replace with sealed-secrets in production
+  DATABASE_PASSWORD: "CHANGE_ME_DB_PASSWORD"
+  REDIS_PASSWORD: "CHANGE_ME_REDIS_PASSWORD"
+  MINIO_SECRET_KEY: "CHANGE_ME_MINIO_SECRET"
+  KEYCLOAK_CLIENT_SECRET: "CHANGE_ME_KEYCLOAK_SECRET"
+  JWT_SIGNING_KEY: "CHANGE_ME_JWT_KEY"
+
+### ./k8s/services/minio/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: minio-secret
+  namespace: shopno-data
+type: Opaque
+stringData:
+  # Replace with sealed-secrets in production
+  DATABASE_PASSWORD: "CHANGE_ME_DB_PASSWORD"
+  REDIS_PASSWORD: "CHANGE_ME_REDIS_PASSWORD"
+  MINIO_SECRET_KEY: "CHANGE_ME_MINIO_SECRET"
+  KEYCLOAK_CLIENT_SECRET: "CHANGE_ME_KEYCLOAK_SECRET"
+  JWT_SIGNING_KEY: "CHANGE_ME_JWT_KEY"
+
+### ./k8s/services/mobile-api/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mobile-api-secret
+  namespace: shopno-platform
+type: Opaque
+stringData:
+  # Replace with sealed-secrets in production
+  DATABASE_PASSWORD: "CHANGE_ME_DB_PASSWORD"
+  REDIS_PASSWORD: "CHANGE_ME_REDIS_PASSWORD"
+  MINIO_SECRET_KEY: "CHANGE_ME_MINIO_SECRET"
+  KEYCLOAK_CLIENT_SECRET: "CHANGE_ME_KEYCLOAK_SECRET"
+  JWT_SIGNING_KEY: "CHANGE_ME_JWT_KEY"
+
+### ./k8s/services/n8n/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: n8n-secret
+  namespace: shopno-apps
+type: Opaque
+stringData:
+  # Replace with sealed-secrets in production
+  DATABASE_PASSWORD: "CHANGE_ME_DB_PASSWORD"
+  REDIS_PASSWORD: "CHANGE_ME_REDIS_PASSWORD"
+  MINIO_SECRET_KEY: "CHANGE_ME_MINIO_SECRET"
+  KEYCLOAK_CLIENT_SECRET: "CHANGE_ME_KEYCLOAK_SECRET"
+  JWT_SIGNING_KEY: "CHANGE_ME_JWT_KEY"
+
+### ./k8s/services/nextcloud/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: nextcloud-secret
+  namespace: shopno-apps
+type: Opaque
+stringData:
+  # Replace with sealed-secrets in production
+  DATABASE_PASSWORD: "CHANGE_ME_DB_PASSWORD"
+  REDIS_PASSWORD: "CHANGE_ME_REDIS_PASSWORD"
+  MINIO_SECRET_KEY: "CHANGE_ME_MINIO_SECRET"
+  KEYCLOAK_CLIENT_SECRET: "CHANGE_ME_KEYCLOAK_SECRET"
+  JWT_SIGNING_KEY: "CHANGE_ME_JWT_KEY"
+
+### ./k8s/services/notification-service/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: notification-service-secret
+  namespace: shopno-platform
+type: Opaque
+stringData:
+  # Replace with sealed-secrets in production
+  DATABASE_PASSWORD: "CHANGE_ME_DB_PASSWORD"
+  REDIS_PASSWORD: "CHANGE_ME_REDIS_PASSWORD"
+  MINIO_SECRET_KEY: "CHANGE_ME_MINIO_SECRET"
+  KEYCLOAK_CLIENT_SECRET: "CHANGE_ME_KEYCLOAK_SECRET"
+  JWT_SIGNING_KEY: "CHANGE_ME_JWT_KEY"
+
+### ./k8s/services/oauth-service/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: oauth-service-secret
+  namespace: shopno-identity
+type: Opaque
+stringData:
+  # Replace with sealed-secrets in production
+  DATABASE_PASSWORD: "CHANGE_ME_DB_PASSWORD"
+  REDIS_PASSWORD: "CHANGE_ME_REDIS_PASSWORD"
+  MINIO_SECRET_KEY: "CHANGE_ME_MINIO_SECRET"
+  KEYCLOAK_CLIENT_SECRET: "CHANGE_ME_KEYCLOAK_SECRET"
+  JWT_SIGNING_KEY: "CHANGE_ME_JWT_KEY"
+
+### ./k8s/services/onlyoffice/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: onlyoffice-secret
+  namespace: shopno-apps
+type: Opaque
+stringData:
+  # Replace with sealed-secrets in production
+  DATABASE_PASSWORD: "CHANGE_ME_DB_PASSWORD"
+  REDIS_PASSWORD: "CHANGE_ME_REDIS_PASSWORD"
+  MINIO_SECRET_KEY: "CHANGE_ME_MINIO_SECRET"
+  KEYCLOAK_CLIENT_SECRET: "CHANGE_ME_KEYCLOAK_SECRET"
+  JWT_SIGNING_KEY: "CHANGE_ME_JWT_KEY"
+
+### ./k8s/services/opensearch/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: opensearch-secret
+  namespace: shopno-data
+type: Opaque
+stringData:
+  # Replace with sealed-secrets in production
+  DATABASE_PASSWORD: "CHANGE_ME_DB_PASSWORD"
+  REDIS_PASSWORD: "CHANGE_ME_REDIS_PASSWORD"
+  MINIO_SECRET_KEY: "CHANGE_ME_MINIO_SECRET"
+  KEYCLOAK_CLIENT_SECRET: "CHANGE_ME_KEYCLOAK_SECRET"
+  JWT_SIGNING_KEY: "CHANGE_ME_JWT_KEY"
+
+### ./k8s/services/owncast/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: owncast-secret
+  namespace: shopno-apps
+type: Opaque
+stringData:
+  # Replace with sealed-secrets in production
+  DATABASE_PASSWORD: "CHANGE_ME_DB_PASSWORD"
+  REDIS_PASSWORD: "CHANGE_ME_REDIS_PASSWORD"
+  MINIO_SECRET_KEY: "CHANGE_ME_MINIO_SECRET"
+  KEYCLOAK_CLIENT_SECRET: "CHANGE_ME_KEYCLOAK_SECRET"
+  JWT_SIGNING_KEY: "CHANGE_ME_JWT_KEY"
+
+### ./k8s/services/payment-service/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: payment-service-secret
+  namespace: shopno-payments
+type: Opaque
+stringData:
+  # Replace with sealed-secrets in production
+  DATABASE_PASSWORD: "CHANGE_ME_DB_PASSWORD"
+  REDIS_PASSWORD: "CHANGE_ME_REDIS_PASSWORD"
+  MINIO_SECRET_KEY: "CHANGE_ME_MINIO_SECRET"
+  KEYCLOAK_CLIENT_SECRET: "CHANGE_ME_KEYCLOAK_SECRET"
+  JWT_SIGNING_KEY: "CHANGE_ME_JWT_KEY"
+
+### ./k8s/services/pc-portal/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: pc-portal-secret
+  namespace: shopno-platform
+type: Opaque
+stringData:
+  # Replace with sealed-secrets in production
+  DATABASE_PASSWORD: "CHANGE_ME_DB_PASSWORD"
+  REDIS_PASSWORD: "CHANGE_ME_REDIS_PASSWORD"
+  MINIO_SECRET_KEY: "CHANGE_ME_MINIO_SECRET"
+  KEYCLOAK_CLIENT_SECRET: "CHANGE_ME_KEYCLOAK_SECRET"
+  JWT_SIGNING_KEY: "CHANGE_ME_JWT_KEY"
+
+### ./k8s/services/postgres/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgres-secret
+  namespace: shopno-data
+  labels:
+    app.kubernetes.io/name: postgres
+    app.kubernetes.io/part-of: shopnoltd
+    app.kubernetes.io/component: database
+
+type: Opaque
+
+stringData:
+  POSTGRES_USER: kobo
+  POSTGRES_PASSWORD: kobopass
+  POSTGRES_DB: kobotoolbox
+
+  # Internal Kubernetes connection
+  POSTGRES_HOST: postgres
+  POSTGRES_PORT: "5432"
+
+  # Platform database URL
+  DATABASE_URL: postgresql://kobo:kobopass@postgres:5432/kobotoolbox
+
+### ./k8s/services/prometheus/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: prometheus-secret
+  namespace: shopno-monitoring
+type: Opaque
+stringData:
+  # Replace with sealed-secrets in production
+  DATABASE_PASSWORD: "CHANGE_ME_DB_PASSWORD"
+  REDIS_PASSWORD: "CHANGE_ME_REDIS_PASSWORD"
+  MINIO_SECRET_KEY: "CHANGE_ME_MINIO_SECRET"
+  KEYCLOAK_CLIENT_SECRET: "CHANGE_ME_KEYCLOAK_SECRET"
+  JWT_SIGNING_KEY: "CHANGE_ME_JWT_KEY"
+
+### ./k8s/services/redis/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: redis-secret
+  namespace: shopno-data
+type: Opaque
+stringData:
+  # Replace with sealed-secrets in production
+  DATABASE_PASSWORD: "CHANGE_ME_DB_PASSWORD"
+  REDIS_PASSWORD: "CHANGE_ME_REDIS_PASSWORD"
+  MINIO_SECRET_KEY: "CHANGE_ME_MINIO_SECRET"
+  KEYCLOAK_CLIENT_SECRET: "CHANGE_ME_KEYCLOAK_SECRET"
+  JWT_SIGNING_KEY: "CHANGE_ME_JWT_KEY"
+
+### ./k8s/services/report-service/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: report-service-secret
+  namespace: shopno-platform
+type: Opaque
+stringData:
+  # Replace with sealed-secrets in production
+  DATABASE_PASSWORD: "CHANGE_ME_DB_PASSWORD"
+  REDIS_PASSWORD: "CHANGE_ME_REDIS_PASSWORD"
+  MINIO_SECRET_KEY: "CHANGE_ME_MINIO_SECRET"
+  KEYCLOAK_CLIENT_SECRET: "CHANGE_ME_KEYCLOAK_SECRET"
+  JWT_SIGNING_KEY: "CHANGE_ME_JWT_KEY"
+
+### ./k8s/services/scheduler-service/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: scheduler-service-secret
+  namespace: shopno-platform
+type: Opaque
+stringData:
+  # Replace with sealed-secrets in production
+  DATABASE_PASSWORD: "CHANGE_ME_DB_PASSWORD"
+  REDIS_PASSWORD: "CHANGE_ME_REDIS_PASSWORD"
+  MINIO_SECRET_KEY: "CHANGE_ME_MINIO_SECRET"
+  KEYCLOAK_CLIENT_SECRET: "CHANGE_ME_KEYCLOAK_SECRET"
+  JWT_SIGNING_KEY: "CHANGE_ME_JWT_KEY"
+
+### ./k8s/services/search-service/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: search-service-secret
+  namespace: shopno-platform
+type: Opaque
+stringData:
+  # Replace with sealed-secrets in production
+  DATABASE_PASSWORD: "CHANGE_ME_DB_PASSWORD"
+  REDIS_PASSWORD: "CHANGE_ME_REDIS_PASSWORD"
+  MINIO_SECRET_KEY: "CHANGE_ME_MINIO_SECRET"
+  KEYCLOAK_CLIENT_SECRET: "CHANGE_ME_KEYCLOAK_SECRET"
+  JWT_SIGNING_KEY: "CHANGE_ME_JWT_KEY"
+
+### ./k8s/services/storage-service/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: storage-service-secret
+  namespace: shopno-platform
+type: Opaque
+stringData:
+  # Replace with sealed-secrets in production
+  DATABASE_PASSWORD: "CHANGE_ME_DB_PASSWORD"
+  REDIS_PASSWORD: "CHANGE_ME_REDIS_PASSWORD"
+  MINIO_SECRET_KEY: "CHANGE_ME_MINIO_SECRET"
+  KEYCLOAK_CLIENT_SECRET: "CHANGE_ME_KEYCLOAK_SECRET"
+  JWT_SIGNING_KEY: "CHANGE_ME_JWT_KEY"
+
+### ./k8s/services/superset/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: superset-secret
+  namespace: shopno-apps
+type: Opaque
+stringData:
+  # Replace with sealed-secrets in production
+  DATABASE_PASSWORD: "CHANGE_ME_DB_PASSWORD"
+  REDIS_PASSWORD: "CHANGE_ME_REDIS_PASSWORD"
+  MINIO_SECRET_KEY: "CHANGE_ME_MINIO_SECRET"
+  KEYCLOAK_CLIENT_SECRET: "CHANGE_ME_KEYCLOAK_SECRET"
+  JWT_SIGNING_KEY: "CHANGE_ME_JWT_KEY"
+
+### ./k8s/services/tenant-router/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: tenant-router-secret
+  namespace: shopno-platform
+type: Opaque
+stringData:
+  # Replace with sealed-secrets in production
+  DATABASE_PASSWORD: "CHANGE_ME_DB_PASSWORD"
+  REDIS_PASSWORD: "CHANGE_ME_REDIS_PASSWORD"
+  MINIO_SECRET_KEY: "CHANGE_ME_MINIO_SECRET"
+  KEYCLOAK_CLIENT_SECRET: "CHANGE_ME_KEYCLOAK_SECRET"
+  JWT_SIGNING_KEY: "CHANGE_ME_JWT_KEY"
+
+### ./k8s/services/training-service/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: training-service-secret
+  namespace: shopno-platform
+type: Opaque
+stringData:
+  # Replace with sealed-secrets in production
+  DATABASE_PASSWORD: "CHANGE_ME_DB_PASSWORD"
+  REDIS_PASSWORD: "CHANGE_ME_REDIS_PASSWORD"
+  MINIO_SECRET_KEY: "CHANGE_ME_MINIO_SECRET"
+  KEYCLOAK_CLIENT_SECRET: "CHANGE_ME_KEYCLOAK_SECRET"
+  JWT_SIGNING_KEY: "CHANGE_ME_JWT_KEY"
+
+### ./k8s/services/web-portal/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: web-portal-secret
+  namespace: shopno-platform
+type: Opaque
+stringData:
+  # Replace with sealed-secrets in production
+  DATABASE_PASSWORD: "CHANGE_ME_DB_PASSWORD"
+  REDIS_PASSWORD: "CHANGE_ME_REDIS_PASSWORD"
+  MINIO_SECRET_KEY: "CHANGE_ME_MINIO_SECRET"
+  KEYCLOAK_CLIENT_SECRET: "CHANGE_ME_KEYCLOAK_SECRET"
+  JWT_SIGNING_KEY: "CHANGE_ME_JWT_KEY"
+
+### ./k8s/services/worker-service/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: worker-service-secret
+  namespace: shopno-platform
+type: Opaque
+stringData:
+  # Replace with sealed-secrets in production
+  DATABASE_PASSWORD: "CHANGE_ME_DB_PASSWORD"
+  REDIS_PASSWORD: "CHANGE_ME_REDIS_PASSWORD"
+  MINIO_SECRET_KEY: "CHANGE_ME_MINIO_SECRET"
+  KEYCLOAK_CLIENT_SECRET: "CHANGE_ME_KEYCLOAK_SECRET"
+  JWT_SIGNING_KEY: "CHANGE_ME_JWT_KEY"
+
+### ./scripts/generated_secrets.yaml
+# Generated Kubernetes secrets YAML (sensitive)
+apiVersion: v1
+kind: Secret
+metadata:
+  name: oauth-secrets
+type: Opaque
+data:
+  JWT_SECRET: NTI2YTRjMzctYjdhZi00N2E4LTgwNTYtZGY0NjU1NGY4OTQ5
+  SESSION_SECRET: NTQzZDEyMjktYWI4YS00M2M1LWI5YjMtNmU0NjM3MTg2YzBh
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgres-secret
+type: Opaque
+data:
+  POSTGRES_DB: c2hvcG5vbHRk
+  POSTGRES_PASSWORD: Mzg1YTFhNDQtNTdiYy00MjcwLTljNmQtZGQyMWRhNGVjZGFh
+  POSTGRES_USER: c2hvcG5vbHRk
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: stripe-secret
+type: Opaque
+data:
+  STRIPE_SECRET_KEY: c2tfdGVzdF81MVRqaHdYMldsMUM3c05FNHB6bHk3OFBUYWo5UTJrTmk2SjhCREFJSDZ1N2dIbEppMHJLUXlnUVd1OXExbmVOM3VhSFpwblVZN2QybmFPU2lieFVSbE1NTzAwSFBYQzEzbEI=
+  STRIPE_WEBHOOK_SECRET: d2hzZWNfcnlhZjUxTkM1WTFnUWRCdm5wSFZtdnFMbkZxQVVKVWg=
+  STRIPE_PRICE_BASIC: cHJpY2VfMVRqalJuMldsMUM3c05FNFNiSWdkTUpF
+  STRIPE_PRICE_PRO: cHJpY2VfMVRqalN2MldsMUM3c05FNExRQUkzSEFk
+  STRIPE_PRICE_ENTERPRISE: cHJpY2VfMVRqalRiMldsMUM3c05FNFJrTlhQZDc2
+  BILLING_API_KEY: d2VfMVRqanZ3MldsMUM3c05FNFMwQlZNcWxp
+  FRONTEND_URL: aHR0cHM6Ly9zaG9wbm9sdGQuZHBkbnMub3Jn
+  POSTGRES_URL: cG9zdGdyZXM6Ly9zaG9wbm9sdGQ6Mzg1YTFhNDQtNTdiYy00MjcwLTljNmQtZGQyMWRhNGVjZGFhQHBvc3RncmVzOjU0MzIvc2hvcG5vbHRk
+
+### ./secrets-template.yaml
+# NOTE: This file is a template. Do NOT commit real secrets.
+# Replace values with base64-encoded strings, or use the helper script
+# scripts/create_k8s_secrets.ps1 which accepts plain text values and
+# will generate/apply Kubernetes Secrets for you.
+# Example (PowerShell):
+#   $env:STRIPE_SECRET_KEY = 'sk_test_xxx'; .\scripts\create_k8s_secrets.ps1 -Apply
+# This writes secrets to the cluster only when -Apply is provided.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: oauth-secrets
+type: Opaque
+data:
+  JWT_SECRET: REPLACE_WITH_BASE64
+  SESSION_SECRET: REPLACE_WITH_BASE64
+---
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgres-secret
+type: Opaque
+data:
+  POSTGRES_DB: REPLACE_WITH_BASE64
+  POSTGRES_PASSWORD: REPLACE_WITH_BASE64
+  POSTGRES_USER: REPLACE_WITH_BASE64
+---
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: stripe-secret
+type: Opaque
+data:
+  STRIPE_SECRET_KEY: REPLACE_WITH_BASE64
+  STRIPE_WEBHOOK_SECRET: REPLACE_WITH_BASE64
+  STRIPE_PRICE_BASIC: REPLACE_WITH_BASE64
+  STRIPE_PRICE_PRO: REPLACE_WITH_BASE64
+  STRIPE_PRICE_ENTERPRISE: REPLACE_WITH_BASE64
+  BILLING_API_KEY: REPLACE_WITH_BASE64
+  FRONTEND_URL: REPLACE_WITH_BASE64
+  POSTGRES_URL: REPLACE_WITH_BASE64
+
+### ./toolbox/01-secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: toolbox-secrets
+  namespace: toolbox
+type: Opaque
+stringData:
+  POSTGRES_USER: kobo
+  POSTGRES_PASSWORD: kobo_pass
+  POSTGRES_DB: kobodb
+
+  MONGO_USER: kobo
+  MONGO_PASSWORD: mongo_pass
+
+  REDIS_PASSWORD: redis_pass
+
+  DJANGO_SECRET_KEY: change-me
+
+===== CONFIGMAPS =====
+### ./config/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: shopnoltd-config
+  namespace: default
+data:
+  BRAND_NAME: "Shopnoltd"
+  COMPANY_NAME: "Shopno Database Firm"
+  DOMAIN: "shopnoltd.dpdns.org"
+  TURNSTILE_SITE_KEY: "0x4AAAAAADlJuQGlpqi1EZRQ"
+  RECAPTCHA_SITE_KEY: "6LcVWyAtAAAAAErwmEZU2lHxuwOWTp2Y5RJqvBmS"
+
+### ./configmaps.yaml
+apiVersion: v1
+items:
+- apiVersion: v1
+  data:
+    uwsgi.ini: |
+      [uwsgi]
+      # directory structure
+      chdir       = $(KPI_SRC_DIR)
+      logto       = $(KPI_LOGS_DIR)/uwsgi.log
+      # Run the application at a non-root URL path, e.g. http://hostname/KPI_PREFIX.
+      # See http://uwsgi-docs.readthedocs.org/en/latest/Nginx.html#hosting-multiple-apps-in-the-same-process-aka-managing-script-name-and-path-info
+      # This supersedes `wsgi-file = $(KPI_SRC_DIR)/kobo/wsgi.py`.
+      manage-script-name = true
+      mount              = $(KPI_PREFIX)=$(KPI_SRC_DIR)/kobo/wsgi.py
+      # process related settings
+      master              = true
+      harakiri            = $(UWSGI_HARAKIRI)
+      worker-reload-mercy = $(UWSGI_WORKER_RELOAD_MERCY)
+      # monitoring (use with `uwsgitop :1717`, for example)
+      stats = :1717
+      memory-report = true
+      # Overrideable default of 2 uWSGI processes.
+      if-env = UWSGI_WORKERS_COUNT
+      workers = %(_)
+      endif =
+      if-not-env = UWSGI_WORKERS_COUNT
+      workers = 2
+      endif =
+      # activate cheaper mode
+      if-env = UWSGI_CHEAPER_WORKERS_COUNT
+      cheaper-algo = busyness
+      cheaper = %(_)
+      cheaper-initial = %(_)
+      cheaper-step = 1
+      cheaper-overload = 30
+      cheaper-busyness-max = 50
+      cheaper-busyness-min = 25
+      cheaper-busyness-multiplier = 20
+      endif =
+      # stop spawning new workers if total memory consumption grows too large
+      if-env = UWSGI_CHEAPER_RSS_LIMIT_SOFT
+      cheaper-rss-limit-soft = %(_)
+      endif =
+      if-not-env = UWSGI_CHEAPER_RSS_LIMIT_SOFT
+      cheaper-rss-limit-soft = %(2 * 1024 * 1024 * 1024)
+      endif =
+      # respawn processes after serving KPI_UWSGI_MAX_REQUESTS requests (default 5000)
+      if-env = UWSGI_MAX_REQUESTS
+      max-requests = %(_)
+      endif =
+      # respawn workers when their memory consumption grows too large
+      if-env = UWSGI_RELOAD_ON_RSS_MB
+      reload-on-rss = %(_)
+      endif =
+      if-not-env = UWSGI_RELOAD_ON_RSS_MB
+      reload-on-rss = 512
+      endif =
+      http-socket     = 0.0.0.0:8000
+      buffer-size     = 32768
+      listen          = @(/proc/sys/net/core/somaxconn)
+      uid             = $(UWSGI_USER)
+      gid             = $(UWSGI_GROUP)
+      die-on-term     = true
+      # uWSGI does not pass locale information to the application by default
+      env = LC_ALL=en_US.UTF-8
+      # Required for Sentry
+      enable-threads  = true
+      # Custom tweaks
+      single-interpreter = true
+      post-buffering = true
+      ignore-sigpipe = true
+      ignore-write-errors = true
+      disable-write-exception = true
+      vacuum = true
+  kind: ConfigMap
+  metadata:
+    creationTimestamp: "2026-07-06T04:28:25Z"
+    name: kc-uwsgi-ini
+    namespace: toolbox
+    resourceVersion: "659215"
+    uid: 0250763b-3f83-45ef-ab09-9c89d6fdad63
+- apiVersion: v1
+  data:
+    wait_for_mongo.bash: |
+      #!/bin/bash
+      set -e
+      HOST="${MONGO_HOST:-mongo}"
+      # Note: intentionally NOT reading $MONGO_PORT here -- Kubernetes auto-injects
+      # a MONGO_PORT env var for the "mongo" Service (e.g. tcp://10.x.x.x:27017),
+      # which collides with and overrides any value we'd want to default to.
+      PORT=27017
+      echo "Waiting for MongoDB at ${HOST}:${PORT}..."
+      for i in $(seq 1 60); do
+        if (echo > /dev/tcp/${HOST}/${PORT}) >/dev/null 2>&1; then
+          echo "MongoDB is up."
+          exit 0
+        fi
+        sleep 2
+      done
+      echo "Timed out waiting for MongoDB at ${HOST}:${PORT}."
+      exit 1
+    wait_for_postgres.bash: |
+      #!/bin/bash
+      set -e
+      # Parses host/port out of DATABASE_URL, e.g. postgres://user:pass@host:5432/db
+      DB_HOST=$(echo "$DATABASE_URL" | sed -E 's#.*://[^@]*@([^:/]+).*#\1#')
+      DB_PORT=$(echo "$DATABASE_URL" | sed -E 's#.*:([0-9]+)/.*#\1#')
+      DB_PORT="${DB_PORT:-5432}"
+      echo "Waiting for Postgres at ${DB_HOST}:${DB_PORT}..."
+      for i in $(seq 1 60); do
+        if (echo > /dev/tcp/${DB_HOST}/${DB_PORT}) >/dev/null 2>&1; then
+          echo "Postgres is up."
+          exit 0
+        fi
+        sleep 2
+      done
+      echo "Timed out waiting for Postgres at ${DB_HOST}:${DB_PORT}."
+      exit 1
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","data":{"wait_for_mongo.bash":"#!/bin/bash\nset -e\nHOST=\"${MONGO_HOST:-mongo}\"\n# Note: intentionally NOT reading $MONGO_PORT here -- Kubernetes auto-injects\n# a MONGO_PORT env var for the \"mongo\" Service (e.g. tcp://10.x.x.x:27017),\n# which collides with and overrides any value we'd want to default to.\nPORT=27017\necho \"Waiting for MongoDB at ${HOST}:${PORT}...\"\nfor i in $(seq 1 60); do\n  if (echo \u003e /dev/tcp/${HOST}/${PORT}) \u003e/dev/null 2\u003e\u00261; then\n    echo \"MongoDB is up.\"\n    exit 0\n  fi\n  sleep 2\ndone\necho \"Timed out waiting for MongoDB at ${HOST}:${PORT}.\"\nexit 1\n","wait_for_postgres.bash":"#!/bin/bash\nset -e\n# Parses host/port out of DATABASE_URL, e.g. postgres://user:pass@host:5432/db\nDB_HOST=$(echo \"$DATABASE_URL\" | sed -E 's#.*://[^@]*@([^:/]+).*#\\1#')\nDB_PORT=$(echo \"$DATABASE_URL\" | sed -E 's#.*:([0-9]+)/.*#\\1#')\nDB_PORT=\"${DB_PORT:-5432}\"\necho \"Waiting for Postgres at ${DB_HOST}:${DB_PORT}...\"\nfor i in $(seq 1 60); do\n  if (echo \u003e /dev/tcp/${DB_HOST}/${DB_PORT}) \u003e/dev/null 2\u003e\u00261; then\n    echo \"Postgres is up.\"\n    exit 0\n  fi\n  sleep 2\ndone\necho \"Timed out waiting for Postgres at ${DB_HOST}:${DB_PORT}.\"\nexit 1\n"},"kind":"ConfigMap","metadata":{"annotations":{},"name":"kf-init-scripts","namespace":"toolbox"}}
+    creationTimestamp: "2026-07-05T07:52:36Z"
+    name: kf-init-scripts
+    namespace: toolbox
+    resourceVersion: "602192"
+    uid: 038a79a9-da82-49a2-bb95-aee481932532
+- apiVersion: v1
+  data:
+    default.conf: |
+      server {
+          listen 80;
+          location / {
+              include uwsgi_params;
+              uwsgi_pass 127.0.0.1:8000;
+              uwsgi_read_timeout 300;
+              uwsgi_send_timeout 300;
+              client_max_body_size 100m;
+          }
+      }
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","data":{"default.conf":"server {\n    listen 80;\n    location / {\n        include uwsgi_params;\n        uwsgi_pass 127.0.0.1:8000;\n        uwsgi_read_timeout 300;\n        uwsgi_send_timeout 300;\n        client_max_body_size 100m;\n    }\n}\n"},"kind":"ConfigMap","metadata":{"annotations":{},"name":"kf-nginx-conf","namespace":"toolbox"}}
+    creationTimestamp: "2026-06-30T16:18:19Z"
+    name: kf-nginx-conf
+    namespace: toolbox
+    resourceVersion: "301454"
+    uid: 0ac05ed9-332f-43f4-82f2-2f3e8bb2be34
+- apiVersion: v1
+  data:
+    kobocat.ini: |
+      [uwsgi]
+      # directory structure
+      chdir           = $(KOBOCAT_SRC_DIR)
+      module          = onadata.apps.main.wsgi
+      logto           = $(KOBOCAT_LOGS_DIR)/uwsgi.log
+      # process related settings
+      master          = true
+      # Overrideable default of 2 uWSGI processes.
+      if-env = KOBOCAT_UWSGI_PROCESS_COUNT
+      processes = %(_)
+      endif =
+      if-not-env = KOBOCAT_UWSGI_PROCESS_COUNT
+      processes = 2
+      endif =
+      http-socket     = 0.0.0.0:8000
+      buffer-size     = 32768
+      harakiri        = 120
+      uid             = $(UWSGI_USER)
+      gid             = $(UWSGI_GROUP)
+      die-on-term     = true
+      # Required for Raven/Sentry
+      enable-threads  = true
+  kind: ConfigMap
+  metadata:
+    creationTimestamp: "2026-07-06T04:37:38Z"
+    name: kf-uwsgi-ini
+    namespace: toolbox
+    resourceVersion: "660150"
+    uid: c1caa1a6-e0b9-4dcf-be24-a926f9460851
+- apiVersion: v1
+  data:
+    ca.crt: |
+      -----BEGIN CERTIFICATE-----
+      MIIDBTCCAe2gAwIBAgIIdGJ0bJM5Y1QwDQYJKoZIhvcNAQELBQAwFTETMBEGA1UE
+      AxMKa3ViZXJuZXRlczAeFw0yNjA2MjYxNDM2NTZaFw0zNjA2MjMxNDQxNTZaMBUx
+      EzARBgNVBAMTCmt1YmVybmV0ZXMwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEK
+      AoIBAQDPWpI5zPKAuGnkLW+jnHTHrY7GOeFZh/e4RS+sKOkIX0I32d9KWXPUI4PA
+      O41LGSe8CODEsow0X3IzlMgDeF7sEjv016XCicf/rIoflpBwrgA9vBp1CPvNz+b7
+      uSciYBW32iRzzcGZcG6niRNxSOahCeyih1cZHoUDCVbTx6Shjr0WHJ5XR8lu5DHk
+      BTj22odb45ss9Z/EDwFlPHAi7kjZhEY0nMNHrwCULMZE8UOBLt0lfsQEgJeBagJ3
+      0sOOQ53zcEANlim/Ysg83O2EP6P/4JwhQRvhWYbSgISbMhctvA9ppEb5UIh4JrS1
+      kvhaM2goUZR4Y9GjK+tottqfKw/PAgMBAAGjWTBXMA4GA1UdDwEB/wQEAwICpDAP
+      BgNVHRMBAf8EBTADAQH/MB0GA1UdDgQWBBS3hu9xMCrvruDjHzJ8m/5Qj7EhFTAV
+      BgNVHREEDjAMggprdWJlcm5ldGVzMA0GCSqGSIb3DQEBCwUAA4IBAQC9AY/jBj76
+      c1IUwYmBPePW63rEHW49OzyDQ1Gkl+4VPuNSkifybf1B1CRQXqgHDLE9aCCN9tGk
+      JfCJKuW0L8seOM5KNviVkg7d457E4hMA2OSqUT6GiWvqwTZdNO3iG3JIoPaiqlUD
+      5ofsLhNu4scY8U5xhM/Wb31hZOD/FCNOwe8LuTVmrjuAMjn/0+dgMAHSUFFcSp7M
+      BK51iHSRZ16Ch7t9LzrHm5uSpvDRnzzyxZZCMWocl//aFel16NeUtBt6i7WduzWB
+      H3QaUwiDwTFBsdxOHHXJnddPDrUZ9w2BAQs5RkJhGqBeJSXo0OyzCcVvL6sd5si7
+      20jYa4JOCU15
+      -----END CERTIFICATE-----
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubernetes.io/description: Contains a CA bundle that can be used to verify the
+        kube-apiserver when using internal endpoints such as the internal service
+        IP or kubernetes.default.svc. No other usage is guaranteed across distributions
+        of Kubernetes clusters.
+    creationTimestamp: "2026-06-26T18:08:37Z"
+    name: kube-root-ca.crt
+    namespace: toolbox
+    resourceVersion: "11781"
+    uid: 3bb62c92-07a0-4037-b518-d2d9c6c67dd2
+- apiVersion: v1
+  data:
+    APP_NAME: ShopnoltdToolbox
+    COMPANY: Shopnoltd
+    LOGO_URL: https://shopnoltd.dpdns.org/assets/logo.png
+    SUPPORT_EMAIL: support@shopnoltd.dpdns.org
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","data":{"APP_NAME":"ShopnoltdToolbox","COMPANY":"Shopnoltd","LOGO_URL":"https://shopnoltd.dpdns.org/assets/logo.png","SUPPORT_EMAIL":"support@shopnoltd.dpdns.org"},"kind":"ConfigMap","metadata":{"annotations":{},"name":"shopnoltd-toolbox-branding","namespace":"toolbox"}}
+    creationTimestamp: "2026-06-26T18:08:37Z"
+    name: shopnoltd-toolbox-branding
+    namespace: toolbox
+    resourceVersion: "11783"
+    uid: e4151b70-2360-4cf3-87e9-d20b6517983b
+- apiVersion: v1
+  data:
+    EE_HOST: ee.toolbox.svc.cluster.local
+    KF_HOST: kf.toolbox.svc.cluster.local
+    KPI_HOST: kc.toolbox.svc.cluster.local
+    MONGO_HOST: mongo.toolbox.svc.cluster.local
+    MONGO_PORT: "27017"
+    POSTGRES_HOST: postgres.toolbox.svc.cluster.local
+    POSTGRES_PORT: "5432"
+    REDIS_HOST: redis.toolbox.svc.cluster.local
+    REDIS_PORT: "6379"
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","data":{"EE_HOST":"ee.toolbox.svc.cluster.local","KF_HOST":"kf.toolbox.svc.cluster.local","KPI_HOST":"kc.toolbox.svc.cluster.local","MONGO_HOST":"mongo.toolbox.svc.cluster.local","MONGO_PORT":"27017","POSTGRES_HOST":"postgres.toolbox.svc.cluster.local","POSTGRES_PORT":"5432","REDIS_HOST":"redis.toolbox.svc.cluster.local","REDIS_PORT":"6379"},"kind":"ConfigMap","metadata":{"annotations":{},"name":"toolbox-config","namespace":"toolbox"}}
+    creationTimestamp: "2026-07-04T18:03:44Z"
+    name: toolbox-config
+    namespace: toolbox
+    resourceVersion: "652797"
+    uid: 66bd1087-c3aa-472a-8fa7-f7fa9984c944
+kind: List
+metadata:
+  resourceVersion: ""
+
+### ./corrections/deployment-tenant-router-configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tenant-router-config
+  namespace: default
+data:
+  nginx.conf: |
+    worker_processes 1;
+    
+    events {
+        worker_connections 1024;
+    }
+    
+    http {
+    
+        resolver 10.96.0.10 valid=10s;
+    
+        lua_package_path "/usr/local/openresty/lualib/?.lua;;";
+    
+        server {
+    
+            listen 80;
+            server_name _;
+    
+            location / {
+    
+                set $backend "";
+    
+                rewrite_by_lua_block {
+    
+                    local redis = require "resty.redis"
+    
+                    local red = redis:new()
+                    red:set_timeout(1000)
+    
+                    local ok, err = red:connect(
+                        "redis.default.svc.cluster.local",
+                        6379
+                    )
+    
+                    if not ok then
+                        ngx.log(ngx.ERR, "redis failed: ", err)
+    
+                        ngx.var.backend =
+                            "http://root-app.default.svc.cluster.local:80"
+    
+                        return
+                    end
+    
+                    local host = ngx.var.host
+    
+                    local tenant = host:match("([^%.]+)")
+    
+                    if not tenant then
+                        tenant = "root"
+                    end
+    
+                    local upstream, err =
+                        red:get("tenant:" .. tenant)
+    
+                    if not upstream or upstream == ngx.null then
+                        upstream =
+                            "http://root-app.default.svc.cluster.local:80"
+                    end
+    
+                    ngx.log(
+                        ngx.ERR,
+                        "tenant=",
+                        tenant,
+                        " upstream=",
+                        upstream
+                    )
+    
+                    ngx.var.backend = upstream
+                }
+    
+                proxy_http_version 1.1;
+    
+                proxy_set_header Host $host;
+                proxy_set_header Connection "";
+    
+                proxy_pass $backend;
+            }
+        }
+    }
+
+### ./k8s/cloudflared/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cloudflared-config
+  namespace: shopno-ingress
+data:
+  config.yml: |
+    tunnel: 5d6e037a-7c09-4788-8532-11dba5fc1a72
+    credentials-file: /etc/cloudflared/creds/credentials.json
+    ingress:
+      - hostname: kf.shopnoltd.dpdns.org
+        service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
+      - hostname: kc.shopnoltd.dpdns.org
+        service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
+      - hostname: ee.shopnoltd.dpdns.org
+        service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
+      - hostname: shopnoltd.dpdns.org
+        service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
+      - hostname: domain.shopnoltd.dpdns.org
+        service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
+      - hostname: api.shopnoltd.dpdns.org
+        service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
+      - hostname: auth.shopnoltd.dpdns.org
+        service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
+      - hostname: billing.shopnoltd.dpdns.org
+        service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
+      - hostname: chat.shopnoltd.dpdns.org
+        service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
+      - hostname: freedomain.shopnoltd.dpdns.org
+        service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
+      - hostname: live.shopnoltd.dpdns.org
+        service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
+      - hostname: meet.shopnoltd.dpdns.org
+        service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
+      - hostname: event.shopnoltd.dpdns.org
+        service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
+      - hostname: interior.shopnoltd.dpdns.org
+        service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
+      - hostname: foundation.shopnoltd.dpdns.org
+        service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
+      - hostname: kobo.shopnoltd.dpdns.org
+        service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
+      - hostname: enketo.shopnoltd.dpdns.org
+        service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
+      - hostname: grafana.shopnoltd.dpdns.org
+        service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
+      - hostname: prometheus.shopnoltd.dpdns.org
+        service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
+      - hostname: pgadmin.shopnoltd.dpdns.org
+        service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
+      - hostname: portainer.shopnoltd.dpdns.org
+        service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
+      - hostname: mail.shopnoltd.dpdns.org
+        service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
+      - hostname: shopnoltdandroid.shopnoltd.dpdns.org
+        service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
+      - hostname: shopnoltdpc.shopnoltd.dpdns.org
+        service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
+      - hostname: "*.shopnoltd.dpdns.org"
+        service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
+      - service: http_status:404
+
+### ./k8s/ingress/cloudflared/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cloudflared-config
+  namespace: shopno-ingress
+data:
+  config.yml: |
+    tunnel: 5d6e037a-7c09-4788-8532-11dba5fc1a72
+    credentials-file: /etc/cloudflared/creds/credentials.json
+    metrics: 0.0.0.0:2000
+    no-autoupdate: true
+    ingress:
+      # --- Core Shopnoltd ---
+      - hostname: shopnoltd.dpdns.org
+        service: http://traefik.traefik.svc.cluster.local:80
+      - hostname: api.shopnoltd.dpdns.org
+        service: http://traefik.traefik.svc.cluster.local:80
+      - hostname: auth.shopnoltd.dpdns.org
+        service: http://traefik.traefik.svc.cluster.local:80
+      # --- KoboToolbox ---
+      - hostname: kf.shopnoltd.dpdns.org
+        service: http://traefik.traefik.svc.cluster.local:80
+      - hostname: kc.shopnoltd.dpdns.org
+        service: http://traefik.traefik.svc.cluster.local:80
+      - hostname: ee.shopnoltd.dpdns.org
+        service: http://traefik.traefik.svc.cluster.local:80
+      - hostname: kobo.shopnoltd.dpdns.org
+        service: http://traefik.traefik.svc.cluster.local:80
+      - hostname: enketo.shopnoltd.dpdns.org
+        service: http://traefik.traefik.svc.cluster.local:80
+      # --- Communication ---
+      - hostname: chat.shopnoltd.dpdns.org
+        service: http://traefik.traefik.svc.cluster.local:80
+      - hostname: meet.shopnoltd.dpdns.org
+        service: http://traefik.traefik.svc.cluster.local:80
+      - hostname: live.shopnoltd.dpdns.org
+        service: http://traefik.traefik.svc.cluster.local:80
+      # --- Business / money ---
+      - hostname: billing.shopnoltd.dpdns.org
+        service: http://traefik.traefik.svc.cluster.local:80
+      # --- NEW: Business verticals ---
+      - hostname: domain.shopnoltd.dpdns.org
+        service: http://traefik.traefik.svc.cluster.local:80
+      - hostname: interior.shopnoltd.dpdns.org
+        service: http://traefik.traefik.svc.cluster.local:80
+      - hostname: event.shopnoltd.dpdns.org
+        service: http://traefik.traefik.svc.cluster.local:80
+      - hostname: foundation.shopnoltd.dpdns.org
+        service: http://traefik.traefik.svc.cluster.local:80
+      - hostname: training.shopnoltd.dpdns.org
+        service: http://traefik.traefik.svc.cluster.local:80
+      - hostname: freedomain.shopnoltd.dpdns.org
+        service: http://traefik.traefik.svc.cluster.local:80
+      # --- Observability ---
+      - hostname: grafana.shopnoltd.dpdns.org
+        service: http://traefik.traefik.svc.cluster.local:80
+      - hostname: prometheus.shopnoltd.dpdns.org
+        service: http://traefik.traefik.svc.cluster.local:80
+      - hostname: mail.shopnoltd.dpdns.org
+        service: http://traefik.traefik.svc.cluster.local:80
+      - hostname: pgadmin.shopnoltd.dpdns.org
+        service: http://traefik.traefik.svc.cluster.local:80
+      - hostname: portainer.shopnoltd.dpdns.org
+        service: http://traefik.traefik.svc.cluster.local:80
+      # --- NEW: Android & PC portals ---
+      - hostname: shopnoltdandroid.shopnoltd.dpdns.org
+        service: http://traefik.traefik.svc.cluster.local:80
+      - hostname: shopnoltdpc.shopnoltd.dpdns.org
+        service: http://traefik.traefik.svc.cluster.local:80
+      # --- Wildcard ---
+      - hostname: "*.shopnoltd.dpdns.org"
+        service: http://traefik.traefik.svc.cluster.local:80
+      - service: http_status:404
+
+### ./k8s/legacy/deployment-tenant-router-configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tenant-router-config
+  namespace: default
+data:
+  nginx.conf: |
+    worker_processes 1;
+    
+    events {
+        worker_connections 1024;
+    }
+    
+    http {
+    
+        resolver 10.96.0.10 valid=10s;
+    
+        lua_package_path "/usr/local/openresty/lualib/?.lua;;";
+    
+        server {
+    
+            listen 80;
+            server_name _;
+    
+            location / {
+    
+                set $backend "";
+    
+                rewrite_by_lua_block {
+    
+                    local redis = require "resty.redis"
+    
+                    local red = redis:new()
+                    red:set_timeout(1000)
+    
+                    local ok, err = red:connect(
+                        "redis.default.svc.cluster.local",
+                        6379
+                    )
+    
+                    if not ok then
+                        ngx.log(ngx.ERR, "redis failed: ", err)
+    
+                        ngx.var.backend =
+                            "http://root-app.default.svc.cluster.local:80"
+    
+                        return
+                    end
+    
+                    local host = ngx.var.host
+    
+                    local tenant = host:match("([^%.]+)")
+    
+                    if not tenant then
+                        tenant = "root"
+                    end
+    
+                    local upstream, err =
+                        red:get("tenant:" .. tenant)
+    
+                    if not upstream or upstream == ngx.null then
+                        upstream =
+                            "http://root-app.default.svc.cluster.local:80"
+                    end
+    
+                    ngx.log(
+                        ngx.ERR,
+                        "tenant=",
+                        tenant,
+                        " upstream=",
+                        upstream
+                    )
+    
+                    ngx.var.backend = upstream
+                }
+    
+                proxy_http_version 1.1;
+    
+                proxy_set_header Host $host;
+                proxy_set_header Connection "";
+    
+                proxy_pass $backend;
+            }
+        }
+    }
+
+### ./k8s/services/admin-portal/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: admin-portal-config
+  namespace: shopno-platform
+data:
+  APP_NAME: "admin-portal"
+  APP_PORT: "3000"
+  LOG_LEVEL: "info"
+  LOG_FORMAT: "json"
+  ENV: "production"
+  PATH_PREFIX: "/"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://tempo.observability.svc.cluster.local:4317"
+  REDIS_HOST: "redis.shopno-data.svc.cluster.local"
+  REDIS_PORT: "6379"
+  POSTGRES_HOST: "postgres.shopno-data.svc.cluster.local"
+  POSTGRES_PORT: "5432"
+  MINIO_ENDPOINT: "minio.shopno-data.svc.cluster.local:9000"
+  KEYCLOAK_ISSUER: "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
+  KEYCLOAK_CLIENT_ID: "admin-portal"
+
+### ./k8s/services/ai-platform/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ai-platform-config
+  namespace: shopno-platform
+data:
+  APP_NAME: "ai-platform"
+  APP_PORT: "8000"
+  LOG_LEVEL: "info"
+  LOG_FORMAT: "json"
+  ENV: "production"
+  PATH_PREFIX: "/"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://tempo.observability.svc.cluster.local:4317"
+  REDIS_HOST: "redis.shopno-data.svc.cluster.local"
+  REDIS_PORT: "6379"
+  POSTGRES_HOST: "postgres.shopno-data.svc.cluster.local"
+  POSTGRES_PORT: "5432"
+  MINIO_ENDPOINT: "minio.shopno-data.svc.cluster.local:9000"
+  KEYCLOAK_ISSUER: "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
+  KEYCLOAK_CLIENT_ID: "ai-platform"
+
+### ./k8s/services/alertmanager/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alertmanager-config
+  namespace: shopno-monitoring
+data:
+  APP_NAME: "alertmanager"
+  APP_PORT: "9093"
+  LOG_LEVEL: "info"
+  LOG_FORMAT: "json"
+  ENV: "production"
+  PATH_PREFIX: "/"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://tempo.observability.svc.cluster.local:4317"
+  REDIS_HOST: "redis.shopno-data.svc.cluster.local"
+  REDIS_PORT: "6379"
+  POSTGRES_HOST: "postgres.shopno-data.svc.cluster.local"
+  POSTGRES_PORT: "5432"
+  MINIO_ENDPOINT: "minio.shopno-data.svc.cluster.local:9000"
+  KEYCLOAK_ISSUER: "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
+  KEYCLOAK_CLIENT_ID: "alertmanager"
+
+### ./k8s/services/analytics-service/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: analytics-service-config
+  namespace: shopno-platform
+data:
+  APP_NAME: "analytics-service"
+  APP_PORT: "8080"
+  LOG_LEVEL: "info"
+  LOG_FORMAT: "json"
+  ENV: "production"
+  PATH_PREFIX: "/"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://tempo.observability.svc.cluster.local:4317"
+  REDIS_HOST: "redis.shopno-data.svc.cluster.local"
+  REDIS_PORT: "6379"
+  POSTGRES_HOST: "postgres.shopno-data.svc.cluster.local"
+  POSTGRES_PORT: "5432"
+  MINIO_ENDPOINT: "minio.shopno-data.svc.cluster.local:9000"
+  KEYCLOAK_ISSUER: "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
+  KEYCLOAK_CLIENT_ID: "analytics-service"
+
+### ./k8s/services/android-portal/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: android-portal-config
+  namespace: shopno-platform
+data:
+  APP_NAME: "android-portal"
+  APP_PORT: "8080"
+  LOG_LEVEL: "info"
+  LOG_FORMAT: "json"
+  ENV: "production"
+  PATH_PREFIX: "/"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://tempo.observability.svc.cluster.local:4317"
+  REDIS_HOST: "redis.shopno-data.svc.cluster.local"
+  REDIS_PORT: "6379"
+  POSTGRES_HOST: "postgres.shopno-data.svc.cluster.local"
+  POSTGRES_PORT: "5432"
+  MINIO_ENDPOINT: "minio.shopno-data.svc.cluster.local:9000"
+  KEYCLOAK_ISSUER: "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
+  KEYCLOAK_CLIENT_ID: "android-portal"
+
+### ./k8s/services/api-service/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: api-service-config
+  namespace: shopno-platform
+data:
+  APP_NAME: "api-service"
+  APP_PORT: "8080"
+  LOG_LEVEL: "info"
+  LOG_FORMAT: "json"
+  ENV: "production"
+  PATH_PREFIX: "/"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://tempo.observability.svc.cluster.local:4317"
+  REDIS_HOST: "redis.shopno-data.svc.cluster.local"
+  REDIS_PORT: "6379"
+  POSTGRES_HOST: "postgres.shopno-data.svc.cluster.local"
+  POSTGRES_PORT: "5432"
+  MINIO_ENDPOINT: "minio.shopno-data.svc.cluster.local:9000"
+  KEYCLOAK_ISSUER: "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
+  KEYCLOAK_CLIENT_ID: "api-service"
+
+### ./k8s/services/audit-service/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: audit-service-config
+  namespace: shopno-platform
+data:
+  APP_NAME: "audit-service"
+  APP_PORT: "8080"
+  LOG_LEVEL: "info"
+  LOG_FORMAT: "json"
+  ENV: "production"
+  PATH_PREFIX: "/"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://tempo.observability.svc.cluster.local:4317"
+  REDIS_HOST: "redis.shopno-data.svc.cluster.local"
+  REDIS_PORT: "6379"
+  POSTGRES_HOST: "postgres.shopno-data.svc.cluster.local"
+  POSTGRES_PORT: "5432"
+  MINIO_ENDPOINT: "minio.shopno-data.svc.cluster.local:9000"
+  KEYCLOAK_ISSUER: "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
+  KEYCLOAK_CLIENT_ID: "audit-service"
+
+### ./k8s/services/auth-service/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: auth-service-config
+  namespace: shopno-identity
+data:
+  APP_NAME: "auth-service"
+  APP_PORT: "8080"
+  LOG_LEVEL: "info"
+  LOG_FORMAT: "json"
+  ENV: "production"
+  PATH_PREFIX: "/"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://tempo.observability.svc.cluster.local:4317"
+  REDIS_HOST: "redis.shopno-data.svc.cluster.local"
+  REDIS_PORT: "6379"
+  POSTGRES_HOST: "postgres.shopno-data.svc.cluster.local"
+  POSTGRES_PORT: "5432"
+  MINIO_ENDPOINT: "minio.shopno-data.svc.cluster.local:9000"
+  KEYCLOAK_ISSUER: "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
+  KEYCLOAK_CLIENT_ID: "auth-service"
+
+### ./k8s/services/billing-engine/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: billing-engine-config
+  namespace: shopno-payments
+data:
+  APP_NAME: "billing-engine"
+  APP_PORT: "8080"
+  LOG_LEVEL: "info"
+  LOG_FORMAT: "json"
+  ENV: "production"
+  PATH_PREFIX: "/"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://tempo.observability.svc.cluster.local:4317"
+  REDIS_HOST: "redis.shopno-data.svc.cluster.local"
+  REDIS_PORT: "6379"
+  POSTGRES_HOST: "postgres.shopno-data.svc.cluster.local"
+  POSTGRES_PORT: "5432"
+  MINIO_ENDPOINT: "minio.shopno-data.svc.cluster.local:9000"
+  KEYCLOAK_ISSUER: "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
+  KEYCLOAK_CLIENT_ID: "billing-engine"
+
+### ./k8s/services/chatwoot/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: chatwoot-config
+  namespace: shopno-apps
+data:
+  APP_NAME: "chatwoot"
+  APP_PORT: "3000"
+  LOG_LEVEL: "info"
+  LOG_FORMAT: "json"
+  ENV: "production"
+  PATH_PREFIX: "/"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://tempo.observability.svc.cluster.local:4317"
+  REDIS_HOST: "redis.shopno-data.svc.cluster.local"
+  REDIS_PORT: "6379"
+  POSTGRES_HOST: "postgres.shopno-data.svc.cluster.local"
+  POSTGRES_PORT: "5432"
+  MINIO_ENDPOINT: "minio.shopno-data.svc.cluster.local:9000"
+  KEYCLOAK_ISSUER: "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
+  KEYCLOAK_CLIENT_ID: "chatwoot"
+
+### ./k8s/services/code-server/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: code-server-config
+  namespace: shopno-apps
+data:
+  APP_NAME: "code-server"
+  APP_PORT: "8443"
+  LOG_LEVEL: "info"
+  LOG_FORMAT: "json"
+  ENV: "production"
+  PATH_PREFIX: "/"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://tempo.observability.svc.cluster.local:4317"
+  REDIS_HOST: "redis.shopno-data.svc.cluster.local"
+  REDIS_PORT: "6379"
+  POSTGRES_HOST: "postgres.shopno-data.svc.cluster.local"
+  POSTGRES_PORT: "5432"
+  MINIO_ENDPOINT: "minio.shopno-data.svc.cluster.local:9000"
+  KEYCLOAK_ISSUER: "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
+  KEYCLOAK_CLIENT_ID: "code-server"
+
+### ./k8s/services/domain-service/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: domain-service-config
+  namespace: shopno-platform
+data:
+  APP_NAME: "domain-service"
+  APP_PORT: "8080"
+  LOG_LEVEL: "info"
+  LOG_FORMAT: "json"
+  ENV: "production"
+  PATH_PREFIX: "/"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://tempo.observability.svc.cluster.local:4317"
+  REDIS_HOST: "redis.shopno-data.svc.cluster.local"
+  REDIS_PORT: "6379"
+  POSTGRES_HOST: "postgres.shopno-data.svc.cluster.local"
+  POSTGRES_PORT: "5432"
+  MINIO_ENDPOINT: "minio.shopno-data.svc.cluster.local:9000"
+  KEYCLOAK_ISSUER: "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
+  KEYCLOAK_CLIENT_ID: "domain-service"
+
+### ./k8s/services/event-service/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: event-service-config
+  namespace: shopno-platform
+data:
+  APP_NAME: "event-service"
+  APP_PORT: "8080"
+  LOG_LEVEL: "info"
+  LOG_FORMAT: "json"
+  ENV: "production"
+  PATH_PREFIX: "/"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://tempo.observability.svc.cluster.local:4317"
+  REDIS_HOST: "redis.shopno-data.svc.cluster.local"
+  REDIS_PORT: "6379"
+  POSTGRES_HOST: "postgres.shopno-data.svc.cluster.local"
+  POSTGRES_PORT: "5432"
+  MINIO_ENDPOINT: "minio.shopno-data.svc.cluster.local:9000"
+  KEYCLOAK_ISSUER: "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
+  KEYCLOAK_CLIENT_ID: "event-service"
+
+### ./k8s/services/exchange-service/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: exchange-service-config
+  namespace: shopno-payments
+data:
+  APP_NAME: "exchange-service"
+  APP_PORT: "8080"
+  LOG_LEVEL: "info"
+  LOG_FORMAT: "json"
+  ENV: "production"
+  PATH_PREFIX: "/"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://tempo.observability.svc.cluster.local:4317"
+  REDIS_HOST: "redis.shopno-data.svc.cluster.local"
+  REDIS_PORT: "6379"
+  POSTGRES_HOST: "postgres.shopno-data.svc.cluster.local"
+  POSTGRES_PORT: "5432"
+  MINIO_ENDPOINT: "minio.shopno-data.svc.cluster.local:9000"
+  KEYCLOAK_ISSUER: "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
+  KEYCLOAK_CLIENT_ID: "exchange-service"
+
+### ./k8s/services/foundation-service/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: foundation-service-config
+  namespace: shopno-platform
+data:
+  APP_NAME: "foundation-service"
+  APP_PORT: "8080"
+  LOG_LEVEL: "info"
+  LOG_FORMAT: "json"
+  ENV: "production"
+  PATH_PREFIX: "/"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://tempo.observability.svc.cluster.local:4317"
+  REDIS_HOST: "redis.shopno-data.svc.cluster.local"
+  REDIS_PORT: "6379"
+  POSTGRES_HOST: "postgres.shopno-data.svc.cluster.local"
+  POSTGRES_PORT: "5432"
+  MINIO_ENDPOINT: "minio.shopno-data.svc.cluster.local:9000"
+  KEYCLOAK_ISSUER: "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
+  KEYCLOAK_CLIENT_ID: "foundation-service"
+
+### ./k8s/services/freedomain-service/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: freedomain-service-config
+  namespace: shopno-platform
+data:
+  APP_NAME: "freedomain-service"
+  APP_PORT: "8080"
+  LOG_LEVEL: "info"
+  LOG_FORMAT: "json"
+  ENV: "production"
+  PATH_PREFIX: "/"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://tempo.observability.svc.cluster.local:4317"
+  REDIS_HOST: "redis.shopno-data.svc.cluster.local"
+  REDIS_PORT: "6379"
+  POSTGRES_HOST: "postgres.shopno-data.svc.cluster.local"
+  POSTGRES_PORT: "5432"
+  MINIO_ENDPOINT: "minio.shopno-data.svc.cluster.local:9000"
+  KEYCLOAK_ISSUER: "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
+  KEYCLOAK_CLIENT_ID: "freedomain-service"
+
+### ./k8s/services/gateway/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gateway-config
+  namespace: shopno-platform
+data:
+  APP_NAME: "gateway"
+  APP_PORT: "8000"
+  LOG_LEVEL: "info"
+  LOG_FORMAT: "json"
+  ENV: "production"
+  PATH_PREFIX: "/"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://tempo.observability.svc.cluster.local:4317"
+  REDIS_HOST: "redis.shopno-data.svc.cluster.local"
+  REDIS_PORT: "6379"
+  POSTGRES_HOST: "postgres.shopno-data.svc.cluster.local"
+  POSTGRES_PORT: "5432"
+  MINIO_ENDPOINT: "minio.shopno-data.svc.cluster.local:9000"
+  KEYCLOAK_ISSUER: "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
+  KEYCLOAK_CLIENT_ID: "gateway"
+
+### ./k8s/services/gitea/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gitea-config
+  namespace: shopno-apps
+data:
+  APP_NAME: "gitea"
+  APP_PORT: "3000"
+  LOG_LEVEL: "info"
+  LOG_FORMAT: "json"
+  ENV: "production"
+  PATH_PREFIX: "/"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://tempo.observability.svc.cluster.local:4317"
+  REDIS_HOST: "redis.shopno-data.svc.cluster.local"
+  REDIS_PORT: "6379"
+  POSTGRES_HOST: "postgres.shopno-data.svc.cluster.local"
+  POSTGRES_PORT: "5432"
+  MINIO_ENDPOINT: "minio.shopno-data.svc.cluster.local:9000"
+  KEYCLOAK_ISSUER: "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
+  KEYCLOAK_CLIENT_ID: "gitea"
+
+### ./k8s/services/grafana/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-config
+  namespace: shopno-monitoring
+data:
+  APP_NAME: "grafana"
+  APP_PORT: "3000"
+  LOG_LEVEL: "info"
+  LOG_FORMAT: "json"
+  ENV: "production"
+  PATH_PREFIX: "/"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://tempo.observability.svc.cluster.local:4317"
+  REDIS_HOST: "redis.shopno-data.svc.cluster.local"
+  REDIS_PORT: "6379"
+  POSTGRES_HOST: "postgres.shopno-data.svc.cluster.local"
+  POSTGRES_PORT: "5432"
+  MINIO_ENDPOINT: "minio.shopno-data.svc.cluster.local:9000"
+  KEYCLOAK_ISSUER: "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
+  KEYCLOAK_CLIENT_ID: "grafana"
+
+### ./k8s/services/interior-service/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: interior-service-config
+  namespace: shopno-platform
+data:
+  APP_NAME: "interior-service"
+  APP_PORT: "8080"
+  LOG_LEVEL: "info"
+  LOG_FORMAT: "json"
+  ENV: "production"
+  PATH_PREFIX: "/"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://tempo.observability.svc.cluster.local:4317"
+  REDIS_HOST: "redis.shopno-data.svc.cluster.local"
+  REDIS_PORT: "6379"
+  POSTGRES_HOST: "postgres.shopno-data.svc.cluster.local"
+  POSTGRES_PORT: "5432"
+  MINIO_ENDPOINT: "minio.shopno-data.svc.cluster.local:9000"
+  KEYCLOAK_ISSUER: "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
+  KEYCLOAK_CLIENT_ID: "interior-service"
+
+### ./k8s/services/jitsi-jicofo/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: jitsi-jicofo-config
+  namespace: shopno-apps
+data:
+  APP_NAME: "jitsi-jicofo"
+  APP_PORT: "8888"
+  LOG_LEVEL: "info"
+  LOG_FORMAT: "json"
+  ENV: "production"
+  PATH_PREFIX: "/health"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://tempo.observability.svc.cluster.local:4317"
+  REDIS_HOST: "redis.shopno-data.svc.cluster.local"
+  REDIS_PORT: "6379"
+  POSTGRES_HOST: "postgres.shopno-data.svc.cluster.local"
+  POSTGRES_PORT: "5432"
+  MINIO_ENDPOINT: "minio.shopno-data.svc.cluster.local:9000"
+  KEYCLOAK_ISSUER: "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
+  KEYCLOAK_CLIENT_ID: "jitsi-jicofo"
+
+### ./k8s/services/jitsi-jvb/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: jitsi-jvb-config
+  namespace: shopno-apps
+data:
+  APP_NAME: "jitsi-jvb"
+  APP_PORT: "10000"
+  LOG_LEVEL: "info"
+  LOG_FORMAT: "json"
+  ENV: "production"
+  PATH_PREFIX: "/"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://tempo.observability.svc.cluster.local:4317"
+  REDIS_HOST: "redis.shopno-data.svc.cluster.local"
+  REDIS_PORT: "6379"
+  POSTGRES_HOST: "postgres.shopno-data.svc.cluster.local"
+  POSTGRES_PORT: "5432"
+  MINIO_ENDPOINT: "minio.shopno-data.svc.cluster.local:9000"
+  KEYCLOAK_ISSUER: "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
+  KEYCLOAK_CLIENT_ID: "jitsi-jvb"
+
+### ./k8s/services/jitsi-prosody/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: jitsi-prosody-config
+  namespace: shopno-apps
+data:
+  APP_NAME: "jitsi-prosody"
+  APP_PORT: "5222"
+  LOG_LEVEL: "info"
+  LOG_FORMAT: "json"
+  ENV: "production"
+  PATH_PREFIX: "/"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://tempo.observability.svc.cluster.local:4317"
+  REDIS_HOST: "redis.shopno-data.svc.cluster.local"
+  REDIS_PORT: "6379"
+  POSTGRES_HOST: "postgres.shopno-data.svc.cluster.local"
+  POSTGRES_PORT: "5432"
+  MINIO_ENDPOINT: "minio.shopno-data.svc.cluster.local:9000"
+  KEYCLOAK_ISSUER: "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
+  KEYCLOAK_CLIENT_ID: "jitsi-prosody"
+
+### ./k8s/services/jitsi-web/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: jitsi-web-config
+  namespace: shopno-apps
+data:
+  APP_NAME: "jitsi-web"
+  APP_PORT: "8000"
+  LOG_LEVEL: "info"
+  LOG_FORMAT: "json"
+  ENV: "production"
+  PATH_PREFIX: "/"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://tempo.observability.svc.cluster.local:4317"
+  REDIS_HOST: "redis.shopno-data.svc.cluster.local"
+  REDIS_PORT: "6379"
+  POSTGRES_HOST: "postgres.shopno-data.svc.cluster.local"
+  POSTGRES_PORT: "5432"
+  MINIO_ENDPOINT: "minio.shopno-data.svc.cluster.local:9000"
+  KEYCLOAK_ISSUER: "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
+  KEYCLOAK_CLIENT_ID: "jitsi-web"
+
+### ./k8s/services/keycloak/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keycloak-config
+  namespace: shopno-identity
+
+data:
+  KC_DB: postgres
+  KC_DB_URL_HOST: postgres.shopno-data.svc.cluster.local
+  KC_DB_URL_PORT: "5432"
+  KC_DB_URL_DATABASE: keycloak
+
+  KC_DB_USERNAME: keycloak
+
+  KC_HTTP_ENABLED: "true"
+
+  KC_HEALTH_ENABLED: "true"
+
+  KC_METRICS_ENABLED: "true"
+
+  KC_PROXY_HEADERS: xforwarded
+
+  KC_HOSTNAME: auth.shopnoltd.dpdns.org
+
+  KC_BOOTSTRAP_ADMIN_USERNAME: admin
+
+### ./k8s/services/kobotoolbox/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kobotoolbox-config
+  namespace: shopno-apps
+data:
+  APP_NAME: "kobotoolbox"
+  APP_PORT: "8000"
+  LOG_LEVEL: "info"
+  LOG_FORMAT: "json"
+  ENV: "production"
+  PATH_PREFIX: "/"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://tempo.observability.svc.cluster.local:4317"
+  REDIS_HOST: "redis.shopno-data.svc.cluster.local"
+  REDIS_PORT: "6379"
+  POSTGRES_HOST: "postgres.shopno-data.svc.cluster.local"
+  POSTGRES_PORT: "5432"
+  MINIO_ENDPOINT: "minio.shopno-data.svc.cluster.local:9000"
+  KEYCLOAK_ISSUER: "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
+  KEYCLOAK_CLIENT_ID: "kobotoolbox"
+
+### ./k8s/services/license-service/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: license-service-config
+  namespace: shopno-platform
+data:
+  APP_NAME: "license-service"
+  APP_PORT: "8080"
+  LOG_LEVEL: "info"
+  LOG_FORMAT: "json"
+  ENV: "production"
+  PATH_PREFIX: "/"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://tempo.observability.svc.cluster.local:4317"
+  REDIS_HOST: "redis.shopno-data.svc.cluster.local"
+  REDIS_PORT: "6379"
+  POSTGRES_HOST: "postgres.shopno-data.svc.cluster.local"
+  POSTGRES_PORT: "5432"
+  MINIO_ENDPOINT: "minio.shopno-data.svc.cluster.local:9000"
+  KEYCLOAK_ISSUER: "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
+  KEYCLOAK_CLIENT_ID: "license-service"
+
+### ./k8s/services/loki/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: loki-config
+  namespace: shopno-monitoring
+data:
+  APP_NAME: "loki"
+  APP_PORT: "3100"
+  LOG_LEVEL: "info"
+  LOG_FORMAT: "json"
+  ENV: "production"
+  PATH_PREFIX: "/"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://tempo.observability.svc.cluster.local:4317"
+  REDIS_HOST: "redis.shopno-data.svc.cluster.local"
+  REDIS_PORT: "6379"
+  POSTGRES_HOST: "postgres.shopno-data.svc.cluster.local"
+  POSTGRES_PORT: "5432"
+  MINIO_ENDPOINT: "minio.shopno-data.svc.cluster.local:9000"
+  KEYCLOAK_ISSUER: "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
+  KEYCLOAK_CLIENT_ID: "loki"
+
+### ./k8s/services/metabase/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: metabase-config
+  namespace: shopno-apps
+data:
+  APP_NAME: "metabase"
+  APP_PORT: "3000"
+  LOG_LEVEL: "info"
+  LOG_FORMAT: "json"
+  ENV: "production"
+  PATH_PREFIX: "/"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://tempo.observability.svc.cluster.local:4317"
+  REDIS_HOST: "redis.shopno-data.svc.cluster.local"
+  REDIS_PORT: "6379"
+  POSTGRES_HOST: "postgres.shopno-data.svc.cluster.local"
+  POSTGRES_PORT: "5432"
+  MINIO_ENDPOINT: "minio.shopno-data.svc.cluster.local:9000"
+  KEYCLOAK_ISSUER: "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
+  KEYCLOAK_CLIENT_ID: "metabase"
+
+### ./k8s/services/minio/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: minio-config
+  namespace: shopno-data
+data:
+  APP_NAME: "minio"
+  APP_PORT: "9000"
+  LOG_LEVEL: "info"
+  LOG_FORMAT: "json"
+  ENV: "production"
+  PATH_PREFIX: "/"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://tempo.observability.svc.cluster.local:4317"
+  REDIS_HOST: "redis.shopno-data.svc.cluster.local"
+  REDIS_PORT: "6379"
+  POSTGRES_HOST: "postgres.shopno-data.svc.cluster.local"
+  POSTGRES_PORT: "5432"
+  MINIO_ENDPOINT: "minio.shopno-data.svc.cluster.local:9000"
+  KEYCLOAK_ISSUER: "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
+  KEYCLOAK_CLIENT_ID: "minio"
+
+### ./k8s/services/mobile-api/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mobile-api-config
+  namespace: shopno-platform
+data:
+  APP_NAME: "mobile-api"
+  APP_PORT: "8080"
+  LOG_LEVEL: "info"
+  LOG_FORMAT: "json"
+  ENV: "production"
+  PATH_PREFIX: "/"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://tempo.observability.svc.cluster.local:4317"
+  REDIS_HOST: "redis.shopno-data.svc.cluster.local"
+  REDIS_PORT: "6379"
+  POSTGRES_HOST: "postgres.shopno-data.svc.cluster.local"
+  POSTGRES_PORT: "5432"
+  MINIO_ENDPOINT: "minio.shopno-data.svc.cluster.local:9000"
+  KEYCLOAK_ISSUER: "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
+  KEYCLOAK_CLIENT_ID: "mobile-api"
+
+### ./k8s/services/n8n/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: n8n-config
+  namespace: shopno-apps
+data:
+  APP_NAME: "n8n"
+  APP_PORT: "5678"
+  LOG_LEVEL: "info"
+  LOG_FORMAT: "json"
+  ENV: "production"
+  PATH_PREFIX: "/"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://tempo.observability.svc.cluster.local:4317"
+  REDIS_HOST: "redis.shopno-data.svc.cluster.local"
+  REDIS_PORT: "6379"
+  POSTGRES_HOST: "postgres.shopno-data.svc.cluster.local"
+  POSTGRES_PORT: "5432"
+  MINIO_ENDPOINT: "minio.shopno-data.svc.cluster.local:9000"
+  KEYCLOAK_ISSUER: "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
+  KEYCLOAK_CLIENT_ID: "n8n"
+
+### ./k8s/services/nextcloud/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nextcloud-config
+  namespace: shopno-apps
+data:
+  APP_NAME: "nextcloud"
+  APP_PORT: "80"
+  LOG_LEVEL: "info"
+  LOG_FORMAT: "json"
+  ENV: "production"
+  PATH_PREFIX: "/"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://tempo.observability.svc.cluster.local:4317"
+  REDIS_HOST: "redis.shopno-data.svc.cluster.local"
+  REDIS_PORT: "6379"
+  POSTGRES_HOST: "postgres.shopno-data.svc.cluster.local"
+  POSTGRES_PORT: "5432"
+  MINIO_ENDPOINT: "minio.shopno-data.svc.cluster.local:9000"
+  KEYCLOAK_ISSUER: "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
+  KEYCLOAK_CLIENT_ID: "nextcloud"
+
+### ./k8s/services/notification-service/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: notification-service-config
+  namespace: shopno-platform
+data:
+  APP_NAME: "notification-service"
+  APP_PORT: "8080"
+  LOG_LEVEL: "info"
+  LOG_FORMAT: "json"
+  ENV: "production"
+  PATH_PREFIX: "/"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://tempo.observability.svc.cluster.local:4317"
+  REDIS_HOST: "redis.shopno-data.svc.cluster.local"
+  REDIS_PORT: "6379"
+  POSTGRES_HOST: "postgres.shopno-data.svc.cluster.local"
+  POSTGRES_PORT: "5432"
+  MINIO_ENDPOINT: "minio.shopno-data.svc.cluster.local:9000"
+  KEYCLOAK_ISSUER: "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
+  KEYCLOAK_CLIENT_ID: "notification-service"
+
+### ./k8s/services/oauth-service/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: oauth-service-config
+  namespace: shopno-identity
+data:
+  APP_NAME: "oauth-service"
+  APP_PORT: "3000"
+  LOG_LEVEL: "info"
+  LOG_FORMAT: "json"
+  ENV: "production"
+  PATH_PREFIX: "/"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://tempo.observability.svc.cluster.local:4317"
+  REDIS_HOST: "redis.shopno-data.svc.cluster.local"
+  REDIS_PORT: "6379"
+  POSTGRES_HOST: "postgres.shopno-data.svc.cluster.local"
+  POSTGRES_PORT: "5432"
+  MINIO_ENDPOINT: "minio.shopno-data.svc.cluster.local:9000"
+  KEYCLOAK_ISSUER: "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
+  KEYCLOAK_CLIENT_ID: "oauth-service"
+
+### ./k8s/services/onlyoffice/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: onlyoffice-config
+  namespace: shopno-apps
+data:
+  APP_NAME: "onlyoffice"
+  APP_PORT: "80"
+  LOG_LEVEL: "info"
+  LOG_FORMAT: "json"
+  ENV: "production"
+  PATH_PREFIX: "/"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://tempo.observability.svc.cluster.local:4317"
+  REDIS_HOST: "redis.shopno-data.svc.cluster.local"
+  REDIS_PORT: "6379"
+  POSTGRES_HOST: "postgres.shopno-data.svc.cluster.local"
+  POSTGRES_PORT: "5432"
+  MINIO_ENDPOINT: "minio.shopno-data.svc.cluster.local:9000"
+  KEYCLOAK_ISSUER: "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
+  KEYCLOAK_CLIENT_ID: "onlyoffice"
+
+### ./k8s/services/opensearch/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: opensearch-config
+  namespace: shopno-data
+data:
+  APP_NAME: "opensearch"
+  APP_PORT: "9200"
+  LOG_LEVEL: "info"
+  LOG_FORMAT: "json"
+  ENV: "production"
+  PATH_PREFIX: "/"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://tempo.observability.svc.cluster.local:4317"
+  REDIS_HOST: "redis.shopno-data.svc.cluster.local"
+  REDIS_PORT: "6379"
+  POSTGRES_HOST: "postgres.shopno-data.svc.cluster.local"
+  POSTGRES_PORT: "5432"
+  MINIO_ENDPOINT: "minio.shopno-data.svc.cluster.local:9000"
+  KEYCLOAK_ISSUER: "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
+  KEYCLOAK_CLIENT_ID: "opensearch"
+
+### ./k8s/services/owncast/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: owncast-config
+  namespace: shopno-apps
+data:
+  APP_NAME: "owncast"
+  APP_PORT: "8080"
+  LOG_LEVEL: "info"
+  LOG_FORMAT: "json"
+  ENV: "production"
+  PATH_PREFIX: "/"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://tempo.observability.svc.cluster.local:4317"
+  REDIS_HOST: "redis.shopno-data.svc.cluster.local"
+  REDIS_PORT: "6379"
+  POSTGRES_HOST: "postgres.shopno-data.svc.cluster.local"
+  POSTGRES_PORT: "5432"
+  MINIO_ENDPOINT: "minio.shopno-data.svc.cluster.local:9000"
+  KEYCLOAK_ISSUER: "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
+  KEYCLOAK_CLIENT_ID: "owncast"
+
+### ./k8s/services/payment-service/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: payment-service-config
+  namespace: shopno-payments
+data:
+  APP_NAME: "payment-service"
+  APP_PORT: "8080"
+  LOG_LEVEL: "info"
+  LOG_FORMAT: "json"
+  ENV: "production"
+  PATH_PREFIX: "/"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://tempo.observability.svc.cluster.local:4317"
+  REDIS_HOST: "redis.shopno-data.svc.cluster.local"
+  REDIS_PORT: "6379"
+  POSTGRES_HOST: "postgres.shopno-data.svc.cluster.local"
+  POSTGRES_PORT: "5432"
+  MINIO_ENDPOINT: "minio.shopno-data.svc.cluster.local:9000"
+  KEYCLOAK_ISSUER: "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
+  KEYCLOAK_CLIENT_ID: "payment-service"
+
+### ./k8s/services/pc-portal/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pc-portal-config
+  namespace: shopno-platform
+data:
+  APP_NAME: "pc-portal"
+  APP_PORT: "8080"
+  LOG_LEVEL: "info"
+  LOG_FORMAT: "json"
+  ENV: "production"
+  PATH_PREFIX: "/"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://tempo.observability.svc.cluster.local:4317"
+  REDIS_HOST: "redis.shopno-data.svc.cluster.local"
+  REDIS_PORT: "6379"
+  POSTGRES_HOST: "postgres.shopno-data.svc.cluster.local"
+  POSTGRES_PORT: "5432"
+  MINIO_ENDPOINT: "minio.shopno-data.svc.cluster.local:9000"
+  KEYCLOAK_ISSUER: "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
+  KEYCLOAK_CLIENT_ID: "pc-portal"
+
+### ./k8s/services/postgres/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-config
+  namespace: shopno-data
+  labels:
+    app.kubernetes.io/name: postgres
+    app.kubernetes.io/part-of: shopnoltd
+    app.kubernetes.io/component: database
+
+data:
+  # PostgreSQL runtime configuration
+
+  POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.UTF-8"
+
+  PGDATA: "/var/lib/postgresql/data/pgdata"
+
+  # Connection defaults
+  PGPORT: "5432"
+
+  # Shopnoltd platform identification
+  PLATFORM_NAME: "shopnoltd"
+  PLATFORM_MODE: "multi-tenant"
+
+  # Tenant architecture
+  TENANT_DATABASE_MODE: "schema"
+
+  # Performance baseline
+  POSTGRES_MAX_CONNECTIONS: "200"
+
+  POSTGRES_SHARED_BUFFERS: "256MB"
+
+  POSTGRES_EFFECTIVE_CACHE_SIZE: "1GB"
+
+  POSTGRES_WORK_MEM: "16MB"
+
+  POSTGRES_MAINTENANCE_WORK_MEM: "128MB"
+
+  # Timezone
+  TZ: "UTC"
+
+### ./k8s/services/postgres/migration/sql-configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-platform-migrations
+  namespace: shopno-data
+
+data:
+
+  run-migrations.sh: |
+    #!/bin/bash
+    set -e
+
+    export PGPASSWORD=$POSTGRES_PASSWORD
+
+    echo "Running Shopnoltd database migration"
+
+    for file in /sql/*.sql
+    do
+        echo "Executing $file"
+        psql \
+        -h postgres \
+        -U $POSTGRES_USER \
+        -d postgres \
+        -f $file || true
+    done
+
+    echo "Migration completed"
+
+### ./k8s/services/prometheus/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: shopno-monitoring
+data:
+  APP_NAME: "prometheus"
+  APP_PORT: "9090"
+  LOG_LEVEL: "info"
+  LOG_FORMAT: "json"
+  ENV: "production"
+  PATH_PREFIX: "/"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://tempo.observability.svc.cluster.local:4317"
+  REDIS_HOST: "redis.shopno-data.svc.cluster.local"
+  REDIS_PORT: "6379"
+  POSTGRES_HOST: "postgres.shopno-data.svc.cluster.local"
+  POSTGRES_PORT: "5432"
+  MINIO_ENDPOINT: "minio.shopno-data.svc.cluster.local:9000"
+  KEYCLOAK_ISSUER: "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
+  KEYCLOAK_CLIENT_ID: "prometheus"
+
+### ./k8s/services/redis/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: redis-config
+  namespace: shopno-data
+data:
+  APP_NAME: "redis"
+  APP_PORT: "6379"
+  LOG_LEVEL: "info"
+  LOG_FORMAT: "json"
+  ENV: "production"
+  PATH_PREFIX: "/healthz"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://tempo.observability.svc.cluster.local:4317"
+  REDIS_HOST: "redis.shopno-data.svc.cluster.local"
+  REDIS_PORT: "6379"
+  POSTGRES_HOST: "postgres.shopno-data.svc.cluster.local"
+  POSTGRES_PORT: "5432"
+  MINIO_ENDPOINT: "minio.shopno-data.svc.cluster.local:9000"
+  KEYCLOAK_ISSUER: "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
+  KEYCLOAK_CLIENT_ID: "redis"
+
+### ./k8s/services/report-service/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: report-service-config
+  namespace: shopno-platform
+data:
+  APP_NAME: "report-service"
+  APP_PORT: "8080"
+  LOG_LEVEL: "info"
+  LOG_FORMAT: "json"
+  ENV: "production"
+  PATH_PREFIX: "/"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://tempo.observability.svc.cluster.local:4317"
+  REDIS_HOST: "redis.shopno-data.svc.cluster.local"
+  REDIS_PORT: "6379"
+  POSTGRES_HOST: "postgres.shopno-data.svc.cluster.local"
+  POSTGRES_PORT: "5432"
+  MINIO_ENDPOINT: "minio.shopno-data.svc.cluster.local:9000"
+  KEYCLOAK_ISSUER: "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
+  KEYCLOAK_CLIENT_ID: "report-service"
+
+### ./k8s/services/scheduler-service/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: scheduler-service-config
+  namespace: shopno-platform
+data:
+  APP_NAME: "scheduler-service"
+  APP_PORT: "8080"
+  LOG_LEVEL: "info"
+  LOG_FORMAT: "json"
+  ENV: "production"
+  PATH_PREFIX: "/"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://tempo.observability.svc.cluster.local:4317"
+  REDIS_HOST: "redis.shopno-data.svc.cluster.local"
+  REDIS_PORT: "6379"
+  POSTGRES_HOST: "postgres.shopno-data.svc.cluster.local"
+  POSTGRES_PORT: "5432"
+  MINIO_ENDPOINT: "minio.shopno-data.svc.cluster.local:9000"
+  KEYCLOAK_ISSUER: "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
+  KEYCLOAK_CLIENT_ID: "scheduler-service"
+
+### ./k8s/services/search-service/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: search-service-config
+  namespace: shopno-platform
+data:
+  APP_NAME: "search-service"
+  APP_PORT: "8080"
+  LOG_LEVEL: "info"
+  LOG_FORMAT: "json"
+  ENV: "production"
+  PATH_PREFIX: "/"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://tempo.observability.svc.cluster.local:4317"
+  REDIS_HOST: "redis.shopno-data.svc.cluster.local"
+  REDIS_PORT: "6379"
+  POSTGRES_HOST: "postgres.shopno-data.svc.cluster.local"
+  POSTGRES_PORT: "5432"
+  MINIO_ENDPOINT: "minio.shopno-data.svc.cluster.local:9000"
+  KEYCLOAK_ISSUER: "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
+  KEYCLOAK_CLIENT_ID: "search-service"
+
+### ./k8s/services/storage-service/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: storage-service-config
+  namespace: shopno-platform
+data:
+  APP_NAME: "storage-service"
+  APP_PORT: "9000"
+  LOG_LEVEL: "info"
+  LOG_FORMAT: "json"
+  ENV: "production"
+  PATH_PREFIX: "/"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://tempo.observability.svc.cluster.local:4317"
+  REDIS_HOST: "redis.shopno-data.svc.cluster.local"
+  REDIS_PORT: "6379"
+  POSTGRES_HOST: "postgres.shopno-data.svc.cluster.local"
+  POSTGRES_PORT: "5432"
+  MINIO_ENDPOINT: "minio.shopno-data.svc.cluster.local:9000"
+  KEYCLOAK_ISSUER: "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
+  KEYCLOAK_CLIENT_ID: "storage-service"
+
+### ./k8s/services/superset/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: superset-config
+  namespace: shopno-apps
+data:
+  APP_NAME: "superset"
+  APP_PORT: "8088"
+  LOG_LEVEL: "info"
+  LOG_FORMAT: "json"
+  ENV: "production"
+  PATH_PREFIX: "/"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://tempo.observability.svc.cluster.local:4317"
+  REDIS_HOST: "redis.shopno-data.svc.cluster.local"
+  REDIS_PORT: "6379"
+  POSTGRES_HOST: "postgres.shopno-data.svc.cluster.local"
+  POSTGRES_PORT: "5432"
+  MINIO_ENDPOINT: "minio.shopno-data.svc.cluster.local:9000"
+  KEYCLOAK_ISSUER: "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
+  KEYCLOAK_CLIENT_ID: "superset"
+
+### ./k8s/services/tenant-router/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tenant-router-config
+  namespace: shopno-platform
+data:
+  APP_NAME: "tenant-router"
+  APP_PORT: "8080"
+  LOG_LEVEL: "info"
+  LOG_FORMAT: "json"
+  ENV: "production"
+  PATH_PREFIX: "/"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://tempo.observability.svc.cluster.local:4317"
+  REDIS_HOST: "redis.shopno-data.svc.cluster.local"
+  REDIS_PORT: "6379"
+  POSTGRES_HOST: "postgres.shopno-data.svc.cluster.local"
+  POSTGRES_PORT: "5432"
+  MINIO_ENDPOINT: "minio.shopno-data.svc.cluster.local:9000"
+  KEYCLOAK_ISSUER: "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
+  KEYCLOAK_CLIENT_ID: "tenant-router"
+
+### ./k8s/services/training-service/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: training-service-config
+  namespace: shopno-platform
+data:
+  APP_NAME: "training-service"
+  APP_PORT: "8080"
+  LOG_LEVEL: "info"
+  LOG_FORMAT: "json"
+  ENV: "production"
+  PATH_PREFIX: "/"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://tempo.observability.svc.cluster.local:4317"
+  REDIS_HOST: "redis.shopno-data.svc.cluster.local"
+  REDIS_PORT: "6379"
+  POSTGRES_HOST: "postgres.shopno-data.svc.cluster.local"
+  POSTGRES_PORT: "5432"
+  MINIO_ENDPOINT: "minio.shopno-data.svc.cluster.local:9000"
+  KEYCLOAK_ISSUER: "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
+  KEYCLOAK_CLIENT_ID: "training-service"
+
+### ./k8s/services/web-portal/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: web-portal-config
+  namespace: shopno-platform
+data:
+  APP_NAME: "web-portal"
+  APP_PORT: "3000"
+  LOG_LEVEL: "info"
+  LOG_FORMAT: "json"
+  ENV: "production"
+  PATH_PREFIX: "/"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://tempo.observability.svc.cluster.local:4317"
+  REDIS_HOST: "redis.shopno-data.svc.cluster.local"
+  REDIS_PORT: "6379"
+  POSTGRES_HOST: "postgres.shopno-data.svc.cluster.local"
+  POSTGRES_PORT: "5432"
+  MINIO_ENDPOINT: "minio.shopno-data.svc.cluster.local:9000"
+  KEYCLOAK_ISSUER: "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
+  KEYCLOAK_CLIENT_ID: "web-portal"
+
+### ./k8s/services/worker-service/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: worker-service-config
+  namespace: shopno-platform
+data:
+  APP_NAME: "worker-service"
+  APP_PORT: "8080"
+  LOG_LEVEL: "info"
+  LOG_FORMAT: "json"
+  ENV: "production"
+  PATH_PREFIX: "/"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://tempo.observability.svc.cluster.local:4317"
+  REDIS_HOST: "redis.shopno-data.svc.cluster.local"
+  REDIS_PORT: "6379"
+  POSTGRES_HOST: "postgres.shopno-data.svc.cluster.local"
+  POSTGRES_PORT: "5432"
+  MINIO_ENDPOINT: "minio.shopno-data.svc.cluster.local:9000"
+  KEYCLOAK_ISSUER: "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
+  KEYCLOAK_CLIENT_ID: "worker-service"
+
+### ./toolbox/02-configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: toolbox-config
+  namespace: toolbox
+
+data:
+  POSTGRES_HOST: postgres.toolbox.svc.cluster.local
+  POSTGRES_PORT: "5432"
+
+  MONGO_HOST: mongo.toolbox.svc.cluster.local
+  MONGO_PORT: "27017"
+
+  REDIS_HOST: redis.toolbox.svc.cluster.local
+  REDIS_PORT: "6379"
+
+  KPI_HOST: kc.toolbox.svc.cluster.local
+  KF_HOST: kf.toolbox.svc.cluster.local
+  EE_HOST: ee.toolbox.svc.cluster.local
+
+===== DEPLOYMENTS =====
+
+===== KUSTOMIZE =====
+### ./k8s/components/service-monitor-conditional/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+
+# This component is a no-op when ServiceMonitor CRD is missing.
+# When the prometheus-operator is installed, the SM resource becomes valid
+# and is registered automatically.
+resources:
+- servicemonitor-conditional.yaml
+
+### ./k8s/ingress/cloudflared/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: shopno-ingress
+resources:
+- deployment.yaml
+- configmap.yaml
+- secret.yaml
+- rbac.yaml
+- service.yaml
+
+### ./k8s/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+
+
+
+
+
+
+resources:
+- namespaces/shopno-platform.yaml
+- namespaces/shopno-apps.yaml
+- namespaces/shopno-data.yaml
+- namespaces/shopno-identity.yaml
+- namespaces/shopno-monitoring.yaml
+- namespaces/shopno-payments.yaml
+- namespaces/shopno-ingress.yaml
+- services/api-service
+- services/gateway
+- services/web-portal
+- services/admin-portal
+- services/tenant-router
+- services/auth-service
+- services/oauth-service
+- services/billing-engine
+- services/domain-service
+- services/freedomain-service
+- services/mobile-api
+- services/search-service
+- services/storage-service
+- services/notification-service
+- services/report-service
+- services/analytics-service
+- services/worker-service
+- services/training-service
+- services/license-service
+- services/audit-service
+- services/event-service
+- services/foundation-service
+- services/interior-service
+- services/android-portal
+- services/ai-platform
+- services/postgres
+- services/redis
+- services/minio
+- services/opensearch
+- services/grafana
+- services/prometheus
+- services/loki
+- services/alertmanager
+- services/keycloak
+- services/chatwoot
+- services/gitea
+- services/code-server
+- services/nextcloud
+- services/onlyoffice
+- services/kobotoolbox
+- services/metabase
+- services/n8n
+- services/owncast
+- services/superset
+- ingress/cloudflared
+
+### ./k8s/legacy/root-migration/kustomization.yaml
+
+components:
+- ../../components/service-monitor-conditional
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+### ./k8s/services/admin-portal/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: shopno-platform
+
+resources:
+- serviceaccount.yaml
+- configmap.yaml
+- secret.yaml
+- pvc.yaml
+- deployment.yaml
+- service.yaml
+- ingress.yaml
+- hpa.yaml
+- networkpolicy.yaml
+- poddisruptionbudget.yaml
+- servicemonitor.yaml
+
+labels:
+- includeSelectors: true
+  pairs:
+    app.kubernetes.io/name: admin-portal
+- includeSelectors: false
+  pairs:
+    app.kubernetes.io/part-of: shopnoltd
+
+### ./k8s/services/ai-platform/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: shopno-platform
+
+resources:
+- serviceaccount.yaml
+- configmap.yaml
+- secret.yaml
+- pvc.yaml
+- deployment.yaml
+- service.yaml
+- ingress.yaml
+- hpa.yaml
+- networkpolicy.yaml
+- poddisruptionbudget.yaml
+- servicemonitor.yaml
+
+labels:
+- includeSelectors: true
+  pairs:
+    app.kubernetes.io/name: ai-platform
+- includeSelectors: false
+  pairs:
+    app.kubernetes.io/part-of: shopnoltd
+
+### ./k8s/services/alertmanager/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: shopno-monitoring
+
+resources:
+- serviceaccount.yaml
+- configmap.yaml
+- secret.yaml
+- pvc.yaml
+- deployment.yaml
+- service.yaml
+- ingress.yaml
+- hpa.yaml
+- networkpolicy.yaml
+- poddisruptionbudget.yaml
+- servicemonitor.yaml
+
+labels:
+- includeSelectors: true
+  pairs:
+    app.kubernetes.io/name: alertmanager
+- includeSelectors: false
+  pairs:
+    app.kubernetes.io/part-of: shopnoltd
+
+### ./k8s/services/analytics-service/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: shopno-platform
+
+resources:
+- serviceaccount.yaml
+- configmap.yaml
+- secret.yaml
+- pvc.yaml
+- deployment.yaml
+- service.yaml
+- ingress.yaml
+- hpa.yaml
+- networkpolicy.yaml
+- poddisruptionbudget.yaml
+- servicemonitor.yaml
+
+labels:
+- includeSelectors: true
+  pairs:
+    app.kubernetes.io/name: analytics-service
+- includeSelectors: false
+  pairs:
+    app.kubernetes.io/part-of: shopnoltd
+
+### ./k8s/services/android-portal/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: shopno-platform
+
+resources:
+- serviceaccount.yaml
+- configmap.yaml
+- secret.yaml
+- pvc.yaml
+- deployment.yaml
+- service.yaml
+- ingress.yaml
+- hpa.yaml
+- networkpolicy.yaml
+- poddisruptionbudget.yaml
+- servicemonitor.yaml
+
+labels:
+- includeSelectors: true
+  pairs:
+    app.kubernetes.io/name: android-portal
+- includeSelectors: false
+  pairs:
+    app.kubernetes.io/part-of: shopnoltd
+
+### ./k8s/services/api-service/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: shopno-platform
+
+resources:
+- serviceaccount.yaml
+- configmap.yaml
+- secret.yaml
+- pvc.yaml
+- deployment.yaml
+- service.yaml
+- ingress.yaml
+- hpa.yaml
+- networkpolicy.yaml
+- poddisruptionbudget.yaml
+- servicemonitor.yaml
+
+labels:
+- includeSelectors: true
+  pairs:
+    app.kubernetes.io/name: api-service
+- includeSelectors: false
+  pairs:
+    app.kubernetes.io/part-of: shopnoltd
+
+### ./k8s/services/audit-service/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: shopno-platform
+
+resources:
+- serviceaccount.yaml
+- configmap.yaml
+- secret.yaml
+- pvc.yaml
+- deployment.yaml
+- service.yaml
+- ingress.yaml
+- hpa.yaml
+- networkpolicy.yaml
+- poddisruptionbudget.yaml
+- servicemonitor.yaml
+
+labels:
+- includeSelectors: true
+  pairs:
+    app.kubernetes.io/name: audit-service
+- includeSelectors: false
+  pairs:
+    app.kubernetes.io/part-of: shopnoltd
+
+### ./k8s/services/auth-service/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: shopno-identity
+
+resources:
+- serviceaccount.yaml
+- configmap.yaml
+- secret.yaml
+- pvc.yaml
+- deployment.yaml
+- service.yaml
+- ingress.yaml
+- hpa.yaml
+- networkpolicy.yaml
+- poddisruptionbudget.yaml
+- servicemonitor.yaml
+
+labels:
+- includeSelectors: true
+  pairs:
+    app.kubernetes.io/name: auth-service
+- includeSelectors: false
+  pairs:
+    app.kubernetes.io/part-of: shopnoltd
+
+### ./k8s/services/billing-engine/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: shopno-payments
+
+resources:
+- serviceaccount.yaml
+- configmap.yaml
+- secret.yaml
+- pvc.yaml
+- deployment.yaml
+- service.yaml
+- ingress.yaml
+- hpa.yaml
+- networkpolicy.yaml
+- poddisruptionbudget.yaml
+- servicemonitor.yaml
+
+labels:
+- includeSelectors: true
+  pairs:
+    app.kubernetes.io/name: billing-engine
+- includeSelectors: false
+  pairs:
+    app.kubernetes.io/part-of: shopnoltd
+
+### ./k8s/services/chatwoot/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: shopno-apps
+
+resources:
+- serviceaccount.yaml
+- configmap.yaml
+- secret.yaml
+- pvc.yaml
+- deployment.yaml
+- service.yaml
+- ingress.yaml
+- hpa.yaml
+- networkpolicy.yaml
+- poddisruptionbudget.yaml
+- servicemonitor.yaml
+
+labels:
+- includeSelectors: true
+  pairs:
+    app.kubernetes.io/name: chatwoot
+- includeSelectors: false
+  pairs:
+    app.kubernetes.io/part-of: shopnoltd
+
+### ./k8s/services/code-server/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: shopno-apps
+
+resources:
+- serviceaccount.yaml
+- configmap.yaml
+- secret.yaml
+- pvc.yaml
+- deployment.yaml
+- service.yaml
+- ingress.yaml
+- hpa.yaml
+- networkpolicy.yaml
+- poddisruptionbudget.yaml
+- servicemonitor.yaml
+
+labels:
+- includeSelectors: true
+  pairs:
+    app.kubernetes.io/name: code-server
+- includeSelectors: false
+  pairs:
+    app.kubernetes.io/part-of: shopnoltd
+
+### ./k8s/services/domain-service/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: shopno-platform
+
+resources:
+- serviceaccount.yaml
+- configmap.yaml
+- secret.yaml
+- pvc.yaml
+- deployment.yaml
+- service.yaml
+- ingress.yaml
+- hpa.yaml
+- networkpolicy.yaml
+- poddisruptionbudget.yaml
+- servicemonitor.yaml
+
+labels:
+- includeSelectors: true
+  pairs:
+    app.kubernetes.io/name: domain-service
+- includeSelectors: false
+  pairs:
+    app.kubernetes.io/part-of: shopnoltd
+
+### ./k8s/services/event-service/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: shopno-platform
+
+resources:
+- serviceaccount.yaml
+- configmap.yaml
+- secret.yaml
+- pvc.yaml
+- deployment.yaml
+- service.yaml
+- ingress.yaml
+- hpa.yaml
+- networkpolicy.yaml
+- poddisruptionbudget.yaml
+- servicemonitor.yaml
+
+labels:
+- includeSelectors: true
+  pairs:
+    app.kubernetes.io/name: event-service
+- includeSelectors: false
+  pairs:
+    app.kubernetes.io/part-of: shopnoltd
+
+### ./k8s/services/exchange-service/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: shopno-payments
+
+resources:
+- serviceaccount.yaml
+- configmap.yaml
+- secret.yaml
+- pvc.yaml
+- deployment.yaml
+- service.yaml
+- ingress.yaml
+- hpa.yaml
+- networkpolicy.yaml
+- poddisruptionbudget.yaml
+- servicemonitor.yaml
+
+labels:
+- includeSelectors: true
+  pairs:
+    app.kubernetes.io/name: exchange-service
+- includeSelectors: false
+  pairs:
+    app.kubernetes.io/part-of: shopnoltd
+
+### ./k8s/services/foundation-service/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: shopno-platform
+
+resources:
+- serviceaccount.yaml
+- configmap.yaml
+- secret.yaml
+- pvc.yaml
+- deployment.yaml
+- service.yaml
+- ingress.yaml
+- hpa.yaml
+- networkpolicy.yaml
+- poddisruptionbudget.yaml
+- servicemonitor.yaml
+
+labels:
+- includeSelectors: true
+  pairs:
+    app.kubernetes.io/name: foundation-service
+- includeSelectors: false
+  pairs:
+    app.kubernetes.io/part-of: shopnoltd
+
+### ./k8s/services/freedomain-service/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: shopno-platform
+
+resources:
+- serviceaccount.yaml
+- configmap.yaml
+- secret.yaml
+- pvc.yaml
+- deployment.yaml
+- service.yaml
+- ingress.yaml
+- hpa.yaml
+- networkpolicy.yaml
+- poddisruptionbudget.yaml
+- servicemonitor.yaml
+
+labels:
+- includeSelectors: true
+  pairs:
+    app.kubernetes.io/name: freedomain-service
+- includeSelectors: false
+  pairs:
+    app.kubernetes.io/part-of: shopnoltd
+
+### ./k8s/services/gateway/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: shopno-platform
+
+resources:
+- serviceaccount.yaml
+- configmap.yaml
+- secret.yaml
+- pvc.yaml
+- deployment.yaml
+- service.yaml
+- ingress.yaml
+- hpa.yaml
+- networkpolicy.yaml
+- poddisruptionbudget.yaml
+- servicemonitor.yaml
+
+labels:
+- includeSelectors: true
+  pairs:
+    app.kubernetes.io/name: gateway
+- includeSelectors: false
+  pairs:
+    app.kubernetes.io/part-of: shopnoltd
+
+### ./k8s/services/gitea/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: shopno-apps
+
+resources:
+- serviceaccount.yaml
+- configmap.yaml
+- secret.yaml
+- pvc.yaml
+- deployment.yaml
+- service.yaml
+- ingress.yaml
+- hpa.yaml
+- networkpolicy.yaml
+- poddisruptionbudget.yaml
+- servicemonitor.yaml
+
+labels:
+- includeSelectors: true
+  pairs:
+    app.kubernetes.io/name: gitea
+- includeSelectors: false
+  pairs:
+    app.kubernetes.io/part-of: shopnoltd
+
+### ./k8s/services/grafana/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: shopno-monitoring
+
+resources:
+- serviceaccount.yaml
+- configmap.yaml
+- secret.yaml
+- pvc.yaml
+- deployment.yaml
+- service.yaml
+- ingress.yaml
+- hpa.yaml
+- networkpolicy.yaml
+- poddisruptionbudget.yaml
+- servicemonitor.yaml
+
+labels:
+- includeSelectors: true
+  pairs:
+    app.kubernetes.io/name: grafana
+- includeSelectors: false
+  pairs:
+    app.kubernetes.io/part-of: shopnoltd
+
+### ./k8s/services/interior-service/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: shopno-platform
+
+resources:
+- serviceaccount.yaml
+- configmap.yaml
+- secret.yaml
+- pvc.yaml
+- deployment.yaml
+- service.yaml
+- ingress.yaml
+- hpa.yaml
+- networkpolicy.yaml
+- poddisruptionbudget.yaml
+- servicemonitor.yaml
+
+labels:
+- includeSelectors: true
+  pairs:
+    app.kubernetes.io/name: interior-service
+- includeSelectors: false
+  pairs:
+    app.kubernetes.io/part-of: shopnoltd
+
+### ./k8s/services/jitsi-jicofo/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: shopno-apps
+
+resources:
+- serviceaccount.yaml
+- configmap.yaml
+- secret.yaml
+- pvc.yaml
+- deployment.yaml
+- service.yaml
+- ingress.yaml
+- hpa.yaml
+- networkpolicy.yaml
+- poddisruptionbudget.yaml
+- servicemonitor.yaml
+
+labels:
+- includeSelectors: true
+  pairs:
+    app.kubernetes.io/name: jitsi-jicofo
+- includeSelectors: false
+  pairs:
+    app.kubernetes.io/part-of: shopnoltd
+
+### ./k8s/services/jitsi-jvb/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: shopno-apps
+
+resources:
+- serviceaccount.yaml
+- configmap.yaml
+- secret.yaml
+- pvc.yaml
+- deployment.yaml
+- service.yaml
+- ingress.yaml
+- hpa.yaml
+- networkpolicy.yaml
+- poddisruptionbudget.yaml
+- servicemonitor.yaml
+
+labels:
+- includeSelectors: true
+  pairs:
+    app.kubernetes.io/name: jitsi-jvb
+- includeSelectors: false
+  pairs:
+    app.kubernetes.io/part-of: shopnoltd
+
+### ./k8s/services/jitsi-prosody/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: shopno-apps
+
+resources:
+- serviceaccount.yaml
+- configmap.yaml
+- secret.yaml
+- pvc.yaml
+- deployment.yaml
+- service.yaml
+- ingress.yaml
+- hpa.yaml
+- networkpolicy.yaml
+- poddisruptionbudget.yaml
+- servicemonitor.yaml
+
+labels:
+- includeSelectors: true
+  pairs:
+    app.kubernetes.io/name: jitsi-prosody
+- includeSelectors: false
+  pairs:
+    app.kubernetes.io/part-of: shopnoltd
+
+### ./k8s/services/jitsi-web/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: shopno-apps
+
+resources:
+- serviceaccount.yaml
+- configmap.yaml
+- secret.yaml
+- pvc.yaml
+- deployment.yaml
+- service.yaml
+- ingress.yaml
+- hpa.yaml
+- networkpolicy.yaml
+- poddisruptionbudget.yaml
+- servicemonitor.yaml
+
+labels:
+- includeSelectors: true
+  pairs:
+    app.kubernetes.io/name: jitsi-web
+- includeSelectors: false
+  pairs:
+    app.kubernetes.io/part-of: shopnoltd
+
+### ./k8s/services/keycloak/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: shopno-identity
+
+resources:
+- serviceaccount.yaml
+- configmap.yaml
+- secret.yaml
+- pvc.yaml
+- deployment.yaml
+- service.yaml
+- ingress.yaml
+- hpa.yaml
+- networkpolicy.yaml
+- poddisruptionbudget.yaml
+- servicemonitor.yaml
+
+labels:
+- includeSelectors: true
+  pairs:
+    app.kubernetes.io/name: keycloak
+- includeSelectors: false
+  pairs:
+    app.kubernetes.io/part-of: shopnoltd
+
+### ./k8s/services/kobotoolbox/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: shopno-apps
+
+resources:
+- serviceaccount.yaml
+- configmap.yaml
+- secret.yaml
+- pvc.yaml
+- deployment.yaml
+- service.yaml
+- ingress.yaml
+- hpa.yaml
+- networkpolicy.yaml
+- poddisruptionbudget.yaml
+- servicemonitor.yaml
+
+labels:
+- includeSelectors: true
+  pairs:
+    app.kubernetes.io/name: kobotoolbox
+- includeSelectors: false
+  pairs:
+    app.kubernetes.io/part-of: shopnoltd
+
+### ./k8s/services/license-service/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: shopno-platform
+
+resources:
+- serviceaccount.yaml
+- configmap.yaml
+- secret.yaml
+- pvc.yaml
+- deployment.yaml
+- service.yaml
+- ingress.yaml
+- hpa.yaml
+- networkpolicy.yaml
+- poddisruptionbudget.yaml
+- servicemonitor.yaml
+
+labels:
+- includeSelectors: true
+  pairs:
+    app.kubernetes.io/name: license-service
+- includeSelectors: false
+  pairs:
+    app.kubernetes.io/part-of: shopnoltd
+
+### ./k8s/services/loki/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: shopno-monitoring
+
+resources:
+- serviceaccount.yaml
+- configmap.yaml
+- secret.yaml
+- pvc.yaml
+- deployment.yaml
+- service.yaml
+- ingress.yaml
+- hpa.yaml
+- networkpolicy.yaml
+- poddisruptionbudget.yaml
+- servicemonitor.yaml
+
+labels:
+- includeSelectors: true
+  pairs:
+    app.kubernetes.io/name: loki
+- includeSelectors: false
+  pairs:
+    app.kubernetes.io/part-of: shopnoltd
+
+### ./k8s/services/metabase/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: shopno-apps
+
+resources:
+- serviceaccount.yaml
+- configmap.yaml
+- secret.yaml
+- pvc.yaml
+- deployment.yaml
+- service.yaml
+- ingress.yaml
+- hpa.yaml
+- networkpolicy.yaml
+- poddisruptionbudget.yaml
+- servicemonitor.yaml
+
+labels:
+- includeSelectors: true
+  pairs:
+    app.kubernetes.io/name: metabase
+- includeSelectors: false
+  pairs:
+    app.kubernetes.io/part-of: shopnoltd
+
+### ./k8s/services/minio/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: shopno-data
+
+resources:
+- serviceaccount.yaml
+- configmap.yaml
+- secret.yaml
+- pvc.yaml
+- deployment.yaml
+- service.yaml
+- ingress.yaml
+- hpa.yaml
+- networkpolicy.yaml
+- poddisruptionbudget.yaml
+- servicemonitor.yaml
+
+labels:
+- includeSelectors: true
+  pairs:
+    app.kubernetes.io/name: minio
+- includeSelectors: false
+  pairs:
+    app.kubernetes.io/part-of: shopnoltd
+
+### ./k8s/services/mobile-api/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: shopno-platform
+
+resources:
+- serviceaccount.yaml
+- configmap.yaml
+- secret.yaml
+- pvc.yaml
+- deployment.yaml
+- service.yaml
+- ingress.yaml
+- hpa.yaml
+- networkpolicy.yaml
+- poddisruptionbudget.yaml
+- servicemonitor.yaml
+
+labels:
+- includeSelectors: true
+  pairs:
+    app.kubernetes.io/name: mobile-api
+- includeSelectors: false
+  pairs:
+    app.kubernetes.io/part-of: shopnoltd
+
+### ./k8s/services/n8n/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: shopno-apps
+
+resources:
+- serviceaccount.yaml
+- configmap.yaml
+- secret.yaml
+- pvc.yaml
+- deployment.yaml
+- service.yaml
+- ingress.yaml
+- hpa.yaml
+- networkpolicy.yaml
+- poddisruptionbudget.yaml
+- servicemonitor.yaml
+
+labels:
+- includeSelectors: true
+  pairs:
+    app.kubernetes.io/name: n8n
+- includeSelectors: false
+  pairs:
+    app.kubernetes.io/part-of: shopnoltd
+
+### ./k8s/services/nextcloud/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: shopno-apps
+
+resources:
+- serviceaccount.yaml
+- configmap.yaml
+- secret.yaml
+- pvc.yaml
+- deployment.yaml
+- service.yaml
+- ingress.yaml
+- hpa.yaml
+- networkpolicy.yaml
+- poddisruptionbudget.yaml
+- servicemonitor.yaml
+
+labels:
+- includeSelectors: true
+  pairs:
+    app.kubernetes.io/name: nextcloud
+- includeSelectors: false
+  pairs:
+    app.kubernetes.io/part-of: shopnoltd
+
+### ./k8s/services/notification-service/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: shopno-platform
+
+resources:
+- serviceaccount.yaml
+- configmap.yaml
+- secret.yaml
+- pvc.yaml
+- deployment.yaml
+- service.yaml
+- ingress.yaml
+- hpa.yaml
+- networkpolicy.yaml
+- poddisruptionbudget.yaml
+- servicemonitor.yaml
+
+labels:
+- includeSelectors: true
+  pairs:
+    app.kubernetes.io/name: notification-service
+- includeSelectors: false
+  pairs:
+    app.kubernetes.io/part-of: shopnoltd
+
+### ./k8s/services/oauth-service/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: shopno-identity
+
+resources:
+- serviceaccount.yaml
+- configmap.yaml
+- secret.yaml
+- pvc.yaml
+- deployment.yaml
+- service.yaml
+- ingress.yaml
+- hpa.yaml
+- networkpolicy.yaml
+- poddisruptionbudget.yaml
+- servicemonitor.yaml
+
+labels:
+- includeSelectors: true
+  pairs:
+    app.kubernetes.io/name: oauth-service
+- includeSelectors: false
+  pairs:
+    app.kubernetes.io/part-of: shopnoltd
+
+### ./k8s/services/onlyoffice/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: shopno-apps
+
+resources:
+- serviceaccount.yaml
+- configmap.yaml
+- secret.yaml
+- pvc.yaml
+- deployment.yaml
+- service.yaml
+- ingress.yaml
+- hpa.yaml
+- networkpolicy.yaml
+- poddisruptionbudget.yaml
+- servicemonitor.yaml
+
+labels:
+- includeSelectors: true
+  pairs:
+    app.kubernetes.io/name: onlyoffice
+- includeSelectors: false
+  pairs:
+    app.kubernetes.io/part-of: shopnoltd
+
+### ./k8s/services/opensearch/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: shopno-data
+
+resources:
+- serviceaccount.yaml
+- configmap.yaml
+- secret.yaml
+- pvc.yaml
+- deployment.yaml
+- service.yaml
+- ingress.yaml
+- hpa.yaml
+- networkpolicy.yaml
+- poddisruptionbudget.yaml
+- servicemonitor.yaml
+
+labels:
+- includeSelectors: true
+  pairs:
+    app.kubernetes.io/name: opensearch
+- includeSelectors: false
+  pairs:
+    app.kubernetes.io/part-of: shopnoltd
+
+### ./k8s/services/owncast/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: shopno-apps
+
+resources:
+- serviceaccount.yaml
+- configmap.yaml
+- secret.yaml
+- pvc.yaml
+- deployment.yaml
+- service.yaml
+- ingress.yaml
+- hpa.yaml
+- networkpolicy.yaml
+- poddisruptionbudget.yaml
+- servicemonitor.yaml
+
+labels:
+- includeSelectors: true
+  pairs:
+    app.kubernetes.io/name: owncast
+- includeSelectors: false
+  pairs:
+    app.kubernetes.io/part-of: shopnoltd
+
+### ./k8s/services/payment-service/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: shopno-payments
+
+resources:
+- serviceaccount.yaml
+- configmap.yaml
+- secret.yaml
+- pvc.yaml
+- deployment.yaml
+- service.yaml
+- ingress.yaml
+- hpa.yaml
+- networkpolicy.yaml
+- poddisruptionbudget.yaml
+- servicemonitor.yaml
+
+labels:
+- includeSelectors: true
+  pairs:
+    app.kubernetes.io/name: payment-service
+- includeSelectors: false
+  pairs:
+    app.kubernetes.io/part-of: shopnoltd
+
+### ./k8s/services/pc-portal/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: shopno-platform
+
+resources:
+- serviceaccount.yaml
+- configmap.yaml
+- secret.yaml
+- pvc.yaml
+- deployment.yaml
+- service.yaml
+- ingress.yaml
+- hpa.yaml
+- networkpolicy.yaml
+- poddisruptionbudget.yaml
+- servicemonitor.yaml
+
+labels:
+- includeSelectors: true
+  pairs:
+    app.kubernetes.io/name: pc-portal
+- includeSelectors: false
+  pairs:
+    app.kubernetes.io/part-of: shopnoltd
+
+### ./k8s/services/postgres/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: shopno-data
+
+resources:
+- serviceaccount.yaml
+- configmap.yaml
+- secret.yaml
+- pvc.yaml
+- deployment.yaml
+- service.yaml
+- ingress.yaml
+- hpa.yaml
+- networkpolicy.yaml
+- poddisruptionbudget.yaml
+- servicemonitor.yaml
+
+labels:
+- includeSelectors: true
+  pairs:
+    app.kubernetes.io/name: postgres
+- includeSelectors: false
+  pairs:
+    app.kubernetes.io/part-of: shopnoltd
+
+### ./k8s/services/prometheus/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: shopno-monitoring
+
+resources:
+- serviceaccount.yaml
+- configmap.yaml
+- secret.yaml
+- pvc.yaml
+- deployment.yaml
+- service.yaml
+- ingress.yaml
+- hpa.yaml
+- networkpolicy.yaml
+- poddisruptionbudget.yaml
+- servicemonitor.yaml
+
+labels:
+- includeSelectors: true
+  pairs:
+    app.kubernetes.io/name: prometheus
+- includeSelectors: false
+  pairs:
+    app.kubernetes.io/part-of: shopnoltd
+
+### ./k8s/services/redis/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: shopno-data
+
+resources:
+- serviceaccount.yaml
+- configmap.yaml
+- secret.yaml
+- pvc.yaml
+- deployment.yaml
+- service.yaml
+- ingress.yaml
+- hpa.yaml
+- networkpolicy.yaml
+- poddisruptionbudget.yaml
+- servicemonitor.yaml
+
+labels:
+- includeSelectors: true
+  pairs:
+    app.kubernetes.io/name: redis
+- includeSelectors: false
+  pairs:
+    app.kubernetes.io/part-of: shopnoltd
+
+### ./k8s/services/report-service/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: shopno-platform
+
+resources:
+- serviceaccount.yaml
+- configmap.yaml
+- secret.yaml
+- pvc.yaml
+- deployment.yaml
+- service.yaml
+- ingress.yaml
+- hpa.yaml
+- networkpolicy.yaml
+- poddisruptionbudget.yaml
+- servicemonitor.yaml
+
+labels:
+- includeSelectors: true
+  pairs:
+    app.kubernetes.io/name: report-service
+- includeSelectors: false
+  pairs:
+    app.kubernetes.io/part-of: shopnoltd
+
+### ./k8s/services/scheduler-service/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: shopno-platform
+
+resources:
+- serviceaccount.yaml
+- configmap.yaml
+- secret.yaml
+- pvc.yaml
+- deployment.yaml
+- service.yaml
+- ingress.yaml
+- hpa.yaml
+- networkpolicy.yaml
+- poddisruptionbudget.yaml
+- servicemonitor.yaml
+
+labels:
+- includeSelectors: true
+  pairs:
+    app.kubernetes.io/name: scheduler-service
+- includeSelectors: false
+  pairs:
+    app.kubernetes.io/part-of: shopnoltd
+
+### ./k8s/services/search-service/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: shopno-platform
+
+resources:
+- serviceaccount.yaml
+- configmap.yaml
+- secret.yaml
+- pvc.yaml
+- deployment.yaml
+- service.yaml
+- ingress.yaml
+- hpa.yaml
+- networkpolicy.yaml
+- poddisruptionbudget.yaml
+- servicemonitor.yaml
+
+labels:
+- includeSelectors: true
+  pairs:
+    app.kubernetes.io/name: search-service
+- includeSelectors: false
+  pairs:
+    app.kubernetes.io/part-of: shopnoltd
+
+### ./k8s/services/storage-service/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: shopno-platform
+
+resources:
+- serviceaccount.yaml
+- configmap.yaml
+- secret.yaml
+- pvc.yaml
+- deployment.yaml
+- service.yaml
+- ingress.yaml
+- hpa.yaml
+- networkpolicy.yaml
+- poddisruptionbudget.yaml
+- servicemonitor.yaml
+
+labels:
+- includeSelectors: true
+  pairs:
+    app.kubernetes.io/name: storage-service
+- includeSelectors: false
+  pairs:
+    app.kubernetes.io/part-of: shopnoltd
+
+### ./k8s/services/superset/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: shopno-apps
+
+resources:
+- serviceaccount.yaml
+- configmap.yaml
+- secret.yaml
+- pvc.yaml
+- deployment.yaml
+- service.yaml
+- ingress.yaml
+- hpa.yaml
+- networkpolicy.yaml
+- poddisruptionbudget.yaml
+- servicemonitor.yaml
+
+labels:
+- includeSelectors: true
+  pairs:
+    app.kubernetes.io/name: superset
+- includeSelectors: false
+  pairs:
+    app.kubernetes.io/part-of: shopnoltd
+
+### ./k8s/services/tenant-router/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: shopno-platform
+
+resources:
+- serviceaccount.yaml
+- configmap.yaml
+- secret.yaml
+- pvc.yaml
+- deployment.yaml
+- service.yaml
+- ingress.yaml
+- hpa.yaml
+- networkpolicy.yaml
+- poddisruptionbudget.yaml
+- servicemonitor.yaml
+
+labels:
+- includeSelectors: true
+  pairs:
+    app.kubernetes.io/name: tenant-router
+- includeSelectors: false
+  pairs:
+    app.kubernetes.io/part-of: shopnoltd
+
+### ./k8s/services/training-service/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: shopno-platform
+
+resources:
+- serviceaccount.yaml
+- configmap.yaml
+- secret.yaml
+- pvc.yaml
+- deployment.yaml
+- service.yaml
+- ingress.yaml
+- hpa.yaml
+- networkpolicy.yaml
+- poddisruptionbudget.yaml
+- servicemonitor.yaml
+
+labels:
+- includeSelectors: true
+  pairs:
+    app.kubernetes.io/name: training-service
+- includeSelectors: false
+  pairs:
+    app.kubernetes.io/part-of: shopnoltd
+
+### ./k8s/services/web-portal/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: shopno-platform
+
+resources:
+- serviceaccount.yaml
+- configmap.yaml
+- secret.yaml
+- pvc.yaml
+- deployment.yaml
+- service.yaml
+- ingress.yaml
+- hpa.yaml
+- networkpolicy.yaml
+- poddisruptionbudget.yaml
+- servicemonitor.yaml
+
+labels:
+- includeSelectors: true
+  pairs:
+    app.kubernetes.io/name: web-portal
+- includeSelectors: false
+  pairs:
+    app.kubernetes.io/part-of: shopnoltd
+
+### ./k8s/services/worker-service/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: shopno-platform
+
+resources:
+- serviceaccount.yaml
+- configmap.yaml
+- secret.yaml
+- pvc.yaml
+- deployment.yaml
+- service.yaml
+- ingress.yaml
+- hpa.yaml
+- networkpolicy.yaml
+- poddisruptionbudget.yaml
+- servicemonitor.yaml
+
+labels:
+- includeSelectors: true
+  pairs:
+    app.kubernetes.io/name: worker-service
+- includeSelectors: false
+  pairs:
+    app.kubernetes.io/part-of: shopnoltd
+

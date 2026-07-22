@@ -16,11 +16,11 @@ from app.api import (
 )
 from app.core.config import settings
 from app.core.db import Base, engine
-from app.core.redis_client import redis_client
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from prometheus_client import Counter, Histogram, generate_latest
+from shopno_core.database.redis import redis_client
 from starlette.responses import Response
 
 log = structlog.get_logger()
