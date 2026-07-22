@@ -11,11 +11,11 @@ RUN groupadd -g 10001 shopno && \
 
 WORKDIR /app
 
-COPY platform/payment-service/requirements.txt /app/requirements.txt
+COPY platform/web-portal/requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r /app/requirements.txt
 
-COPY platform/payment-service/app/ /app/app/
-COPY shared/libraries/python/ /app/shared/
+COPY platform/web-portal/app/ /app/app/
+COPY shared/libraries/python /app/shared
 
 USER shopno
 EXPOSE 8080
