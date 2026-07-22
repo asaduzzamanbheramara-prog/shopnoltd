@@ -15,7 +15,7 @@ COPY platform/payment-service/requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r /app/requirements.txt
 
 COPY platform/payment-service/app/ /app/app/
-COPY shared/libraries/python/ /app/shared/
+COPY shared/libraries/python /app/shared
 
 USER shopno
 EXPOSE 8080
