@@ -25,11 +25,11 @@ ARG APP_CODE
 ARG PACKAGE_NAME
 WORKDIR /src
 # Clone the upstream mobile project. Each matrix entry sets BASE_IMAGE / APP_CODE.
-RUN git clone --depth=1 https://github.com/${{ matrix.upstream }}.git /src/upstream
+RUN git clone --depth=1 https://github.com/${BASE_IMAGE}.git /src/upstream
 WORKDIR /src/upstream
 # Apply Shopnoltd branding overlays
-COPY branding/logos/ app/src/main/res/drawable-xxxhdpi/ 2>/dev/null || true
-COPY branding/icons/  app/src/main/res/ 2>/dev/null || true
+COPY branding/logos/ app/src/main/res/drawable-xxxhdpi/
+COPY branding/icons/  app/src/main/res/
 # Rename package
 RUN find . -name "AndroidManifest.xml" -exec sed -i "s/com.kobocollect/$PACKAGE_NAME/g; s/com.chatwoot/$PACKAGE_NAME/g; s/org.jitsi.meet/$PACKAGE_NAME/g; s/com.owncast/$PACKAGE_NAME/g; s/com.nextcloud.client/$PACKAGE_NAME/g; s/com.fsck.k9/$PACKAGE_NAME/g" {} \;
 # Replace strings
