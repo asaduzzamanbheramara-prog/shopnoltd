@@ -170,3 +170,4 @@ coverage/
 # Vendor cache
 vendor/**/.cache/
 
+branding/output/omnilogin-extracted/
