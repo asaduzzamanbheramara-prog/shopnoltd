@@ -146,3 +146,4 @@ kustomize.save
 *.sqlite3
 *.tar.gz
 archive/
+branding/output/omnilogin-extracted/

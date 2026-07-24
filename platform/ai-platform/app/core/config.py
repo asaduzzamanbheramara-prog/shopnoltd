@@ -3,7 +3,9 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     app_name: str = "shopnoltd-ai-platform"
-    database_url: str = "postgresql+asyncpg://shopno:shopno@postgres.data.svc.cluster.local:5432/ai"
+    database_url: str = (
+        "postgresql+asyncpg://shopno:shopno@postgres.shopno-data.svc.cluster.local:5432/ai"
+    )
     redis_url: str = "redis://redis.data.svc.cluster.local:6379/0"
     cors_origins: str = "https://*.shopnoltd.dpdns.org"
     embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
