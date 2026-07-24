@@ -6,7 +6,7 @@ class Settings(BaseSettings):
     database_url: str = (
         "postgresql+asyncpg://shopno:shopno@postgres.shopno-data.svc.cluster.local:5432/ai"
     )
-    redis_url: str = "redis://redis.data.svc.cluster.local:6379/0"
+    redis_url: str = "redis://redis.shopno-data.svc.cluster.local:6379/0"
     cors_origins: str = "https://*.shopnoltd.dpdns.org"
     embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
     llm_model: str = "microsoft/Phi-3-mini-4k-instruct"

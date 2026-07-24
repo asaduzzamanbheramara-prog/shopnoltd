@@ -6,7 +6,7 @@ class Settings(BaseSettings):
     database_url: str = (
         "postgresql+asyncpg://shopno:shopno@postgres.shopno-data.svc.cluster.local:5432/meet"
     )
-    redis_url: str = "redis://redis.data.svc.cluster.local:6379/0"
+    redis_url: str = "redis://redis.shopno-data.svc.cluster.local:6379/0"
     cors_origins: str = "https://*.shopnoltd.dpdns.org"
     jitsi_jwt_app_id: str = "shopnoltd"
     jitsi_jwt_secret: str = "CHANGE_ME_JITSI_JWT"
