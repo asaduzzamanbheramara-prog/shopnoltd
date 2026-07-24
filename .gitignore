@@ -147,3 +147,26 @@ kustomize.save
 *.tar.gz
 archive/
 branding/output/omnilogin-extracted/
+
+# Generated branding output
+branding/output/
+
+# Backup files
+*.bak
+*.bak-*
+*.old
+*.swp
+
+# Kustomize backups
+*.bak-no-smon-*
+
+# Archives
+*.7z
+*.zip
+
+# Build artifacts
+coverage/
+
+# Vendor cache
+vendor/**/.cache/
+
