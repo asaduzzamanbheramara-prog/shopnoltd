@@ -6,7 +6,7 @@ class Settings(BaseSettings):
     database_url: str = (
         "postgresql+asyncpg://shopno:shopno@postgres.shopno-data.svc.cluster.local:5432/mail"
     )
-    redis_url: str = "redis://redis.data.svc.cluster.local:6379/0"
+    redis_url: str = "redis://redis.shopno-data.svc.cluster.local:6379/0"
     cors_origins: str = "https://*.shopnoltd.dpdns.org"
     mailcow_api_url: str = "https://mail.shopnoltd.dpdns.org/api/v1"
     mailcow_api_key: str = "CHANGE_ME_MAILCOW_KEY"

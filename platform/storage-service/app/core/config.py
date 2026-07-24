@@ -6,7 +6,7 @@ class Settings(BaseSettings):
     database_url: str = (
         "postgresql+asyncpg://shopno:shopno@postgres.shopno-data.svc.cluster.local:5432/storage"
     )
-    redis_url: str = "redis://redis.data.svc.cluster.local:6379/0"
+    redis_url: str = "redis://redis.shopno-data.svc.cluster.local:6379/0"
     cors_origins: str = "https://*.shopnoltd.dpdns.org"
     minio_endpoint: str = "minio.data.svc.cluster.local:9000"
     minio_access_key: str = "shopno"
