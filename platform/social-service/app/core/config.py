@@ -4,7 +4,7 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     app_name: str = "shopnoltd-social-service"
     database_url: str = (
-        "postgresql+asyncpg://shopno:shopno@postgres.data.svc.cluster.local:5432/social"
+        "postgresql+asyncpg://shopno:shopno@postgres.shopno-data.svc.cluster.local:5432/social"
     )
     redis_url: str = "redis://redis.data.svc.cluster.local:6379/4"
     cors_origins: str = "https://*.shopnoltd.dpdns.org"

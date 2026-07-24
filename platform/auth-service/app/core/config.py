@@ -5,7 +5,7 @@ class Settings(BaseSettings):
     env: str = "production"
     app_name: str = "shopnoltd-auth-service"
     database_url: str = (
-        "postgresql+asyncpg://shopno:shopno@postgres.data.svc.cluster.local:5432/auth"
+        "postgresql+asyncpg://shopno:shopno@postgres.shopno-data.svc.cluster.local:5432/auth"
     )
     redis_url: str = "redis://redis.data.svc.cluster.local:6379/0"
     cors_origins: str = "https://*.shopnoltd.dpdns.org"

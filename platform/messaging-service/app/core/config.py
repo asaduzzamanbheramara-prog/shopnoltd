@@ -5,7 +5,7 @@ class Settings(BaseSettings):
     app_name: str = "shopnoltd-messaging-service"
     env: str = "production"
     database_url: str = (
-        "postgresql+asyncpg://shopno:shopno@postgres.data.svc.cluster.local:5432/messaging"
+        "postgresql+asyncpg://shopno:shopno@postgres.shopno-data.svc.cluster.local:5432/messaging"
     )
     redis_url: str = "redis://redis.data.svc.cluster.local:6379/0"
     cors_origins: str = "https://*.shopnoltd.dpdns.org"

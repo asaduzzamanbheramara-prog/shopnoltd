@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     env: str = "production"
     version: str = "0.1.0"
     database_url: str = (
-        "postgresql+asyncpg://shopno:shopno@postgres.data.svc.cluster.local:5432/payments"
+        "postgresql+asyncpg://shopno:shopno@postgres.shopno-data.svc.cluster.local:5432/payments"
     )
     redis_url: str = "redis://redis.data.svc.cluster.local:6379/0"
     cors_origins: str = "https://*.shopnoltd.dpdns.org"
