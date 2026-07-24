@@ -1,0 +1,15 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Apply this overlay to any service that imports shopno_core.
+# It adds an initContainer that creates a fake shopno_core package
+# from this ConfigMap, mounted at /app/shopno_core in the main container.
+#
+# USE:
+#   kubectl apply -k k8s/overlays/shopno-core-inject
+# then patch each affected deployment to mount it.
+generatorOptions:
+  disableNameSuffixHash: true
+configMapGenerator:
+- name: shopno-core
+  files:
