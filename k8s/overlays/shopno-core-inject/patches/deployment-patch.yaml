@@ -1,0 +1,32 @@
+# Apply per-deployment with:
+#   kubectl patch deploy <name> -n <ns> --patch-file deployment-patch.yaml
+# Or include this in your kustomization.yaml as a patch
+spec:
+  template:
+    spec:
+      volumes:
+      - name: shopno-core
+        configMap:
+          name: shopno-core
+      initContainers:
+      - name: inject-shopno-core
+        image: busybox:1.36
+        command: ["/bin/sh", "-c",
+          "set -eu; cd /shopno-core; \
+           find . -type f -name '*.py' | while read f; do \
+             mkdir -p \"/app/\$(dirname \$f)\"; \
+             cp \"\$f\" \"/app/\$f\"; \
+           done; \
+           echo shopno_core stub injected"]
+        volumeMounts:
+        - name: shopno-core
+          mountPath: /shopno-core
+        - name: shopno-core
+          mountPath: /app
+          readOnly: false
+      containers:
+      - name: REPLACE_ME  # kustomize will rewrite this to the real name
+        volumeMounts:
+        - name: shopno-core
+          mountPath: /app
+          readOnly: false
