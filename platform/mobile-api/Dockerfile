@@ -15,7 +15,7 @@ COPY platform/mobile-api/requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r /app/requirements.txt
 
 COPY platform/mobile-api/app/ /app/app/
-COPY shared/libraries/python /app/shared
+COPY shared/libraries/python/shopno_core /app/shopno_core
 
 USER shopno
 EXPOSE 8080
