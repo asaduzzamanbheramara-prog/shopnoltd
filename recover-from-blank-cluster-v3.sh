@@ -42,10 +42,12 @@ warn()   { printf '\033[0;31m[WARN]\033[0m %s\n' "$*" >&2; }
 info()   { printf '\033[0;36m[INFO]\033[0m %s\n' "$*"; }
 
 pressure() {
-  for n in desktop-control-plane desktop-worker; do
+  local nodes
+  nodes=$(kubectl get nodes -o name 2>/dev/null | sed 's|node/||')
+  for n in $nodes; do
     out=$(kubectl describe node "$n" 2>/dev/null \
           | awk '/Allocated resources:/{flag=1;next} flag && /^$/{flag=0} flag' \
-          | head -8)
+          | head -8 || true)
     if [[ -n "$out" ]]; then
       echo "  $n"
       echo "$out" | sed 's/^/    /'
@@ -54,9 +56,12 @@ pressure() {
 }
 
 cpu_pct() {
-  # returns current CPU request percentage, or "?" if unknown
-  kubectl describe node desktop-control-plane 2>/dev/null \
-    | awk '/^  cpu[[:space:]]/{print $2; exit}' || echo "?"
+  # returns current CPU request percentage (as a bare number, no %), or "?" if unknown
+  local node
+  node=$(kubectl get nodes -o name 2>/dev/null | head -1 | sed 's|node/||')
+  [[ -z "$node" ]] && { echo "?"; return; }
+  kubectl describe node "$node" 2>/dev/null \
+    | awk '/^  cpu[[:space:]]/{gsub(/[()%]/,"",$3); print $3; exit}' || echo "?"
 }
 
 apply_subpath() {
@@ -78,12 +83,13 @@ gate() {
   local p
   p=$(cpu_pct)
   info "  gate [$label]: CPU reqs at ${p}%, threshold ${max}%"
-  if [[ "$p" =~ ^[0-9]+%$ ]]; then
-    local n=${p%\%}
-    if (( n > max )); then
+  if [[ "$p" =~ ^[0-9]+$ ]]; then
+    if (( p > max )); then
       warn "  above threshold! Pausing 60s for things to settle…"
       sleep 60
     fi
+  else
+    warn "  gate [$label]: could not read CPU %% (\"$p\") — skipping pause check"
   fi
 }
 
