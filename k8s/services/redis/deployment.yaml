@@ -85,7 +85,7 @@ spec:
             failureThreshold: 30
           volumeMounts:
             - name: data
-              mountPath: /var/lib/redis
+              mountPath: /data
             - name: tmp
               mountPath: /tmp
           securityContext:

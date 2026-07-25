@@ -171,3 +171,7 @@ coverage/
 vendor/**/.cache/
 
 branding/output/omnilogin-extracted/
+
+# Docker Desktop virtual disks
+.github/workflows/DockerDesktopWSL/
+*.vhdx

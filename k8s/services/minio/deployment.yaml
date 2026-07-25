@@ -37,6 +37,7 @@ spec:
         - name: minio
           image: minio/minio:latest
           imagePullPolicy: IfNotPresent
+          args: ["server", "/data", "--console-address", ":9001"]
           ports:
             - name: http
               containerPort: 9000
@@ -85,7 +86,7 @@ spec:
             failureThreshold: 30
           volumeMounts:
             - name: data
-              mountPath: /var/lib/minio
+              mountPath: /data
             - name: tmp
               mountPath: /tmp
           securityContext:
