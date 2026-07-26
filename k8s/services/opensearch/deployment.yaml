@@ -5,16 +5,17 @@ metadata:
   namespace: shopno-data
   labels:
     app.kubernetes.io/name: opensearch
+
 spec:
   replicas: 1
+
   strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0
+    type: Recreate
+
   selector:
     matchLabels:
       app.kubernetes.io/name: opensearch
+
   template:
     metadata:
       labels:
@@ -23,9 +24,11 @@ spec:
         prometheus.io/scrape: "true"
         prometheus.io/port: "9200"
         prometheus.io/path: "/metrics"
+
     spec:
       serviceAccountName: opensearch
       automountServiceAccountToken: false
+
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
@@ -33,76 +36,108 @@ spec:
         fsGroup: 1000
         seccompProfile:
           type: RuntimeDefault
+
       containers:
         - name: opensearch
-          image: opensearchproject/opensearch:latest
+          image: opensearchproject/opensearch:2.19.3
           imagePullPolicy: IfNotPresent
+
           ports:
             - name: http
               containerPort: 9200
               protocol: TCP
+
           envFrom:
             - configMapRef:
                 name: opensearch-config
             - secretRef:
                 name: opensearch-secret
+
           env:
             - name: POD_NAME
-              valueFrom: { fieldRef: { fieldPath: metadata.name } }
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+
             - name: POD_NAMESPACE
-              valueFrom: { fieldRef: { fieldPath: metadata.namespace } }
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+
           resources:
             requests:
-              cpu: 100m
-              memory: 128Mi
-              ephemeral-storage: 256Mi
+              cpu: "250m"
+              memory: "512Mi"
+              ephemeral-storage: "512Mi"
+
             limits:
-              cpu: 1000m
-              memory: 512Mi
-              ephemeral-storage: 1Gi
-          livenessProbe:
-            httpGet:
-              path: /healthz
-              port: http
-            initialDelaySeconds: 30
-            periodSeconds: 10
-            timeoutSeconds: 3
-            failureThreshold: 3
-          readinessProbe:
-            httpGet:
-              path: /readyz
-              port: http
-            initialDelaySeconds: 5
-            periodSeconds: 5
-            timeoutSeconds: 3
-            failureThreshold: 3
+              cpu: "1000m"
+              memory: "1Gi"
+              ephemeral-storage: "1Gi"
+
           startupProbe:
             httpGet:
-              path: /healthz
+              path: /
               port: http
-            initialDelaySeconds: 10
-            periodSeconds: 5
+
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
             failureThreshold: 30
+
+
+          readinessProbe:
+            httpGet:
+              path: /_cluster/health
+              port: http
+
+            initialDelaySeconds: 60
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 5
+
+
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+
+            initialDelaySeconds: 120
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 5
+
+
           volumeMounts:
             - name: data
               mountPath: /var/lib/opensearch
+
             - name: tmp
               mountPath: /tmp
+
+
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: false
             capabilities:
-              drop: ["ALL"]
+              drop:
+                - ALL
+
+
       volumes:
         - name: data
           persistentVolumeClaim:
             claimName: opensearch-data
+
         - name: tmp
           emptyDir: {}
+
+
       topologySpreadConstraints:
         - maxSkew: 1
           topologyKey: topology.kubernetes.io/zone
           whenUnsatisfiable: ScheduleAnyway
+
           labelSelector:
             matchLabels:
               app.kubernetes.io/name: opensearch
