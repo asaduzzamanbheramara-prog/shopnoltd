@@ -1,25 +1,11 @@
-# syntax=docker/dockerfile:1.7
-FROM python:3.12-slim AS base
-
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1
-
-RUN groupadd -g 10001 shopno && \
-    useradd -u 10001 -g shopno -d /app -s /sbin/nologin shopno
-
+FROM node:20-alpine AS build
 WORKDIR /app
-
-COPY platform/admin-portal/requirements.txt /app/requirements.txt
-RUN pip install --no-cache-dir -r /app/requirements.txt
-
-COPY platform/admin-portal/app/ /app/app/
-COPY shared/libraries/python/shopno_core /app/shopno_core
-
-USER shopno
-EXPOSE 8080
-HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
-  CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/healthz').read()"
-
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080", "--proxy-headers", "--forwarded-allow-ips", "*"]
+COPY platform/admin-portal/package.json platform/admin-portal/package-lock.json* ./
+RUN npm ci || npm install
+COPY platform/admin-portal/ ./
+RUN npm run build
+FROM nginx:1.27-alpine
+COPY --from=build /app/dist /usr/share/nginx/html
+COPY platform/admin-portal/nginx.conf /etc/nginx/conf.d/default.conf
+EXPOSE 3000
+HEALTHCHECK CMD wget -qO- http://127.0.0.1:3000/healthz || exit 1

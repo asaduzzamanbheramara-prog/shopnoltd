@@ -36,7 +36,6 @@ jobs:
           - { service: scheduler-service,  dockerfile: platform/scheduler-service/Dockerfile }
           - { service: worker-service,     dockerfile: platform/worker-service/Dockerfile }
           - { service: payment-service,    dockerfile: platform/payment-service/Dockerfile }
-          - { service: exchange-service,   dockerfile: platform/exchange-service/Dockerfile }
           - { service: auth-service,       dockerfile: platform/auth-service/Dockerfile }
           - { service: audit-service,      dockerfile: platform/audit-service/Dockerfile }
           - { service: report-service,     dockerfile: platform/report-service/Dockerfile }
@@ -46,7 +45,6 @@ jobs:
           - { service: admin-portal,       dockerfile: platform/admin-portal/Dockerfile }
           - { service: web-portal,         dockerfile: platform/web-portal/Dockerfile }
           - { service: android-portal,     dockerfile: platform/android-portal/Dockerfile }
-          - { service: pc-portal,          dockerfile: platform/pc-portal/Dockerfile }
           - { service: messaging-service,  dockerfile: platform/messaging-service/Dockerfile }
           - { service: meet-service,       dockerfile: platform/meet-service/Dockerfile }
           - { service: live-service,       dockerfile: platform/live-service/Dockerfile }
