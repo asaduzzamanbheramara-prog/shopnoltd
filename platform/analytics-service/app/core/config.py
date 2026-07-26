@@ -2,6 +2,7 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
+    env: str = "production"
     app_name: str = "shopnoltd-analytics-service"
     database_url: str = (
         "postgresql+asyncpg://shopno:shopno@postgres.shopno-data.svc.cluster.local:5432/analytics"
