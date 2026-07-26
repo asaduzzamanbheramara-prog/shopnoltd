@@ -11,5 +11,9 @@ class Settings(BaseSettings):
     keycloak_audience: str = "tenant-router"
     base_domain: str = "shopnoltd.dpdns.org"
 
+    @property
+    def cors_origins_list(self):
+        return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+
 
 settings = Settings()

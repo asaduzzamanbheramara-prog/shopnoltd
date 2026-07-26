@@ -14,5 +14,9 @@ class Settings(BaseSettings):
     keycloak_issuer: str = "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
     keycloak_audience: str = "search-service"
 
+    @property
+    def cors_origins_list(self):
+        return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+
 
 settings = Settings()
