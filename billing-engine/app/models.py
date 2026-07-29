@@ -12,7 +12,6 @@ from sqlalchemy import (
     String,
     Text,
 )
-from sqlalchemy.dialects.postgresql import UUID
 
 from app.database import Base
 
@@ -29,17 +28,19 @@ def gen_id(prefix: str):
 class User(Base):
     __tablename__ = "users"
 
-    # Matches PostgreSQL schema exactly
+    id = Column(String(64), primary_key=True)
 
-    id = Column(UUID(as_uuid=True), primary_key=True)
+    keycloak_id = Column(String(64), nullable=False)
 
-    tenant_id = Column(UUID(as_uuid=True), nullable=True)
+    email = Column(String(256), unique=True, nullable=False)
 
-    email = Column(String, unique=True, nullable=False)
+    name = Column(String(256))
 
-    password_hash = Column(Text)
+    tenant_id = Column(String(64), nullable=True)
 
-    role = Column(String)
+    roles = Column(Text)
+
+    active = Column(Boolean)
 
     created_at = Column(DateTime, default=datetime.utcnow)
 
@@ -54,7 +55,7 @@ class Wallet(Base):
 
     id = Column(String, primary_key=True, default=lambda: gen_id("wal"))
 
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    user_id = Column(String(64), ForeignKey("users.id"), nullable=False)
 
     currency = Column(String(3), default="BDT")
 
@@ -73,7 +74,7 @@ class Transaction(Base):
 
     id = Column(String, primary_key=True, default=lambda: gen_id("txn"))
 
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
+    user_id = Column(String(64), ForeignKey("users.id"))
 
     gateway = Column(String)
 
@@ -104,7 +105,7 @@ class PaymentMethod(Base):
 
     id = Column(String, primary_key=True, default=lambda: gen_id("pm"))
 
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
+    user_id = Column(String(64), ForeignKey("users.id"))
 
     gateway = Column(String)
 
@@ -158,10 +159,10 @@ class AuditLog(Base):
 class WalletLedgerEntry(Base):
     __tablename__ = "wallet_ledger_entries"
 
-    id = Column(UUID(as_uuid=True), primary_key=True)
+    id = Column(String(64), primary_key=True)
 
     user_id = Column(
-        UUID(as_uuid=True),
+        String(64),
         ForeignKey("users.id"),
         nullable=False,
         index=True,
