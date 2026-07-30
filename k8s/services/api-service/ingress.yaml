@@ -5,16 +5,18 @@ metadata:
   namespace: shopno-platform
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-prod
-    traefik.ingress.kubernetes.io/router.tls: "true"
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
+
 spec:
   ingressClassName: nginx
+
   tls:
     - hosts:
-        - api-service.shopnoltd.dpdns.org
+        - api.shopnoltd.dpdns.org
       secretName: api-service-tls
+
   rules:
-    - host: api-service.shopnoltd.dpdns.org
+    - host: api.shopnoltd.dpdns.org
       http:
         paths:
           - path: /
