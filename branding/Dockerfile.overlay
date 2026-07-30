@@ -138,4 +138,18 @@ RUN chmod -R 755 /srv/src/kpi/static \
 
 
 
+# ============================================================== 
+# Runtime directories
+# ==============================================================
+
+RUN mkdir -p \
+    /srv/src/kpi/media \
+    /srv/src/kpi/logs \
+    /srv/src/kobocat/media \
+    /srv/src/kobocat/logs \
+    /srv/src/kpi/static \
+    /srv/src/kpi/staticfiles \
+ && chmod -R 775 /srv/src/kpi \
+ && chmod -R 775 /srv/src/kobocat
+
 EXPOSE 8000
