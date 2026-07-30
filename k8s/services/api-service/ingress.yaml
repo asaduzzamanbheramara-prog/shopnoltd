@@ -4,16 +4,10 @@ metadata:
   name: api-service
   namespace: shopno-platform
   annotations:
-    cert-manager.io/cluster-issuer: letsencrypt-prod
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
 
 spec:
   ingressClassName: nginx
-
-  tls:
-    - hosts:
-        - api.shopnoltd.dpdns.org
-      secretName: api-service-tls
 
   rules:
     - host: api.shopnoltd.dpdns.org
