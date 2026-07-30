@@ -44,11 +44,20 @@ def log_action(db: Session, action: str, user_id: str | None, details: dict):
 
 def get_or_create_user(db: Session, email: str) -> User:
     user = db.query(User).filter(User.email == email).first()
-    if not user:
-        user = User(email=email)
-        db.add(user)
-        db.commit()
-        db.refresh(user)
+
+    if user:
+        return user
+
+    user = User(
+        email=email,
+        keycloak_id=None,
+        active=True,
+    )
+
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+
     return user
 
 
@@ -111,7 +120,7 @@ def exchange_convert(amount: float, from_currency: str, to_currency: str):
     try:
         converted, rate = fx.convert_currency(amount, from_currency.upper(), to_currency.upper())
     except ValueError as e:
-        raise HTTPException(400, str(e))
+        raise HTTPException(400, str(e)) from e
     return {
         "amount": amount,
         "from": from_currency.upper(),
@@ -154,7 +163,7 @@ def create_checkout(req: CheckoutRequest, db: Session = Depends(get_db)):
     try:
         gw = get_gateway(req.gateway)
     except KeyError as e:
-        raise HTTPException(400, str(e))
+        raise HTTPException(400, str(e)) from e
 
     user = get_or_create_user(db, req.customer_email)
     reference = req.reference or f"ord_{user.id}_{int(__import__('time').time())}"
@@ -169,10 +178,10 @@ def create_checkout(req: CheckoutRequest, db: Session = Depends(get_db)):
             customer_phone=req.customer_phone,
         )
     except ValueError as e:
-        raise HTTPException(400, str(e))
+        raise HTTPException(400, str(e)) from e
     except Exception as e:
         logger.exception("Gateway %s create_payment failed", req.gateway)
-        raise HTTPException(502, f"{req.gateway} error: {e}")
+        raise HTTPException(502, f"{req.gateway} error: {e}") from e
 
     txn = Transaction(
         user_id=user.id,
@@ -235,7 +244,7 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
     try:
         event = gw.verify_webhook(payload, dict(request.headers))
     except Exception as e:
-        raise HTTPException(400, f"Webhook verification failed: {e}")
+        raise HTTPException(400, f"Webhook verification failed: {e}") from e
     _complete_transaction(
         db, event["gateway_reference"], "stripe", event["status"], event.get("amount")
     )
@@ -249,7 +258,7 @@ async def razorpay_webhook(request: Request, db: Session = Depends(get_db)):
     try:
         event = gw.verify_webhook(payload, dict(request.headers))
     except Exception as e:
-        raise HTTPException(400, f"Webhook verification failed: {e}")
+        raise HTTPException(400, f"Webhook verification failed: {e}") from e
     _complete_transaction(
         db, event["gateway_reference"], "razorpay", event["status"], event.get("amount")
     )
@@ -304,7 +313,7 @@ async def crypto_webhook(request: Request, db: Session = Depends(get_db)):
     try:
         event = gw.verify_webhook(payload, dict(request.headers))
     except Exception as e:
-        raise HTTPException(400, f"Webhook verification failed: {e}")
+        raise HTTPException(400, f"Webhook verification failed: {e}") from e
     _complete_transaction(
         db, event["gateway_reference"], "crypto", event["status"], event.get("amount")
     )
@@ -342,7 +351,7 @@ def deduct_wallet(req: DeductRequest, db: Session = Depends(get_db)):
             reference=req.reference,
         )
     except InsufficientBalanceError as e:
-        raise HTTPException(402, str(e))
+        raise HTTPException(402, str(e)) from e
     log_action(db, "wallet_deducted", user.id, {"amount": req.amount, "reason": req.reason})
     return {"balance_after": entry.balance_after, "ledger_entry_id": entry.id}
 
@@ -371,7 +380,7 @@ def fine_wallet(req: FineRequest, db: Session = Depends(get_db)):
             allow_negative=req.allow_negative_balance,
         )
     except InsufficientBalanceError as e:
-        raise HTTPException(402, str(e))
+        raise HTTPException(402, str(e)) from e
     log_action(db, "wallet_fined", user.id, {"amount": req.amount, "reason": req.reason})
     return {"balance_after": entry.balance_after, "ledger_entry_id": entry.id}
 
