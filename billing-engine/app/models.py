@@ -28,11 +28,22 @@ def gen_id(prefix: str):
 class User(Base):
     __tablename__ = "users"
 
-    id = Column(String(64), primary_key=True)
+    id = Column(
+        String(64),
+        primary_key=True,
+        default=lambda: gen_id("usr"),
+    )
 
-    keycloak_id = Column(String(64), nullable=False)
+    keycloak_id = Column(
+        String(64),
+        nullable=True,
+    )
 
-    email = Column(String(256), unique=True, nullable=False)
+    email = Column(
+        String(256),
+        unique=True,
+        nullable=False,
+    )
 
     name = Column(String(256))
 
@@ -40,7 +51,7 @@ class User(Base):
 
     roles = Column(Text)
 
-    active = Column(Boolean)
+    active = Column(Boolean, default=True)
 
     created_at = Column(DateTime, default=datetime.utcnow)
 
