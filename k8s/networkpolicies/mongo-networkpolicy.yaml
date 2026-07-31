@@ -1,0 +1,34 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: mongo
+  namespace: shopno-data
+spec:
+  podSelector:
+    matchLabels:
+      app: mongo
+
+  policyTypes:
+    - Ingress
+
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: shopno-apps
+
+        - namespaceSelector:
+            matchLabels:
+              name: shopno-platform
+
+        - namespaceSelector:
+            matchLabels:
+              name: shopno-payments
+
+        - namespaceSelector:
+            matchLabels:
+              name: shopno-identity
+
+      ports:
+        - protocol: TCP
+          port: 27017
