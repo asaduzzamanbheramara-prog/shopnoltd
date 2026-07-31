@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mail-service-config
+  namespace: shopno-mail
+data:
+  MAIL_PROVIDER: "smtp"
+  SMTP_HOST: "mail.shopnoltd.dpdns.org"
+  SMTP_PORT: "587"
