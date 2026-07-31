@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mail-service
+  namespace: shopno-mail
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mail-service
+  template:
+    metadata:
+      labels:
+        app: mail-service
+    spec:
+      containers:
+      - name: mail-service
+        image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/mail-service:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+        envFrom:
+        - configMapRef:
+            name: mail-service-config
+        - secretRef:
+            name: mail-service-secret
+        resources:
+          requests:
+            cpu: 50m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi

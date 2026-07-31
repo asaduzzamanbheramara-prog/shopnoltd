@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mail-service
+  namespace: shopno-mail
+spec:
+  selector:
+    app: mail-service
+  ports:
+  - port: 80
+    targetPort: 8000
