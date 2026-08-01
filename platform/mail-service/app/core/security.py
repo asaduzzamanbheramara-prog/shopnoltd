@@ -1,4 +1,5 @@
 import httpx
+from fastapi import HTTPException
 from shopno_core.security.jwt import JWTError, jwt
 
 from app.core.config import settings
@@ -29,12 +30,15 @@ async def verify_token(token: str) -> dict:
             audience=settings.keycloak_audience,
             options={"verify_aud": True},
         )
-    except (JWTError, StopIteration) as e:
-        raise ValueError(f"invalid token: {e}") from e
+    except (JWTError, StopIteration):
+        raise HTTPException(status_code=401, detail="Invalid or malformed JWT token") from None
 
 
 async def verify_token_admin(token: str) -> dict:
     u = await verify_token(token)
-    if "admin" not in u.get("roles", []):
+    roles = u.get("realm_access", {}).get("roles", []) + u.get("resource_access", {}).get(
+        settings.keycloak_audience, {}
+    ).get("roles", [])
+    if "admin" not in roles:
         raise PermissionError("admin only")
     return u
