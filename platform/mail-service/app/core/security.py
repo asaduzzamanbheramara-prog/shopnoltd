@@ -40,5 +40,5 @@ async def verify_token_admin(token: str) -> dict:
         settings.keycloak_audience, {}
     ).get("roles", [])
     if "admin" not in roles:
-        raise PermissionError("admin only")
+        raise HTTPException(status_code=403, detail="admin only")
     return u
