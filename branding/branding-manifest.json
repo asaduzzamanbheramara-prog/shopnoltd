@@ -1,0 +1,35 @@
+{
+  "app_name": "Shopnoltd",
+  "assets": [
+    {
+      "description": "Primary logo (SVG)",
+      "source": "branding\\logo.svg",
+      "targets": [
+        "frontend\\web-portal\\public\\logo.svg",
+        "frontend\\admin-portal\\public\\logo.svg"
+      ]
+    },
+    {
+      "description": "Favicon",
+      "source": "branding\\favicon.ico",
+      "targets": [
+        "frontend\\web-portal\\public\\favicon.ico",
+        "frontend\\admin-portal\\public\\favicon.ico"
+      ]
+    },
+    {
+      "description": "Android app launcher icon",
+      "source": "branding\\app-icon-android.png",
+      "targets": [
+        "mobile\\android-portal\\app\\src\\main\\res\\mipmap-xxxhdpi\\ic_launcher.png"
+      ]
+    },
+    {
+      "description": "Keycloak login theme logo",
+      "source": "branding\\keycloak-logo.png",
+      "targets": [
+        "docker\\keycloak\\themes\\shopnoltd\\login\\resources\\img\\logo.png"
+      ]
+    }
+  ]
+}
