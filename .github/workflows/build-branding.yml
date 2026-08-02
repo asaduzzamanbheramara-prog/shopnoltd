@@ -17,7 +17,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        service: [kobotoolbox, kobocat, chatwoot, jitsi-web, owncast, onlyoffice, gitea, nextcloud, code-server, n8n]
+        include:
+          - service: kobotoolbox
+            dockerfile: branding/Dockerfile.overlay
+
+          - service: kobocat
+            dockerfile: branding/Dockerfile.overlay.kobocat
     permissions:
       contents: read
       packages: write
@@ -35,7 +40,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: branding/Dockerfile.overlay
+          file: ${{ matrix.dockerfile }}
           build-args: BASE_SERVICE=${{ matrix.service }}
           push: true
           tags: |
