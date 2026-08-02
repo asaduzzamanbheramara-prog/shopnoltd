@@ -35,8 +35,8 @@ spec:
           type: RuntimeDefault
       containers:
         - name: kobotoolbox
-          image: kobotoolbox/kpi:2.026.23a
-          imagePullPolicy: IfNotPresent
+          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-kpi:sha-7ef4f470ae55378c064389ec6671dfc04b6aabca
+          imagePullPolicy: Always
           ports:
             - name: http
               containerPort: 8000
@@ -51,6 +51,18 @@ spec:
               valueFrom: { fieldRef: { fieldPath: metadata.name } }
             - name: POD_NAMESPACE
               valueFrom: { fieldRef: { fieldPath: metadata.namespace } }
+            - name: PUBLIC_DOMAIN_NAME
+              value: shopnoltd.dpdns.org
+            - name: KOBOFORM_URL
+              value: https://kobo.shopnoltd.dpdns.org
+            - name: KOBOCAT_URL
+              value: https://kobotoolbox.shopnoltd.dpdns.org
+            - name: SECURE_PROXY_SSL_HEADER
+              value: HTTP_X_FORWARDED_PROTO, https
+            - name: USE_X_FORWARDED_HOST
+              value: "true"
+            - name: PUBLIC_REQUEST_SCHEME
+              value: https
           resources:
             requests:
               cpu: 100m
@@ -60,29 +72,26 @@ spec:
               cpu: 1000m
               memory: 512Mi
               ephemeral-storage: 1Gi
-          livenessProbe:
-            httpGet:
-              path: /healthz
-              port: http
-            initialDelaySeconds: 30
-            periodSeconds: 10
-            timeoutSeconds: 3
-            failureThreshold: 3
-          readinessProbe:
-            httpGet:
-              path: /readyz
-              port: http
-            initialDelaySeconds: 5
-            periodSeconds: 5
-            timeoutSeconds: 3
-            failureThreshold: 3
           startupProbe:
-            httpGet:
-              path: /healthz
-              port: http
-            initialDelaySeconds: 10
-            periodSeconds: 5
-            failureThreshold: 30
+            tcpSocket:
+              port: 8000
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            failureThreshold: 60
+          readinessProbe:
+            tcpSocket:
+              port: 8000
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          livenessProbe:
+            tcpSocket:
+              port: 8000
+            initialDelaySeconds: 60
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
           volumeMounts:
             - name: data
               mountPath: /var/lib/kobotoolbox
@@ -94,6 +103,11 @@ spec:
               subPath: kobocat-media
             - name: tmp
               mountPath: /tmp
+            - name: logs
+              mountPath: /srv/logs
+            - name: uwsgi-ini-override
+              mountPath: /srv/src/kpi/docker/uwsgi.ini
+              subPath: kpi-uwsgi.ini
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: false
@@ -106,6 +120,11 @@ spec:
             claimName: kobotoolbox-data
         - name: tmp
           emptyDir: {}
+        - name: logs
+          emptyDir: {}
+        - name: uwsgi-ini-override
+          configMap:
+            name: kobotoolbox-config
       topologySpreadConstraints:
         - maxSkew: 1
           topologyKey: topology.kubernetes.io/zone
