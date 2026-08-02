@@ -4,16 +4,27 @@ metadata:
   name: keycloak
   namespace: shopno-identity
   annotations:
-    cert-manager.io/cluster-issuer: letsencrypt-prod
-    traefik.ingress.kubernetes.io/router.tls: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: letsencrypt-prod
 spec:
   ingressClassName: nginx
   tls:
     - hosts:
+        - auth.shopnoltd.dpdns.org
         - keycloak.shopnoltd.dpdns.org
-      secretName: keycloak-tls
+      secretName: keycloak-auth-tls
   rules:
+    - host: auth.shopnoltd.dpdns.org
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: keycloak
+                port:
+                  number: 80
     - host: keycloak.shopnoltd.dpdns.org
       http:
         paths:

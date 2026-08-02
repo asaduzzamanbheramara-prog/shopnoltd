@@ -26,73 +26,74 @@ spec:
     spec:
       serviceAccountName: keycloak
       automountServiceAccountToken: false
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 10001
-        runAsGroup: 10001
-        fsGroup: 10001
-        seccompProfile:
-          type: RuntimeDefault
       containers:
         - name: keycloak
           image: quay.io/keycloak/keycloak:latest
           imagePullPolicy: IfNotPresent
+          args:
+            - start-dev
           ports:
             - name: http
               containerPort: 8080
               protocol: TCP
+            - name: management
+              containerPort: 9000
+              protocol: TCP
           envFrom:
             - configMapRef:
                 name: keycloak-config
-            - secretRef:
-                name: keycloak-secret
           env:
             - name: POD_NAME
               valueFrom: { fieldRef: { fieldPath: metadata.name } }
             - name: POD_NAMESPACE
               valueFrom: { fieldRef: { fieldPath: metadata.namespace } }
+            - name: KC_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-secret
+                  key: KC_DB_PASSWORD
+            - name: KC_BOOTSTRAP_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-secret
+                  key: KC_BOOTSTRAP_ADMIN_PASSWORD
           resources:
             requests:
               cpu: 100m
-              memory: 128Mi
+              memory: 512Mi
               ephemeral-storage: 256Mi
             limits:
-              cpu: 1000m
-              memory: 512Mi
+              cpu: 2000m
+              memory: 1Gi
               ephemeral-storage: 1Gi
           livenessProbe:
             httpGet:
-              path: /healthz
-              port: http
+              path: /health/live
+              port: management
             initialDelaySeconds: 30
             periodSeconds: 10
             timeoutSeconds: 3
             failureThreshold: 3
           readinessProbe:
             httpGet:
-              path: /readyz
-              port: http
+              path: /health/ready
+              port: management
             initialDelaySeconds: 5
             periodSeconds: 5
             timeoutSeconds: 3
             failureThreshold: 3
           startupProbe:
             httpGet:
-              path: /healthz
-              port: http
+              path: /health/started
+              port: management
             initialDelaySeconds: 10
-            periodSeconds: 5
-            failureThreshold: 30
+            periodSeconds: 10
+            failureThreshold: 60
           volumeMounts:
             - name: data
               mountPath: /var/lib/keycloak
             - name: tmp
               mountPath: /tmp
-          securityContext:
-            allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: true
-            capabilities:
-              drop: ["ALL"]
       volumes:
         - name: data
           persistentVolumeClaim:

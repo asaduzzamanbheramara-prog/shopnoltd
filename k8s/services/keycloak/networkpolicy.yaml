@@ -21,6 +21,9 @@ spec:
         - namespaceSelector:
             matchLabels:
               name: shopno-monitoring
+        - namespaceSelector:
+            matchLabels:
+              name: ingress-nginx
       ports:
         - port: 8080
           protocol: TCP
