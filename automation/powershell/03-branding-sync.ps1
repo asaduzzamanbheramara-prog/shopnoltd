@@ -11,7 +11,7 @@
 
     You maintain branding-manifest.json — this script does not guess file
     locations, since every portal (React web-portal, Android app under
-    /mobile, Keycloak theme, etc.) has a different asset layout.
+    /mobile, Keycloak theme, KoboToolbox, etc.) has a different asset layout.
 
 .PARAMETER RepoRoot
     Path to the shopnoltd repo root.
