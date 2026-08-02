@@ -6,15 +6,50 @@ metadata:
 data:
   APP_NAME: "kobotoolbox"
   APP_PORT: "8000"
-  LOG_LEVEL: "info"
-  LOG_FORMAT: "json"
+  CACHE_URL: "redis://redis.shopno-data.svc.cluster.local:6379/1"
+  CELERY_BROKER_URL: "redis://redis.shopno-data.svc.cluster.local:6379/2"
+  CELERY_RESULT_BACKEND: "redis://redis.shopno-data.svc.cluster.local:6379/3"
+  DJANGO_SETTINGS_MODULE: "kobo.settings.prod"
   ENV: "production"
-  PATH_PREFIX: "/"
+  KEYCLOAK_CLIENT_ID: "kobotoolbox"
+  KEYCLOAK_ISSUER: "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
+  KOBOCAT_URL: "https://kobotoolbox.shopnoltd.dpdns.org"
+  KOBOFORM_URL: "https://kobo.shopnoltd.dpdns.org"
+  KPI_LOGS_DIR: "/tmp"
+  KPI_PREFIX: "/"
+  KPI_REDIS_URL: "redis://redis.shopno-data.svc.cluster.local:6379/0"
+  KPI_SRC_DIR: "/srv/src/kpi"
+  LOG_FORMAT: "json"
+  LOG_LEVEL: "info"
+  MINIO_ENDPOINT: "minio.shopno-data.svc.cluster.local:9000"
+  MONGO_HOST: "mongo"
   OTEL_EXPORTER_OTLP_ENDPOINT: "http://tempo.observability.svc.cluster.local:4317"
-  REDIS_HOST: "redis.shopno-data.svc.cluster.local"
-  REDIS_PORT: "6379"
+  PATH_PREFIX: "/"
   POSTGRES_HOST: "postgres.shopno-data.svc.cluster.local"
   POSTGRES_PORT: "5432"
-  MINIO_ENDPOINT: "minio.shopno-data.svc.cluster.local:9000"
-  KEYCLOAK_ISSUER: "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
-  KEYCLOAK_CLIENT_ID: "kobotoolbox"
+  PUBLIC_DOMAIN_NAME: "shopnoltd.dpdns.org"
+  REDIS_HOST: "redis.shopno-data.svc.cluster.local"
+  REDIS_PORT: "6379"
+  REDIS_URL: "redis://redis.shopno-data.svc.cluster.local:6379/0"
+  SESSION_COOKIE_DOMAIN: ".shopnoltd.dpdns.org"
+  UWSGI_GROUP: "root"
+  UWSGI_USER: "root"
+  kpi-uwsgi.ini: |
+    [uwsgi]
+    chdir = $(KPI_SRC_DIR)
+    logto = $(KPI_LOGS_DIR)/uwsgi.log
+    manage-script-name = true
+    mount = $(KPI_PREFIX)=$(KPI_SRC_DIR)/kobo/wsgi.py
+    master = true
+    http-socket = 0.0.0.0:8000
+    buffer-size = 32768
+    listen = 128
+    die-on-term = true
+    enable-threads = true
+    single-interpreter = true
+    vacuum = true
+    processes = 2
+    threads = 2
+    uid = $(UWSGI_USER)
+    gid = $(UWSGI_GROUP)
+    static-map = /static=$(KPI_SRC_DIR)/staticfiles
