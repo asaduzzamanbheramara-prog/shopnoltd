@@ -41,7 +41,7 @@ jobs:
       - name: Build & push branded image
         uses: docker/build-push-action@v5
         with:
-          context: .
+          context: ./branding
           file: ${{ matrix.dockerfile }}
           build-args: BASE_SERVICE=${{ matrix.service }}
           push: true
