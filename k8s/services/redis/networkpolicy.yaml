@@ -21,6 +21,9 @@ spec:
         - namespaceSelector:
             matchLabels:
               name: shopno-monitoring
+        - namespaceSelector:
+            matchLabels:
+              name: shopno-identity
       ports:
         - port: 6379
           protocol: TCP
