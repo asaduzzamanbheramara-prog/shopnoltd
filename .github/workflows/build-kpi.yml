@@ -1,27 +1,44 @@
-name: build shopnoltd-kpi
+name: build branded shopnoltd-kpi
+
 on:
   push:
     branches: [main]
-    paths: ['kpi/**', '.github/workflows/build-kpi.yml']
+    paths:
+      - branding/**
+      - toolbox/**
+      - .github/workflows/build-kpi.yml
   workflow_dispatch:
+
 jobs:
   build:
     runs-on: ubuntu-latest
-    permissions: { contents: read, packages: write }
+
+    permissions:
+      contents: read
+      packages: write
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: docker/login-action@v3
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Login GHCR
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/build-push-action@v5
+
+      - name: Setup Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and Push branded KPI
+        uses: docker/build-push-action@v5
         with:
-          context: ./kpi
+          context: ./branding
+          file: ./branding/Dockerfile.overlay
           push: true
           tags: |
-            ghcr.io/asaduzzamanbheramara-prog/shopnoltd-kpi:main
-            ghcr.io/asaduzzamanbheramara-prog/shopnoltd-kpi:sha-${{ github.sha }}
+            ghcr.io/asaduzzamanbheramara-prog/shopnoltd-kpi:latest
+            ghcr.io/asaduzzamanbheramara-prog/shopnoltd-kpi:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
