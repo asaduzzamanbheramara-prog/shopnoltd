@@ -30,6 +30,29 @@
       "targets": [
         "docker\\keycloak\\themes\\shopnoltd\\login\\resources\\img\\logo.png"
       ]
+    },
+    {
+      "description": "ShopnoltdToolbox Kobo logo",
+      "source": "branding\\shopnoapp-logo.svg",
+      "targets": [
+        "toolbox\\kpi\\static\\shopnoltdlogo.svg",
+        "toolbox\\kpi\\staticfiles\\shopnoltdlogo.svg"
+      ]
+    },
+    {
+      "description": "KoboToolbox branded logo",
+      "source": "branding\\kobologo.svg",
+      "targets": [
+        "toolbox\\kpi\\static\\kobologo.svg",
+        "toolbox\\kpi\\staticfiles\\kobologo.svg"
+      ]
+    },
+    {
+      "description": "KoboCat logo",
+      "source": "branding\\shopnoapp-logo.png",
+      "targets": [
+        "toolbox\\kobocat\\static\\shopnoltdlogo.png"
+      ]
     }
   ]
 }
