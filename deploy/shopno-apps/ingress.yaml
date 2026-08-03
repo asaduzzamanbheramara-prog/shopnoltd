@@ -1,0 +1,28 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: enketo
+  namespace: shopno-apps
+  labels:
+    app.kubernetes.io/name: enketo
+    app.kubernetes.io/part-of: shopnoltd
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - enketo.shopnoltd.dpdns.org
+      secretName: enketo-tls
+  rules:
+    - host: enketo.shopnoltd.dpdns.org
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: enketo
+                port:
+                  number: 8005

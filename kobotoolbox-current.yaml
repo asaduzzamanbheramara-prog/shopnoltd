@@ -1,0 +1,199 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    deployment.kubernetes.io/revision: "67"
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"kobotoolbox","app.kubernetes.io/part-of":"shopnoltd"},"name":"kobotoolbox","namespace":"shopno-apps"},"spec":{"replicas":1,"selector":{"matchLabels":{"app.kubernetes.io/name":"kobotoolbox"}},"strategy":{"rollingUpdate":{"maxSurge":1,"maxUnavailable":0},"type":"RollingUpdate"},"template":{"metadata":{"annotations":{"prometheus.io/path":"/metrics","prometheus.io/port":"8000","prometheus.io/scrape":"true"},"labels":{"app.kubernetes.io/name":"kobotoolbox"}},"spec":{"automountServiceAccountToken":false,"containers":[{"env":[{"name":"POD_NAME","valueFrom":{"fieldRef":{"fieldPath":"metadata.name"}}},{"name":"POD_NAMESPACE","valueFrom":{"fieldRef":{"fieldPath":"metadata.namespace"}}},{"name":"PUBLIC_DOMAIN_NAME","value":"shopnoltd.dpdns.org"},{"name":"KOBOFORM_URL","value":"https://kobo.shopnoltd.dpdns.org"},{"name":"KOBOCAT_URL","value":"https://kobotoolbox.shopnoltd.dpdns.org"},{"name":"SECURE_PROXY_SSL_HEADER","value":"HTTP_X_FORWARDED_PROTO, https"},{"name":"USE_X_FORWARDED_HOST","value":"true"},{"name":"PUBLIC_REQUEST_SCHEME","value":"https"}],"envFrom":[{"configMapRef":{"name":"kobotoolbox-config"}},{"secretRef":{"name":"kobotoolbox-secret"}}],"image":"ghcr.io/asaduzzamanbheramara-prog/shopnoltd-kpi:sha-7ef4f470ae55378c064389ec6671dfc04b6aabca","imagePullPolicy":"Always","livenessProbe":{"failureThreshold":3,"initialDelaySeconds":60,"periodSeconds":20,"tcpSocket":{"port":8000},"timeoutSeconds":5},"name":"kobotoolbox","ports":[{"containerPort":8000,"name":"http","protocol":"TCP"}],"readinessProbe":{"failureThreshold":6,"initialDelaySeconds":20,"periodSeconds":10,"tcpSocket":{"port":8000},"timeoutSeconds":5},"resources":{"limits":{"cpu":"1000m","ephemeral-storage":"1Gi","memory":"512Mi"},"requests":{"cpu":"100m","ephemeral-storage":"256Mi","memory":"128Mi"}},"securityContext":{"allowPrivilegeEscalation":false,"capabilities":{"add":["CHOWN","SETUID","SETGID"],"drop":["ALL"]},"readOnlyRootFilesystem":false},"startupProbe":{"failureThreshold":60,"initialDelaySeconds":20,"periodSeconds":10,"tcpSocket":{"port":8000}},"volumeMounts":[{"mountPath":"/var/lib/kobotoolbox","name":"data"},{"mountPath":"/srv/src/kpi/media","name":"data","subPath":"media"},{"mountPath":"/srv/src/kobocat/media","name":"data","subPath":"kobocat-media"},{"mountPath":"/tmp","name":"tmp"},{"mountPath":"/srv/logs","name":"logs"},{"mountPath":"/srv/src/kpi/docker/uwsgi.ini","name":"uwsgi-ini-override","subPath":"kpi-uwsgi.ini"}]}],"securityContext":{"fsGroup":10001,"runAsGroup":10001,"runAsNonRoot":false,"runAsUser":0,"seccompProfile":{"type":"RuntimeDefault"}},"serviceAccountName":"kobotoolbox","topologySpreadConstraints":[{"labelSelector":{"matchLabels":{"app.kubernetes.io/name":"kobotoolbox"}},"maxSkew":1,"topologyKey":"topology.kubernetes.io/zone","whenUnsatisfiable":"ScheduleAnyway"}],"volumes":[{"name":"data","persistentVolumeClaim":{"claimName":"kobotoolbox-data"}},{"emptyDir":{},"name":"tmp"},{"emptyDir":{},"name":"logs"},{"configMap":{"name":"kobotoolbox-config"},"name":"uwsgi-ini-override"}]}}}}
+  creationTimestamp: "2026-07-31T10:39:02Z"
+  generation: 111
+  labels:
+    app.kubernetes.io/name: kobotoolbox
+    app.kubernetes.io/part-of: shopnoltd
+  name: kobotoolbox
+  namespace: shopno-apps
+  resourceVersion: "446033"
+  uid: de43e8fd-553f-4b17-96ed-3c133926a4ff
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 3
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: kobotoolbox
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/restartedAt: "2026-08-03T02:08:53+06:00"
+        prometheus.io/path: /metrics
+        prometheus.io/port: "8000"
+        prometheus.io/scrape: "true"
+      labels:
+        app.kubernetes.io/name: kobotoolbox
+    spec:
+      automountServiceAccountToken: false
+      containers:
+      - args:
+        - cd /srv/src/kpi && exec /opt/venv/bin/uwsgi --ini docker/uwsgi.ini --logto
+          /dev/stdout
+        command:
+        - /bin/bash
+        - -c
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        - name: PUBLIC_DOMAIN_NAME
+          value: shopnoltd.dpdns.org
+        - name: KOBOFORM_URL
+          value: https://kobo.shopnoltd.dpdns.org
+        - name: KOBOCAT_URL
+          value: https://kobotoolbox.shopnoltd.dpdns.org
+        - name: SECURE_PROXY_SSL_HEADER
+          value: HTTP_X_FORWARDED_PROTO, https
+        - name: USE_X_FORWARDED_HOST
+          value: "true"
+        - name: PUBLIC_REQUEST_SCHEME
+          value: https
+        envFrom:
+        - configMapRef:
+            name: kobotoolbox-config
+        - secretRef:
+            name: kobotoolbox-secret
+        image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-kpi:sha-7ef4f470ae55378c064389ec6671dfc04b6aabca
+        imagePullPolicy: Always
+        livenessProbe:
+          failureThreshold: 3
+          initialDelaySeconds: 60
+          periodSeconds: 20
+          successThreshold: 1
+          tcpSocket:
+            port: 8000
+          timeoutSeconds: 5
+        name: kobotoolbox
+        ports:
+        - containerPort: 8000
+          name: http
+          protocol: TCP
+        readinessProbe:
+          failureThreshold: 6
+          initialDelaySeconds: 20
+          periodSeconds: 10
+          successThreshold: 1
+          tcpSocket:
+            port: 8000
+          timeoutSeconds: 5
+        resources:
+          limits:
+            cpu: "1"
+            ephemeral-storage: 1Gi
+            memory: 2Gi
+          requests:
+            cpu: 100m
+            ephemeral-storage: 256Mi
+            memory: 512Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            add:
+            - CHOWN
+            - SETUID
+            - SETGID
+            drop:
+            - ALL
+          readOnlyRootFilesystem: false
+        startupProbe:
+          failureThreshold: 60
+          initialDelaySeconds: 20
+          periodSeconds: 10
+          successThreshold: 1
+          tcpSocket:
+            port: 8000
+          timeoutSeconds: 1
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /var/lib/kobotoolbox
+          name: data
+        - mountPath: /srv/src/kpi/media
+          name: data
+          subPath: media
+        - mountPath: /srv/src/kobocat/media
+          name: data
+          subPath: kobocat-media
+        - mountPath: /tmp
+          name: tmp
+        - mountPath: /srv/logs
+          name: logs
+        - mountPath: /srv/src/kpi/docker/uwsgi.ini
+          name: uwsgi-ini-override
+          subPath: kpi-uwsgi.ini
+        - mountPath: /srv/tmp
+          name: srv-tmp
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext:
+        fsGroup: 10001
+        fsGroupChangePolicy: Always
+        runAsGroup: 10001
+        runAsNonRoot: false
+        runAsUser: 0
+        seccompProfile:
+          type: RuntimeDefault
+      serviceAccount: kobotoolbox
+      serviceAccountName: kobotoolbox
+      terminationGracePeriodSeconds: 30
+      topologySpreadConstraints:
+      - labelSelector:
+          matchLabels:
+            app.kubernetes.io/name: kobotoolbox
+        maxSkew: 1
+        topologyKey: topology.kubernetes.io/zone
+        whenUnsatisfiable: ScheduleAnyway
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: kobotoolbox-data
+      - emptyDir: {}
+        name: tmp
+      - emptyDir: {}
+        name: logs
+      - configMap:
+          defaultMode: 420
+          name: kobotoolbox-config
+        name: uwsgi-ini-override
+      - emptyDir: {}
+        name: srv-tmp
+status:
+  availableReplicas: 3
+  conditions:
+  - lastTransitionTime: "2026-08-02T20:26:56Z"
+    lastUpdateTime: "2026-08-02T20:27:59Z"
+    message: ReplicaSet "kobotoolbox-6747ff5bdc" has successfully progressed.
+    reason: NewReplicaSetAvailable
+    status: "True"
+    type: Progressing
+  - lastTransitionTime: "2026-08-02T20:35:19Z"
+    lastUpdateTime: "2026-08-02T20:35:19Z"
+    message: Deployment has minimum availability.
+    reason: MinimumReplicasAvailable
+    status: "True"
+    type: Available
+  observedGeneration: 111
+  readyReplicas: 3
+  replicas: 3
+  terminatingReplicas: 0
+  updatedReplicas: 3

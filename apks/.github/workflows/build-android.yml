@@ -1,0 +1,20 @@
+name: Build ShopnoltdCollect
+on:
+  push: { branches: [main] }
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: android-actions/setup-android@v3
+      - run: echo "sdk.dir=$ANDROID_HOME" > local.properties
+      - run: ./gradlew assembleRelease
+      - uses: actions/upload-artifact@v4
+        with:
+          name: shopnoltdcollect-release
+          path: app/build/outputs/apk/release/app-release.apk
