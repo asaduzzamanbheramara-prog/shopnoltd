@@ -1,17 +1,23 @@
-FROM postgis/postgis:16-3.4
+FROM postgis/postgis:16-3.5
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    git \
-    clang-13 \
-    postgresql-server-dev-16 \
-    ca-certificates \
-    && git clone --branch v0.7.4 https://github.com/pgvector/pgvector.git /tmp/pgvector \
+USER root
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+       build-essential \
+       git \
+       postgresql-server-dev-16 \
+    && git clone --branch v0.8.6 --depth 1 \
+       https://github.com/pgvector/pgvector.git /tmp/pgvector \
     && cd /tmp/pgvector \
     && make \
     && make install \
-    && cd / \
     && rm -rf /tmp/pgvector \
-    && apt-get purge -y build-essential git clang-13 postgresql-server-dev-16 \
+    && apt-get purge -y \
+       build-essential \
+       git \
+       postgresql-server-dev-16 \
     && apt-get autoremove -y \
     && rm -rf /var/lib/apt/lists/*
+
+USER postgres
