@@ -17,8 +17,8 @@ spec:
     spec:
       containers:
         - name: postgres
-          image: postgres:16
-          imagePullPolicy: IfNotPresent
+          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-postgres-combined:pg16-postgis3.5-pgvector0.8.6
+          imagePullPolicy: Always
 
           envFrom:
             - secretRef:
