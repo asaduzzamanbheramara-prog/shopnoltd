@@ -1,3 +1,6 @@
 [submodule "vendor/genai-stack"]
 	path = vendor/genai-stack
 	url = https://github.com/docker/genai-stack.git
+[submodule "shopnoltd-collect-android"]
+	path = shopnoltd-collect-android
+	url = https://github.com/asaduzzamanbheramara-prog/shopnoltd-collect-android.git
