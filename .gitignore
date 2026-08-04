@@ -175,3 +175,6 @@ branding/output/omnilogin-extracted/
 # Docker Desktop virtual disks
 .github/workflows/DockerDesktopWSL/
 *.vhdx
+
+# Local database backups
+backups
