@@ -1,0 +1,31 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: kf
+  namespace: toolbox
+  labels:
+    app.kubernetes.io/name: kf
+    app.kubernetes.io/part-of: shopnoltd
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/backend-protocol: HTTP
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: kf.shopnoltd.dpdns.org
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: kf
+                port:
+                  number: 80
+  tls:
+    - hosts:
+        - kf.shopnoltd.dpdns.org
+      secretName: kf-tls

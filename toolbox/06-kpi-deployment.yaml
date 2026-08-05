@@ -17,6 +17,13 @@ spec:
       - name: kc
         image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-kpi:latest
         imagePullPolicy: Always
+        resources:
+          requests:
+            cpu: 800m
+            memory: 1Gi
+          limits:
+            cpu: "2"
+            memory: 2Gi
         ports:
         - containerPort: 8000
         env:
