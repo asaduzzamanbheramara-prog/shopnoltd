@@ -21,7 +21,7 @@ spec:
         app.kubernetes.io/name: ai-platform
       annotations:
         prometheus.io/scrape: "true"
-        prometheus.io/port: "8000"
+        prometheus.io/port: "8080"
         prometheus.io/path: "/metrics"
     spec:
       serviceAccountName: ai-platform
@@ -39,7 +39,7 @@ spec:
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
-              containerPort: 8000
+              containerPort: 8080
               protocol: TCP
           envFrom:
             - configMapRef:
@@ -53,7 +53,7 @@ spec:
               valueFrom: { fieldRef: { fieldPath: metadata.namespace } }
           resources:
             requests:
-              cpu: 100m
+              cpu: 20m
               memory: 128Mi
               ephemeral-storage: 256Mi
             limits:
