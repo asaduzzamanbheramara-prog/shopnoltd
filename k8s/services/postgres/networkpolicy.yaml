@@ -14,6 +14,9 @@ spec:
     - from:
         - namespaceSelector:
             matchLabels:
+              name: ingress-nginx
+        - namespaceSelector:
+            matchLabels:
               name: shopno-ingress
         - namespaceSelector:
             matchLabels:
@@ -24,6 +27,12 @@ spec:
         - namespaceSelector:
             matchLabels:
               name: shopno-identity
+        - namespaceSelector:
+            matchLabels:
+              name: shopno-apps
+        - namespaceSelector:
+            matchLabels:
+              name: shopno-payments
       ports:
         - port: 5432
           protocol: TCP
