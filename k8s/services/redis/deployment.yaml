@@ -17,9 +17,6 @@ spec:
       labels:
         app.kubernetes.io/name: redis
       annotations:
-        prometheus.io/scrape: "true"
-        prometheus.io/port: "6379"
-        prometheus.io/path: "/metrics"
     spec:
       serviceAccountName: redis
       automountServiceAccountToken: false
@@ -35,7 +32,7 @@ spec:
           image: redis:latest
           imagePullPolicy: IfNotPresent
           ports:
-            - name: http
+            - name: redis
               containerPort: 6379
               protocol: TCP
           envFrom:
