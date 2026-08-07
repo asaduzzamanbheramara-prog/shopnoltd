@@ -24,6 +24,7 @@ spec:
         prometheus.io/port: "5678"
         prometheus.io/path: "/metrics"
     spec:
+      enableServiceLinks: false
       serviceAccountName: n8n
       automountServiceAccountToken: false
       securityContext:

@@ -8,10 +8,7 @@ metadata:
 spec:
   replicas: 1
   strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0
+    type: Recreate
   selector:
     matchLabels:
       app.kubernetes.io/name: prometheus
@@ -25,7 +22,7 @@ spec:
         prometheus.io/path: "/metrics"
     spec:
       serviceAccountName: prometheus
-      automountServiceAccountToken: false
+      automountServiceAccountToken: true
       securityContext:
         runAsNonRoot: true
         runAsUser: 10001
@@ -37,6 +34,9 @@ spec:
         - name: prometheus
           image: prom/prometheus:latest
           imagePullPolicy: IfNotPresent
+          args:
+            - "--config.file=/etc/prometheus/prometheus.yml"
+            - "--storage.tsdb.path=/prometheus"
           ports:
             - name: http
               containerPort: 9090
@@ -88,6 +88,9 @@ spec:
               mountPath: /prometheus
             - name: tmp
               mountPath: /tmp
+            - name: config
+              mountPath: /etc/prometheus/prometheus.yml
+              subPath: prometheus.yml
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
@@ -99,6 +102,9 @@ spec:
             claimName: prometheus-data
         - name: tmp
           emptyDir: {}
+        - name: config
+          configMap:
+            name: prometheus-scrape-config
       topologySpreadConstraints:
         - maxSkew: 1
           topologyKey: topology.kubernetes.io/zone

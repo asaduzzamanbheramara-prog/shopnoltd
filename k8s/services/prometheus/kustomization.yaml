@@ -5,13 +5,14 @@ namespace: shopno-monitoring
 
 resources:
 - serviceaccount.yaml
+- rbac.yaml
+- scrape-config.yaml
 - configmap.yaml
 - secret.yaml
 - pvc.yaml
 - deployment.yaml
 - service.yaml
 - ingress.yaml
-- hpa.yaml
 - networkpolicy.yaml
 - poddisruptionbudget.yaml
 - servicemonitor.yaml

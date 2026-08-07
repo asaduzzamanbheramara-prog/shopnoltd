@@ -29,12 +29,12 @@ spec:
           protocol: TCP
   egress:
     - to:
-        - namespaceSelector:
-            matchLabels:
-              name: shopno-data
-        - namespaceSelector:
-            matchLabels:
-              name: shopno-identity
+        - ipBlock:
+            cidr: 10.43.0.1/32
+      ports:
+        - port: 443
+          protocol: TCP
+    - to:
         - namespaceSelector:
             matchLabels:
               name: shopno-monitoring
@@ -46,9 +46,23 @@ spec:
           protocol: UDP
         - port: 443
           protocol: TCP
-        - port: 5432
-          protocol: TCP
-        - port: 6379
-          protocol: TCP
-        - port: 9000
-          protocol: TCP
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: shopno-data
+        - namespaceSelector:
+            matchLabels:
+              name: shopno-identity
+        - namespaceSelector:
+            matchLabels:
+              name: shopno-platform
+        - namespaceSelector:
+            matchLabels:
+              name: shopno-apps
+        - namespaceSelector:
+            matchLabels:
+              name: shopno-ingress
+        - namespaceSelector:
+            matchLabels:
+              name: toolbox
+      # scrape ports vary per-service annotation; also covers prometheus's own db/cache/keycloak/minio egress to shopno-data & shopno-identity

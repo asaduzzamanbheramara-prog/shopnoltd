@@ -12,5 +12,9 @@ spec:
       port: 80
       targetPort: http
       protocol: TCP
+    - name: management
+      port: 9000
+      targetPort: management
+      protocol: TCP
   selector:
     app.kubernetes.io/name: keycloak

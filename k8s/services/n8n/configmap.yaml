@@ -6,6 +6,7 @@ metadata:
 data:
   APP_NAME: "n8n"
   APP_PORT: "5678"
+  N8N_USER_FOLDER: "/var/lib/n8n"
   LOG_LEVEL: "info"
   LOG_FORMAT: "json"
   ENV: "production"
