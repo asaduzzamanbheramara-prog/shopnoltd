@@ -25,7 +25,7 @@ spec:
             matchLabels:
               name: shopno-monitoring
       ports:
-        - port: 3000
+        - port: 8080
           protocol: TCP
   egress:
     - to:
