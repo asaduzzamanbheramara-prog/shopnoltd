@@ -14,6 +14,9 @@ spec:
     - from:
         - namespaceSelector:
             matchLabels:
+              name: ingress-nginx
+        - namespaceSelector:
+            matchLabels:
               name: shopno-ingress
         - namespaceSelector:
             matchLabels:
@@ -22,7 +25,7 @@ spec:
             matchLabels:
               name: shopno-monitoring
       ports:
-        - port: 8000
+        - port: 8080
           protocol: TCP
   egress:
     - to:

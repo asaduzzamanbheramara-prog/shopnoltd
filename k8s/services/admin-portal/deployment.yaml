@@ -19,10 +19,6 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: admin-portal
-      annotations:
-        prometheus.io/scrape: "true"
-        prometheus.io/port: "3000"
-        prometheus.io/path: "/metrics"
     spec:
       serviceAccountName: admin-portal
       automountServiceAccountToken: false

@@ -33,6 +33,13 @@ spec:
         fsGroup: 10001
         seccompProfile:
           type: RuntimeDefault
+      initContainers:
+        - name: seed-php-confd
+          image: nextcloud:latest
+          command: ["sh", "-c", "cp -a /usr/local/etc/php/conf.d/. /php-confd-writable/"]
+          volumeMounts:
+            - name: php-confd
+              mountPath: /php-confd-writable
       containers:
         - name: nextcloud
           image: nextcloud:latest
@@ -88,6 +95,8 @@ spec:
               mountPath: /var/lib/nextcloud
             - name: tmp
               mountPath: /tmp
+            - name: php-confd
+              mountPath: /usr/local/etc/php/conf.d
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
@@ -98,6 +107,8 @@ spec:
           persistentVolumeClaim:
             claimName: nextcloud-data
         - name: tmp
+          emptyDir: {}
+        - name: php-confd
           emptyDir: {}
       topologySpreadConstraints:
         - maxSkew: 1
