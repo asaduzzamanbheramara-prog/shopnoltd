@@ -51,6 +51,7 @@ jobs:
           - { service: mail-service,       dockerfile: platform/mail-service/Dockerfile }
           - { service: social-service,     dockerfile: platform/social-service/Dockerfile }
           - { service: keycloak,           dockerfile: platform/keycloak/Dockerfile }
+          - { service: superset,           dockerfile: platform/superset/Dockerfile }
     permissions:
       contents: read
       packages: write
