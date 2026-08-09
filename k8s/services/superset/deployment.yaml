@@ -34,7 +34,7 @@ spec:
       containers:
         - name: superset
           image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/superset:latest
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           ports:
             - name: http
               containerPort: 8088
