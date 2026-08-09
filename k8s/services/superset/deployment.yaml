@@ -20,9 +20,6 @@ spec:
       labels:
         app.kubernetes.io/name: superset
       annotations:
-        prometheus.io/scrape: "true"
-        prometheus.io/port: "8088"
-        prometheus.io/path: "/metrics"
     spec:
       enableServiceLinks: false
       serviceAccountName: superset
@@ -36,7 +33,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: superset
-          image: apache/superset:latest
+          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/superset:latest
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
