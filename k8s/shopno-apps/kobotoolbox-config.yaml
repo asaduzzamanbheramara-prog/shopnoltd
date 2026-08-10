@@ -1,0 +1,73 @@
+apiVersion: v1
+data:
+  ACCOUNT_EMAIL_VERIFICATION: mandatory
+  APP_NAME: kobotoolbox
+  APP_PORT: "8000"
+  CACHE_URL: redis://redis.shopno-data.svc.cluster.local:6379/1
+  CELERY_BROKER_URL: redis://redis.shopno-data.svc.cluster.local:6379/2
+  CELERY_RESULT_BACKEND: redis://redis.shopno-data.svc.cluster.local:6379/3
+  DEFAULT_FROM_EMAIL: KoboToolbox <no-reply@shopnoltd.dpdns.org>
+  DJANGO_SETTINGS_MODULE: kobo.settings.prod
+  EMAIL_BACKEND: django.core.mail.backends.smtp.EmailBackend
+  EMAIL_HOST: smtp-relay.brevo.com
+  EMAIL_HOST_PASSWORD: xsmtpsib-PASTE-YOUR-0cEMpl-KEY-HERE
+  EMAIL_HOST_USER: abb931001@smtp-brevo.com
+  EMAIL_PORT: "587"
+  EMAIL_USE_TLS: "True"
+  ENV: production
+  KEYCLOAK_CLIENT_ID: kobotoolbox
+  KEYCLOAK_ISSUER: https://auth.shopnoltd.dpdns.org/realms/shopnoltd
+  KOBOCAT_URL: https://kobotoolbox.shopnoltd.dpdns.org
+  KOBOFORM_URL: https://kobo.shopnoltd.dpdns.org
+  KPI_LOGS_DIR: /tmp
+  KPI_PREFIX: /
+  KPI_REDIS_URL: redis://redis.shopno-data.svc.cluster.local:6379/0
+  KPI_SRC_DIR: /srv/src/kpi
+  LOG_FORMAT: json
+  LOG_LEVEL: info
+  MINIO_ENDPOINT: minio.shopno-data.svc.cluster.local:9000
+  MONGO_HOST: mongo
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo.observability.svc.cluster.local:4317
+  PATH_PREFIX: /
+  POSTGRES_HOST: postgres.shopno-data.svc.cluster.local
+  POSTGRES_PORT: "5432"
+  PUBLIC_DOMAIN_NAME: shopnoltd.dpdns.org
+  REDIS_HOST: redis.shopno-data.svc.cluster.local
+  REDIS_PORT: "6379"
+  REDIS_URL: redis://redis.shopno-data.svc.cluster.local:6379/0
+  SERVER_EMAIL: no-reply@shopnoltd.dpdns.org
+  SESSION_COOKIE_DOMAIN: .shopnoltd.dpdns.org
+  UWSGI_GROUP: root
+  UWSGI_USER: root
+  kpi-uwsgi.ini: |
+    [uwsgi]
+    chdir = $(KPI_SRC_DIR)
+    logto = $(KPI_LOGS_DIR)/uwsgi.log
+    manage-script-name = true
+    mount = $(KPI_PREFIX)=$(KPI_SRC_DIR)/kobo/wsgi.py
+    master = true
+    http-socket = 0.0.0.0:8000
+    buffer-size = 32768
+    listen = 128
+    die-on-term = true
+    enable-threads = true
+    single-interpreter = true
+    vacuum = true
+    processes = 2
+    threads = 2
+    uid = $(UWSGI_USER)
+    gid = $(UWSGI_GROUP)
+    static-map = /static=$(KPI_SRC_DIR)/staticfiles
+kind: ConfigMap
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"v1","data":{"APP_NAME":"kobotoolbox","APP_PORT":"8000","CACHE_URL":"redis://redis.shopno-data.svc.cluster.local:6379/1","CELERY_BROKER_URL":"redis://redis.shopno-data.svc.cluster.local:6379/2","CELERY_RESULT_BACKEND":"redis://redis.shopno-data.svc.cluster.local:6379/3","DJANGO_SETTINGS_MODULE":"kobo.settings.prod","ENV":"production","KEYCLOAK_CLIENT_ID":"kobotoolbox","KEYCLOAK_ISSUER":"https://auth.shopnoltd.dpdns.org/realms/shopnoltd","KOBOCAT_URL":"https://kobotoolbox.shopnoltd.dpdns.org","KOBOFORM_URL":"https://kobo.shopnoltd.dpdns.org","KPI_LOGS_DIR":"/tmp","KPI_PREFIX":"/","KPI_REDIS_URL":"redis://redis.shopno-data.svc.cluster.local:6379/0","KPI_SRC_DIR":"/srv/src/kpi","LOG_FORMAT":"json","LOG_LEVEL":"info","MINIO_ENDPOINT":"minio.shopno-data.svc.cluster.local:9000","MONGO_HOST":"mongo","OTEL_EXPORTER_OTLP_ENDPOINT":"http://tempo.observability.svc.cluster.local:4317","PATH_PREFIX":"/","POSTGRES_HOST":"postgres.shopno-data.svc.cluster.local","POSTGRES_PORT":"5432","PUBLIC_DOMAIN_NAME":"shopnoltd.dpdns.org","REDIS_HOST":"redis.shopno-data.svc.cluster.local","REDIS_PORT":"6379","REDIS_URL":"redis://redis.shopno-data.svc.cluster.local:6379/0","SESSION_COOKIE_DOMAIN":".shopnoltd.dpdns.org","UWSGI_GROUP":"root","UWSGI_USER":"root","kpi-uwsgi.ini":"[uwsgi]\nchdir = $(KPI_SRC_DIR)\nlogto = $(KPI_LOGS_DIR)/uwsgi.log\nmanage-script-name = true\nmount = $(KPI_PREFIX)=$(KPI_SRC_DIR)/kobo/wsgi.py\nmaster = true\nhttp-socket = 0.0.0.0:8000\nbuffer-size = 32768\nlisten = 128\ndie-on-term = true\nenable-threads = true\nsingle-interpreter = true\nvacuum = true\nprocesses = 2\nthreads = 2\nuid = $(UWSGI_USER)\ngid = $(UWSGI_GROUP)\nstatic-map = /static=$(KPI_SRC_DIR)/staticfiles\n"},"kind":"ConfigMap","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"kobotoolbox","app.kubernetes.io/part-of":"shopnoltd"},"name":"kobotoolbox-config","namespace":"shopno-apps"}}
+  creationTimestamp: "2026-07-28T05:46:04Z"
+  labels:
+    app.kubernetes.io/name: kobotoolbox
+    app.kubernetes.io/part-of: shopnoltd
+  name: kobotoolbox-config
+  namespace: shopno-apps
+  resourceVersion: "1600226"
+  uid: beeecf54-1494-40c8-a9e2-5f9ce8750aae
