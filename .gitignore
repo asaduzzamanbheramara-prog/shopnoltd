@@ -178,3 +178,15 @@ branding/output/omnilogin-extracted/
 
 # Local database backups
 backups
+cookies.txt
+*.tmp
+*.log
+.env
+.env.*
+
+# Local/runtime files
+*.tmp
+*.log
+.env
+.env.*
+cookies.txt
