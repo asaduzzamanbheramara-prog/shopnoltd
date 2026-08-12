@@ -3,17 +3,10 @@ kind: Ingress
 metadata:
   name: mail-service
   namespace: shopno-mail
-  annotations:
-    cert-manager.io/cluster-issuer: letsencrypt-prod
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
 spec:
   ingressClassName: nginx
-  tls:
-    - hosts:
-        - api.mail.shopnoltd.dpdns.org
-      secretName: mail-service-tls
   rules:
-    - host: api.mail.shopnoltd.dpdns.org
+    - host: mail-api.shopnoltd.dpdns.org
       http:
         paths:
           - path: /
