@@ -21,6 +21,13 @@ const APPS = {
     type: "Payment",
   },
 
+  "domain.shopnoltd.dpdns.org": {
+    title: "Shopnoltd Domain",
+    subtitle: "Domain registration, management and services",
+    type: "Domain",
+  },
+
+
   "exchange.shopnoltd.dpdns.org": {
     title: "Shopnoltd Exchange",
     subtitle: "Exchange, balances and transactions",
