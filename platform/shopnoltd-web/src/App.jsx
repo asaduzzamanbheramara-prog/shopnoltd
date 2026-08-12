@@ -41,8 +41,7 @@ const APPS = {
 };
 
 const app =
-  APPS[host] ||
-  {
+  APPS[host] || {
     title: "Shopnoltd",
     subtitle: "Shopno Database Firm",
     type: "Platform",
