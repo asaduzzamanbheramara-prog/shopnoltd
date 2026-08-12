@@ -41,6 +41,11 @@ jobs:
             dockerfile: ./billing-engine/Dockerfile
             tag: v6
 
+          - name: shopnoltd-web
+            context: ./platform/shopnoltd-web
+            dockerfile: ./platform/shopnoltd-web/Dockerfile
+            tag: latest
+
           - name: oauth
             context: ./oauth-service
             dockerfile: ./oauth-service/Dockerfile

@@ -1,0 +1,89 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: shopnoltd-web
+  namespace: shopno-platform
+
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+
+spec:
+  ingressClassName: nginx
+
+  tls:
+    - secretName: shopno-wildcard-tls
+      hosts:
+        - shopnoltd.dpdns.org
+        - billing.shopnoltd.dpdns.org
+        - payment.shopnoltd.dpdns.org
+        - exchange.shopnoltd.dpdns.org
+        - admin.shopnoltd.dpdns.org
+        - support.shopnoltd.dpdns.org
+
+  rules:
+
+    - host: shopnoltd.dpdns.org
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: shopnoltd-web
+                port:
+                  number: 80
+
+    - host: billing.shopnoltd.dpdns.org
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: shopnoltd-web
+                port:
+                  number: 80
+
+    - host: payment.shopnoltd.dpdns.org
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: shopnoltd-web
+                port:
+                  number: 80
+
+    - host: exchange.shopnoltd.dpdns.org
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: shopnoltd-web
+                port:
+                  number: 80
+
+    - host: admin.shopnoltd.dpdns.org
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: shopnoltd-web
+                port:
+                  number: 80
+
+    - host: support.shopnoltd.dpdns.org
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: shopnoltd-web
+                port:
+                  number: 80
