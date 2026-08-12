@@ -11,10 +11,10 @@ spec:
   ingressClassName: nginx
   tls:
     - hosts:
-        - billing-engine.shopnoltd.dpdns.org
+        - billing.shopnoltd.dpdns.org
       secretName: billing-engine-tls
   rules:
-    - host: billing-engine.shopnoltd.dpdns.org
+    - host: billing.shopnoltd.dpdns.org
       http:
         paths:
           - path: /
