@@ -190,3 +190,6 @@ cookies.txt
 .env
 .env.*
 cookies.txt
+
+# Local DNS/email backups
+/dns-backup-email/
