@@ -68,8 +68,12 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends docker.io \
     && rm -rf /var/lib/apt/lists/*
 
-# Claude Code
-# Installed separately after verifying the package architecture.
+# Claude Code — official native Linux installer
+RUN mkdir -p /opt/claude \
+    && HOME=/opt/claude bash -c 'curl -fsSL https://claude.ai/install.sh | bash' \
+    && test -x /opt/claude/.local/bin/claude \
+    && ln -sf /opt/claude/.local/bin/claude /usr/local/bin/claude \
+    && chmod -R a+rX /opt/claude
 
 # Useful shell defaults
 RUN printf '%s\n' \
