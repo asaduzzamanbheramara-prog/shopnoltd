@@ -96,6 +96,9 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /config
+            - name: data
+              mountPath: /mnt
+              subPath: workspace
             - name: tmp
               mountPath: /tmp
             - name: run-dir
