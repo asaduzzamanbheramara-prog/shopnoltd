@@ -115,7 +115,8 @@ spec:
         - name: run
           emptyDir: {}
         - name: etc-gitea
-          emptyDir: {}
+          persistentVolumeClaim:
+            claimName: gitea-etc
       topologySpreadConstraints:
         - maxSkew: 1
           topologyKey: topology.kubernetes.io/zone
