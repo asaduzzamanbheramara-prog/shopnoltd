@@ -4,7 +4,7 @@ USER root
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV SHELL=/bin/bash
-ENV PATH=/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/bin:/sbin
+ENV PATH=/app/code-server/bin:/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/bin:/sbin
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
@@ -69,7 +69,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 # Claude Code
-RUN npm install -g @anthropic-ai/claude-code
+# Installed separately after verifying the package architecture.
 
 # Useful shell defaults
 RUN printf '%s\n' \
@@ -80,16 +80,16 @@ RUN printf '%s\n' \
 
 # VS Code extensions
 RUN mkdir -p /opt/code-server-extensions \
-    && code-server --install-extension GitHub.vscode-pull-request-github \
-    && code-server --install-extension eamodio.gitlens \
-    && code-server --install-extension dbaeumer.vscode-eslint \
-    && code-server --install-extension esbenp.prettier-vscode \
-    && code-server --install-extension ms-python.python \
-    && code-server --install-extension ms-python.vscode-pylance \
-    && code-server --install-extension redhat.vscode-yaml \
-    && code-server --install-extension ms-azuretools.vscode-docker \
-    && code-server --install-extension ms-kubernetes-tools.vscode-kubernetes-tools \
-    && code-server --install-extension Continue.continue \
+    && /app/code-server/bin/code-server --install-extension GitHub.vscode-pull-request-github \
+    && /app/code-server/bin/code-server --install-extension eamodio.gitlens \
+    && /app/code-server/bin/code-server --install-extension dbaeumer.vscode-eslint \
+    && /app/code-server/bin/code-server --install-extension esbenp.prettier-vscode \
+    && /app/code-server/bin/code-server --install-extension ms-python.python \
+    && /app/code-server/bin/code-server --install-extension ms-python.vscode-pylance \
+    && /app/code-server/bin/code-server --install-extension redhat.vscode-yaml \
+    && /app/code-server/bin/code-server --install-extension ms-azuretools.vscode-docker \
+    && /app/code-server/bin/code-server --install-extension ms-kubernetes-tools.vscode-kubernetes-tools \
+    && /app/code-server/bin/code-server --install-extension Continue.continue \
     || true
 
 USER abc
