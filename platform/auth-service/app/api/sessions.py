@@ -26,7 +26,7 @@ async def current_user(creds: HTTPAuthorizationCredentials = Depends(bearer)):
 async def list_(user=Depends(current_user), s: AsyncSession = Depends(db)):
     res = await s.execute(
         select(Session).where(
-            Session.user_id == user.get("email", user["sub"]), Session.active == True
+            Session.user_id == user.get("email", user["sub"]), Session.active.is_(True)
         )
     )
     return [
@@ -44,7 +44,14 @@ async def list_(user=Depends(current_user), s: AsyncSession = Depends(db)):
 
 @router.delete("/{sess_id}")
 async def revoke(sess_id: str, user=Depends(current_user), s: AsyncSession = Depends(db)):
-    sess = (await s.execute(select(Session).where(Session.id == sess_id))).scalar_one_or_none()
+    sess = (
+        await s.execute(
+            select(Session).where(
+                Session.id == sess_id,
+                Session.user_id == user.get("email", user["sub"]),
+            )
+        )
+    ).scalar_one_or_none()
     if not sess:
         from fastapi import HTTPException
 
