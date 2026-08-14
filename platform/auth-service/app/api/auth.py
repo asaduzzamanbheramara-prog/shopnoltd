@@ -78,7 +78,7 @@ async def logout(
     payload = await verify_token(creds.credentials)
     res = await s.execute(
         select(Session).where(
-            Session.user_id == payload.get("email", payload["sub"]), Session.active == True
+            Session.user_id == payload.get("email", payload["sub"]), Session.active.is_(True)
         )
     )
     for sess in res.scalars().all():
