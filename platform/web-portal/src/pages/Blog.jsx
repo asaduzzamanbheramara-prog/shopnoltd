@@ -1,3 +1,4 @@
+import React from 'react'
 export default function Blog() {
   return (
     <div style={{ maxWidth: 720, margin: '0 auto', padding: 32, fontFamily: 'system-ui, sans-serif' }}>

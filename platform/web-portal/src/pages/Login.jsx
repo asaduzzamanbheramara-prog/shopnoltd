@@ -1,3 +1,4 @@
+import React from 'react'
 import { KEYCLOAK_URL, KEYCLOAK_REALM, KEYCLOAK_CLIENT_ID, REDIRECT_URI } from '../config'
 import { randomString, codeChallengeFor } from '../pkce'
 

@@ -1,3 +1,4 @@
+import React from 'react'
 export default function Home() {
   return (
     <div style={{ maxWidth: 960, margin: '0 auto', padding: 32, fontFamily: 'system-ui, sans-serif' }}>

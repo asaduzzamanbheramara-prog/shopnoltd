@@ -1,3 +1,4 @@
+import React from 'react'
 export default function Pricing() {
   const plans = [
     { name: 'Free',    price: 0,    features: ['1 user', '1 GB storage', 'Community support'] },
