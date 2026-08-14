@@ -10,7 +10,9 @@ from shopno_core.database.redis import redis_client
 from starlette.responses import Response
 
 from app.core.config import settings
-from app.core.db import Base, engine
+from app.db import models as ai_db_models  # noqa: F401
+from app.db.base import Base
+from app.db.session import engine
 
 log = structlog.get_logger()
 
@@ -53,6 +55,14 @@ app.include_router(
     __import__("app.api.agents", fromlist=["router"]).router,
     prefix="/api/v1/agents",
     tags=["agents"],
+)
+
+app.include_router(
+    __import__("app.api.ai_providers", fromlist=["router"]).router,
+)
+
+app.include_router(
+    __import__("app.api.ai_models", fromlist=["router"]).router,
 )
 
 

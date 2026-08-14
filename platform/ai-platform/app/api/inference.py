@@ -1,37 +1,44 @@
-import httpx
-from fastapi import APIRouter, Depends
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import settings
-from app.core.security import verify_token
+from app.core.security import current_user
+from app.db.session import get_db
 from app.schemas.schemas import InferIn, InferOut
+from app.services.model_router import (
+    ModelNotAvailableError,
+    run_inference,
+)
 
 router = APIRouter()
-bearer = HTTPBearer()
-
-
-async def current_user(creds: HTTPAuthorizationCredentials = Depends(bearer)):
-    return await verify_token(creds.credentials)
 
 
 @router.post("", response_model=InferOut)
-async def infer(body: InferIn, user=Depends(current_user)):
-    """Call local LLM (Ollama/vLLM) or fall back to stub."""
+async def infer(
+    body: InferIn,
+    user=Depends(current_user),
+    db: AsyncSession = Depends(get_db),
+):
     try:
-        async with httpx.AsyncClient(timeout=60) as c:
-            r = await c.post(
-                f"{settings.llm_url}/api/generate",
-                json={"model": settings.llm_model, "prompt": body.prompt, "stream": False},
-            )
-        r.raise_for_status()
-        d = r.json()
-        return InferOut(
-            response=d.get("response", ""), model=settings.llm_model, tokens=d.get("eval_count", 0)
+        result = await run_inference(
+            db=db,
+            prompt=body.prompt,
+            model_name=body.model,
         )
-    except Exception:
-        # Stub for when no LLM is running yet
+
         return InferOut(
-            response=f"[Stub: would call {settings.llm_model}]: {body.prompt[:200]}",
-            model=settings.llm_model,
-            tokens=0,
+            response=result.text,
+            model=body.model or "resolved",
+            tokens=result.tokens_used,
         )
+
+    except ModelNotAvailableError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
+        ) from exc
+
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"AI inference failed: {exc}",
+        ) from exc

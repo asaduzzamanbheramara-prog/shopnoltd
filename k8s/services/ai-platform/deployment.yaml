@@ -47,6 +47,11 @@ spec:
             - secretRef:
                 name: ai-platform-secret
           env:
+            - name: AI_KEY_ENCRYPTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: ai-platform-encryption
+                  key: AI_KEY_ENCRYPTION_KEY
             - name: POD_NAME
               valueFrom: { fieldRef: { fieldPath: metadata.name } }
             - name: POD_NAMESPACE

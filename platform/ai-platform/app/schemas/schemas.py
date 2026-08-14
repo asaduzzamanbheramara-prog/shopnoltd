@@ -3,6 +3,7 @@ from pydantic import BaseModel
 
 class InferIn(BaseModel):
     prompt: str
+    model: str | None = None
     agent_id: str | None = None
     max_tokens: int = 512
     temperature: float = 0.7
