@@ -4,17 +4,26 @@ metadata:
   name: web-portal
   namespace: shopno-platform
   annotations:
-    cert-manager.io/cluster-issuer: letsencrypt-prod
-    traefik.ingress.kubernetes.io/router.tls: "true"
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
 spec:
   ingressClassName: nginx
   tls:
     - hosts:
         - web-portal.shopnoltd.dpdns.org
-      secretName: web-portal-tls
+        - shopnoltd.dpdns.org
+      secretName: shopno-wildcard-tls
   rules:
     - host: web-portal.shopnoltd.dpdns.org
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: web-portal
+                port:
+                  number: 80
+    - host: shopnoltd.dpdns.org
       http:
         paths:
           - path: /
