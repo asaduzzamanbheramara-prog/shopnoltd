@@ -1,43 +1,116 @@
-import React from 'react'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { KEYCLOAK_URL, KEYCLOAK_REALM, KEYCLOAK_CLIENT_ID, REDIRECT_URI } from '../config'
+import {
+  KEYCLOAK_CLIENT_ID,
+  KEYCLOAK_REALM,
+  KEYCLOAK_URL,
+  REDIRECT_URI,
+} from '../config'
 
 export default function Callback() {
   const [error, setError] = useState(null)
   const navigate = useNavigate()
 
   useEffect(() => {
-    const code = new URLSearchParams(window.location.search).get('code')
+    const params = new URLSearchParams(window.location.search)
+
+    const code = params.get('code')
+    const returnedState = params.get('state')
+    const oauthError = params.get('error')
+    const oauthErrorDescription = params.get('error_description')
+
     const verifier = sessionStorage.getItem('pkce_verifier')
-    if (!code || !verifier) {
-      setError('Missing login code or verifier -- please try signing in again.')
+    const expectedState = sessionStorage.getItem('oidc_state')
+
+    if (oauthError) {
+      setError(oauthErrorDescription || oauthError)
+      sessionStorage.removeItem('pkce_verifier')
+      sessionStorage.removeItem('oidc_state')
       return
     }
-    fetch(`${KEYCLOAK_URL}/realms/${KEYCLOAK_REALM}/protocol/openid-connect/token`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        grant_type: 'authorization_code',
-        client_id: KEYCLOAK_CLIENT_ID,
-        code,
-        redirect_uri: REDIRECT_URI,
-        code_verifier: verifier,
-      }),
+
+    if (!code || !verifier) {
+      setError('Missing authentication code. Please try again.')
+      return
+    }
+
+    if (expectedState && returnedState !== expectedState) {
+      setError('Authentication state validation failed. Please try again.')
+      sessionStorage.removeItem('pkce_verifier')
+      sessionStorage.removeItem('oidc_state')
+      return
+    }
+
+    const body = new URLSearchParams({
+      grant_type: 'authorization_code',
+      client_id: KEYCLOAK_CLIENT_ID,
+      code,
+      redirect_uri: REDIRECT_URI,
+      code_verifier: verifier,
     })
-      .then(r => r.json())
-      .then(d => {
-        if (!d.access_token) { setError(d.error_description || 'Login failed.'); return }
-        localStorage.setItem('shopno_token', d.access_token)
-        sessionStorage.removeItem('pkce_verifier')
-        navigate('/dashboard')
+
+    fetch(
+      `${KEYCLOAK_URL}/realms/${KEYCLOAK_REALM}/protocol/openid-connect/token`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body,
+      }
+    )
+      .then(async (response) => {
+        const data = await response.json()
+
+        if (!response.ok || !data.access_token) {
+          throw new Error(
+            data.error_description ||
+            data.error ||
+            'Authentication failed.'
+          )
+        }
+
+        return data
       })
-      .catch(e => setError(e.message))
+      .then((data) => {
+        localStorage.setItem('shopno_token', data.access_token)
+
+        if (data.refresh_token) {
+          localStorage.setItem('shopno_refresh_token', data.refresh_token)
+        }
+
+        sessionStorage.removeItem('pkce_verifier')
+        sessionStorage.removeItem('oidc_state')
+
+        navigate('/dashboard', { replace: true })
+      })
+      .catch((err) => {
+        setError(err.message)
+      })
   }, [navigate])
 
+  if (error) {
+    return (
+      <div style={{
+        maxWidth: 640,
+        margin: '80px auto',
+        padding: 24,
+      }}>
+        <h2>Authentication failed</h2>
+        <p>{error}</p>
+        <a href="/login">Return to login</a>
+      </div>
+    )
+  }
+
   return (
-    <div style={{ padding: 64, textAlign: 'center' }}>
-      {error ? <p style={{ color: '#ef4444' }}>{error}</p> : <p>Signing you in…</p>}
+    <div style={{
+      maxWidth: 640,
+      margin: '80px auto',
+      padding: 24,
+      textAlign: 'center',
+    }}>
+      Completing sign in…
     </div>
   )
 }
