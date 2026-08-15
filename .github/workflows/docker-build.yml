@@ -42,7 +42,7 @@ jobs:
             tag: v6
 
           - name: shopnoltd-web
-            context: ./platform/web-portal
+            context: .
             dockerfile: ./platform/web-portal/Dockerfile
             tag: latest
 
