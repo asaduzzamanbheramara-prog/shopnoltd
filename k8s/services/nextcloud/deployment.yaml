@@ -36,7 +36,12 @@ spec:
       initContainers:
         - name: seed-php-confd
           image: nextcloud:latest
-          command: ["sh", "-c", "cp -a /usr/local/etc/php/conf.d/. /php-confd-writable/"]
+          command: ["sh", "-c", "cp -rL /usr/local/etc/php/conf.d/. /php-confd-writable/"]
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+              add: ["FOWNER"]
           volumeMounts:
             - name: php-confd
               mountPath: /php-confd-writable
