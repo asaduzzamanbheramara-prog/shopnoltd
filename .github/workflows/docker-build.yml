@@ -42,8 +42,8 @@ jobs:
             tag: v6
 
           - name: shopnoltd-web
-            context: ./platform/shopnoltd-web
-            dockerfile: ./platform/shopnoltd-web/Dockerfile
+            context: ./platform/web-portal
+            dockerfile: ./platform/web-portal/Dockerfile
             tag: latest
 
           - name: oauth
