@@ -13,7 +13,6 @@ spec:
   tls:
     - secretName: shopno-wildcard-tls
       hosts:
-        - shopnoltd.dpdns.org
         - billing.shopnoltd.dpdns.org
         - payment.shopnoltd.dpdns.org
         - exchange.shopnoltd.dpdns.org
@@ -21,17 +20,6 @@ spec:
         - support.shopnoltd.dpdns.org
 
   rules:
-
-    - host: shopnoltd.dpdns.org
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: shopnoltd-web
-                port:
-                  number: 80
 
     - host: billing.shopnoltd.dpdns.org
       http:
