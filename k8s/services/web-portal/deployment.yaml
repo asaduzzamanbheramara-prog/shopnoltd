@@ -32,7 +32,7 @@ spec:
       containers:
         - name: web-portal
           image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/web-portal:latest
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           ports:
             - name: http
               containerPort: 3000
