@@ -101,5 +101,5 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/shopnoltd-${{ matrix.name }}:${{ matrix.tag }}
             ghcr.io/${{ github.repository_owner }}/shopnoltd-${{ matrix.name }}:latest
             ghcr.io/${{ github.repository_owner }}/shopnoltd-${{ matrix.name }}:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}
