@@ -9,6 +9,9 @@ metadata:
 spec:
   replicas: 1
 
+  strategy:
+    type: Recreate
+
   selector:
     matchLabels:
       app.kubernetes.io/name: shopnoltd-web
@@ -29,7 +32,7 @@ spec:
 
           ports:
             - name: http
-              containerPort: 80
+              containerPort: 3000
 
           resources:
             requests:
