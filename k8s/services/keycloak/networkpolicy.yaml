@@ -54,3 +54,13 @@ spec:
           protocol: TCP
         - port: 9000
           protocol: TCP
+
+    # External SMTP relay
+    - to:
+        - ipBlock:
+            cidr: 1.179.116.1/32
+      ports:
+        - port: 587
+          protocol: TCP
+        - port: 2525
+          protocol: TCP
