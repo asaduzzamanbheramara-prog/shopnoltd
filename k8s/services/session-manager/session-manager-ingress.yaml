@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+  name: session-manager
+  namespace: shopno-tools
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: sessions.shopnoltd.dpdns.org
+      http:
+        paths:
+          - backend:
+              service:
+                name: session-manager
+                port:
+                  number: 80
+            path: /
+            pathType: Prefix
+  tls:
+    - hosts:
+        - sessions.shopnoltd.dpdns.org
+      secretName: session-manager-tls
