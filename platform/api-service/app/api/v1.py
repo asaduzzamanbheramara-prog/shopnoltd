@@ -58,7 +58,7 @@ async def me(creds: HTTPAuthorizationCredentials = Depends(bearer)):
 async def users_me(creds: HTTPAuthorizationCredentials = Depends(bearer)):
     return await call(
         "GET",
-        "http://oauth-service.shopno-identity.svc.cluster.local:8080/api/v1/users/me",
+        "http://oauth-service.shopno-identity.svc.cluster.local:80/api/v1/users/me",
         creds.credentials,
     )
 
@@ -81,7 +81,7 @@ async def wallets(creds: HTTPAuthorizationCredentials = Depends(bearer)):
 async def feed(creds: HTTPAuthorizationCredentials = Depends(bearer)):
     return await call(
         "GET",
-        "http://social-service.shopno-platform.svc.cluster.local:8080/api/v1/feed/me",
+        "http://social-service.shopno-platform.svc.cluster.local:80/api/v1/feed/me",
         creds.credentials,
     )
 
@@ -90,7 +90,7 @@ async def feed(creds: HTTPAuthorizationCredentials = Depends(bearer)):
 async def conversations(creds: HTTPAuthorizationCredentials = Depends(bearer)):
     return await call(
         "GET",
-        "http://messaging-service.shopno-platform.svc.cluster.local:8080/api/v1/conversations",
+        "http://messaging-service.shopno-platform.svc.cluster.local:80/api/v1/conversations",
         creds.credentials,
     )
 
@@ -99,7 +99,7 @@ async def conversations(creds: HTTPAuthorizationCredentials = Depends(bearer)):
 async def notifications(creds: HTTPAuthorizationCredentials = Depends(bearer)):
     return await call(
         "GET",
-        "http://notification-service.shopno-platform.svc.cluster.local:8080/api/v1/notifications/me",
+        "http://notification-service.shopno-platform.svc.cluster.local:80/api/v1/notifications/me",
         creds.credentials,
     )
 
