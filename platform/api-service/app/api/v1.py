@@ -16,15 +16,38 @@ async def user(creds: HTTPAuthorizationCredentials = Depends(bearer)):
 
 async def call(method: str, url: str, user_token: str, **kw):
     headers = {"Authorization": f"Bearer {user_token}"}
-    async with httpx.AsyncClient(timeout=10) as c:
-        r = await c.request(method, url, headers=headers, **kw)
+
+    try:
+        async with httpx.AsyncClient(timeout=10) as c:
+            r = await c.request(method, url, headers=headers, **kw)
+    except (httpx.ConnectError, httpx.ConnectTimeout, httpx.ReadTimeout) as e:
+        raise HTTPException(
+            status_code=503,
+            detail="Downstream service unavailable",
+        ) from e
+
     if r.status_code >= 400:
-        raise HTTPException(r.status_code, r.text)
+        detail = r.text
+        try:
+            detail = r.json()
+        except Exception:
+            pass
+        raise HTTPException(status_code=r.status_code, detail=detail)
+
     return r.json() if r.text else None
 
 
 @router.get("/me")
 async def me(creds: HTTPAuthorizationCredentials = Depends(bearer)):
+    return await call(
+        "GET",
+        "http://oauth-service.shopno-identity.svc.cluster.local:8080/api/v1/users/me",
+        creds.credentials,
+    )
+
+
+@router.get("/users/me")
+async def users_me(creds: HTTPAuthorizationCredentials = Depends(bearer)):
     return await call(
         "GET",
         "http://oauth-service.shopno-identity.svc.cluster.local:8080/api/v1/users/me",
@@ -72,7 +95,7 @@ async def notifications(creds: HTTPAuthorizationCredentials = Depends(bearer)):
 async def subscription(creds: HTTPAuthorizationCredentials = Depends(bearer)):
     return await call(
         "GET",
-        "http://billing-engine.shopno-payments.svc.cluster.local:8080/api/v1/subscriptions/me",
+        "http://billing-engine.shopno-payments.svc.cluster.local:80/api/v1/subscriptions/me",
         creds.credentials,
     )
 
