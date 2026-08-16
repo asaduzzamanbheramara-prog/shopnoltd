@@ -3,7 +3,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1
 RUN groupadd -g 10001 shopno && useradd -u 10001 -g shopno -d /app -s /sbin/nologin shopno
 WORKDIR /app
 COPY platform/exchange-service/requirements.txt /app/requirements.txt
-RUN pip install --no-cache-dir -r /app/requirements.txt
+RUN python -m pip install --upgrade pip setuptools wheel && \
+    python -m pip install --no-cache-dir --disable-pip-version-check \
+    --index-url https://pypi.org/simple \
+    -r /app/requirements.txt
 COPY platform/exchange-service/app /app/app
 COPY shared/libraries/python/shopno_core /app/shopno_core
 USER shopno
