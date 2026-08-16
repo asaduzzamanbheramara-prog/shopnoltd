@@ -11,7 +11,10 @@ bearer = HTTPBearer()
 
 
 async def user(creds: HTTPAuthorizationCredentials = Depends(bearer)):
-    return await verify_token(creds.credentials)
+    try:
+        return await verify_token(creds.credentials)
+    except Exception as e:
+        raise HTTPException(status_code=401, detail="Invalid authentication token") from e
 
 
 async def call(method: str, url: str, user_token: str, **kw):
@@ -39,9 +42,14 @@ async def call(method: str, url: str, user_token: str, **kw):
 
 @router.get("/me")
 async def me(creds: HTTPAuthorizationCredentials = Depends(bearer)):
+    try:
+        await verify_token(creds.credentials)
+    except Exception as e:
+        raise HTTPException(status_code=401, detail="Invalid authentication token") from e
+
     return await call(
         "GET",
-        "http://oauth-service.shopno-identity.svc.cluster.local:8080/api/v1/users/me",
+        "http://oauth-service.shopno-identity.svc.cluster.local:80/api/v1/users/me",
         creds.credentials,
     )
 
@@ -57,9 +65,14 @@ async def users_me(creds: HTTPAuthorizationCredentials = Depends(bearer)):
 
 @router.get("/wallets")
 async def wallets(creds: HTTPAuthorizationCredentials = Depends(bearer)):
+    try:
+        await verify_token(creds.credentials)
+    except Exception as e:
+        raise HTTPException(status_code=401, detail="Invalid authentication token") from e
+
     return await call(
         "GET",
-        "http://payment-service.shopno-payments.svc.cluster.local:8080/api/v1/wallets",
+        "http://billing-engine.shopno-payments.svc.cluster.local:80/api/v1/wallets",
         creds.credentials,
     )
 
@@ -102,8 +115,12 @@ async def subscription(creds: HTTPAuthorizationCredentials = Depends(bearer)):
 
 @router.get("/rate/{frm}/{to}")
 async def rate(frm: str, to: str, creds: HTTPAuthorizationCredentials = Depends(bearer)):
-    return await call(
-        "GET",
-        f"http://exchange-service.shopno-payments.svc.cluster.local:8080/api/v1/rates/{frm}/{to}",
-        creds.credentials,
+    try:
+        await verify_token(creds.credentials)
+    except Exception as e:
+        raise HTTPException(status_code=401, detail="Invalid authentication token") from e
+
+    raise HTTPException(
+        status_code=503,
+        detail="Exchange service is not deployed",
     )
