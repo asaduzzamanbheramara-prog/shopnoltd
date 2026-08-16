@@ -1,0 +1,178 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: shopno-tools
+  labels:
+    name: shopno-tools
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: session-manager-data
+  namespace: shopno-tools
+spec:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: session-manager-db
+  namespace: shopno-tools
+spec:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 2Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: session-manager
+  namespace: shopno-tools
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate   # single RWO PVC — avoid scheduling deadlock, per established pattern
+  selector:
+    matchLabels:
+      app: session-manager
+  template:
+    metadata:
+      labels:
+        app: session-manager
+    spec:
+      containers:
+        - name: session-manager
+          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/session-manager:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+            - containerPort: 6080
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: session-manager-secrets
+                  key: DATABASE_URL
+            - name: SESSION_MANAGER_ENCRYPTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: session-manager-secrets
+                  key: ENCRYPTION_KEY
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 8000
+            initialDelaySeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: 8000
+            initialDelaySeconds: 10
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: session-manager-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: session-manager
+  namespace: shopno-tools
+spec:
+  selector:
+    app: session-manager
+  ports:
+    - name: api
+      port: 80
+      targetPort: 8000
+    - name: vnc
+      port: 6080
+      targetPort: 6080
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: session-manager
+  namespace: shopno-tools
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts: ["sessions.shopnoltd.dpdns.org"]
+      secretName: session-manager-tls
+  rules:
+    - host: sessions.shopnoltd.dpdns.org
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: session-manager
+                port:
+                  number: 80
+---
+# Separate ingress + path rewrite for the noVNC web bridge, so the
+# rewrite-target annotation doesn't affect the main API path above.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: session-manager-vnc
+  namespace: shopno-tools
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts: ["sessions.shopnoltd.dpdns.org"]
+      secretName: session-manager-tls
+  rules:
+    - host: sessions.shopnoltd.dpdns.org
+      http:
+        paths:
+          - path: /vnc(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: session-manager
+                port:
+                  number: 6080
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: session-manager-allow-ingress
+  namespace: shopno-tools
+spec:
+  podSelector:
+    matchLabels:
+      app: session-manager
+  policyTypes: ["Ingress"]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: ingress-nginx   # remember: this label must be applied manually per your established pattern
+      ports:
+        - protocol: TCP
+          port: 8000
+        - protocol: TCP
+          port: 6080

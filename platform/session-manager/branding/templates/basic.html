@@ -1,0 +1,17 @@
+{% extends "base_no_static.html" %}
+
+{% block title %}Shopnoltd API{% endblock %}
+
+{% block body %}
+    <h1>Shopnoltd API</h1>
+    <p>For a general introduction to the Shopnoltd API, please visit <a href="#">the Shopnoltd help center</a>.</p>
+    <p>You can also <a href="{% url 'swagger-ui' %}?q={{ q_param }}">check the official API documentation</a> for a detailed documentation of all available endpoints.</p>
+    <hr>
+    {% if root %}
+        <p>This is the root of the API. Please access an endpoint for a meaningful response.</p>
+    {% else %}
+        {% autoescape on %}
+        <pre>{{ pretty|urlize }}</pre>
+        {% endautoescape %}
+    {% endif %}
+{% endblock %}

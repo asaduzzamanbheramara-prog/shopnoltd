@@ -53,6 +53,7 @@ jobs:
           - { service: social-service,     dockerfile: platform/social-service/Dockerfile }
           - { service: keycloak,           dockerfile: platform/keycloak/Dockerfile }
           - { service: superset,           dockerfile: platform/superset/Dockerfile }
+          - { service: session-manager,   dockerfile: platform/session-manager/Dockerfile }
     permissions:
       contents: read
       packages: write

@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Shopnoltd Session Manager</title>
+<link rel="icon" href="/branding/favicon-32x32.png" />
+<style>
+  :root {
+    --shopno-primary: #1c3faa;   /* replace with values from branding/colors */
+    --shopno-bg: #0d1117;
+    --shopno-panel: #161b22;
+    --shopno-text: #e6edf3;
+    --shopno-muted: #8b949e;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: var(--shopno-bg);
+    color: var(--shopno-text);
+  }
+  header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 24px;
+    background: var(--shopno-panel);
+    border-bottom: 1px solid #21262d;
+  }
+  header img { height: 32px; }
+  header h1 { font-size: 16px; font-weight: 600; margin: 0; }
+  main { padding: 24px; max-width: 960px; margin: 0 auto; }
+  .card {
+    background: var(--shopno-panel);
+    border: 1px solid #21262d;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .card h2 { font-size: 14px; text-transform: uppercase; letter-spacing: .05em; color: var(--shopno-muted); margin-top: 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 8px; border-bottom: 1px solid #21262d; }
+  button {
+    background: var(--shopno-primary);
+    color: white;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+  }
+  input, select {
+    background: #0d1117;
+    border: 1px solid #30363d;
+    color: var(--shopno-text);
+    padding: 6px 8px;
+    border-radius: 6px;
+    margin-right: 8px;
+  }
+  .badge { padding: 2px 8px; border-radius: 12px; font-size: 11px; }
+  .badge.qa { background: #1f6feb33; color: #58a6ff; }
+  .badge.staff { background: #23863633; color: #3fb950; }
+  .badge.scraping { background: #9e6a0333; color: #d29922; }
+</style>
+</head>
+<body>
+<header>
+  <img src="/branding/shopnoapp-logo.svg" alt="Shopnoltd" onerror="this.style.display='none'" />
+  <h1>Session Manager</h1>
+</header>
+<main>
+  <div class="card">
+    <h2>New Profile</h2>
+    <input id="name" placeholder="Profile name" />
+    <select id="purpose">
+      <option value="qa">QA Testing</option>
+      <option value="staff">Staff Tooling</option>
+      <option value="scraping">Scraping</option>
+    </select>
+    <input id="owner" placeholder="Owner (optional)" />
+    <button onclick="createProfile()">Create</button>
+  </div>
+
+  <div class="card">
+    <h2>Profiles</h2>
+    <table>
+      <thead><tr><th>Name</th><th>Purpose</th><th>Owner</th><th>Last used</th><th></th></tr></thead>
+      <tbody id="profile-rows"></tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>Live View</h2>
+    <p style="color: var(--shopno-muted); font-size: 13px;">
+      Launching a session opens it on the container's virtual display.
+      Watch/interact with it here once launched:
+    </p>
+    <a href="#" onclick="openViewer(); return false;">
+      <button>Open Live Session Viewer</button>
+    </a>
+  </div>
+</main>
+
+<script>
+async function loadProfiles() {
+  const res = await fetch('/api/profiles');
+  const profiles = await res.json();
+  const rows = document.getElementById('profile-rows');
+  rows.innerHTML = profiles.map(p => `
+    <tr>
+      <td>${p.name}</td>
+      <td><span class="badge ${p.purpose}">${p.purpose}</span></td>
+      <td>${p.owner || '-'}</td>
+      <td>${p.last_used_at ? new Date(p.last_used_at).toLocaleString() : 'never'}</td>
+      <td>
+        <button onclick="launch('${p.id}')">Launch</button>
+        <button onclick="closeSession('${p.id}')" style="background:#30363d;">Close</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+async function createProfile() {
+  const name = document.getElementById('name').value;
+  const purpose = document.getElementById('purpose').value;
+  const owner = document.getElementById('owner').value;
+  if (!name) return alert('Name required');
+  await fetch('/api/profiles', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, purpose, owner: owner || null })
+  });
+  document.getElementById('name').value = '';
+  loadProfiles();
+}
+
+async function launch(profileId) {
+  const targetUrl = prompt('URL to open in this profile\'s isolated session:', 'https://shopnoltd.dpdns.org');
+  if (!targetUrl) return;
+  const res = await fetch('/api/sessions/launch', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ profile_id: profileId, target_url: targetUrl, headless: true })
+  });
+  const data = await res.json();
+  alert(data.message || ('Session launched: ' + data.status));
+  openViewer();
+  loadProfiles();
+}
+
+function openViewer() {
+  // noVNC/websockify serves on port 6080, separate from the API's port 8000.
+  // In k8s this is a second Service port routed via its own ingress path
+  // (see k8s/deployment.yaml) — update VNC_HOST below if you change that.
+  const vncHost = window.location.hostname === 'localhost'
+    ? 'http://localhost:6080'
+    : `${window.location.protocol}//${window.location.hostname}/vnc`;
+  window.open(`${vncHost}/vnc.html?autoconnect=true&resize=scale`, '_blank');
+}
+
+async function closeSession(profileId) {
+  await fetch(`/api/sessions/${profileId}/close`, { method: 'POST' });
+  loadProfiles();
+}
+
+loadProfiles();
+</script>
+</body>
+</html>
