@@ -1,0 +1,25 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+  name: session-manager-vnc
+  namespace: shopno-tools
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: sessions.shopnoltd.dpdns.org
+      http:
+        paths:
+          - backend:
+              service:
+                name: session-manager
+                port:
+                  number: 6080
+            path: /vnc(/|$)(.*)
+            pathType: ImplementationSpecific
+  tls:
+    - hosts:
+        - sessions.shopnoltd.dpdns.org
+      secretName: session-manager-tls

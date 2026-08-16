@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Service
+metadata:
+  annotations: {}
+  name: session-manager
+  namespace: shopno-tools
+spec:
+  clusterIP: 10.43.175.217
+  clusterIPs:
+    - 10.43.175.217
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+    - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+    - name: api
+      port: 80
+      protocol: TCP
+      targetPort: 8000
+    - name: vnc
+      port: 6080
+      protocol: TCP
+      targetPort: 6080
+  selector:
+    app: session-manager
+  sessionAffinity: None
+  type: ClusterIP
