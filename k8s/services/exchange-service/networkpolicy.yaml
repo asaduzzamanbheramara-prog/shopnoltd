@@ -28,6 +28,18 @@ spec:
         - port: 8080
           protocol: TCP
   egress:
+    # DNS
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: kube-system
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+
+    # Internal Shopnoltd services
     - to:
         - namespaceSelector:
             matchLabels:
@@ -42,13 +54,17 @@ spec:
             matchLabels:
               name: kube-system
       ports:
-        - port: 53
-          protocol: UDP
-        - port: 443
-          protocol: TCP
         - port: 5432
           protocol: TCP
         - port: 6379
           protocol: TCP
         - port: 9000
+          protocol: TCP
+
+    # External exchange/rate APIs
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - port: 443
           protocol: TCP

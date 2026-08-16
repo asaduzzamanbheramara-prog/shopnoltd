@@ -37,11 +37,22 @@ class RateUpdater:
             await asyncio.sleep(settings.rate_refresh_seconds)
 
     async def _pull_all(self):
-        crypto, fiat = await asyncio.gather(
-            self._pull_binance(), self._pull_coingecko(), self._pull_openexchangerates()
+        results = await asyncio.gather(
+            self._pull_binance(),
+            self._pull_coingecko(),
+            self._pull_openexchangerates(),
+            return_exceptions=True,
         )
+
+        rates = []
+        for result in results:
+            if isinstance(result, Exception):
+                log.warning("rate.source.failed", err=str(result))
+                continue
+            rates.extend(result)
+
         async with SessionLocal() as s:
-            for base, quote, rate, source in crypto + fiat:
+            for base, quote, rate, source in rates:
                 r = Rate(
                     base=base, quote=quote, rate=rate, source=source, fetched_at=datetime.utcnow()
                 )
