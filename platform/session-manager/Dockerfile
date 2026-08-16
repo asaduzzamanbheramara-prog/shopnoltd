@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.11-slim-bookworm
 
 WORKDIR /app
 
@@ -17,7 +17,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # so every COPY below is relative to the repo root, not this folder.
 COPY platform/session-manager/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt \
-    && playwright install chromium --with-deps
+    && playwright install chromium
 
 # Bring in the shared branding assets so the UI can reference them
 COPY platform/session-manager/branding/ /app/app/static/branding/
