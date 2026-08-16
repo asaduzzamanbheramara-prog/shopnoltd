@@ -24,6 +24,9 @@ spec:
         - namespaceSelector:
             matchLabels:
               name: shopno-monitoring
+        - namespaceSelector:
+            matchLabels:
+              name: shopno-payments
       ports:
         - port: 8080
           protocol: TCP
