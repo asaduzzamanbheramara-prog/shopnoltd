@@ -7,9 +7,11 @@ spec:
   podSelector:
     matchLabels:
       app.kubernetes.io/name: payment-service
+
   policyTypes:
     - Ingress
     - Egress
+
   ingress:
     - from:
         - namespaceSelector:
@@ -27,6 +29,7 @@ spec:
       ports:
         - port: 8080
           protocol: TCP
+
   egress:
     - to:
         - namespaceSelector:
@@ -51,4 +54,26 @@ spec:
         - port: 6379
           protocol: TCP
         - port: 9000
+          protocol: TCP
+
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: shopno-payments
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: exchange-service
+      ports:
+        - port: 8080
+          protocol: TCP
+
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: shopno-payments
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: billing-engine
+      ports:
+        - port: 5000
           protocol: TCP
