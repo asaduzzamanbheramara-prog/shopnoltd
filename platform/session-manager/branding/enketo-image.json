@@ -1,0 +1,74 @@
+[
+    {
+        "Id": "sha256:7662d878df81088a320855752553336686f23a657765c0aa3a52019cd75e312e",
+        "RepoTags": [
+            "enketo/enketo-express:latest"
+        ],
+        "RepoDigests": [
+            "enketo/enketo-express@sha256:022de155e616f862897f93fe8835d0259364bad33a9122426478310ac5833c19"
+        ],
+        "Comment": "buildkit.dockerfile.v0",
+        "Created": "2026-07-02T18:24:36.532135548Z",
+        "Config": {
+            "ExposedPorts": {
+                "8005/tcp": {}
+            },
+            "Env": [
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+                "NODE_VERSION=22.12.0",
+                "YARN_VERSION=1.22.22",
+                "ENKETO_SRC_DIR=/srv/src/enketo"
+            ],
+            "Entrypoint": [
+                "docker-entrypoint.sh"
+            ],
+            "Cmd": [
+                "yarn",
+                "workspace",
+                "enketo-express",
+                "start"
+            ],
+            "WorkingDir": "/srv/src/enketo",
+            "Labels": {
+                "org.opencontainers.image.created": "2026-07-02T18:20:17.578Z",
+                "org.opencontainers.image.description": "Enketo is an open source project that produces web form software based on open-source standards.",
+                "org.opencontainers.image.licenses": "Apache-2.0",
+                "org.opencontainers.image.revision": "53cf51c0f9edf3cada0b5bbb79f296da493ed217",
+                "org.opencontainers.image.source": "https://github.com/enketo/enketo",
+                "org.opencontainers.image.title": "enketo",
+                "org.opencontainers.image.url": "https://github.com/enketo/enketo",
+                "org.opencontainers.image.version": "7.6.3"
+            },
+            "ArgsEscaped": true
+        },
+        "Architecture": "amd64",
+        "Os": "linux",
+        "Size": 1883546533,
+        "GraphDriver": {
+            "Data": {
+                "LowerDir": "/var/lib/docker/overlay2/9945c90d7d75a1de5cfca44f50704b86fd29037b63f72059c4343604933ed9b6/diff:/var/lib/docker/overlay2/470478bab703cccdc1d87206fae1b48cbbfb1ec7330d056c50637c8c49082171/diff:/var/lib/docker/overlay2/b81ebb87f2f5100f892ca8d11f081387718a5c6df782da823da3e76452037330/diff:/var/lib/docker/overlay2/7394783eada725976973c6d7365ecd3d8f34c1213e1d74db26b8980947671014/diff:/var/lib/docker/overlay2/2e152afbb020b2c0c9b61eea37fa548e0ec3114d1e4bf4aa06de0706b53ec023/diff:/var/lib/docker/overlay2/c4dd754c5a4ef5bcab936138cba4b5a214d7f39fc480325d8aa56e59c9fbadcc/diff:/var/lib/docker/overlay2/5388d604994b41574210cfe6d2885f25d56649a88d8fcf25fe2d793137665c7b/diff:/var/lib/docker/overlay2/a00d830945bcefd027da1365ef8911129e21d148899c353f0dea79a0b51edf9f/diff",
+                "MergedDir": "/var/lib/docker/overlay2/6f8810331c4197961498419fa60de95673ca6798058da829a5e6db80f6194921/merged",
+                "UpperDir": "/var/lib/docker/overlay2/6f8810331c4197961498419fa60de95673ca6798058da829a5e6db80f6194921/diff",
+                "WorkDir": "/var/lib/docker/overlay2/6f8810331c4197961498419fa60de95673ca6798058da829a5e6db80f6194921/work"
+            },
+            "Name": "overlay2"
+        },
+        "RootFS": {
+            "Type": "layers",
+            "Layers": [
+                "sha256:8b296f48696071aafb5a6286ca60d441a7e559b192fc7f94bb63ee93dae98f17",
+                "sha256:2978e8b93e850e57bcd042dae07529cc63a5c86ee67734a98d0e824f24065316",
+                "sha256:a6426a9bf417c58d5ba0cf60167becc42891cc011b37f37af53dd3c681a7c08d",
+                "sha256:a2171f1263ef56c78fc4a5d5e18df026b82821a968962204a236dbca102bdc2d",
+                "sha256:b77d99c4c05e0efa397eb96032db3efb9d5f4660f476dc8a4211d25a021776ac",
+                "sha256:bd439ef5a488aa47c6b64720f107bf75d8e1f0afb56d9015b56bdd320aec366f",
+                "sha256:8d68d6413d23386168d9076795cdb1eb8577a11785ca0a1d1c5b3e174b392ca1",
+                "sha256:05c4745a9de3a6d554a70bfac278c8d717050e3eafb92106f9d21a16bc3a2fb0",
+                "sha256:4a5890af1d8f1f1b187686f54298f1b7bb33f21e002704859b3e1d21f3b5fa07"
+            ]
+        },
+        "Metadata": {
+            "LastTagTime": "0001-01-01T00:00:00Z"
+        }
+    }
+]

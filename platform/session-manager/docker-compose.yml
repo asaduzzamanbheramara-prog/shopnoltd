@@ -1,0 +1,40 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: localdevpassword
+      POSTGRES_DB: session_manager
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  session-manager:
+    build:
+      context: ../..
+      dockerfile: platform/session-manager/Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://postgres:localdevpassword@postgres:5432/session_manager
+      SESSION_MANAGER_ENCRYPTION_KEY: "dev-only-key-Zc9v8sBpXQ2Y7wq4nT1uF3jK6rL0mH5e="
+      PROFILE_STORAGE_ROOT: /data
+    ports:
+      - "8000:8000"
+      - "6080:6080"   # noVNC, once wired up
+    volumes:
+      - profile_data:/data
+    shm_size: "1gb"    # Chromium needs this or it crashes under docker
+
+volumes:
+  pgdata:
+  profile_data:

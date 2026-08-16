@@ -1,0 +1,96 @@
+[
+    {
+        "Id": "sha256:b0b87ef5955cfc1e628586486fced40a2bc313a43b0232bf05cafd0d1fb51018",
+        "RepoTags": [
+            "kobotoolbox/kpi:2.026.12k"
+        ],
+        "RepoDigests": [
+            "kobotoolbox/kpi@sha256:2fd68bdeb7e6e7d6e880dbe0043b12cac2a786ad5532f3b3a27e66793035501e"
+        ],
+        "Comment": "buildkit.dockerfile.v0",
+        "Created": "2026-06-29T20:49:09.601807369Z",
+        "Config": {
+            "ExposedPorts": {
+                "8000/tcp": {}
+            },
+            "Env": [
+                "PATH=/opt/venv/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/srv/src/kpi/node_modules/.bin",
+                "LANG=en_US.UTF-8",
+                "GPG_KEY=A035C8C19219BA821ECEA86B64E628F8D684696D",
+                "PYTHON_VERSION=3.10.19",
+                "PYTHON_SHA256=c8f4a596572201d81dd7df91f70e177e19a70f1d489968b54b5fbbf29a97c076",
+                "UV_TOOL_BIN_DIR=/usr/local/bin",
+                "DEBIAN_FRONTEND=noninteractive",
+                "LANGUAGE=en_US:en",
+                "LC_ALL=en_US.UTF-8",
+                "DJANGO_SETTINGS_MODULE=kobo.settings.prod",
+                "INIT_PATH=/srv/init",
+                "KPI_LOGS_DIR=/srv/logs",
+                "KPI_MEDIA_DIR=/srv/src/kpi/media",
+                "KPI_NODE_PATH=/srv/src/kpi/node_modules",
+                "KPI_SRC_DIR=/srv/src/kpi",
+                "NGINX_STATIC_DIR=/srv/static",
+                "OPENROSA_MEDIA_DIR=/srv/src/kobocat/media",
+                "TMP_DIR=/srv/tmp",
+                "UWSGI_USER=kobo",
+                "UWSGI_GROUP=kobo",
+                "VIRTUAL_ENV=/opt/venv"
+            ],
+            "Cmd": [
+                "/bin/bash",
+                "docker/entrypoint.sh"
+            ],
+            "WorkingDir": "/srv/src/kpi/",
+            "Labels": {
+                "org.opencontainers.image.created": "2026-02-04T21:30:09.759Z",
+                "org.opencontainers.image.description": "An extremely fast Python package and project manager, written in Rust.",
+                "org.opencontainers.image.licenses": "Apache-2.0",
+                "org.opencontainers.image.revision": "ea4560831e503c6ce34d18739476a71ac6e9a9de",
+                "org.opencontainers.image.source": "https://github.com/astral-sh/uv",
+                "org.opencontainers.image.title": "uv",
+                "org.opencontainers.image.url": "https://github.com/astral-sh/uv",
+                "org.opencontainers.image.version": "0.9.30-python3.10-bookworm-slim"
+            },
+            "ArgsEscaped": true
+        },
+        "Architecture": "amd64",
+        "Os": "linux",
+        "Size": 2696212396,
+        "GraphDriver": {
+            "Data": {
+                "LowerDir": "/var/lib/docker/overlay2/23250f93d327bb065978ce743b7aaea8b49611c1ffa924ed3ef6b09291c4653b/diff:/var/lib/docker/overlay2/e58cd03d17b41b4875ed108561854f303196b6203e5612e6565c6128cc1eafc2/diff:/var/lib/docker/overlay2/d3181c95df096d75b294c05d48881dee8a61dbcfc42cf4308c88c3e44afe8937/diff:/var/lib/docker/overlay2/129a22d411551fb2c270cc33797ffebf2967172e19660b9c094d842512c72c11/diff:/var/lib/docker/overlay2/478175b2da747881c219af12dd9b1bf005ab24f3e579886229f853a162d88edf/diff:/var/lib/docker/overlay2/fea5806093a781173ee5bafd1b334648cc3814e3daa7ac31e33a277e0cdd87e1/diff:/var/lib/docker/overlay2/bd93e7a32d416801a9a9a6c6ef8e78ba62c1f53839ca2c2cab5932e86f5d9a4a/diff:/var/lib/docker/overlay2/c38f18cc65c68d2387ebb31b8e065c10680730a0a3ce5db7aeea85acff0dc74e/diff:/var/lib/docker/overlay2/15591a1fe1ecba53c791a4dc56f2454c488ccd9502d348e21d5288ffaefe46f8/diff:/var/lib/docker/overlay2/9b08035e21f01617a139d24987ebdd40a45cf3cbee0adbe1ed64af3be119e14f/diff:/var/lib/docker/overlay2/63b43d897f2c71fdbc2a9306a326771a4a506b3c62316511a9df829d3af4c55a/diff:/var/lib/docker/overlay2/121d96e1696f540fd11906b00a76b802976e9ab8ec9519982f6ab6c7d8ab8fe1/diff:/var/lib/docker/overlay2/7efd83d1b77d1a64f5a67e84f64ccd22085454dfdf22f764f966ea019ea8f293/diff:/var/lib/docker/overlay2/8c4c488e4aace8edf6f1b47ee629314ba74c14bd7dcf46512a7ef2927be354e2/diff:/var/lib/docker/overlay2/9f5a2fd5232639fc34ec97e583f9e1328fae93a18dbba8831ad8cac511c49748/diff:/var/lib/docker/overlay2/f37aa85afd863479051a4e30721be355248fef302fa2753644405c7d9a4de9cc/diff:/var/lib/docker/overlay2/7e566dd0d76f17fb55423109160739ba59ccd666784e63d59080be3a526f908d/diff:/var/lib/docker/overlay2/572679cbbb1e70df7166bf0f678a682f0bd6ce8d2eb67703b94a981d0c47064b/diff",
+                "MergedDir": "/var/lib/docker/overlay2/6452af290f75d9ab3028eefd3308d07b5bda5e4b2961a8c46e272839da4263fa/merged",
+                "UpperDir": "/var/lib/docker/overlay2/6452af290f75d9ab3028eefd3308d07b5bda5e4b2961a8c46e272839da4263fa/diff",
+                "WorkDir": "/var/lib/docker/overlay2/6452af290f75d9ab3028eefd3308d07b5bda5e4b2961a8c46e272839da4263fa/work"
+            },
+            "Name": "overlay2"
+        },
+        "RootFS": {
+            "Type": "layers",
+            "Layers": [
+                "sha256:e48af84b2108a5d73effd9e16685b42ac33e7994e606398c46690918f5f3604a",
+                "sha256:a5a256e564915b3cb3ed566d9a059cc15c8a9676964991b223c36bd93095acf4",
+                "sha256:a5ab160ac52b8c876b0b71eeedd543274711df3a14bdc82e691cc94717244ca1",
+                "sha256:fb7c48df1260f6b7fac6ddf3cd8e7097fc7cd6aa527d81dc84e3b0dfe4e48e55",
+                "sha256:8db78052f3c374c1b0f5ab091f9a6df29e366a36020a0a599779ed73aba8808b",
+                "sha256:283530ac58a6779eb0a2a2c24e23642160038c494aef4aef72107c0bb58341b0",
+                "sha256:5e4a77b5f08bee30142f240bc387cd18d1e09200b79f2ef3cb971b709fcb0503",
+                "sha256:e45de8304c3607c610942902b50306828c2a46ef0f598db537896076ad548110",
+                "sha256:7bbe15ef3a1738ffb1247027ac855cd4393ea8680e4714205482fea0c696645d",
+                "sha256:a2a1d379d4f04a0436b7bab954f0a664097fb73ea8e83eb07126652855fd54d2",
+                "sha256:b8dbb5cd361a3fb17b94cbf9d5f549a66f5ead92814a042579e77d02e101c1a9",
+                "sha256:6ffd0b19a26680a3c7158176c85176899c5775ab9d6009f77253bab24de57a31",
+                "sha256:5887eaed2d73568fc4c36d87eafc2683c2406357aa0bbb07f65242ec7a54ef22",
+                "sha256:c7a274cb536ebb2f47d2fcc623d3bd4c67505aaca5c4d2da38d989b96c06cfc2",
+                "sha256:df4739b099fc4909c995ed90d949f9a4e0a569fc96b3b3cd183d677058e7612a",
+                "sha256:5f34523d213c06a3b63cbaa61641e466111c77ade7150faae2833c561cfc4a44",
+                "sha256:cfcc0b8c33c7627c64a03a04549bdb5e258a617bec7467ad8a72f36aba2451b1",
+                "sha256:87e774c4c1b20b3829b4d31bbc7905d205cf6f11e8b4f267e5eccd58df43e8e9",
+                "sha256:a74ac0a8e99e34ca8e3ca2ea05fca9b20a5b647626893d2536af63a039697a3b"
+            ]
+        },
+        "Metadata": {
+            "LastTagTime": "0001-01-01T00:00:00Z"
+        }
+    }
+]
