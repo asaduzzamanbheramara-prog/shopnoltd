@@ -9,6 +9,7 @@ RUN python -m pip install --upgrade pip setuptools wheel && \
     -r /app/requirements.txt
 COPY platform/exchange-service/app /app/app
 COPY shared/libraries/python/shopno_core /app/shopno_core
+RUN test -f /app/shopno_core/__init__.py &&     python -c "import sys; sys.path.insert(0, '/app'); import shopno_core; print(shopno_core.__file__)" 
 USER shopno
 EXPOSE 8080
 HEALTHCHECK CMD python -c "import urllib.request;urllib.request.urlopen(\"http://127.0.0.1:8080/healthz\").read()"
