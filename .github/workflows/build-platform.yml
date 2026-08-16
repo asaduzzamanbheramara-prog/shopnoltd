@@ -36,7 +36,6 @@ jobs:
           - { service: scheduler-service,  dockerfile: platform/scheduler-service/Dockerfile }
           - { service: worker-service,     dockerfile: platform/worker-service/Dockerfile }
           - { service: payment-service,    dockerfile: platform/payment-service/Dockerfile }
-          - { service: exchange-service,   dockerfile: platform/exchange-service/Dockerfile }
           - { service: auth-service,       dockerfile: platform/auth-service/Dockerfile }
           - { service: audit-service,      dockerfile: platform/audit-service/Dockerfile }
           - { service: report-service,     dockerfile: platform/report-service/Dockerfile }
