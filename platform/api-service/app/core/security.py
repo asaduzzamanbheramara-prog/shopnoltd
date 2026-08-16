@@ -1,4 +1,5 @@
 import httpx
+from fastapi import HTTPException, status
 from shopno_core.security.jwt import JWTError, jwt
 
 from app.core.config import settings
@@ -29,8 +30,12 @@ async def verify_token(token: str) -> dict:
             audience=settings.keycloak_audience,
             options={"verify_aud": True},
         )
-    except (JWTError, StopIteration) as e:
-        raise ValueError(f"invalid token: {e}") from e
+    except (JWTError, StopIteration, KeyError, ValueError) as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired access token",
+            headers={"WWW-Authenticate": "Bearer"},
+        ) from e
 
 
 async def verify_token_admin(token: str) -> dict:
