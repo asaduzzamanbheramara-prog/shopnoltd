@@ -193,3 +193,4 @@ cookies.txt
 
 # Local DNS/email backups
 /dns-backup-email/
+scripts/seed/social-login-secrets.local.yaml

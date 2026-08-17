@@ -5,9 +5,9 @@ class Settings(BaseSettings):
     app_name: str = "shopnoltd-exchange-service"
     env: str = "production"
     database_url: str = (
-        "postgresql+asyncpg://shopno:shopno@postgres.data.svc.cluster.local:5432/exchange"
+        "postgresql+asyncpg://shopno:shopno@postgres.shopno-data.svc.cluster.local:5432/payments"
     )
-    redis_url: str = "redis://redis.data.svc.cluster.local:6379/1"
+    redis_url: str = "redis://redis.shopno-data.svc.cluster.local:6379/1"
     cors_origins: str = "https://*.shopnoltd.dpdns.org"
     binance_api: str = "https://api.binance.com"
     coingecko_api: str = "https://api.coingecko.com/api/v3"

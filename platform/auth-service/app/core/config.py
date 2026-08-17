@@ -14,11 +14,13 @@ class Settings(BaseSettings):
     cors_origins: str = "https://*.shopnoltd.dpdns.org"
 
     # Keycloak base URL. Do NOT include /realms/<realm> here.
-    keycloak_url: str = "https://auth.shopnoltd.dpdns.org"
+    # Use internal Kubernetes service DNS to avoid ingress/TLS issues.
+    keycloak_url: str = "http://keycloak.shopno-identity.svc.cluster.local:8080"
 
     keycloak_realm: str = "shopnoltd"
 
     # Full Keycloak issuer URL used for JWKS/token verification.
+    # Must match Keycloak's KEYCLOAK_FRONTEND_URL for token validation.
     keycloak_issuer: str = "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
 
     keycloak_audience: str = "auth-service"

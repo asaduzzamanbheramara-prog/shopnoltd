@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-H() { mkdir -p "$(dirname "$2")"; cat > "$2" <<HEREDOC_$RANDOM
-$3
-HEREDOC
+H() {
+    mkdir -p "$(dirname "$1")"
+    printf '%s\n' "$2" > "$1"
 }
 
 # exchange-service

@@ -9,10 +9,10 @@ a Kaniko Job instead (see README "Running builds inside the cluster").
 
 import os
 
-import docker
 from docker.errors import APIError, BuildError
 
 import config
+import docker
 
 
 def _dockerfile_relative_to_context(dockerfile_rel: str, context_rel: str) -> str:
@@ -56,7 +56,7 @@ def build_image(dockerfile_rel: str, context_rel: str, tag: str) -> tuple[bool, 
         for chunk in build_logs:
             if "stream" in chunk:
                 log_lines.append(chunk["stream"].strip())
-        return True, "\n".join(l for l in log_lines if l)
+        return True, "\n".join(line for line in log_lines if line)
     except BuildError as e:
         for chunk in e.build_log:
             if "stream" in chunk:

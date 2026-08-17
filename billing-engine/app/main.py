@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from app import fx
 from app.database import Base, engine, get_db
+from app.gateway_admin import is_effectively_live, list_gateway_status, set_gateway_enabled
 from app.gateways import REGISTRY, get_gateway, payoneer_payouts
 from app.ledger import InsufficientBalanceError, apply_ledger_entry
 from app.models import AuditLog, Transaction, User, Wallet, WalletLedgerEntry
@@ -77,17 +78,22 @@ def health():
 
 
 @app.get("/gateways")
-def list_gateways():
+def list_gateways(db: Session = Depends(get_db)):
     """
-    Honest status of every gateway: whether real credentials are configured
-    (`live: true`) or it is currently running in demo mode (`live: false`).
+    Honest status of every gateway: whether real credentials are configured,
+    whether an admin has disabled it at runtime, and the combined effective
+    live status.
     """
+    status = {s["name"]: s for s in list_gateway_status(db)}
     out = []
-    for name, gw in REGISTRY.items():
+    for name, _gw in REGISTRY.items():
+        s = status[name]
         out.append(
             {
                 "name": name,
-                "live": gw.enabled,
+                "live": s["effectively_live"],
+                "credentials_configured": s["credentials_configured"],
+                "admin_disabled": s["admin_disabled"],
                 "currencies": {
                     "stripe": ["USD", "EUR", "GBP", "AUD", "CAD", "SGD", "and more"],
                     "paypal": ["USD", "EUR", "GBP", "AUD", "CAD"],
@@ -164,6 +170,11 @@ def create_checkout(req: CheckoutRequest, db: Session = Depends(get_db)):
         gw = get_gateway(req.gateway)
     except KeyError as e:
         raise HTTPException(400, str(e)) from e
+
+    if gw.enabled and not is_effectively_live(db, req.gateway):
+        raise HTTPException(
+            503, f"Gateway '{req.gateway}' is currently disabled by an administrator."
+        )
 
     user = get_or_create_user(db, req.customer_email)
     reference = req.reference or f"ord_{user.id}_{int(__import__('time').time())}"
@@ -461,3 +472,28 @@ def get_transactions(email: str, db: Session = Depends(get_db)):
         }
         for t in txns
     ]
+
+
+class GatewayToggleRequest(BaseModel):
+    enabled: bool
+    note: str | None = None
+    actor: str = "admin"
+
+
+@app.post("/admin/gateways/{name}/toggle", dependencies=[Depends(require_internal_key)])
+def toggle_gateway(name: str, req: GatewayToggleRequest, db: Session = Depends(get_db)):
+    try:
+        override = set_gateway_enabled(db, name, req.enabled, req.actor, req.note)
+    except KeyError as e:
+        raise HTTPException(400, str(e)) from e
+    log_action(db, "gateway_toggled", req.actor, {"gateway": name, "enabled": req.enabled})
+    return {
+        "gateway": name,
+        "admin_disabled": override.admin_disabled,
+        "effectively_live": is_effectively_live(db, name),
+    }
+
+
+@app.get("/admin/gateways", dependencies=[Depends(require_internal_key)])
+def admin_gateway_status(db: Session = Depends(get_db)):
+    return {"gateways": list_gateway_status(db)}
