@@ -18,5 +18,5 @@ spec:
     requests:
       storage: 10Gi
 
-  storageClassName: hostpath
+  storageClassName: standard
   # storageClassName: standard  # Use standard for Docker Desktop/Minikube
