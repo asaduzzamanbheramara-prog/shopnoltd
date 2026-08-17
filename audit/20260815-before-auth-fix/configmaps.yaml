@@ -1,0 +1,2060 @@
+apiVersion: v1
+items:
+- apiVersion: v1
+  data:
+    ca.crt: |
+      -----BEGIN CERTIFICATE-----
+      MIIBdzCCAR2gAwIBAgIBADAKBggqhkjOPQQDAjAjMSEwHwYDVQQDDBhrM3Mtc2Vy
+      dmVyLWNhQDE3ODUyMTcwNzAwHhcNMjYwNzI4MDQzNzUwWhcNMzYwNzI1MDQzNzUw
+      WjAjMSEwHwYDVQQDDBhrM3Mtc2VydmVyLWNhQDE3ODUyMTcwNzAwWTATBgcqhkjO
+      PQIBBggqhkjOPQMBBwNCAARksyxdq1AF7Tqds+RLYke46Zm9n1BVPx4qvMMMMmhd
+      nGXgsrlNM+cZN831XaBeK4VKtFBbZ11cZJWHAsoX+6Xoo0IwQDAOBgNVHQ8BAf8E
+      BAMCAqQwDwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4EFgQUyZoM3JhaALYdQWOhyOGj
+      0r0+6vYwCgYIKoZIzj0EAwIDSAAwRQIhAPF48MlDXzfmOF+iQe6pDtkT54gLwkX8
+      /j7UWZuBstVjAiAp4SDpKOVDRr5AWpOYz7jkHHajF++B9tZDGWlncACzAA==
+      -----END CERTIFICATE-----
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubernetes.io/description: Contains a CA bundle that can be used to verify the
+        kube-apiserver when using internal endpoints such as the internal service
+        IP or kubernetes.default.svc. No other usage is guaranteed across distributions
+        of Kubernetes clusters.
+    creationTimestamp: "2026-07-28T05:38:06Z"
+    name: kube-root-ca.crt
+    namespace: default
+    resourceVersion: "302"
+    uid: da0056c8-5977-4eab-81ca-c47ea26e7c74
+- apiVersion: v1
+  data:
+    hsts: "false"
+    use-forwarded-headers: "true"
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","data":null,"kind":"ConfigMap","metadata":{"annotations":{},"labels":{"app.kubernetes.io/component":"controller","app.kubernetes.io/instance":"ingress-nginx","app.kubernetes.io/name":"ingress-nginx","app.kubernetes.io/part-of":"ingress-nginx","app.kubernetes.io/version":"1.15.1"},"name":"ingress-nginx-controller","namespace":"ingress-nginx"}}
+    creationTimestamp: "2026-07-28T05:45:24Z"
+    labels:
+      app.kubernetes.io/component: controller
+      app.kubernetes.io/instance: ingress-nginx
+      app.kubernetes.io/name: ingress-nginx
+      app.kubernetes.io/part-of: ingress-nginx
+      app.kubernetes.io/version: 1.15.1
+    name: ingress-nginx-controller
+    namespace: ingress-nginx
+    resourceVersion: "67596"
+    uid: 4e598da0-b089-4f55-bd6b-01f423ed5c67
+- apiVersion: v1
+  data:
+    ca.crt: |
+      -----BEGIN CERTIFICATE-----
+      MIIBdzCCAR2gAwIBAgIBADAKBggqhkjOPQQDAjAjMSEwHwYDVQQDDBhrM3Mtc2Vy
+      dmVyLWNhQDE3ODUyMTcwNzAwHhcNMjYwNzI4MDQzNzUwWhcNMzYwNzI1MDQzNzUw
+      WjAjMSEwHwYDVQQDDBhrM3Mtc2VydmVyLWNhQDE3ODUyMTcwNzAwWTATBgcqhkjO
+      PQIBBggqhkjOPQMBBwNCAARksyxdq1AF7Tqds+RLYke46Zm9n1BVPx4qvMMMMmhd
+      nGXgsrlNM+cZN831XaBeK4VKtFBbZ11cZJWHAsoX+6Xoo0IwQDAOBgNVHQ8BAf8E
+      BAMCAqQwDwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4EFgQUyZoM3JhaALYdQWOhyOGj
+      0r0+6vYwCgYIKoZIzj0EAwIDSAAwRQIhAPF48MlDXzfmOF+iQe6pDtkT54gLwkX8
+      /j7UWZuBstVjAiAp4SDpKOVDRr5AWpOYz7jkHHajF++B9tZDGWlncACzAA==
+      -----END CERTIFICATE-----
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubernetes.io/description: Contains a CA bundle that can be used to verify the
+        kube-apiserver when using internal endpoints such as the internal service
+        IP or kubernetes.default.svc. No other usage is guaranteed across distributions
+        of Kubernetes clusters.
+    creationTimestamp: "2026-07-28T05:45:24Z"
+    name: kube-root-ca.crt
+    namespace: ingress-nginx
+    resourceVersion: "707"
+    uid: 763f8cca-5349-4fb3-989a-c4d4e27cbf4d
+- apiVersion: v1
+  data:
+    ca.crt: |
+      -----BEGIN CERTIFICATE-----
+      MIIBdzCCAR2gAwIBAgIBADAKBggqhkjOPQQDAjAjMSEwHwYDVQQDDBhrM3Mtc2Vy
+      dmVyLWNhQDE3ODUyMTcwNzAwHhcNMjYwNzI4MDQzNzUwWhcNMzYwNzI1MDQzNzUw
+      WjAjMSEwHwYDVQQDDBhrM3Mtc2VydmVyLWNhQDE3ODUyMTcwNzAwWTATBgcqhkjO
+      PQIBBggqhkjOPQMBBwNCAARksyxdq1AF7Tqds+RLYke46Zm9n1BVPx4qvMMMMmhd
+      nGXgsrlNM+cZN831XaBeK4VKtFBbZ11cZJWHAsoX+6Xoo0IwQDAOBgNVHQ8BAf8E
+      BAMCAqQwDwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4EFgQUyZoM3JhaALYdQWOhyOGj
+      0r0+6vYwCgYIKoZIzj0EAwIDSAAwRQIhAPF48MlDXzfmOF+iQe6pDtkT54gLwkX8
+      /j7UWZuBstVjAiAp4SDpKOVDRr5AWpOYz7jkHHajF++B9tZDGWlncACzAA==
+      -----END CERTIFICATE-----
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubernetes.io/description: Contains a CA bundle that can be used to verify the
+        kube-apiserver when using internal endpoints such as the internal service
+        IP or kubernetes.default.svc. No other usage is guaranteed across distributions
+        of Kubernetes clusters.
+    creationTimestamp: "2026-07-28T05:38:06Z"
+    name: kube-root-ca.crt
+    namespace: kube-node-lease
+    resourceVersion: "310"
+    uid: 4250f404-bb06-407a-a89e-9fb567e71d18
+- apiVersion: v1
+  data:
+    ca.crt: |
+      -----BEGIN CERTIFICATE-----
+      MIIBdzCCAR2gAwIBAgIBADAKBggqhkjOPQQDAjAjMSEwHwYDVQQDDBhrM3Mtc2Vy
+      dmVyLWNhQDE3ODUyMTcwNzAwHhcNMjYwNzI4MDQzNzUwWhcNMzYwNzI1MDQzNzUw
+      WjAjMSEwHwYDVQQDDBhrM3Mtc2VydmVyLWNhQDE3ODUyMTcwNzAwWTATBgcqhkjO
+      PQIBBggqhkjOPQMBBwNCAARksyxdq1AF7Tqds+RLYke46Zm9n1BVPx4qvMMMMmhd
+      nGXgsrlNM+cZN831XaBeK4VKtFBbZ11cZJWHAsoX+6Xoo0IwQDAOBgNVHQ8BAf8E
+      BAMCAqQwDwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4EFgQUyZoM3JhaALYdQWOhyOGj
+      0r0+6vYwCgYIKoZIzj0EAwIDSAAwRQIhAPF48MlDXzfmOF+iQe6pDtkT54gLwkX8
+      /j7UWZuBstVjAiAp4SDpKOVDRr5AWpOYz7jkHHajF++B9tZDGWlncACzAA==
+      -----END CERTIFICATE-----
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubernetes.io/description: Contains a CA bundle that can be used to verify the
+        kube-apiserver when using internal endpoints such as the internal service
+        IP or kubernetes.default.svc. No other usage is guaranteed across distributions
+        of Kubernetes clusters.
+    creationTimestamp: "2026-07-28T05:38:06Z"
+    name: kube-root-ca.crt
+    namespace: kube-public
+    resourceVersion: "313"
+    uid: 48d2af00-08b5-4d4b-a485-b48d590de5dd
+- apiVersion: v1
+  data:
+    clusterDNS: 10.43.0.10
+    clusterDomain: cluster.local
+  kind: ConfigMap
+  metadata:
+    creationTimestamp: "2026-07-28T05:38:03Z"
+    name: cluster-dns
+    namespace: kube-system
+    resourceVersion: "263"
+    uid: a926e238-3ddf-4ec7-84f8-2abcf06c49e5
+- apiVersion: v1
+  data:
+    Corefile: |
+      .:53 {
+          errors
+          health
+          ready
+          kubernetes cluster.local in-addr.arpa ip6.arpa {
+            pods insecure
+            fallthrough in-addr.arpa ip6.arpa
+          }
+          hosts /etc/coredns/NodeHosts {
+            ttl 60
+            reload 15s
+            fallthrough
+          }
+          prometheus :9153
+          cache 30
+          loop
+          reload
+          loadbalance
+          import /etc/coredns/custom/*.override
+          forward . /etc/resolv.conf
+      }
+      import /etc/coredns/custom/*.server
+    NodeHosts: |
+      172.30.206.152 shopnoltd-pc-1 Shopnoltd-PC-1
+  kind: ConfigMap
+  metadata:
+    annotations:
+      objectset.rio.cattle.io/applied: H4sIAAAAAAAA/4yQwWrzMBCEX0Xs2fEf20nsX9BDybH02lMva2kdq1Z2g6SkBJN3L8IUCiVtbyNGOzvfzoAn90IhOmHQcKmgAIsJQc+wl0CD8wQaSr1t1PzKSilFIUiIix4JfRoXHQjtdZHTuafAlCgq488xUSi9wK2AybEFDXvhwR2e8QQFHCnh50ZkloTJCcf8lP6NTIqUyuCkNJiSp9LJP5czoLjryztTWB0uE2iYmvjFuVSFenJsHx6tFf41gvGY6Y0Eshz/9D2e0OSZfIJVvMZExwzusSf/I9SIcQQNvaG6a+r/XVdV7abBddPtsN9W66Eedi0N7aberM22zaHf6t0tcPsIAAD//8Ix+PfoAQAA
+      objectset.rio.cattle.io/id: ""
+      objectset.rio.cattle.io/owner-gvk: k3s.cattle.io/v1, Kind=Addon
+      objectset.rio.cattle.io/owner-name: coredns
+      objectset.rio.cattle.io/owner-namespace: kube-system
+    creationTimestamp: "2026-07-28T05:38:06Z"
+    labels:
+      objectset.rio.cattle.io/hash: bce283298811743a0386ab510f2f67ef74240c57
+    name: coredns
+    namespace: kube-system
+    resourceVersion: "358"
+    uid: fc99c3ef-4060-4db3-9a63-256328c37fca
+- apiVersion: v1
+  data:
+    client-ca-file: |
+      -----BEGIN CERTIFICATE-----
+      MIIBdjCCAR2gAwIBAgIBADAKBggqhkjOPQQDAjAjMSEwHwYDVQQDDBhrM3MtY2xp
+      ZW50LWNhQDE3ODUyMTcwNzAwHhcNMjYwNzI4MDQzNzUwWhcNMzYwNzI1MDQzNzUw
+      WjAjMSEwHwYDVQQDDBhrM3MtY2xpZW50LWNhQDE3ODUyMTcwNzAwWTATBgcqhkjO
+      PQIBBggqhkjOPQMBBwNCAARn5npge3wVTVvS6j8u/RpH2sLcnPmGqP/jhLGRX6SN
+      PzhwiQRuBNUOuJCCw7/XwO94vdj83gk681eN38OhXwmWo0IwQDAOBgNVHQ8BAf8E
+      BAMCAqQwDwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4EFgQU0oa0WSeGYOZsHCPf5Wvv
+      fyF8vLgwCgYIKoZIzj0EAwIDRwAwRAIgFzJxpYK7uIUyUDIszBWHL5V/4lKu+eu6
+      NM0VMWbw940CIAHuyJm2jm498fWx4b2c0my+EsjFtft6amZFEAKbuRzV
+      -----END CERTIFICATE-----
+    requestheader-allowed-names: '["system:auth-proxy"]'
+    requestheader-client-ca-file: |
+      -----BEGIN CERTIFICATE-----
+      MIIBhzCCAS2gAwIBAgIBADAKBggqhkjOPQQDAjArMSkwJwYDVQQDDCBrM3MtcmVx
+      dWVzdC1oZWFkZXItY2FAMTc4NTIxNzA3MDAeFw0yNjA3MjgwNDM3NTBaFw0zNjA3
+      MjUwNDM3NTBaMCsxKTAnBgNVBAMMIGszcy1yZXF1ZXN0LWhlYWRlci1jYUAxNzg1
+      MjE3MDcwMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAERd6Y/KJFv4mIEVFU7Qfe
+      MdV+v15Pa5XcXqyqetaQ9bHoQ37ELcDcZR6tb8ilhpEaVxID8Dgfa6fSpoma3I7h
+      iKNCMEAwDgYDVR0PAQH/BAQDAgKkMA8GA1UdEwEB/wQFMAMBAf8wHQYDVR0OBBYE
+      FDkVBTE6AnBZ7r/8fe7X0kfzhXS8MAoGCCqGSM49BAMCA0gAMEUCIQCfgLVemcN4
+      MRu1DnbTdv7HjxpwQ9Xh/1YCgSwhDBLT1gIgad3K8J8LPdPykEkOMtDlmLmtZfUC
+      V7mJlwLPwOPRKDU=
+      -----END CERTIFICATE-----
+    requestheader-extra-headers-prefix: '["X-Remote-Extra-"]'
+    requestheader-group-headers: '["X-Remote-Group"]'
+    requestheader-username-headers: '["X-Remote-User"]'
+  kind: ConfigMap
+  metadata:
+    creationTimestamp: "2026-07-28T05:37:54Z"
+    name: extension-apiserver-authentication
+    namespace: kube-system
+    resourceVersion: "20"
+    uid: c86eb6dc-a7e4-45cc-a73e-ea4bbd232503
+- apiVersion: v1
+  data:
+    since: "2026-07-28"
+  kind: ConfigMap
+  metadata:
+    creationTimestamp: "2026-07-28T05:37:54Z"
+    name: kube-apiserver-legacy-service-account-token-tracking
+    namespace: kube-system
+    resourceVersion: "25"
+    uid: a9d82eb9-fd8e-4247-865b-bdf11628288d
+- apiVersion: v1
+  data:
+    ca.crt: |
+      -----BEGIN CERTIFICATE-----
+      MIIBdzCCAR2gAwIBAgIBADAKBggqhkjOPQQDAjAjMSEwHwYDVQQDDBhrM3Mtc2Vy
+      dmVyLWNhQDE3ODUyMTcwNzAwHhcNMjYwNzI4MDQzNzUwWhcNMzYwNzI1MDQzNzUw
+      WjAjMSEwHwYDVQQDDBhrM3Mtc2VydmVyLWNhQDE3ODUyMTcwNzAwWTATBgcqhkjO
+      PQIBBggqhkjOPQMBBwNCAARksyxdq1AF7Tqds+RLYke46Zm9n1BVPx4qvMMMMmhd
+      nGXgsrlNM+cZN831XaBeK4VKtFBbZ11cZJWHAsoX+6Xoo0IwQDAOBgNVHQ8BAf8E
+      BAMCAqQwDwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4EFgQUyZoM3JhaALYdQWOhyOGj
+      0r0+6vYwCgYIKoZIzj0EAwIDSAAwRQIhAPF48MlDXzfmOF+iQe6pDtkT54gLwkX8
+      /j7UWZuBstVjAiAp4SDpKOVDRr5AWpOYz7jkHHajF++B9tZDGWlncACzAA==
+      -----END CERTIFICATE-----
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubernetes.io/description: Contains a CA bundle that can be used to verify the
+        kube-apiserver when using internal endpoints such as the internal service
+        IP or kubernetes.default.svc. No other usage is guaranteed across distributions
+        of Kubernetes clusters.
+    creationTimestamp: "2026-07-28T05:38:06Z"
+    name: kube-root-ca.crt
+    namespace: kube-system
+    resourceVersion: "314"
+    uid: d23010b6-8421-4687-b978-dec7a9dde6dd
+- apiVersion: v1
+  data:
+    config.json: |-
+      {
+        "nodePathMap":[
+        {
+          "node":"DEFAULT_PATH_FOR_NON_LISTED_NODES",
+          "paths":["/var/lib/rancher/k3s/storage"]
+        }
+        ]
+      }
+    helperPod.yaml: |-
+      apiVersion: v1
+      kind: Pod
+      metadata:
+        name: helper-pod
+      spec:
+        containers:
+        - name: helper-pod
+          image: "rancher/mirrored-library-busybox:1.37.0"
+          imagePullPolicy: IfNotPresent
+    setup: |-
+      #!/bin/sh
+      set -eu
+      mkdir -m 0777 -p "${VOL_DIR}"
+      chmod 700 "${VOL_DIR}/.."
+    teardown: |-
+      #!/bin/sh
+      set -eu
+      rm -rf "${VOL_DIR}"
+  kind: ConfigMap
+  metadata:
+    annotations:
+      objectset.rio.cattle.io/applied: H4sIAAAAAAAA/4ySX2vbMBTFv4p2t0c7deb8Q7CHsLSsLG1Cl/VlAnMtybFq+0pYSkoJ+e5DCYFurNsepR/n6JyDDoDOPOreG0vAYT+EBBQGBH4Aaaky28GTP6GDIMYEkFV6jaG+QyeA/4iXJ3JhAriAxfXN/PtyU6znmy/FzeqhuF/dF8vbb5vrRQEJ1Lp1ul9bNXjBrgX+KgNn+6GgxpDibG2VoE4HjIF4fISw05yd5amL2DstT0haSMDrsHPA4f27q9LQla8FeR1YqneCukaZnqUdy6bTKUsdE/Dh8LhaFovbh6MAQbLurGLTLLsQSCBo7JV9pjc8+46lffWbExwTiAWAw+fTgnfoIIFLkbgsEtmAwVjy8WjLJy2D12HQGzuQGEKrB8ZemegByZvcPpPu0+2+AQ5N7l+R/TBhXw2pT3OlLP3TIu4KHForsU19sD1u9X+JvEMZlc2u1Kl/8UF3sX6LpW7/Wq1GXwOH4Syv8rGcjKuqlHk2GU2yvBrl1XA8y9RMTmb4UWGpRtH0l5AOQ52ePyic0R+jHH8GAAD//7kWEdfgAgAA
+      objectset.rio.cattle.io/id: ""
+      objectset.rio.cattle.io/owner-gvk: k3s.cattle.io/v1, Kind=Addon
+      objectset.rio.cattle.io/owner-name: local-storage
+      objectset.rio.cattle.io/owner-namespace: kube-system
+    creationTimestamp: "2026-07-28T05:38:08Z"
+    labels:
+      objectset.rio.cattle.io/hash: 183f35c65ffbc3064603f43f1580d8c68a2dabd4
+    name: local-path-config
+    namespace: kube-system
+    resourceVersion: "357"
+    uid: b8bba9a6-1a9a-410c-a13a-59f2679458b7
+- apiVersion: v1
+  data:
+    APP_NAME: chatwoot
+    APP_PORT: "3000"
+    ENV: production
+    KEYCLOAK_CLIENT_ID: chatwoot
+    KEYCLOAK_ISSUER: https://auth.shopnoltd.dpdns.org/realms/shopnoltd
+    LOG_FORMAT: json
+    LOG_LEVEL: info
+    MINIO_ENDPOINT: minio.shopno-data.svc.cluster.local:9000
+    OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo.observability.svc.cluster.local:4317
+    PATH_PREFIX: /
+    POSTGRES_HOST: postgres.shopno-data.svc.cluster.local
+    POSTGRES_PORT: "5432"
+    REDIS_HOST: redis.shopno-data.svc.cluster.local
+    REDIS_PORT: "6379"
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","data":{"APP_NAME":"chatwoot","APP_PORT":"3000","ENV":"production","KEYCLOAK_CLIENT_ID":"chatwoot","KEYCLOAK_ISSUER":"https://auth.shopnoltd.dpdns.org/realms/shopnoltd","LOG_FORMAT":"json","LOG_LEVEL":"info","MINIO_ENDPOINT":"minio.shopno-data.svc.cluster.local:9000","OTEL_EXPORTER_OTLP_ENDPOINT":"http://tempo.observability.svc.cluster.local:4317","PATH_PREFIX":"/","POSTGRES_HOST":"postgres.shopno-data.svc.cluster.local","POSTGRES_PORT":"5432","REDIS_HOST":"redis.shopno-data.svc.cluster.local","REDIS_PORT":"6379"},"kind":"ConfigMap","metadata":{"annotations":{},"name":"chatwoot-config","namespace":"shopno-apps"}}
+    creationTimestamp: "2026-07-28T05:46:04Z"
+    name: chatwoot-config
+    namespace: shopno-apps
+    resourceVersion: "2076586"
+    uid: e14b142c-142e-42b4-83ec-e0356810c5e1
+- apiVersion: v1
+  data:
+    APP_NAME: code-server
+    APP_PORT: "8443"
+    DEFAULT_WORKSPACE: /mnt
+    ENV: production
+    KEYCLOAK_CLIENT_ID: code-server
+    KEYCLOAK_ISSUER: https://auth.shopnoltd.dpdns.org/realms/shopnoltd
+    LOG_FORMAT: json
+    LOG_LEVEL: info
+    MINIO_ENDPOINT: minio.shopno-data.svc.cluster.local:9000
+    OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo.observability.svc.cluster.local:4317
+    PATH_PREFIX: /
+    POSTGRES_HOST: postgres.shopno-data.svc.cluster.local
+    POSTGRES_PORT: "5432"
+    REDIS_HOST: redis.shopno-data.svc.cluster.local
+    REDIS_PORT: "6379"
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","data":{"APP_NAME":"code-server","APP_PORT":"8443","DEFAULT_WORKSPACE":"/mnt","ENV":"production","KEYCLOAK_CLIENT_ID":"code-server","KEYCLOAK_ISSUER":"https://auth.shopnoltd.dpdns.org/realms/shopnoltd","LOG_FORMAT":"json","LOG_LEVEL":"info","MINIO_ENDPOINT":"minio.shopno-data.svc.cluster.local:9000","OTEL_EXPORTER_OTLP_ENDPOINT":"http://tempo.observability.svc.cluster.local:4317","PATH_PREFIX":"/","POSTGRES_HOST":"postgres.shopno-data.svc.cluster.local","POSTGRES_PORT":"5432","REDIS_HOST":"redis.shopno-data.svc.cluster.local","REDIS_PORT":"6379"},"kind":"ConfigMap","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"code-server","app.kubernetes.io/part-of":"shopnoltd"},"name":"code-server-config","namespace":"shopno-apps"}}
+    creationTimestamp: "2026-07-28T05:46:04Z"
+    labels:
+      app.kubernetes.io/name: code-server
+      app.kubernetes.io/part-of: shopnoltd
+    name: code-server-config
+    namespace: shopno-apps
+    resourceVersion: "2153988"
+    uid: 4a2fc3f5-9544-45be-ae67-9a1f871f22d0
+- apiVersion: v1
+  data:
+    APP_NAME: gitea
+    APP_PORT: "3000"
+    ENV: production
+    GITEA__security__INSTALL_LOCK: "true"
+    KEYCLOAK_CLIENT_ID: gitea
+    KEYCLOAK_ISSUER: https://auth.shopnoltd.dpdns.org/realms/shopnoltd
+    LOG_FORMAT: json
+    LOG_LEVEL: info
+    MINIO_ENDPOINT: minio.shopno-data.svc.cluster.local:9000
+    OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo.observability.svc.cluster.local:4317
+    PATH_PREFIX: /
+    POSTGRES_HOST: postgres.shopno-data.svc.cluster.local
+    POSTGRES_PORT: "5432"
+    REDIS_HOST: redis.shopno-data.svc.cluster.local
+    REDIS_PORT: "6379"
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","data":{"APP_NAME":"gitea","APP_PORT":"3000","ENV":"production","KEYCLOAK_CLIENT_ID":"gitea","KEYCLOAK_ISSUER":"https://auth.shopnoltd.dpdns.org/realms/shopnoltd","LOG_FORMAT":"json","LOG_LEVEL":"info","MINIO_ENDPOINT":"minio.shopno-data.svc.cluster.local:9000","OTEL_EXPORTER_OTLP_ENDPOINT":"http://tempo.observability.svc.cluster.local:4317","PATH_PREFIX":"/","POSTGRES_HOST":"postgres.shopno-data.svc.cluster.local","POSTGRES_PORT":"5432","REDIS_HOST":"redis.shopno-data.svc.cluster.local","REDIS_PORT":"6379"},"kind":"ConfigMap","metadata":{"annotations":{},"name":"gitea-config","namespace":"shopno-apps"}}
+    creationTimestamp: "2026-07-28T05:46:04Z"
+    name: gitea-config
+    namespace: shopno-apps
+    resourceVersion: "2076505"
+    uid: d155672e-ceb1-43cd-861d-ed3e5425c2d5
+- apiVersion: v1
+  data:
+    wait_for_mongo.bash: |
+      #!/bin/bash
+      set -e
+      HOST="${MONGO_HOST:-mongo}"
+      # Note: intentionally NOT reading $MONGO_PORT here -- Kubernetes auto-injects
+      # a MONGO_PORT env var for the "mongo" Service (e.g. tcp://10.x.x.x:27017),
+      # which collides with and overrides any value we'd want to default to.
+      PORT=27017
+      echo "Waiting for MongoDB at ${HOST}:${PORT}..."
+      for i in $(seq 1 60); do
+        if (echo > /dev/tcp/${HOST}/${PORT}) >/dev/null 2>&1; then
+          echo "MongoDB is up."
+          exit 0
+        fi
+        sleep 2
+      done
+      echo "Timed out waiting for MongoDB at ${HOST}:${PORT}."
+      exit 1
+    wait_for_postgres.bash: |
+      #!/bin/bash
+      set -e
+      # Parses host/port out of DATABASE_URL, e.g. postgres://user:pass@host:5432/db
+      DB_HOST=$(echo "$DATABASE_URL" | sed -E 's#.*://[^@]*@([^:/]+).*#\1#')
+      DB_PORT=$(echo "$DATABASE_URL" | sed -E 's#.*:([0-9]+)/.*#\1#')
+      DB_PORT="${DB_PORT:-5432}"
+      echo "Waiting for Postgres at ${DB_HOST}:${DB_PORT}..."
+      for i in $(seq 1 60); do
+        if (echo > /dev/tcp/${DB_HOST}/${DB_PORT}) >/dev/null 2>&1; then
+          echo "Postgres is up."
+          exit 0
+        fi
+        sleep 2
+      done
+      echo "Timed out waiting for Postgres at ${DB_HOST}:${DB_PORT}."
+      exit 1
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubernetes.io/mode: "0755"
+    creationTimestamp: "2026-07-30T13:17:29Z"
+    name: kf-init-scripts
+    namespace: shopno-apps
+    resourceVersion: "187556"
+    uid: dd081e6e-45a2-45ab-b4ba-16eef5b15392
+- apiVersion: v1
+  data:
+    ACCOUNT_EMAIL_VERIFICATION: mandatory
+    APP_NAME: kobotoolbox
+    APP_PORT: "8000"
+    CACHE_URL: redis://redis.shopno-data.svc.cluster.local:6379/1
+    CELERY_BROKER_URL: redis://redis.shopno-data.svc.cluster.local:6379/2
+    CELERY_RESULT_BACKEND: redis://redis.shopno-data.svc.cluster.local:6379/3
+    DEFAULT_FROM_EMAIL: KoboToolbox <no-reply@shopnoltd.dpdns.org>
+    DJANGO_SETTINGS_MODULE: kobo.settings.prod
+    EMAIL_BACKEND: django.core.mail.backends.smtp.EmailBackend
+    EMAIL_HOST: smtp-relay.brevo.com
+    EMAIL_PORT: "587"
+    EMAIL_TIMEOUT: "10"
+    EMAIL_USE_TLS: "True"
+    ENV: production
+    KEYCLOAK_CLIENT_ID: kobotoolbox
+    KEYCLOAK_ISSUER: https://auth.shopnoltd.dpdns.org/realms/shopnoltd
+    KOBOCAT_URL: https://kobotoolbox.shopnoltd.dpdns.org
+    KOBOFORM_URL: https://kobo.shopnoltd.dpdns.org
+    KPI_LOGS_DIR: /tmp
+    KPI_PREFIX: /
+    KPI_REDIS_URL: redis://redis.shopno-data.svc.cluster.local:6379/0
+    KPI_SRC_DIR: /srv/src/kpi
+    LOG_FORMAT: json
+    LOG_LEVEL: info
+    MINIO_ENDPOINT: minio.shopno-data.svc.cluster.local:9000
+    MONGO_HOST: mongo
+    OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo.observability.svc.cluster.local:4317
+    PATH_PREFIX: /
+    POSTGRES_HOST: postgres.shopno-data.svc.cluster.local
+    POSTGRES_PORT: "5432"
+    PUBLIC_DOMAIN_NAME: shopnoltd.dpdns.org
+    REDIS_HOST: redis.shopno-data.svc.cluster.local
+    REDIS_PORT: "6379"
+    REDIS_URL: redis://redis.shopno-data.svc.cluster.local:6379/0
+    SERVER_EMAIL: no-reply@shopnoltd.dpdns.org
+    SESSION_COOKIE_DOMAIN: .shopnoltd.dpdns.org
+    UWSGI_GROUP: root
+    UWSGI_USER: root
+    kpi-uwsgi.ini: |
+      [uwsgi]
+      chdir = $(KPI_SRC_DIR)
+      logto = $(KPI_LOGS_DIR)/uwsgi.log
+      manage-script-name = true
+      mount = $(KPI_PREFIX)=$(KPI_SRC_DIR)/kobo/wsgi.py
+      master = true
+      http-socket = 0.0.0.0:8000
+      buffer-size = 32768
+      listen = 128
+      die-on-term = true
+      enable-threads = true
+      single-interpreter = true
+      vacuum = true
+      processes = 2
+      threads = 2
+      uid = $(UWSGI_USER)
+      gid = $(UWSGI_GROUP)
+      static-map = /static=$(KPI_SRC_DIR)/staticfiles
+    uwsgi-max-requests: "1000"
+    uwsgi-max-requests-delta: "100"
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","data":{"APP_NAME":"kobotoolbox","APP_PORT":"8000","CACHE_URL":"redis://redis.shopno-data.svc.cluster.local:6379/1","CELERY_BROKER_URL":"redis://redis.shopno-data.svc.cluster.local:6379/2","CELERY_RESULT_BACKEND":"redis://redis.shopno-data.svc.cluster.local:6379/3","DJANGO_SETTINGS_MODULE":"kobo.settings.prod","ENV":"production","KEYCLOAK_CLIENT_ID":"kobotoolbox","KEYCLOAK_ISSUER":"https://auth.shopnoltd.dpdns.org/realms/shopnoltd","KOBOCAT_URL":"https://kobotoolbox.shopnoltd.dpdns.org","KOBOFORM_URL":"https://kobo.shopnoltd.dpdns.org","KPI_LOGS_DIR":"/tmp","KPI_PREFIX":"/","KPI_REDIS_URL":"redis://redis.shopno-data.svc.cluster.local:6379/0","KPI_SRC_DIR":"/srv/src/kpi","LOG_FORMAT":"json","LOG_LEVEL":"info","MINIO_ENDPOINT":"minio.shopno-data.svc.cluster.local:9000","MONGO_HOST":"mongo","OTEL_EXPORTER_OTLP_ENDPOINT":"http://tempo.observability.svc.cluster.local:4317","PATH_PREFIX":"/","POSTGRES_HOST":"postgres.shopno-data.svc.cluster.local","POSTGRES_PORT":"5432","PUBLIC_DOMAIN_NAME":"shopnoltd.dpdns.org","REDIS_HOST":"redis.shopno-data.svc.cluster.local","REDIS_PORT":"6379","REDIS_URL":"redis://redis.shopno-data.svc.cluster.local:6379/0","SESSION_COOKIE_DOMAIN":".shopnoltd.dpdns.org","UWSGI_GROUP":"root","UWSGI_USER":"root","kpi-uwsgi.ini":"[uwsgi]\nchdir = $(KPI_SRC_DIR)\nlogto = $(KPI_LOGS_DIR)/uwsgi.log\nmanage-script-name = true\nmount = $(KPI_PREFIX)=$(KPI_SRC_DIR)/kobo/wsgi.py\nmaster = true\nhttp-socket = 0.0.0.0:8000\nbuffer-size = 32768\nlisten = 128\ndie-on-term = true\nenable-threads = true\nsingle-interpreter = true\nvacuum = true\nprocesses = 2\nthreads = 2\nuid = $(UWSGI_USER)\ngid = $(UWSGI_GROUP)\nstatic-map = /static=$(KPI_SRC_DIR)/staticfiles\n"},"kind":"ConfigMap","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"kobotoolbox","app.kubernetes.io/part-of":"shopnoltd"},"name":"kobotoolbox-config","namespace":"shopno-apps"}}
+    creationTimestamp: "2026-07-28T05:46:04Z"
+    labels:
+      app.kubernetes.io/name: kobotoolbox
+      app.kubernetes.io/part-of: shopnoltd
+    name: kobotoolbox-config
+    namespace: shopno-apps
+    resourceVersion: "1823130"
+    uid: beeecf54-1494-40c8-a9e2-5f9ce8750aae
+- apiVersion: v1
+  data:
+    ca.crt: |
+      -----BEGIN CERTIFICATE-----
+      MIIBdzCCAR2gAwIBAgIBADAKBggqhkjOPQQDAjAjMSEwHwYDVQQDDBhrM3Mtc2Vy
+      dmVyLWNhQDE3ODUyMTcwNzAwHhcNMjYwNzI4MDQzNzUwWhcNMzYwNzI1MDQzNzUw
+      WjAjMSEwHwYDVQQDDBhrM3Mtc2VydmVyLWNhQDE3ODUyMTcwNzAwWTATBgcqhkjO
+      PQIBBggqhkjOPQMBBwNCAARksyxdq1AF7Tqds+RLYke46Zm9n1BVPx4qvMMMMmhd
+      nGXgsrlNM+cZN831XaBeK4VKtFBbZ11cZJWHAsoX+6Xoo0IwQDAOBgNVHQ8BAf8E
+      BAMCAqQwDwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4EFgQUyZoM3JhaALYdQWOhyOGj
+      0r0+6vYwCgYIKoZIzj0EAwIDSAAwRQIhAPF48MlDXzfmOF+iQe6pDtkT54gLwkX8
+      /j7UWZuBstVjAiAp4SDpKOVDRr5AWpOYz7jkHHajF++B9tZDGWlncACzAA==
+      -----END CERTIFICATE-----
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubernetes.io/description: Contains a CA bundle that can be used to verify the
+        kube-apiserver when using internal endpoints such as the internal service
+        IP or kubernetes.default.svc. No other usage is guaranteed across distributions
+        of Kubernetes clusters.
+    creationTimestamp: "2026-07-28T05:46:03Z"
+    name: kube-root-ca.crt
+    namespace: shopno-apps
+    resourceVersion: "846"
+    uid: 4ddd976f-e3f1-4f15-967b-7e1df90cf6ec
+- apiVersion: v1
+  data:
+    APP_NAME: metabase
+    APP_PORT: "3000"
+    ENV: production
+    KEYCLOAK_CLIENT_ID: metabase
+    KEYCLOAK_ISSUER: https://auth.shopnoltd.dpdns.org/realms/shopnoltd
+    LOG_FORMAT: json
+    LOG_LEVEL: info
+    MINIO_ENDPOINT: minio.shopno-data.svc.cluster.local:9000
+    OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo.observability.svc.cluster.local:4317
+    PATH_PREFIX: /
+    POSTGRES_HOST: postgres.shopno-data.svc.cluster.local
+    POSTGRES_PORT: "5432"
+    REDIS_HOST: redis.shopno-data.svc.cluster.local
+    REDIS_PORT: "6379"
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","data":{"APP_NAME":"metabase","APP_PORT":"3000","ENV":"production","KEYCLOAK_CLIENT_ID":"metabase","KEYCLOAK_ISSUER":"https://auth.shopnoltd.dpdns.org/realms/shopnoltd","LOG_FORMAT":"json","LOG_LEVEL":"info","MINIO_ENDPOINT":"minio.shopno-data.svc.cluster.local:9000","OTEL_EXPORTER_OTLP_ENDPOINT":"http://tempo.observability.svc.cluster.local:4317","PATH_PREFIX":"/","POSTGRES_HOST":"postgres.shopno-data.svc.cluster.local","POSTGRES_PORT":"5432","REDIS_HOST":"redis.shopno-data.svc.cluster.local","REDIS_PORT":"6379"},"kind":"ConfigMap","metadata":{"annotations":{},"name":"metabase-config","namespace":"shopno-apps"}}
+    creationTimestamp: "2026-07-28T05:46:04Z"
+    name: metabase-config
+    namespace: shopno-apps
+    resourceVersion: "2076619"
+    uid: cdd6b0f1-bae3-47df-a573-6df697790e7e
+- apiVersion: v1
+  data:
+    APP_NAME: n8n
+    APP_PORT: "5678"
+    ENV: production
+    KEYCLOAK_CLIENT_ID: n8n
+    KEYCLOAK_ISSUER: https://auth.shopnoltd.dpdns.org/realms/shopnoltd
+    LOG_FORMAT: json
+    LOG_LEVEL: info
+    MINIO_ENDPOINT: minio.shopno-data.svc.cluster.local:9000
+    N8N_PORT: "5678"
+    N8N_USER_FOLDER: /var/lib/n8n
+    OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo.observability.svc.cluster.local:4317
+    PATH_PREFIX: /
+    POSTGRES_HOST: postgres.shopno-data.svc.cluster.local
+    POSTGRES_PORT: "5432"
+    REDIS_HOST: redis.shopno-data.svc.cluster.local
+    REDIS_PORT: "6379"
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","data":{"APP_NAME":"n8n","APP_PORT":"5678","ENV":"production","KEYCLOAK_CLIENT_ID":"n8n","KEYCLOAK_ISSUER":"https://auth.shopnoltd.dpdns.org/realms/shopnoltd","LOG_FORMAT":"json","LOG_LEVEL":"info","MINIO_ENDPOINT":"minio.shopno-data.svc.cluster.local:9000","N8N_USER_FOLDER":"/var/lib/n8n","OTEL_EXPORTER_OTLP_ENDPOINT":"http://tempo.observability.svc.cluster.local:4317","PATH_PREFIX":"/","POSTGRES_HOST":"postgres.shopno-data.svc.cluster.local","POSTGRES_PORT":"5432","REDIS_HOST":"redis.shopno-data.svc.cluster.local","REDIS_PORT":"6379"},"kind":"ConfigMap","metadata":{"annotations":{},"name":"n8n-config","namespace":"shopno-apps"}}
+    creationTimestamp: "2026-07-28T05:46:04Z"
+    name: n8n-config
+    namespace: shopno-apps
+    resourceVersion: "2076603"
+    uid: b58ca5d7-98e6-4341-b268-a85bea5a13bf
+- apiVersion: v1
+  data:
+    APP_NAME: nextcloud
+    APP_PORT: "80"
+    ENV: production
+    KEYCLOAK_CLIENT_ID: nextcloud
+    KEYCLOAK_ISSUER: https://auth.shopnoltd.dpdns.org/realms/shopnoltd
+    LOG_FORMAT: json
+    LOG_LEVEL: info
+    MINIO_ENDPOINT: minio.shopno-data.svc.cluster.local:9000
+    OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo.observability.svc.cluster.local:4317
+    PATH_PREFIX: /
+    POSTGRES_HOST: postgres.shopno-data.svc.cluster.local
+    POSTGRES_PORT: "5432"
+    REDIS_HOST: redis.shopno-data.svc.cluster.local
+    REDIS_PORT: "6379"
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","data":{"APP_NAME":"nextcloud","APP_PORT":"80","ENV":"production","KEYCLOAK_CLIENT_ID":"nextcloud","KEYCLOAK_ISSUER":"https://auth.shopnoltd.dpdns.org/realms/shopnoltd","LOG_FORMAT":"json","LOG_LEVEL":"info","MINIO_ENDPOINT":"minio.shopno-data.svc.cluster.local:9000","OTEL_EXPORTER_OTLP_ENDPOINT":"http://tempo.observability.svc.cluster.local:4317","PATH_PREFIX":"/","POSTGRES_HOST":"postgres.shopno-data.svc.cluster.local","POSTGRES_PORT":"5432","REDIS_HOST":"redis.shopno-data.svc.cluster.local","REDIS_PORT":"6379"},"kind":"ConfigMap","metadata":{"annotations":{},"name":"nextcloud-config","namespace":"shopno-apps"}}
+    creationTimestamp: "2026-07-28T05:46:04Z"
+    name: nextcloud-config
+    namespace: shopno-apps
+    resourceVersion: "2076534"
+    uid: f2a69acc-a882-41ec-a6cd-7d8b2481f2fa
+- apiVersion: v1
+  data:
+    APP_NAME: onlyoffice
+    APP_PORT: "80"
+    ENV: production
+    KEYCLOAK_CLIENT_ID: onlyoffice
+    KEYCLOAK_ISSUER: https://auth.shopnoltd.dpdns.org/realms/shopnoltd
+    LOG_FORMAT: json
+    LOG_LEVEL: info
+    MINIO_ENDPOINT: minio.shopno-data.svc.cluster.local:9000
+    OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo.observability.svc.cluster.local:4317
+    PATH_PREFIX: /
+    POSTGRES_HOST: postgres.shopno-data.svc.cluster.local
+    POSTGRES_PORT: "5432"
+    REDIS_HOST: redis.shopno-data.svc.cluster.local
+    REDIS_PORT: "6379"
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","data":{"APP_NAME":"onlyoffice","APP_PORT":"80","ENV":"production","KEYCLOAK_CLIENT_ID":"onlyoffice","KEYCLOAK_ISSUER":"https://auth.shopnoltd.dpdns.org/realms/shopnoltd","LOG_FORMAT":"json","LOG_LEVEL":"info","MINIO_ENDPOINT":"minio.shopno-data.svc.cluster.local:9000","OTEL_EXPORTER_OTLP_ENDPOINT":"http://tempo.observability.svc.cluster.local:4317","PATH_PREFIX":"/","POSTGRES_HOST":"postgres.shopno-data.svc.cluster.local","POSTGRES_PORT":"5432","REDIS_HOST":"redis.shopno-data.svc.cluster.local","REDIS_PORT":"6379"},"kind":"ConfigMap","metadata":{"annotations":{},"name":"onlyoffice-config","namespace":"shopno-apps"}}
+    creationTimestamp: "2026-07-28T05:46:04Z"
+    name: onlyoffice-config
+    namespace: shopno-apps
+    resourceVersion: "2076565"
+    uid: c75a70ea-3a9c-4182-bbf6-61f6704bb67d
+- apiVersion: v1
+  data:
+    APP_NAME: owncast
+    APP_PORT: "8080"
+    ENV: production
+    KEYCLOAK_CLIENT_ID: owncast
+    KEYCLOAK_ISSUER: https://auth.shopnoltd.dpdns.org/realms/shopnoltd
+    LOG_FORMAT: json
+    LOG_LEVEL: info
+    MINIO_ENDPOINT: minio.shopno-data.svc.cluster.local:9000
+    OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo.observability.svc.cluster.local:4317
+    PATH_PREFIX: /
+    POSTGRES_HOST: postgres.shopno-data.svc.cluster.local
+    POSTGRES_PORT: "5432"
+    REDIS_HOST: redis.shopno-data.svc.cluster.local
+    REDIS_PORT: "6379"
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","data":{"APP_NAME":"owncast","APP_PORT":"8080","ENV":"production","KEYCLOAK_CLIENT_ID":"owncast","KEYCLOAK_ISSUER":"https://auth.shopnoltd.dpdns.org/realms/shopnoltd","LOG_FORMAT":"json","LOG_LEVEL":"info","MINIO_ENDPOINT":"minio.shopno-data.svc.cluster.local:9000","OTEL_EXPORTER_OTLP_ENDPOINT":"http://tempo.observability.svc.cluster.local:4317","PATH_PREFIX":"/","POSTGRES_HOST":"postgres.shopno-data.svc.cluster.local","POSTGRES_PORT":"5432","REDIS_HOST":"redis.shopno-data.svc.cluster.local","REDIS_PORT":"6379"},"kind":"ConfigMap","metadata":{"annotations":{},"name":"owncast-config","namespace":"shopno-apps"}}
+    creationTimestamp: "2026-07-28T05:46:04Z"
+    name: owncast-config
+    namespace: shopno-apps
+    resourceVersion: "2076689"
+    uid: 00ad3f57-37b4-452c-9c3a-802af1a50e58
+- apiVersion: v1
+  data:
+    APP_NAME: superset
+    APP_PORT: "8088"
+    ENV: production
+    KEYCLOAK_CLIENT_ID: superset
+    KEYCLOAK_ISSUER: https://auth.shopnoltd.dpdns.org/realms/shopnoltd
+    LOG_FORMAT: json
+    LOG_LEVEL: info
+    MINIO_ENDPOINT: minio.shopno-data.svc.cluster.local:9000
+    OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo.observability.svc.cluster.local:4317
+    PATH_PREFIX: /
+    POSTGRES_HOST: postgres.shopno-data.svc.cluster.local
+    POSTGRES_PORT: "5432"
+    REDIS_HOST: redis.shopno-data.svc.cluster.local
+    REDIS_PORT: "6379"
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","data":{"APP_NAME":"superset","APP_PORT":"8088","ENV":"production","KEYCLOAK_CLIENT_ID":"superset","KEYCLOAK_ISSUER":"https://auth.shopnoltd.dpdns.org/realms/shopnoltd","LOG_FORMAT":"json","LOG_LEVEL":"info","MINIO_ENDPOINT":"minio.shopno-data.svc.cluster.local:9000","OTEL_EXPORTER_OTLP_ENDPOINT":"http://tempo.observability.svc.cluster.local:4317","PATH_PREFIX":"/","POSTGRES_HOST":"postgres.shopno-data.svc.cluster.local","POSTGRES_PORT":"5432","REDIS_HOST":"redis.shopno-data.svc.cluster.local","REDIS_PORT":"6379"},"kind":"ConfigMap","metadata":{"annotations":{},"name":"superset-config","namespace":"shopno-apps"}}
+    creationTimestamp: "2026-07-28T05:46:04Z"
+    name: superset-config
+    namespace: shopno-apps
+    resourceVersion: "2076732"
+    uid: 182273b0-593e-4897-8a0f-2d0326b2ebcb
+- apiVersion: v1
+  data:
+    ca.crt: |
+      -----BEGIN CERTIFICATE-----
+      MIIBdzCCAR2gAwIBAgIBADAKBggqhkjOPQQDAjAjMSEwHwYDVQQDDBhrM3Mtc2Vy
+      dmVyLWNhQDE3ODUyMTcwNzAwHhcNMjYwNzI4MDQzNzUwWhcNMzYwNzI1MDQzNzUw
+      WjAjMSEwHwYDVQQDDBhrM3Mtc2VydmVyLWNhQDE3ODUyMTcwNzAwWTATBgcqhkjO
+      PQIBBggqhkjOPQMBBwNCAARksyxdq1AF7Tqds+RLYke46Zm9n1BVPx4qvMMMMmhd
+      nGXgsrlNM+cZN831XaBeK4VKtFBbZ11cZJWHAsoX+6Xoo0IwQDAOBgNVHQ8BAf8E
+      BAMCAqQwDwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4EFgQUyZoM3JhaALYdQWOhyOGj
+      0r0+6vYwCgYIKoZIzj0EAwIDSAAwRQIhAPF48MlDXzfmOF+iQe6pDtkT54gLwkX8
+      /j7UWZuBstVjAiAp4SDpKOVDRr5AWpOYz7jkHHajF++B9tZDGWlncACzAA==
+      -----END CERTIFICATE-----
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubernetes.io/description: Contains a CA bundle that can be used to verify the
+        kube-apiserver when using internal endpoints such as the internal service
+        IP or kubernetes.default.svc. No other usage is guaranteed across distributions
+        of Kubernetes clusters.
+    creationTimestamp: "2026-07-28T05:46:03Z"
+    name: kube-root-ca.crt
+    namespace: shopno-data
+    resourceVersion: "850"
+    uid: 973ffa03-4815-45cc-b797-6d789428d08a
+- apiVersion: v1
+  data:
+    APP_NAME: minio
+    APP_PORT: "9000"
+    ENV: production
+    KEYCLOAK_CLIENT_ID: minio
+    KEYCLOAK_ISSUER: https://auth.shopnoltd.dpdns.org/realms/shopnoltd
+    LOG_FORMAT: json
+    LOG_LEVEL: info
+    MINIO_ENDPOINT: minio.shopno-data.svc.cluster.local:9000
+    OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo.observability.svc.cluster.local:4317
+    PATH_PREFIX: /
+    POSTGRES_HOST: postgres.shopno-data.svc.cluster.local
+    POSTGRES_PORT: "5432"
+    REDIS_HOST: redis.shopno-data.svc.cluster.local
+    REDIS_PORT: "6379"
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","data":{"APP_NAME":"minio","APP_PORT":"9000","ENV":"production","KEYCLOAK_CLIENT_ID":"minio","KEYCLOAK_ISSUER":"https://auth.shopnoltd.dpdns.org/realms/shopnoltd","LOG_FORMAT":"json","LOG_LEVEL":"info","MINIO_ENDPOINT":"minio.shopno-data.svc.cluster.local:9000","OTEL_EXPORTER_OTLP_ENDPOINT":"http://tempo.observability.svc.cluster.local:4317","PATH_PREFIX":"/","POSTGRES_HOST":"postgres.shopno-data.svc.cluster.local","POSTGRES_PORT":"5432","REDIS_HOST":"redis.shopno-data.svc.cluster.local","REDIS_PORT":"6379"},"kind":"ConfigMap","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"minio","app.kubernetes.io/part-of":"shopnoltd"},"name":"minio-config","namespace":"shopno-data"}}
+    creationTimestamp: "2026-07-28T05:46:04Z"
+    labels:
+      app.kubernetes.io/name: minio
+      app.kubernetes.io/part-of: shopnoltd
+    name: minio-config
+    namespace: shopno-data
+    resourceVersion: "923"
+    uid: e2f6ae48-4556-4d50-a18f-9b155cb76a38
+- apiVersion: v1
+  data:
+    APP_NAME: opensearch
+    APP_PORT: "9200"
+    ENV: production
+    KEYCLOAK_CLIENT_ID: opensearch
+    KEYCLOAK_ISSUER: https://auth.shopnoltd.dpdns.org/realms/shopnoltd
+    LOG_FORMAT: json
+    LOG_LEVEL: info
+    MINIO_ENDPOINT: minio.shopno-data.svc.cluster.local:9000
+    OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo.observability.svc.cluster.local:4317
+    PATH_PREFIX: /
+    POSTGRES_HOST: postgres.shopno-data.svc.cluster.local
+    POSTGRES_PORT: "5432"
+    REDIS_HOST: redis.shopno-data.svc.cluster.local
+    REDIS_PORT: "6379"
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","data":{"APP_NAME":"opensearch","APP_PORT":"9200","ENV":"production","KEYCLOAK_CLIENT_ID":"opensearch","KEYCLOAK_ISSUER":"https://auth.shopnoltd.dpdns.org/realms/shopnoltd","LOG_FORMAT":"json","LOG_LEVEL":"info","MINIO_ENDPOINT":"minio.shopno-data.svc.cluster.local:9000","OTEL_EXPORTER_OTLP_ENDPOINT":"http://tempo.observability.svc.cluster.local:4317","PATH_PREFIX":"/","POSTGRES_HOST":"postgres.shopno-data.svc.cluster.local","POSTGRES_PORT":"5432","REDIS_HOST":"redis.shopno-data.svc.cluster.local","REDIS_PORT":"6379"},"kind":"ConfigMap","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"opensearch","app.kubernetes.io/part-of":"shopnoltd"},"name":"opensearch-config","namespace":"shopno-data"}}
+    creationTimestamp: "2026-07-28T05:46:04Z"
+    labels:
+      app.kubernetes.io/name: opensearch
+      app.kubernetes.io/part-of: shopnoltd
+    name: opensearch-config
+    namespace: shopno-data
+    resourceVersion: "924"
+    uid: f3da2076-33a6-4b80-adb9-c1d7590b3228
+- apiVersion: v1
+  data:
+    PGDATA: /var/lib/postgresql/data/pgdata
+    PGPORT: "5432"
+    PLATFORM_MODE: multi-tenant
+    PLATFORM_NAME: shopnoltd
+    POSTGRES_EFFECTIVE_CACHE_SIZE: 1GB
+    POSTGRES_INITDB_ARGS: --encoding=UTF8 --locale=en_US.UTF-8
+    POSTGRES_MAINTENANCE_WORK_MEM: 128MB
+    POSTGRES_MAX_CONNECTIONS: "200"
+    POSTGRES_SHARED_BUFFERS: 256MB
+    POSTGRES_WORK_MEM: 16MB
+    TENANT_DATABASE_MODE: schema
+    TZ: UTC
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","data":{"PGDATA":"/var/lib/postgresql/data/pgdata","PGPORT":"5432","PLATFORM_MODE":"multi-tenant","PLATFORM_NAME":"shopnoltd","POSTGRES_EFFECTIVE_CACHE_SIZE":"1GB","POSTGRES_INITDB_ARGS":"--encoding=UTF8 --locale=en_US.UTF-8","POSTGRES_MAINTENANCE_WORK_MEM":"128MB","POSTGRES_MAX_CONNECTIONS":"200","POSTGRES_SHARED_BUFFERS":"256MB","POSTGRES_WORK_MEM":"16MB","TENANT_DATABASE_MODE":"schema","TZ":"UTC"},"kind":"ConfigMap","metadata":{"annotations":{},"labels":{"app.kubernetes.io/component":"database","app.kubernetes.io/name":"postgres","app.kubernetes.io/part-of":"shopnoltd"},"name":"postgres-config","namespace":"shopno-data"}}
+    creationTimestamp: "2026-07-28T05:46:04Z"
+    labels:
+      app.kubernetes.io/component: database
+      app.kubernetes.io/name: postgres
+      app.kubernetes.io/part-of: shopnoltd
+    name: postgres-config
+    namespace: shopno-data
+    resourceVersion: "925"
+    uid: 3e334785-c405-41ed-9361-88336a60e271
+- apiVersion: v1
+  data:
+    APP_NAME: redis
+    APP_PORT: "6379"
+    ENV: production
+    KEYCLOAK_CLIENT_ID: redis
+    KEYCLOAK_ISSUER: https://auth.shopnoltd.dpdns.org/realms/shopnoltd
+    LOG_FORMAT: json
+    LOG_LEVEL: info
+    MINIO_ENDPOINT: minio.shopno-data.svc.cluster.local:9000
+    OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo.observability.svc.cluster.local:4317
+    PATH_PREFIX: /healthz
+    POSTGRES_HOST: postgres.shopno-data.svc.cluster.local
+    POSTGRES_PORT: "5432"
+    REDIS_HOST: redis.shopno-data.svc.cluster.local
+    REDIS_PORT: "6379"
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","data":{"APP_NAME":"redis","APP_PORT":"6379","ENV":"production","KEYCLOAK_CLIENT_ID":"redis","KEYCLOAK_ISSUER":"https://auth.shopnoltd.dpdns.org/realms/shopnoltd","LOG_FORMAT":"json","LOG_LEVEL":"info","MINIO_ENDPOINT":"minio.shopno-data.svc.cluster.local:9000","OTEL_EXPORTER_OTLP_ENDPOINT":"http://tempo.observability.svc.cluster.local:4317","PATH_PREFIX":"/healthz","POSTGRES_HOST":"postgres.shopno-data.svc.cluster.local","POSTGRES_PORT":"5432","REDIS_HOST":"redis.shopno-data.svc.cluster.local","REDIS_PORT":"6379"},"kind":"ConfigMap","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"redis","app.kubernetes.io/part-of":"shopnoltd"},"name":"redis-config","namespace":"shopno-data"}}
+    creationTimestamp: "2026-07-28T05:46:04Z"
+    labels:
+      app.kubernetes.io/name: redis
+      app.kubernetes.io/part-of: shopnoltd
+    name: redis-config
+    namespace: shopno-data
+    resourceVersion: "926"
+    uid: 7549d68d-1acd-4278-ba56-eda100523805
+- apiVersion: v1
+  data:
+    ca.crt: |
+      -----BEGIN CERTIFICATE-----
+      MIIBdzCCAR2gAwIBAgIBADAKBggqhkjOPQQDAjAjMSEwHwYDVQQDDBhrM3Mtc2Vy
+      dmVyLWNhQDE3ODUyMTcwNzAwHhcNMjYwNzI4MDQzNzUwWhcNMzYwNzI1MDQzNzUw
+      WjAjMSEwHwYDVQQDDBhrM3Mtc2VydmVyLWNhQDE3ODUyMTcwNzAwWTATBgcqhkjO
+      PQIBBggqhkjOPQMBBwNCAARksyxdq1AF7Tqds+RLYke46Zm9n1BVPx4qvMMMMmhd
+      nGXgsrlNM+cZN831XaBeK4VKtFBbZ11cZJWHAsoX+6Xoo0IwQDAOBgNVHQ8BAf8E
+      BAMCAqQwDwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4EFgQUyZoM3JhaALYdQWOhyOGj
+      0r0+6vYwCgYIKoZIzj0EAwIDSAAwRQIhAPF48MlDXzfmOF+iQe6pDtkT54gLwkX8
+      /j7UWZuBstVjAiAp4SDpKOVDRr5AWpOYz7jkHHajF++B9tZDGWlncACzAA==
+      -----END CERTIFICATE-----
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubernetes.io/description: Contains a CA bundle that can be used to verify the
+        kube-apiserver when using internal endpoints such as the internal service
+        IP or kubernetes.default.svc. No other usage is guaranteed across distributions
+        of Kubernetes clusters.
+    creationTimestamp: "2026-08-13T15:51:05Z"
+    name: kube-root-ca.crt
+    namespace: shopno-ide
+    resourceVersion: "2142149"
+    uid: ffa417cc-5dd9-4975-9c54-d62dc1ecb30b
+- apiVersion: v1
+  data:
+    APP_NAME: auth-service
+    APP_PORT: "8080"
+    DATABASE_URL: postgresql+asyncpg://postgres:5XuByzqhn6nJyq7iR7xva58iKHLSUSj@postgres.shopno-data.svc.cluster.local:5432/shopnoltd
+    ENV: production
+    KEYCLOAK_AUDIENCE: auth-service
+    KEYCLOAK_ISSUER: https://auth.shopnoltd.dpdns.org/realms/shopnoltd
+    KEYCLOAK_REALM: shopnoltd
+    KEYCLOAK_URL: http://keycloak.shopno-identity.svc.cluster.local
+    KEYCLOAK_WEB_CLIENT_ID: shopnoltd-web
+    LOG_FORMAT: json
+    LOG_LEVEL: info
+    MINIO_ENDPOINT: minio.shopno-data.svc.cluster.local:9000
+    OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo.observability.svc.cluster.local:4317
+    PATH_PREFIX: /
+    POSTGRES_HOST: postgres.shopno-data.svc.cluster.local
+    POSTGRES_PORT: "5432"
+    REDIS_HOST: redis.shopno-data.svc.cluster.local
+    REDIS_PORT: "6379"
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","data":{"APP_NAME":"auth-service","APP_PORT":"8080","DATABASE_URL":"postgresql+asyncpg://postgres:5XuByzqhn6nJyq7iR7xva58iKHLSUSj@postgres.shopno-data.svc.cluster.local:5432/shopnoltd","ENV":"production","KEYCLOAK_AUDIENCE":"auth-service","KEYCLOAK_ISSUER":"https://auth.shopnoltd.dpdns.org/realms/shopnoltd","KEYCLOAK_REALM":"shopnoltd","KEYCLOAK_URL":"https://auth.shopnoltd.dpdns.org","KEYCLOAK_WEB_CLIENT_ID":"shopnoltd-web","LOG_FORMAT":"json","LOG_LEVEL":"info","MINIO_ENDPOINT":"minio.shopno-data.svc.cluster.local:9000","OTEL_EXPORTER_OTLP_ENDPOINT":"http://tempo.observability.svc.cluster.local:4317","PATH_PREFIX":"/","POSTGRES_HOST":"postgres.shopno-data.svc.cluster.local","POSTGRES_PORT":"5432","REDIS_HOST":"redis.shopno-data.svc.cluster.local","REDIS_PORT":"6379"},"kind":"ConfigMap","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"auth-service","app.kubernetes.io/part-of":"shopnoltd"},"name":"auth-service-config","namespace":"shopno-identity"}}
+    creationTimestamp: "2026-07-28T05:46:04Z"
+    labels:
+      app.kubernetes.io/name: auth-service
+      app.kubernetes.io/part-of: shopnoltd
+    name: auth-service-config
+    namespace: shopno-identity
+    resourceVersion: "2493959"
+    uid: 7d323a65-debf-4340-852f-596df1e969fa
+- apiVersion: v1
+  data:
+    APP_NAME: keycloak
+    APP_PORT: "8080"
+    ENV: production
+    KC_BOOTSTRAP_ADMIN_USERNAME: admin
+    KC_DB: postgres
+    KC_DB_URL_DATABASE: keycloak
+    KC_DB_URL_HOST: postgres.shopno-data.svc.cluster.local
+    KC_DB_URL_PORT: "5432"
+    KC_DB_USERNAME: keycloak
+    KC_HEALTH_ENABLED: "true"
+    KC_HOSTNAME: auth.shopnoltd.dpdns.org
+    KC_HOSTNAME_STRICT: "false"
+    KC_HTTP_ENABLED: "true"
+    KC_METRICS_ENABLED: "true"
+    KC_PROXY_HEADERS: xforwarded
+    KEYCLOAK_CLIENT_ID: keycloak
+    KEYCLOAK_ISSUER: https://auth.shopnoltd.dpdns.org/realms/shopnoltd
+    LOG_FORMAT: json
+    LOG_LEVEL: info
+    MINIO_ENDPOINT: minio.shopno-data.svc.cluster.local:9000
+    OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo.observability.svc.cluster.local:4317
+    PATH_PREFIX: /
+    POSTGRES_HOST: postgres.shopno-data.svc.cluster.local
+    POSTGRES_PORT: "5432"
+    REDIS_HOST: redis.shopno-data.svc.cluster.local
+    REDIS_PORT: "6379"
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","data":{"APP_NAME":"keycloak","APP_PORT":"8080","ENV":"production","KC_BOOTSTRAP_ADMIN_USERNAME":"admin","KC_DB":"postgres","KC_DB_URL_DATABASE":"keycloak","KC_DB_URL_HOST":"postgres.shopno-data.svc.cluster.local","KC_DB_URL_PORT":"5432","KC_DB_USERNAME":"keycloak","KC_HEALTH_ENABLED":"true","KC_HOSTNAME":"auth.shopnoltd.dpdns.org","KC_HOSTNAME_STRICT":"false","KC_HTTP_ENABLED":"true","KC_METRICS_ENABLED":"true","KC_PROXY_HEADERS":"xforwarded","KEYCLOAK_CLIENT_ID":"keycloak","KEYCLOAK_ISSUER":"https://auth.shopnoltd.dpdns.org/realms/shopnoltd","LOG_FORMAT":"json","LOG_LEVEL":"info","MINIO_ENDPOINT":"minio.shopno-data.svc.cluster.local:9000","OTEL_EXPORTER_OTLP_ENDPOINT":"http://tempo.observability.svc.cluster.local:4317","PATH_PREFIX":"/","POSTGRES_HOST":"postgres.shopno-data.svc.cluster.local","POSTGRES_PORT":"5432","REDIS_HOST":"redis.shopno-data.svc.cluster.local","REDIS_PORT":"6379"},"kind":"ConfigMap","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"keycloak","app.kubernetes.io/part-of":"shopnoltd"},"name":"keycloak-config","namespace":"shopno-identity"}}
+    creationTimestamp: "2026-07-28T05:46:04Z"
+    labels:
+      app.kubernetes.io/name: keycloak
+      app.kubernetes.io/part-of: shopnoltd
+    name: keycloak-config
+    namespace: shopno-identity
+    resourceVersion: "303857"
+    uid: cb005531-812d-4d51-81ac-0fbaae7f7430
+- apiVersion: v1
+  data:
+    ca.crt: |
+      -----BEGIN CERTIFICATE-----
+      MIIBdzCCAR2gAwIBAgIBADAKBggqhkjOPQQDAjAjMSEwHwYDVQQDDBhrM3Mtc2Vy
+      dmVyLWNhQDE3ODUyMTcwNzAwHhcNMjYwNzI4MDQzNzUwWhcNMzYwNzI1MDQzNzUw
+      WjAjMSEwHwYDVQQDDBhrM3Mtc2VydmVyLWNhQDE3ODUyMTcwNzAwWTATBgcqhkjO
+      PQIBBggqhkjOPQMBBwNCAARksyxdq1AF7Tqds+RLYke46Zm9n1BVPx4qvMMMMmhd
+      nGXgsrlNM+cZN831XaBeK4VKtFBbZ11cZJWHAsoX+6Xoo0IwQDAOBgNVHQ8BAf8E
+      BAMCAqQwDwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4EFgQUyZoM3JhaALYdQWOhyOGj
+      0r0+6vYwCgYIKoZIzj0EAwIDSAAwRQIhAPF48MlDXzfmOF+iQe6pDtkT54gLwkX8
+      /j7UWZuBstVjAiAp4SDpKOVDRr5AWpOYz7jkHHajF++B9tZDGWlncACzAA==
+      -----END CERTIFICATE-----
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubernetes.io/description: Contains a CA bundle that can be used to verify the
+        kube-apiserver when using internal endpoints such as the internal service
+        IP or kubernetes.default.svc. No other usage is guaranteed across distributions
+        of Kubernetes clusters.
+    creationTimestamp: "2026-07-28T05:46:03Z"
+    name: kube-root-ca.crt
+    namespace: shopno-identity
+    resourceVersion: "853"
+    uid: c252905b-50ef-458d-a2ac-3097ac7e0a76
+- apiVersion: v1
+  data:
+    APP_NAME: oauth-service
+    APP_PORT: "3000"
+    DATABASE_URL: postgresql+asyncpg://postgres:5XuByzqhn6nJyq7iR7xva58iKHLSUSj@postgres.shopno-data.svc.cluster.local:5432/shopnoltd
+    ENV: production
+    KEYCLOAK_CLIENT_ID: oauth-service
+    KEYCLOAK_ISSUER: https://auth.shopnoltd.dpdns.org/realms/shopnoltd
+    LOG_FORMAT: json
+    LOG_LEVEL: info
+    MINIO_ENDPOINT: minio.shopno-data.svc.cluster.local:9000
+    OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo.observability.svc.cluster.local:4317
+    PATH_PREFIX: /
+    POSTGRES_HOST: postgres.shopno-data.svc.cluster.local
+    POSTGRES_PORT: "5432"
+    REDIS_HOST: redis.shopno-data.svc.cluster.local
+    REDIS_PORT: "6379"
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","data":{"APP_NAME":"oauth-service","APP_PORT":"3000","ENV":"production","KEYCLOAK_CLIENT_ID":"oauth-service","KEYCLOAK_ISSUER":"https://auth.shopnoltd.dpdns.org/realms/shopnoltd","LOG_FORMAT":"json","LOG_LEVEL":"info","MINIO_ENDPOINT":"minio.shopno-data.svc.cluster.local:9000","OTEL_EXPORTER_OTLP_ENDPOINT":"http://tempo.observability.svc.cluster.local:4317","PATH_PREFIX":"/","POSTGRES_HOST":"postgres.shopno-data.svc.cluster.local","POSTGRES_PORT":"5432","REDIS_HOST":"redis.shopno-data.svc.cluster.local","REDIS_PORT":"6379"},"kind":"ConfigMap","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"oauth-service","app.kubernetes.io/part-of":"shopnoltd"},"name":"oauth-service-config","namespace":"shopno-identity"}}
+    creationTimestamp: "2026-07-28T05:46:04Z"
+    labels:
+      app.kubernetes.io/name: oauth-service
+      app.kubernetes.io/part-of: shopnoltd
+    name: oauth-service-config
+    namespace: shopno-identity
+    resourceVersion: "42855"
+    uid: 663b4556-b52b-4562-b192-8ea83b3380f3
+- apiVersion: v1
+  data:
+    config.yml: |
+      tunnel: 5d6e037a-7c09-4788-8532-11dba5fc1a72
+      credentials-file: /etc/cloudflared/creds/credentials.json
+      ingress:
+        - hostname: kf.shopnoltd.dpdns.org
+          service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
+        - hostname: kc.shopnoltd.dpdns.org
+          service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
+        - hostname: ee.shopnoltd.dpdns.org
+          service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
+        - hostname: shopnoltd.dpdns.org
+          service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
+        - hostname: domain.shopnoltd.dpdns.org
+          service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
+        - hostname: api.shopnoltd.dpdns.org
+          service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
+        - hostname: auth.shopnoltd.dpdns.org
+          service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
+        - hostname: billing.shopnoltd.dpdns.org
+          service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
+        - hostname: chat.shopnoltd.dpdns.org
+          service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
+        - hostname: freedomain.shopnoltd.dpdns.org
+          service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
+        - hostname: live.shopnoltd.dpdns.org
+          service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
+        - hostname: meet.shopnoltd.dpdns.org
+          service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
+        - hostname: event.shopnoltd.dpdns.org
+          service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
+        - hostname: interior.shopnoltd.dpdns.org
+          service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
+        - hostname: foundation.shopnoltd.dpdns.org
+          service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
+        - hostname: kobo.shopnoltd.dpdns.org
+          service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
+        - hostname: enketo.shopnoltd.dpdns.org
+          service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
+        - hostname: grafana.shopnoltd.dpdns.org
+          service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
+        - hostname: prometheus.shopnoltd.dpdns.org
+          service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
+        - hostname: pgadmin.shopnoltd.dpdns.org
+          service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
+        - hostname: portainer.shopnoltd.dpdns.org
+          service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
+        - hostname: mail.shopnoltd.dpdns.org
+          service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
+        - hostname: mail-api.shopnoltd.dpdns.org
+          service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
+        - hostname: shopnoltdandroid.shopnoltd.dpdns.org
+          service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
+        - hostname: shopnoltdpc.shopnoltd.dpdns.org
+          service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
+        - hostname: "*.shopnoltd.dpdns.org"
+          service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
+        - service: http_status:404
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","data":{"config.yml":"tunnel: 5d6e037a-7c09-4788-8532-11dba5fc1a72\ncredentials-file: /etc/cloudflared/creds/credentials.json\ningress:\n  - hostname: kf.shopnoltd.dpdns.org\n    service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80\n  - hostname: kc.shopnoltd.dpdns.org\n    service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80\n  - hostname: ee.shopnoltd.dpdns.org\n    service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80\n  - hostname: shopnoltd.dpdns.org\n    service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80\n  - hostname: domain.shopnoltd.dpdns.org\n    service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80\n  - hostname: api.shopnoltd.dpdns.org\n    service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80\n  - hostname: auth.shopnoltd.dpdns.org\n    service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80\n  - hostname: billing.shopnoltd.dpdns.org\n    service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80\n  - hostname: chat.shopnoltd.dpdns.org\n    service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80\n  - hostname: freedomain.shopnoltd.dpdns.org\n    service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80\n  - hostname: live.shopnoltd.dpdns.org\n    service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80\n  - hostname: meet.shopnoltd.dpdns.org\n    service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80\n  - hostname: event.shopnoltd.dpdns.org\n    service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80\n  - hostname: interior.shopnoltd.dpdns.org\n    service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80\n  - hostname: foundation.shopnoltd.dpdns.org\n    service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80\n  - hostname: kobo.shopnoltd.dpdns.org\n    service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80\n  - hostname: enketo.shopnoltd.dpdns.org\n    service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80\n  - hostname: grafana.shopnoltd.dpdns.org\n    service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80\n  - hostname: prometheus.shopnoltd.dpdns.org\n    service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80\n  - hostname: pgadmin.shopnoltd.dpdns.org\n    service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80\n  - hostname: portainer.shopnoltd.dpdns.org\n    service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80\n  - hostname: mail.shopnoltd.dpdns.org\n    service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80\n  - hostname: mail-api.shopnoltd.dpdns.org\n    service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80\n  - hostname: shopnoltdandroid.shopnoltd.dpdns.org\n    service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80\n  - hostname: shopnoltdpc.shopnoltd.dpdns.org\n    service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80\n  - hostname: \"*.shopnoltd.dpdns.org\"\n    service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80\n  - service: http_status:404\n"},"kind":"ConfigMap","metadata":{"annotations":{},"name":"cloudflared-config","namespace":"shopno-ingress"}}
+    creationTimestamp: "2026-07-28T05:46:04Z"
+    name: cloudflared-config
+    namespace: shopno-ingress
+    resourceVersion: "1957981"
+    uid: 8babd768-9a05-4a73-8815-2d7abece2e6b
+- apiVersion: v1
+  data:
+    ca.crt: |
+      -----BEGIN CERTIFICATE-----
+      MIIBdzCCAR2gAwIBAgIBADAKBggqhkjOPQQDAjAjMSEwHwYDVQQDDBhrM3Mtc2Vy
+      dmVyLWNhQDE3ODUyMTcwNzAwHhcNMjYwNzI4MDQzNzUwWhcNMzYwNzI1MDQzNzUw
+      WjAjMSEwHwYDVQQDDBhrM3Mtc2VydmVyLWNhQDE3ODUyMTcwNzAwWTATBgcqhkjO
+      PQIBBggqhkjOPQMBBwNCAARksyxdq1AF7Tqds+RLYke46Zm9n1BVPx4qvMMMMmhd
+      nGXgsrlNM+cZN831XaBeK4VKtFBbZ11cZJWHAsoX+6Xoo0IwQDAOBgNVHQ8BAf8E
+      BAMCAqQwDwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4EFgQUyZoM3JhaALYdQWOhyOGj
+      0r0+6vYwCgYIKoZIzj0EAwIDSAAwRQIhAPF48MlDXzfmOF+iQe6pDtkT54gLwkX8
+      /j7UWZuBstVjAiAp4SDpKOVDRr5AWpOYz7jkHHajF++B9tZDGWlncACzAA==
+      -----END CERTIFICATE-----
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubernetes.io/description: Contains a CA bundle that can be used to verify the
+        kube-apiserver when using internal endpoints such as the internal service
+        IP or kubernetes.default.svc. No other usage is guaranteed across distributions
+        of Kubernetes clusters.
+    creationTimestamp: "2026-07-28T05:46:03Z"
+    name: kube-root-ca.crt
+    namespace: shopno-ingress
+    resourceVersion: "856"
+    uid: bf592777-7871-41dd-892e-79ea2aefdb77
+- apiVersion: v1
+  data:
+    ca.crt: |
+      -----BEGIN CERTIFICATE-----
+      MIIBdzCCAR2gAwIBAgIBADAKBggqhkjOPQQDAjAjMSEwHwYDVQQDDBhrM3Mtc2Vy
+      dmVyLWNhQDE3ODUyMTcwNzAwHhcNMjYwNzI4MDQzNzUwWhcNMzYwNzI1MDQzNzUw
+      WjAjMSEwHwYDVQQDDBhrM3Mtc2VydmVyLWNhQDE3ODUyMTcwNzAwWTATBgcqhkjO
+      PQIBBggqhkjOPQMBBwNCAARksyxdq1AF7Tqds+RLYke46Zm9n1BVPx4qvMMMMmhd
+      nGXgsrlNM+cZN831XaBeK4VKtFBbZ11cZJWHAsoX+6Xoo0IwQDAOBgNVHQ8BAf8E
+      BAMCAqQwDwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4EFgQUyZoM3JhaALYdQWOhyOGj
+      0r0+6vYwCgYIKoZIzj0EAwIDSAAwRQIhAPF48MlDXzfmOF+iQe6pDtkT54gLwkX8
+      /j7UWZuBstVjAiAp4SDpKOVDRr5AWpOYz7jkHHajF++B9tZDGWlncACzAA==
+      -----END CERTIFICATE-----
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubernetes.io/description: Contains a CA bundle that can be used to verify the
+        kube-apiserver when using internal endpoints such as the internal service
+        IP or kubernetes.default.svc. No other usage is guaranteed across distributions
+        of Kubernetes clusters.
+    creationTimestamp: "2026-07-31T15:26:49Z"
+    name: kube-root-ca.crt
+    namespace: shopno-mail
+    resourceVersion: "252713"
+    uid: aea2c1b9-cdd8-4c57-9add-dba6d66e1b72
+- apiVersion: v1
+  data:
+    DATABASE_URL: postgresql+asyncpg://mail_service:MailPwClean2026NoBash@postgres.shopno-data.svc.cluster.local:5432/mail?sslmode=disable
+    MAIL_PROVIDER: smtp
+    REDIS_URL: redis://redis.shopno-data.svc.cluster.local:6379/0
+    SMTP_HOST: mail.shopnoltd.dpdns.org
+    SMTP_PORT: "587"
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","data":{"DATABASE_URL":"postgresql+asyncpg://mail_service:MailPwClean2026NoBash@postgres.shopno-data.svc.cluster.local:5432/mail?ssl=disable","MAIL_PROVIDER":"smtp","REDIS_URL":"redis://redis.shopno-data.svc.cluster.local:6379/0","SMTP_HOST":"mail.shopnoltd.dpdns.org","SMTP_PORT":"587"},"kind":"ConfigMap","metadata":{"annotations":{},"name":"mail-service-config","namespace":"shopno-mail"}}
+    creationTimestamp: "2026-08-10T06:36:10Z"
+    name: mail-service-config
+    namespace: shopno-mail
+    resourceVersion: "1515706"
+    uid: 5d3c6e04-1cb9-4e9e-9e90-a04e39b47505
+- apiVersion: v1
+  data:
+    APP_NAME: alertmanager
+    APP_PORT: "9093"
+    ENV: production
+    KEYCLOAK_CLIENT_ID: alertmanager
+    KEYCLOAK_ISSUER: https://auth.shopnoltd.dpdns.org/realms/shopnoltd
+    LOG_FORMAT: json
+    LOG_LEVEL: info
+    MINIO_ENDPOINT: minio.shopno-data.svc.cluster.local:9000
+    OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo.observability.svc.cluster.local:4317
+    PATH_PREFIX: /
+    POSTGRES_HOST: postgres.shopno-data.svc.cluster.local
+    POSTGRES_PORT: "5432"
+    REDIS_HOST: redis.shopno-data.svc.cluster.local
+    REDIS_PORT: "6379"
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","data":{"APP_NAME":"alertmanager","APP_PORT":"9093","ENV":"production","KEYCLOAK_CLIENT_ID":"alertmanager","KEYCLOAK_ISSUER":"https://auth.shopnoltd.dpdns.org/realms/shopnoltd","LOG_FORMAT":"json","LOG_LEVEL":"info","MINIO_ENDPOINT":"minio.shopno-data.svc.cluster.local:9000","OTEL_EXPORTER_OTLP_ENDPOINT":"http://tempo.observability.svc.cluster.local:4317","PATH_PREFIX":"/","POSTGRES_HOST":"postgres.shopno-data.svc.cluster.local","POSTGRES_PORT":"5432","REDIS_HOST":"redis.shopno-data.svc.cluster.local","REDIS_PORT":"6379"},"kind":"ConfigMap","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"alertmanager","app.kubernetes.io/part-of":"shopnoltd"},"name":"alertmanager-config","namespace":"shopno-monitoring"}}
+    creationTimestamp: "2026-07-28T05:46:04Z"
+    labels:
+      app.kubernetes.io/name: alertmanager
+      app.kubernetes.io/part-of: shopnoltd
+    name: alertmanager-config
+    namespace: shopno-monitoring
+    resourceVersion: "931"
+    uid: 137bbd09-5b56-4664-9b64-26b135b498b6
+- apiVersion: v1
+  data:
+    APP_NAME: grafana
+    APP_PORT: "3000"
+    ENV: production
+    KEYCLOAK_CLIENT_ID: grafana
+    KEYCLOAK_ISSUER: https://auth.shopnoltd.dpdns.org/realms/shopnoltd
+    LOG_FORMAT: json
+    LOG_LEVEL: info
+    MINIO_ENDPOINT: minio.shopno-data.svc.cluster.local:9000
+    OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo.observability.svc.cluster.local:4317
+    PATH_PREFIX: /
+    POSTGRES_HOST: postgres.shopno-data.svc.cluster.local
+    POSTGRES_PORT: "5432"
+    REDIS_HOST: redis.shopno-data.svc.cluster.local
+    REDIS_PORT: "6379"
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","data":{"APP_NAME":"grafana","APP_PORT":"3000","ENV":"production","KEYCLOAK_CLIENT_ID":"grafana","KEYCLOAK_ISSUER":"https://auth.shopnoltd.dpdns.org/realms/shopnoltd","LOG_FORMAT":"json","LOG_LEVEL":"info","MINIO_ENDPOINT":"minio.shopno-data.svc.cluster.local:9000","OTEL_EXPORTER_OTLP_ENDPOINT":"http://tempo.observability.svc.cluster.local:4317","PATH_PREFIX":"/","POSTGRES_HOST":"postgres.shopno-data.svc.cluster.local","POSTGRES_PORT":"5432","REDIS_HOST":"redis.shopno-data.svc.cluster.local","REDIS_PORT":"6379"},"kind":"ConfigMap","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"grafana","app.kubernetes.io/part-of":"shopnoltd"},"name":"grafana-config","namespace":"shopno-monitoring"}}
+    creationTimestamp: "2026-07-28T05:46:04Z"
+    labels:
+      app.kubernetes.io/name: grafana
+      app.kubernetes.io/part-of: shopnoltd
+    name: grafana-config
+    namespace: shopno-monitoring
+    resourceVersion: "932"
+    uid: e7842631-d43a-4dca-bb03-37dbada171f7
+- apiVersion: v1
+  data:
+    ca.crt: |
+      -----BEGIN CERTIFICATE-----
+      MIIBdzCCAR2gAwIBAgIBADAKBggqhkjOPQQDAjAjMSEwHwYDVQQDDBhrM3Mtc2Vy
+      dmVyLWNhQDE3ODUyMTcwNzAwHhcNMjYwNzI4MDQzNzUwWhcNMzYwNzI1MDQzNzUw
+      WjAjMSEwHwYDVQQDDBhrM3Mtc2VydmVyLWNhQDE3ODUyMTcwNzAwWTATBgcqhkjO
+      PQIBBggqhkjOPQMBBwNCAARksyxdq1AF7Tqds+RLYke46Zm9n1BVPx4qvMMMMmhd
+      nGXgsrlNM+cZN831XaBeK4VKtFBbZ11cZJWHAsoX+6Xoo0IwQDAOBgNVHQ8BAf8E
+      BAMCAqQwDwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4EFgQUyZoM3JhaALYdQWOhyOGj
+      0r0+6vYwCgYIKoZIzj0EAwIDSAAwRQIhAPF48MlDXzfmOF+iQe6pDtkT54gLwkX8
+      /j7UWZuBstVjAiAp4SDpKOVDRr5AWpOYz7jkHHajF++B9tZDGWlncACzAA==
+      -----END CERTIFICATE-----
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubernetes.io/description: Contains a CA bundle that can be used to verify the
+        kube-apiserver when using internal endpoints such as the internal service
+        IP or kubernetes.default.svc. No other usage is guaranteed across distributions
+        of Kubernetes clusters.
+    creationTimestamp: "2026-07-28T05:46:03Z"
+    name: kube-root-ca.crt
+    namespace: shopno-monitoring
+    resourceVersion: "859"
+    uid: 7e832a01-6d87-475e-ac1d-21cb00312834
+- apiVersion: v1
+  data:
+    APP_NAME: loki
+    APP_PORT: "3100"
+    ENV: production
+    KEYCLOAK_CLIENT_ID: loki
+    KEYCLOAK_ISSUER: https://auth.shopnoltd.dpdns.org/realms/shopnoltd
+    LOG_FORMAT: json
+    LOG_LEVEL: info
+    MINIO_ENDPOINT: minio.shopno-data.svc.cluster.local:9000
+    OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo.observability.svc.cluster.local:4317
+    PATH_PREFIX: /
+    POSTGRES_HOST: postgres.shopno-data.svc.cluster.local
+    POSTGRES_PORT: "5432"
+    REDIS_HOST: redis.shopno-data.svc.cluster.local
+    REDIS_PORT: "6379"
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","data":{"APP_NAME":"loki","APP_PORT":"3100","ENV":"production","KEYCLOAK_CLIENT_ID":"loki","KEYCLOAK_ISSUER":"https://auth.shopnoltd.dpdns.org/realms/shopnoltd","LOG_FORMAT":"json","LOG_LEVEL":"info","MINIO_ENDPOINT":"minio.shopno-data.svc.cluster.local:9000","OTEL_EXPORTER_OTLP_ENDPOINT":"http://tempo.observability.svc.cluster.local:4317","PATH_PREFIX":"/","POSTGRES_HOST":"postgres.shopno-data.svc.cluster.local","POSTGRES_PORT":"5432","REDIS_HOST":"redis.shopno-data.svc.cluster.local","REDIS_PORT":"6379"},"kind":"ConfigMap","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"loki","app.kubernetes.io/part-of":"shopnoltd"},"name":"loki-config","namespace":"shopno-monitoring"}}
+    creationTimestamp: "2026-07-28T05:46:04Z"
+    labels:
+      app.kubernetes.io/name: loki
+      app.kubernetes.io/part-of: shopnoltd
+    name: loki-config
+    namespace: shopno-monitoring
+    resourceVersion: "933"
+    uid: 5a5ef4dd-f805-44ca-a422-04af6ae0f905
+- apiVersion: v1
+  data:
+    APP_NAME: prometheus
+    APP_PORT: "9090"
+    ENV: production
+    KEYCLOAK_CLIENT_ID: prometheus
+    KEYCLOAK_ISSUER: https://auth.shopnoltd.dpdns.org/realms/shopnoltd
+    LOG_FORMAT: json
+    LOG_LEVEL: info
+    MINIO_ENDPOINT: minio.shopno-data.svc.cluster.local:9000
+    OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo.observability.svc.cluster.local:4317
+    PATH_PREFIX: /
+    POSTGRES_HOST: postgres.shopno-data.svc.cluster.local
+    POSTGRES_PORT: "5432"
+    REDIS_HOST: redis.shopno-data.svc.cluster.local
+    REDIS_PORT: "6379"
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","data":{"APP_NAME":"prometheus","APP_PORT":"9090","ENV":"production","KEYCLOAK_CLIENT_ID":"prometheus","KEYCLOAK_ISSUER":"https://auth.shopnoltd.dpdns.org/realms/shopnoltd","LOG_FORMAT":"json","LOG_LEVEL":"info","MINIO_ENDPOINT":"minio.shopno-data.svc.cluster.local:9000","OTEL_EXPORTER_OTLP_ENDPOINT":"http://tempo.observability.svc.cluster.local:4317","PATH_PREFIX":"/","POSTGRES_HOST":"postgres.shopno-data.svc.cluster.local","POSTGRES_PORT":"5432","REDIS_HOST":"redis.shopno-data.svc.cluster.local","REDIS_PORT":"6379"},"kind":"ConfigMap","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"prometheus","app.kubernetes.io/part-of":"shopnoltd"},"name":"prometheus-config","namespace":"shopno-monitoring"}}
+    creationTimestamp: "2026-07-28T05:46:04Z"
+    labels:
+      app.kubernetes.io/name: prometheus
+      app.kubernetes.io/part-of: shopnoltd
+    name: prometheus-config
+    namespace: shopno-monitoring
+    resourceVersion: "934"
+    uid: 1f3e6333-315e-4f2d-af67-1883c7cd0906
+- apiVersion: v1
+  data:
+    prometheus.yml: |
+      global:
+        scrape_interval: 15s
+        scrape_timeout: 10s
+        evaluation_interval: 15s
+
+      scrape_configs:
+        - job_name: "prometheus"
+          static_configs:
+            - targets: ["localhost:9090"]
+              labels:
+                app: "prometheus"
+
+        - job_name: "kubernetes-pods"
+          kubernetes_sd_configs:
+            - role: pod
+          relabel_configs:
+            - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+              action: keep
+              regex: "true"
+            - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+              action: replace
+              target_label: __metrics_path__
+              regex: (.+)
+            - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+              action: replace
+              regex: ([^:]+)(?::\d+)?;(\d+)
+              replacement: $1:$2
+              target_label: __address__
+            - action: labelmap
+              regex: __meta_kubernetes_pod_label_(.+)
+            - source_labels: [__meta_kubernetes_namespace]
+              target_label: namespace
+            - source_labels: [__meta_kubernetes_pod_name]
+              target_label: pod
+
+        - job_name: "kubernetes-service-endpoints"
+          kubernetes_sd_configs:
+            - role: endpoints
+          relabel_configs:
+            - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_scrape]
+              action: keep
+              regex: "true"
+            - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_path]
+              action: replace
+              target_label: __metrics_path__
+              regex: (.+)
+            - source_labels: [__address__, __meta_kubernetes_service_annotation_prometheus_io_port]
+              action: replace
+              regex: ([^:]+)(?::\d+)?;(\d+)
+              replacement: $1:$2
+              target_label: __address__
+            - action: labelmap
+              regex: __meta_kubernetes_service_label_(.+)
+            - source_labels: [__meta_kubernetes_namespace]
+              target_label: namespace
+            - source_labels: [__meta_kubernetes_service_name]
+              target_label: service
+
+        - job_name: "kubernetes-nodes-cadvisor"
+          scheme: https
+          tls_config:
+            ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+            insecure_skip_verify: true
+          bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+          kubernetes_sd_configs:
+            - role: node
+          relabel_configs:
+            - action: labelmap
+              regex: __meta_kubernetes_node_label_(.+)
+            - target_label: __address__
+              replacement: kubernetes.default.svc:443
+            - source_labels: [__meta_kubernetes_node_name]
+              regex: (.+)
+              target_label: __metrics_path__
+              replacement: /api/v1/nodes/${1}/proxy/metrics/cadvisor
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","data":{"prometheus.yml":"global:\n  scrape_interval: 15s\n  scrape_timeout: 10s\n  evaluation_interval: 15s\n\nscrape_configs:\n  - job_name: \"prometheus\"\n    static_configs:\n      - targets: [\"localhost:9090\"]\n        labels:\n          app: \"prometheus\"\n\n  - job_name: \"kubernetes-pods\"\n    kubernetes_sd_configs:\n      - role: pod\n    relabel_configs:\n      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]\n        action: keep\n        regex: \"true\"\n      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]\n        action: replace\n        target_label: __metrics_path__\n        regex: (.+)\n      - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]\n        action: replace\n        regex: ([^:]+)(?::\\d+)?;(\\d+)\n        replacement: $1:$2\n        target_label: __address__\n      - action: labelmap\n        regex: __meta_kubernetes_pod_label_(.+)\n      - source_labels: [__meta_kubernetes_namespace]\n        target_label: namespace\n      - source_labels: [__meta_kubernetes_pod_name]\n        target_label: pod\n\n  - job_name: \"kubernetes-service-endpoints\"\n    kubernetes_sd_configs:\n      - role: endpoints\n    relabel_configs:\n      - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_scrape]\n        action: keep\n        regex: \"true\"\n      - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_path]\n        action: replace\n        target_label: __metrics_path__\n        regex: (.+)\n      - source_labels: [__address__, __meta_kubernetes_service_annotation_prometheus_io_port]\n        action: replace\n        regex: ([^:]+)(?::\\d+)?;(\\d+)\n        replacement: $1:$2\n        target_label: __address__\n      - action: labelmap\n        regex: __meta_kubernetes_service_label_(.+)\n      - source_labels: [__meta_kubernetes_namespace]\n        target_label: namespace\n      - source_labels: [__meta_kubernetes_service_name]\n        target_label: service\n\n  - job_name: \"kubernetes-nodes-cadvisor\"\n    scheme: https\n    tls_config:\n      ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt\n      insecure_skip_verify: true\n    bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token\n    kubernetes_sd_configs:\n      - role: node\n    relabel_configs:\n      - action: labelmap\n        regex: __meta_kubernetes_node_label_(.+)\n      - target_label: __address__\n        replacement: kubernetes.default.svc:443\n      - source_labels: [__meta_kubernetes_node_name]\n        regex: (.+)\n        target_label: __metrics_path__\n        replacement: /api/v1/nodes/${1}/proxy/metrics/cadvisor\n"},"kind":"ConfigMap","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"prometheus","app.kubernetes.io/part-of":"shopnoltd"},"name":"prometheus-scrape-config","namespace":"shopno-monitoring"}}
+    creationTimestamp: "2026-08-06T09:02:41Z"
+    labels:
+      app.kubernetes.io/name: prometheus
+      app.kubernetes.io/part-of: shopnoltd
+    name: prometheus-scrape-config
+    namespace: shopno-monitoring
+    resourceVersion: "1009743"
+    uid: e0130f76-4eb6-4ef4-bc5b-62d5bfe5d5cd
+- apiVersion: v1
+  data:
+    APP_NAME: billing-engine
+    APP_PORT: "8080"
+    ENV: production
+    KEYCLOAK_CLIENT_ID: billing-engine
+    KEYCLOAK_ISSUER: https://auth.shopnoltd.dpdns.org/realms/shopnoltd
+    LOG_FORMAT: json
+    LOG_LEVEL: info
+    MINIO_ENDPOINT: minio.shopno-data.svc.cluster.local:9000
+    OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo.observability.svc.cluster.local:4317
+    PATH_PREFIX: /
+    POSTGRES_HOST: postgres.shopno-data.svc.cluster.local
+    POSTGRES_PORT: "5432"
+    REDIS_HOST: redis.shopno-data.svc.cluster.local
+    REDIS_PORT: "6379"
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","data":{"APP_NAME":"billing-engine","APP_PORT":"8080","ENV":"production","KEYCLOAK_CLIENT_ID":"billing-engine","KEYCLOAK_ISSUER":"https://auth.shopnoltd.dpdns.org/realms/shopnoltd","LOG_FORMAT":"json","LOG_LEVEL":"info","MINIO_ENDPOINT":"minio.shopno-data.svc.cluster.local:9000","OTEL_EXPORTER_OTLP_ENDPOINT":"http://tempo.observability.svc.cluster.local:4317","PATH_PREFIX":"/","POSTGRES_HOST":"postgres.shopno-data.svc.cluster.local","POSTGRES_PORT":"5432","REDIS_HOST":"redis.shopno-data.svc.cluster.local","REDIS_PORT":"6379"},"kind":"ConfigMap","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"billing-engine","app.kubernetes.io/part-of":"shopnoltd"},"name":"billing-engine-config","namespace":"shopno-payments"}}
+    creationTimestamp: "2026-07-28T05:46:04Z"
+    labels:
+      app.kubernetes.io/name: billing-engine
+      app.kubernetes.io/part-of: shopnoltd
+    name: billing-engine-config
+    namespace: shopno-payments
+    resourceVersion: "935"
+    uid: b7e0103d-73c1-476f-a47d-c9ce33734942
+- apiVersion: v1
+  data:
+    ca.crt: |
+      -----BEGIN CERTIFICATE-----
+      MIIBdzCCAR2gAwIBAgIBADAKBggqhkjOPQQDAjAjMSEwHwYDVQQDDBhrM3Mtc2Vy
+      dmVyLWNhQDE3ODUyMTcwNzAwHhcNMjYwNzI4MDQzNzUwWhcNMzYwNzI1MDQzNzUw
+      WjAjMSEwHwYDVQQDDBhrM3Mtc2VydmVyLWNhQDE3ODUyMTcwNzAwWTATBgcqhkjO
+      PQIBBggqhkjOPQMBBwNCAARksyxdq1AF7Tqds+RLYke46Zm9n1BVPx4qvMMMMmhd
+      nGXgsrlNM+cZN831XaBeK4VKtFBbZ11cZJWHAsoX+6Xoo0IwQDAOBgNVHQ8BAf8E
+      BAMCAqQwDwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4EFgQUyZoM3JhaALYdQWOhyOGj
+      0r0+6vYwCgYIKoZIzj0EAwIDSAAwRQIhAPF48MlDXzfmOF+iQe6pDtkT54gLwkX8
+      /j7UWZuBstVjAiAp4SDpKOVDRr5AWpOYz7jkHHajF++B9tZDGWlncACzAA==
+      -----END CERTIFICATE-----
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubernetes.io/description: Contains a CA bundle that can be used to verify the
+        kube-apiserver when using internal endpoints such as the internal service
+        IP or kubernetes.default.svc. No other usage is guaranteed across distributions
+        of Kubernetes clusters.
+    creationTimestamp: "2026-07-28T05:46:03Z"
+    name: kube-root-ca.crt
+    namespace: shopno-payments
+    resourceVersion: "862"
+    uid: b7e583c9-13c9-4ac9-ab1e-8a2ff47dd333
+- apiVersion: v1
+  data:
+    APP_NAME: admin-portal
+    APP_PORT: "3000"
+    ENV: production
+    KEYCLOAK_CLIENT_ID: admin-portal
+    KEYCLOAK_ISSUER: https://auth.shopnoltd.dpdns.org/realms/shopnoltd
+    LOG_FORMAT: json
+    LOG_LEVEL: info
+    MINIO_ENDPOINT: minio.shopno-data.svc.cluster.local:9000
+    OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo.observability.svc.cluster.local:4317
+    PATH_PREFIX: /
+    POSTGRES_HOST: postgres.shopno-data.svc.cluster.local
+    POSTGRES_PORT: "5432"
+    REDIS_HOST: redis.shopno-data.svc.cluster.local
+    REDIS_PORT: "6379"
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","data":{"APP_NAME":"admin-portal","APP_PORT":"3000","ENV":"production","KEYCLOAK_CLIENT_ID":"admin-portal","KEYCLOAK_ISSUER":"https://auth.shopnoltd.dpdns.org/realms/shopnoltd","LOG_FORMAT":"json","LOG_LEVEL":"info","MINIO_ENDPOINT":"minio.shopno-data.svc.cluster.local:9000","OTEL_EXPORTER_OTLP_ENDPOINT":"http://tempo.observability.svc.cluster.local:4317","PATH_PREFIX":"/","POSTGRES_HOST":"postgres.shopno-data.svc.cluster.local","POSTGRES_PORT":"5432","REDIS_HOST":"redis.shopno-data.svc.cluster.local","REDIS_PORT":"6379"},"kind":"ConfigMap","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"admin-portal","app.kubernetes.io/part-of":"shopnoltd"},"name":"admin-portal-config","namespace":"shopno-platform"}}
+    creationTimestamp: "2026-07-28T05:46:04Z"
+    labels:
+      app.kubernetes.io/name: admin-portal
+      app.kubernetes.io/part-of: shopnoltd
+    name: admin-portal-config
+    namespace: shopno-platform
+    resourceVersion: "936"
+    uid: c5dd2e72-6e9b-4d9e-a6df-4a47cb9bd3ce
+- apiVersion: v1
+  data:
+    APP_NAME: ai-platform
+    APP_PORT: "8080"
+    DATABASE_URL: postgresql+asyncpg://shopno:KUSEZeFnjWKY997vtX9eayS3XBICDJG@postgres.shopno-data.svc.cluster.local:5432/shopnoltd
+    ENV: production
+    KEYCLOAK_CLIENT_ID: ai-platform
+    KEYCLOAK_ISSUER: https://auth.shopnoltd.dpdns.org/realms/shopnoltd
+    LOG_FORMAT: json
+    LOG_LEVEL: info
+    MINIO_ENDPOINT: minio.shopno-data.svc.cluster.local:9000
+    OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo.observability.svc.cluster.local:4317
+    PATH_PREFIX: /
+    POSTGRES_HOST: postgres.shopno-data.svc.cluster.local
+    POSTGRES_PORT: "5432"
+    REDIS_HOST: redis.shopno-data.svc.cluster.local
+    REDIS_PORT: "6379"
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","data":{"APP_NAME":"ai-platform","APP_PORT":"8080","ENV":"production","KEYCLOAK_CLIENT_ID":"ai-platform","KEYCLOAK_ISSUER":"https://auth.shopnoltd.dpdns.org/realms/shopnoltd","LOG_FORMAT":"json","LOG_LEVEL":"info","MINIO_ENDPOINT":"minio.shopno-data.svc.cluster.local:9000","OTEL_EXPORTER_OTLP_ENDPOINT":"http://tempo.observability.svc.cluster.local:4317","PATH_PREFIX":"/","POSTGRES_HOST":"postgres.shopno-data.svc.cluster.local","POSTGRES_PORT":"5432","REDIS_HOST":"redis.shopno-data.svc.cluster.local","REDIS_PORT":"6379"},"kind":"ConfigMap","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"ai-platform","app.kubernetes.io/part-of":"shopnoltd"},"name":"ai-platform-config","namespace":"shopno-platform"}}
+    creationTimestamp: "2026-07-28T05:46:04Z"
+    labels:
+      app.kubernetes.io/name: ai-platform
+      app.kubernetes.io/part-of: shopnoltd
+    name: ai-platform-config
+    namespace: shopno-platform
+    resourceVersion: "1397440"
+    uid: 0973f6aa-b749-43e9-95e6-88f4b270072d
+- apiVersion: v1
+  data:
+    APP_NAME: analytics-service
+    APP_PORT: "8080"
+    ENV: production
+    KEYCLOAK_CLIENT_ID: analytics-service
+    KEYCLOAK_ISSUER: https://auth.shopnoltd.dpdns.org/realms/shopnoltd
+    LOG_FORMAT: json
+    LOG_LEVEL: info
+    MINIO_ENDPOINT: minio.shopno-data.svc.cluster.local:9000
+    OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo.observability.svc.cluster.local:4317
+    PATH_PREFIX: /
+    POSTGRES_HOST: postgres.shopno-data.svc.cluster.local
+    POSTGRES_PORT: "5432"
+    REDIS_HOST: redis.shopno-data.svc.cluster.local
+    REDIS_PORT: "6379"
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","data":{"APP_NAME":"analytics-service","APP_PORT":"8080","ENV":"production","KEYCLOAK_CLIENT_ID":"analytics-service","KEYCLOAK_ISSUER":"https://auth.shopnoltd.dpdns.org/realms/shopnoltd","LOG_FORMAT":"json","LOG_LEVEL":"info","MINIO_ENDPOINT":"minio.shopno-data.svc.cluster.local:9000","OTEL_EXPORTER_OTLP_ENDPOINT":"http://tempo.observability.svc.cluster.local:4317","PATH_PREFIX":"/","POSTGRES_HOST":"postgres.shopno-data.svc.cluster.local","POSTGRES_PORT":"5432","REDIS_HOST":"redis.shopno-data.svc.cluster.local","REDIS_PORT":"6379"},"kind":"ConfigMap","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"analytics-service","app.kubernetes.io/part-of":"shopnoltd"},"name":"analytics-service-config","namespace":"shopno-platform"}}
+    creationTimestamp: "2026-07-28T05:46:04Z"
+    labels:
+      app.kubernetes.io/name: analytics-service
+      app.kubernetes.io/part-of: shopnoltd
+    name: analytics-service-config
+    namespace: shopno-platform
+    resourceVersion: "938"
+    uid: b5c3ea1a-2f10-41b5-b7b1-ab5a7588cfac
+- apiVersion: v1
+  data:
+    APP_NAME: android-portal
+    APP_PORT: "8080"
+    ENV: production
+    KEYCLOAK_CLIENT_ID: android-portal
+    KEYCLOAK_ISSUER: https://auth.shopnoltd.dpdns.org/realms/shopnoltd
+    LOG_FORMAT: json
+    LOG_LEVEL: info
+    MINIO_ENDPOINT: minio.shopno-data.svc.cluster.local:9000
+    OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo.observability.svc.cluster.local:4317
+    PATH_PREFIX: /
+    POSTGRES_HOST: postgres.shopno-data.svc.cluster.local
+    POSTGRES_PORT: "5432"
+    REDIS_HOST: redis.shopno-data.svc.cluster.local
+    REDIS_PORT: "6379"
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","data":{"APP_NAME":"android-portal","APP_PORT":"8080","ENV":"production","KEYCLOAK_CLIENT_ID":"android-portal","KEYCLOAK_ISSUER":"https://auth.shopnoltd.dpdns.org/realms/shopnoltd","LOG_FORMAT":"json","LOG_LEVEL":"info","MINIO_ENDPOINT":"minio.shopno-data.svc.cluster.local:9000","OTEL_EXPORTER_OTLP_ENDPOINT":"http://tempo.observability.svc.cluster.local:4317","PATH_PREFIX":"/","POSTGRES_HOST":"postgres.shopno-data.svc.cluster.local","POSTGRES_PORT":"5432","REDIS_HOST":"redis.shopno-data.svc.cluster.local","REDIS_PORT":"6379"},"kind":"ConfigMap","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"android-portal","app.kubernetes.io/part-of":"shopnoltd"},"name":"android-portal-config","namespace":"shopno-platform"}}
+    creationTimestamp: "2026-07-28T05:46:04Z"
+    labels:
+      app.kubernetes.io/name: android-portal
+      app.kubernetes.io/part-of: shopnoltd
+    name: android-portal-config
+    namespace: shopno-platform
+    resourceVersion: "939"
+    uid: e901d520-064f-4d32-8e26-6e03bd981d2f
+- apiVersion: v1
+  data:
+    APP_NAME: api-service
+    APP_PORT: "8080"
+    ENV: production
+    KEYCLOAK_CLIENT_ID: api-service
+    KEYCLOAK_ISSUER: https://auth.shopnoltd.dpdns.org/realms/shopnoltd
+    LOG_FORMAT: json
+    LOG_LEVEL: info
+    MINIO_ENDPOINT: minio.shopno-data.svc.cluster.local:9000
+    OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo.observability.svc.cluster.local:4317
+    PATH_PREFIX: /
+    POSTGRES_HOST: postgres.shopno-data.svc.cluster.local
+    POSTGRES_PORT: "5432"
+    REDIS_HOST: redis.shopno-data.svc.cluster.local
+    REDIS_PORT: "6379"
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","data":{"APP_NAME":"api-service","APP_PORT":"8080","ENV":"production","KEYCLOAK_CLIENT_ID":"api-service","KEYCLOAK_ISSUER":"https://auth.shopnoltd.dpdns.org/realms/shopnoltd","LOG_FORMAT":"json","LOG_LEVEL":"info","MINIO_ENDPOINT":"minio.shopno-data.svc.cluster.local:9000","OTEL_EXPORTER_OTLP_ENDPOINT":"http://tempo.observability.svc.cluster.local:4317","PATH_PREFIX":"/","POSTGRES_HOST":"postgres.shopno-data.svc.cluster.local","POSTGRES_PORT":"5432","REDIS_HOST":"redis.shopno-data.svc.cluster.local","REDIS_PORT":"6379"},"kind":"ConfigMap","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"api-service","app.kubernetes.io/part-of":"shopnoltd"},"name":"api-service-config","namespace":"shopno-platform"}}
+    creationTimestamp: "2026-07-28T05:46:04Z"
+    labels:
+      app.kubernetes.io/name: api-service
+      app.kubernetes.io/part-of: shopnoltd
+    name: api-service-config
+    namespace: shopno-platform
+    resourceVersion: "940"
+    uid: 414bf144-7c91-42c3-87d8-d8d2573a2403
+- apiVersion: v1
+  data:
+    APP_NAME: audit-service
+    APP_PORT: "8080"
+    ENV: production
+    KEYCLOAK_CLIENT_ID: audit-service
+    KEYCLOAK_ISSUER: https://auth.shopnoltd.dpdns.org/realms/shopnoltd
+    LOG_FORMAT: json
+    LOG_LEVEL: info
+    MINIO_ENDPOINT: minio.shopno-data.svc.cluster.local:9000
+    OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo.observability.svc.cluster.local:4317
+    PATH_PREFIX: /
+    POSTGRES_HOST: postgres.shopno-data.svc.cluster.local
+    POSTGRES_PORT: "5432"
+    REDIS_HOST: redis.shopno-data.svc.cluster.local
+    REDIS_PORT: "6379"
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","data":{"APP_NAME":"audit-service","APP_PORT":"8080","ENV":"production","KEYCLOAK_CLIENT_ID":"audit-service","KEYCLOAK_ISSUER":"https://auth.shopnoltd.dpdns.org/realms/shopnoltd","LOG_FORMAT":"json","LOG_LEVEL":"info","MINIO_ENDPOINT":"minio.shopno-data.svc.cluster.local:9000","OTEL_EXPORTER_OTLP_ENDPOINT":"http://tempo.observability.svc.cluster.local:4317","PATH_PREFIX":"/","POSTGRES_HOST":"postgres.shopno-data.svc.cluster.local","POSTGRES_PORT":"5432","REDIS_HOST":"redis.shopno-data.svc.cluster.local","REDIS_PORT":"6379"},"kind":"ConfigMap","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"audit-service","app.kubernetes.io/part-of":"shopnoltd"},"name":"audit-service-config","namespace":"shopno-platform"}}
+    creationTimestamp: "2026-07-28T05:46:04Z"
+    labels:
+      app.kubernetes.io/name: audit-service
+      app.kubernetes.io/part-of: shopnoltd
+    name: audit-service-config
+    namespace: shopno-platform
+    resourceVersion: "941"
+    uid: 114304fa-a8ca-4c98-9485-d2944c7139f7
+- apiVersion: v1
+  data:
+    APP_NAME: domain-service
+    APP_PORT: "8080"
+    ENV: production
+    KEYCLOAK_CLIENT_ID: domain-service
+    KEYCLOAK_ISSUER: https://auth.shopnoltd.dpdns.org/realms/shopnoltd
+    LOG_FORMAT: json
+    LOG_LEVEL: info
+    MINIO_ENDPOINT: minio.shopno-data.svc.cluster.local:9000
+    OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo.observability.svc.cluster.local:4317
+    PATH_PREFIX: /
+    POSTGRES_HOST: postgres.shopno-data.svc.cluster.local
+    POSTGRES_PORT: "5432"
+    REDIS_HOST: redis.shopno-data.svc.cluster.local
+    REDIS_PORT: "6379"
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","data":{"APP_NAME":"domain-service","APP_PORT":"8080","ENV":"production","KEYCLOAK_CLIENT_ID":"domain-service","KEYCLOAK_ISSUER":"https://auth.shopnoltd.dpdns.org/realms/shopnoltd","LOG_FORMAT":"json","LOG_LEVEL":"info","MINIO_ENDPOINT":"minio.shopno-data.svc.cluster.local:9000","OTEL_EXPORTER_OTLP_ENDPOINT":"http://tempo.observability.svc.cluster.local:4317","PATH_PREFIX":"/","POSTGRES_HOST":"postgres.shopno-data.svc.cluster.local","POSTGRES_PORT":"5432","REDIS_HOST":"redis.shopno-data.svc.cluster.local","REDIS_PORT":"6379"},"kind":"ConfigMap","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"domain-service","app.kubernetes.io/part-of":"shopnoltd"},"name":"domain-service-config","namespace":"shopno-platform"}}
+    creationTimestamp: "2026-07-28T05:46:04Z"
+    labels:
+      app.kubernetes.io/name: domain-service
+      app.kubernetes.io/part-of: shopnoltd
+    name: domain-service-config
+    namespace: shopno-platform
+    resourceVersion: "942"
+    uid: bc58e525-e4a6-4e93-bccf-06215525b055
+- apiVersion: v1
+  data:
+    APP_NAME: event-service
+    APP_PORT: "8080"
+    ENV: production
+    KEYCLOAK_CLIENT_ID: event-service
+    KEYCLOAK_ISSUER: https://auth.shopnoltd.dpdns.org/realms/shopnoltd
+    LOG_FORMAT: json
+    LOG_LEVEL: info
+    MINIO_ENDPOINT: minio.shopno-data.svc.cluster.local:9000
+    OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo.observability.svc.cluster.local:4317
+    PATH_PREFIX: /
+    POSTGRES_HOST: postgres.shopno-data.svc.cluster.local
+    POSTGRES_PORT: "5432"
+    REDIS_HOST: redis.shopno-data.svc.cluster.local
+    REDIS_PORT: "6379"
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","data":{"APP_NAME":"event-service","APP_PORT":"8080","ENV":"production","KEYCLOAK_CLIENT_ID":"event-service","KEYCLOAK_ISSUER":"https://auth.shopnoltd.dpdns.org/realms/shopnoltd","LOG_FORMAT":"json","LOG_LEVEL":"info","MINIO_ENDPOINT":"minio.shopno-data.svc.cluster.local:9000","OTEL_EXPORTER_OTLP_ENDPOINT":"http://tempo.observability.svc.cluster.local:4317","PATH_PREFIX":"/","POSTGRES_HOST":"postgres.shopno-data.svc.cluster.local","POSTGRES_PORT":"5432","REDIS_HOST":"redis.shopno-data.svc.cluster.local","REDIS_PORT":"6379"},"kind":"ConfigMap","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"event-service","app.kubernetes.io/part-of":"shopnoltd"},"name":"event-service-config","namespace":"shopno-platform"}}
+    creationTimestamp: "2026-07-28T05:46:04Z"
+    labels:
+      app.kubernetes.io/name: event-service
+      app.kubernetes.io/part-of: shopnoltd
+    name: event-service-config
+    namespace: shopno-platform
+    resourceVersion: "943"
+    uid: 0473bd79-9a87-431a-964f-4fe47596865b
+- apiVersion: v1
+  data:
+    APP_NAME: foundation-service
+    APP_PORT: "8080"
+    ENV: production
+    KEYCLOAK_CLIENT_ID: foundation-service
+    KEYCLOAK_ISSUER: https://auth.shopnoltd.dpdns.org/realms/shopnoltd
+    LOG_FORMAT: json
+    LOG_LEVEL: info
+    MINIO_ENDPOINT: minio.shopno-data.svc.cluster.local:9000
+    OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo.observability.svc.cluster.local:4317
+    PATH_PREFIX: /
+    POSTGRES_HOST: postgres.shopno-data.svc.cluster.local
+    POSTGRES_PORT: "5432"
+    REDIS_HOST: redis.shopno-data.svc.cluster.local
+    REDIS_PORT: "6379"
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","data":{"APP_NAME":"foundation-service","APP_PORT":"8080","ENV":"production","KEYCLOAK_CLIENT_ID":"foundation-service","KEYCLOAK_ISSUER":"https://auth.shopnoltd.dpdns.org/realms/shopnoltd","LOG_FORMAT":"json","LOG_LEVEL":"info","MINIO_ENDPOINT":"minio.shopno-data.svc.cluster.local:9000","OTEL_EXPORTER_OTLP_ENDPOINT":"http://tempo.observability.svc.cluster.local:4317","PATH_PREFIX":"/","POSTGRES_HOST":"postgres.shopno-data.svc.cluster.local","POSTGRES_PORT":"5432","REDIS_HOST":"redis.shopno-data.svc.cluster.local","REDIS_PORT":"6379"},"kind":"ConfigMap","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"foundation-service","app.kubernetes.io/part-of":"shopnoltd"},"name":"foundation-service-config","namespace":"shopno-platform"}}
+    creationTimestamp: "2026-07-28T05:46:04Z"
+    labels:
+      app.kubernetes.io/name: foundation-service
+      app.kubernetes.io/part-of: shopnoltd
+    name: foundation-service-config
+    namespace: shopno-platform
+    resourceVersion: "944"
+    uid: 9e160e54-1e94-4e45-93cd-60bd11e69126
+- apiVersion: v1
+  data:
+    APP_NAME: freedomain-service
+    APP_PORT: "8080"
+    ENV: production
+    KEYCLOAK_CLIENT_ID: freedomain-service
+    KEYCLOAK_ISSUER: https://auth.shopnoltd.dpdns.org/realms/shopnoltd
+    LOG_FORMAT: json
+    LOG_LEVEL: info
+    MINIO_ENDPOINT: minio.shopno-data.svc.cluster.local:9000
+    OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo.observability.svc.cluster.local:4317
+    PATH_PREFIX: /
+    POSTGRES_HOST: postgres.shopno-data.svc.cluster.local
+    POSTGRES_PORT: "5432"
+    REDIS_HOST: redis.shopno-data.svc.cluster.local
+    REDIS_PORT: "6379"
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","data":{"APP_NAME":"freedomain-service","APP_PORT":"8080","ENV":"production","KEYCLOAK_CLIENT_ID":"freedomain-service","KEYCLOAK_ISSUER":"https://auth.shopnoltd.dpdns.org/realms/shopnoltd","LOG_FORMAT":"json","LOG_LEVEL":"info","MINIO_ENDPOINT":"minio.shopno-data.svc.cluster.local:9000","OTEL_EXPORTER_OTLP_ENDPOINT":"http://tempo.observability.svc.cluster.local:4317","PATH_PREFIX":"/","POSTGRES_HOST":"postgres.shopno-data.svc.cluster.local","POSTGRES_PORT":"5432","REDIS_HOST":"redis.shopno-data.svc.cluster.local","REDIS_PORT":"6379"},"kind":"ConfigMap","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"freedomain-service","app.kubernetes.io/part-of":"shopnoltd"},"name":"freedomain-service-config","namespace":"shopno-platform"}}
+    creationTimestamp: "2026-07-28T05:46:05Z"
+    labels:
+      app.kubernetes.io/name: freedomain-service
+      app.kubernetes.io/part-of: shopnoltd
+    name: freedomain-service-config
+    namespace: shopno-platform
+    resourceVersion: "945"
+    uid: 8475f015-7d8d-4eb0-a66e-c35c3d8e5574
+- apiVersion: v1
+  data:
+    APP_NAME: gateway
+    APP_PORT: "8000"
+    ENV: production
+    KEYCLOAK_CLIENT_ID: gateway
+    KEYCLOAK_ISSUER: https://auth.shopnoltd.dpdns.org/realms/shopnoltd
+    LOG_FORMAT: json
+    LOG_LEVEL: info
+    MINIO_ENDPOINT: minio.shopno-data.svc.cluster.local:9000
+    OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo.observability.svc.cluster.local:4317
+    PATH_PREFIX: /
+    POSTGRES_HOST: postgres.shopno-data.svc.cluster.local
+    POSTGRES_PORT: "5432"
+    REDIS_HOST: redis.shopno-data.svc.cluster.local
+    REDIS_PORT: "6379"
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","data":{"APP_NAME":"gateway","APP_PORT":"8000","ENV":"production","KEYCLOAK_CLIENT_ID":"gateway","KEYCLOAK_ISSUER":"https://auth.shopnoltd.dpdns.org/realms/shopnoltd","LOG_FORMAT":"json","LOG_LEVEL":"info","MINIO_ENDPOINT":"minio.shopno-data.svc.cluster.local:9000","OTEL_EXPORTER_OTLP_ENDPOINT":"http://tempo.observability.svc.cluster.local:4317","PATH_PREFIX":"/","POSTGRES_HOST":"postgres.shopno-data.svc.cluster.local","POSTGRES_PORT":"5432","REDIS_HOST":"redis.shopno-data.svc.cluster.local","REDIS_PORT":"6379"},"kind":"ConfigMap","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"gateway","app.kubernetes.io/part-of":"shopnoltd"},"name":"gateway-config","namespace":"shopno-platform"}}
+    creationTimestamp: "2026-07-28T05:46:05Z"
+    labels:
+      app.kubernetes.io/name: gateway
+      app.kubernetes.io/part-of: shopnoltd
+    name: gateway-config
+    namespace: shopno-platform
+    resourceVersion: "946"
+    uid: bad3c2cd-5f49-4ec7-9fa2-3b59a4791f29
+- apiVersion: v1
+  data:
+    APP_NAME: interior-service
+    APP_PORT: "8080"
+    ENV: production
+    KEYCLOAK_CLIENT_ID: interior-service
+    KEYCLOAK_ISSUER: https://auth.shopnoltd.dpdns.org/realms/shopnoltd
+    LOG_FORMAT: json
+    LOG_LEVEL: info
+    MINIO_ENDPOINT: minio.shopno-data.svc.cluster.local:9000
+    OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo.observability.svc.cluster.local:4317
+    PATH_PREFIX: /
+    POSTGRES_HOST: postgres.shopno-data.svc.cluster.local
+    POSTGRES_PORT: "5432"
+    REDIS_HOST: redis.shopno-data.svc.cluster.local
+    REDIS_PORT: "6379"
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","data":{"APP_NAME":"interior-service","APP_PORT":"8080","ENV":"production","KEYCLOAK_CLIENT_ID":"interior-service","KEYCLOAK_ISSUER":"https://auth.shopnoltd.dpdns.org/realms/shopnoltd","LOG_FORMAT":"json","LOG_LEVEL":"info","MINIO_ENDPOINT":"minio.shopno-data.svc.cluster.local:9000","OTEL_EXPORTER_OTLP_ENDPOINT":"http://tempo.observability.svc.cluster.local:4317","PATH_PREFIX":"/","POSTGRES_HOST":"postgres.shopno-data.svc.cluster.local","POSTGRES_PORT":"5432","REDIS_HOST":"redis.shopno-data.svc.cluster.local","REDIS_PORT":"6379"},"kind":"ConfigMap","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"interior-service","app.kubernetes.io/part-of":"shopnoltd"},"name":"interior-service-config","namespace":"shopno-platform"}}
+    creationTimestamp: "2026-07-28T05:46:05Z"
+    labels:
+      app.kubernetes.io/name: interior-service
+      app.kubernetes.io/part-of: shopnoltd
+    name: interior-service-config
+    namespace: shopno-platform
+    resourceVersion: "947"
+    uid: 53044515-b366-4461-ad2f-e239ba92531d
+- apiVersion: v1
+  data:
+    ca.crt: |
+      -----BEGIN CERTIFICATE-----
+      MIIBdzCCAR2gAwIBAgIBADAKBggqhkjOPQQDAjAjMSEwHwYDVQQDDBhrM3Mtc2Vy
+      dmVyLWNhQDE3ODUyMTcwNzAwHhcNMjYwNzI4MDQzNzUwWhcNMzYwNzI1MDQzNzUw
+      WjAjMSEwHwYDVQQDDBhrM3Mtc2VydmVyLWNhQDE3ODUyMTcwNzAwWTATBgcqhkjO
+      PQIBBggqhkjOPQMBBwNCAARksyxdq1AF7Tqds+RLYke46Zm9n1BVPx4qvMMMMmhd
+      nGXgsrlNM+cZN831XaBeK4VKtFBbZ11cZJWHAsoX+6Xoo0IwQDAOBgNVHQ8BAf8E
+      BAMCAqQwDwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4EFgQUyZoM3JhaALYdQWOhyOGj
+      0r0+6vYwCgYIKoZIzj0EAwIDSAAwRQIhAPF48MlDXzfmOF+iQe6pDtkT54gLwkX8
+      /j7UWZuBstVjAiAp4SDpKOVDRr5AWpOYz7jkHHajF++B9tZDGWlncACzAA==
+      -----END CERTIFICATE-----
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubernetes.io/description: Contains a CA bundle that can be used to verify the
+        kube-apiserver when using internal endpoints such as the internal service
+        IP or kubernetes.default.svc. No other usage is guaranteed across distributions
+        of Kubernetes clusters.
+    creationTimestamp: "2026-07-28T05:46:03Z"
+    name: kube-root-ca.crt
+    namespace: shopno-platform
+    resourceVersion: "864"
+    uid: e361909d-5a27-4b28-b9b1-20101198a1b7
+- apiVersion: v1
+  data:
+    APP_NAME: license-service
+    APP_PORT: "8080"
+    ENV: production
+    KEYCLOAK_CLIENT_ID: license-service
+    KEYCLOAK_ISSUER: https://auth.shopnoltd.dpdns.org/realms/shopnoltd
+    LOG_FORMAT: json
+    LOG_LEVEL: info
+    MINIO_ENDPOINT: minio.shopno-data.svc.cluster.local:9000
+    OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo.observability.svc.cluster.local:4317
+    PATH_PREFIX: /
+    POSTGRES_HOST: postgres.shopno-data.svc.cluster.local
+    POSTGRES_PORT: "5432"
+    REDIS_HOST: redis.shopno-data.svc.cluster.local
+    REDIS_PORT: "6379"
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","data":{"APP_NAME":"license-service","APP_PORT":"8080","ENV":"production","KEYCLOAK_CLIENT_ID":"license-service","KEYCLOAK_ISSUER":"https://auth.shopnoltd.dpdns.org/realms/shopnoltd","LOG_FORMAT":"json","LOG_LEVEL":"info","MINIO_ENDPOINT":"minio.shopno-data.svc.cluster.local:9000","OTEL_EXPORTER_OTLP_ENDPOINT":"http://tempo.observability.svc.cluster.local:4317","PATH_PREFIX":"/","POSTGRES_HOST":"postgres.shopno-data.svc.cluster.local","POSTGRES_PORT":"5432","REDIS_HOST":"redis.shopno-data.svc.cluster.local","REDIS_PORT":"6379"},"kind":"ConfigMap","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"license-service","app.kubernetes.io/part-of":"shopnoltd"},"name":"license-service-config","namespace":"shopno-platform"}}
+    creationTimestamp: "2026-07-28T05:46:05Z"
+    labels:
+      app.kubernetes.io/name: license-service
+      app.kubernetes.io/part-of: shopnoltd
+    name: license-service-config
+    namespace: shopno-platform
+    resourceVersion: "948"
+    uid: eed6c143-2517-4981-85af-b86e7528d3bf
+- apiVersion: v1
+  data:
+    APP_NAME: mobile-api
+    APP_PORT: "8080"
+    ENV: production
+    KEYCLOAK_CLIENT_ID: mobile-api
+    KEYCLOAK_ISSUER: https://auth.shopnoltd.dpdns.org/realms/shopnoltd
+    LOG_FORMAT: json
+    LOG_LEVEL: info
+    MINIO_ENDPOINT: minio.shopno-data.svc.cluster.local:9000
+    OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo.observability.svc.cluster.local:4317
+    PATH_PREFIX: /
+    POSTGRES_HOST: postgres.shopno-data.svc.cluster.local
+    POSTGRES_PORT: "5432"
+    REDIS_HOST: redis.shopno-data.svc.cluster.local
+    REDIS_PORT: "6379"
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","data":{"APP_NAME":"mobile-api","APP_PORT":"8080","ENV":"production","KEYCLOAK_CLIENT_ID":"mobile-api","KEYCLOAK_ISSUER":"https://auth.shopnoltd.dpdns.org/realms/shopnoltd","LOG_FORMAT":"json","LOG_LEVEL":"info","MINIO_ENDPOINT":"minio.shopno-data.svc.cluster.local:9000","OTEL_EXPORTER_OTLP_ENDPOINT":"http://tempo.observability.svc.cluster.local:4317","PATH_PREFIX":"/","POSTGRES_HOST":"postgres.shopno-data.svc.cluster.local","POSTGRES_PORT":"5432","REDIS_HOST":"redis.shopno-data.svc.cluster.local","REDIS_PORT":"6379"},"kind":"ConfigMap","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"mobile-api","app.kubernetes.io/part-of":"shopnoltd"},"name":"mobile-api-config","namespace":"shopno-platform"}}
+    creationTimestamp: "2026-07-28T05:46:05Z"
+    labels:
+      app.kubernetes.io/name: mobile-api
+      app.kubernetes.io/part-of: shopnoltd
+    name: mobile-api-config
+    namespace: shopno-platform
+    resourceVersion: "949"
+    uid: 53ab9799-d61c-46c3-a8b3-def986a68540
+- apiVersion: v1
+  data:
+    APP_NAME: notification-service
+    APP_PORT: "8080"
+    ENV: production
+    KEYCLOAK_CLIENT_ID: notification-service
+    KEYCLOAK_ISSUER: https://auth.shopnoltd.dpdns.org/realms/shopnoltd
+    LOG_FORMAT: json
+    LOG_LEVEL: info
+    MINIO_ENDPOINT: minio.shopno-data.svc.cluster.local:9000
+    OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo.observability.svc.cluster.local:4317
+    PATH_PREFIX: /
+    POSTGRES_HOST: postgres.shopno-data.svc.cluster.local
+    POSTGRES_PORT: "5432"
+    REDIS_HOST: redis.shopno-data.svc.cluster.local
+    REDIS_PORT: "6379"
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","data":{"APP_NAME":"notification-service","APP_PORT":"8080","ENV":"production","KEYCLOAK_CLIENT_ID":"notification-service","KEYCLOAK_ISSUER":"https://auth.shopnoltd.dpdns.org/realms/shopnoltd","LOG_FORMAT":"json","LOG_LEVEL":"info","MINIO_ENDPOINT":"minio.shopno-data.svc.cluster.local:9000","OTEL_EXPORTER_OTLP_ENDPOINT":"http://tempo.observability.svc.cluster.local:4317","PATH_PREFIX":"/","POSTGRES_HOST":"postgres.shopno-data.svc.cluster.local","POSTGRES_PORT":"5432","REDIS_HOST":"redis.shopno-data.svc.cluster.local","REDIS_PORT":"6379"},"kind":"ConfigMap","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"notification-service","app.kubernetes.io/part-of":"shopnoltd"},"name":"notification-service-config","namespace":"shopno-platform"}}
+    creationTimestamp: "2026-07-28T05:46:05Z"
+    labels:
+      app.kubernetes.io/name: notification-service
+      app.kubernetes.io/part-of: shopnoltd
+    name: notification-service-config
+    namespace: shopno-platform
+    resourceVersion: "950"
+    uid: 47076e4e-2871-4681-84e4-62aef81118e8
+- apiVersion: v1
+  data:
+    APP_NAME: report-service
+    APP_PORT: "8080"
+    ENV: production
+    KEYCLOAK_CLIENT_ID: report-service
+    KEYCLOAK_ISSUER: https://auth.shopnoltd.dpdns.org/realms/shopnoltd
+    LOG_FORMAT: json
+    LOG_LEVEL: info
+    MINIO_ENDPOINT: minio.shopno-data.svc.cluster.local:9000
+    OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo.observability.svc.cluster.local:4317
+    PATH_PREFIX: /
+    POSTGRES_HOST: postgres.shopno-data.svc.cluster.local
+    POSTGRES_PORT: "5432"
+    REDIS_HOST: redis.shopno-data.svc.cluster.local
+    REDIS_PORT: "6379"
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","data":{"APP_NAME":"report-service","APP_PORT":"8080","ENV":"production","KEYCLOAK_CLIENT_ID":"report-service","KEYCLOAK_ISSUER":"https://auth.shopnoltd.dpdns.org/realms/shopnoltd","LOG_FORMAT":"json","LOG_LEVEL":"info","MINIO_ENDPOINT":"minio.shopno-data.svc.cluster.local:9000","OTEL_EXPORTER_OTLP_ENDPOINT":"http://tempo.observability.svc.cluster.local:4317","PATH_PREFIX":"/","POSTGRES_HOST":"postgres.shopno-data.svc.cluster.local","POSTGRES_PORT":"5432","REDIS_HOST":"redis.shopno-data.svc.cluster.local","REDIS_PORT":"6379"},"kind":"ConfigMap","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"report-service","app.kubernetes.io/part-of":"shopnoltd"},"name":"report-service-config","namespace":"shopno-platform"}}
+    creationTimestamp: "2026-07-28T05:46:05Z"
+    labels:
+      app.kubernetes.io/name: report-service
+      app.kubernetes.io/part-of: shopnoltd
+    name: report-service-config
+    namespace: shopno-platform
+    resourceVersion: "951"
+    uid: 1723211a-3aad-4957-a727-64cd775b2f0f
+- apiVersion: v1
+  data:
+    APP_NAME: search-service
+    APP_PORT: "8080"
+    ENV: production
+    KEYCLOAK_CLIENT_ID: search-service
+    KEYCLOAK_ISSUER: https://auth.shopnoltd.dpdns.org/realms/shopnoltd
+    LOG_FORMAT: json
+    LOG_LEVEL: info
+    MINIO_ENDPOINT: minio.shopno-data.svc.cluster.local:9000
+    OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo.observability.svc.cluster.local:4317
+    PATH_PREFIX: /
+    POSTGRES_HOST: postgres.shopno-data.svc.cluster.local
+    POSTGRES_PORT: "5432"
+    REDIS_HOST: redis.shopno-data.svc.cluster.local
+    REDIS_PORT: "6379"
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","data":{"APP_NAME":"search-service","APP_PORT":"8080","ENV":"production","KEYCLOAK_CLIENT_ID":"search-service","KEYCLOAK_ISSUER":"https://auth.shopnoltd.dpdns.org/realms/shopnoltd","LOG_FORMAT":"json","LOG_LEVEL":"info","MINIO_ENDPOINT":"minio.shopno-data.svc.cluster.local:9000","OTEL_EXPORTER_OTLP_ENDPOINT":"http://tempo.observability.svc.cluster.local:4317","PATH_PREFIX":"/","POSTGRES_HOST":"postgres.shopno-data.svc.cluster.local","POSTGRES_PORT":"5432","REDIS_HOST":"redis.shopno-data.svc.cluster.local","REDIS_PORT":"6379"},"kind":"ConfigMap","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"search-service","app.kubernetes.io/part-of":"shopnoltd"},"name":"search-service-config","namespace":"shopno-platform"}}
+    creationTimestamp: "2026-07-28T05:46:05Z"
+    labels:
+      app.kubernetes.io/name: search-service
+      app.kubernetes.io/part-of: shopnoltd
+    name: search-service-config
+    namespace: shopno-platform
+    resourceVersion: "952"
+    uid: b94f0308-b65a-413b-afdc-071140b90143
+- apiVersion: v1
+  data:
+    APP_NAME: storage-service
+    APP_PORT: "9000"
+    ENV: production
+    KEYCLOAK_CLIENT_ID: storage-service
+    KEYCLOAK_ISSUER: https://auth.shopnoltd.dpdns.org/realms/shopnoltd
+    LOG_FORMAT: json
+    LOG_LEVEL: info
+    MINIO_ENDPOINT: minio.shopno-data.svc.cluster.local:9000
+    OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo.observability.svc.cluster.local:4317
+    PATH_PREFIX: /
+    POSTGRES_HOST: postgres.shopno-data.svc.cluster.local
+    POSTGRES_PORT: "5432"
+    REDIS_HOST: redis.shopno-data.svc.cluster.local
+    REDIS_PORT: "6379"
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","data":{"APP_NAME":"storage-service","APP_PORT":"9000","ENV":"production","KEYCLOAK_CLIENT_ID":"storage-service","KEYCLOAK_ISSUER":"https://auth.shopnoltd.dpdns.org/realms/shopnoltd","LOG_FORMAT":"json","LOG_LEVEL":"info","MINIO_ENDPOINT":"minio.shopno-data.svc.cluster.local:9000","OTEL_EXPORTER_OTLP_ENDPOINT":"http://tempo.observability.svc.cluster.local:4317","PATH_PREFIX":"/","POSTGRES_HOST":"postgres.shopno-data.svc.cluster.local","POSTGRES_PORT":"5432","REDIS_HOST":"redis.shopno-data.svc.cluster.local","REDIS_PORT":"6379"},"kind":"ConfigMap","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"storage-service","app.kubernetes.io/part-of":"shopnoltd"},"name":"storage-service-config","namespace":"shopno-platform"}}
+    creationTimestamp: "2026-07-28T05:46:05Z"
+    labels:
+      app.kubernetes.io/name: storage-service
+      app.kubernetes.io/part-of: shopnoltd
+    name: storage-service-config
+    namespace: shopno-platform
+    resourceVersion: "953"
+    uid: 34d551a3-ba22-4f4f-bb7b-1147dafa9d21
+- apiVersion: v1
+  data:
+    APP_NAME: tenant-router
+    APP_PORT: "8080"
+    ENV: production
+    KEYCLOAK_CLIENT_ID: tenant-router
+    KEYCLOAK_ISSUER: https://auth.shopnoltd.dpdns.org/realms/shopnoltd
+    LOG_FORMAT: json
+    LOG_LEVEL: info
+    MINIO_ENDPOINT: minio.shopno-data.svc.cluster.local:9000
+    OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo.observability.svc.cluster.local:4317
+    PATH_PREFIX: /
+    POSTGRES_HOST: postgres.shopno-data.svc.cluster.local
+    POSTGRES_PORT: "5432"
+    REDIS_HOST: redis.shopno-data.svc.cluster.local
+    REDIS_PORT: "6379"
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","data":{"APP_NAME":"tenant-router","APP_PORT":"8080","ENV":"production","KEYCLOAK_CLIENT_ID":"tenant-router","KEYCLOAK_ISSUER":"https://auth.shopnoltd.dpdns.org/realms/shopnoltd","LOG_FORMAT":"json","LOG_LEVEL":"info","MINIO_ENDPOINT":"minio.shopno-data.svc.cluster.local:9000","OTEL_EXPORTER_OTLP_ENDPOINT":"http://tempo.observability.svc.cluster.local:4317","PATH_PREFIX":"/","POSTGRES_HOST":"postgres.shopno-data.svc.cluster.local","POSTGRES_PORT":"5432","REDIS_HOST":"redis.shopno-data.svc.cluster.local","REDIS_PORT":"6379"},"kind":"ConfigMap","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"tenant-router","app.kubernetes.io/part-of":"shopnoltd"},"name":"tenant-router-config","namespace":"shopno-platform"}}
+    creationTimestamp: "2026-07-28T05:46:05Z"
+    labels:
+      app.kubernetes.io/name: tenant-router
+      app.kubernetes.io/part-of: shopnoltd
+    name: tenant-router-config
+    namespace: shopno-platform
+    resourceVersion: "954"
+    uid: 8ced5035-3e5d-4201-9b62-4f7f1710179f
+- apiVersion: v1
+  data:
+    APP_NAME: training-service
+    APP_PORT: "8080"
+    ENV: production
+    KEYCLOAK_CLIENT_ID: training-service
+    KEYCLOAK_ISSUER: https://auth.shopnoltd.dpdns.org/realms/shopnoltd
+    LOG_FORMAT: json
+    LOG_LEVEL: info
+    MINIO_ENDPOINT: minio.shopno-data.svc.cluster.local:9000
+    OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo.observability.svc.cluster.local:4317
+    PATH_PREFIX: /
+    POSTGRES_HOST: postgres.shopno-data.svc.cluster.local
+    POSTGRES_PORT: "5432"
+    REDIS_HOST: redis.shopno-data.svc.cluster.local
+    REDIS_PORT: "6379"
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","data":{"APP_NAME":"training-service","APP_PORT":"8080","ENV":"production","KEYCLOAK_CLIENT_ID":"training-service","KEYCLOAK_ISSUER":"https://auth.shopnoltd.dpdns.org/realms/shopnoltd","LOG_FORMAT":"json","LOG_LEVEL":"info","MINIO_ENDPOINT":"minio.shopno-data.svc.cluster.local:9000","OTEL_EXPORTER_OTLP_ENDPOINT":"http://tempo.observability.svc.cluster.local:4317","PATH_PREFIX":"/","POSTGRES_HOST":"postgres.shopno-data.svc.cluster.local","POSTGRES_PORT":"5432","REDIS_HOST":"redis.shopno-data.svc.cluster.local","REDIS_PORT":"6379"},"kind":"ConfigMap","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"training-service","app.kubernetes.io/part-of":"shopnoltd"},"name":"training-service-config","namespace":"shopno-platform"}}
+    creationTimestamp: "2026-07-28T05:46:05Z"
+    labels:
+      app.kubernetes.io/name: training-service
+      app.kubernetes.io/part-of: shopnoltd
+    name: training-service-config
+    namespace: shopno-platform
+    resourceVersion: "955"
+    uid: f538c38b-fb8c-4901-9860-cfee63ab8654
+- apiVersion: v1
+  data:
+    APP_NAME: web-portal
+    APP_PORT: "3000"
+    ENV: production
+    KEYCLOAK_CLIENT_ID: web-portal
+    KEYCLOAK_ISSUER: https://auth.shopnoltd.dpdns.org/realms/shopnoltd
+    LOG_FORMAT: json
+    LOG_LEVEL: info
+    MINIO_ENDPOINT: minio.shopno-data.svc.cluster.local:9000
+    OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo.observability.svc.cluster.local:4317
+    PATH_PREFIX: /
+    POSTGRES_HOST: postgres.shopno-data.svc.cluster.local
+    POSTGRES_PORT: "5432"
+    REDIS_HOST: redis.shopno-data.svc.cluster.local
+    REDIS_PORT: "6379"
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","data":{"APP_NAME":"web-portal","APP_PORT":"3000","ENV":"production","KEYCLOAK_CLIENT_ID":"web-portal","KEYCLOAK_ISSUER":"https://auth.shopnoltd.dpdns.org/realms/shopnoltd","LOG_FORMAT":"json","LOG_LEVEL":"info","MINIO_ENDPOINT":"minio.shopno-data.svc.cluster.local:9000","OTEL_EXPORTER_OTLP_ENDPOINT":"http://tempo.observability.svc.cluster.local:4317","PATH_PREFIX":"/","POSTGRES_HOST":"postgres.shopno-data.svc.cluster.local","POSTGRES_PORT":"5432","REDIS_HOST":"redis.shopno-data.svc.cluster.local","REDIS_PORT":"6379"},"kind":"ConfigMap","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"web-portal","app.kubernetes.io/part-of":"shopnoltd"},"name":"web-portal-config","namespace":"shopno-platform"}}
+    creationTimestamp: "2026-07-28T05:46:05Z"
+    labels:
+      app.kubernetes.io/name: web-portal
+      app.kubernetes.io/part-of: shopnoltd
+    name: web-portal-config
+    namespace: shopno-platform
+    resourceVersion: "956"
+    uid: 1fce5da3-0d4e-497c-b4dc-4c4e22269b6b
+- apiVersion: v1
+  data:
+    APP_NAME: worker-service
+    APP_PORT: "8080"
+    ENV: production
+    KEYCLOAK_CLIENT_ID: worker-service
+    KEYCLOAK_ISSUER: https://auth.shopnoltd.dpdns.org/realms/shopnoltd
+    LOG_FORMAT: json
+    LOG_LEVEL: info
+    MINIO_ENDPOINT: minio.shopno-data.svc.cluster.local:9000
+    OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo.observability.svc.cluster.local:4317
+    PATH_PREFIX: /
+    POSTGRES_HOST: postgres.shopno-data.svc.cluster.local
+    POSTGRES_PORT: "5432"
+    REDIS_HOST: redis.shopno-data.svc.cluster.local
+    REDIS_PORT: "6379"
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","data":{"APP_NAME":"worker-service","APP_PORT":"8080","ENV":"production","KEYCLOAK_CLIENT_ID":"worker-service","KEYCLOAK_ISSUER":"https://auth.shopnoltd.dpdns.org/realms/shopnoltd","LOG_FORMAT":"json","LOG_LEVEL":"info","MINIO_ENDPOINT":"minio.shopno-data.svc.cluster.local:9000","OTEL_EXPORTER_OTLP_ENDPOINT":"http://tempo.observability.svc.cluster.local:4317","PATH_PREFIX":"/","POSTGRES_HOST":"postgres.shopno-data.svc.cluster.local","POSTGRES_PORT":"5432","REDIS_HOST":"redis.shopno-data.svc.cluster.local","REDIS_PORT":"6379"},"kind":"ConfigMap","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"worker-service","app.kubernetes.io/part-of":"shopnoltd"},"name":"worker-service-config","namespace":"shopno-platform"}}
+    creationTimestamp: "2026-07-28T05:46:05Z"
+    labels:
+      app.kubernetes.io/name: worker-service
+      app.kubernetes.io/part-of: shopnoltd
+    name: worker-service-config
+    namespace: shopno-platform
+    resourceVersion: "957"
+    uid: 9dc1f500-2f79-43b5-80c4-e5b221d0b63e
+kind: List
+metadata:
+  resourceVersion: ""

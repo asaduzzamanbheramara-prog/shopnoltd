@@ -2,33 +2,25 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: auth-service-config
+  namespace: shopno-identity
   labels:
     app.kubernetes.io/name: auth-service
     app.kubernetes.io/part-of: shopnoltd
 data:
-  APP_NAME: "auth-service"
+  APP_NAME: auth-service
   APP_PORT: "8080"
-  ENV: "production"
-
-  DATABASE_URL: "postgresql+asyncpg://postgres:5XuByzqhn6nJyq7iR7xva58iKHLSUSj@postgres.shopno-data.svc.cluster.local:5432/shopnoltd"
-
-  KEYCLOAK_URL: "https://auth.shopnoltd.dpdns.org"
-  KEYCLOAK_ISSUER: "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
-  KEYCLOAK_REALM: "shopnoltd"
-  KEYCLOAK_AUDIENCE: "auth-service"
-  KEYCLOAK_WEB_CLIENT_ID: "shopnoltd-web"
-
-  LOG_FORMAT: "json"
-  LOG_LEVEL: "info"
-
-  MINIO_ENDPOINT: "minio.shopno-data.svc.cluster.local:9000"
-
-  OTEL_EXPORTER_OTLP_ENDPOINT: "http://tempo.observability.svc.cluster.local:4317"
-
-  PATH_PREFIX: "/"
-
-  POSTGRES_HOST: "postgres.shopno-data.svc.cluster.local"
+  ENV: production
+  KEYCLOAK_AUDIENCE: auth-service
+  KEYCLOAK_ISSUER: https://auth.shopnoltd.dpdns.org/realms/shopnoltd
+  KEYCLOAK_REALM: shopnoltd
+  KEYCLOAK_URL: https://auth.shopnoltd.dpdns.org
+  KEYCLOAK_WEB_CLIENT_ID: shopnoltd-web
+  LOG_FORMAT: json
+  LOG_LEVEL: info
+  MINIO_ENDPOINT: minio.shopno-data.svc.cluster.local:9000
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo.observability.svc.cluster.local:4317
+  PATH_PREFIX: /
+  POSTGRES_HOST: postgres.shopno-data.svc.cluster.local
   POSTGRES_PORT: "5432"
-
-  REDIS_HOST: "redis.shopno-data.svc.cluster.local"
+  REDIS_HOST: redis.shopno-data.svc.cluster.local
   REDIS_PORT: "6379"

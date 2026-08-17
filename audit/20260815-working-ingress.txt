@@ -1,0 +1,47 @@
+NAMESPACE           NAME                   CLASS   HOSTS                                                                                              ADDRESS         PORTS     AGE
+shopno-apps         chatwoot               nginx   chatwoot.shopnoltd.dpdns.org                                                                       10.43.250.239   80, 443   18d
+shopno-apps         code-server            nginx   code-server.shopnoltd.dpdns.org                                                                    10.43.250.239   80, 443   18d
+shopno-apps         enketo                 nginx   enketo.shopnoltd.dpdns.org                                                                         10.43.250.239   80, 443   12d
+shopno-apps         gitea                  nginx   gitea.shopnoltd.dpdns.org                                                                          10.43.250.239   80, 443   18d
+shopno-apps         kobotoolbox            nginx   kobotoolbox.shopnoltd.dpdns.org,kobo.shopnoltd.dpdns.org                                           10.43.250.239   80, 443   18d
+shopno-apps         metabase               nginx   metabase.shopnoltd.dpdns.org                                                                       10.43.250.239   80, 443   18d
+shopno-apps         n8n                    nginx   n8n.shopnoltd.dpdns.org                                                                            10.43.250.239   80, 443   18d
+shopno-apps         nextcloud              nginx   nextcloud.shopnoltd.dpdns.org                                                                      10.43.250.239   80, 443   18d
+shopno-apps         onlyoffice             nginx   onlyoffice.shopnoltd.dpdns.org                                                                     10.43.250.239   80, 443   18d
+shopno-apps         owncast                nginx   owncast.shopnoltd.dpdns.org                                                                        10.43.250.239   80, 443   18d
+shopno-apps         superset               nginx   superset.shopnoltd.dpdns.org                                                                       10.43.250.239   80, 443   18d
+shopno-data         minio                  nginx   minio.shopnoltd.dpdns.org                                                                          10.43.250.239   80, 443   18d
+shopno-data         opensearch             nginx   opensearch.shopnoltd.dpdns.org                                                                     10.43.250.239   80, 443   18d
+shopno-data         postgres               nginx   postgres.shopnoltd.dpdns.org                                                                       10.43.250.239   80, 443   18d
+shopno-data         redis                  nginx   redis.shopnoltd.dpdns.org                                                                          10.43.250.239   80, 443   18d
+shopno-identity     auth-service           nginx   auth-service.shopnoltd.dpdns.org                                                                   10.43.250.239   80, 443   18d
+shopno-identity     keycloak               nginx   auth.shopnoltd.dpdns.org,keycloak.shopnoltd.dpdns.org                                              10.43.250.239   80, 443   18d
+shopno-identity     oauth-service          nginx   oauth-service.shopnoltd.dpdns.org                                                                  10.43.250.239   80, 443   18d
+shopno-mail         mail-service           nginx   mail-api.shopnoltd.dpdns.org                                                                       10.43.250.239   80        15d
+shopno-monitoring   alertmanager           nginx   alertmanager.shopnoltd.dpdns.org                                                                   10.43.250.239   80, 443   18d
+shopno-monitoring   grafana                nginx   grafana.shopnoltd.dpdns.org                                                                        10.43.250.239   80, 443   18d
+shopno-monitoring   loki                   nginx   loki.shopnoltd.dpdns.org                                                                           10.43.250.239   80, 443   18d
+shopno-monitoring   prometheus             nginx   prometheus.shopnoltd.dpdns.org                                                                     10.43.250.239   80, 443   18d
+shopno-platform     admin-portal           nginx   admin-portal.shopnoltd.dpdns.org                                                                   10.43.250.239   80, 443   18d
+shopno-platform     ai-platform            nginx   ai-platform.shopnoltd.dpdns.org                                                                    10.43.250.239   80, 443   18d
+shopno-platform     analytics-service      nginx   analytics-service.shopnoltd.dpdns.org                                                              10.43.250.239   80, 443   18d
+shopno-platform     android-portal         nginx   shopnoltdandroid.shopnoltd.dpdns.org                                                               10.43.250.239   80, 443   18d
+shopno-platform     api-service            nginx   api.shopnoltd.dpdns.org                                                                            10.43.250.239   80, 443   18d
+shopno-platform     audit-service          nginx   audit-service.shopnoltd.dpdns.org                                                                  10.43.250.239   80, 443   18d
+shopno-platform     domain-service         nginx   domain.shopnoltd.dpdns.org                                                                         10.43.250.239   80, 443   18d
+shopno-platform     event-service          nginx   event.shopnoltd.dpdns.org                                                                          10.43.250.239   80, 443   18d
+shopno-platform     foundation-service     nginx   foundation.shopnoltd.dpdns.org                                                                     10.43.250.239   80, 443   18d
+shopno-platform     freedomain-service     nginx   freedomain.shopnoltd.dpdns.org                                                                     10.43.250.239   80, 443   18d
+shopno-platform     gateway                nginx   gateway.shopnoltd.dpdns.org                                                                        10.43.250.239   80, 443   18d
+shopno-platform     interior-service       nginx   interior.shopnoltd.dpdns.org                                                                       10.43.250.239   80, 443   18d
+shopno-platform     license-service        nginx   license-service.shopnoltd.dpdns.org                                                                10.43.250.239   80, 443   18d
+shopno-platform     mobile-api             nginx   mobile-api.shopnoltd.dpdns.org                                                                     10.43.250.239   80, 443   18d
+shopno-platform     notification-service   nginx   notification-service.shopnoltd.dpdns.org                                                           10.43.250.239   80, 443   18d
+shopno-platform     report-service         nginx   report-service.shopnoltd.dpdns.org                                                                 10.43.250.239   80, 443   18d
+shopno-platform     search-service         nginx   search-service.shopnoltd.dpdns.org                                                                 10.43.250.239   80, 443   18d
+shopno-platform     shopnoltd-web          nginx   billing.shopnoltd.dpdns.org,payment.shopnoltd.dpdns.org,exchange.shopnoltd.dpdns.org + 2 more...   10.43.250.239   80, 443   3d4h
+shopno-platform     storage-service        nginx   storage-service.shopnoltd.dpdns.org                                                                10.43.250.239   80, 443   18d
+shopno-platform     tenant-router          nginx   tenant-router.shopnoltd.dpdns.org                                                                  10.43.250.239   80, 443   18d
+shopno-platform     training-service       nginx   training.shopnoltd.dpdns.org                                                                       10.43.250.239   80, 443   18d
+shopno-platform     web-portal             nginx   web-portal.shopnoltd.dpdns.org,shopnoltd.dpdns.org                                                 10.43.250.239   80, 443   18d
+shopno-platform     worker-service         nginx   worker-service.shopnoltd.dpdns.org                                                                 10.43.250.239   80, 443   18d

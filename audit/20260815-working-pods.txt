@@ -1,0 +1,60 @@
+NAMESPACE           NAME                                        READY   STATUS    RESTARTS        AGE     IP            NODE             NOMINATED NODE   READINESS GATES
+ingress-nginx       ingress-nginx-controller-6fbb8fc6f6-m8rnm   1/1     Running   0               149m    10.42.0.214   shopnoltd-pc-1   <none>           <none>
+kube-system         coredns-559ddc757c-9g4nn                    1/1     Running   10 (165m ago)   2d5h    10.42.0.191   shopnoltd-pc-1   <none>           <none>
+kube-system         coredns-559ddc757c-r2tdd                    1/1     Running   16 (165m ago)   3d1h    10.42.0.199   shopnoltd-pc-1   <none>           <none>
+kube-system         local-path-provisioner-58d557dc48-6gpfv     1/1     Running   45 (165m ago)   10d     10.42.0.150   shopnoltd-pc-1   <none>           <none>
+kube-system         metrics-server-7b68cf4f54-89l6w             1/1     Running   0               119m    10.42.0.227   shopnoltd-pc-1   <none>           <none>
+shopno-apps         chatwoot-78988f7854-gclrh                   1/1     Running   27 (159m ago)   2d9h    10.42.0.160   shopnoltd-pc-1   <none>           <none>
+shopno-apps         code-server-5985bddc5c-hvjtn                1/1     Running   12 (165m ago)   47h     10.42.0.197   shopnoltd-pc-1   <none>           <none>
+shopno-apps         enketo-758d85f4bd-nswkz                     1/1     Running   20 (165m ago)   5d7h    10.42.0.155   shopnoltd-pc-1   <none>           <none>
+shopno-apps         gitea-6fd4749457-cvvhq                      1/1     Running   10 (165m ago)   2d5h    10.42.0.170   shopnoltd-pc-1   <none>           <none>
+shopno-apps         kobotoolbox-6d6c8867bf-62qqk                1/1     Running   13 (165m ago)   3d6h    10.42.0.169   shopnoltd-pc-1   <none>           <none>
+shopno-apps         kobotoolbox-worker-c8f6f4b9b-k6shd          1/1     Running   11 (165m ago)   2d23h   10.42.0.153   shopnoltd-pc-1   <none>           <none>
+shopno-apps         metabase-c55bffd89-rp886                    1/1     Running   19 (159m ago)   2d4h    10.42.0.176   shopnoltd-pc-1   <none>           <none>
+shopno-apps         n8n-59896957bd-rf8hd                        1/1     Running   24 (159m ago)   2d4h    10.42.0.175   shopnoltd-pc-1   <none>           <none>
+shopno-apps         nextcloud-cf9f6b5bb-fvjpg                   1/1     Running   0               129m    10.42.0.223   shopnoltd-pc-1   <none>           <none>
+shopno-apps         onlyoffice-7fdbbb9f58-mt2ww                 1/1     Running   15 (165m ago)   2d7h    10.42.0.174   shopnoltd-pc-1   <none>           <none>
+shopno-apps         owncast-6d69cc5dbf-2hcxg                    1/1     Running   9 (165m ago)    2d3h    10.42.0.179   shopnoltd-pc-1   <none>           <none>
+shopno-apps         owncast-6d69cc5dbf-mcgn2                    1/1     Running   10 (165m ago)   2d6h    10.42.0.200   shopnoltd-pc-1   <none>           <none>
+shopno-apps         owncast-6d69cc5dbf-spj6l                    1/1     Running   9 (165m ago)    2d3h    10.42.0.183   shopnoltd-pc-1   <none>           <none>
+shopno-apps         superset-8565695d9f-vfv78                   1/1     Running   21 (161m ago)   2d9h    10.42.0.151   shopnoltd-pc-1   <none>           <none>
+shopno-data         minio-775c4b4549-mgqqz                      1/1     Running   36 (165m ago)   7d1h    10.42.0.156   shopnoltd-pc-1   <none>           <none>
+shopno-data         mongo-7f4549847b-4l9gt                      1/1     Running   47 (165m ago)   10d     10.42.0.152   shopnoltd-pc-1   <none>           <none>
+shopno-data         opensearch-74588ffb4c-cgf4w                 1/1     Running   29 (165m ago)   5d5h    10.42.0.159   shopnoltd-pc-1   <none>           <none>
+shopno-data         postgres-7897d45b8c-2vxw8                   1/1     Running   16 (165m ago)   4d9h    10.42.0.163   shopnoltd-pc-1   <none>           <none>
+shopno-data         redis-6d47d4c9c6-jfzzq                      1/1     Running   41 (165m ago)   8d      10.42.0.161   shopnoltd-pc-1   <none>           <none>
+shopno-identity     auth-service-7457b5f6d5-llsxx               1/1     Running   4 (165m ago)    7h4m    10.42.0.207   shopnoltd-pc-1   <none>           <none>
+shopno-identity     auth-service-7457b5f6d5-plt7p               1/1     Running   3 (165m ago)    6h30m   10.42.0.186   shopnoltd-pc-1   <none>           <none>
+shopno-identity     auth-service-7457b5f6d5-sl7dd               1/1     Running   4 (165m ago)    7h4m    10.42.0.194   shopnoltd-pc-1   <none>           <none>
+shopno-identity     keycloak-984946c86-6p9n2                    1/1     Running   0               25m     10.42.0.229   shopnoltd-pc-1   <none>           <none>
+shopno-identity     oauth-service-5769d7566f-z9mth              1/1     Running   20 (161m ago)   2d5h    10.42.0.188   shopnoltd-pc-1   <none>           <none>
+shopno-ingress      cloudflared-5658ffdb8-t7s5v                 1/1     Running   46 (165m ago)   3d      10.42.0.172   shopnoltd-pc-1   <none>           <none>
+shopno-mail         mail-service-6b88b5764-k5f65                1/1     Running   17 (165m ago)   4d9h    10.42.0.185   shopnoltd-pc-1   <none>           <none>
+shopno-monitoring   alertmanager-dd46bb7cd-c4jqm                1/1     Running   11 (165m ago)   2d7h    10.42.0.162   shopnoltd-pc-1   <none>           <none>
+shopno-monitoring   grafana-6b4b48497f-j2dsq                    1/1     Running   98 (159m ago)   10d     10.42.0.154   shopnoltd-pc-1   <none>           <none>
+shopno-monitoring   loki-65d9cf6b64-rcxrb                       1/1     Running   46 (165m ago)   9d      10.42.0.157   shopnoltd-pc-1   <none>           <none>
+shopno-monitoring   prometheus-5bd6cb8fb6-ksmlg                 1/1     Running   48 (165m ago)   9d      10.42.0.158   shopnoltd-pc-1   <none>           <none>
+shopno-payments     billing-engine-78bbf75c4b-ckrdh             1/1     Running   63 (163m ago)   4d11h   10.42.0.167   shopnoltd-pc-1   <none>           <none>
+shopno-platform     admin-portal-7d6f4dcf8f-cfrqt               1/1     Running   16 (164m ago)   2d5h    10.42.0.193   shopnoltd-pc-1   <none>           <none>
+shopno-platform     ai-platform-5c75f8bfc5-2n29m                1/1     Running   17 (161m ago)   42h     10.42.0.182   shopnoltd-pc-1   <none>           <none>
+shopno-platform     analytics-service-ddf98c448-gzqq2           1/1     Running   16 (162m ago)   2d5h    10.42.0.192   shopnoltd-pc-1   <none>           <none>
+shopno-platform     android-portal-5f7c64dd49-hnlg9             1/1     Running   10 (165m ago)   2d5h    10.42.0.171   shopnoltd-pc-1   <none>           <none>
+shopno-platform     api-service-6db46bbd5f-x5c6w                1/1     Running   21 (162m ago)   2d5h    10.42.0.164   shopnoltd-pc-1   <none>           <none>
+shopno-platform     audit-service-7f57c9d6f9-v7lfp              1/1     Running   19 (161m ago)   2d5h    10.42.0.187   shopnoltd-pc-1   <none>           <none>
+shopno-platform     domain-service-5fb9c8f984-424xv             1/1     Running   17 (161m ago)   2d5h    10.42.0.198   shopnoltd-pc-1   <none>           <none>
+shopno-platform     event-service-67dd65f8d-mtfqp               1/1     Running   21 (161m ago)   2d5h    10.42.0.203   shopnoltd-pc-1   <none>           <none>
+shopno-platform     foundation-service-5b5c48c98c-9pqrz         1/1     Running   19 (161m ago)   2d5h    10.42.0.180   shopnoltd-pc-1   <none>           <none>
+shopno-platform     freedomain-service-5d8d4c7f5d-qzlsz         1/1     Running   15 (165m ago)   2d5h    10.42.0.166   shopnoltd-pc-1   <none>           <none>
+shopno-platform     gateway-76ff59dd88-8fg8m                    1/1     Running   20 (161m ago)   2d5h    10.42.0.196   shopnoltd-pc-1   <none>           <none>
+shopno-platform     interior-service-647cd5d8f-dqc79            1/1     Running   19 (162m ago)   2d5h    10.42.0.168   shopnoltd-pc-1   <none>           <none>
+shopno-platform     license-service-7bbc6ff55-4f44m             1/1     Running   20 (165m ago)   2d5h    10.42.0.204   shopnoltd-pc-1   <none>           <none>
+shopno-platform     mobile-api-79568bc744-vqf66                 1/1     Running   19 (161m ago)   2d5h    10.42.0.190   shopnoltd-pc-1   <none>           <none>
+shopno-platform     notification-service-7687494d6d-xjfwl       1/1     Running   17 (162m ago)   2d5h    10.42.0.165   shopnoltd-pc-1   <none>           <none>
+shopno-platform     report-service-757fb95c4f-r5bjn             1/1     Running   20 (161m ago)   2d5h    10.42.0.189   shopnoltd-pc-1   <none>           <none>
+shopno-platform     search-service-bd6d47d5c-b5d52              1/1     Running   20 (165m ago)   2d5h    10.42.0.206   shopnoltd-pc-1   <none>           <none>
+shopno-platform     shopnoltd-web-5f9786bb68-7nkq4              1/1     Running   10 (165m ago)   2d5h    10.42.0.178   shopnoltd-pc-1   <none>           <none>
+shopno-platform     storage-service-767cb5d596-d8l27            1/1     Running   19 (165m ago)   2d5h    10.42.0.208   shopnoltd-pc-1   <none>           <none>
+shopno-platform     tenant-router-55cdbfbdd4-cxb7f              1/1     Running   15 (162m ago)   2d5h    10.42.0.177   shopnoltd-pc-1   <none>           <none>
+shopno-platform     training-service-6cf87b954b-ddlc4           1/1     Running   18 (162m ago)   2d5h    10.42.0.173   shopnoltd-pc-1   <none>           <none>
+shopno-platform     web-portal-7c57c49984-rrxbj                 1/1     Running   0               51m     10.42.0.228   shopnoltd-pc-1   <none>           <none>
+shopno-platform     worker-service-6f554bcd89-nhcgh             1/1     Running   21 (162m ago)   2d5h    10.42.0.181   shopnoltd-pc-1   <none>           <none>

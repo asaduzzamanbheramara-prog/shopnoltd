@@ -1,0 +1,1825 @@
+apiVersion: v1
+items:
+- apiVersion: networking.k8s.io/v1
+  kind: Ingress
+  metadata:
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"networking.k8s.io/v1","kind":"Ingress","metadata":{"annotations":{"cert-manager.io/cluster-issuer":"letsencrypt-prod","nginx.ingress.kubernetes.io/ssl-redirect":"true","traefik.ingress.kubernetes.io/router.tls":"true"},"name":"chatwoot","namespace":"shopno-apps"},"spec":{"ingressClassName":"nginx","rules":[{"host":"chatwoot.shopnoltd.dpdns.org","http":{"paths":[{"backend":{"service":{"name":"chatwoot","port":{"number":80}}},"path":"/","pathType":"Prefix"}]}}],"tls":[{"hosts":["chatwoot.shopnoltd.dpdns.org"],"secretName":"chatwoot-tls"}]}}
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      traefik.ingress.kubernetes.io/router.tls: "true"
+    creationTimestamp: "2026-07-28T05:49:19Z"
+    generation: 3
+    name: chatwoot
+    namespace: shopno-apps
+    resourceVersion: "2102663"
+    uid: fa0083b3-1920-457f-9340-9758f3262a4d
+  spec:
+    ingressClassName: nginx
+    rules:
+    - host: chatwoot.shopnoltd.dpdns.org
+      http:
+        paths:
+        - backend:
+            service:
+              name: chatwoot
+              port:
+                number: 80
+          path: /
+          pathType: Prefix
+    tls:
+    - hosts:
+      - chatwoot.shopnoltd.dpdns.org
+      secretName: chatwoot-tls
+  status:
+    loadBalancer:
+      ingress:
+      - ip: 10.43.250.239
+- apiVersion: networking.k8s.io/v1
+  kind: Ingress
+  metadata:
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"networking.k8s.io/v1","kind":"Ingress","metadata":{"annotations":{"cert-manager.io/cluster-issuer":"letsencrypt-prod","nginx.ingress.kubernetes.io/ssl-redirect":"true","traefik.ingress.kubernetes.io/router.tls":"true"},"labels":{"app.kubernetes.io/name":"code-server","app.kubernetes.io/part-of":"shopnoltd"},"name":"code-server","namespace":"shopno-apps"},"spec":{"ingressClassName":"nginx","rules":[{"host":"code-server.shopnoltd.dpdns.org","http":{"paths":[{"backend":{"service":{"name":"code-server","port":{"number":80}}},"path":"/","pathType":"Prefix"}]}}],"tls":[{"hosts":["code-server.shopnoltd.dpdns.org"],"secretName":"code-server-tls"}]}}
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      traefik.ingress.kubernetes.io/router.tls: "true"
+    creationTimestamp: "2026-07-28T05:49:19Z"
+    generation: 1
+    labels:
+      app.kubernetes.io/name: code-server
+      app.kubernetes.io/part-of: shopnoltd
+    name: code-server
+    namespace: shopno-apps
+    resourceVersion: "2130813"
+    uid: 636439f2-ff1a-4bd4-ac28-190e00f4d6ab
+  spec:
+    ingressClassName: nginx
+    rules:
+    - host: code-server.shopnoltd.dpdns.org
+      http:
+        paths:
+        - backend:
+            service:
+              name: code-server
+              port:
+                number: 80
+          path: /
+          pathType: Prefix
+    tls:
+    - hosts:
+      - code-server.shopnoltd.dpdns.org
+      secretName: code-server-tls
+  status:
+    loadBalancer:
+      ingress:
+      - ip: 10.43.250.239
+- apiVersion: networking.k8s.io/v1
+  kind: Ingress
+  metadata:
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"networking.k8s.io/v1","kind":"Ingress","metadata":{"annotations":{"cert-manager.io/cluster-issuer":"letsencrypt-prod","nginx.ingress.kubernetes.io/proxy-body-size":"50m"},"labels":{"app.kubernetes.io/name":"enketo","app.kubernetes.io/part-of":"shopnoltd"},"name":"enketo","namespace":"shopno-apps"},"spec":{"ingressClassName":"nginx","rules":[{"host":"enketo.shopnoltd.dpdns.org","http":{"paths":[{"backend":{"service":{"name":"enketo","port":{"number":8005}}},"path":"/","pathType":"Prefix"}]}}],"tls":[{"hosts":["enketo.shopnoltd.dpdns.org"],"secretName":"enketo-tls"}]}}
+      nginx.ingress.kubernetes.io/proxy-body-size: 50m
+    creationTimestamp: "2026-08-02T23:01:52Z"
+    generation: 3
+    labels:
+      app.kubernetes.io/name: enketo
+      app.kubernetes.io/part-of: shopnoltd
+    name: enketo
+    namespace: shopno-apps
+    resourceVersion: "2102689"
+    uid: a6a0b307-560a-4f47-8949-2d2c9010a681
+  spec:
+    ingressClassName: nginx
+    rules:
+    - host: enketo.shopnoltd.dpdns.org
+      http:
+        paths:
+        - backend:
+            service:
+              name: enketo
+              port:
+                number: 8005
+          path: /
+          pathType: Prefix
+    tls:
+    - hosts:
+      - enketo.shopnoltd.dpdns.org
+      secretName: enketo-tls
+  status:
+    loadBalancer:
+      ingress:
+      - ip: 10.43.250.239
+- apiVersion: networking.k8s.io/v1
+  kind: Ingress
+  metadata:
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"networking.k8s.io/v1","kind":"Ingress","metadata":{"annotations":{"cert-manager.io/cluster-issuer":"letsencrypt-prod","nginx.ingress.kubernetes.io/ssl-redirect":"true","traefik.ingress.kubernetes.io/router.tls":"true"},"name":"gitea","namespace":"shopno-apps"},"spec":{"ingressClassName":"nginx","rules":[{"host":"gitea.shopnoltd.dpdns.org","http":{"paths":[{"backend":{"service":{"name":"gitea","port":{"number":80}}},"path":"/","pathType":"Prefix"}]}}],"tls":[{"hosts":["gitea.shopnoltd.dpdns.org"],"secretName":"gitea-tls"}]}}
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      traefik.ingress.kubernetes.io/router.tls: "true"
+    creationTimestamp: "2026-07-28T05:49:19Z"
+    generation: 1
+    name: gitea
+    namespace: shopno-apps
+    resourceVersion: "2102603"
+    uid: c231ee20-751a-4ffe-816a-03c64b6baeb1
+  spec:
+    ingressClassName: nginx
+    rules:
+    - host: gitea.shopnoltd.dpdns.org
+      http:
+        paths:
+        - backend:
+            service:
+              name: gitea
+              port:
+                number: 80
+          path: /
+          pathType: Prefix
+    tls:
+    - hosts:
+      - gitea.shopnoltd.dpdns.org
+      secretName: gitea-tls
+  status:
+    loadBalancer:
+      ingress:
+      - ip: 10.43.250.239
+- apiVersion: networking.k8s.io/v1
+  kind: Ingress
+  metadata:
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"networking.k8s.io/v1","kind":"Ingress","metadata":{"annotations":{"cert-manager.io/cluster-issuer":"letsencrypt-prod","nginx.ingress.kubernetes.io/backend-protocol":"HTTP","nginx.ingress.kubernetes.io/proxy-read-timeout":"300","nginx.ingress.kubernetes.io/proxy-send-timeout":"300","nginx.ingress.kubernetes.io/ssl-redirect":"true","traefik.ingress.kubernetes.io/router.tls":"true"},"labels":{"app.kubernetes.io/name":"kobotoolbox","app.kubernetes.io/part-of":"shopnoltd"},"name":"kobotoolbox","namespace":"shopno-apps"},"spec":{"ingressClassName":"nginx","rules":[{"host":"kobotoolbox.shopnoltd.dpdns.org","http":{"paths":[{"backend":{"service":{"name":"kobotoolbox","port":{"number":80}}},"path":"/","pathType":"Prefix"}]}},{"host":"kobo.shopnoltd.dpdns.org","http":{"paths":[{"backend":{"service":{"name":"kobotoolbox","port":{"number":80}}},"path":"/","pathType":"Prefix"}]}}],"tls":[{"hosts":["kobotoolbox.shopnoltd.dpdns.org","kobo.shopnoltd.dpdns.org"],"secretName":"kobotoolbox-tls"}]}}
+      nginx.ingress.kubernetes.io/backend-protocol: HTTP
+      nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+      nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      traefik.ingress.kubernetes.io/router.tls: "true"
+    creationTimestamp: "2026-07-28T05:49:19Z"
+    generation: 4
+    labels:
+      app.kubernetes.io/name: kobotoolbox
+      app.kubernetes.io/part-of: shopnoltd
+    name: kobotoolbox
+    namespace: shopno-apps
+    resourceVersion: "2102698"
+    uid: 5f008781-d034-4cc8-b7c5-be1d6b2355ac
+  spec:
+    ingressClassName: nginx
+    rules:
+    - host: kobotoolbox.shopnoltd.dpdns.org
+      http:
+        paths:
+        - backend:
+            service:
+              name: kobotoolbox
+              port:
+                number: 80
+          path: /
+          pathType: Prefix
+    - host: kobo.shopnoltd.dpdns.org
+      http:
+        paths:
+        - backend:
+            service:
+              name: kobotoolbox
+              port:
+                number: 80
+          path: /
+          pathType: Prefix
+    tls:
+    - hosts:
+      - kobotoolbox.shopnoltd.dpdns.org
+      - kobo.shopnoltd.dpdns.org
+      secretName: kobotoolbox-tls
+  status:
+    loadBalancer:
+      ingress:
+      - ip: 10.43.250.239
+- apiVersion: networking.k8s.io/v1
+  kind: Ingress
+  metadata:
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"networking.k8s.io/v1","kind":"Ingress","metadata":{"annotations":{"cert-manager.io/cluster-issuer":"letsencrypt-prod","nginx.ingress.kubernetes.io/ssl-redirect":"true","traefik.ingress.kubernetes.io/router.tls":"true"},"name":"metabase","namespace":"shopno-apps"},"spec":{"ingressClassName":"nginx","rules":[{"host":"metabase.shopnoltd.dpdns.org","http":{"paths":[{"backend":{"service":{"name":"metabase","port":{"number":80}}},"path":"/","pathType":"Prefix"}]}}],"tls":[{"hosts":["metabase.shopnoltd.dpdns.org"],"secretName":"metabase-tls"}]}}
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      traefik.ingress.kubernetes.io/router.tls: "true"
+    creationTimestamp: "2026-07-28T05:49:19Z"
+    generation: 1
+    name: metabase
+    namespace: shopno-apps
+    resourceVersion: "2102684"
+    uid: a9fc852f-14ad-4741-aeed-65e2da6d0f20
+  spec:
+    ingressClassName: nginx
+    rules:
+    - host: metabase.shopnoltd.dpdns.org
+      http:
+        paths:
+        - backend:
+            service:
+              name: metabase
+              port:
+                number: 80
+          path: /
+          pathType: Prefix
+    tls:
+    - hosts:
+      - metabase.shopnoltd.dpdns.org
+      secretName: metabase-tls
+  status:
+    loadBalancer:
+      ingress:
+      - ip: 10.43.250.239
+- apiVersion: networking.k8s.io/v1
+  kind: Ingress
+  metadata:
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"networking.k8s.io/v1","kind":"Ingress","metadata":{"annotations":{"cert-manager.io/cluster-issuer":"letsencrypt-prod","nginx.ingress.kubernetes.io/ssl-redirect":"true","traefik.ingress.kubernetes.io/router.tls":"true"},"name":"n8n","namespace":"shopno-apps"},"spec":{"ingressClassName":"nginx","rules":[{"host":"n8n.shopnoltd.dpdns.org","http":{"paths":[{"backend":{"service":{"name":"n8n","port":{"number":80}}},"path":"/","pathType":"Prefix"}]}}],"tls":[{"hosts":["n8n.shopnoltd.dpdns.org"],"secretName":"n8n-tls"}]}}
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      traefik.ingress.kubernetes.io/router.tls: "true"
+    creationTimestamp: "2026-07-28T05:49:19Z"
+    generation: 1
+    name: n8n
+    namespace: shopno-apps
+    resourceVersion: "2102601"
+    uid: ccdeebe3-6feb-4931-bf57-37f45a90ced4
+  spec:
+    ingressClassName: nginx
+    rules:
+    - host: n8n.shopnoltd.dpdns.org
+      http:
+        paths:
+        - backend:
+            service:
+              name: n8n
+              port:
+                number: 80
+          path: /
+          pathType: Prefix
+    tls:
+    - hosts:
+      - n8n.shopnoltd.dpdns.org
+      secretName: n8n-tls
+  status:
+    loadBalancer:
+      ingress:
+      - ip: 10.43.250.239
+- apiVersion: networking.k8s.io/v1
+  kind: Ingress
+  metadata:
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"networking.k8s.io/v1","kind":"Ingress","metadata":{"annotations":{"cert-manager.io/cluster-issuer":"letsencrypt-prod","nginx.ingress.kubernetes.io/ssl-redirect":"true","traefik.ingress.kubernetes.io/router.tls":"true"},"name":"nextcloud","namespace":"shopno-apps"},"spec":{"ingressClassName":"nginx","rules":[{"host":"nextcloud.shopnoltd.dpdns.org","http":{"paths":[{"backend":{"service":{"name":"nextcloud","port":{"number":80}}},"path":"/","pathType":"Prefix"}]}}],"tls":[{"hosts":["nextcloud.shopnoltd.dpdns.org"],"secretName":"nextcloud-tls"}]}}
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      traefik.ingress.kubernetes.io/router.tls: "true"
+    creationTimestamp: "2026-07-28T05:49:19Z"
+    generation: 1
+    name: nextcloud
+    namespace: shopno-apps
+    resourceVersion: "2102650"
+    uid: b3615cf1-f4c1-4b05-90db-9a7fd2b3adba
+  spec:
+    ingressClassName: nginx
+    rules:
+    - host: nextcloud.shopnoltd.dpdns.org
+      http:
+        paths:
+        - backend:
+            service:
+              name: nextcloud
+              port:
+                number: 80
+          path: /
+          pathType: Prefix
+    tls:
+    - hosts:
+      - nextcloud.shopnoltd.dpdns.org
+      secretName: nextcloud-tls
+  status:
+    loadBalancer:
+      ingress:
+      - ip: 10.43.250.239
+- apiVersion: networking.k8s.io/v1
+  kind: Ingress
+  metadata:
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"networking.k8s.io/v1","kind":"Ingress","metadata":{"annotations":{"cert-manager.io/cluster-issuer":"letsencrypt-prod","nginx.ingress.kubernetes.io/ssl-redirect":"true","traefik.ingress.kubernetes.io/router.tls":"true"},"name":"onlyoffice","namespace":"shopno-apps"},"spec":{"ingressClassName":"nginx","rules":[{"host":"onlyoffice.shopnoltd.dpdns.org","http":{"paths":[{"backend":{"service":{"name":"onlyoffice","port":{"number":80}}},"path":"/","pathType":"Prefix"}]}}],"tls":[{"hosts":["onlyoffice.shopnoltd.dpdns.org"],"secretName":"onlyoffice-tls"}]}}
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      traefik.ingress.kubernetes.io/router.tls: "true"
+    creationTimestamp: "2026-07-28T05:49:19Z"
+    generation: 1
+    name: onlyoffice
+    namespace: shopno-apps
+    resourceVersion: "2102634"
+    uid: e3ab3825-e66f-45f1-b466-a9d64253c4b3
+  spec:
+    ingressClassName: nginx
+    rules:
+    - host: onlyoffice.shopnoltd.dpdns.org
+      http:
+        paths:
+        - backend:
+            service:
+              name: onlyoffice
+              port:
+                number: 80
+          path: /
+          pathType: Prefix
+    tls:
+    - hosts:
+      - onlyoffice.shopnoltd.dpdns.org
+      secretName: onlyoffice-tls
+  status:
+    loadBalancer:
+      ingress:
+      - ip: 10.43.250.239
+- apiVersion: networking.k8s.io/v1
+  kind: Ingress
+  metadata:
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"networking.k8s.io/v1","kind":"Ingress","metadata":{"annotations":{"cert-manager.io/cluster-issuer":"letsencrypt-prod","nginx.ingress.kubernetes.io/ssl-redirect":"true","traefik.ingress.kubernetes.io/router.tls":"true"},"name":"owncast","namespace":"shopno-apps"},"spec":{"ingressClassName":"nginx","rules":[{"host":"owncast.shopnoltd.dpdns.org","http":{"paths":[{"backend":{"service":{"name":"owncast","port":{"number":80}}},"path":"/","pathType":"Prefix"}]}}],"tls":[{"hosts":["owncast.shopnoltd.dpdns.org"],"secretName":"owncast-tls"}]}}
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      traefik.ingress.kubernetes.io/router.tls: "true"
+    creationTimestamp: "2026-07-28T05:49:19Z"
+    generation: 1
+    name: owncast
+    namespace: shopno-apps
+    resourceVersion: "2102703"
+    uid: d11224d7-da82-4bbd-ad78-d9970ee56b35
+  spec:
+    ingressClassName: nginx
+    rules:
+    - host: owncast.shopnoltd.dpdns.org
+      http:
+        paths:
+        - backend:
+            service:
+              name: owncast
+              port:
+                number: 80
+          path: /
+          pathType: Prefix
+    tls:
+    - hosts:
+      - owncast.shopnoltd.dpdns.org
+      secretName: owncast-tls
+  status:
+    loadBalancer:
+      ingress:
+      - ip: 10.43.250.239
+- apiVersion: networking.k8s.io/v1
+  kind: Ingress
+  metadata:
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"networking.k8s.io/v1","kind":"Ingress","metadata":{"annotations":{"cert-manager.io/cluster-issuer":"letsencrypt-prod","nginx.ingress.kubernetes.io/ssl-redirect":"true","traefik.ingress.kubernetes.io/router.tls":"true"},"name":"superset","namespace":"shopno-apps"},"spec":{"ingressClassName":"nginx","rules":[{"host":"superset.shopnoltd.dpdns.org","http":{"paths":[{"backend":{"service":{"name":"superset","port":{"number":80}}},"path":"/","pathType":"Prefix"}]}}],"tls":[{"hosts":["superset.shopnoltd.dpdns.org"],"secretName":"superset-tls"}]}}
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      traefik.ingress.kubernetes.io/router.tls: "true"
+    creationTimestamp: "2026-07-28T05:49:19Z"
+    generation: 1
+    name: superset
+    namespace: shopno-apps
+    resourceVersion: "2102696"
+    uid: 60323171-f7d1-426c-984f-312e89d48596
+  spec:
+    ingressClassName: nginx
+    rules:
+    - host: superset.shopnoltd.dpdns.org
+      http:
+        paths:
+        - backend:
+            service:
+              name: superset
+              port:
+                number: 80
+          path: /
+          pathType: Prefix
+    tls:
+    - hosts:
+      - superset.shopnoltd.dpdns.org
+      secretName: superset-tls
+  status:
+    loadBalancer:
+      ingress:
+      - ip: 10.43.250.239
+- apiVersion: networking.k8s.io/v1
+  kind: Ingress
+  metadata:
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"networking.k8s.io/v1","kind":"Ingress","metadata":{"annotations":{"cert-manager.io/cluster-issuer":"letsencrypt-prod","nginx.ingress.kubernetes.io/ssl-redirect":"true","traefik.ingress.kubernetes.io/router.tls":"true"},"labels":{"app.kubernetes.io/name":"minio","app.kubernetes.io/part-of":"shopnoltd"},"name":"minio","namespace":"shopno-data"},"spec":{"ingressClassName":"nginx","rules":[{"host":"minio.shopnoltd.dpdns.org","http":{"paths":[{"backend":{"service":{"name":"minio","port":{"number":80}}},"path":"/","pathType":"Prefix"}]}}],"tls":[{"hosts":["minio.shopnoltd.dpdns.org"],"secretName":"minio-tls"}]}}
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      traefik.ingress.kubernetes.io/router.tls: "true"
+    creationTimestamp: "2026-07-28T05:49:19Z"
+    generation: 1
+    labels:
+      app.kubernetes.io/name: minio
+      app.kubernetes.io/part-of: shopnoltd
+    name: minio
+    namespace: shopno-data
+    resourceVersion: "2102685"
+    uid: 98556f47-accb-4599-b5c6-07dd409520a8
+  spec:
+    ingressClassName: nginx
+    rules:
+    - host: minio.shopnoltd.dpdns.org
+      http:
+        paths:
+        - backend:
+            service:
+              name: minio
+              port:
+                number: 80
+          path: /
+          pathType: Prefix
+    tls:
+    - hosts:
+      - minio.shopnoltd.dpdns.org
+      secretName: minio-tls
+  status:
+    loadBalancer:
+      ingress:
+      - ip: 10.43.250.239
+- apiVersion: networking.k8s.io/v1
+  kind: Ingress
+  metadata:
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"networking.k8s.io/v1","kind":"Ingress","metadata":{"annotations":{"cert-manager.io/cluster-issuer":"letsencrypt-prod","nginx.ingress.kubernetes.io/ssl-redirect":"true","traefik.ingress.kubernetes.io/router.tls":"true"},"labels":{"app.kubernetes.io/name":"opensearch","app.kubernetes.io/part-of":"shopnoltd"},"name":"opensearch","namespace":"shopno-data"},"spec":{"ingressClassName":"nginx","rules":[{"host":"opensearch.shopnoltd.dpdns.org","http":{"paths":[{"backend":{"service":{"name":"opensearch","port":{"number":80}}},"path":"/","pathType":"Prefix"}]}}],"tls":[{"hosts":["opensearch.shopnoltd.dpdns.org"],"secretName":"opensearch-tls"}]}}
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      traefik.ingress.kubernetes.io/router.tls: "true"
+    creationTimestamp: "2026-07-28T05:49:19Z"
+    generation: 1
+    labels:
+      app.kubernetes.io/name: opensearch
+      app.kubernetes.io/part-of: shopnoltd
+    name: opensearch
+    namespace: shopno-data
+    resourceVersion: "2102694"
+    uid: b4818c31-0090-4443-817c-c1839e6c3fd2
+  spec:
+    ingressClassName: nginx
+    rules:
+    - host: opensearch.shopnoltd.dpdns.org
+      http:
+        paths:
+        - backend:
+            service:
+              name: opensearch
+              port:
+                number: 80
+          path: /
+          pathType: Prefix
+    tls:
+    - hosts:
+      - opensearch.shopnoltd.dpdns.org
+      secretName: opensearch-tls
+  status:
+    loadBalancer:
+      ingress:
+      - ip: 10.43.250.239
+- apiVersion: networking.k8s.io/v1
+  kind: Ingress
+  metadata:
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"networking.k8s.io/v1","kind":"Ingress","metadata":{"annotations":{"cert-manager.io/cluster-issuer":"letsencrypt-prod","nginx.ingress.kubernetes.io/ssl-redirect":"true","traefik.ingress.kubernetes.io/router.tls":"true"},"labels":{"app.kubernetes.io/name":"postgres","app.kubernetes.io/part-of":"shopnoltd"},"name":"postgres","namespace":"shopno-data"},"spec":{"ingressClassName":"nginx","rules":[{"host":"postgres.shopnoltd.dpdns.org","http":{"paths":[{"backend":{"service":{"name":"postgres","port":{"number":80}}},"path":"/healthz","pathType":"Prefix"}]}}],"tls":[{"hosts":["postgres.shopnoltd.dpdns.org"],"secretName":"postgres-tls"}]}}
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      traefik.ingress.kubernetes.io/router.tls: "true"
+    creationTimestamp: "2026-07-28T05:49:19Z"
+    generation: 1
+    labels:
+      app.kubernetes.io/name: postgres
+      app.kubernetes.io/part-of: shopnoltd
+    name: postgres
+    namespace: shopno-data
+    resourceVersion: "2102692"
+    uid: 7d86a53d-40ee-43a5-9377-8589412f463c
+  spec:
+    ingressClassName: nginx
+    rules:
+    - host: postgres.shopnoltd.dpdns.org
+      http:
+        paths:
+        - backend:
+            service:
+              name: postgres
+              port:
+                number: 80
+          path: /healthz
+          pathType: Prefix
+    tls:
+    - hosts:
+      - postgres.shopnoltd.dpdns.org
+      secretName: postgres-tls
+  status:
+    loadBalancer:
+      ingress:
+      - ip: 10.43.250.239
+- apiVersion: networking.k8s.io/v1
+  kind: Ingress
+  metadata:
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"networking.k8s.io/v1","kind":"Ingress","metadata":{"annotations":{"cert-manager.io/cluster-issuer":"letsencrypt-prod","nginx.ingress.kubernetes.io/ssl-redirect":"true","traefik.ingress.kubernetes.io/router.tls":"true"},"labels":{"app.kubernetes.io/name":"redis","app.kubernetes.io/part-of":"shopnoltd"},"name":"redis","namespace":"shopno-data"},"spec":{"ingressClassName":"nginx","rules":[{"host":"redis.shopnoltd.dpdns.org","http":{"paths":[{"backend":{"service":{"name":"redis","port":{"number":80}}},"path":"/healthz","pathType":"Prefix"}]}}],"tls":[{"hosts":["redis.shopnoltd.dpdns.org"],"secretName":"redis-tls"}]}}
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      traefik.ingress.kubernetes.io/router.tls: "true"
+    creationTimestamp: "2026-07-28T05:49:19Z"
+    generation: 1
+    labels:
+      app.kubernetes.io/name: redis
+      app.kubernetes.io/part-of: shopnoltd
+    name: redis
+    namespace: shopno-data
+    resourceVersion: "2102673"
+    uid: c01f6385-33bd-4a03-ae76-3176021a27f8
+  spec:
+    ingressClassName: nginx
+    rules:
+    - host: redis.shopnoltd.dpdns.org
+      http:
+        paths:
+        - backend:
+            service:
+              name: redis
+              port:
+                number: 80
+          path: /healthz
+          pathType: Prefix
+    tls:
+    - hosts:
+      - redis.shopnoltd.dpdns.org
+      secretName: redis-tls
+  status:
+    loadBalancer:
+      ingress:
+      - ip: 10.43.250.239
+- apiVersion: networking.k8s.io/v1
+  kind: Ingress
+  metadata:
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"networking.k8s.io/v1","kind":"Ingress","metadata":{"annotations":{"cert-manager.io/cluster-issuer":"letsencrypt-prod","nginx.ingress.kubernetes.io/ssl-redirect":"true","traefik.ingress.kubernetes.io/router.tls":"true"},"labels":{"app.kubernetes.io/name":"auth-service","app.kubernetes.io/part-of":"shopnoltd"},"name":"auth-service","namespace":"shopno-identity"},"spec":{"ingressClassName":"nginx","rules":[{"host":"auth-service.shopnoltd.dpdns.org","http":{"paths":[{"backend":{"service":{"name":"auth-service","port":{"number":80}}},"path":"/","pathType":"Prefix"}]}}],"tls":[{"hosts":["auth-service.shopnoltd.dpdns.org"],"secretName":"auth-service-tls"}]}}
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      traefik.ingress.kubernetes.io/router.tls: "true"
+    creationTimestamp: "2026-07-28T05:49:19Z"
+    generation: 1
+    labels:
+      app.kubernetes.io/name: auth-service
+      app.kubernetes.io/part-of: shopnoltd
+    name: auth-service
+    namespace: shopno-identity
+    resourceVersion: "2102655"
+    uid: 8204c371-d8a8-46d9-9a97-f287a8277b1b
+  spec:
+    ingressClassName: nginx
+    rules:
+    - host: auth-service.shopnoltd.dpdns.org
+      http:
+        paths:
+        - backend:
+            service:
+              name: auth-service
+              port:
+                number: 80
+          path: /
+          pathType: Prefix
+    tls:
+    - hosts:
+      - auth-service.shopnoltd.dpdns.org
+      secretName: auth-service-tls
+  status:
+    loadBalancer:
+      ingress:
+      - ip: 10.43.250.239
+- apiVersion: networking.k8s.io/v1
+  kind: Ingress
+  metadata:
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"networking.k8s.io/v1","kind":"Ingress","metadata":{"annotations":{"cert-manager.io/cluster-issuer":"letsencrypt-prod","nginx.ingress.kubernetes.io/proxy-body-size":"50m","nginx.ingress.kubernetes.io/ssl-redirect":"true"},"labels":{"app.kubernetes.io/name":"keycloak","app.kubernetes.io/part-of":"shopnoltd"},"name":"keycloak","namespace":"shopno-identity"},"spec":{"ingressClassName":"nginx","rules":[{"host":"auth.shopnoltd.dpdns.org","http":{"paths":[{"backend":{"service":{"name":"keycloak","port":{"number":80}}},"path":"/","pathType":"Prefix"}]}},{"host":"keycloak.shopnoltd.dpdns.org","http":{"paths":[{"backend":{"service":{"name":"keycloak","port":{"number":80}}},"path":"/","pathType":"Prefix"}]}}],"tls":[{"hosts":["auth.shopnoltd.dpdns.org","keycloak.shopnoltd.dpdns.org"],"secretName":"keycloak-auth-tls"}]}}
+      nginx.ingress.kubernetes.io/proxy-body-size: 50m
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    creationTimestamp: "2026-07-28T05:49:19Z"
+    generation: 2
+    labels:
+      app.kubernetes.io/name: keycloak
+      app.kubernetes.io/part-of: shopnoltd
+    name: keycloak
+    namespace: shopno-identity
+    resourceVersion: "2102668"
+    uid: 3ca5cf0c-1869-4021-bdf2-b6c8950fc350
+  spec:
+    ingressClassName: nginx
+    rules:
+    - host: auth.shopnoltd.dpdns.org
+      http:
+        paths:
+        - backend:
+            service:
+              name: keycloak
+              port:
+                number: 80
+          path: /
+          pathType: Prefix
+    - host: keycloak.shopnoltd.dpdns.org
+      http:
+        paths:
+        - backend:
+            service:
+              name: keycloak
+              port:
+                number: 80
+          path: /
+          pathType: Prefix
+    tls:
+    - hosts:
+      - auth.shopnoltd.dpdns.org
+      - keycloak.shopnoltd.dpdns.org
+      secretName: keycloak-auth-tls
+  status:
+    loadBalancer:
+      ingress:
+      - ip: 10.43.250.239
+- apiVersion: networking.k8s.io/v1
+  kind: Ingress
+  metadata:
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"networking.k8s.io/v1","kind":"Ingress","metadata":{"annotations":{"cert-manager.io/cluster-issuer":"letsencrypt-prod","nginx.ingress.kubernetes.io/ssl-redirect":"true","traefik.ingress.kubernetes.io/router.tls":"true"},"labels":{"app.kubernetes.io/name":"oauth-service","app.kubernetes.io/part-of":"shopnoltd"},"name":"oauth-service","namespace":"shopno-identity"},"spec":{"ingressClassName":"nginx","rules":[{"host":"oauth-service.shopnoltd.dpdns.org","http":{"paths":[{"backend":{"service":{"name":"oauth-service","port":{"number":80}}},"path":"/","pathType":"Prefix"}]}}],"tls":[{"hosts":["oauth-service.shopnoltd.dpdns.org"],"secretName":"oauth-service-tls"}]}}
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      traefik.ingress.kubernetes.io/router.tls: "true"
+    creationTimestamp: "2026-07-28T05:49:19Z"
+    generation: 1
+    labels:
+      app.kubernetes.io/name: oauth-service
+      app.kubernetes.io/part-of: shopnoltd
+    name: oauth-service
+    namespace: shopno-identity
+    resourceVersion: "2102656"
+    uid: 191cfd33-2a89-4a80-9c5e-43d6e229fb4d
+  spec:
+    ingressClassName: nginx
+    rules:
+    - host: oauth-service.shopnoltd.dpdns.org
+      http:
+        paths:
+        - backend:
+            service:
+              name: oauth-service
+              port:
+                number: 80
+          path: /
+          pathType: Prefix
+    tls:
+    - hosts:
+      - oauth-service.shopnoltd.dpdns.org
+      secretName: oauth-service-tls
+  status:
+    loadBalancer:
+      ingress:
+      - ip: 10.43.250.239
+- apiVersion: networking.k8s.io/v1
+  kind: Ingress
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"networking.k8s.io/v1","kind":"Ingress","metadata":{"annotations":{},"name":"mail-service","namespace":"shopno-mail"},"spec":{"ingressClassName":"nginx","rules":[{"host":"mail-api.shopnoltd.dpdns.org","http":{"paths":[{"backend":{"service":{"name":"mail-service","port":{"number":80}}},"path":"/","pathType":"Prefix"}]}}]}}
+    creationTimestamp: "2026-07-31T15:28:43Z"
+    generation: 4
+    name: mail-service
+    namespace: shopno-mail
+    resourceVersion: "2102672"
+    uid: 13bf71b4-5884-4931-b488-7681970cb368
+  spec:
+    ingressClassName: nginx
+    rules:
+    - host: mail-api.shopnoltd.dpdns.org
+      http:
+        paths:
+        - backend:
+            service:
+              name: mail-service
+              port:
+                number: 80
+          path: /
+          pathType: Prefix
+  status:
+    loadBalancer:
+      ingress:
+      - ip: 10.43.250.239
+- apiVersion: networking.k8s.io/v1
+  kind: Ingress
+  metadata:
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"networking.k8s.io/v1","kind":"Ingress","metadata":{"annotations":{"cert-manager.io/cluster-issuer":"letsencrypt-prod","nginx.ingress.kubernetes.io/ssl-redirect":"true","traefik.ingress.kubernetes.io/router.tls":"true"},"labels":{"app.kubernetes.io/name":"alertmanager","app.kubernetes.io/part-of":"shopnoltd"},"name":"alertmanager","namespace":"shopno-monitoring"},"spec":{"ingressClassName":"nginx","rules":[{"host":"alertmanager.shopnoltd.dpdns.org","http":{"paths":[{"backend":{"service":{"name":"alertmanager","port":{"number":80}}},"path":"/","pathType":"Prefix"}]}}],"tls":[{"hosts":["alertmanager.shopnoltd.dpdns.org"],"secretName":"alertmanager-tls"}]}}
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      traefik.ingress.kubernetes.io/router.tls: "true"
+    creationTimestamp: "2026-07-28T05:49:19Z"
+    generation: 1
+    labels:
+      app.kubernetes.io/name: alertmanager
+      app.kubernetes.io/part-of: shopnoltd
+    name: alertmanager
+    namespace: shopno-monitoring
+    resourceVersion: "2102605"
+    uid: fa93810d-ddd5-46a1-ab9d-6a6614fc03eb
+  spec:
+    ingressClassName: nginx
+    rules:
+    - host: alertmanager.shopnoltd.dpdns.org
+      http:
+        paths:
+        - backend:
+            service:
+              name: alertmanager
+              port:
+                number: 80
+          path: /
+          pathType: Prefix
+    tls:
+    - hosts:
+      - alertmanager.shopnoltd.dpdns.org
+      secretName: alertmanager-tls
+  status:
+    loadBalancer:
+      ingress:
+      - ip: 10.43.250.239
+- apiVersion: networking.k8s.io/v1
+  kind: Ingress
+  metadata:
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"networking.k8s.io/v1","kind":"Ingress","metadata":{"annotations":{"cert-manager.io/cluster-issuer":"letsencrypt-prod","nginx.ingress.kubernetes.io/ssl-redirect":"true","traefik.ingress.kubernetes.io/router.tls":"true"},"labels":{"app.kubernetes.io/name":"grafana","app.kubernetes.io/part-of":"shopnoltd"},"name":"grafana","namespace":"shopno-monitoring"},"spec":{"ingressClassName":"nginx","rules":[{"host":"grafana.shopnoltd.dpdns.org","http":{"paths":[{"backend":{"service":{"name":"grafana","port":{"number":80}}},"path":"/","pathType":"Prefix"}]}}],"tls":[{"hosts":["grafana.shopnoltd.dpdns.org"],"secretName":"grafana-tls"}]}}
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      traefik.ingress.kubernetes.io/router.tls: "true"
+    creationTimestamp: "2026-07-28T05:49:19Z"
+    generation: 1
+    labels:
+      app.kubernetes.io/name: grafana
+      app.kubernetes.io/part-of: shopnoltd
+    name: grafana
+    namespace: shopno-monitoring
+    resourceVersion: "2102600"
+    uid: 93a9f71e-0edb-4199-9b57-6c4a210a4e7d
+  spec:
+    ingressClassName: nginx
+    rules:
+    - host: grafana.shopnoltd.dpdns.org
+      http:
+        paths:
+        - backend:
+            service:
+              name: grafana
+              port:
+                number: 80
+          path: /
+          pathType: Prefix
+    tls:
+    - hosts:
+      - grafana.shopnoltd.dpdns.org
+      secretName: grafana-tls
+  status:
+    loadBalancer:
+      ingress:
+      - ip: 10.43.250.239
+- apiVersion: networking.k8s.io/v1
+  kind: Ingress
+  metadata:
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"networking.k8s.io/v1","kind":"Ingress","metadata":{"annotations":{"cert-manager.io/cluster-issuer":"letsencrypt-prod","nginx.ingress.kubernetes.io/ssl-redirect":"true","traefik.ingress.kubernetes.io/router.tls":"true"},"labels":{"app.kubernetes.io/name":"loki","app.kubernetes.io/part-of":"shopnoltd"},"name":"loki","namespace":"shopno-monitoring"},"spec":{"ingressClassName":"nginx","rules":[{"host":"loki.shopnoltd.dpdns.org","http":{"paths":[{"backend":{"service":{"name":"loki","port":{"number":80}}},"path":"/","pathType":"Prefix"}]}}],"tls":[{"hosts":["loki.shopnoltd.dpdns.org"],"secretName":"loki-tls"}]}}
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      traefik.ingress.kubernetes.io/router.tls: "true"
+    creationTimestamp: "2026-07-28T05:49:19Z"
+    generation: 1
+    labels:
+      app.kubernetes.io/name: loki
+      app.kubernetes.io/part-of: shopnoltd
+    name: loki
+    namespace: shopno-monitoring
+    resourceVersion: "2102602"
+    uid: 237983a1-456c-43d6-a8a9-d273f97ecc89
+  spec:
+    ingressClassName: nginx
+    rules:
+    - host: loki.shopnoltd.dpdns.org
+      http:
+        paths:
+        - backend:
+            service:
+              name: loki
+              port:
+                number: 80
+          path: /
+          pathType: Prefix
+    tls:
+    - hosts:
+      - loki.shopnoltd.dpdns.org
+      secretName: loki-tls
+  status:
+    loadBalancer:
+      ingress:
+      - ip: 10.43.250.239
+- apiVersion: networking.k8s.io/v1
+  kind: Ingress
+  metadata:
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"networking.k8s.io/v1","kind":"Ingress","metadata":{"annotations":{"cert-manager.io/cluster-issuer":"letsencrypt-prod","nginx.ingress.kubernetes.io/ssl-redirect":"true","traefik.ingress.kubernetes.io/router.tls":"true"},"labels":{"app.kubernetes.io/name":"prometheus","app.kubernetes.io/part-of":"shopnoltd"},"name":"prometheus","namespace":"shopno-monitoring"},"spec":{"ingressClassName":"nginx","rules":[{"host":"prometheus.shopnoltd.dpdns.org","http":{"paths":[{"backend":{"service":{"name":"prometheus","port":{"number":80}}},"path":"/","pathType":"Prefix"}]}}],"tls":[{"hosts":["prometheus.shopnoltd.dpdns.org"],"secretName":"prometheus-tls"}]}}
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      traefik.ingress.kubernetes.io/router.tls: "true"
+    creationTimestamp: "2026-07-28T05:49:19Z"
+    generation: 1
+    labels:
+      app.kubernetes.io/name: prometheus
+      app.kubernetes.io/part-of: shopnoltd
+    name: prometheus
+    namespace: shopno-monitoring
+    resourceVersion: "2102599"
+    uid: 361a814a-00ea-4a47-b13f-418ee2e28d4f
+  spec:
+    ingressClassName: nginx
+    rules:
+    - host: prometheus.shopnoltd.dpdns.org
+      http:
+        paths:
+        - backend:
+            service:
+              name: prometheus
+              port:
+                number: 80
+          path: /
+          pathType: Prefix
+    tls:
+    - hosts:
+      - prometheus.shopnoltd.dpdns.org
+      secretName: prometheus-tls
+  status:
+    loadBalancer:
+      ingress:
+      - ip: 10.43.250.239
+- apiVersion: networking.k8s.io/v1
+  kind: Ingress
+  metadata:
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"networking.k8s.io/v1","kind":"Ingress","metadata":{"annotations":{"cert-manager.io/cluster-issuer":"letsencrypt-prod","nginx.ingress.kubernetes.io/ssl-redirect":"true","traefik.ingress.kubernetes.io/router.tls":"true"},"labels":{"app.kubernetes.io/name":"admin-portal","app.kubernetes.io/part-of":"shopnoltd"},"name":"admin-portal","namespace":"shopno-platform"},"spec":{"ingressClassName":"nginx","rules":[{"host":"admin-portal.shopnoltd.dpdns.org","http":{"paths":[{"backend":{"service":{"name":"admin-portal","port":{"number":80}}},"path":"/","pathType":"Prefix"}]}}],"tls":[{"hosts":["admin-portal.shopnoltd.dpdns.org"],"secretName":"admin-portal-tls"}]}}
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      traefik.ingress.kubernetes.io/router.tls: "true"
+    creationTimestamp: "2026-07-28T05:49:20Z"
+    generation: 3
+    labels:
+      app.kubernetes.io/name: admin-portal
+      app.kubernetes.io/part-of: shopnoltd
+    name: admin-portal
+    namespace: shopno-platform
+    resourceVersion: "2102666"
+    uid: e67a3f7f-3ec0-4b50-9943-a18302e1a679
+  spec:
+    ingressClassName: nginx
+    rules:
+    - host: admin-portal.shopnoltd.dpdns.org
+      http:
+        paths:
+        - backend:
+            service:
+              name: admin-portal
+              port:
+                number: 80
+          path: /
+          pathType: Prefix
+    tls:
+    - hosts:
+      - admin-portal.shopnoltd.dpdns.org
+      secretName: admin-portal-tls
+  status:
+    loadBalancer:
+      ingress:
+      - ip: 10.43.250.239
+- apiVersion: networking.k8s.io/v1
+  kind: Ingress
+  metadata:
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"networking.k8s.io/v1","kind":"Ingress","metadata":{"annotations":{"cert-manager.io/cluster-issuer":"letsencrypt-prod","nginx.ingress.kubernetes.io/ssl-redirect":"true","traefik.ingress.kubernetes.io/router.tls":"true"},"labels":{"app.kubernetes.io/name":"ai-platform","app.kubernetes.io/part-of":"shopnoltd"},"name":"ai-platform","namespace":"shopno-platform"},"spec":{"ingressClassName":"nginx","rules":[{"host":"ai-platform.shopnoltd.dpdns.org","http":{"paths":[{"backend":{"service":{"name":"ai-platform","port":{"number":80}}},"path":"/","pathType":"Prefix"}]}}],"tls":[{"hosts":["ai-platform.shopnoltd.dpdns.org"],"secretName":"ai-platform-tls"}]}}
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      traefik.ingress.kubernetes.io/router.tls: "true"
+    creationTimestamp: "2026-07-28T05:49:20Z"
+    generation: 5
+    labels:
+      app.kubernetes.io/name: ai-platform
+      app.kubernetes.io/part-of: shopnoltd
+    name: ai-platform
+    namespace: shopno-platform
+    resourceVersion: "2102657"
+    uid: 31f1e2c7-0b06-48fd-b15a-936e2e523fbe
+  spec:
+    ingressClassName: nginx
+    rules:
+    - host: ai-platform.shopnoltd.dpdns.org
+      http:
+        paths:
+        - backend:
+            service:
+              name: ai-platform
+              port:
+                number: 80
+          path: /
+          pathType: Prefix
+    tls:
+    - hosts:
+      - ai-platform.shopnoltd.dpdns.org
+      secretName: ai-platform-tls
+  status:
+    loadBalancer:
+      ingress:
+      - ip: 10.43.250.239
+- apiVersion: networking.k8s.io/v1
+  kind: Ingress
+  metadata:
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"networking.k8s.io/v1","kind":"Ingress","metadata":{"annotations":{"cert-manager.io/cluster-issuer":"letsencrypt-prod","nginx.ingress.kubernetes.io/ssl-redirect":"true","traefik.ingress.kubernetes.io/router.tls":"true"},"labels":{"app.kubernetes.io/name":"analytics-service","app.kubernetes.io/part-of":"shopnoltd"},"name":"analytics-service","namespace":"shopno-platform"},"spec":{"ingressClassName":"nginx","rules":[{"host":"analytics-service.shopnoltd.dpdns.org","http":{"paths":[{"backend":{"service":{"name":"analytics-service","port":{"number":80}}},"path":"/","pathType":"Prefix"}]}}],"tls":[{"hosts":["analytics-service.shopnoltd.dpdns.org"],"secretName":"analytics-service-tls"}]}}
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      traefik.ingress.kubernetes.io/router.tls: "true"
+    creationTimestamp: "2026-07-28T05:49:20Z"
+    generation: 3
+    labels:
+      app.kubernetes.io/name: analytics-service
+      app.kubernetes.io/part-of: shopnoltd
+    name: analytics-service
+    namespace: shopno-platform
+    resourceVersion: "2102622"
+    uid: 00aad70f-c8a8-4bb8-a396-d1dda94b9f14
+  spec:
+    ingressClassName: nginx
+    rules:
+    - host: analytics-service.shopnoltd.dpdns.org
+      http:
+        paths:
+        - backend:
+            service:
+              name: analytics-service
+              port:
+                number: 80
+          path: /
+          pathType: Prefix
+    tls:
+    - hosts:
+      - analytics-service.shopnoltd.dpdns.org
+      secretName: analytics-service-tls
+  status:
+    loadBalancer:
+      ingress:
+      - ip: 10.43.250.239
+- apiVersion: networking.k8s.io/v1
+  kind: Ingress
+  metadata:
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"networking.k8s.io/v1","kind":"Ingress","metadata":{"annotations":{"cert-manager.io/cluster-issuer":"letsencrypt-prod","traefik.ingress.kubernetes.io/router.tls":"true"},"labels":{"app.kubernetes.io/name":"android-portal","app.kubernetes.io/part-of":"shopnoltd"},"name":"android-portal","namespace":"shopno-platform"},"spec":{"ingressClassName":"nginx","rules":[{"host":"shopnoltdandroid.shopnoltd.dpdns.org","http":{"paths":[{"backend":{"service":{"name":"android-portal","port":{"number":80}}},"path":"/","pathType":"Prefix"}]}}],"tls":[{"hosts":["shopnoltdandroid.shopnoltd.dpdns.org"],"secretName":"android-portal-tls"}]}}
+      traefik.ingress.kubernetes.io/router.tls: "true"
+    creationTimestamp: "2026-07-28T05:49:20Z"
+    generation: 3
+    labels:
+      app.kubernetes.io/name: android-portal
+      app.kubernetes.io/part-of: shopnoltd
+    name: android-portal
+    namespace: shopno-platform
+    resourceVersion: "2102638"
+    uid: addb3845-87d1-449e-aeaf-ba227d1d7447
+  spec:
+    ingressClassName: nginx
+    rules:
+    - host: shopnoltdandroid.shopnoltd.dpdns.org
+      http:
+        paths:
+        - backend:
+            service:
+              name: android-portal
+              port:
+                number: 80
+          path: /
+          pathType: Prefix
+    tls:
+    - hosts:
+      - shopnoltdandroid.shopnoltd.dpdns.org
+      secretName: android-portal-tls
+  status:
+    loadBalancer:
+      ingress:
+      - ip: 10.43.250.239
+- apiVersion: networking.k8s.io/v1
+  kind: Ingress
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"networking.k8s.io/v1","kind":"Ingress","metadata":{"annotations":{"nginx.ingress.kubernetes.io/ssl-redirect":"true"},"labels":{"app.kubernetes.io/name":"api-service","app.kubernetes.io/part-of":"shopnoltd"},"name":"api-service","namespace":"shopno-platform"},"spec":{"ingressClassName":"nginx","rules":[{"host":"api.shopnoltd.dpdns.org","http":{"paths":[{"backend":{"service":{"name":"api-service","port":{"number":80}}},"path":"/","pathType":"Prefix"}]}}]}}
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    creationTimestamp: "2026-07-28T05:49:20Z"
+    generation: 5
+    labels:
+      app.kubernetes.io/name: api-service
+      app.kubernetes.io/part-of: shopnoltd
+    name: api-service
+    namespace: shopno-platform
+    resourceVersion: "2102628"
+    uid: 7831cda8-2fb9-4332-bca6-e34fbeaa68c1
+  spec:
+    ingressClassName: nginx
+    rules:
+    - host: api.shopnoltd.dpdns.org
+      http:
+        paths:
+        - backend:
+            service:
+              name: api-service
+              port:
+                number: 80
+          path: /
+          pathType: Prefix
+    tls:
+    - hosts:
+      - api.shopnoltd.dpdns.org
+      secretName: shopno-wildcard-tls
+  status:
+    loadBalancer:
+      ingress:
+      - ip: 10.43.250.239
+- apiVersion: networking.k8s.io/v1
+  kind: Ingress
+  metadata:
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"networking.k8s.io/v1","kind":"Ingress","metadata":{"annotations":{"cert-manager.io/cluster-issuer":"letsencrypt-prod","nginx.ingress.kubernetes.io/ssl-redirect":"true","traefik.ingress.kubernetes.io/router.tls":"true"},"labels":{"app.kubernetes.io/name":"audit-service","app.kubernetes.io/part-of":"shopnoltd"},"name":"audit-service","namespace":"shopno-platform"},"spec":{"ingressClassName":"nginx","rules":[{"host":"audit-service.shopnoltd.dpdns.org","http":{"paths":[{"backend":{"service":{"name":"audit-service","port":{"number":80}}},"path":"/","pathType":"Prefix"}]}}],"tls":[{"hosts":["audit-service.shopnoltd.dpdns.org"],"secretName":"audit-service-tls"}]}}
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      traefik.ingress.kubernetes.io/router.tls: "true"
+    creationTimestamp: "2026-07-28T05:49:20Z"
+    generation: 3
+    labels:
+      app.kubernetes.io/name: audit-service
+      app.kubernetes.io/part-of: shopnoltd
+    name: audit-service
+    namespace: shopno-platform
+    resourceVersion: "2102627"
+    uid: 11569a6f-dd92-4987-946b-e3255b16bc4b
+  spec:
+    ingressClassName: nginx
+    rules:
+    - host: audit-service.shopnoltd.dpdns.org
+      http:
+        paths:
+        - backend:
+            service:
+              name: audit-service
+              port:
+                number: 80
+          path: /
+          pathType: Prefix
+    tls:
+    - hosts:
+      - audit-service.shopnoltd.dpdns.org
+      secretName: audit-service-tls
+  status:
+    loadBalancer:
+      ingress:
+      - ip: 10.43.250.239
+- apiVersion: networking.k8s.io/v1
+  kind: Ingress
+  metadata:
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"networking.k8s.io/v1","kind":"Ingress","metadata":{"annotations":{"cert-manager.io/cluster-issuer":"letsencrypt-prod","traefik.ingress.kubernetes.io/router.tls":"true"},"labels":{"app.kubernetes.io/name":"domain-service","app.kubernetes.io/part-of":"shopnoltd"},"name":"domain-service","namespace":"shopno-platform"},"spec":{"ingressClassName":"nginx","rules":[{"host":"domain.shopnoltd.dpdns.org","http":{"paths":[{"backend":{"service":{"name":"domain-service","port":{"number":80}}},"path":"/","pathType":"Prefix"}]}}],"tls":[{"hosts":["domain.shopnoltd.dpdns.org"],"secretName":"domain-service-tls"}]}}
+      traefik.ingress.kubernetes.io/router.tls: "true"
+    creationTimestamp: "2026-07-28T05:49:20Z"
+    generation: 3
+    labels:
+      app.kubernetes.io/name: domain-service
+      app.kubernetes.io/part-of: shopnoltd
+    name: domain-service
+    namespace: shopno-platform
+    resourceVersion: "2102621"
+    uid: 62b0fdec-a9a1-4e7b-ac10-aadecaa37486
+  spec:
+    ingressClassName: nginx
+    rules:
+    - host: domain.shopnoltd.dpdns.org
+      http:
+        paths:
+        - backend:
+            service:
+              name: domain-service
+              port:
+                number: 80
+          path: /
+          pathType: Prefix
+    tls:
+    - hosts:
+      - domain.shopnoltd.dpdns.org
+      secretName: domain-service-tls
+  status:
+    loadBalancer:
+      ingress:
+      - ip: 10.43.250.239
+- apiVersion: networking.k8s.io/v1
+  kind: Ingress
+  metadata:
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"networking.k8s.io/v1","kind":"Ingress","metadata":{"annotations":{"cert-manager.io/cluster-issuer":"letsencrypt-prod","traefik.ingress.kubernetes.io/router.tls":"true"},"labels":{"app.kubernetes.io/name":"event-service","app.kubernetes.io/part-of":"shopnoltd"},"name":"event-service","namespace":"shopno-platform"},"spec":{"ingressClassName":"nginx","rules":[{"host":"event.shopnoltd.dpdns.org","http":{"paths":[{"backend":{"service":{"name":"event-service","port":{"number":80}}},"path":"/","pathType":"Prefix"}]}}],"tls":[{"hosts":["event.shopnoltd.dpdns.org"],"secretName":"event-service-tls"}]}}
+      traefik.ingress.kubernetes.io/router.tls: "true"
+    creationTimestamp: "2026-07-28T05:49:20Z"
+    generation: 3
+    labels:
+      app.kubernetes.io/name: event-service
+      app.kubernetes.io/part-of: shopnoltd
+    name: event-service
+    namespace: shopno-platform
+    resourceVersion: "2102624"
+    uid: 613be011-387c-45de-8362-5faf9e3e3c6e
+  spec:
+    ingressClassName: nginx
+    rules:
+    - host: event.shopnoltd.dpdns.org
+      http:
+        paths:
+        - backend:
+            service:
+              name: event-service
+              port:
+                number: 80
+          path: /
+          pathType: Prefix
+    tls:
+    - hosts:
+      - event.shopnoltd.dpdns.org
+      secretName: event-service-tls
+  status:
+    loadBalancer:
+      ingress:
+      - ip: 10.43.250.239
+- apiVersion: networking.k8s.io/v1
+  kind: Ingress
+  metadata:
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"networking.k8s.io/v1","kind":"Ingress","metadata":{"annotations":{"cert-manager.io/cluster-issuer":"letsencrypt-prod","traefik.ingress.kubernetes.io/router.tls":"true"},"labels":{"app.kubernetes.io/name":"foundation-service","app.kubernetes.io/part-of":"shopnoltd"},"name":"foundation-service","namespace":"shopno-platform"},"spec":{"ingressClassName":"nginx","rules":[{"host":"foundation.shopnoltd.dpdns.org","http":{"paths":[{"backend":{"service":{"name":"foundation-service","port":{"number":80}}},"path":"/","pathType":"Prefix"}]}}],"tls":[{"hosts":["foundation.shopnoltd.dpdns.org"],"secretName":"foundation-service-tls"}]}}
+      traefik.ingress.kubernetes.io/router.tls: "true"
+    creationTimestamp: "2026-07-28T05:49:20Z"
+    generation: 3
+    labels:
+      app.kubernetes.io/name: foundation-service
+      app.kubernetes.io/part-of: shopnoltd
+    name: foundation-service
+    namespace: shopno-platform
+    resourceVersion: "2102616"
+    uid: 96dde549-8c5c-4bb8-89f8-8aaa456fdaea
+  spec:
+    ingressClassName: nginx
+    rules:
+    - host: foundation.shopnoltd.dpdns.org
+      http:
+        paths:
+        - backend:
+            service:
+              name: foundation-service
+              port:
+                number: 80
+          path: /
+          pathType: Prefix
+    tls:
+    - hosts:
+      - foundation.shopnoltd.dpdns.org
+      secretName: foundation-service-tls
+  status:
+    loadBalancer:
+      ingress:
+      - ip: 10.43.250.239
+- apiVersion: networking.k8s.io/v1
+  kind: Ingress
+  metadata:
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"networking.k8s.io/v1","kind":"Ingress","metadata":{"annotations":{"cert-manager.io/cluster-issuer":"letsencrypt-prod","traefik.ingress.kubernetes.io/router.tls":"true"},"labels":{"app.kubernetes.io/name":"freedomain-service","app.kubernetes.io/part-of":"shopnoltd"},"name":"freedomain-service","namespace":"shopno-platform"},"spec":{"ingressClassName":"nginx","rules":[{"host":"freedomain.shopnoltd.dpdns.org","http":{"paths":[{"backend":{"service":{"name":"freedomain-service","port":{"number":80}}},"path":"/","pathType":"Prefix"}]}}],"tls":[{"hosts":["freedomain.shopnoltd.dpdns.org"],"secretName":"freedomain-service-tls"}]}}
+      traefik.ingress.kubernetes.io/router.tls: "true"
+    creationTimestamp: "2026-07-28T05:49:20Z"
+    generation: 3
+    labels:
+      app.kubernetes.io/name: freedomain-service
+      app.kubernetes.io/part-of: shopnoltd
+    name: freedomain-service
+    namespace: shopno-platform
+    resourceVersion: "2102620"
+    uid: 0ca6ca38-3d71-40db-8fe9-b45105ee62f2
+  spec:
+    ingressClassName: nginx
+    rules:
+    - host: freedomain.shopnoltd.dpdns.org
+      http:
+        paths:
+        - backend:
+            service:
+              name: freedomain-service
+              port:
+                number: 80
+          path: /
+          pathType: Prefix
+    tls:
+    - hosts:
+      - freedomain.shopnoltd.dpdns.org
+      secretName: freedomain-service-tls
+  status:
+    loadBalancer:
+      ingress:
+      - ip: 10.43.250.239
+- apiVersion: networking.k8s.io/v1
+  kind: Ingress
+  metadata:
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"networking.k8s.io/v1","kind":"Ingress","metadata":{"annotations":{"cert-manager.io/cluster-issuer":"letsencrypt-prod","nginx.ingress.kubernetes.io/ssl-redirect":"true","traefik.ingress.kubernetes.io/router.tls":"true"},"labels":{"app.kubernetes.io/name":"gateway","app.kubernetes.io/part-of":"shopnoltd"},"name":"gateway","namespace":"shopno-platform"},"spec":{"ingressClassName":"nginx","rules":[{"host":"gateway.shopnoltd.dpdns.org","http":{"paths":[{"backend":{"service":{"name":"gateway","port":{"number":80}}},"path":"/","pathType":"Prefix"}]}}],"tls":[{"hosts":["gateway.shopnoltd.dpdns.org"],"secretName":"gateway-tls"}]}}
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      traefik.ingress.kubernetes.io/router.tls: "true"
+    creationTimestamp: "2026-07-28T05:49:20Z"
+    generation: 3
+    labels:
+      app.kubernetes.io/name: gateway
+      app.kubernetes.io/part-of: shopnoltd
+    name: gateway
+    namespace: shopno-platform
+    resourceVersion: "2102615"
+    uid: 95a1a30d-2e12-4c22-aee6-1cb570495ba2
+  spec:
+    ingressClassName: nginx
+    rules:
+    - host: gateway.shopnoltd.dpdns.org
+      http:
+        paths:
+        - backend:
+            service:
+              name: gateway
+              port:
+                number: 80
+          path: /
+          pathType: Prefix
+    tls:
+    - hosts:
+      - gateway.shopnoltd.dpdns.org
+      secretName: gateway-tls
+  status:
+    loadBalancer:
+      ingress:
+      - ip: 10.43.250.239
+- apiVersion: networking.k8s.io/v1
+  kind: Ingress
+  metadata:
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"networking.k8s.io/v1","kind":"Ingress","metadata":{"annotations":{"cert-manager.io/cluster-issuer":"letsencrypt-prod","traefik.ingress.kubernetes.io/router.tls":"true"},"labels":{"app.kubernetes.io/name":"interior-service","app.kubernetes.io/part-of":"shopnoltd"},"name":"interior-service","namespace":"shopno-platform"},"spec":{"ingressClassName":"nginx","rules":[{"host":"interior.shopnoltd.dpdns.org","http":{"paths":[{"backend":{"service":{"name":"interior-service","port":{"number":80}}},"path":"/","pathType":"Prefix"}]}}],"tls":[{"hosts":["interior.shopnoltd.dpdns.org"],"secretName":"interior-service-tls"}]}}
+      traefik.ingress.kubernetes.io/router.tls: "true"
+    creationTimestamp: "2026-07-28T05:49:20Z"
+    generation: 3
+    labels:
+      app.kubernetes.io/name: interior-service
+      app.kubernetes.io/part-of: shopnoltd
+    name: interior-service
+    namespace: shopno-platform
+    resourceVersion: "2102607"
+    uid: e7552768-6b5f-4631-a1d7-083dae308064
+  spec:
+    ingressClassName: nginx
+    rules:
+    - host: interior.shopnoltd.dpdns.org
+      http:
+        paths:
+        - backend:
+            service:
+              name: interior-service
+              port:
+                number: 80
+          path: /
+          pathType: Prefix
+    tls:
+    - hosts:
+      - interior.shopnoltd.dpdns.org
+      secretName: interior-service-tls
+  status:
+    loadBalancer:
+      ingress:
+      - ip: 10.43.250.239
+- apiVersion: networking.k8s.io/v1
+  kind: Ingress
+  metadata:
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"networking.k8s.io/v1","kind":"Ingress","metadata":{"annotations":{"cert-manager.io/cluster-issuer":"letsencrypt-prod","nginx.ingress.kubernetes.io/ssl-redirect":"true","traefik.ingress.kubernetes.io/router.tls":"true"},"labels":{"app.kubernetes.io/name":"license-service","app.kubernetes.io/part-of":"shopnoltd"},"name":"license-service","namespace":"shopno-platform"},"spec":{"ingressClassName":"nginx","rules":[{"host":"license-service.shopnoltd.dpdns.org","http":{"paths":[{"backend":{"service":{"name":"license-service","port":{"number":80}}},"path":"/","pathType":"Prefix"}]}}],"tls":[{"hosts":["license-service.shopnoltd.dpdns.org"],"secretName":"license-service-tls"}]}}
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      traefik.ingress.kubernetes.io/router.tls: "true"
+    creationTimestamp: "2026-07-28T05:49:20Z"
+    generation: 3
+    labels:
+      app.kubernetes.io/name: license-service
+      app.kubernetes.io/part-of: shopnoltd
+    name: license-service
+    namespace: shopno-platform
+    resourceVersion: "2102598"
+    uid: 18069530-c2c0-44a6-9274-bb488b5e9e83
+  spec:
+    ingressClassName: nginx
+    rules:
+    - host: license-service.shopnoltd.dpdns.org
+      http:
+        paths:
+        - backend:
+            service:
+              name: license-service
+              port:
+                number: 80
+          path: /
+          pathType: Prefix
+    tls:
+    - hosts:
+      - license-service.shopnoltd.dpdns.org
+      secretName: license-service-tls
+  status:
+    loadBalancer:
+      ingress:
+      - ip: 10.43.250.239
+- apiVersion: networking.k8s.io/v1
+  kind: Ingress
+  metadata:
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"networking.k8s.io/v1","kind":"Ingress","metadata":{"annotations":{"cert-manager.io/cluster-issuer":"letsencrypt-prod","nginx.ingress.kubernetes.io/ssl-redirect":"true","traefik.ingress.kubernetes.io/router.tls":"true"},"labels":{"app.kubernetes.io/name":"mobile-api","app.kubernetes.io/part-of":"shopnoltd"},"name":"mobile-api","namespace":"shopno-platform"},"spec":{"ingressClassName":"nginx","rules":[{"host":"mobile-api.shopnoltd.dpdns.org","http":{"paths":[{"backend":{"service":{"name":"mobile-api","port":{"number":80}}},"path":"/","pathType":"Prefix"}]}}],"tls":[{"hosts":["mobile-api.shopnoltd.dpdns.org"],"secretName":"mobile-api-tls"}]}}
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      traefik.ingress.kubernetes.io/router.tls: "true"
+    creationTimestamp: "2026-07-28T05:49:20Z"
+    generation: 3
+    labels:
+      app.kubernetes.io/name: mobile-api
+      app.kubernetes.io/part-of: shopnoltd
+    name: mobile-api
+    namespace: shopno-platform
+    resourceVersion: "2102606"
+    uid: f093740f-8393-4476-8d19-e3fe4486e7c1
+  spec:
+    ingressClassName: nginx
+    rules:
+    - host: mobile-api.shopnoltd.dpdns.org
+      http:
+        paths:
+        - backend:
+            service:
+              name: mobile-api
+              port:
+                number: 80
+          path: /
+          pathType: Prefix
+    tls:
+    - hosts:
+      - mobile-api.shopnoltd.dpdns.org
+      secretName: mobile-api-tls
+  status:
+    loadBalancer:
+      ingress:
+      - ip: 10.43.250.239
+- apiVersion: networking.k8s.io/v1
+  kind: Ingress
+  metadata:
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"networking.k8s.io/v1","kind":"Ingress","metadata":{"annotations":{"cert-manager.io/cluster-issuer":"letsencrypt-prod","nginx.ingress.kubernetes.io/ssl-redirect":"true","traefik.ingress.kubernetes.io/router.tls":"true"},"labels":{"app.kubernetes.io/name":"notification-service","app.kubernetes.io/part-of":"shopnoltd"},"name":"notification-service","namespace":"shopno-platform"},"spec":{"ingressClassName":"nginx","rules":[{"host":"notification-service.shopnoltd.dpdns.org","http":{"paths":[{"backend":{"service":{"name":"notification-service","port":{"number":80}}},"path":"/","pathType":"Prefix"}]}}],"tls":[{"hosts":["notification-service.shopnoltd.dpdns.org"],"secretName":"notification-service-tls"}]}}
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      traefik.ingress.kubernetes.io/router.tls: "true"
+    creationTimestamp: "2026-07-28T05:49:20Z"
+    generation: 3
+    labels:
+      app.kubernetes.io/name: notification-service
+      app.kubernetes.io/part-of: shopnoltd
+    name: notification-service
+    namespace: shopno-platform
+    resourceVersion: "2102691"
+    uid: 7292804a-6e16-40b7-9a1f-894c43d5b458
+  spec:
+    ingressClassName: nginx
+    rules:
+    - host: notification-service.shopnoltd.dpdns.org
+      http:
+        paths:
+        - backend:
+            service:
+              name: notification-service
+              port:
+                number: 80
+          path: /
+          pathType: Prefix
+    tls:
+    - hosts:
+      - notification-service.shopnoltd.dpdns.org
+      secretName: notification-service-tls
+  status:
+    loadBalancer:
+      ingress:
+      - ip: 10.43.250.239
+- apiVersion: networking.k8s.io/v1
+  kind: Ingress
+  metadata:
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"networking.k8s.io/v1","kind":"Ingress","metadata":{"annotations":{"cert-manager.io/cluster-issuer":"letsencrypt-prod","nginx.ingress.kubernetes.io/ssl-redirect":"true","traefik.ingress.kubernetes.io/router.tls":"true"},"labels":{"app.kubernetes.io/name":"report-service","app.kubernetes.io/part-of":"shopnoltd"},"name":"report-service","namespace":"shopno-platform"},"spec":{"ingressClassName":"nginx","rules":[{"host":"report-service.shopnoltd.dpdns.org","http":{"paths":[{"backend":{"service":{"name":"report-service","port":{"number":80}}},"path":"/","pathType":"Prefix"}]}}],"tls":[{"hosts":["report-service.shopnoltd.dpdns.org"],"secretName":"report-service-tls"}]}}
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      traefik.ingress.kubernetes.io/router.tls: "true"
+    creationTimestamp: "2026-07-28T05:49:20Z"
+    generation: 3
+    labels:
+      app.kubernetes.io/name: report-service
+      app.kubernetes.io/part-of: shopnoltd
+    name: report-service
+    namespace: shopno-platform
+    resourceVersion: "2102674"
+    uid: 3f132893-47a8-48dc-bbd5-77083fd13811
+  spec:
+    ingressClassName: nginx
+    rules:
+    - host: report-service.shopnoltd.dpdns.org
+      http:
+        paths:
+        - backend:
+            service:
+              name: report-service
+              port:
+                number: 80
+          path: /
+          pathType: Prefix
+    tls:
+    - hosts:
+      - report-service.shopnoltd.dpdns.org
+      secretName: report-service-tls
+  status:
+    loadBalancer:
+      ingress:
+      - ip: 10.43.250.239
+- apiVersion: networking.k8s.io/v1
+  kind: Ingress
+  metadata:
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"networking.k8s.io/v1","kind":"Ingress","metadata":{"annotations":{"cert-manager.io/cluster-issuer":"letsencrypt-prod","nginx.ingress.kubernetes.io/ssl-redirect":"true","traefik.ingress.kubernetes.io/router.tls":"true"},"labels":{"app.kubernetes.io/name":"search-service","app.kubernetes.io/part-of":"shopnoltd"},"name":"search-service","namespace":"shopno-platform"},"spec":{"ingressClassName":"nginx","rules":[{"host":"search-service.shopnoltd.dpdns.org","http":{"paths":[{"backend":{"service":{"name":"search-service","port":{"number":80}}},"path":"/","pathType":"Prefix"}]}}],"tls":[{"hosts":["search-service.shopnoltd.dpdns.org"],"secretName":"search-service-tls"}]}}
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      traefik.ingress.kubernetes.io/router.tls: "true"
+    creationTimestamp: "2026-07-28T05:49:20Z"
+    generation: 3
+    labels:
+      app.kubernetes.io/name: search-service
+      app.kubernetes.io/part-of: shopnoltd
+    name: search-service
+    namespace: shopno-platform
+    resourceVersion: "2102680"
+    uid: 6ce8e51b-130f-4b9f-a34a-cf376a047051
+  spec:
+    ingressClassName: nginx
+    rules:
+    - host: search-service.shopnoltd.dpdns.org
+      http:
+        paths:
+        - backend:
+            service:
+              name: search-service
+              port:
+                number: 80
+          path: /
+          pathType: Prefix
+    tls:
+    - hosts:
+      - search-service.shopnoltd.dpdns.org
+      secretName: search-service-tls
+  status:
+    loadBalancer:
+      ingress:
+      - ip: 10.43.250.239
+- apiVersion: networking.k8s.io/v1
+  kind: Ingress
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"networking.k8s.io/v1","kind":"Ingress","metadata":{"annotations":{"nginx.ingress.kubernetes.io/ssl-redirect":"true"},"name":"shopnoltd-web","namespace":"shopno-platform"},"spec":{"ingressClassName":"nginx","rules":[{"host":"billing.shopnoltd.dpdns.org","http":{"paths":[{"backend":{"service":{"name":"shopnoltd-web","port":{"number":80}}},"path":"/","pathType":"Prefix"}]}},{"host":"payment.shopnoltd.dpdns.org","http":{"paths":[{"backend":{"service":{"name":"shopnoltd-web","port":{"number":80}}},"path":"/","pathType":"Prefix"}]}},{"host":"exchange.shopnoltd.dpdns.org","http":{"paths":[{"backend":{"service":{"name":"shopnoltd-web","port":{"number":80}}},"path":"/","pathType":"Prefix"}]}},{"host":"admin.shopnoltd.dpdns.org","http":{"paths":[{"backend":{"service":{"name":"shopnoltd-web","port":{"number":80}}},"path":"/","pathType":"Prefix"}]}},{"host":"support.shopnoltd.dpdns.org","http":{"paths":[{"backend":{"service":{"name":"shopnoltd-web","port":{"number":80}}},"path":"/","pathType":"Prefix"}]}}],"tls":[{"hosts":["billing.shopnoltd.dpdns.org","payment.shopnoltd.dpdns.org","exchange.shopnoltd.dpdns.org","admin.shopnoltd.dpdns.org","support.shopnoltd.dpdns.org"],"secretName":"shopno-wildcard-tls"}]}}
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    creationTimestamp: "2026-08-12T13:43:34Z"
+    generation: 2
+    name: shopnoltd-web
+    namespace: shopno-platform
+    resourceVersion: "2444702"
+    uid: cbdf3ec4-b6a1-4746-b999-5917309a1c55
+  spec:
+    ingressClassName: nginx
+    rules:
+    - host: billing.shopnoltd.dpdns.org
+      http:
+        paths:
+        - backend:
+            service:
+              name: shopnoltd-web
+              port:
+                number: 80
+          path: /
+          pathType: Prefix
+    - host: payment.shopnoltd.dpdns.org
+      http:
+        paths:
+        - backend:
+            service:
+              name: shopnoltd-web
+              port:
+                number: 80
+          path: /
+          pathType: Prefix
+    - host: exchange.shopnoltd.dpdns.org
+      http:
+        paths:
+        - backend:
+            service:
+              name: shopnoltd-web
+              port:
+                number: 80
+          path: /
+          pathType: Prefix
+    - host: admin.shopnoltd.dpdns.org
+      http:
+        paths:
+        - backend:
+            service:
+              name: shopnoltd-web
+              port:
+                number: 80
+          path: /
+          pathType: Prefix
+    - host: support.shopnoltd.dpdns.org
+      http:
+        paths:
+        - backend:
+            service:
+              name: shopnoltd-web
+              port:
+                number: 80
+          path: /
+          pathType: Prefix
+    tls:
+    - hosts:
+      - billing.shopnoltd.dpdns.org
+      - payment.shopnoltd.dpdns.org
+      - exchange.shopnoltd.dpdns.org
+      - admin.shopnoltd.dpdns.org
+      - support.shopnoltd.dpdns.org
+      secretName: shopno-wildcard-tls
+  status:
+    loadBalancer:
+      ingress:
+      - ip: 10.43.250.239
+- apiVersion: networking.k8s.io/v1
+  kind: Ingress
+  metadata:
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"networking.k8s.io/v1","kind":"Ingress","metadata":{"annotations":{"cert-manager.io/cluster-issuer":"letsencrypt-prod","nginx.ingress.kubernetes.io/ssl-redirect":"true","traefik.ingress.kubernetes.io/router.tls":"true"},"labels":{"app.kubernetes.io/name":"storage-service","app.kubernetes.io/part-of":"shopnoltd"},"name":"storage-service","namespace":"shopno-platform"},"spec":{"ingressClassName":"nginx","rules":[{"host":"storage-service.shopnoltd.dpdns.org","http":{"paths":[{"backend":{"service":{"name":"storage-service","port":{"number":80}}},"path":"/","pathType":"Prefix"}]}}],"tls":[{"hosts":["storage-service.shopnoltd.dpdns.org"],"secretName":"storage-service-tls"}]}}
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      traefik.ingress.kubernetes.io/router.tls: "true"
+    creationTimestamp: "2026-07-28T05:49:20Z"
+    generation: 3
+    labels:
+      app.kubernetes.io/name: storage-service
+      app.kubernetes.io/part-of: shopnoltd
+    name: storage-service
+    namespace: shopno-platform
+    resourceVersion: "2102676"
+    uid: a7eda2fd-0030-47e6-98a7-d9306b0ad853
+  spec:
+    ingressClassName: nginx
+    rules:
+    - host: storage-service.shopnoltd.dpdns.org
+      http:
+        paths:
+        - backend:
+            service:
+              name: storage-service
+              port:
+                number: 80
+          path: /
+          pathType: Prefix
+    tls:
+    - hosts:
+      - storage-service.shopnoltd.dpdns.org
+      secretName: storage-service-tls
+  status:
+    loadBalancer:
+      ingress:
+      - ip: 10.43.250.239
+- apiVersion: networking.k8s.io/v1
+  kind: Ingress
+  metadata:
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"networking.k8s.io/v1","kind":"Ingress","metadata":{"annotations":{"cert-manager.io/cluster-issuer":"letsencrypt-prod","nginx.ingress.kubernetes.io/ssl-redirect":"true","traefik.ingress.kubernetes.io/router.tls":"true"},"labels":{"app.kubernetes.io/name":"tenant-router","app.kubernetes.io/part-of":"shopnoltd"},"name":"tenant-router","namespace":"shopno-platform"},"spec":{"ingressClassName":"nginx","rules":[{"host":"tenant-router.shopnoltd.dpdns.org","http":{"paths":[{"backend":{"service":{"name":"tenant-router","port":{"number":80}}},"path":"/","pathType":"Prefix"}]}}],"tls":[{"hosts":["tenant-router.shopnoltd.dpdns.org"],"secretName":"tenant-router-tls"}]}}
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      traefik.ingress.kubernetes.io/router.tls: "true"
+    creationTimestamp: "2026-07-28T05:49:20Z"
+    generation: 3
+    labels:
+      app.kubernetes.io/name: tenant-router
+      app.kubernetes.io/part-of: shopnoltd
+    name: tenant-router
+    namespace: shopno-platform
+    resourceVersion: "2102597"
+    uid: c020a7d2-b1b3-41df-baa4-fdbcb2f3afaa
+  spec:
+    ingressClassName: nginx
+    rules:
+    - host: tenant-router.shopnoltd.dpdns.org
+      http:
+        paths:
+        - backend:
+            service:
+              name: tenant-router
+              port:
+                number: 80
+          path: /
+          pathType: Prefix
+    tls:
+    - hosts:
+      - tenant-router.shopnoltd.dpdns.org
+      secretName: tenant-router-tls
+  status:
+    loadBalancer:
+      ingress:
+      - ip: 10.43.250.239
+- apiVersion: networking.k8s.io/v1
+  kind: Ingress
+  metadata:
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"networking.k8s.io/v1","kind":"Ingress","metadata":{"annotations":{"cert-manager.io/cluster-issuer":"letsencrypt-prod","traefik.ingress.kubernetes.io/router.tls":"true"},"labels":{"app.kubernetes.io/name":"training-service","app.kubernetes.io/part-of":"shopnoltd"},"name":"training-service","namespace":"shopno-platform"},"spec":{"ingressClassName":"nginx","rules":[{"host":"training.shopnoltd.dpdns.org","http":{"paths":[{"backend":{"service":{"name":"training-service","port":{"number":80}}},"path":"/","pathType":"Prefix"}]}}],"tls":[{"hosts":["training.shopnoltd.dpdns.org"],"secretName":"training-service-tls"}]}}
+      traefik.ingress.kubernetes.io/router.tls: "true"
+    creationTimestamp: "2026-07-28T05:49:20Z"
+    generation: 3
+    labels:
+      app.kubernetes.io/name: training-service
+      app.kubernetes.io/part-of: shopnoltd
+    name: training-service
+    namespace: shopno-platform
+    resourceVersion: "2102697"
+    uid: 883651ed-2656-481c-8deb-6ec0a178d3ec
+  spec:
+    ingressClassName: nginx
+    rules:
+    - host: training.shopnoltd.dpdns.org
+      http:
+        paths:
+        - backend:
+            service:
+              name: training-service
+              port:
+                number: 80
+          path: /
+          pathType: Prefix
+    tls:
+    - hosts:
+      - training.shopnoltd.dpdns.org
+      secretName: training-service-tls
+  status:
+    loadBalancer:
+      ingress:
+      - ip: 10.43.250.239
+- apiVersion: networking.k8s.io/v1
+  kind: Ingress
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"networking.k8s.io/v1","kind":"Ingress","metadata":{"annotations":{"nginx.ingress.kubernetes.io/ssl-redirect":"true"},"name":"web-portal","namespace":"shopno-platform"},"spec":{"ingressClassName":"nginx","rules":[{"host":"web-portal.shopnoltd.dpdns.org","http":{"paths":[{"backend":{"service":{"name":"web-portal","port":{"number":80}}},"path":"/","pathType":"Prefix"}]}},{"host":"shopnoltd.dpdns.org","http":{"paths":[{"backend":{"service":{"name":"web-portal","port":{"number":80}}},"path":"/","pathType":"Prefix"}]}}],"tls":[{"hosts":["web-portal.shopnoltd.dpdns.org","shopnoltd.dpdns.org"],"secretName":"shopno-wildcard-tls"}]}}
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    creationTimestamp: "2026-07-28T05:49:20Z"
+    generation: 5
+    name: web-portal
+    namespace: shopno-platform
+    resourceVersion: "2444919"
+    uid: 11ea84ff-0d7d-4309-9081-bb04696fc0fa
+  spec:
+    ingressClassName: nginx
+    rules:
+    - host: web-portal.shopnoltd.dpdns.org
+      http:
+        paths:
+        - backend:
+            service:
+              name: web-portal
+              port:
+                number: 80
+          path: /
+          pathType: Prefix
+    - host: shopnoltd.dpdns.org
+      http:
+        paths:
+        - backend:
+            service:
+              name: web-portal
+              port:
+                number: 80
+          path: /
+          pathType: Prefix
+    tls:
+    - hosts:
+      - web-portal.shopnoltd.dpdns.org
+      - shopnoltd.dpdns.org
+      secretName: shopno-wildcard-tls
+  status:
+    loadBalancer:
+      ingress:
+      - ip: 10.43.250.239
+- apiVersion: networking.k8s.io/v1
+  kind: Ingress
+  metadata:
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"networking.k8s.io/v1","kind":"Ingress","metadata":{"annotations":{"cert-manager.io/cluster-issuer":"letsencrypt-prod","nginx.ingress.kubernetes.io/ssl-redirect":"true","traefik.ingress.kubernetes.io/router.tls":"true"},"labels":{"app.kubernetes.io/name":"worker-service","app.kubernetes.io/part-of":"shopnoltd"},"name":"worker-service","namespace":"shopno-platform"},"spec":{"ingressClassName":"nginx","rules":[{"host":"worker-service.shopnoltd.dpdns.org","http":{"paths":[{"backend":{"service":{"name":"worker-service","port":{"number":80}}},"path":"/","pathType":"Prefix"}]}}],"tls":[{"hosts":["worker-service.shopnoltd.dpdns.org"],"secretName":"worker-service-tls"}]}}
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      traefik.ingress.kubernetes.io/router.tls: "true"
+    creationTimestamp: "2026-07-28T05:49:20Z"
+    generation: 3
+    labels:
+      app.kubernetes.io/name: worker-service
+      app.kubernetes.io/part-of: shopnoltd
+    name: worker-service
+    namespace: shopno-platform
+    resourceVersion: "2102695"
+    uid: 28b474f4-6927-4aab-8143-db8119517aee
+  spec:
+    ingressClassName: nginx
+    rules:
+    - host: worker-service.shopnoltd.dpdns.org
+      http:
+        paths:
+        - backend:
+            service:
+              name: worker-service
+              port:
+                number: 80
+          path: /
+          pathType: Prefix
+    tls:
+    - hosts:
+      - worker-service.shopnoltd.dpdns.org
+      secretName: worker-service-tls
+  status:
+    loadBalancer:
+      ingress:
+      - ip: 10.43.250.239
+kind: List
+metadata:
+  resourceVersion: ""

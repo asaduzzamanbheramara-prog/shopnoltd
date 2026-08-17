@@ -15,15 +15,33 @@ spec:
       labels:
         app.kubernetes.io/name: postgres
     spec:
+      securityContext:
+        fsGroup: 999
+      initContainers:
+        - name: init-data-dir
+          image: busybox:latest
+          command:
+            - /bin/sh
+            - -c
+            - |
+              mkdir -p /var/lib/postgresql/data
+              chmod 700 /var/lib/postgresql/data
+              chown -R 999:999 /var/lib/postgresql/data
+          securityContext:
+            runAsUser: 0
+          volumeMounts:
+            - name: postgres-storage
+              mountPath: /var/lib/postgresql/data
       containers:
         - name: postgres
           image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-postgres-combined:pg16-postgis3.5-pgvector0.8.6
           imagePullPolicy: Always
-
           envFrom:
             - secretRef:
                 name: postgres-secret
-
+          env:
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
           resources:
             requests:
               cpu: "100m"
@@ -31,16 +49,36 @@ spec:
             limits:
               cpu: "1000m"
               memory: "1Gi"
-
           ports:
             - name: postgres
               containerPort: 5432
-
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - pg_isready -U postgres
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - pg_isready -U postgres
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 3
           volumeMounts:
             - name: postgres-storage
               mountPath: /var/lib/postgresql/data
-
+            - name: tmp
+              mountPath: /tmp
       volumes:
         - name: postgres-storage
-          persistentVolumeClaim:
-            claimName: postgres-data
+          emptyDir:
+            sizeLimit: 10Gi
+        - name: tmp
+          emptyDir:
+            sizeLimit: 1Gi

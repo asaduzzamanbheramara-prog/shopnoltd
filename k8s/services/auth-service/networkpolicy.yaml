@@ -37,6 +37,12 @@ spec:
               name: shopno-identity
         - namespaceSelector:
             matchLabels:
+              name: ingress-nginx
+        - namespaceSelector:
+            matchLabels:
+              name: shopno-ingress
+        - namespaceSelector:
+            matchLabels:
               name: shopno-monitoring
         - namespaceSelector:
             matchLabels:

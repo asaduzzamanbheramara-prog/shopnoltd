@@ -1,0 +1,12 @@
+FROM ghcr.io/asaduzzamanbheramara-prog/shopnoltd/auth-service:latest
+
+# Override the main.py with the fixed version that handles DB connection gracefully
+# This version:
+# 1. Does NOT block startup on database connection
+# 2. Retries database connection asynchronously with exponential backoff
+# 3. Returns 503 from /readyz if DB is not available
+# 4. Allows /healthz to pass before DB is ready
+
+COPY --chown=shopno:shopno auth-service-main-FIXED.py /app/app/main.py
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080", "--proxy-headers", "--forwarded-allow-ips", "*"]

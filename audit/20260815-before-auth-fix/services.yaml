@@ -1,0 +1,1818 @@
+apiVersion: v1
+items:
+- apiVersion: v1
+  kind: Service
+  metadata:
+    creationTimestamp: "2026-07-28T05:38:00Z"
+    labels:
+      component: apiserver
+      provider: kubernetes
+    name: kubernetes
+    namespace: default
+    resourceVersion: "203"
+    uid: 633944b5-4cab-4bfa-98a2-b9d130d4cad0
+  spec:
+    clusterIP: 10.43.0.1
+    clusterIPs:
+    - 10.43.0.1
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: https
+      port: 443
+      protocol: TCP
+      targetPort: 6443
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"labels":{"app.kubernetes.io/component":"controller","app.kubernetes.io/instance":"ingress-nginx","app.kubernetes.io/name":"ingress-nginx","app.kubernetes.io/part-of":"ingress-nginx","app.kubernetes.io/version":"1.15.1"},"name":"ingress-nginx-controller","namespace":"ingress-nginx"},"spec":{"externalTrafficPolicy":"Local","ipFamilies":["IPv4"],"ipFamilyPolicy":"SingleStack","ports":[{"appProtocol":"http","name":"http","port":80,"protocol":"TCP","targetPort":"http"},{"appProtocol":"https","name":"https","port":443,"protocol":"TCP","targetPort":"https"}],"selector":{"app.kubernetes.io/component":"controller","app.kubernetes.io/instance":"ingress-nginx","app.kubernetes.io/name":"ingress-nginx"},"type":"LoadBalancer"}}
+    creationTimestamp: "2026-07-28T05:45:24Z"
+    labels:
+      app.kubernetes.io/component: controller
+      app.kubernetes.io/instance: ingress-nginx
+      app.kubernetes.io/name: ingress-nginx
+      app.kubernetes.io/part-of: ingress-nginx
+      app.kubernetes.io/version: 1.15.1
+    name: ingress-nginx-controller
+    namespace: ingress-nginx
+    resourceVersion: "2102504"
+    uid: 304c3f30-acb1-43c1-98f8-960594595307
+  spec:
+    clusterIP: 10.43.250.239
+    clusterIPs:
+    - 10.43.250.239
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - appProtocol: http
+      name: http
+      port: 80
+      protocol: TCP
+      targetPort: http
+    - appProtocol: https
+      name: https
+      port: 443
+      protocol: TCP
+      targetPort: https
+    selector:
+      app.kubernetes.io/component: controller
+      app.kubernetes.io/instance: ingress-nginx
+      app.kubernetes.io/name: ingress-nginx
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"labels":{"app.kubernetes.io/component":"controller","app.kubernetes.io/instance":"ingress-nginx","app.kubernetes.io/name":"ingress-nginx","app.kubernetes.io/part-of":"ingress-nginx","app.kubernetes.io/version":"1.15.1"},"name":"ingress-nginx-controller-admission","namespace":"ingress-nginx"},"spec":{"ports":[{"appProtocol":"https","name":"https-webhook","port":443,"targetPort":"webhook"}],"selector":{"app.kubernetes.io/component":"controller","app.kubernetes.io/instance":"ingress-nginx","app.kubernetes.io/name":"ingress-nginx"},"type":"ClusterIP"}}
+    creationTimestamp: "2026-07-28T05:45:24Z"
+    labels:
+      app.kubernetes.io/component: controller
+      app.kubernetes.io/instance: ingress-nginx
+      app.kubernetes.io/name: ingress-nginx
+      app.kubernetes.io/part-of: ingress-nginx
+      app.kubernetes.io/version: 1.15.1
+    name: ingress-nginx-controller-admission
+    namespace: ingress-nginx
+    resourceVersion: "729"
+    uid: e123b0e4-6121-4df7-99c6-64d413842656
+  spec:
+    clusterIP: 10.43.34.199
+    clusterIPs:
+    - 10.43.34.199
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - appProtocol: https
+      name: https-webhook
+      port: 443
+      protocol: TCP
+      targetPort: webhook
+    selector:
+      app.kubernetes.io/component: controller
+      app.kubernetes.io/instance: ingress-nginx
+      app.kubernetes.io/name: ingress-nginx
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      objectset.rio.cattle.io/applied: H4sIAAAAAAAA/4ySQYvbMBCF/0p5Z9m142TjFfRQdimUQgmk7aXsQZYnG9W2JKRJSgj+70WJl00b0vZm8958vHmjI5Q33yhE4ywk9iUEOmNbSKwp7I0mCAzEqlWsII9Q1jpWbJyN6dc1P0hzJM6DcblWzD3lxr01iQBxU3c/LYXsed9BoqvihbIvxZtPxrbv3rets/9EWDUQJLQL1Nr4X/bolU4z3a6hLB4i0wABH9xAvKVdTG7vAkPivlxUV1rUQfkE4LAjjAK9aqg/1dHVMVPev8DPidJnsMR0mtb9LjKFLE71Tpg/bdNeDy7Q4+f1X/baqriFRKNpVlez+7ouy+W8UkVV36lmURab2eZuSZvlfDYv9GKZ8k7si4i3ahkFoiedVptyf1xBoizyeZUXeVlAvAoR8vul9CRg/Ac1mP6wcr3Rh/SojH3uac1Kd6lXFzhNHV8indOcy19Up+LZaddD4uvjCqO4dGas/S33l4ff3ANxMPqVne567X8SiNSTZhduHHMcx18BAAD//5X9LCMyAwAA
+      objectset.rio.cattle.io/id: ""
+      objectset.rio.cattle.io/owner-gvk: k3s.cattle.io/v1, Kind=Addon
+      objectset.rio.cattle.io/owner-name: coredns
+      objectset.rio.cattle.io/owner-namespace: kube-system
+      prometheus.io/port: "9153"
+      prometheus.io/scrape: "true"
+    creationTimestamp: "2026-07-28T05:38:06Z"
+    labels:
+      k8s-app: kube-dns
+      kubernetes.io/cluster-service: "true"
+      kubernetes.io/name: CoreDNS
+      objectset.rio.cattle.io/hash: bce283298811743a0386ab510f2f67ef74240c57
+    name: kube-dns
+    namespace: kube-system
+    resourceVersion: "325"
+    uid: ef3ae4eb-1f66-4478-bb75-70418e353b1d
+  spec:
+    clusterIP: 10.43.0.10
+    clusterIPs:
+    - 10.43.0.10
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: dns
+      port: 53
+      protocol: UDP
+      targetPort: 53
+    - name: dns-tcp
+      port: 53
+      protocol: TCP
+      targetPort: 53
+    - name: metrics
+      port: 9153
+      protocol: TCP
+      targetPort: 9153
+    selector:
+      k8s-app: kube-dns
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      objectset.rio.cattle.io/applied: H4sIAAAAAAAA/4SQQWsbMRCF/0p5Z9nNep04FfRQWnopBUNKL6WHWe04VleWhGa8xZj970UbFxLaJCchvZn3vqczKPvvXMSnCIuxgcHgYw+LOy6jdwyDAyv1pAR7BsWYlNSnKPWaul/sVFiXxaelI9XAS5/e+uoA86yefkcui/txgMXQyiNlbMybLz727z/0fYqvWkQ6MGxFLN7JQriMXObjgf31bcnkqsVw7HghJ1E+YDII1HGYO1ahRFaWuujCUfRRhIWWY016Onbh+vqE6wWePckeFnTdt527uWrc7abhZtXuqF11q83uev2uu2HabK46t1tTJfxvdTy8P1NKMrtayefPdPDhtE3BuxMstoV3XD4dKdwpuQEGORUV2B/nvzl71SwXAXa9bg1ySZpcCrD49nELA6Vyz7qdJy4L008D4cBOU5l/81YWlPO/4NM0/QkAAP//sKxN444CAAA
+      objectset.rio.cattle.io/id: ""
+      objectset.rio.cattle.io/owner-gvk: k3s.cattle.io/v1, Kind=Addon
+      objectset.rio.cattle.io/owner-name: metrics-server-service
+      objectset.rio.cattle.io/owner-namespace: kube-system
+    creationTimestamp: "2026-07-28T05:38:11Z"
+    labels:
+      kubernetes.io/cluster-service: "true"
+      kubernetes.io/name: Metrics-server
+      objectset.rio.cattle.io/hash: a5d3bc601c871e123fa32b27f549b6ea770bcf4a
+    name: metrics-server
+    namespace: kube-system
+    resourceVersion: "2122084"
+    uid: c3a135e0-92f5-4ce7-9b84-0d5e80ffc704
+  spec:
+    clusterIP: 10.43.182.50
+    clusterIPs:
+    - 10.43.182.50
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: PreferDualStack
+    ports:
+    - name: https
+      port: 443
+      protocol: TCP
+      targetPort: https
+    selector:
+      k8s-app: metrics-server
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"chatwoot"},"name":"chatwoot","namespace":"shopno-apps"},"spec":{"ports":[{"name":"http","port":80,"protocol":"TCP","targetPort":"http"}],"selector":{"app.kubernetes.io/name":"chatwoot"},"type":"ClusterIP"}}
+    creationTimestamp: "2026-07-28T05:46:05Z"
+    labels:
+      app.kubernetes.io/name: chatwoot
+    name: chatwoot
+    namespace: shopno-apps
+    resourceVersion: "2076596"
+    uid: 60baf6b1-c708-4b19-aa03-3ceaa589b486
+  spec:
+    clusterIP: 10.43.18.118
+    clusterIPs:
+    - 10.43.18.118
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: http
+    selector:
+      app.kubernetes.io/name: chatwoot
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"code-server","app.kubernetes.io/part-of":"shopnoltd"},"name":"code-server","namespace":"shopno-apps"},"spec":{"ports":[{"name":"http","port":80,"protocol":"TCP","targetPort":"http"}],"selector":{"app.kubernetes.io/name":"code-server"},"type":"ClusterIP"}}
+    creationTimestamp: "2026-07-28T05:46:05Z"
+    labels:
+      app.kubernetes.io/name: code-server
+      app.kubernetes.io/part-of: shopnoltd
+    name: code-server
+    namespace: shopno-apps
+    resourceVersion: "2141194"
+    uid: 393af3ad-48a5-4f27-98e6-50fcb0f3000d
+  spec:
+    clusterIP: 10.43.197.165
+    clusterIPs:
+    - 10.43.197.165
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: http
+    selector:
+      app.kubernetes.io/name: code-server
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"enketo","app.kubernetes.io/part-of":"shopnoltd"},"name":"enketo","namespace":"shopno-apps"},"spec":{"ports":[{"name":"http","port":8005,"targetPort":"http"}],"selector":{"app.kubernetes.io/name":"enketo"},"type":"ClusterIP"}}
+    creationTimestamp: "2026-08-03T06:44:10Z"
+    labels:
+      app.kubernetes.io/name: enketo
+      app.kubernetes.io/part-of: shopnoltd
+    name: enketo
+    namespace: shopno-apps
+    resourceVersion: "525643"
+    uid: 68fd5871-735f-4129-b8f0-2ba1d77bdd8e
+  spec:
+    clusterIP: 10.43.253.204
+    clusterIPs:
+    - 10.43.253.204
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: http
+      port: 8005
+      protocol: TCP
+      targetPort: http
+    selector:
+      app.kubernetes.io/name: enketo
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"gitea"},"name":"gitea","namespace":"shopno-apps"},"spec":{"ports":[{"name":"http","port":80,"protocol":"TCP","targetPort":"http"}],"selector":{"app.kubernetes.io/name":"gitea"},"type":"ClusterIP"}}
+    creationTimestamp: "2026-07-28T05:46:06Z"
+    labels:
+      app.kubernetes.io/name: gitea
+    name: gitea
+    namespace: shopno-apps
+    resourceVersion: "2076514"
+    uid: fc089910-1add-477d-a825-0a3cdefcc725
+  spec:
+    clusterIP: 10.43.245.184
+    clusterIPs:
+    - 10.43.245.184
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: http
+    selector:
+      app.kubernetes.io/name: gitea
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"kobotoolbox","app.kubernetes.io/part-of":"shopnoltd"},"name":"kobotoolbox","namespace":"shopno-apps"},"spec":{"ports":[{"name":"http","port":80,"protocol":"TCP","targetPort":8000}],"selector":{"app.kubernetes.io/name":"kobotoolbox"},"type":"ClusterIP"}}
+    creationTimestamp: "2026-08-04T05:55:21Z"
+    labels:
+      app.kubernetes.io/name: kobotoolbox
+      app.kubernetes.io/part-of: shopnoltd
+    name: kobotoolbox
+    namespace: shopno-apps
+    resourceVersion: "1762381"
+    uid: a6fb5f3d-bfed-4af8-a3cd-97f6bd046eb8
+  spec:
+    clusterIP: 10.43.167.21
+    clusterIPs:
+    - 10.43.167.21
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: 8000
+    selector:
+      app.kubernetes.io/component: web
+      app.kubernetes.io/name: kobotoolbox
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"metabase"},"name":"metabase","namespace":"shopno-apps"},"spec":{"ports":[{"name":"http","port":80,"protocol":"TCP","targetPort":"http"}],"selector":{"app.kubernetes.io/name":"metabase"},"type":"ClusterIP"}}
+    creationTimestamp: "2026-07-28T05:46:06Z"
+    labels:
+      app.kubernetes.io/name: metabase
+    name: metabase
+    namespace: shopno-apps
+    resourceVersion: "2076661"
+    uid: 4daaf118-9e8b-495c-aeec-550f80b2bcfb
+  spec:
+    clusterIP: 10.43.215.129
+    clusterIPs:
+    - 10.43.215.129
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: http
+    selector:
+      app.kubernetes.io/name: metabase
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"name":"mongo","namespace":"shopno-apps"},"spec":{"externalName":"mongo.shopno-data.svc.cluster.local","type":"ExternalName"}}
+    creationTimestamp: "2026-07-30T14:44:54Z"
+    name: mongo
+    namespace: shopno-apps
+    resourceVersion: "194277"
+    uid: 27c1066a-c926-4376-a998-27c76e0b5c18
+  spec:
+    externalName: mongo.shopno-data.svc.cluster.local
+    sessionAffinity: None
+    type: ExternalName
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"n8n"},"name":"n8n","namespace":"shopno-apps"},"spec":{"ports":[{"name":"http","port":80,"protocol":"TCP","targetPort":"http"}],"selector":{"app.kubernetes.io/name":"n8n"},"type":"ClusterIP"}}
+    creationTimestamp: "2026-07-28T05:46:06Z"
+    labels:
+      app.kubernetes.io/name: n8n
+    name: n8n
+    namespace: shopno-apps
+    resourceVersion: "2076612"
+    uid: d4ddde69-b3de-4455-9c10-f22d1d76733e
+  spec:
+    clusterIP: 10.43.4.249
+    clusterIPs:
+    - 10.43.4.249
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: http
+    selector:
+      app.kubernetes.io/name: n8n
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"nextcloud"},"name":"nextcloud","namespace":"shopno-apps"},"spec":{"ports":[{"name":"http","port":80,"protocol":"TCP","targetPort":"http"}],"selector":{"app.kubernetes.io/name":"nextcloud"},"type":"ClusterIP"}}
+    creationTimestamp: "2026-07-28T05:46:06Z"
+    labels:
+      app.kubernetes.io/name: nextcloud
+    name: nextcloud
+    namespace: shopno-apps
+    resourceVersion: "2076558"
+    uid: b82a9e99-f596-48da-a9c0-2c4b0a3ca892
+  spec:
+    clusterIP: 10.43.112.61
+    clusterIPs:
+    - 10.43.112.61
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: http
+    selector:
+      app.kubernetes.io/name: nextcloud
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"onlyoffice"},"name":"onlyoffice","namespace":"shopno-apps"},"spec":{"ports":[{"name":"http","port":80,"protocol":"TCP","targetPort":"http"}],"selector":{"app.kubernetes.io/name":"onlyoffice"},"type":"ClusterIP"}}
+    creationTimestamp: "2026-07-28T05:46:06Z"
+    labels:
+      app.kubernetes.io/name: onlyoffice
+    name: onlyoffice
+    namespace: shopno-apps
+    resourceVersion: "2076576"
+    uid: d64984b6-81ab-4dcb-819a-825d68ed34a9
+  spec:
+    clusterIP: 10.43.123.136
+    clusterIPs:
+    - 10.43.123.136
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: http
+    selector:
+      app.kubernetes.io/name: onlyoffice
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"owncast"},"name":"owncast","namespace":"shopno-apps"},"spec":{"ports":[{"name":"http","port":80,"protocol":"TCP","targetPort":"http"}],"selector":{"app.kubernetes.io/name":"owncast"},"type":"ClusterIP"}}
+    creationTimestamp: "2026-07-28T05:46:06Z"
+    labels:
+      app.kubernetes.io/name: owncast
+    name: owncast
+    namespace: shopno-apps
+    resourceVersion: "2076713"
+    uid: a57b0846-b99f-4c00-8bac-0f46023ff51e
+  spec:
+    clusterIP: 10.43.211.201
+    clusterIPs:
+    - 10.43.211.201
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: http
+    selector:
+      app.kubernetes.io/name: owncast
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"superset"},"name":"superset","namespace":"shopno-apps"},"spec":{"ports":[{"name":"http","port":80,"protocol":"TCP","targetPort":"http"}],"selector":{"app.kubernetes.io/name":"superset"},"type":"ClusterIP"}}
+    creationTimestamp: "2026-07-28T05:46:06Z"
+    labels:
+      app.kubernetes.io/name: superset
+    name: superset
+    namespace: shopno-apps
+    resourceVersion: "2076758"
+    uid: 622f8da4-ea24-4ee3-b66f-044bb96e5c85
+  spec:
+    clusterIP: 10.43.183.238
+    clusterIPs:
+    - 10.43.183.238
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: http
+    selector:
+      app.kubernetes.io/name: superset
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"minio","app.kubernetes.io/part-of":"shopnoltd"},"name":"minio","namespace":"shopno-data"},"spec":{"ports":[{"name":"http","port":80,"protocol":"TCP","targetPort":"http"}],"selector":{"app.kubernetes.io/name":"minio"},"type":"ClusterIP"}}
+    creationTimestamp: "2026-07-28T05:46:06Z"
+    labels:
+      app.kubernetes.io/name: minio
+      app.kubernetes.io/part-of: shopnoltd
+    name: minio
+    namespace: shopno-data
+    resourceVersion: "1046"
+    uid: b1ce9056-cafa-4f30-b353-f929ca062ae6
+  spec:
+    clusterIP: 10.43.25.105
+    clusterIPs:
+    - 10.43.25.105
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: http
+    selector:
+      app.kubernetes.io/name: minio
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"name":"mongo","namespace":"shopno-data"},"spec":{"ports":[{"port":27017,"targetPort":27017}],"selector":{"app":"mongo"}}}
+    creationTimestamp: "2026-07-30T13:45:45Z"
+    name: mongo
+    namespace: shopno-data
+    resourceVersion: "190379"
+    uid: e36b62e8-5050-4d89-a964-d0afe2c406e1
+  spec:
+    clusterIP: 10.43.149.166
+    clusterIPs:
+    - 10.43.149.166
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - port: 27017
+      protocol: TCP
+      targetPort: 27017
+    selector:
+      app: mongo
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"opensearch","app.kubernetes.io/part-of":"shopnoltd"},"name":"opensearch","namespace":"shopno-data"},"spec":{"ports":[{"name":"http","port":80,"protocol":"TCP","targetPort":"http"}],"selector":{"app.kubernetes.io/name":"opensearch"},"type":"ClusterIP"}}
+    creationTimestamp: "2026-07-28T05:46:06Z"
+    labels:
+      app.kubernetes.io/name: opensearch
+      app.kubernetes.io/part-of: shopnoltd
+    name: opensearch
+    namespace: shopno-data
+    resourceVersion: "1050"
+    uid: 063a53cb-6015-40eb-aa6e-18bc728eaebb
+  spec:
+    clusterIP: 10.43.21.15
+    clusterIPs:
+    - 10.43.21.15
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: http
+    selector:
+      app.kubernetes.io/name: opensearch
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"postgres","app.kubernetes.io/part-of":"shopnoltd"},"name":"postgres","namespace":"shopno-data"},"spec":{"ports":[{"name":"postgres","port":5432,"targetPort":5432}],"selector":{"app.kubernetes.io/name":"postgres"},"type":"ClusterIP"}}
+    creationTimestamp: "2026-07-28T05:46:06Z"
+    labels:
+      app.kubernetes.io/name: postgres
+      app.kubernetes.io/part-of: shopnoltd
+    name: postgres
+    namespace: shopno-data
+    resourceVersion: "1054"
+    uid: dcca35d2-421c-4928-9430-641891569fc3
+  spec:
+    clusterIP: 10.43.227.219
+    clusterIPs:
+    - 10.43.227.219
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: postgres
+      port: 5432
+      protocol: TCP
+      targetPort: 5432
+    selector:
+      app.kubernetes.io/name: postgres
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"redis","app.kubernetes.io/part-of":"shopnoltd"},"name":"redis","namespace":"shopno-data"},"spec":{"ports":[{"name":"redis","port":6379,"protocol":"TCP","targetPort":"redis"}],"selector":{"app.kubernetes.io/name":"redis"},"type":"ClusterIP"}}
+    creationTimestamp: "2026-07-28T05:46:06Z"
+    labels:
+      app.kubernetes.io/name: redis
+      app.kubernetes.io/part-of: shopnoltd
+    name: redis
+    namespace: shopno-data
+    resourceVersion: "1159742"
+    uid: fa1990da-b6a2-48b4-8241-337b2d456eca
+  spec:
+    clusterIP: 10.43.60.121
+    clusterIPs:
+    - 10.43.60.121
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: redis
+      port: 6379
+      protocol: TCP
+      targetPort: redis
+    selector:
+      app.kubernetes.io/name: redis
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"auth-service","app.kubernetes.io/part-of":"shopnoltd"},"name":"auth-service","namespace":"shopno-identity"},"spec":{"ports":[{"name":"http","port":80,"protocol":"TCP","targetPort":"http"}],"selector":{"app.kubernetes.io/name":"auth-service"},"type":"ClusterIP"}}
+    creationTimestamp: "2026-07-28T05:46:06Z"
+    labels:
+      app.kubernetes.io/name: auth-service
+      app.kubernetes.io/part-of: shopnoltd
+    name: auth-service
+    namespace: shopno-identity
+    resourceVersion: "1063"
+    uid: 0ce65480-d09f-4e4c-b8ae-02e72270c34b
+  spec:
+    clusterIP: 10.43.32.91
+    clusterIPs:
+    - 10.43.32.91
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: http
+    selector:
+      app.kubernetes.io/name: auth-service
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"keycloak","app.kubernetes.io/part-of":"shopnoltd"},"name":"keycloak","namespace":"shopno-identity"},"spec":{"ports":[{"name":"http","port":80,"protocol":"TCP","targetPort":"http"},{"name":"management","port":9000,"protocol":"TCP","targetPort":"management"}],"selector":{"app.kubernetes.io/name":"keycloak"},"type":"ClusterIP"}}
+    creationTimestamp: "2026-07-28T05:46:06Z"
+    labels:
+      app.kubernetes.io/name: keycloak
+      app.kubernetes.io/part-of: shopnoltd
+    name: keycloak
+    namespace: shopno-identity
+    resourceVersion: "1066111"
+    uid: 62627a92-896f-4b35-8cd8-3c628f4ecaef
+  spec:
+    clusterIP: 10.43.235.90
+    clusterIPs:
+    - 10.43.235.90
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: http
+    - name: management
+      port: 9000
+      protocol: TCP
+      targetPort: management
+    selector:
+      app.kubernetes.io/name: keycloak
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"oauth-service","app.kubernetes.io/part-of":"shopnoltd"},"name":"oauth-service","namespace":"shopno-identity"},"spec":{"ports":[{"name":"http","port":80,"protocol":"TCP","targetPort":"http"}],"selector":{"app.kubernetes.io/name":"oauth-service"},"type":"ClusterIP"}}
+    creationTimestamp: "2026-07-28T05:46:06Z"
+    labels:
+      app.kubernetes.io/name: oauth-service
+      app.kubernetes.io/part-of: shopnoltd
+    name: oauth-service
+    namespace: shopno-identity
+    resourceVersion: "1071"
+    uid: d20c8ec1-e5b4-47bd-aa30-f58c66525527
+  spec:
+    clusterIP: 10.43.212.92
+    clusterIPs:
+    - 10.43.212.92
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: http
+    selector:
+      app.kubernetes.io/name: oauth-service
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"name":"cloudflared","namespace":"shopno-ingress"},"spec":{"ports":[{"name":"metrics","port":2000,"targetPort":2000}],"selector":{"app.kubernetes.io/name":"cloudflared"},"type":"ClusterIP"}}
+    creationTimestamp: "2026-07-28T05:46:06Z"
+    name: cloudflared
+    namespace: shopno-ingress
+    resourceVersion: "1075"
+    uid: 4b04f516-d5b1-4c61-a7db-de73890d4089
+  spec:
+    clusterIP: 10.43.243.183
+    clusterIPs:
+    - 10.43.243.183
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: metrics
+      port: 2000
+      protocol: TCP
+      targetPort: 2000
+    selector:
+      app.kubernetes.io/name: cloudflared
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"name":"mail-service","namespace":"shopno-mail"},"spec":{"ports":[{"port":80,"targetPort":8080}],"selector":{"app":"mail-service"}}}
+    creationTimestamp: "2026-07-31T15:26:49Z"
+    name: mail-service
+    namespace: shopno-mail
+    resourceVersion: "425613"
+    uid: 3982d28e-2706-4bd6-b28e-e831893aa0dd
+  spec:
+    clusterIP: 10.43.177.231
+    clusterIPs:
+    - 10.43.177.231
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - port: 80
+      protocol: TCP
+      targetPort: 8080
+    selector:
+      app: mail-service
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"alertmanager","app.kubernetes.io/part-of":"shopnoltd"},"name":"alertmanager","namespace":"shopno-monitoring"},"spec":{"ports":[{"name":"http","port":80,"protocol":"TCP","targetPort":"http"}],"selector":{"app.kubernetes.io/name":"alertmanager"},"type":"ClusterIP"}}
+    creationTimestamp: "2026-07-28T05:46:06Z"
+    labels:
+      app.kubernetes.io/name: alertmanager
+      app.kubernetes.io/part-of: shopnoltd
+    name: alertmanager
+    namespace: shopno-monitoring
+    resourceVersion: "1079"
+    uid: c28d537e-e7c9-4627-9efe-c65537591790
+  spec:
+    clusterIP: 10.43.228.164
+    clusterIPs:
+    - 10.43.228.164
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: http
+    selector:
+      app.kubernetes.io/name: alertmanager
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"grafana","app.kubernetes.io/part-of":"shopnoltd"},"name":"grafana","namespace":"shopno-monitoring"},"spec":{"ports":[{"name":"http","port":80,"protocol":"TCP","targetPort":"http"}],"selector":{"app.kubernetes.io/name":"grafana"},"type":"ClusterIP"}}
+    creationTimestamp: "2026-07-28T05:46:06Z"
+    labels:
+      app.kubernetes.io/name: grafana
+      app.kubernetes.io/part-of: shopnoltd
+    name: grafana
+    namespace: shopno-monitoring
+    resourceVersion: "1083"
+    uid: 91954d2f-d20b-449e-bc10-4f5592b8c629
+  spec:
+    clusterIP: 10.43.114.11
+    clusterIPs:
+    - 10.43.114.11
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: http
+    selector:
+      app.kubernetes.io/name: grafana
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"loki","app.kubernetes.io/part-of":"shopnoltd"},"name":"loki","namespace":"shopno-monitoring"},"spec":{"ports":[{"name":"http","port":80,"protocol":"TCP","targetPort":"http"}],"selector":{"app.kubernetes.io/name":"loki"},"type":"ClusterIP"}}
+    creationTimestamp: "2026-07-28T05:46:06Z"
+    labels:
+      app.kubernetes.io/name: loki
+      app.kubernetes.io/part-of: shopnoltd
+    name: loki
+    namespace: shopno-monitoring
+    resourceVersion: "1087"
+    uid: f7a6ed79-bb3b-4b7a-b27a-28246189c023
+  spec:
+    clusterIP: 10.43.208.200
+    clusterIPs:
+    - 10.43.208.200
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: http
+    selector:
+      app.kubernetes.io/name: loki
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"prometheus","app.kubernetes.io/part-of":"shopnoltd"},"name":"prometheus","namespace":"shopno-monitoring"},"spec":{"ports":[{"name":"http","port":80,"protocol":"TCP","targetPort":"http"}],"selector":{"app.kubernetes.io/name":"prometheus"},"type":"ClusterIP"}}
+    creationTimestamp: "2026-07-28T05:46:06Z"
+    labels:
+      app.kubernetes.io/name: prometheus
+      app.kubernetes.io/part-of: shopnoltd
+    name: prometheus
+    namespace: shopno-monitoring
+    resourceVersion: "1091"
+    uid: bf6c3c5c-b63e-4986-a7ce-de2fc36c5129
+  spec:
+    clusterIP: 10.43.40.115
+    clusterIPs:
+    - 10.43.40.115
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: http
+    selector:
+      app.kubernetes.io/name: prometheus
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"billing-engine","app.kubernetes.io/part-of":"shopnoltd"},"name":"billing-engine","namespace":"shopno-payments"},"spec":{"ports":[{"name":"http","port":80,"protocol":"TCP","targetPort":5000}],"selector":{"app.kubernetes.io/name":"billing-engine"},"type":"ClusterIP"}}
+    creationTimestamp: "2026-07-28T05:46:06Z"
+    labels:
+      app.kubernetes.io/name: billing-engine
+      app.kubernetes.io/part-of: shopnoltd
+    name: billing-engine
+    namespace: shopno-payments
+    resourceVersion: "1095"
+    uid: 757fbad8-f5c6-45b1-9e44-80d18ed3241d
+  spec:
+    clusterIP: 10.43.155.166
+    clusterIPs:
+    - 10.43.155.166
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: 5000
+    selector:
+      app.kubernetes.io/name: billing-engine
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"admin-portal","app.kubernetes.io/part-of":"shopnoltd"},"name":"admin-portal","namespace":"shopno-platform"},"spec":{"ports":[{"name":"http","port":80,"protocol":"TCP","targetPort":"http"}],"selector":{"app.kubernetes.io/name":"admin-portal"},"type":"ClusterIP"}}
+    creationTimestamp: "2026-07-28T05:46:06Z"
+    labels:
+      app.kubernetes.io/name: admin-portal
+      app.kubernetes.io/part-of: shopnoltd
+    name: admin-portal
+    namespace: shopno-platform
+    resourceVersion: "1099"
+    uid: 09dc279b-6165-4b01-ac8e-e1968eb16b45
+  spec:
+    clusterIP: 10.43.54.78
+    clusterIPs:
+    - 10.43.54.78
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: http
+    selector:
+      app.kubernetes.io/name: admin-portal
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"ai-platform","app.kubernetes.io/part-of":"shopnoltd"},"name":"ai-platform","namespace":"shopno-platform"},"spec":{"ports":[{"name":"http","port":80,"protocol":"TCP","targetPort":"http"}],"selector":{"app.kubernetes.io/name":"ai-platform"},"type":"ClusterIP"}}
+    creationTimestamp: "2026-07-28T05:46:06Z"
+    labels:
+      app.kubernetes.io/name: ai-platform
+      app.kubernetes.io/part-of: shopnoltd
+    name: ai-platform
+    namespace: shopno-platform
+    resourceVersion: "1397463"
+    uid: 93fa85e3-44a9-4d33-a4a9-63a1431d7ef7
+  spec:
+    clusterIP: 10.43.174.1
+    clusterIPs:
+    - 10.43.174.1
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: http
+    selector:
+      app.kubernetes.io/name: ai-platform
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"analytics-service","app.kubernetes.io/part-of":"shopnoltd"},"name":"analytics-service","namespace":"shopno-platform"},"spec":{"ports":[{"name":"http","port":80,"protocol":"TCP","targetPort":"http"}],"selector":{"app.kubernetes.io/name":"analytics-service"},"type":"ClusterIP"}}
+    creationTimestamp: "2026-07-28T05:46:06Z"
+    labels:
+      app.kubernetes.io/name: analytics-service
+      app.kubernetes.io/part-of: shopnoltd
+    name: analytics-service
+    namespace: shopno-platform
+    resourceVersion: "1107"
+    uid: 64448e8e-4eb8-4bb9-b256-0915797cfae1
+  spec:
+    clusterIP: 10.43.213.147
+    clusterIPs:
+    - 10.43.213.147
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: http
+    selector:
+      app.kubernetes.io/name: analytics-service
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"android-portal","app.kubernetes.io/part-of":"shopnoltd"},"name":"android-portal","namespace":"shopno-platform"},"spec":{"ports":[{"name":"http","port":80,"protocol":"TCP","targetPort":"http"}],"selector":{"app.kubernetes.io/name":"android-portal"},"type":"ClusterIP"}}
+    creationTimestamp: "2026-07-28T05:46:06Z"
+    labels:
+      app.kubernetes.io/name: android-portal
+      app.kubernetes.io/part-of: shopnoltd
+    name: android-portal
+    namespace: shopno-platform
+    resourceVersion: "1111"
+    uid: fb0218bf-928c-4cf7-9012-bda79d0d08ac
+  spec:
+    clusterIP: 10.43.193.221
+    clusterIPs:
+    - 10.43.193.221
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: http
+    selector:
+      app.kubernetes.io/name: android-portal
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"api-service","app.kubernetes.io/part-of":"shopnoltd"},"name":"api-service","namespace":"shopno-platform"},"spec":{"ports":[{"name":"http","port":80,"protocol":"TCP","targetPort":"http"}],"selector":{"app.kubernetes.io/name":"api-service"},"type":"ClusterIP"}}
+    creationTimestamp: "2026-07-28T05:46:06Z"
+    labels:
+      app.kubernetes.io/name: api-service
+      app.kubernetes.io/part-of: shopnoltd
+    name: api-service
+    namespace: shopno-platform
+    resourceVersion: "1115"
+    uid: 5f62bab2-f877-431f-b5a0-26f07d0e8b14
+  spec:
+    clusterIP: 10.43.243.8
+    clusterIPs:
+    - 10.43.243.8
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: http
+    selector:
+      app.kubernetes.io/name: api-service
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"audit-service","app.kubernetes.io/part-of":"shopnoltd"},"name":"audit-service","namespace":"shopno-platform"},"spec":{"ports":[{"name":"http","port":80,"protocol":"TCP","targetPort":"http"}],"selector":{"app.kubernetes.io/name":"audit-service"},"type":"ClusterIP"}}
+    creationTimestamp: "2026-07-28T05:46:06Z"
+    labels:
+      app.kubernetes.io/name: audit-service
+      app.kubernetes.io/part-of: shopnoltd
+    name: audit-service
+    namespace: shopno-platform
+    resourceVersion: "1119"
+    uid: b594140a-a0d0-44e5-a93e-d2ce13bd856a
+  spec:
+    clusterIP: 10.43.107.189
+    clusterIPs:
+    - 10.43.107.189
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: http
+    selector:
+      app.kubernetes.io/name: audit-service
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"domain-service","app.kubernetes.io/part-of":"shopnoltd"},"name":"domain-service","namespace":"shopno-platform"},"spec":{"ports":[{"name":"http","port":80,"protocol":"TCP","targetPort":"http"}],"selector":{"app.kubernetes.io/name":"domain-service"},"type":"ClusterIP"}}
+    creationTimestamp: "2026-07-28T05:46:06Z"
+    labels:
+      app.kubernetes.io/name: domain-service
+      app.kubernetes.io/part-of: shopnoltd
+    name: domain-service
+    namespace: shopno-platform
+    resourceVersion: "1123"
+    uid: 1d0fd702-31af-4a89-8907-74dd14470bb0
+  spec:
+    clusterIP: 10.43.229.178
+    clusterIPs:
+    - 10.43.229.178
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: http
+    selector:
+      app.kubernetes.io/name: domain-service
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"event-service","app.kubernetes.io/part-of":"shopnoltd"},"name":"event-service","namespace":"shopno-platform"},"spec":{"ports":[{"name":"http","port":80,"protocol":"TCP","targetPort":"http"}],"selector":{"app.kubernetes.io/name":"event-service"},"type":"ClusterIP"}}
+    creationTimestamp: "2026-07-28T05:46:06Z"
+    labels:
+      app.kubernetes.io/name: event-service
+      app.kubernetes.io/part-of: shopnoltd
+    name: event-service
+    namespace: shopno-platform
+    resourceVersion: "1127"
+    uid: 9380a79d-93b0-426d-ab18-9b8a58c6249b
+  spec:
+    clusterIP: 10.43.67.18
+    clusterIPs:
+    - 10.43.67.18
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: http
+    selector:
+      app.kubernetes.io/name: event-service
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"foundation-service","app.kubernetes.io/part-of":"shopnoltd"},"name":"foundation-service","namespace":"shopno-platform"},"spec":{"ports":[{"name":"http","port":80,"protocol":"TCP","targetPort":"http"}],"selector":{"app.kubernetes.io/name":"foundation-service"},"type":"ClusterIP"}}
+    creationTimestamp: "2026-07-28T05:46:06Z"
+    labels:
+      app.kubernetes.io/name: foundation-service
+      app.kubernetes.io/part-of: shopnoltd
+    name: foundation-service
+    namespace: shopno-platform
+    resourceVersion: "1131"
+    uid: facc7421-c330-4267-aa17-442581357636
+  spec:
+    clusterIP: 10.43.158.86
+    clusterIPs:
+    - 10.43.158.86
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: http
+    selector:
+      app.kubernetes.io/name: foundation-service
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"freedomain-service","app.kubernetes.io/part-of":"shopnoltd"},"name":"freedomain-service","namespace":"shopno-platform"},"spec":{"ports":[{"name":"http","port":80,"protocol":"TCP","targetPort":"http"}],"selector":{"app.kubernetes.io/name":"freedomain-service"},"type":"ClusterIP"}}
+    creationTimestamp: "2026-07-28T05:46:06Z"
+    labels:
+      app.kubernetes.io/name: freedomain-service
+      app.kubernetes.io/part-of: shopnoltd
+    name: freedomain-service
+    namespace: shopno-platform
+    resourceVersion: "1135"
+    uid: 21d7b5df-b8e4-460e-ac4c-72d4bb773d3b
+  spec:
+    clusterIP: 10.43.138.76
+    clusterIPs:
+    - 10.43.138.76
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: http
+    selector:
+      app.kubernetes.io/name: freedomain-service
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"gateway","app.kubernetes.io/part-of":"shopnoltd"},"name":"gateway","namespace":"shopno-platform"},"spec":{"ports":[{"name":"http","port":80,"protocol":"TCP","targetPort":"http"}],"selector":{"app.kubernetes.io/name":"gateway"},"type":"ClusterIP"}}
+    creationTimestamp: "2026-07-28T05:46:06Z"
+    labels:
+      app.kubernetes.io/name: gateway
+      app.kubernetes.io/part-of: shopnoltd
+    name: gateway
+    namespace: shopno-platform
+    resourceVersion: "337451"
+    uid: 2207fe20-30c2-4d48-88a2-b64156cce5c9
+  spec:
+    clusterIP: 10.43.36.16
+    clusterIPs:
+    - 10.43.36.16
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: http
+    selector:
+      app.kubernetes.io/name: gateway
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"interior-service","app.kubernetes.io/part-of":"shopnoltd"},"name":"interior-service","namespace":"shopno-platform"},"spec":{"ports":[{"name":"http","port":80,"protocol":"TCP","targetPort":"http"}],"selector":{"app.kubernetes.io/name":"interior-service"},"type":"ClusterIP"}}
+    creationTimestamp: "2026-07-28T05:46:06Z"
+    labels:
+      app.kubernetes.io/name: interior-service
+      app.kubernetes.io/part-of: shopnoltd
+    name: interior-service
+    namespace: shopno-platform
+    resourceVersion: "1143"
+    uid: 2f5ae7aa-2ac2-4321-972e-0f74037d290c
+  spec:
+    clusterIP: 10.43.197.91
+    clusterIPs:
+    - 10.43.197.91
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: http
+    selector:
+      app.kubernetes.io/name: interior-service
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"license-service","app.kubernetes.io/part-of":"shopnoltd"},"name":"license-service","namespace":"shopno-platform"},"spec":{"ports":[{"name":"http","port":80,"protocol":"TCP","targetPort":"http"}],"selector":{"app.kubernetes.io/name":"license-service"},"type":"ClusterIP"}}
+    creationTimestamp: "2026-07-28T05:46:06Z"
+    labels:
+      app.kubernetes.io/name: license-service
+      app.kubernetes.io/part-of: shopnoltd
+    name: license-service
+    namespace: shopno-platform
+    resourceVersion: "1147"
+    uid: 4b6b2973-7098-4dce-8c13-d8f394ee503a
+  spec:
+    clusterIP: 10.43.74.242
+    clusterIPs:
+    - 10.43.74.242
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: http
+    selector:
+      app.kubernetes.io/name: license-service
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"mobile-api","app.kubernetes.io/part-of":"shopnoltd"},"name":"mobile-api","namespace":"shopno-platform"},"spec":{"ports":[{"name":"http","port":80,"protocol":"TCP","targetPort":"http"}],"selector":{"app.kubernetes.io/name":"mobile-api"},"type":"ClusterIP"}}
+    creationTimestamp: "2026-07-28T05:46:06Z"
+    labels:
+      app.kubernetes.io/name: mobile-api
+      app.kubernetes.io/part-of: shopnoltd
+    name: mobile-api
+    namespace: shopno-platform
+    resourceVersion: "1151"
+    uid: ea7347a7-caf4-4c25-8fb7-d510fe694a59
+  spec:
+    clusterIP: 10.43.158.151
+    clusterIPs:
+    - 10.43.158.151
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: http
+    selector:
+      app.kubernetes.io/name: mobile-api
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"notification-service","app.kubernetes.io/part-of":"shopnoltd"},"name":"notification-service","namespace":"shopno-platform"},"spec":{"ports":[{"name":"http","port":80,"protocol":"TCP","targetPort":"http"}],"selector":{"app.kubernetes.io/name":"notification-service"},"type":"ClusterIP"}}
+    creationTimestamp: "2026-07-28T05:46:07Z"
+    labels:
+      app.kubernetes.io/name: notification-service
+      app.kubernetes.io/part-of: shopnoltd
+    name: notification-service
+    namespace: shopno-platform
+    resourceVersion: "1155"
+    uid: 2fd3cc77-8ff4-4c58-8303-1e36effac301
+  spec:
+    clusterIP: 10.43.10.235
+    clusterIPs:
+    - 10.43.10.235
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: http
+    selector:
+      app.kubernetes.io/name: notification-service
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"report-service","app.kubernetes.io/part-of":"shopnoltd"},"name":"report-service","namespace":"shopno-platform"},"spec":{"ports":[{"name":"http","port":80,"protocol":"TCP","targetPort":"http"}],"selector":{"app.kubernetes.io/name":"report-service"},"type":"ClusterIP"}}
+    creationTimestamp: "2026-07-28T05:46:07Z"
+    labels:
+      app.kubernetes.io/name: report-service
+      app.kubernetes.io/part-of: shopnoltd
+    name: report-service
+    namespace: shopno-platform
+    resourceVersion: "1159"
+    uid: 19795484-23ee-4fbf-b5d8-032fd692d979
+  spec:
+    clusterIP: 10.43.91.89
+    clusterIPs:
+    - 10.43.91.89
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: http
+    selector:
+      app.kubernetes.io/name: report-service
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"search-service","app.kubernetes.io/part-of":"shopnoltd"},"name":"search-service","namespace":"shopno-platform"},"spec":{"ports":[{"name":"http","port":80,"protocol":"TCP","targetPort":"http"}],"selector":{"app.kubernetes.io/name":"search-service"},"type":"ClusterIP"}}
+    creationTimestamp: "2026-07-28T05:46:07Z"
+    labels:
+      app.kubernetes.io/name: search-service
+      app.kubernetes.io/part-of: shopnoltd
+    name: search-service
+    namespace: shopno-platform
+    resourceVersion: "1163"
+    uid: 685e8c09-934c-430b-ae05-415c698064a0
+  spec:
+    clusterIP: 10.43.75.248
+    clusterIPs:
+    - 10.43.75.248
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: http
+    selector:
+      app.kubernetes.io/name: search-service
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"name":"shopnoltd-web","namespace":"shopno-platform"},"spec":{"ports":[{"name":"http","port":80,"targetPort":"http"}],"selector":{"app.kubernetes.io/name":"shopnoltd-web"},"type":"ClusterIP"}}
+    creationTimestamp: "2026-08-12T13:43:34Z"
+    name: shopnoltd-web
+    namespace: shopno-platform
+    resourceVersion: "1991822"
+    uid: bd312b62-d653-4296-9b27-a40f215802bd
+  spec:
+    clusterIP: 10.43.69.197
+    clusterIPs:
+    - 10.43.69.197
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: http
+    selector:
+      app.kubernetes.io/name: shopnoltd-web
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"storage-service","app.kubernetes.io/part-of":"shopnoltd"},"name":"storage-service","namespace":"shopno-platform"},"spec":{"ports":[{"name":"http","port":80,"protocol":"TCP","targetPort":"http"}],"selector":{"app.kubernetes.io/name":"storage-service"},"type":"ClusterIP"}}
+    creationTimestamp: "2026-07-28T05:46:07Z"
+    labels:
+      app.kubernetes.io/name: storage-service
+      app.kubernetes.io/part-of: shopnoltd
+    name: storage-service
+    namespace: shopno-platform
+    resourceVersion: "1167"
+    uid: 44351bab-6598-479a-97f7-1d4a065fde88
+  spec:
+    clusterIP: 10.43.84.24
+    clusterIPs:
+    - 10.43.84.24
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: http
+    selector:
+      app.kubernetes.io/name: storage-service
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"tenant-router","app.kubernetes.io/part-of":"shopnoltd"},"name":"tenant-router","namespace":"shopno-platform"},"spec":{"ports":[{"name":"http","port":80,"protocol":"TCP","targetPort":"http"}],"selector":{"app.kubernetes.io/name":"tenant-router"},"type":"ClusterIP"}}
+    creationTimestamp: "2026-07-28T05:46:07Z"
+    labels:
+      app.kubernetes.io/name: tenant-router
+      app.kubernetes.io/part-of: shopnoltd
+    name: tenant-router
+    namespace: shopno-platform
+    resourceVersion: "1171"
+    uid: a531bc18-a28d-4083-8019-63bf8d34e3dd
+  spec:
+    clusterIP: 10.43.150.58
+    clusterIPs:
+    - 10.43.150.58
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: http
+    selector:
+      app.kubernetes.io/name: tenant-router
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"training-service","app.kubernetes.io/part-of":"shopnoltd"},"name":"training-service","namespace":"shopno-platform"},"spec":{"ports":[{"name":"http","port":80,"protocol":"TCP","targetPort":"http"}],"selector":{"app.kubernetes.io/name":"training-service"},"type":"ClusterIP"}}
+    creationTimestamp: "2026-07-28T05:46:07Z"
+    labels:
+      app.kubernetes.io/name: training-service
+      app.kubernetes.io/part-of: shopnoltd
+    name: training-service
+    namespace: shopno-platform
+    resourceVersion: "1175"
+    uid: 4d0795ea-e2f9-4a88-b029-27a196bb911e
+  spec:
+    clusterIP: 10.43.202.73
+    clusterIPs:
+    - 10.43.202.73
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: http
+    selector:
+      app.kubernetes.io/name: training-service
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"web-portal","app.kubernetes.io/part-of":"shopnoltd"},"name":"web-portal","namespace":"shopno-platform"},"spec":{"ports":[{"name":"http","port":80,"protocol":"TCP","targetPort":"http"}],"selector":{"app.kubernetes.io/name":"web-portal"},"type":"ClusterIP"}}
+    creationTimestamp: "2026-07-28T05:46:07Z"
+    labels:
+      app.kubernetes.io/name: web-portal
+      app.kubernetes.io/part-of: shopnoltd
+    name: web-portal
+    namespace: shopno-platform
+    resourceVersion: "1179"
+    uid: 61f99ddb-bd08-4792-bba1-5e569b1c8b56
+  spec:
+    clusterIP: 10.43.241.37
+    clusterIPs:
+    - 10.43.241.37
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: http
+    selector:
+      app.kubernetes.io/name: web-portal
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"worker-service","app.kubernetes.io/part-of":"shopnoltd"},"name":"worker-service","namespace":"shopno-platform"},"spec":{"ports":[{"name":"http","port":80,"protocol":"TCP","targetPort":"http"}],"selector":{"app.kubernetes.io/name":"worker-service"},"type":"ClusterIP"}}
+    creationTimestamp: "2026-07-28T05:46:07Z"
+    labels:
+      app.kubernetes.io/name: worker-service
+      app.kubernetes.io/part-of: shopnoltd
+    name: worker-service
+    namespace: shopno-platform
+    resourceVersion: "1183"
+    uid: d37629f6-b65b-42ff-9255-bc8fd45ab0a1
+  spec:
+    clusterIP: 10.43.110.124
+    clusterIPs:
+    - 10.43.110.124
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: http
+    selector:
+      app.kubernetes.io/name: worker-service
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+kind: List
+metadata:
+  resourceVersion: ""

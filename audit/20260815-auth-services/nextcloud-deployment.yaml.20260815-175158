@@ -1,10 +1,10 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: auth-service
-  namespace: shopno-identity
+  name: nextcloud
+  namespace: shopno-apps
   labels:
-    app.kubernetes.io/name: auth-service
+    app.kubernetes.io/name: nextcloud
 spec:
   replicas: 1
   strategy:
@@ -14,17 +14,17 @@ spec:
       maxUnavailable: 0
   selector:
     matchLabels:
-      app.kubernetes.io/name: auth-service
+      app.kubernetes.io/name: nextcloud
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: auth-service
+        app.kubernetes.io/name: nextcloud
       annotations:
         prometheus.io/scrape: "true"
-        prometheus.io/port: "8080"
+        prometheus.io/port: "80"
         prometheus.io/path: "/metrics"
     spec:
-      serviceAccountName: auth-service
+      serviceAccountName: nextcloud
       automountServiceAccountToken: false
       securityContext:
         runAsNonRoot: true
@@ -33,32 +33,34 @@ spec:
         fsGroup: 10001
         seccompProfile:
           type: RuntimeDefault
+      initContainers:
+        - name: seed-php-confd
+          image: nextcloud:latest
+          command: ["sh", "-c", "cp -a /usr/local/etc/php/conf.d/. /php-confd-writable/"]
+          volumeMounts:
+            - name: php-confd
+              mountPath: /php-confd-writable
       containers:
-        - name: auth-service
-          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/auth-service:fixed
+        - name: nextcloud
+          image: nextcloud:latest
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
-              containerPort: 8080
+              containerPort: 80
               protocol: TCP
           envFrom:
             - configMapRef:
-                name: auth-service-config
+                name: nextcloud-config
             - secretRef:
-                name: auth-service-secret
+                name: nextcloud-secret
           env:
             - name: POD_NAME
               valueFrom: { fieldRef: { fieldPath: metadata.name } }
             - name: POD_NAMESPACE
               valueFrom: { fieldRef: { fieldPath: metadata.namespace } }
-            - name: DATABASE_URL
-              valueFrom:
-                secretKeyRef:
-                  name: auth-service-secret
-                  key: database-url
           resources:
             requests:
-              cpu: 20m
+              cpu: 100m
               memory: 128Mi
               ephemeral-storage: 256Mi
             limits:
@@ -69,30 +71,32 @@ spec:
             httpGet:
               path: /healthz
               port: http
-            initialDelaySeconds: 90
+            initialDelaySeconds: 30
             periodSeconds: 10
-            timeoutSeconds: 5
+            timeoutSeconds: 3
             failureThreshold: 3
           readinessProbe:
             httpGet:
               path: /readyz
               port: http
-            initialDelaySeconds: 75
+            initialDelaySeconds: 5
             periodSeconds: 5
             timeoutSeconds: 3
-            failureThreshold: 5
+            failureThreshold: 3
           startupProbe:
             httpGet:
               path: /healthz
               port: http
-            initialDelaySeconds: 30
+            initialDelaySeconds: 10
             periodSeconds: 5
-            failureThreshold: 120
+            failureThreshold: 30
           volumeMounts:
             - name: data
-              mountPath: /var/lib/auth-service
+              mountPath: /var/lib/nextcloud
             - name: tmp
               mountPath: /tmp
+            - name: php-confd
+              mountPath: /usr/local/etc/php/conf.d
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
@@ -100,8 +104,11 @@ spec:
               drop: ["ALL"]
       volumes:
         - name: data
-          emptyDir: {}
+          persistentVolumeClaim:
+            claimName: nextcloud-data
         - name: tmp
+          emptyDir: {}
+        - name: php-confd
           emptyDir: {}
       topologySpreadConstraints:
         - maxSkew: 1
@@ -109,4 +116,4 @@ spec:
           whenUnsatisfiable: ScheduleAnyway
           labelSelector:
             matchLabels:
-              app.kubernetes.io/name: auth-service
+              app.kubernetes.io/name: nextcloud

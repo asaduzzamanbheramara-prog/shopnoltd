@@ -1,0 +1,117 @@
+diff --git a/.gitignore b/.gitignore
+index a8e8c48..355163e 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -193,3 +193,4 @@ cookies.txt
+ 
+ # Local DNS/email backups
+ /dns-backup-email/
++scripts/seed/social-login-secrets.local.yaml
+diff --git a/ai-platform/shopnoltd-orchestrator/agents/docker_agent.py b/ai-platform/shopnoltd-orchestrator/agents/docker_agent.py
+index 530cfb3..0c48932 100644
+--- a/ai-platform/shopnoltd-orchestrator/agents/docker_agent.py
++++ b/ai-platform/shopnoltd-orchestrator/agents/docker_agent.py
+@@ -9,11 +9,10 @@ a Kaniko Job instead (see README "Running builds inside the cluster").
+ 
+ import os
+ 
++import config
+ import docker
+ from docker.errors import APIError, BuildError
+ 
+-import config
+-
+ 
+ def _dockerfile_relative_to_context(dockerfile_rel: str, context_rel: str) -> str:
+     """docker-py wants the Dockerfile path relative to the build context dir."""
+diff --git a/billing-engine/app/main.py b/billing-engine/app/main.py
+index 5450f2b..122265a 100644
+--- a/billing-engine/app/main.py
++++ b/billing-engine/app/main.py
+@@ -12,6 +12,7 @@ from app.gateways import REGISTRY, get_gateway, payoneer_payouts
+ from app.ledger import InsufficientBalanceError, apply_ledger_entry
+ from app.models import AuditLog, Transaction, User, Wallet, WalletLedgerEntry
+ from app.security import require_internal_key
++from app.gateway_admin import is_effectively_live, list_gateway_status, set_gateway_enabled
+ 
+ logging.basicConfig(level=logging.INFO)
+ logger = logging.getLogger("billing-engine")
+@@ -77,17 +78,22 @@ def health():
+ 
+ 
+ @app.get("/gateways")
+-def list_gateways():
++def list_gateways(db: Session = Depends(get_db)):
+     """
+-    Honest status of every gateway: whether real credentials are configured
+-    (`live: true`) or it is currently running in demo mode (`live: false`).
++    Honest status of every gateway: whether real credentials are configured,
++    whether an admin has disabled it at runtime, and the combined effective
++    live status.
+     """
++    status = {s["name"]: s for s in list_gateway_status(db)}
+     out = []
+     for name, gw in REGISTRY.items():
++        s = status[name]
+         out.append(
+             {
+                 "name": name,
+-                "live": gw.enabled,
++                "live": s["effectively_live"],
++                "credentials_configured": s["credentials_configured"],
++                "admin_disabled": s["admin_disabled"],
+                 "currencies": {
+                     "stripe": ["USD", "EUR", "GBP", "AUD", "CAD", "SGD", "and more"],
+                     "paypal": ["USD", "EUR", "GBP", "AUD", "CAD"],
+@@ -165,6 +171,9 @@ def create_checkout(req: CheckoutRequest, db: Session = Depends(get_db)):
+     except KeyError as e:
+         raise HTTPException(400, str(e)) from e
+ 
++    if gw.enabled and not is_effectively_live(db, req.gateway):
++        raise HTTPException(503, f"Gateway '{req.gateway}' is currently disabled by an administrator.")
++
+     user = get_or_create_user(db, req.customer_email)
+     reference = req.reference or f"ord_{user.id}_{int(__import__('time').time())}"
+ 
+@@ -461,3 +470,28 @@ def get_transactions(email: str, db: Session = Depends(get_db)):
+         }
+         for t in txns
+     ]
++
++
++class GatewayToggleRequest(BaseModel):
++    enabled: bool
++    note: str | None = None
++    actor: str = "admin"
++
++
++@app.post("/admin/gateways/{name}/toggle", dependencies=[Depends(require_internal_key)])
++def toggle_gateway(name: str, req: GatewayToggleRequest, db: Session = Depends(get_db)):
++    try:
++        override = set_gateway_enabled(db, name, req.enabled, req.actor, req.note)
++    except KeyError as e:
++        raise HTTPException(400, str(e)) from e
++    log_action(db, "gateway_toggled", req.actor, {"gateway": name, "enabled": req.enabled})
++    return {
++        "gateway": name,
++        "admin_disabled": override.admin_disabled,
++        "effectively_live": is_effectively_live(db, name),
++    }
++
++
++@app.get("/admin/gateways", dependencies=[Depends(require_internal_key)])
++def admin_gateway_status(db: Session = Depends(get_db)):
++    return {"gateways": list_gateway_status(db)}
+diff --git a/k8s/services/code-server/deployment.yaml b/k8s/services/code-server/deployment.yaml
+index ea1f62b..a686375 100644
+--- a/k8s/services/code-server/deployment.yaml
++++ b/k8s/services/code-server/deployment.yaml
+@@ -105,7 +105,7 @@ spec:
+               mountPath: /run
+           securityContext:
+             allowPrivilegeEscalation: false
+-            readOnlyRootFilesystem: true
++            readOnlyRootFilesystem: false
+             capabilities:
+               drop: ["ALL"]
+       volumes:
