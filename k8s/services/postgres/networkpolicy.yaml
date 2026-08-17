@@ -33,6 +33,12 @@ spec:
         - namespaceSelector:
             matchLabels:
               name: shopno-payments
+        - namespaceSelector:
+            matchLabels:
+              name: shopno-tools
+        - namespaceSelector:
+            matchLabels:
+              name: shopno-mail
       ports:
         - port: 5432
           protocol: TCP
