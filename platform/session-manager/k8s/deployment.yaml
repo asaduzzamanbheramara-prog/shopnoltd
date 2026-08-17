@@ -17,18 +17,6 @@ spec:
     requests:
       storage: 5Gi
 ---
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: session-manager-db
-  namespace: shopno-tools
-spec:
-  accessModes: ["ReadWriteOnce"]
-  storageClassName: local-path
-  resources:
-    requests:
-      storage: 2Gi
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
