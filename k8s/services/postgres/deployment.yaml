@@ -79,8 +79,8 @@ spec:
               mountPath: /tmp
       volumes:
         - name: postgres-storage
-          emptyDir:
-            sizeLimit: 10Gi
+          persistentVolumeClaim:
+            claimName: postgres-data
         - name: tmp
           emptyDir:
             sizeLimit: 1Gi
