@@ -33,6 +33,12 @@ spec:
         - namespaceSelector:
             matchLabels:
               name: shopno-apps
+        - namespaceSelector:
+            matchLabels:
+              name: shopno-payments
+        - namespaceSelector:
+            matchLabels:
+              name: shopno-tools
       ports:
         - port: 6379
           protocol: TCP
