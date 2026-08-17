@@ -35,7 +35,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: auth-service
-          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/auth-service:fixed
+          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/auth-service:latest
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
