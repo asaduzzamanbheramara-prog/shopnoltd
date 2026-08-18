@@ -34,6 +34,11 @@ spec:
         - name: chatwoot
           image: chatwoot/chatwoot:latest
           imagePullPolicy: IfNotPresent
+          command:
+            - /bin/sh
+            - -lc
+          args:
+            - exec bundle exec rails s -p 3000 -b 0.0.0.0
           ports:
             - name: http
               containerPort: 3000
