@@ -3,7 +3,7 @@ kind: Kustomization
 
 resources:
 - session-manager-deployment.yaml
+- pvc.yaml
 - session-manager-service.yaml
 - session-manager-ingress.yaml
 - session-manager-vnc-ingress.yaml
-- pvc.yaml
