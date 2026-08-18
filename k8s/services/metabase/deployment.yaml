@@ -39,8 +39,6 @@ spec:
               fieldPath: metadata.namespace
         - name: JAVA_OPTS
           value: -XX:MaxRAMPercentage=75 -XshowSettings:vm -XX:+UseContainerSupport
-        - name: JAVA_OPTS
-          value: -XX:MaxRAMPercentage=75
         envFrom:
         - configMapRef:
             name: metabase-config
@@ -78,8 +76,8 @@ spec:
             cpu: '1'
             memory: 2Gi
           requests:
-            cpu: 300m
-            memory: 1Gi
+            cpu: 200m
+            memory: 512Mi
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
