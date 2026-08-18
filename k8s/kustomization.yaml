@@ -24,6 +24,8 @@ resources:
 - services/auth-service
 - services/oauth-service
 - services/billing-engine
+- services/payment-service
+- services/exchange-service
 - services/domain-service
 - services/freedomain-service
 - services/mobile-api
