@@ -6,7 +6,7 @@ metadata:
   labels:
     app.kubernetes.io/name: tenant-router
 spec:
-  replicas: 1
+  replicas: 0
   strategy:
     type: RollingUpdate
     rollingUpdate:
