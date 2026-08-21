@@ -25,6 +25,9 @@ spec:
           imagePullPolicy: IfNotPresent
           args:
             - start-dev
+            - --import-realm
+            - --http-host=0.0.0.0
+            - --http-management-host=0.0.0.0
           ports:
             - name: http
               containerPort: 8080
@@ -87,12 +90,18 @@ spec:
               mountPath: /var/lib/keycloak
             - name: tmp
               mountPath: /tmp
+            - name: realm-import
+              mountPath: /opt/keycloak/data/import
+              readOnly: true
       volumes:
         - name: data
           persistentVolumeClaim:
             claimName: keycloak-data
         - name: tmp
           emptyDir: {}
+        - name: realm-import
+          configMap:
+            name: keycloak-realm
       topologySpreadConstraints:
         - maxSkew: 1
           topologyKey: topology.kubernetes.io/zone
