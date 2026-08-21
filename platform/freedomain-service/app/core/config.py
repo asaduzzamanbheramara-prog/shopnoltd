@@ -8,7 +8,7 @@ class Settings(BaseSettings):
         "postgresql+asyncpg://shopno:shopno@postgres.shopno-data.svc.cluster.local:5432/freedomain"
     )
     redis_url: str = "redis://redis.shopno-data.svc.cluster.local:6379/0"
-    cors_origins: str = "https://*.shopnoltd.dpdns.org"
+    cors_origins: str = "https://shopnoltd.dpdns.org"
     domain_service_url: str = "http://domain-service.shopno-platform.svc.cluster.local:8080"
     parent_zone: str = "freedomain.shopnoltd.dpdns.org"
     keycloak_audience: str = "freedomain-service"
