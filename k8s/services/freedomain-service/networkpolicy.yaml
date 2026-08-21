@@ -8,48 +8,55 @@ spec:
     matchLabels:
       app.kubernetes.io/name: freedomain-service
   policyTypes:
-    - Ingress
-    - Egress
+  - Ingress
+  - Egress
   ingress:
-    - from:
-        - namespaceSelector:
-            matchLabels:
-              name: ingress-nginx
-        - namespaceSelector:
-            matchLabels:
-              name: shopno-ingress
-        - namespaceSelector:
-            matchLabels:
-              name: shopno-platform
-        - namespaceSelector:
-            matchLabels:
-              name: shopno-monitoring
-        - podSelector: {}
-      ports:
-        - port: 8080
-          protocol: TCP
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    - namespaceSelector:
+        matchLabels:
+          name: shopno-ingress
+    - namespaceSelector:
+        matchLabels:
+          name: shopno-platform
+    - namespaceSelector:
+        matchLabels:
+          name: shopno-monitoring
+    - podSelector: {}
+    ports:
+    - port: 8080
+      protocol: TCP
   egress:
-    - to:
-        - namespaceSelector:
-            matchLabels:
-              name: shopno-data
-        - namespaceSelector:
-            matchLabels:
-              name: shopno-identity
-        - namespaceSelector:
-            matchLabels:
-              name: shopno-monitoring
-        - namespaceSelector:
-            matchLabels:
-              name: kube-system
-      ports:
-        - port: 53
-          protocol: UDP
-        - port: 443
-          protocol: TCP
-        - port: 5432
-          protocol: TCP
-        - port: 6379
-          protocol: TCP
-        - port: 9000
-          protocol: TCP
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: shopno-data
+    - namespaceSelector:
+        matchLabels:
+          name: shopno-identity
+    - namespaceSelector:
+        matchLabels:
+          name: shopno-monitoring
+    - namespaceSelector:
+        matchLabels:
+          name: kube-system
+    ports:
+    - port: 53
+      protocol: UDP
+    - port: 443
+      protocol: TCP
+    - port: 5432
+      protocol: TCP
+    - port: 6379
+      protocol: TCP
+    - port: 9000
+      protocol: TCP
+  - to:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: domain-service
+    ports:
+    - port: 8080
+      protocol: TCP
