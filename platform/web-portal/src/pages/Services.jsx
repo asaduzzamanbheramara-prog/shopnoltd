@@ -3,13 +3,13 @@ const SERVICES = [
     icon: '🌐',
     name: 'Domain Registration',
     description: 'Register and manage your Shopnoltd domains.',
-    url: 'https://domain.shopnoltd.dpdns.org',
+    url: '/register',
   },
   {
     icon: '📋',
-    name: 'Surveys',
-    description: 'KoboToolbox-powered data collection.',
-    url: 'https://kf.shopnoltd.dpdns.org',
+    name: 'ShopnoltdToolbox',
+    description: 'ShopnoltdToolbox-powered data collection.',
+    url: 'https://kobotoolbox.shopnoltd.dpdns.org',
   },
   {
     icon: '💬',

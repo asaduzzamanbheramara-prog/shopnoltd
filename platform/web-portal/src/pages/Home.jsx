@@ -1,9 +1,11 @@
+import DomainSearch from '../components/DomainSearch'
+
 const SERVICES = [
   {
     icon: '📋',
-    name: 'Surveys',
-    description: 'KoboToolbox-powered data collection.',
-    url: 'https://kf.shopnoltd.dpdns.org',
+    name: 'ShopnoltdToolbox',
+    description: 'ShopnoltdToolbox-powered data collection.',
+    url: 'https://kobotoolbox.shopnoltd.dpdns.org',
     category: 'Productivity',
   },
   {
@@ -151,6 +153,8 @@ export default function Home() {
       padding: '52px 24px 80px',
       fontFamily: 'system-ui, sans-serif',
     }}>
+      <DomainSearch />
+
       <section style={{
         textAlign: 'center',
         marginBottom: 52,
