@@ -24,6 +24,7 @@ spec:
         - namespaceSelector:
             matchLabels:
               name: shopno-monitoring
+        - podSelector: {}
       ports:
         - port: 8080
           protocol: TCP
