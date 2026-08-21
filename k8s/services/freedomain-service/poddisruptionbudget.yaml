@@ -4,7 +4,7 @@ metadata:
   name: freedomain-service
   namespace: shopno-platform
 spec:
-  minAvailable: 2
+  minAvailable: 1
   selector:
     matchLabels:
       app.kubernetes.io/name: freedomain-service
