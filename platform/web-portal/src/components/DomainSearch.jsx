@@ -2,7 +2,7 @@ import { useState } from 'react'
 
 const DOMAIN_API =
   import.meta.env.VITE_DOMAIN_API_URL ||
-  'https://freedomain.shopnoltd.dpdns.org/api/v1/domains'
+  '/api/v1/domains'
 
 export default function DomainSearch() {
   const [subdomain, setSubdomain] = useState('')
