@@ -9,7 +9,7 @@ import { useEffect, useState } from 'react'
 const KNOWN_PLUGINS = [
   { key: 'blog', label: 'Blog', description: 'Public blog/content pages for this tenant.' },
   { key: 'live_chat', label: 'Live Chat', description: 'Chatwoot-powered customer chat widget.' },
-  { key: 'surveys', label: 'Surveys', description: 'KoboToolbox-powered data collection forms.' },
+  { key: 'surveys', label: 'Surveys', description: 'ShopnoltdToolbox-powered data collection forms.' },
   { key: 'meetings', label: 'Video Meetings', description: 'Jitsi-powered video conferencing.' },
 ]
 
