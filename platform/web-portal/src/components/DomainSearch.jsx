@@ -62,6 +62,8 @@ export default function DomainSearch() {
     const token = localStorage.getItem('shopno_token')
 
     if (!token) {
+      sessionStorage.setItem('pending_domain', value)
+
       window.location.href = `/login?next=/&domain=${encodeURIComponent(value)}`
       return
     }

@@ -53,20 +53,6 @@ async function startLocalSignup() {
   sessionStorage.setItem('pkce_verifier', verifier)
   sessionStorage.setItem('oidc_state', state)
 
-  const incomingDomain =
-    new URLSearchParams(window.location.search).get('domain')
-
-  if (incomingDomain) {
-    const value = incomingDomain
-      .trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9-]/g, '')
-
-    if (value) {
-      sessionStorage.setItem('pending_domain', value)
-    }
-  }
-
   const params = new URLSearchParams({
     client_id: KEYCLOAK_CLIENT_ID,
     redirect_uri: REDIRECT_URI,
