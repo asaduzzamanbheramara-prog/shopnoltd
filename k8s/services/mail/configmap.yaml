@@ -5,5 +5,5 @@ metadata:
   namespace: shopno-mail
 data:
   MAIL_PROVIDER: "smtp"
-  SMTP_HOST: "mail.shopnoltd.dpdns.org"
+  SMTP_HOST: "smtp-relay.brevo.com"
   SMTP_PORT: "587"

@@ -1,0 +1,160 @@
+{
+  "kind": "ConfigMap",
+  "namespace": "shopno-apps",
+  "name": "nextcloud-config",
+  "sync_status": "OutOfSync",
+  "health": "UNKNOWN",
+  "message": ""
+}
+{
+  "kind": "PersistentVolumeClaim",
+  "namespace": "shopno-apps",
+  "name": "n8n-data",
+  "sync_status": "OutOfSync",
+  "health": "UNKNOWN",
+  "message": ""
+}
+{
+  "kind": "PersistentVolumeClaim",
+  "namespace": "shopno-apps",
+  "name": "owncast-data",
+  "sync_status": "OutOfSync",
+  "health": "UNKNOWN",
+  "message": ""
+}
+{
+  "kind": "PersistentVolumeClaim",
+  "namespace": "shopno-data",
+  "name": "opensearch-data",
+  "sync_status": "OutOfSync",
+  "health": "UNKNOWN",
+  "message": ""
+}
+{
+  "kind": "PersistentVolumeClaim",
+  "namespace": "shopno-identity",
+  "name": "auth-service-data",
+  "sync_status": "OutOfSync",
+  "health": "UNKNOWN",
+  "message": ""
+}
+{
+  "kind": "PersistentVolumeClaim",
+  "namespace": "shopno-monitoring",
+  "name": "alertmanager-data",
+  "sync_status": "OutOfSync",
+  "health": "UNKNOWN",
+  "message": ""
+}
+{
+  "kind": "PersistentVolumeClaim",
+  "namespace": "shopno-monitoring",
+  "name": "grafana-data",
+  "sync_status": "OutOfSync",
+  "health": "UNKNOWN",
+  "message": ""
+}
+{
+  "kind": "PersistentVolumeClaim",
+  "namespace": "shopno-monitoring",
+  "name": "loki-data",
+  "sync_status": "OutOfSync",
+  "health": "UNKNOWN",
+  "message": ""
+}
+{
+  "kind": "PersistentVolumeClaim",
+  "namespace": "shopno-monitoring",
+  "name": "prometheus-data",
+  "sync_status": "OutOfSync",
+  "health": "UNKNOWN",
+  "message": ""
+}
+{
+  "kind": "Deployment",
+  "namespace": "shopno-apps",
+  "name": "metabase",
+  "sync_status": "OutOfSync",
+  "health": "UNKNOWN",
+  "message": ""
+}
+{
+  "kind": "Deployment",
+  "namespace": "shopno-apps",
+  "name": "n8n",
+  "sync_status": "OutOfSync",
+  "health": "UNKNOWN",
+  "message": ""
+}
+{
+  "kind": "Deployment",
+  "namespace": "shopno-apps",
+  "name": "nextcloud",
+  "sync_status": "OutOfSync",
+  "health": "UNKNOWN",
+  "message": ""
+}
+{
+  "kind": "Deployment",
+  "namespace": "shopno-apps",
+  "name": "onlyoffice",
+  "sync_status": "OutOfSync",
+  "health": "UNKNOWN",
+  "message": ""
+}
+{
+  "kind": "Deployment",
+  "namespace": "shopno-apps",
+  "name": "owncast",
+  "sync_status": "OutOfSync",
+  "health": "UNKNOWN",
+  "message": ""
+}
+{
+  "kind": "Deployment",
+  "namespace": "shopno-apps",
+  "name": "superset",
+  "sync_status": "OutOfSync",
+  "health": "UNKNOWN",
+  "message": ""
+}
+{
+  "kind": "Deployment",
+  "namespace": "shopno-monitoring",
+  "name": "alertmanager",
+  "sync_status": "OutOfSync",
+  "health": "UNKNOWN",
+  "message": ""
+}
+{
+  "kind": "Deployment",
+  "namespace": "shopno-monitoring",
+  "name": "grafana",
+  "sync_status": "OutOfSync",
+  "health": "UNKNOWN",
+  "message": ""
+}
+{
+  "kind": "Deployment",
+  "namespace": "shopno-monitoring",
+  "name": "loki",
+  "sync_status": "OutOfSync",
+  "health": "UNKNOWN",
+  "message": ""
+}
+{
+  "kind": "Deployment",
+  "namespace": "shopno-monitoring",
+  "name": "prometheus",
+  "sync_status": "OutOfSync",
+  "health": "UNKNOWN",
+  "message": ""
+}
+{
+  "kind": "Deployment",
+  "namespace": "shopno-tools",
+  "name": "session-manager",
+  "sync_status": "OutOfSync",
+  "health": "UNKNOWN",
+  "message": ""
+}

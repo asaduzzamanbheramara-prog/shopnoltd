@@ -1,0 +1,46 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: k3s-cleanup
+  namespace: kube-system
+spec:
+  schedule: "0 3 * * *"
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: k3s-cleanup
+          restartPolicy: OnFailure
+          hostNetwork: true
+          containers:
+          - name: cleanup
+            image: docker.io/rancher/mirrored-library-busybox:1.37.0
+            command: ["/bin/sh", "-c"]
+            args:
+              - |
+                set -eu
+                echo "[$(date)] cleanup start"
+                # Remove overlayfs snapshots with no active containers
+                cd /var/lib/rancher/k3s/agent/containerd/io.containerd.snapshotter.v1.overlayfs
+                for d in */; do
+                  # keep if recently touched (active)
+                  find "$d" -maxdepth 2 -mmin -10 -print -quit 2>/dev/null | grep -q . || rm -rf "$d"
+                done
+                echo "[$(date)] cleanup done"
+            securityContext:
+              privileged: true
+              runAsUser: 0
+            volumeMounts:
+            - name: k3s-data
+              mountPath: /var/lib/rancher/k3s
+              readOnly: false
+          volumes:
+          - name: k3s-data
+            hostPath:
+              path: /var/lib/rancher/k3s
+              type: Directory
+          nodeSelector:
+            kubernetes.io/hostname: shopnoltd-pc-1

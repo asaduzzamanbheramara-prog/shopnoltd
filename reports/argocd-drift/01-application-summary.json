@@ -1,0 +1,22 @@
+{
+  "sync": {
+    "comparedTo": {
+      "destination": {
+        "namespace": "default",
+        "server": "https://kubernetes.default.svc"
+      },
+      "source": {
+        "path": "k8s",
+        "repoURL": "https://github.com/asaduzzamanbheramara-prog/shopnoltd.git",
+        "targetRevision": "main"
+      }
+    },
+    "revision": "91a90e80bddfb512568260d1c05938d2913e11f3",
+    "status": "OutOfSync"
+  },
+  "health": {
+    "lastTransitionTime": "2026-08-19T13:45:26Z",
+    "status": "Progressing"
+  },
+  "revision": "91a90e80bddfb512568260d1c05938d2913e11f3"
+}

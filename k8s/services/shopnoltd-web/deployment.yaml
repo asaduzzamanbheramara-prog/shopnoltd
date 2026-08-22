@@ -32,7 +32,8 @@ spec:
 
           ports:
             - name: http
-              containerPort: 80
+              containerPort: 3000
+              protocol: TCP
 
           resources:
             requests:
@@ -45,7 +46,7 @@ spec:
 
           readinessProbe:
             httpGet:
-              path: /
+              path: /healthz
               port: http
             initialDelaySeconds: 5
             periodSeconds: 10
@@ -54,7 +55,7 @@ spec:
 
           livenessProbe:
             httpGet:
-              path: /
+              path: /healthz
               port: http
             initialDelaySeconds: 15
             periodSeconds: 20
