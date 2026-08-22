@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     domain_service_url: str = "http://domain-service.shopno-platform.svc.cluster.local:8080"
     parent_zone: str = "freedomain.shopnoltd.dpdns.org"
     keycloak_audience: str = "freedomain-service"
+    keycloak_issuer: str = "http://keycloak.shopno-identity.svc.cluster.local/realms/shopnoltd"
 
     @property
     def cors_origins_list(self):
