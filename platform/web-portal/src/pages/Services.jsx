@@ -3,7 +3,7 @@ const SERVICES = [
     icon: '🌐',
     name: 'Domain Registration',
     description: 'Register and manage your Shopnoltd domains.',
-    url: '/register',
+    url: '/',
   },
   {
     icon: '📋',
