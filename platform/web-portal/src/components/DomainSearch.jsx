@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 const DOMAIN_API =
   import.meta.env.VITE_DOMAIN_API_URL ||
@@ -9,11 +9,7 @@ export default function DomainSearch() {
   const [status, setStatus] = useState(null)
   const [loading, setLoading] = useState(false)
 
-  async function checkAvailability(event) {
-    event.preventDefault()
-
-    const value = subdomain.trim().toLowerCase()
-
+  async function checkAvailabilityValue(value) {
     if (!value) {
       setStatus({
         type: 'error',
@@ -55,6 +51,41 @@ export default function DomainSearch() {
     } finally {
       setLoading(false)
     }
+  }
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const incomingDomain = params.get('domain')
+
+    if (!incomingDomain) {
+      return
+    }
+
+    const value = incomingDomain
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9-]/g, '')
+
+    if (!value) {
+      return
+    }
+
+    setSubdomain(value)
+    sessionStorage.removeItem('pending_domain')
+
+    const timer = window.setTimeout(() => {
+      checkAvailabilityValue(value)
+    }, 0)
+
+    return () => window.clearTimeout(timer)
+  }, [])
+
+  async function checkAvailability(event) {
+    event.preventDefault()
+
+    const value = subdomain.trim().toLowerCase()
+
+    await checkAvailabilityValue(value)
   }
 
   async function registerDomain() {
