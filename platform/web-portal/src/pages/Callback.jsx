@@ -79,10 +79,22 @@ export default function Callback() {
           localStorage.setItem('shopno_refresh_token', data.refresh_token)
         }
 
+        const pendingDomain =
+          sessionStorage.getItem('pending_domain')
+
         sessionStorage.removeItem('pkce_verifier')
         sessionStorage.removeItem('oidc_state')
 
-        navigate('/dashboard', { replace: true })
+        if (pendingDomain) {
+          sessionStorage.removeItem('pending_domain')
+
+          navigate(
+            `/?domain=${encodeURIComponent(pendingDomain)}`,
+            { replace: true }
+          )
+        } else {
+          navigate('/dashboard', { replace: true })
+        }
       })
       .catch((err) => {
         setError(err.message)
