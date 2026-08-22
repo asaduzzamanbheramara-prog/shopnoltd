@@ -28,7 +28,6 @@ jobs:
           - { service: gateway,            dockerfile: platform/gateway/Dockerfile }
           - { service: oauth-service,      dockerfile: platform/oauth-service/Dockerfile }
           - { service: tenant-router,      dockerfile: platform/tenant-router/Dockerfile }
-          - { service: billing-engine,     dockerfile: platform/billing-engine/Dockerfile }
           - { service: analytics-service,  dockerfile: platform/analytics-service/Dockerfile }
           - { service: search-service,     dockerfile: platform/search-service/Dockerfile }
           - { service: storage-service,    dockerfile: platform/storage-service/Dockerfile }
