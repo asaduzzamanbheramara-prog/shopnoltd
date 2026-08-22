@@ -21,3 +21,9 @@ spec:
       selfHeal: true
     syncOptions:
       - CreateNamespace=false
+
+  ignoreDifferences:
+    - group: autoscaling
+      kind: HorizontalPodAutoscaler
+      jsonPointers:
+        - /spec/behavior
