@@ -9,6 +9,7 @@ resources:
 - pvc.yaml
 - pvc-etc.yaml
 - deployment.yaml
+- hpa.yaml
 - service.yaml
 - ingress.yaml
 - networkpolicy.yaml
