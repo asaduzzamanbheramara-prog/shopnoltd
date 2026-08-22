@@ -1,0 +1,51 @@
+
+===== PVC: shopno-apps/n8n-data =====
+
+===== PVC: shopno-apps/owncast-data =====
+
+===== PVC: shopno-data/opensearch-data =====
+{
+  "metadata": {
+    "name": "opensearch-data",
+    "namespace": "shopno-data",
+    "annotations": {
+      "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"v1\",\"kind\":\"PersistentVolumeClaim\",\"metadata\":{\"annotations\":{},\"name\":\"opensearch-data\",\"namespace\":\"shopno-data\"},\"spec\":{\"accessModes\":[\"ReadWriteOnce\"],\"resources\":{\"requests\":{\"storage\":\"10Gi\"}},\"storageClassName\":\"standard\"}}\n",
+      "pv.kubernetes.io/bind-completed": "yes",
+      "pv.kubernetes.io/bound-by-controller": "yes",
+      "volume.beta.kubernetes.io/storage-provisioner": "rancher.io/local-path",
+      "volume.kubernetes.io/selected-node": "shopnoltd-pc-1",
+      "volume.kubernetes.io/storage-provisioner": "rancher.io/local-path"
+    }
+  },
+  "spec": {
+    "accessModes": [
+      "ReadWriteOnce"
+    ],
+    "resources": {
+      "requests": {
+        "storage": "10Gi"
+      }
+    },
+    "storageClassName": "standard",
+    "volumeName": "pvc-d9005436-c7e5-4407-8fcd-14e8f4843460"
+  },
+  "status": {
+    "accessModes": [
+      "ReadWriteOnce"
+    ],
+    "capacity": {
+      "storage": "10Gi"
+    },
+    "phase": "Bound"
+  }
+}
+
+===== PVC: shopno-identity/auth-service-data =====
+
+===== PVC: shopno-monitoring/alertmanager-data =====
+
+===== PVC: shopno-monitoring/grafana-data =====
+
+===== PVC: shopno-monitoring/loki-data =====
+
+===== PVC: shopno-monitoring/prometheus-data =====

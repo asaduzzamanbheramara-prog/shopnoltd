@@ -1,0 +1,100 @@
+8h          Normal    Started                pod/argocd-notifications-controller-dd4ff84c-hbjb7      Container started
+8h          Normal    Pulling                pod/argocd-redis-84497fb7c5-242vz                       Pulling image "public.ecr.aws/docker/library/redis:8.2.3-alpine"
+8h          Normal    Created                pod/argocd-redis-84497fb7c5-242vz                       Container created
+8h          Warning   Unhealthy              pod/argocd-notifications-controller-dd4ff84c-hbjb7      Liveness probe failed: dial tcp 10.42.0.90:9001: connect: connection refused
+8h          Normal    Pulled                 pod/argocd-redis-84497fb7c5-242vz                       Successfully pulled image "public.ecr.aws/docker/library/redis:8.2.3-alpine" in 1.559s (1.559s including waiting). Image size: 27510315 bytes.
+8h          Normal    Started                pod/argocd-redis-84497fb7c5-242vz                       Container started
+8h          Normal    Pulling                pod/argocd-repo-server-548bcd5486-dd7x7                 Pulling image "quay.io/argoproj/argocd:v3.5.1"
+8h          Normal    Pulled                 pod/argocd-repo-server-548bcd5486-dd7x7                 Successfully pulled image "quay.io/argoproj/argocd:v3.5.1" in 1.517s (1.517s including waiting). Image size: 210598970 bytes.
+8h          Normal    Created                pod/argocd-repo-server-548bcd5486-dd7x7                 Container created
+8h          Normal    Started                pod/argocd-repo-server-548bcd5486-dd7x7                 Container started
+8h          Warning   Unhealthy              pod/argocd-repo-server-548bcd5486-dd7x7                 Liveness probe failed: Get "http://10.42.0.104:8084/healthz?full=true": context deadline exceeded (Client.Timeout exceeded while awaiting headers)
+8h          Normal    SandboxChanged         pod/argocd-dex-server-744c5d4467-2n6tm                  Pod sandbox changed, it will be killed and re-created.
+8h          Normal    SandboxChanged         pod/argocd-notifications-controller-dd4ff84c-hbjb7      Pod sandbox changed, it will be killed and re-created.
+8h          Normal    SandboxChanged         pod/argocd-redis-84497fb7c5-242vz                       Pod sandbox changed, it will be killed and re-created.
+8h          Normal    Pulling                pod/argocd-notifications-controller-dd4ff84c-hbjb7      Pulling image "quay.io/argoproj/argocd:v3.5.1"
+8h          Normal    Pulled                 pod/argocd-redis-84497fb7c5-242vz                       Container image "quay.io/argoproj/argocd:v3.5.1" already present on machine and can be accessed by the pod
+8h          Normal    Pulling                pod/argocd-dex-server-744c5d4467-2n6tm                  Pulling image "quay.io/argoproj/argocd:v3.5.1"
+8h          Normal    Created                pod/argocd-redis-84497fb7c5-242vz                       Container created
+8h          Normal    SandboxChanged         pod/argocd-application-controller-0                     Pod sandbox changed, it will be killed and re-created.
+8h          Normal    SandboxChanged         pod/argocd-dex-server-744c5d4467-2n6tm                  Pod sandbox changed, it will be killed and re-created.
+8h          Normal    SandboxChanged         pod/argocd-server-76448b9999-2kpn6                      Pod sandbox changed, it will be killed and re-created.
+8h          Normal    SandboxChanged         pod/argocd-repo-server-548bcd5486-dd7x7                 Pod sandbox changed, it will be killed and re-created.
+8h          Normal    Pulling                pod/argocd-application-controller-0                     Pulling image "quay.io/argoproj/argocd:v3.5.1"
+8h          Normal    Pulling                pod/argocd-server-76448b9999-2kpn6                      Pulling image "quay.io/argoproj/argocd:v3.5.1"
+8h          Normal    SandboxChanged         pod/argocd-applicationset-controller-579c4c54b8-jlwm5   Pod sandbox changed, it will be killed and re-created.
+8h          Normal    Pulling                pod/argocd-dex-server-744c5d4467-2n6tm                  Pulling image "quay.io/argoproj/argocd:v3.5.1"
+8h          Normal    Pulled                 pod/argocd-server-76448b9999-2kpn6                      Successfully pulled image "quay.io/argoproj/argocd:v3.5.1" in 3.931s (3.931s including waiting). Image size: 210598970 bytes.
+8h          Normal    Pulled                 pod/argocd-application-controller-0                     Successfully pulled image "quay.io/argoproj/argocd:v3.5.1" in 4s (4s including waiting). Image size: 210598970 bytes.
+8h          Normal    SandboxChanged         pod/argocd-redis-84497fb7c5-242vz                       Pod sandbox changed, it will be killed and re-created.
+8h          Normal    SandboxChanged         pod/argocd-notifications-controller-dd4ff84c-hbjb7      Pod sandbox changed, it will be killed and re-created.
+8h          Normal    Created                pod/argocd-application-controller-0                     Container created
+8h          Normal    Created                pod/argocd-server-76448b9999-2kpn6                      Container created
+8h          Normal    Pulled                 pod/argocd-repo-server-548bcd5486-dd7x7                 Container image "quay.io/argoproj/argocd:v3.5.1" already present on machine and can be accessed by the pod
+8h          Normal    Started                pod/argocd-server-76448b9999-2kpn6                      Container started
+8h          Normal    Started                pod/argocd-application-controller-0                     Container started
+8h          Normal    Created                pod/argocd-repo-server-548bcd5486-dd7x7                 Container created
+8h          Normal    Started                pod/argocd-repo-server-548bcd5486-dd7x7                 Container started
+8h          Normal    Pulled                 pod/argocd-dex-server-744c5d4467-2n6tm                  Successfully pulled image "quay.io/argoproj/argocd:v3.5.1" in 14.659s (14.659s including waiting). Image size: 210598970 bytes.
+8h          Warning   Unhealthy              pod/argocd-server-76448b9999-2kpn6                      Readiness probe failed: Get "http://10.42.0.158:8080/healthz": dial tcp 10.42.0.158:8080: connect: connection refused
+8h          Warning   Unhealthy              pod/argocd-application-controller-0                     Readiness probe failed: Get "http://10.42.0.159:8082/healthz": dial tcp 10.42.0.159:8082: connect: connection refused
+8h          Normal    Created                pod/argocd-dex-server-744c5d4467-2n6tm                  Container created
+8h          Normal    Pulling                pod/argocd-applicationset-controller-579c4c54b8-jlwm5   Pulling image "quay.io/argoproj/argocd:v3.5.1"
+8h          Normal    Pulled                 pod/argocd-applicationset-controller-579c4c54b8-jlwm5   Successfully pulled image "quay.io/argoproj/argocd:v3.5.1" in 6.844s (6.881s including waiting). Image size: 210598970 bytes.
+8h          Normal    Pulling                pod/argocd-notifications-controller-dd4ff84c-hbjb7      Pulling image "quay.io/argoproj/argocd:v3.5.1"
+8h          Normal    Created                pod/argocd-applicationset-controller-579c4c54b8-jlwm5   Container created
+8h          Normal    Started                pod/argocd-dex-server-744c5d4467-2n6tm                  Container started
+8h          Warning   Unhealthy              pod/argocd-server-76448b9999-2kpn6                      Liveness probe failed: Get "http://10.42.0.158:8080/healthz?full=true": context deadline exceeded (Client.Timeout exceeded while awaiting headers)
+33m         Normal    SandboxChanged         pod/argocd-redis-84497fb7c5-242vz                       Pod sandbox changed, it will be killed and re-created.
+33m         Normal    SandboxChanged         pod/argocd-applicationset-controller-579c4c54b8-jlwm5   Pod sandbox changed, it will be killed and re-created.
+33m         Normal    SandboxChanged         pod/argocd-application-controller-0                     Pod sandbox changed, it will be killed and re-created.
+33m         Normal    SandboxChanged         pod/argocd-repo-server-548bcd5486-dd7x7                 Pod sandbox changed, it will be killed and re-created.
+33m         Normal    SandboxChanged         pod/argocd-server-76448b9999-2kpn6                      Pod sandbox changed, it will be killed and re-created.
+33m         Normal    SandboxChanged         pod/argocd-notifications-controller-dd4ff84c-hbjb7      Pod sandbox changed, it will be killed and re-created.
+33m         Normal    SandboxChanged         pod/argocd-dex-server-744c5d4467-2n6tm                  Pod sandbox changed, it will be killed and re-created.
+33m         Normal    Pulling                pod/argocd-application-controller-0                     Pulling image "quay.io/argoproj/argocd:v3.5.1"
+33m         Normal    Pulling                pod/argocd-applicationset-controller-579c4c54b8-jlwm5   Pulling image "quay.io/argoproj/argocd:v3.5.1"
+33m         Normal    Pulled                 pod/argocd-redis-84497fb7c5-242vz                       Container image "quay.io/argoproj/argocd:v3.5.1" already present on machine and can be accessed by the pod
+33m         Normal    Pulling                pod/argocd-server-76448b9999-2kpn6                      Pulling image "quay.io/argoproj/argocd:v3.5.1"
+33m         Normal    Pulled                 pod/argocd-repo-server-548bcd5486-dd7x7                 Container image "quay.io/argoproj/argocd:v3.5.1" already present on machine and can be accessed by the pod
+33m         Normal    Created                pod/argocd-redis-84497fb7c5-242vz                       Container created
+33m         Normal    Pulled                 pod/argocd-application-controller-0                     Successfully pulled image "quay.io/argoproj/argocd:v3.5.1" in 6.712s (6.712s including waiting). Image size: 210598970 bytes.
+33m         Normal    Created                pod/argocd-repo-server-548bcd5486-dd7x7                 Container created
+33m         Normal    Pulled                 pod/argocd-applicationset-controller-579c4c54b8-jlwm5   Successfully pulled image "quay.io/argoproj/argocd:v3.5.1" in 4.889s (4.926s including waiting). Image size: 210598970 bytes.
+33m         Normal    Started                pod/argocd-redis-84497fb7c5-242vz                       Container started
+33m         Normal    Pulling                pod/argocd-dex-server-744c5d4467-2n6tm                  Pulling image "quay.io/argoproj/argocd:v3.5.1"
+33m         Normal    Created                pod/argocd-applicationset-controller-579c4c54b8-jlwm5   Container created
+33m         Normal    Started                pod/argocd-repo-server-548bcd5486-dd7x7                 Container started
+33m         Normal    Created                pod/argocd-application-controller-0                     Container created
+33m         Normal    Pulled                 pod/argocd-notifications-controller-dd4ff84c-hbjb7      Successfully pulled image "quay.io/argoproj/argocd:v3.5.1" in 7.155s (7.155s including waiting). Image size: 210598970 bytes.
+33m         Normal    Pulling                pod/argocd-repo-server-548bcd5486-dd7x7                 Pulling image "quay.io/argoproj/argocd:v3.5.1"
+33m         Normal    Pulled                 pod/argocd-server-76448b9999-2kpn6                      Successfully pulled image "quay.io/argoproj/argocd:v3.5.1" in 8.441s (8.441s including waiting). Image size: 210598970 bytes.
+33m         Normal    Created                pod/argocd-server-76448b9999-2kpn6                      Container created
+33m         Normal    Started                pod/argocd-application-controller-0                     Container started
+33m         Normal    Pulled                 pod/argocd-dex-server-744c5d4467-2n6tm                  Successfully pulled image "quay.io/argoproj/argocd:v3.5.1" in 6.326s (6.326s including waiting). Image size: 210598970 bytes.
+33m         Normal    Created                pod/argocd-dex-server-744c5d4467-2n6tm                  Container created
+33m         Normal    Pulled                 pod/argocd-repo-server-548bcd5486-dd7x7                 Successfully pulled image "quay.io/argoproj/argocd:v3.5.1" in 5.059s (5.059s including waiting). Image size: 210598970 bytes.
+33m         Normal    Created                pod/argocd-repo-server-548bcd5486-dd7x7                 Container created
+33m         Normal    Started                pod/argocd-applicationset-controller-579c4c54b8-jlwm5   Container started
+33m         Normal    Pulling                pod/argocd-redis-84497fb7c5-242vz                       Pulling image "public.ecr.aws/docker/library/redis:8.2.3-alpine"
+33m         Normal    Pulled                 pod/argocd-redis-84497fb7c5-242vz                       Successfully pulled image "public.ecr.aws/docker/library/redis:8.2.3-alpine" in 2.068s (2.069s including waiting). Image size: 27510315 bytes.
+33m         Normal    Created                pod/argocd-redis-84497fb7c5-242vz                       Container created
+32m         Normal    Started                pod/argocd-server-76448b9999-2kpn6                      Container started
+32m         Normal    Pulling                pod/argocd-dex-server-744c5d4467-2n6tm                  Pulling image "ghcr.io/dexidp/dex:v2.45.0"
+32m         Normal    Started                pod/argocd-dex-server-744c5d4467-2n6tm                  Container started
+32m         Normal    Pulled                 pod/argocd-dex-server-744c5d4467-2n6tm                  Successfully pulled image "ghcr.io/dexidp/dex:v2.45.0" in 2.1s (2.1s including waiting). Image size: 48093516 bytes.
+32m         Normal    Created                pod/argocd-dex-server-744c5d4467-2n6tm                  Container created
+32m         Normal    Started                pod/argocd-redis-84497fb7c5-242vz                       Container started
+32m         Normal    Started                pod/argocd-repo-server-548bcd5486-dd7x7                 Container started
+32m         Warning   Unhealthy              pod/argocd-server-76448b9999-2kpn6                      Liveness probe failed: Get "http://10.42.0.222:8080/healthz?full=true": dial tcp 10.42.0.222:8080: connect: connection refused
+32m         Warning   Unhealthy              pod/argocd-notifications-controller-dd4ff84c-hbjb7      Liveness probe failed: dial tcp 10.42.0.224:9001: connect: connection refused
+32m         Normal    Killing                pod/argocd-notifications-controller-dd4ff84c-hbjb7      Container argocd-notifications-controller failed liveness probe, will be restarted
+32m         Normal    Pulling                pod/argocd-notifications-controller-dd4ff84c-hbjb7      Pulling image "quay.io/argoproj/argocd:v3.5.1"
+32m         Normal    Pulled                 pod/argocd-notifications-controller-dd4ff84c-hbjb7      Successfully pulled image "quay.io/argoproj/argocd:v3.5.1" in 1.403s (1.403s including waiting). Image size: 210598970 bytes.
+32m         Normal    Created                pod/argocd-notifications-controller-dd4ff84c-hbjb7      Container created
+32m         Normal    Started                pod/argocd-dex-server-744c5d4467-2n6tm                  Container started
+32m         Warning   Unhealthy              pod/argocd-server-76448b9999-2kpn6                      Readiness probe failed: Get "http://10.42.0.222:8080/healthz": dial tcp 10.42.0.222:8080: connect: connection refused
+32m         Normal    Started                pod/argocd-notifications-controller-dd4ff84c-hbjb7      Container started
+32m         Warning   Unhealthy              pod/argocd-application-controller-0                     Readiness probe failed: Get "http://10.42.0.217:8082/healthz": dial tcp 10.42.0.217:8082: connect: connection refused
+32m         Warning   Unhealthy              pod/argocd-repo-server-548bcd5486-dd7x7                 Readiness probe failed: Get "http://10.42.0.228:8084/healthz": dial tcp 10.42.0.228:8084: connect: connection refused
+10m         Warning   Unhealthy              pod/argocd-repo-server-548bcd5486-dd7x7                 Liveness probe failed: Get "http://10.42.0.228:8084/healthz?full=true": context deadline exceeded (Client.Timeout exceeded while awaiting headers)

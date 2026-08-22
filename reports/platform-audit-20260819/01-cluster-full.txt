@@ -1,0 +1,915 @@
+===== DATE =====
+Thu Aug 20 15:22:59 +06 2026
+
+===== GIT =====
+ M .gitignore
+ M ai-platform/shopnoltd-orchestrator/agents/docker_agent.py
+ M auth-service-main-FIXED.py
+ M auth-service-main.py
+ M k8s/services/admin-portal/kustomization.yaml
+ M k8s/services/ai-platform/kustomization.yaml
+ M k8s/services/alertmanager/kustomization.yaml
+ M k8s/services/analytics-service/kustomization.yaml
+ M k8s/services/android-portal/kustomization.yaml
+ M k8s/services/api-service/kustomization.yaml
+ M k8s/services/audit-service/kustomization.yaml
+ M k8s/services/auth-service/kustomization.yaml
+ M k8s/services/billing-engine/kustomization.yaml
+ M k8s/services/domain-service/kustomization.yaml
+ M k8s/services/event-service/kustomization.yaml
+ M k8s/services/exchange-service/kustomization.yaml
+ M k8s/services/foundation-service/kustomization.yaml
+ M k8s/services/freedomain-service/kustomization.yaml
+ M k8s/services/gateway/kustomization.yaml
+ M k8s/services/gitea/kustomization.yaml
+ M k8s/services/interior-service/kustomization.yaml
+ M k8s/services/jitsi-jicofo/kustomization.yaml
+ M k8s/services/jitsi-jvb/kustomization.yaml
+ M k8s/services/jitsi-prosody/kustomization.yaml
+ M k8s/services/jitsi-web/kustomization.yaml
+ M k8s/services/kobotoolbox/kustomization.yaml
+ M k8s/services/license-service/kustomization.yaml
+ M k8s/services/metabase/kustomization.yaml
+ M k8s/services/mobile-api/kustomization.yaml
+ M k8s/services/nextcloud/configmap.yaml
+ M k8s/services/nextcloud/deployment.yaml
+ M k8s/services/nextcloud/kustomization.yaml
+ M k8s/services/notification-service/kustomization.yaml
+ M k8s/services/oauth-service/kustomization.yaml
+ M k8s/services/onlyoffice/kustomization.yaml
+ M k8s/services/owncast/kustomization.yaml
+ M k8s/services/payment-service/kustomization.yaml
+ M k8s/services/pc-portal/kustomization.yaml
+ M k8s/services/report-service/kustomization.yaml
+ M k8s/services/scheduler-service/kustomization.yaml
+ M k8s/services/search-service/kustomization.yaml
+ M k8s/services/session-manager/kustomization.yaml
+ M k8s/services/storage-service/kustomization.yaml
+ M k8s/services/tenant-router/kustomization.yaml
+ M k8s/services/training-service/kustomization.yaml
+ M k8s/services/web-portal/kustomization.yaml
+ M k8s/services/worker-service/kustomization.yaml
+ M platform/gateway/app/core/config.py
+?? k8s/kustomization.yaml.bak.20260818-193104
+?? k8s/ollama.yaml
+?? k8s/services/session-manager/session-manager-networkpolicy.yaml
+?? k8s/system/cleanup-cronjob.yaml
+?? k8s/system/cleanup-rbac.yaml
+?? mongo-backup-20260819-0258.archive
+?? mongo-backup-full-20260819-0736.archive
+?? redis-backup-20260819-0255.rdb
+?? redis-backup-20260819-0728.rdb
+?? redis-backup-20260819.rdb
+?? reports/platform-audit-20260819/
+?? wsl
+main
+91a90e8 Reduce Metabase scheduling memory request
+
+===== KUBERNETES VERSION =====
+Client Version: v1.36.3
+Kustomize Version: v5.8.1
+Client Version: v1.36.3
+Kustomize Version: v5.8.1
+Server Version: v1.36.2+k3s1
+
+===== NODES =====
+NAME             STATUS   ROLES           AGE   VERSION        INTERNAL-IP      EXTERNAL-IP   OS-IMAGE             KERNEL-VERSION                              CONTAINER-RUNTIME
+shopnoltd-pc-1   Ready    control-plane   23d   v1.36.2+k3s1   172.30.206.152   <none>        Ubuntu 24.04.1 LTS   6.18.33.2-microsoft-standard-WSL2 (amd64)   containerd://2.3.2-k3s2
+
+===== NODE RESOURCE USAGE =====
+NAME             CPU(cores)   CPU(%)   MEMORY(bytes)   MEMORY(%)   
+shopnoltd-pc-1   1419m        23%      8515Mi          77%         
+
+===== ALL PODS =====
+NAMESPACE         NAME                                                READY   STATUS    RESTARTS         AGE     IP            NODE             NOMINATED NODE   READINESS GATES
+argocd            argocd-application-controller-0                     1/1     Running   36 (18m ago)     3d18h   10.42.0.217   shopnoltd-pc-1   <none>           <none>
+argocd            argocd-applicationset-controller-579c4c54b8-jlwm5   1/1     Running   42 (18m ago)     3d18h   10.42.0.219   shopnoltd-pc-1   <none>           <none>
+argocd            argocd-dex-server-744c5d4467-2n6tm                  1/1     Running   32               3d18h   10.42.0.249   shopnoltd-pc-1   <none>           <none>
+argocd            argocd-notifications-controller-dd4ff84c-hbjb7      1/1     Running   96 (16m ago)     3d18h   10.42.0.224   shopnoltd-pc-1   <none>           <none>
+argocd            argocd-redis-84497fb7c5-242vz                       1/1     Running   31 (7h58m ago)   3d18h   10.42.0.221   shopnoltd-pc-1   <none>           <none>
+argocd            argocd-repo-server-548bcd5486-dd7x7                 1/1     Running   44               3d16h   10.42.0.228   shopnoltd-pc-1   <none>           <none>
+argocd            argocd-server-76448b9999-2kpn6                      1/1     Running   69 (18m ago)     3d15h   10.42.0.222   shopnoltd-pc-1   <none>           <none>
+ingress-nginx     ingress-nginx-controller-6fbb8fc6f6-m8rnm           1/1     Running   54 (18m ago)     4d18h   10.42.0.215   shopnoltd-pc-1   <none>           <none>
+kube-system       coredns-6b85b5d59-88xhx                             1/1     Running   43 (18m ago)     3d      10.42.0.225   shopnoltd-pc-1   <none>           <none>
+kube-system       coredns-6b85b5d59-kbkrr                             1/1     Running   48 (18m ago)     3d      10.42.0.231   shopnoltd-pc-1   <none>           <none>
+kube-system       local-path-provisioner-58d557dc48-6gpfv             1/1     Running   95 (18m ago)     14d     10.42.0.216   shopnoltd-pc-1   <none>           <none>
+kube-system       metrics-server-7f5b677f8b-pnpfd                     1/1     Running   15 (18m ago)     38h     10.42.0.8     shopnoltd-pc-1   <none>           <none>
+shopno-apps       chatwoot-848d566fbc-6qj6l                           1/1     Running   26 (18m ago)     44h     10.42.0.241   shopnoltd-pc-1   <none>           <none>
+shopno-apps       code-server-744dc8499f-kkgxr                        1/1     Running   33 (18m ago)     2d18h   10.42.0.244   shopnoltd-pc-1   <none>           <none>
+shopno-apps       enketo-758d85f4bd-nswkz                             1/1     Running   71 (18m ago)     9d      10.42.0.214   shopnoltd-pc-1   <none>           <none>
+shopno-apps       gitea-7c5c9b4dd4-m2k65                              1/1     Running   32 (18m ago)     3d      10.42.0.230   shopnoltd-pc-1   <none>           <none>
+shopno-apps       kobotoolbox-6c88b6db4b-rbrbf                        1/1     Running   16 (18m ago)     47h     10.42.0.252   shopnoltd-pc-1   <none>           <none>
+shopno-apps       kobotoolbox-worker-6b95df7896-wn5bq                 1/1     Running   16 (18m ago)     47h     10.42.0.253   shopnoltd-pc-1   <none>           <none>
+shopno-data       minio-775c4b4549-mgqqz                              1/1     Running   91 (18m ago)     11d     10.42.0.218   shopnoltd-pc-1   <none>           <none>
+shopno-data       mongo-7f4549847b-4l9gt                              1/1     Running   95 (18m ago)     14d     10.42.0.245   shopnoltd-pc-1   <none>           <none>
+shopno-data       opensearch-6d8b995769-gz7p8                         1/1     Running   11 (18m ago)     36h     10.42.0.10    shopnoltd-pc-1   <none>           <none>
+shopno-data       postgres-f9946b988-kwg5r                            1/1     Running   16 (18m ago)     47h     10.42.0.254   shopnoltd-pc-1   <none>           <none>
+shopno-data       redis-6d47d4c9c6-jfzzq                              1/1     Running   89 (18m ago)     12d     10.42.0.233   shopnoltd-pc-1   <none>           <none>
+shopno-identity   auth-service-6989fc87bb-vgh9j                       1/1     Running   22 (18m ago)     47h     10.42.0.237   shopnoltd-pc-1   <none>           <none>
+shopno-identity   keycloak-69767cb496-rqgtp                           1/1     Running   13 (18m ago)     36h     10.42.0.13    shopnoltd-pc-1   <none>           <none>
+shopno-identity   oauth-service-5769d7566f-7pmjq                      1/1     Running   55 (18m ago)     2d14h   10.42.0.251   shopnoltd-pc-1   <none>           <none>
+shopno-ingress    cloudflared-58cfbb6c7-62hgm                         1/1     Running   58 (18m ago)     3d      10.42.0.227   shopnoltd-pc-1   <none>           <none>
+shopno-ingress    cloudflared-58cfbb6c7-jplgp                         1/1     Running   55 (18m ago)     3d      10.42.0.234   shopnoltd-pc-1   <none>           <none>
+shopno-mail       mail-service-bd5f97fcc-szzkx                        1/1     Running   15 (18m ago)     43h     10.42.0.250   shopnoltd-pc-1   <none>           <none>
+shopno-payments   billing-engine-78bbf75c4b-h6pdd                     1/1     Running   81 (17m ago)     2d14h   10.42.0.232   shopnoltd-pc-1   <none>           <none>
+shopno-payments   exchange-service-74595c48cc-t4n99                   1/1     Running   24               43h     10.42.0.9     shopnoltd-pc-1   <none>           <none>
+shopno-payments   payment-service-d75659859-nn9m6                     1/1     Running   24 (18m ago)     43h     10.42.0.14    shopnoltd-pc-1   <none>           <none>
+shopno-platform   admin-portal-7d6f4dcf8f-ztr8s                       1/1     Running   58 (18m ago)     2d14h   10.42.0.223   shopnoltd-pc-1   <none>           <none>
+shopno-platform   ai-platform-5c75f8bfc5-s5cvl                        1/1     Running   29 (18m ago)     47h     10.42.0.3     shopnoltd-pc-1   <none>           <none>
+shopno-platform   analytics-service-ddf98c448-dzwhx                   1/1     Running   52 (18m ago)     2d14h   10.42.0.246   shopnoltd-pc-1   <none>           <none>
+shopno-platform   android-portal-5f7c64dd49-7mqq4                     1/1     Running   30 (18m ago)     2d14h   10.42.0.239   shopnoltd-pc-1   <none>           <none>
+shopno-platform   api-service-5f7f898459-k9gnr                        1/1     Running   53 (18m ago)     2d14h   10.42.0.4     shopnoltd-pc-1   <none>           <none>
+shopno-platform   audit-service-6c478657b8-2nbqh                      1/1     Running   47 (18m ago)     2d14h   10.42.0.236   shopnoltd-pc-1   <none>           <none>
+shopno-platform   domain-service-7fccfc58cf-sxdt9                     1/1     Running   48 (7h54m ago)   2d14h   10.42.0.247   shopnoltd-pc-1   <none>           <none>
+shopno-platform   event-service-67dd65f8d-z7cmv                       1/1     Running   55 (18m ago)     2d14h   10.42.0.242   shopnoltd-pc-1   <none>           <none>
+shopno-platform   foundation-service-7dcdd4977b-gtdrg                 1/1     Running   54 (18m ago)     2d14h   10.42.0.12    shopnoltd-pc-1   <none>           <none>
+shopno-platform   freedomain-service-5d8d4c7f5d-kvvql                 1/1     Running   52 (18m ago)     2d14h   10.42.0.213   shopnoltd-pc-1   <none>           <none>
+shopno-platform   gateway-75968bfddd-hksfp                            1/1     Running   20 (18m ago)     45h     10.42.0.11    shopnoltd-pc-1   <none>           <none>
+shopno-platform   interior-service-69cd5d6b58-4fc58                   1/1     Running   49 (18m ago)     2d14h   10.42.0.2     shopnoltd-pc-1   <none>           <none>
+shopno-platform   license-service-7f4984b88d-mp4b5                    1/1     Running   48 (18m ago)     2d14h   10.42.0.243   shopnoltd-pc-1   <none>           <none>
+shopno-platform   mobile-api-79568bc744-k4m2m                         1/1     Running   44 (18m ago)     2d14h   10.42.0.5     shopnoltd-pc-1   <none>           <none>
+shopno-platform   notification-service-7687494d6d-dhchd               1/1     Running   53 (18m ago)     2d14h   10.42.0.7     shopnoltd-pc-1   <none>           <none>
+shopno-platform   report-service-78fd88d954-2hmdz                     1/1     Running   58 (18m ago)     2d14h   10.42.0.229   shopnoltd-pc-1   <none>           <none>
+shopno-platform   search-service-7f6f45f6fd-s86k2                     1/1     Running   61 (18m ago)     2d14h   10.42.0.220   shopnoltd-pc-1   <none>           <none>
+shopno-platform   shopnoltd-web-5b49f6c747-tzglr                      1/1     Running   24 (18m ago)     43h     10.42.0.6     shopnoltd-pc-1   <none>           <none>
+shopno-platform   storage-service-767cb5d596-ccxhw                    1/1     Running   52 (18m ago)     2d14h   10.42.0.240   shopnoltd-pc-1   <none>           <none>
+shopno-platform   tenant-router-55cdbfbdd4-glsrh                      1/1     Running   50 (18m ago)     2d14h   10.42.0.248   shopnoltd-pc-1   <none>           <none>
+shopno-platform   training-service-6cf87b954b-x9rvs                   1/1     Running   53 (18m ago)     2d14h   10.42.0.235   shopnoltd-pc-1   <none>           <none>
+shopno-platform   web-portal-7c57c49984-v799b                         1/1     Running   41 (18m ago)     2d14h   10.42.0.238   shopnoltd-pc-1   <none>           <none>
+shopno-platform   worker-service-66f9c7d8c4-q8zgv                     1/1     Running   54 (18m ago)     2d14h   10.42.0.226   shopnoltd-pc-1   <none>           <none>
+
+===== NON-RUNNING PODS =====
+No resources found
+
+===== PROBLEM PODS =====
+
+===== RESTART COUNTS =====
+argocd            argocd-notifications-controller-dd4ff84c-hbjb7      1/1   Running   96 (16m ago)     3d18h
+shopno-data       mongo-7f4549847b-4l9gt                              1/1   Running   95 (18m ago)     14d
+kube-system       local-path-provisioner-58d557dc48-6gpfv             1/1   Running   95 (18m ago)     14d
+shopno-data       minio-775c4b4549-mgqqz                              1/1   Running   91 (18m ago)     11d
+shopno-data       redis-6d47d4c9c6-jfzzq                              1/1   Running   89 (18m ago)     12d
+shopno-payments   billing-engine-78bbf75c4b-h6pdd                     1/1   Running   81 (17m ago)     2d14h
+shopno-apps       enketo-758d85f4bd-nswkz                             1/1   Running   71 (18m ago)     9d
+argocd            argocd-server-76448b9999-2kpn6                      1/1   Running   69 (18m ago)     3d15h
+shopno-platform   search-service-7f6f45f6fd-s86k2                     1/1   Running   61 (18m ago)     2d14h
+shopno-platform   report-service-78fd88d954-2hmdz                     1/1   Running   58 (18m ago)     2d14h
+shopno-platform   admin-portal-7d6f4dcf8f-ztr8s                       1/1   Running   58 (18m ago)     2d14h
+shopno-ingress    cloudflared-58cfbb6c7-62hgm                         1/1   Running   58 (18m ago)     3d
+shopno-platform   event-service-67dd65f8d-z7cmv                       1/1   Running   55 (18m ago)     2d14h
+shopno-ingress    cloudflared-58cfbb6c7-jplgp                         1/1   Running   55 (18m ago)     3d
+shopno-identity   oauth-service-5769d7566f-7pmjq                      1/1   Running   55 (18m ago)     2d14h
+shopno-platform   worker-service-66f9c7d8c4-q8zgv                     1/1   Running   54 (18m ago)     2d14h
+shopno-platform   foundation-service-7dcdd4977b-gtdrg                 1/1   Running   54 (18m ago)     2d14h
+ingress-nginx     ingress-nginx-controller-6fbb8fc6f6-m8rnm           1/1   Running   54 (18m ago)     4d18h
+shopno-platform   training-service-6cf87b954b-x9rvs                   1/1   Running   53 (18m ago)     2d14h
+shopno-platform   notification-service-7687494d6d-dhchd               1/1   Running   53 (18m ago)     2d14h
+shopno-platform   api-service-5f7f898459-k9gnr                        1/1   Running   53 (18m ago)     2d14h
+shopno-platform   storage-service-767cb5d596-ccxhw                    1/1   Running   52 (18m ago)     2d14h
+shopno-platform   freedomain-service-5d8d4c7f5d-kvvql                 1/1   Running   52 (18m ago)     2d14h
+shopno-platform   analytics-service-ddf98c448-dzwhx                   1/1   Running   52 (18m ago)     2d14h
+shopno-platform   tenant-router-55cdbfbdd4-glsrh                      1/1   Running   50 (18m ago)     2d14h
+shopno-platform   interior-service-69cd5d6b58-4fc58                   1/1   Running   49 (18m ago)     2d14h
+shopno-platform   license-service-7f4984b88d-mp4b5                    1/1   Running   48 (18m ago)     2d14h
+shopno-platform   domain-service-7fccfc58cf-sxdt9                     1/1   Running   48 (7h54m ago)   2d14h
+kube-system       coredns-6b85b5d59-kbkrr                             1/1   Running   48 (18m ago)     3d
+shopno-platform   audit-service-6c478657b8-2nbqh                      1/1   Running   47 (18m ago)     2d14h
+shopno-platform   mobile-api-79568bc744-k4m2m                         1/1   Running   44 (18m ago)     2d14h
+argocd            argocd-repo-server-548bcd5486-dd7x7                 1/1   Running   44               3d16h
+kube-system       coredns-6b85b5d59-88xhx                             1/1   Running   43 (18m ago)     3d
+argocd            argocd-applicationset-controller-579c4c54b8-jlwm5   1/1   Running   42 (18m ago)     3d18h
+shopno-platform   web-portal-7c57c49984-v799b                         1/1   Running   41 (18m ago)     2d14h
+argocd            argocd-application-controller-0                     1/1   Running   36 (18m ago)     3d18h
+shopno-apps       code-server-744dc8499f-kkgxr                        1/1   Running   33 (18m ago)     2d18h
+shopno-apps       gitea-7c5c9b4dd4-m2k65                              1/1   Running   32 (18m ago)     3d
+argocd            argocd-dex-server-744c5d4467-2n6tm                  1/1   Running   32               3d18h
+argocd            argocd-redis-84497fb7c5-242vz                       1/1   Running   31 (7h58m ago)   3d18h
+shopno-platform   android-portal-5f7c64dd49-7mqq4                     1/1   Running   30 (18m ago)     2d14h
+shopno-platform   ai-platform-5c75f8bfc5-s5cvl                        1/1   Running   29 (18m ago)     47h
+shopno-apps       chatwoot-848d566fbc-6qj6l                           1/1   Running   26 (18m ago)     44h
+shopno-platform   shopnoltd-web-5b49f6c747-tzglr                      1/1   Running   24 (18m ago)     43h
+shopno-payments   payment-service-d75659859-nn9m6                     1/1   Running   24 (18m ago)     43h
+shopno-payments   exchange-service-74595c48cc-t4n99                   1/1   Running   24               43h
+shopno-identity   auth-service-6989fc87bb-vgh9j                       1/1   Running   22 (18m ago)     47h
+shopno-platform   gateway-75968bfddd-hksfp                            1/1   Running   20 (18m ago)     45h
+shopno-data       postgres-f9946b988-kwg5r                            1/1   Running   16 (18m ago)     47h
+shopno-apps       kobotoolbox-worker-6b95df7896-wn5bq                 1/1   Running   16 (18m ago)     47h
+shopno-apps       kobotoolbox-6c88b6db4b-rbrbf                        1/1   Running   16 (18m ago)     47h
+shopno-mail       mail-service-bd5f97fcc-szzkx                        1/1   Running   15 (18m ago)     43h
+kube-system       metrics-server-7f5b677f8b-pnpfd                     1/1   Running   15 (18m ago)     38h
+shopno-identity   keycloak-69767cb496-rqgtp                           1/1   Running   13 (18m ago)     36h
+shopno-data       opensearch-6d8b995769-gz7p8                         1/1   Running   11 (18m ago)     36h
+
+===== ARGOCD APPLICATIONS =====
+NAME        SYNC STATUS   HEALTH STATUS
+shopnoltd   OutOfSync     Progressing
+
+===== SHOPNOLTD ARGO STATUS =====
+SYNC=OutOfSync
+HEALTH=Progressing
+REVISION=91a90e80bddfb512568260d1c05938d2913e11f3
+
+===== ARGO DEGRADED RESOURCES =====
+
+===== SERVICES =====
+NAMESPACE           NAME                                      TYPE           CLUSTER-IP      EXTERNAL-IP                           PORT(S)                      AGE
+argocd              argocd-applicationset-controller          ClusterIP      10.43.84.240    <none>                                7000/TCP,8080/TCP            3d18h
+argocd              argocd-dex-server                         ClusterIP      10.43.123.85    <none>                                5556/TCP,5557/TCP,5558/TCP   3d18h
+argocd              argocd-metrics                            ClusterIP      10.43.212.219   <none>                                8082/TCP                     3d18h
+argocd              argocd-notifications-controller-metrics   ClusterIP      10.43.209.53    <none>                                9001/TCP                     3d18h
+argocd              argocd-redis                              ClusterIP      10.43.185.177   <none>                                6379/TCP                     3d18h
+argocd              argocd-repo-server                        ClusterIP      10.43.52.144    <none>                                8081/TCP,8084/TCP            3d18h
+argocd              argocd-server                             ClusterIP      10.43.205.242   <none>                                80/TCP,443/TCP               3d18h
+argocd              argocd-server-metrics                     ClusterIP      10.43.86.250    <none>                                8083/TCP                     3d18h
+default             kubernetes                                ClusterIP      10.43.0.1       <none>                                443/TCP                      23d
+ingress-nginx       ingress-nginx-controller                  ClusterIP      10.43.250.239   <none>                                80/TCP,443/TCP               23d
+ingress-nginx       ingress-nginx-controller-admission        ClusterIP      10.43.34.199    <none>                                443/TCP                      23d
+kube-system         kube-dns                                  ClusterIP      10.43.0.10      <none>                                53/UDP,53/TCP,9153/TCP       23d
+kube-system         metrics-server                            ClusterIP      10.43.110.80    <none>                                443/TCP                      4d17h
+shopno-apps         chatwoot                                  ClusterIP      10.43.18.118    <none>                                80/TCP                       23d
+shopno-apps         code-server                               ClusterIP      10.43.197.165   <none>                                80/TCP                       23d
+shopno-apps         enketo                                    ClusterIP      10.43.253.204   <none>                                8005/TCP                     17d
+shopno-apps         gitea                                     ClusterIP      10.43.245.184   <none>                                80/TCP                       23d
+shopno-apps         kobotoolbox                               ClusterIP      10.43.167.21    <none>                                80/TCP                       16d
+shopno-apps         metabase                                  ClusterIP      10.43.215.129   <none>                                80/TCP                       23d
+shopno-apps         mongo                                     ExternalName   <none>          mongo.shopno-data.svc.cluster.local   <none>                       20d
+shopno-apps         n8n                                       ClusterIP      10.43.4.249     <none>                                80/TCP                       23d
+shopno-apps         nextcloud                                 ClusterIP      10.43.112.61    <none>                                80/TCP                       23d
+shopno-apps         ollama                                    ClusterIP      10.43.109.21    <none>                                11434/TCP                    2d20h
+shopno-apps         onlyoffice                                ClusterIP      10.43.123.136   <none>                                80/TCP                       23d
+shopno-apps         owncast                                   ClusterIP      10.43.211.201   <none>                                80/TCP                       23d
+shopno-apps         superset                                  ClusterIP      10.43.183.238   <none>                                80/TCP                       23d
+shopno-data         minio                                     ClusterIP      10.43.25.105    <none>                                80/TCP                       23d
+shopno-data         mongo                                     ClusterIP      10.43.149.166   <none>                                27017/TCP                    20d
+shopno-data         opensearch                                ClusterIP      10.43.21.15     <none>                                80/TCP                       23d
+shopno-data         postgres                                  ClusterIP      10.43.227.219   <none>                                5432/TCP                     23d
+shopno-data         redis                                     ClusterIP      10.43.60.121    <none>                                6379/TCP                     23d
+shopno-identity     auth-service                              ClusterIP      10.43.32.91     <none>                                80/TCP                       23d
+shopno-identity     keycloak                                  ClusterIP      10.43.235.90    <none>                                80/TCP,9000/TCP              23d
+shopno-identity     oauth-service                             ClusterIP      10.43.212.92    <none>                                80/TCP                       23d
+shopno-ingress      cloudflared                               ClusterIP      10.43.243.183   <none>                                2000/TCP                     23d
+shopno-mail         mail-service                              ClusterIP      10.43.177.231   <none>                                80/TCP                       19d
+shopno-monitoring   alertmanager                              ClusterIP      10.43.228.164   <none>                                80/TCP                       23d
+shopno-monitoring   grafana                                   ClusterIP      10.43.114.11    <none>                                80/TCP                       23d
+shopno-monitoring   loki                                      ClusterIP      10.43.208.200   <none>                                80/TCP                       23d
+shopno-monitoring   prometheus                                ClusterIP      10.43.40.115    <none>                                80/TCP                       23d
+shopno-payments     billing-engine                            ClusterIP      10.43.155.166   <none>                                80/TCP                       23d
+shopno-payments     exchange-service                          ClusterIP      10.43.138.100   <none>                                80/TCP                       4d2h
+shopno-payments     payment-service                           ClusterIP      10.43.248.142   <none>                                80/TCP                       4d2h
+shopno-platform     admin-portal                              ClusterIP      10.43.54.78     <none>                                80/TCP                       23d
+shopno-platform     ai-platform                               ClusterIP      10.43.174.1     <none>                                80/TCP                       23d
+shopno-platform     analytics-service                         ClusterIP      10.43.213.147   <none>                                80/TCP                       23d
+shopno-platform     android-portal                            ClusterIP      10.43.193.221   <none>                                80/TCP                       23d
+shopno-platform     api-service                               ClusterIP      10.43.243.8     <none>                                80/TCP                       23d
+shopno-platform     audit-service                             ClusterIP      10.43.107.189   <none>                                80/TCP                       23d
+shopno-platform     domain-service                            ClusterIP      10.43.229.178   <none>                                80/TCP                       23d
+shopno-platform     event-service                             ClusterIP      10.43.67.18     <none>                                80/TCP                       23d
+shopno-platform     foundation-service                        ClusterIP      10.43.158.86    <none>                                80/TCP                       23d
+shopno-platform     freedomain-service                        ClusterIP      10.43.138.76    <none>                                80/TCP                       23d
+shopno-platform     gateway                                   ClusterIP      10.43.36.16     <none>                                80/TCP                       23d
+shopno-platform     interior-service                          ClusterIP      10.43.197.91    <none>                                80/TCP                       23d
+shopno-platform     license-service                           ClusterIP      10.43.74.242    <none>                                80/TCP                       23d
+shopno-platform     mobile-api                                ClusterIP      10.43.158.151   <none>                                80/TCP                       23d
+shopno-platform     notification-service                      ClusterIP      10.43.10.235    <none>                                80/TCP                       23d
+shopno-platform     report-service                            ClusterIP      10.43.91.89     <none>                                80/TCP                       23d
+shopno-platform     search-service                            ClusterIP      10.43.75.248    <none>                                80/TCP                       23d
+shopno-platform     shopnoltd-web                             ClusterIP      10.43.69.197    <none>                                80/TCP                       7d19h
+shopno-platform     storage-service                           ClusterIP      10.43.84.24     <none>                                80/TCP                       23d
+shopno-platform     tenant-router                             ClusterIP      10.43.150.58    <none>                                80/TCP                       23d
+shopno-platform     training-service                          ClusterIP      10.43.202.73    <none>                                80/TCP                       23d
+shopno-platform     web-portal                                ClusterIP      10.43.241.37    <none>                                80/TCP                       23d
+shopno-platform     worker-service                            ClusterIP      10.43.110.124   <none>                                80/TCP                       23d
+shopno-tools        session-manager                           ClusterIP      10.43.175.217   <none>                                80/TCP,6080/TCP              3d21h
+
+===== INGRESS =====
+NAMESPACE           NAME                   CLASS   HOSTS                                                                                              ADDRESS         PORTS     AGE
+shopno-apps         chatwoot               nginx   chatwoot.shopnoltd.dpdns.org                                                                       10.43.250.239   80, 443   23d
+shopno-apps         code-server            nginx   code-server.shopnoltd.dpdns.org                                                                    10.43.250.239   80, 443   23d
+shopno-apps         enketo                 nginx   enketo.shopnoltd.dpdns.org                                                                         10.43.250.239   80, 443   17d
+shopno-apps         gitea                  nginx   gitea.shopnoltd.dpdns.org                                                                          10.43.250.239   80, 443   23d
+shopno-apps         kobotoolbox            nginx   kobotoolbox.shopnoltd.dpdns.org,kobo.shopnoltd.dpdns.org                                           10.43.250.239   80, 443   23d
+shopno-apps         metabase               nginx   metabase.shopnoltd.dpdns.org                                                                       10.43.250.239   80, 443   23d
+shopno-apps         n8n                    nginx   n8n.shopnoltd.dpdns.org                                                                            10.43.250.239   80, 443   23d
+shopno-apps         nextcloud              nginx   nextcloud.shopnoltd.dpdns.org                                                                      10.43.250.239   80, 443   23d
+shopno-apps         onlyoffice             nginx   onlyoffice.shopnoltd.dpdns.org                                                                     10.43.250.239   80, 443   23d
+shopno-apps         owncast                nginx   owncast.shopnoltd.dpdns.org                                                                        10.43.250.239   80, 443   23d
+shopno-apps         superset               nginx   superset.shopnoltd.dpdns.org                                                                       10.43.250.239   80, 443   23d
+shopno-data         minio                  nginx   minio.shopnoltd.dpdns.org                                                                          10.43.250.239   80, 443   23d
+shopno-data         opensearch             nginx   opensearch.shopnoltd.dpdns.org                                                                     10.43.250.239   80, 443   23d
+shopno-data         postgres               nginx   postgres.shopnoltd.dpdns.org                                                                       10.43.250.239   80, 443   23d
+shopno-data         redis                  nginx   redis.shopnoltd.dpdns.org                                                                          10.43.250.239   80, 443   23d
+shopno-identity     auth-service           nginx   auth-service.shopnoltd.dpdns.org                                                                   10.43.250.239   80, 443   23d
+shopno-identity     keycloak               nginx   auth.shopnoltd.dpdns.org,keycloak.shopnoltd.dpdns.org                                              10.43.250.239   80, 443   23d
+shopno-identity     oauth-service          nginx   oauth-service.shopnoltd.dpdns.org                                                                  10.43.250.239   80, 443   23d
+shopno-mail         mail-service           nginx   mail-api.shopnoltd.dpdns.org                                                                       10.43.250.239   80, 443   19d
+shopno-monitoring   alertmanager           nginx   alertmanager.shopnoltd.dpdns.org                                                                   10.43.250.239   80, 443   23d
+shopno-monitoring   grafana                nginx   grafana.shopnoltd.dpdns.org                                                                        10.43.250.239   80, 443   23d
+shopno-monitoring   loki                   nginx   loki.shopnoltd.dpdns.org                                                                           10.43.250.239   80, 443   23d
+shopno-monitoring   prometheus             nginx   prometheus.shopnoltd.dpdns.org                                                                     10.43.250.239   80, 443   23d
+shopno-payments     billing-engine         nginx   billing-engine.shopnoltd.dpdns.org                                                                 10.43.250.239   80, 443   3d16h
+shopno-payments     exchange-service       nginx   exchange-service.shopnoltd.dpdns.org                                                               10.43.250.239   80, 443   4d2h
+shopno-payments     payment-service        nginx   payment-service.shopnoltd.dpdns.org                                                                10.43.250.239   80, 443   4d2h
+shopno-platform     admin-portal           nginx   admin-portal.shopnoltd.dpdns.org                                                                   10.43.250.239   80, 443   23d
+shopno-platform     ai-platform            nginx   ai-platform.shopnoltd.dpdns.org                                                                    10.43.250.239   80, 443   23d
+shopno-platform     analytics-service      nginx   analytics-service.shopnoltd.dpdns.org                                                              10.43.250.239   80, 443   23d
+shopno-platform     android-portal         nginx   shopnoltdandroid.shopnoltd.dpdns.org                                                               10.43.250.239   80, 443   23d
+shopno-platform     api-service            nginx   api.shopnoltd.dpdns.org                                                                            10.43.250.239   80, 443   23d
+shopno-platform     audit-service          nginx   audit-service.shopnoltd.dpdns.org                                                                  10.43.250.239   80, 443   23d
+shopno-platform     domain-service         nginx   domain.shopnoltd.dpdns.org                                                                         10.43.250.239   80, 443   23d
+shopno-platform     event-service          nginx   event.shopnoltd.dpdns.org                                                                          10.43.250.239   80, 443   23d
+shopno-platform     foundation-service     nginx   foundation.shopnoltd.dpdns.org                                                                     10.43.250.239   80, 443   23d
+shopno-platform     freedomain-service     nginx   freedomain.shopnoltd.dpdns.org                                                                     10.43.250.239   80, 443   23d
+shopno-platform     gateway                nginx   gateway.shopnoltd.dpdns.org                                                                        10.43.250.239   80, 443   23d
+shopno-platform     interior-service       nginx   interior.shopnoltd.dpdns.org                                                                       10.43.250.239   80, 443   23d
+shopno-platform     license-service        nginx   license-service.shopnoltd.dpdns.org                                                                10.43.250.239   80, 443   23d
+shopno-platform     mobile-api             nginx   mobile-api.shopnoltd.dpdns.org                                                                     10.43.250.239   80, 443   23d
+shopno-platform     notification-service   nginx   notification-service.shopnoltd.dpdns.org                                                           10.43.250.239   80, 443   23d
+shopno-platform     report-service         nginx   report-service.shopnoltd.dpdns.org                                                                 10.43.250.239   80, 443   23d
+shopno-platform     search-service         nginx   search-service.shopnoltd.dpdns.org                                                                 10.43.250.239   80, 443   23d
+shopno-platform     shopnoltd-web          nginx   billing.shopnoltd.dpdns.org,payment.shopnoltd.dpdns.org,exchange.shopnoltd.dpdns.org + 2 more...   10.43.250.239   80, 443   7d19h
+shopno-platform     storage-service        nginx   storage-service.shopnoltd.dpdns.org                                                                10.43.250.239   80, 443   23d
+shopno-platform     tenant-router          nginx   tenant-router.shopnoltd.dpdns.org                                                                  10.43.250.239   80, 443   23d
+shopno-platform     training-service       nginx   training.shopnoltd.dpdns.org                                                                       10.43.250.239   80, 443   23d
+shopno-platform     web-portal             nginx   web-portal.shopnoltd.dpdns.org,shopnoltd.dpdns.org                                                 10.43.250.239   80, 443   23d
+shopno-platform     worker-service         nginx   worker-service.shopnoltd.dpdns.org                                                                 10.43.250.239   80, 443   23d
+shopno-tools        session-manager        nginx   sessions.shopnoltd.dpdns.org                                                                       10.43.250.239   80, 443   3d21h
+shopno-tools        session-manager-vnc    nginx   sessions.shopnoltd.dpdns.org                                                                       10.43.250.239   80, 443   3d21h
+
+===== CERTIFICATES =====
+error: the server doesn't have a resource type "certificate"
+
+===== CERTIFICATE REQUESTS =====
+error: the server doesn't have a resource type "certificaterequest"
+
+===== CLUSTER EVENTS =====
+shopno-platform     18m         Normal    Created                          pod/tenant-router-55cdbfbdd4-glsrh                      Container created
+shopno-platform     18m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/web-portal                      failed to get cpu utilization: unable to get metrics for resource cpu: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-platform     18m         Normal    Created                          pod/interior-service-69cd5d6b58-4fc58                   Container created
+shopno-identity     18m         Normal    Created                          pod/oauth-service-5769d7566f-7pmjq                      Container created
+shopno-platform     18m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/notification-service            failed to get cpu utilization: unable to get metrics for resource cpu: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-platform     18m         Warning   FailedComputeMetricsReplicas     horizontalpodautoscaler/android-portal                  invalid metrics (2 invalid out of 2), first error is: failed to get cpu resource metric value: failed to get cpu utilization: unable to get metrics for resource cpu: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-platform     18m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/notification-service            failed to get memory utilization: unable to get metrics for resource memory: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-platform     18m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/audit-service                   failed to get cpu utilization: unable to get metrics for resource cpu: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-platform     18m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/audit-service                   failed to get memory utilization: unable to get metrics for resource memory: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-platform     18m         Warning   FailedComputeMetricsReplicas     horizontalpodautoscaler/audit-service                   invalid metrics (2 invalid out of 2), first error is: failed to get cpu resource metric value: failed to get cpu utilization: unable to get metrics for resource cpu: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-platform     18m         Warning   FailedComputeMetricsReplicas     horizontalpodautoscaler/notification-service            invalid metrics (2 invalid out of 2), first error is: failed to get cpu resource metric value: failed to get cpu utilization: unable to get metrics for resource cpu: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-platform     18m         Normal    Created                          pod/android-portal-5f7c64dd49-7mqq4                     Container created
+shopno-platform     18m         Warning   FailedComputeMetricsReplicas     horizontalpodautoscaler/admin-portal                    invalid metrics (2 invalid out of 2), first error is: failed to get cpu resource metric value: failed to get cpu utilization: unable to get metrics for resource cpu: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-platform     18m         Normal    Created                          pod/domain-service-7fccfc58cf-sxdt9                     Container created
+argocd              18m         Normal    Created                          pod/argocd-application-controller-0                     Container created
+shopno-identity     18m         Normal    Created                          pod/keycloak-69767cb496-rqgtp                           Container created
+argocd              18m         Normal    Pulled                           pod/argocd-notifications-controller-dd4ff84c-hbjb7      Successfully pulled image "quay.io/argoproj/argocd:v3.5.1" in 7.155s (7.155s including waiting). Image size: 210598970 bytes.
+shopno-platform     18m         Normal    Created                          pod/license-service-7f4984b88d-mp4b5                    Container created
+shopno-platform     18m         Normal    Started                          pod/domain-service-7fccfc58cf-sxdt9                     Container started
+shopno-apps         18m         Normal    Started                          pod/chatwoot-848d566fbc-6qj6l                           Container started
+shopno-platform     18m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/foundation-service              failed to get memory utilization: unable to get metrics for resource memory: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-platform     18m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/foundation-service              failed to get cpu utilization: unable to get metrics for resource cpu: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-platform     18m         Normal    Started                          pod/analytics-service-ddf98c448-dzwhx                   Container started
+shopno-platform     18m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/api-service                     failed to get cpu utilization: unable to get metrics for resource cpu: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-platform     18m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/mobile-api                      failed to get memory utilization: unable to get metrics for resource memory: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-platform     18m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/api-service                     failed to get memory utilization: unable to get metrics for resource memory: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-platform     18m         Warning   FailedComputeMetricsReplicas     horizontalpodautoscaler/mobile-api                      invalid metrics (2 invalid out of 2), first error is: failed to get cpu resource metric value: failed to get cpu utilization: unable to get metrics for resource cpu: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-platform     18m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/mobile-api                      failed to get cpu utilization: unable to get metrics for resource cpu: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-platform     18m         Warning   FailedComputeMetricsReplicas     horizontalpodautoscaler/api-service                     invalid metrics (2 invalid out of 2), first error is: failed to get cpu resource metric value: failed to get cpu utilization: unable to get metrics for resource cpu: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-platform     18m         Warning   FailedComputeMetricsReplicas     horizontalpodautoscaler/interior-service                invalid metrics (2 invalid out of 2), first error is: failed to get cpu resource metric value: failed to get cpu utilization: unable to get metrics for resource cpu: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-platform     18m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/interior-service                failed to get memory utilization: unable to get metrics for resource memory: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-platform     18m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/search-service                  failed to get cpu utilization: unable to get metrics for resource cpu: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-platform     18m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/search-service                  failed to get memory utilization: unable to get metrics for resource memory: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-platform     18m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/domain-service                  failed to get cpu utilization: unable to get metrics for resource cpu: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-platform     18m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/domain-service                  failed to get memory utilization: unable to get metrics for resource memory: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-platform     18m         Warning   FailedComputeMetricsReplicas     horizontalpodautoscaler/domain-service                  invalid metrics (2 invalid out of 2), first error is: failed to get cpu resource metric value: failed to get cpu utilization: unable to get metrics for resource cpu: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-platform     18m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/storage-service                 failed to get cpu utilization: unable to get metrics for resource cpu: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-platform     18m         Warning   FailedComputeMetricsReplicas     horizontalpodautoscaler/analytics-service               invalid metrics (2 invalid out of 2), first error is: failed to get cpu resource metric value: failed to get cpu utilization: unable to get metrics for resource cpu: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-platform     18m         Warning   FailedComputeMetricsReplicas     horizontalpodautoscaler/search-service                  invalid metrics (2 invalid out of 2), first error is: failed to get cpu resource metric value: failed to get cpu utilization: unable to get metrics for resource cpu: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-platform     18m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/tenant-router                   failed to get memory utilization: unable to get metrics for resource memory: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-platform     18m         Warning   FailedComputeMetricsReplicas     horizontalpodautoscaler/tenant-router                   invalid metrics (2 invalid out of 2), first error is: failed to get cpu resource metric value: failed to get cpu utilization: unable to get metrics for resource cpu: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-platform     18m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/event-service                   failed to get cpu utilization: unable to get metrics for resource cpu: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-platform     18m         Normal    Created                          pod/notification-service-7687494d6d-dhchd               Container created
+shopno-payments     18m         Normal    Created                          pod/payment-service-d75659859-nn9m6                     Container created
+shopno-platform     18m         Normal    Started                          pod/audit-service-6c478657b8-2nbqh                      Container started
+shopno-platform     18m         Warning   BackOff                          pod/freedomain-service-5d8d4c7f5d-kvvql                 Back-off restarting failed container freedomain-service in pod freedomain-service-5d8d4c7f5d-kvvql_shopno-platform(96a9446e-fbcb-4ca1-a778-36a0d859d36c)
+shopno-apps         18m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/kobotoolbox                     failed to get cpu utilization: unable to get metrics for resource cpu: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-platform     18m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/license-service                 failed to get cpu utilization: unable to get metrics for resource cpu: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-apps         18m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/kobotoolbox                     failed to get memory utilization: unable to get metrics for resource memory: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-platform     18m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/worker-service                  failed to get cpu utilization: unable to get metrics for resource cpu: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-platform     18m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/worker-service                  failed to get memory utilization: unable to get metrics for resource memory: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-platform     18m         Warning   FailedComputeMetricsReplicas     horizontalpodautoscaler/foundation-service              invalid metrics (2 invalid out of 2), first error is: failed to get cpu resource metric value: failed to get cpu utilization: unable to get metrics for resource cpu: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-identity     18m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/oauth-service                   failed to get cpu utilization: unable to get metrics for resource cpu: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-identity     18m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/oauth-service                   failed to get memory utilization: unable to get metrics for resource memory: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-platform     18m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/analytics-service               failed to get memory utilization: unable to get metrics for resource memory: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-platform     18m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/ai-platform                     failed to get cpu utilization: unable to get metrics for resource cpu: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-platform     18m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/ai-platform                     failed to get memory utilization: unable to get metrics for resource memory: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-platform     18m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/analytics-service               failed to get cpu utilization: unable to get metrics for resource cpu: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-apps         18m         Warning   FailedComputeMetricsReplicas     horizontalpodautoscaler/kobotoolbox                     invalid metrics (2 invalid out of 2), first error is: failed to get cpu resource metric value: failed to get cpu utilization: unable to get metrics for resource cpu: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-platform     18m         Warning   FailedComputeMetricsReplicas     horizontalpodautoscaler/training-service                invalid metrics (2 invalid out of 2), first error is: failed to get cpu resource metric value: failed to get cpu utilization: unable to get metrics for resource cpu: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-platform     18m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/training-service                failed to get memory utilization: unable to get metrics for resource memory: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-platform     18m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/training-service                failed to get cpu utilization: unable to get metrics for resource cpu: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-platform     18m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/license-service                 failed to get memory utilization: unable to get metrics for resource memory: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-platform     18m         Warning   FailedComputeMetricsReplicas     horizontalpodautoscaler/license-service                 invalid metrics (2 invalid out of 2), first error is: failed to get cpu resource metric value: failed to get cpu utilization: unable to get metrics for resource cpu: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-platform     18m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/report-service                  failed to get cpu utilization: unable to get metrics for resource cpu: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-identity     18m         Warning   FailedComputeMetricsReplicas     horizontalpodautoscaler/oauth-service                   invalid metrics (2 invalid out of 2), first error is: failed to get cpu resource metric value: failed to get cpu utilization: unable to get metrics for resource cpu: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-platform     18m         Warning   FailedComputeMetricsReplicas     horizontalpodautoscaler/ai-platform                     invalid metrics (2 invalid out of 2), first error is: failed to get cpu resource metric value: failed to get cpu utilization: unable to get metrics for resource cpu: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-platform     18m         Warning   FailedComputeMetricsReplicas     horizontalpodautoscaler/worker-service                  invalid metrics (2 invalid out of 2), first error is: failed to get cpu resource metric value: failed to get cpu utilization: unable to get metrics for resource cpu: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-payments     18m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/exchange-service                failed to get cpu utilization: unable to get metrics for resource cpu: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-platform     18m         Normal    Started                          pod/event-service-67dd65f8d-z7cmv                       Container started
+shopno-platform     18m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/report-service                  failed to get memory utilization: unable to get metrics for resource memory: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-platform     18m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/gateway                         failed to get memory utilization: unable to get metrics for resource memory: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-apps         18m         Normal    Started                          pod/gitea-7c5c9b4dd4-m2k65                              Container started
+shopno-platform     18m         Warning   FailedComputeMetricsReplicas     horizontalpodautoscaler/report-service                  invalid metrics (2 invalid out of 2), first error is: failed to get cpu resource metric value: failed to get cpu utilization: unable to get metrics for resource cpu: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+kube-system         18m         Normal    Created                          pod/metrics-server-7f5b677f8b-pnpfd                     Container created
+shopno-platform     18m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/interior-service                failed to get cpu utilization: unable to get metrics for resource cpu: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-platform     18m         Warning   FailedComputeMetricsReplicas     horizontalpodautoscaler/gateway                         invalid metrics (2 invalid out of 2), first error is: failed to get cpu resource metric value: failed to get cpu utilization: unable to get metrics for resource cpu: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-platform     18m         Normal    Started                          pod/training-service-6cf87b954b-x9rvs                   Container started
+shopno-platform     18m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/gateway                         failed to get cpu utilization: unable to get metrics for resource cpu: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+argocd              18m         Normal    Pulling                          pod/argocd-repo-server-548bcd5486-dd7x7                 Pulling image "quay.io/argoproj/argocd:v3.5.1"
+shopno-apps         18m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/chatwoot                        failed to get cpu utilization: unable to get metrics for resource cpu: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-platform     18m         Warning   FailedComputeMetricsReplicas     horizontalpodautoscaler/event-service                   invalid metrics (2 invalid out of 2), first error is: failed to get cpu resource metric value: failed to get cpu utilization: unable to get metrics for resource cpu: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-platform     18m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/event-service                   failed to get memory utilization: unable to get metrics for resource memory: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-ingress      18m         Warning   Unhealthy                        pod/cloudflared-58cfbb6c7-62hgm                         Readiness probe failed: Get "http://10.42.0.227:2000/ready": dial tcp 10.42.0.227:2000: connect: connection refused
+argocd              18m         Normal    Pulled                           pod/argocd-server-76448b9999-2kpn6                      Successfully pulled image "quay.io/argoproj/argocd:v3.5.1" in 8.441s (8.441s including waiting). Image size: 210598970 bytes.
+shopno-data         18m         Normal    Started                          pod/opensearch-6d8b995769-gz7p8                         Container started
+shopno-platform     18m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/storage-service                 failed to get memory utilization: unable to get metrics for resource memory: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-apps         18m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/chatwoot                        failed to get memory utilization: unable to get metrics for resource memory: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-apps         18m         Warning   FailedComputeMetricsReplicas     horizontalpodautoscaler/chatwoot                        invalid metrics (2 invalid out of 2), first error is: failed to get cpu resource metric value: failed to get cpu utilization: unable to get metrics for resource cpu: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-platform     18m         Warning   FailedComputeMetricsReplicas     horizontalpodautoscaler/storage-service                 invalid metrics (2 invalid out of 2), first error is: failed to get cpu resource metric value: failed to get cpu utilization: unable to get metrics for resource cpu: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-apps         18m         Normal    Started                          pod/code-server-744dc8499f-kkgxr                        Container started
+shopno-payments     18m         Warning   FailedComputeMetricsReplicas     horizontalpodautoscaler/payment-service                 invalid metrics (2 invalid out of 2), first error is: failed to get cpu resource metric value: failed to get cpu utilization: unable to get metrics for resource cpu: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-payments     18m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/payment-service                 failed to get memory utilization: unable to get metrics for resource memory: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-payments     18m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/exchange-service                failed to get memory utilization: unable to get metrics for resource memory: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-platform     18m         Normal    Started                          pod/android-portal-5f7c64dd49-7mqq4                     Container started
+shopno-payments     18m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/payment-service                 failed to get cpu utilization: unable to get metrics for resource cpu: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-payments     18m         Normal    Started                          pod/exchange-service-74595c48cc-t4n99                   Container started
+shopno-platform     18m         Normal    Started                          pod/tenant-router-55cdbfbdd4-glsrh                      Container started
+kube-system         18m         Normal    Started                          pod/metrics-server-7f5b677f8b-pnpfd                     Container started
+shopno-payments     18m         Warning   FailedComputeMetricsReplicas     horizontalpodautoscaler/exchange-service                invalid metrics (2 invalid out of 2), first error is: failed to get cpu resource metric value: failed to get cpu utilization: unable to get metrics for resource cpu: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+shopno-platform     18m         Normal    Started                          pod/ai-platform-5c75f8bfc5-s5cvl                        Container started
+shopno-identity     18m         Normal    Started                          pod/keycloak-69767cb496-rqgtp                           Container started
+argocd              18m         Normal    Started                          pod/argocd-application-controller-0                     Container started
+shopno-platform     18m         Normal    Started                          pod/mobile-api-79568bc744-k4m2m                         Container started
+shopno-platform     18m         Normal    Started                          pod/license-service-7f4984b88d-mp4b5                    Container started
+shopno-platform     18m         Normal    Started                          pod/notification-service-7687494d6d-dhchd               Container started
+shopno-platform     18m         Normal    Started                          pod/api-service-5f7f898459-k9gnr                        Container started
+shopno-platform     18m         Normal    Started                          pod/interior-service-69cd5d6b58-4fc58                   Container started
+shopno-payments     18m         Normal    Started                          pod/payment-service-d75659859-nn9m6                     Container started
+shopno-platform     18m         Normal    Started                          pod/gateway-75968bfddd-hksfp                            Container started
+shopno-identity     18m         Normal    Started                          pod/oauth-service-5769d7566f-7pmjq                      Container started
+shopno-mail         18m         Normal    Pulled                           pod/mail-service-bd5f97fcc-szzkx                        Successfully pulled image "ghcr.io/asaduzzamanbheramara-prog/shopnoltd/mail-service:latest" in 6.619s (6.619s including waiting). Image size: 73778289 bytes.
+shopno-data         18m         Normal    Pulled                           pod/postgres-f9946b988-kwg5r                            Successfully pulled image "busybox:latest" in 5.482s (5.482s including waiting). Image size: 2236931 bytes.
+shopno-platform     18m         Normal    Pulled                           pod/web-portal-7c57c49984-v799b                         Successfully pulled image "ghcr.io/asaduzzamanbheramara-prog/shopnoltd/web-portal:latest" in 7.566s (7.578s including waiting). Image size: 21036613 bytes.
+argocd              18m         Normal    Created                          pod/argocd-server-76448b9999-2kpn6                      Container created
+shopno-platform     18m         Normal    Started                          pod/foundation-service-7dcdd4977b-gtdrg                 Container started
+shopno-platform     18m         Normal    Pulled                           pod/shopnoltd-web-5b49f6c747-tzglr                      Successfully pulled image "ghcr.io/asaduzzamanbheramara-prog/shopnoltd-shopnoltd-web:latest" in 5.864s (5.864s including waiting). Image size: 21036608 bytes.
+argocd              18m         Normal    Pulled                           pod/argocd-dex-server-744c5d4467-2n6tm                  Successfully pulled image "quay.io/argoproj/argocd:v3.5.1" in 6.326s (6.326s including waiting). Image size: 210598970 bytes.
+shopno-platform     18m         Normal    Created                          pod/web-portal-7c57c49984-v799b                         Container created
+shopno-apps         18m         Normal    Pulled                           pod/gitea-7c5c9b4dd4-m2k65                              Container image "gitea/gitea:latest-rootless" already present on machine and can be accessed by the pod
+shopno-platform     17m         Normal    Pulled                           pod/freedomain-service-5d8d4c7f5d-kvvql                 Container image "ghcr.io/asaduzzamanbheramara-prog/shopnoltd/freedomain-service:latest" already present on machine and can be accessed by the pod
+shopno-apps         17m         Normal    Pulled                           pod/code-server-744dc8499f-kkgxr                        Container image "ghcr.io/asaduzzamanbheramara-prog/shopnoltd-code-server:470a010229144b4a1df84bb80a7957995843a90a" already present on machine and can be accessed by the pod
+shopno-data         17m         Normal    Created                          pod/postgres-f9946b988-kwg5r                            Container created
+shopno-platform     17m         Normal    Pulled                           pod/admin-portal-7d6f4dcf8f-ztr8s                       Container image "ghcr.io/asaduzzamanbheramara-prog/shopnoltd/admin-portal:latest" already present on machine and can be accessed by the pod
+argocd              17m         Normal    Created                          pod/argocd-dex-server-744c5d4467-2n6tm                  Container created
+shopno-ingress      17m         Warning   Unhealthy                        pod/cloudflared-58cfbb6c7-jplgp                         Readiness probe failed: Get "http://10.42.0.234:2000/ready": dial tcp 10.42.0.234:2000: connect: connection refused
+shopno-platform     17m         Normal    Created                          pod/shopnoltd-web-5b49f6c747-tzglr                      Container created
+shopno-mail         17m         Normal    Created                          pod/mail-service-bd5f97fcc-szzkx                        Container created
+shopno-apps         17m         Normal    Created                          pod/gitea-7c5c9b4dd4-m2k65                              Container created
+shopno-platform     17m         Normal    Created                          pod/admin-portal-7d6f4dcf8f-ztr8s                       Container created
+shopno-apps         17m         Normal    Pulled                           pod/kobotoolbox-worker-6b95df7896-wn5bq                 Successfully pulled image "ghcr.io/asaduzzamanbheramara-prog/shopnoltd-kpi:sha-7ef4f470ae55378c064389ec6671dfc04b6aabca" in 10.742s (10.742s including waiting). Image size: 1836348068 bytes.
+argocd              17m         Normal    Pulled                           pod/argocd-repo-server-548bcd5486-dd7x7                 Successfully pulled image "quay.io/argoproj/argocd:v3.5.1" in 5.059s (5.059s including waiting). Image size: 210598970 bytes.
+shopno-apps         17m         Normal    Pulled                           pod/kobotoolbox-6c88b6db4b-rbrbf                        Successfully pulled image "ghcr.io/asaduzzamanbheramara-prog/shopnoltd-kpi:sha-7ef4f470ae55378c064389ec6671dfc04b6aabca" in 10.738s (10.738s including waiting). Image size: 1836348068 bytes.
+shopno-platform     17m         Normal    Created                          pod/freedomain-service-5d8d4c7f5d-kvvql                 Container created
+shopno-data         17m         Normal    Started                          pod/postgres-f9946b988-kwg5r                            Container started
+shopno-apps         17m         Normal    Created                          pod/code-server-744dc8499f-kkgxr                        Container created
+shopno-mail         17m         Normal    Started                          pod/mail-service-bd5f97fcc-szzkx                        Container started
+argocd              17m         Normal    Started                          pod/argocd-applicationset-controller-579c4c54b8-jlwm5   Container started
+shopno-apps         17m         Normal    Created                          pod/kobotoolbox-6c88b6db4b-rbrbf                        Container created
+shopno-apps         17m         Normal    Created                          pod/kobotoolbox-worker-6b95df7896-wn5bq                 Container created
+shopno-platform     17m         Normal    Started                          pod/web-portal-7c57c49984-v799b                         Container started
+argocd              17m         Normal    Created                          pod/argocd-repo-server-548bcd5486-dd7x7                 Container created
+shopno-apps         17m         Normal    Started                          pod/code-server-744dc8499f-kkgxr                        Container started
+shopno-platform     17m         Normal    Started                          pod/shopnoltd-web-5b49f6c747-tzglr                      Container started
+kube-system         17m         Warning   Unhealthy                        pod/metrics-server-7f5b677f8b-pnpfd                     Readiness probe failed: HTTP probe failed with statuscode: 500
+shopno-apps         17m         Normal    Started                          pod/kobotoolbox-6c88b6db4b-rbrbf                        Container started
+shopno-platform     17m         Normal    Started                          pod/freedomain-service-5d8d4c7f5d-kvvql                 Container started
+shopno-apps         17m         Normal    Started                          pod/gitea-7c5c9b4dd4-m2k65                              Container started
+shopno-apps         17m         Normal    Started                          pod/kobotoolbox-worker-6b95df7896-wn5bq                 Container started
+shopno-payments     17m         Warning   BackOff                          pod/billing-engine-78bbf75c4b-h6pdd                     Back-off restarting failed container billing-engine in pod billing-engine-78bbf75c4b-h6pdd_shopno-payments(690b5f88-f2be-4094-99e7-6f4c04c0fa9d)
+shopno-data         17m         Normal    Pulling                          pod/postgres-f9946b988-kwg5r                            Pulling image "ghcr.io/asaduzzamanbheramara-prog/shopnoltd-postgres-combined:pg16-postgis3.5-pgvector0.8.6"
+argocd              17m         Normal    Pulling                          pod/argocd-redis-84497fb7c5-242vz                       Pulling image "public.ecr.aws/docker/library/redis:8.2.3-alpine"
+shopno-platform     17m         Normal    Started                          pod/admin-portal-7d6f4dcf8f-ztr8s                       Container started
+shopno-data         17m         Normal    Pulled                           pod/postgres-f9946b988-kwg5r                            Successfully pulled image "ghcr.io/asaduzzamanbheramara-prog/shopnoltd-postgres-combined:pg16-postgis3.5-pgvector0.8.6" in 1.805s (1.812s including waiting). Image size: 226605399 bytes.
+shopno-data         17m         Normal    Created                          pod/postgres-f9946b988-kwg5r                            Container created
+argocd              17m         Normal    Pulled                           pod/argocd-redis-84497fb7c5-242vz                       Successfully pulled image "public.ecr.aws/docker/library/redis:8.2.3-alpine" in 2.068s (2.069s including waiting). Image size: 27510315 bytes.
+shopno-data         17m         Normal    Started                          pod/postgres-f9946b988-kwg5r                            Container started
+argocd              17m         Normal    Created                          pod/argocd-redis-84497fb7c5-242vz                       Container created
+shopno-data         17m         Normal    Started                          pod/mongo-7f4549847b-4l9gt                              Container started
+shopno-identity     17m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/auth-service                    failed to get memory utilization: unable to get metrics for resource memory: no metrics returned from resource metrics API
+shopno-platform     17m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/notification-service            failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+shopno-platform     17m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/report-service                  failed to get memory utilization: unable to get metrics for resource memory: no metrics returned from resource metrics API
+shopno-platform     17m         Warning   FailedComputeMetricsReplicas     horizontalpodautoscaler/report-service                  invalid metrics (2 invalid out of 2), first error is: failed to get cpu resource metric value: failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+shopno-platform     17m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/notification-service            failed to get memory utilization: unable to get metrics for resource memory: no metrics returned from resource metrics API
+shopno-platform     17m         Warning   FailedComputeMetricsReplicas     horizontalpodautoscaler/web-portal                      invalid metrics (2 invalid out of 2), first error is: failed to get cpu resource metric value: failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+shopno-platform     17m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/web-portal                      failed to get memory utilization: unable to get metrics for resource memory: no metrics returned from resource metrics API
+shopno-platform     17m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/web-portal                      failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+shopno-identity     17m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/auth-service                    failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+shopno-platform     17m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/report-service                  failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+shopno-platform     17m         Warning   FailedComputeMetricsReplicas     horizontalpodautoscaler/tenant-router                   invalid metrics (2 invalid out of 2), first error is: failed to get cpu resource metric value: failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+shopno-platform     17m         Warning   FailedComputeMetricsReplicas     horizontalpodautoscaler/notification-service            invalid metrics (2 invalid out of 2), first error is: failed to get cpu resource metric value: failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+shopno-platform     17m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/audit-service                   failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+shopno-platform     17m         Warning   FailedComputeMetricsReplicas     horizontalpodautoscaler/android-portal                  invalid metrics (2 invalid out of 2), first error is: failed to get cpu resource metric value: failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+shopno-platform     17m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/android-portal                  failed to get memory utilization: unable to get metrics for resource memory: no metrics returned from resource metrics API
+shopno-platform     17m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/android-portal                  failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+shopno-platform     17m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/tenant-router                   failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+shopno-platform     17m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/audit-service                   failed to get memory utilization: unable to get metrics for resource memory: no metrics returned from resource metrics API
+shopno-platform     17m         Warning   FailedComputeMetricsReplicas     horizontalpodautoscaler/audit-service                   invalid metrics (2 invalid out of 2), first error is: failed to get cpu resource metric value: failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+shopno-platform     17m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/tenant-router                   failed to get memory utilization: unable to get metrics for resource memory: no metrics returned from resource metrics API
+shopno-platform     17m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/interior-service                failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+shopno-platform     17m         Warning   FailedComputeMetricsReplicas     horizontalpodautoscaler/domain-service                  invalid metrics (2 invalid out of 2), first error is: failed to get cpu resource metric value: failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+shopno-payments     17m         Normal    Created                          pod/billing-engine-78bbf75c4b-h6pdd                     Container created
+shopno-platform     17m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/api-service                     failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+shopno-platform     17m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/event-service                   failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+shopno-platform     17m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/ai-platform                     failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+shopno-platform     17m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/gateway                         failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+shopno-platform     17m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/ai-platform                     failed to get memory utilization: unable to get metrics for resource memory: no metrics returned from resource metrics API
+shopno-identity     17m         Warning   FailedComputeMetricsReplicas     horizontalpodautoscaler/auth-service                    invalid metrics (2 invalid out of 2), first error is: failed to get cpu resource metric value: failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+shopno-platform     17m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/api-service                     failed to get memory utilization: unable to get metrics for resource memory: no metrics returned from resource metrics API
+shopno-platform     17m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/gateway                         failed to get memory utilization: unable to get metrics for resource memory: no metrics returned from resource metrics API
+shopno-platform     17m         Warning   FailedComputeMetricsReplicas     horizontalpodautoscaler/interior-service                invalid metrics (2 invalid out of 2), first error is: failed to get cpu resource metric value: failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+shopno-platform     17m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/interior-service                failed to get memory utilization: unable to get metrics for resource memory: no metrics returned from resource metrics API
+shopno-platform     17m         Warning   FailedComputeMetricsReplicas     horizontalpodautoscaler/api-service                     invalid metrics (2 invalid out of 2), first error is: failed to get cpu resource metric value: failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+shopno-platform     17m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/mobile-api                      failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+shopno-platform     17m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/mobile-api                      failed to get memory utilization: unable to get metrics for resource memory: no metrics returned from resource metrics API
+shopno-platform     17m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/domain-service                  failed to get memory utilization: unable to get metrics for resource memory: no metrics returned from resource metrics API
+shopno-platform     17m         Warning   FailedComputeMetricsReplicas     horizontalpodautoscaler/foundation-service              invalid metrics (2 invalid out of 2), first error is: failed to get cpu resource metric value: failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+shopno-platform     17m         Warning   FailedComputeMetricsReplicas     horizontalpodautoscaler/ai-platform                     invalid metrics (2 invalid out of 2), first error is: failed to get cpu resource metric value: failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+shopno-identity     17m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/oauth-service                   failed to get memory utilization: unable to get metrics for resource memory: no metrics returned from resource metrics API
+shopno-platform     17m         Warning   FailedComputeMetricsReplicas     horizontalpodautoscaler/analytics-service               invalid metrics (2 invalid out of 2), first error is: failed to get cpu resource metric value: failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+shopno-platform     17m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/analytics-service               failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+shopno-platform     17m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/event-service                   failed to get memory utilization: unable to get metrics for resource memory: no metrics returned from resource metrics API
+shopno-platform     17m         Warning   FailedComputeMetricsReplicas     horizontalpodautoscaler/worker-service                  invalid metrics (2 invalid out of 2), first error is: failed to get cpu resource metric value: failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+shopno-platform     17m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/worker-service                  failed to get memory utilization: unable to get metrics for resource memory: no metrics returned from resource metrics API
+shopno-platform     17m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/foundation-service              failed to get memory utilization: unable to get metrics for resource memory: no metrics returned from resource metrics API
+shopno-platform     17m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/worker-service                  failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+shopno-platform     17m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/analytics-service               failed to get memory utilization: unable to get metrics for resource memory: no metrics returned from resource metrics API
+shopno-platform     17m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/training-service                failed to get memory utilization: unable to get metrics for resource memory: no metrics returned from resource metrics API
+shopno-platform     17m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/foundation-service              failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+shopno-platform     17m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/training-service                failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+shopno-payments     17m         Normal    Pulled                           pod/billing-engine-78bbf75c4b-h6pdd                     Container image "ghcr.io/asaduzzamanbheramara-prog/shopnoltd-billing-engine:v6" already present on machine and can be accessed by the pod
+shopno-platform     17m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/domain-service                  failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+shopno-platform     17m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/license-service                 failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+shopno-platform     17m         Warning   FailedComputeMetricsReplicas     horizontalpodautoscaler/license-service                 invalid metrics (2 invalid out of 2), first error is: failed to get cpu resource metric value: failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+shopno-identity     17m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/oauth-service                   failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+shopno-platform     17m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/license-service                 failed to get memory utilization: unable to get metrics for resource memory: no metrics returned from resource metrics API
+shopno-identity     17m         Warning   FailedComputeMetricsReplicas     horizontalpodautoscaler/oauth-service                   invalid metrics (2 invalid out of 2), first error is: failed to get cpu resource metric value: failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+shopno-platform     17m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/search-service                  failed to get memory utilization: unable to get metrics for resource memory: no metrics returned from resource metrics API
+shopno-platform     17m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/search-service                  failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+shopno-apps         17m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/chatwoot                        failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+shopno-payments     17m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/payment-service                 failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+shopno-platform     17m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/storage-service                 failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+shopno-platform     17m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/storage-service                 failed to get memory utilization: unable to get metrics for resource memory: no metrics returned from resource metrics API
+shopno-platform     17m         Warning   FailedComputeMetricsReplicas     horizontalpodautoscaler/event-service                   invalid metrics (2 invalid out of 2), first error is: failed to get cpu resource metric value: failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+shopno-apps         17m         Warning   Unhealthy                        pod/code-server-744dc8499f-kkgxr                        Startup probe failed: Get "http://10.42.0.244:8443/healthz": dial tcp 10.42.0.244:8443: connect: connection refused
+shopno-apps         17m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/chatwoot                        failed to get memory utilization: unable to get metrics for resource memory: no metrics returned from resource metrics API
+shopno-platform     17m         Warning   FailedComputeMetricsReplicas     horizontalpodautoscaler/training-service                invalid metrics (2 invalid out of 2), first error is: failed to get cpu resource metric value: failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+shopno-platform     17m         Warning   FailedComputeMetricsReplicas     horizontalpodautoscaler/mobile-api                      invalid metrics (2 invalid out of 2), first error is: failed to get cpu resource metric value: failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+shopno-platform     17m         Warning   FailedComputeMetricsReplicas     horizontalpodautoscaler/search-service                  invalid metrics (2 invalid out of 2), first error is: failed to get cpu resource metric value: failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+shopno-platform     17m         Warning   FailedComputeMetricsReplicas     horizontalpodautoscaler/gateway                         invalid metrics (2 invalid out of 2), first error is: failed to get cpu resource metric value: failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+shopno-payments     17m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/payment-service                 failed to get memory utilization: unable to get metrics for resource memory: no metrics returned from resource metrics API
+shopno-payments     17m         Warning   FailedComputeMetricsReplicas     horizontalpodautoscaler/exchange-service                invalid metrics (2 invalid out of 2), first error is: failed to get cpu resource metric value: failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+shopno-payments     17m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/exchange-service                failed to get memory utilization: unable to get metrics for resource memory: no metrics returned from resource metrics API
+shopno-platform     17m         Warning   FailedComputeMetricsReplicas     horizontalpodautoscaler/storage-service                 invalid metrics (2 invalid out of 2), first error is: failed to get cpu resource metric value: failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+shopno-payments     17m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/exchange-service                failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+shopno-payments     17m         Warning   FailedComputeMetricsReplicas     horizontalpodautoscaler/payment-service                 invalid metrics (2 invalid out of 2), first error is: failed to get cpu resource metric value: failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+shopno-payments     17m         Normal    Started                          pod/billing-engine-78bbf75c4b-h6pdd                     Container started
+shopno-apps         17m         Warning   FailedComputeMetricsReplicas     horizontalpodautoscaler/chatwoot                        invalid metrics (2 invalid out of 2), first error is: failed to get cpu resource metric value: failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+shopno-data         17m         Warning   Unhealthy                        pod/postgres-f9946b988-kwg5r                            Readiness probe failed: /var/run/postgresql:5432 - rejecting connections
+shopno-apps         17m         Warning   Unhealthy                        pod/gitea-7c5c9b4dd4-m2k65                              Startup probe failed: dial tcp 10.42.0.230:3000: connect: connection refused
+shopno-platform     17m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/admin-portal                    failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+shopno-payments     17m         Warning   FailedComputeMetricsReplicas     horizontalpodautoscaler/billing-engine                  invalid metrics (2 invalid out of 2), first error is: failed to get cpu resource metric value: failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+shopno-platform     17m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/admin-portal                    failed to get memory utilization: unable to get metrics for resource memory: no metrics returned from resource metrics API
+shopno-platform     17m         Warning   FailedComputeMetricsReplicas     horizontalpodautoscaler/admin-portal                    invalid metrics (2 invalid out of 2), first error is: failed to get cpu resource metric value: failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+shopno-payments     17m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/billing-engine                  failed to get memory utilization: unable to get metrics for resource memory: no metrics returned from resource metrics API
+shopno-payments     17m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/billing-engine                  failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+shopno-platform     17m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/freedomain-service              failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+shopno-apps         17m         Warning   FailedComputeMetricsReplicas     horizontalpodautoscaler/gitea                           invalid metrics (2 invalid out of 2), first error is: failed to get cpu resource metric value: failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+shopno-platform     17m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/freedomain-service              failed to get memory utilization: unable to get metrics for resource memory: no metrics returned from resource metrics API
+shopno-platform     17m         Warning   FailedComputeMetricsReplicas     horizontalpodautoscaler/freedomain-service              invalid metrics (2 invalid out of 2), first error is: failed to get cpu resource metric value: failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+shopno-apps         17m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/kobotoolbox                     failed to get memory utilization: unable to get metrics for resource memory: no metrics returned from resource metrics API
+shopno-apps         17m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/gitea                           failed to get memory utilization: unable to get metrics for resource memory: no metrics returned from resource metrics API
+shopno-apps         17m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/kobotoolbox                     failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+shopno-apps         17m         Warning   FailedComputeMetricsReplicas     horizontalpodautoscaler/kobotoolbox                     invalid metrics (2 invalid out of 2), first error is: failed to get cpu resource metric value: failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+shopno-apps         17m         Warning   FailedGetResourceMetric          horizontalpodautoscaler/gitea                           failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+argocd              17m         Normal    Pulling                          pod/argocd-dex-server-744c5d4467-2n6tm                  Pulling image "ghcr.io/dexidp/dex:v2.45.0"
+argocd              17m         Normal    Started                          pod/argocd-dex-server-744c5d4467-2n6tm                  Container started
+argocd              17m         Normal    Started                          pod/argocd-server-76448b9999-2kpn6                      Container started
+argocd              17m         Normal    Created                          pod/argocd-dex-server-744c5d4467-2n6tm                  Container created
+shopno-payments     17m         Warning   Unhealthy                        pod/billing-engine-78bbf75c4b-h6pdd                     Readiness probe failed: Get "http://10.42.0.232:5000/health": dial tcp 10.42.0.232:5000: connect: connection refused
+argocd              17m         Normal    Pulled                           pod/argocd-dex-server-744c5d4467-2n6tm                  Successfully pulled image "ghcr.io/dexidp/dex:v2.45.0" in 2.1s (2.1s including waiting). Image size: 48093516 bytes.
+argocd              17m         Normal    Started                          pod/argocd-redis-84497fb7c5-242vz                       Container started
+argocd              17m         Normal    Started                          pod/argocd-repo-server-548bcd5486-dd7x7                 Container started
+shopno-platform     17m         Warning   Unhealthy                        pod/report-service-78fd88d954-2hmdz                     Startup probe failed: Get "http://10.42.0.229:8080/healthz": dial tcp 10.42.0.229:8080: connect: connection refused
+shopno-platform     17m         Warning   Unhealthy                        pod/worker-service-66f9c7d8c4-q8zgv                     Startup probe failed: Get "http://10.42.0.226:8080/healthz": dial tcp 10.42.0.226:8080: connect: connection refused
+shopno-identity     17m         Warning   Unhealthy                        pod/auth-service-6989fc87bb-vgh9j                       Startup probe failed: Get "http://10.42.0.237:8080/healthz": dial tcp 10.42.0.237:8080: connect: connection refused
+shopno-platform     17m         Warning   Unhealthy                        pod/search-service-7f6f45f6fd-s86k2                     Startup probe failed: Get "http://10.42.0.220:8080/healthz": dial tcp 10.42.0.220:8080: connect: connection refused
+argocd              16m         Warning   Unhealthy                        pod/argocd-notifications-controller-dd4ff84c-hbjb7      Liveness probe failed: dial tcp 10.42.0.224:9001: connect: connection refused
+argocd              16m         Warning   Unhealthy                        pod/argocd-server-76448b9999-2kpn6                      Liveness probe failed: Get "http://10.42.0.222:8080/healthz?full=true": dial tcp 10.42.0.222:8080: connect: connection refused
+argocd              16m         Normal    Killing                          pod/argocd-notifications-controller-dd4ff84c-hbjb7      Container argocd-notifications-controller failed liveness probe, will be restarted
+argocd              16m         Normal    Pulling                          pod/argocd-notifications-controller-dd4ff84c-hbjb7      Pulling image "quay.io/argoproj/argocd:v3.5.1"
+shopno-platform     16m         Warning   Unhealthy                        pod/audit-service-6c478657b8-2nbqh                      Startup probe failed: Get "http://10.42.0.236:8080/healthz": dial tcp 10.42.0.236:8080: connect: connection refused
+argocd              16m         Normal    Pulled                           pod/argocd-notifications-controller-dd4ff84c-hbjb7      Successfully pulled image "quay.io/argoproj/argocd:v3.5.1" in 1.403s (1.403s including waiting). Image size: 210598970 bytes.
+argocd              16m         Normal    Created                          pod/argocd-notifications-controller-dd4ff84c-hbjb7      Container created
+shopno-platform     16m         Warning   Unhealthy                        pod/tenant-router-55cdbfbdd4-glsrh                      Startup probe failed: Get "http://10.42.0.248:8080/healthz": dial tcp 10.42.0.248:8080: connect: connection refused
+shopno-platform     16m         Warning   Unhealthy                        pod/storage-service-767cb5d596-ccxhw                    Startup probe failed: Get "http://10.42.0.240:8080/healthz": dial tcp 10.42.0.240:8080: connect: connection refused
+argocd              16m         Normal    Started                          pod/argocd-dex-server-744c5d4467-2n6tm                  Container started
+shopno-platform     16m         Warning   Unhealthy                        pod/freedomain-service-5d8d4c7f5d-kvvql                 Startup probe failed: Get "http://10.42.0.213:8080/healthz": dial tcp 10.42.0.213:8080: connect: connection refused
+argocd              16m         Warning   Unhealthy                        pod/argocd-server-76448b9999-2kpn6                      Readiness probe failed: Get "http://10.42.0.222:8080/healthz": dial tcp 10.42.0.222:8080: connect: connection refused
+shopno-platform     16m         Warning   Unhealthy                        pod/domain-service-7fccfc58cf-sxdt9                     Startup probe failed: Get "http://10.42.0.247:8080/healthz": dial tcp 10.42.0.247:8080: connect: connection refused
+shopno-platform     16m         Warning   Unhealthy                        pod/training-service-6cf87b954b-x9rvs                   Startup probe failed: Get "http://10.42.0.235:8080/healthz": dial tcp 10.42.0.235:8080: connect: connection refused
+shopno-platform     16m         Warning   Unhealthy                        pod/mobile-api-79568bc744-k4m2m                         Startup probe failed: Get "http://10.42.0.5:8080/healthz": dial tcp 10.42.0.5:8080: connect: connection refused
+shopno-platform     16m         Warning   Unhealthy                        pod/foundation-service-7dcdd4977b-gtdrg                 Startup probe failed: Get "http://10.42.0.12:8080/healthz": dial tcp 10.42.0.12:8080: connect: connection refused
+shopno-platform     16m         Warning   Unhealthy                        pod/license-service-7f4984b88d-mp4b5                    Startup probe failed: Get "http://10.42.0.243:8080/healthz": dial tcp 10.42.0.243:8080: connect: connection refused
+argocd              16m         Normal    Started                          pod/argocd-notifications-controller-dd4ff84c-hbjb7      Container started
+shopno-platform     16m         Warning   Unhealthy                        pod/interior-service-69cd5d6b58-4fc58                   Startup probe failed: Get "http://10.42.0.2:8080/healthz": dial tcp 10.42.0.2:8080: connect: connection refused
+shopno-platform     16m         Warning   Unhealthy                        pod/gateway-75968bfddd-hksfp                            Startup probe failed: Get "http://10.42.0.11:8080/healthz": dial tcp 10.42.0.11:8080: connect: connection refused
+shopno-platform     16m         Warning   Unhealthy                        pod/analytics-service-ddf98c448-dzwhx                   Startup probe failed: Get "http://10.42.0.246:8080/healthz": dial tcp 10.42.0.246:8080: connect: connection refused
+shopno-identity     16m         Warning   Unhealthy                        pod/oauth-service-5769d7566f-7pmjq                      Startup probe failed: Get "http://10.42.0.251:8080/healthz": dial tcp 10.42.0.251:8080: connect: connection refused
+shopno-payments     16m         Warning   Unhealthy                        pod/exchange-service-74595c48cc-t4n99                   Startup probe failed: Get "http://10.42.0.9:8080/healthz": dial tcp 10.42.0.9:8080: connect: connection refused
+shopno-platform     16m         Warning   Unhealthy                        pod/ai-platform-5c75f8bfc5-s5cvl                        Startup probe failed: Get "http://10.42.0.3:8080/healthz": dial tcp 10.42.0.3:8080: connect: connection refused
+shopno-platform     16m         Warning   Unhealthy                        pod/notification-service-7687494d6d-dhchd               Startup probe failed: Get "http://10.42.0.7:8080/healthz": dial tcp 10.42.0.7:8080: connect: connection refused
+argocd              16m         Warning   Unhealthy                        pod/argocd-application-controller-0                     Readiness probe failed: Get "http://10.42.0.217:8082/healthz": dial tcp 10.42.0.217:8082: connect: connection refused
+shopno-platform     16m         Warning   Unhealthy                        pod/event-service-67dd65f8d-z7cmv                       Startup probe failed: Get "http://10.42.0.242:8080/healthz": dial tcp 10.42.0.242:8080: connect: connection refused
+shopno-platform     16m         Warning   Unhealthy                        pod/api-service-5f7f898459-k9gnr                        Startup probe failed: Get "http://10.42.0.4:8080/healthz": dial tcp 10.42.0.4:8080: connect: connection refused
+argocd              16m         Warning   Unhealthy                        pod/argocd-repo-server-548bcd5486-dd7x7                 Readiness probe failed: Get "http://10.42.0.228:8084/healthz": dial tcp 10.42.0.228:8084: connect: connection refused
+shopno-apps         16m         Warning   Unhealthy                        pod/chatwoot-848d566fbc-6qj6l                           Startup probe failed: Get "http://10.42.0.241:3000/api": dial tcp 10.42.0.241:3000: connect: connection refused
+shopno-payments     16m         Warning   Unhealthy                        pod/payment-service-d75659859-nn9m6                     Startup probe failed: Get "http://10.42.0.14:8080/healthz": dial tcp 10.42.0.14:8080: connect: connection refused
+shopno-data         16m         Warning   Unhealthy                        pod/opensearch-6d8b995769-gz7p8                         Startup probe failed: Get "http://10.42.0.10:9200/": dial tcp 10.42.0.10:9200: connect: connection refused
+shopno-identity     15m         Warning   Unhealthy                        pod/keycloak-69767cb496-rqgtp                           Startup probe failed: Get "http://10.42.0.13:9000/health/started": dial tcp 10.42.0.13:9000: connect: connection refused
+
+===== TOP POD MEMORY =====
+NAMESPACE         NAME                                                CPU(cores)   MEMORY(bytes)   
+shopno-data       opensearch-6d8b995769-gz7p8                         21m          1238Mi          
+shopno-identity   keycloak-69767cb496-rqgtp                           8m           730Mi           
+shopno-apps       kobotoolbox-worker-6b95df7896-wn5bq                 3m           368Mi           
+shopno-apps       enketo-758d85f4bd-nswkz                             1m           349Mi           
+shopno-apps       chatwoot-848d566fbc-6qj6l                           8m           349Mi           
+shopno-apps       kobotoolbox-6c88b6db4b-rbrbf                        1m           281Mi           
+shopno-data       mongo-7f4549847b-4l9gt                              8m           210Mi           
+argocd            argocd-application-controller-0                     19m          183Mi           
+shopno-apps       gitea-7c5c9b4dd4-m2k65                              2m           144Mi           
+shopno-data       postgres-f9946b988-kwg5r                            46m          134Mi           
+shopno-data       minio-775c4b4549-mgqqz                              1m           129Mi           
+shopno-payments   payment-service-d75659859-nn9m6                     4m           125Mi           
+shopno-apps       code-server-744dc8499f-kkgxr                        1m           99Mi            
+shopno-platform   search-service-7f6f45f6fd-s86k2                     3m           93Mi            
+shopno-platform   storage-service-767cb5d596-ccxhw                    3m           92Mi            
+shopno-platform   api-service-5f7f898459-k9gnr                        4m           87Mi            
+shopno-payments   exchange-service-74595c48cc-t4n99                   33m          87Mi            
+shopno-platform   foundation-service-7dcdd4977b-gtdrg                 3m           85Mi            
+shopno-platform   ai-platform-5c75f8bfc5-s5cvl                        3m           85Mi            
+shopno-platform   notification-service-7687494d6d-dhchd               3m           82Mi            
+shopno-platform   report-service-78fd88d954-2hmdz                     3m           81Mi            
+shopno-identity   oauth-service-5769d7566f-7pmjq                      3m           80Mi            
+shopno-platform   domain-service-7fccfc58cf-sxdt9                     3m           80Mi            
+shopno-platform   training-service-6cf87b954b-x9rvs                   4m           80Mi            
+shopno-platform   worker-service-66f9c7d8c4-q8zgv                     4m           80Mi            
+shopno-mail       mail-service-bd5f97fcc-szzkx                        2m           80Mi            
+shopno-platform   analytics-service-ddf98c448-dzwhx                   3m           79Mi            
+shopno-platform   mobile-api-79568bc744-k4m2m                         3m           79Mi            
+shopno-platform   interior-service-69cd5d6b58-4fc58                   3m           79Mi            
+shopno-platform   gateway-75968bfddd-hksfp                            4m           79Mi            
+shopno-platform   event-service-67dd65f8d-z7cmv                       3m           79Mi            
+ingress-nginx     ingress-nginx-controller-6fbb8fc6f6-m8rnm           2m           73Mi            
+shopno-identity   auth-service-6989fc87bb-vgh9j                       3m           71Mi            
+shopno-platform   license-service-7f4984b88d-mp4b5                    3m           70Mi            
+shopno-platform   tenant-router-55cdbfbdd4-glsrh                      3m           70Mi            
+shopno-platform   audit-service-6c478657b8-2nbqh                      4m           70Mi            
+shopno-platform   freedomain-service-5d8d4c7f5d-kvvql                 3m           70Mi            
+argocd            argocd-dex-server-744c5d4467-2n6tm                  1m           69Mi            
+shopno-payments   billing-engine-78bbf75c4b-h6pdd                     3m           62Mi            
+kube-system       metrics-server-7f5b677f8b-pnpfd                     10m          54Mi            
+kube-system       coredns-6b85b5d59-88xhx                             5m           51Mi            
+argocd            argocd-repo-server-548bcd5486-dd7x7                 1m           43Mi            
+kube-system       local-path-provisioner-58d557dc48-6gpfv             2m           34Mi            
+shopno-ingress    cloudflared-58cfbb6c7-62hgm                         7m           33Mi            
+argocd            argocd-server-76448b9999-2kpn6                      2m           31Mi            
+shopno-data       redis-6d47d4c9c6-jfzzq                              5m           24Mi            
+argocd            argocd-applicationset-controller-579c4c54b8-jlwm5   1m           21Mi            
+argocd            argocd-notifications-controller-dd4ff84c-hbjb7      1m           19Mi            
+kube-system       coredns-6b85b5d59-kbkrr                             7m           18Mi            
+shopno-ingress    cloudflared-58cfbb6c7-jplgp                         6m           17Mi            
+argocd            argocd-redis-84497fb7c5-242vz                       9m           13Mi            
+shopno-platform   admin-portal-7d6f4dcf8f-ztr8s                       1m           6Mi             
+shopno-platform   web-portal-7c57c49984-v799b                         1m           6Mi             
+shopno-platform   shopnoltd-web-5b49f6c747-tzglr                      1m           5Mi             
+shopno-platform   android-portal-5f7c64dd49-7mqq4                     1m           5Mi             
+
+===== TOP POD CPU =====
+NAMESPACE         NAME                                                CPU(cores)   MEMORY(bytes)   
+shopno-data       postgres-f9946b988-kwg5r                            46m          134Mi           
+shopno-payments   exchange-service-74595c48cc-t4n99                   33m          87Mi            
+shopno-data       opensearch-6d8b995769-gz7p8                         21m          1238Mi          
+argocd            argocd-application-controller-0                     19m          183Mi           
+kube-system       metrics-server-7f5b677f8b-pnpfd                     10m          54Mi            
+argocd            argocd-redis-84497fb7c5-242vz                       9m           13Mi            
+shopno-data       mongo-7f4549847b-4l9gt                              8m           210Mi           
+shopno-identity   keycloak-69767cb496-rqgtp                           8m           730Mi           
+shopno-apps       chatwoot-848d566fbc-6qj6l                           8m           349Mi           
+shopno-ingress    cloudflared-58cfbb6c7-62hgm                         7m           33Mi            
+kube-system       coredns-6b85b5d59-kbkrr                             7m           18Mi            
+shopno-ingress    cloudflared-58cfbb6c7-jplgp                         6m           17Mi            
+kube-system       coredns-6b85b5d59-88xhx                             5m           51Mi            
+shopno-data       redis-6d47d4c9c6-jfzzq                              5m           24Mi            
+shopno-payments   payment-service-d75659859-nn9m6                     4m           125Mi           
+shopno-platform   api-service-5f7f898459-k9gnr                        4m           87Mi            
+shopno-platform   audit-service-6c478657b8-2nbqh                      4m           70Mi            
+shopno-platform   gateway-75968bfddd-hksfp                            4m           79Mi            
+shopno-platform   training-service-6cf87b954b-x9rvs                   4m           80Mi            
+shopno-platform   worker-service-66f9c7d8c4-q8zgv                     4m           80Mi            
+shopno-platform   event-service-67dd65f8d-z7cmv                       3m           79Mi            
+shopno-platform   mobile-api-79568bc744-k4m2m                         3m           79Mi            
+shopno-apps       kobotoolbox-worker-6b95df7896-wn5bq                 3m           368Mi           
+shopno-identity   auth-service-6989fc87bb-vgh9j                       3m           71Mi            
+shopno-platform   tenant-router-55cdbfbdd4-glsrh                      3m           70Mi            
+shopno-identity   oauth-service-5769d7566f-7pmjq                      3m           80Mi            
+shopno-platform   storage-service-767cb5d596-ccxhw                    3m           92Mi            
+shopno-platform   search-service-7f6f45f6fd-s86k2                     3m           93Mi            
+shopno-platform   report-service-78fd88d954-2hmdz                     3m           81Mi            
+shopno-payments   billing-engine-78bbf75c4b-h6pdd                     3m           62Mi            
+shopno-platform   notification-service-7687494d6d-dhchd               3m           82Mi            
+shopno-platform   license-service-7f4984b88d-mp4b5                    3m           70Mi            
+shopno-platform   interior-service-69cd5d6b58-4fc58                   3m           79Mi            
+shopno-platform   ai-platform-5c75f8bfc5-s5cvl                        3m           85Mi            
+shopno-platform   analytics-service-ddf98c448-dzwhx                   3m           79Mi            
+shopno-platform   freedomain-service-5d8d4c7f5d-kvvql                 3m           70Mi            
+shopno-platform   foundation-service-7dcdd4977b-gtdrg                 3m           85Mi            
+shopno-platform   domain-service-7fccfc58cf-sxdt9                     3m           80Mi            
+kube-system       local-path-provisioner-58d557dc48-6gpfv             2m           34Mi            
+shopno-apps       gitea-7c5c9b4dd4-m2k65                              2m           144Mi           
+ingress-nginx     ingress-nginx-controller-6fbb8fc6f6-m8rnm           2m           73Mi            
+shopno-mail       mail-service-bd5f97fcc-szzkx                        2m           80Mi            
+argocd            argocd-server-76448b9999-2kpn6                      2m           31Mi            
+argocd            argocd-notifications-controller-dd4ff84c-hbjb7      1m           19Mi            
+shopno-platform   admin-portal-7d6f4dcf8f-ztr8s                       1m           6Mi             
+shopno-data       minio-775c4b4549-mgqqz                              1m           129Mi           
+shopno-apps       code-server-744dc8499f-kkgxr                        1m           99Mi            
+shopno-platform   android-portal-5f7c64dd49-7mqq4                     1m           5Mi             
+shopno-apps       enketo-758d85f4bd-nswkz                             1m           349Mi           
+shopno-platform   shopnoltd-web-5b49f6c747-tzglr                      1m           5Mi             
+argocd            argocd-repo-server-548bcd5486-dd7x7                 1m           43Mi            
+shopno-apps       kobotoolbox-6c88b6db4b-rbrbf                        1m           281Mi           
+argocd            argocd-dex-server-744c5d4467-2n6tm                  1m           69Mi            
+shopno-platform   web-portal-7c57c49984-v799b                         1m           6Mi             
+argocd            argocd-applicationset-controller-579c4c54b8-jlwm5   1m           21Mi            
+
+===== DEPLOYMENTS =====
+NAMESPACE           NAME                               READY   UP-TO-DATE   AVAILABLE   AGE
+argocd              argocd-applicationset-controller   1/1     1            1           3d18h
+argocd              argocd-dex-server                  1/1     1            1           3d18h
+argocd              argocd-notifications-controller    1/1     1            1           3d18h
+argocd              argocd-redis                       1/1     1            1           3d18h
+argocd              argocd-repo-server                 1/1     1            1           3d18h
+argocd              argocd-server                      1/1     1            1           3d18h
+ingress-nginx       ingress-nginx-controller           1/1     1            1           23d
+kube-system         coredns                            2/2     2            2           23d
+kube-system         local-path-provisioner             1/1     1            1           23d
+kube-system         metrics-server                     1/1     1            1           4d17h
+shopno-apps         chatwoot                           1/1     1            1           23d
+shopno-apps         code-server                        1/1     1            1           23d
+shopno-apps         enketo                             1/1     1            1           17d
+shopno-apps         gitea                              1/1     1            1           23d
+shopno-apps         kobotoolbox                        1/1     1            1           19d
+shopno-apps         kobotoolbox-worker                 1/1     1            1           9d
+shopno-apps         metabase                           0/0     0            0           23d
+shopno-apps         n8n                                0/0     0            0           23d
+shopno-apps         nextcloud                          0/0     0            0           23d
+shopno-apps         ollama                             0/0     0            0           2d20h
+shopno-apps         onlyoffice                         0/0     0            0           23d
+shopno-apps         owncast                            0/0     0            0           23d
+shopno-apps         superset                           0/0     0            0           23d
+shopno-data         minio                              1/1     1            1           23d
+shopno-data         mongo                              1/1     1            1           20d
+shopno-data         opensearch                         1/1     1            1           23d
+shopno-data         postgres                           1/1     1            1           2d23h
+shopno-data         redis                              1/1     1            1           23d
+shopno-identity     auth-service                       1/1     1            1           2d22h
+shopno-identity     keycloak                           1/1     1            1           23d
+shopno-identity     oauth-service                      1/1     1            1           23d
+shopno-ingress      cloudflared                        2/2     2            2           23d
+shopno-mail         mail-service                       1/1     1            1           19d
+shopno-monitoring   alertmanager                       0/0     0            0           23d
+shopno-monitoring   grafana                            0/0     0            0           23d
+shopno-monitoring   loki                               0/0     0            0           23d
+shopno-monitoring   prometheus                         0/0     0            0           23d
+shopno-payments     billing-engine                     1/1     1            1           23d
+shopno-payments     exchange-service                   1/1     1            1           4d2h
+shopno-payments     payment-service                    1/1     1            1           4d2h
+shopno-platform     admin-portal                       1/1     1            1           23d
+shopno-platform     ai-platform                        1/1     1            1           23d
+shopno-platform     analytics-service                  1/1     1            1           23d
+shopno-platform     android-portal                     1/1     1            1           23d
+shopno-platform     api-service                        1/1     1            1           23d
+shopno-platform     audit-service                      1/1     1            1           23d
+shopno-platform     domain-service                     1/1     1            1           23d
+shopno-platform     event-service                      1/1     1            1           23d
+shopno-platform     foundation-service                 1/1     1            1           23d
+shopno-platform     freedomain-service                 1/1     1            1           23d
+shopno-platform     gateway                            1/1     1            1           23d
+shopno-platform     interior-service                   1/1     1            1           23d
+shopno-platform     license-service                    1/1     1            1           23d
+shopno-platform     mobile-api                         1/1     1            1           23d
+shopno-platform     notification-service               1/1     1            1           23d
+shopno-platform     report-service                     1/1     1            1           23d
+shopno-platform     search-service                     1/1     1            1           23d
+shopno-platform     shopnoltd-web                      1/1     1            1           7d19h
+shopno-platform     storage-service                    1/1     1            1           23d
+shopno-platform     tenant-router                      1/1     1            1           23d
+shopno-platform     training-service                   1/1     1            1           23d
+shopno-platform     web-portal                         1/1     1            1           23d
+shopno-platform     worker-service                     1/1     1            1           23d
+shopno-tools        session-manager                    0/0     0            0           3d21h
+
+===== HPA =====
+NAMESPACE           NAME                   REFERENCE                         TARGETS                                     MINPODS   MAXPODS   REPLICAS   AGE
+shopno-apps         chatwoot               Deployment/chatwoot               cpu: 8%/70%, memory: 272%/80%               1         1         1          7d1h
+shopno-apps         gitea                  Deployment/gitea                  cpu: 3%/70%, memory: 112%/80%               1         1         1          18d
+shopno-apps         kobotoolbox            Deployment/kobotoolbox            cpu: 0%/70%, memory: 63%/80%                1         1         1          8d
+shopno-apps         metabase               Deployment/metabase               cpu: <unknown>/70%, memory: <unknown>/80%   1         1         0          18d
+shopno-apps         nextcloud              Deployment/nextcloud              cpu: <unknown>/70%, memory: <unknown>/80%   1         1         0          18d
+shopno-apps         onlyoffice             Deployment/onlyoffice             cpu: <unknown>/70%, memory: <unknown>/80%   1         1         0          18d
+shopno-apps         owncast                Deployment/owncast                cpu: <unknown>/70%, memory: <unknown>/80%   1         1         0          18d
+shopno-apps         superset               Deployment/superset               cpu: <unknown>/70%, memory: <unknown>/80%   1         1         0          7d1h
+shopno-identity     auth-service           Deployment/auth-service           cpu: 15%/70%, memory: 55%/80%               1         1         1          18d
+shopno-identity     oauth-service          Deployment/oauth-service          cpu: 15%/70%, memory: 63%/80%               1         1         1          18d
+shopno-monitoring   alertmanager           Deployment/alertmanager           cpu: <unknown>/70%, memory: <unknown>/80%   1         1         0          11d
+shopno-monitoring   grafana                Deployment/grafana                cpu: <unknown>/70%, memory: <unknown>/80%   1         1         0          18d
+shopno-payments     billing-engine         Deployment/billing-engine         cpu: 3%/70%, memory: 24%/80%                1         1         1          18d
+shopno-payments     exchange-service       Deployment/exchange-service       cpu: 15%/70%, memory: 68%/80%               1         1         1          4d2h
+shopno-payments     payment-service        Deployment/payment-service        cpu: 20%/70%, memory: 97%/80%               1         1         1          4d2h
+shopno-platform     admin-portal           Deployment/admin-portal           cpu: 5%/70%, memory: 10%/80%                1         1         1          18d
+shopno-platform     ai-platform            Deployment/ai-platform            cpu: 15%/70%, memory: 66%/80%               1         1         1          18d
+shopno-platform     analytics-service      Deployment/analytics-service      cpu: 15%/70%, memory: 62%/80%               1         1         1          18d
+shopno-platform     android-portal         Deployment/android-portal         cpu: 5%/70%, memory: 9%/80%                 1         1         1          18d
+shopno-platform     api-service            Deployment/api-service            cpu: 20%/70%, memory: 91%/80%               1         1         1          18d
+shopno-platform     audit-service          Deployment/audit-service          cpu: 15%/70%, memory: 73%/80%               1         1         1          18d
+shopno-platform     domain-service         Deployment/domain-service         cpu: 15%/70%, memory: 84%/80%               1         1         1          18d
+shopno-platform     event-service          Deployment/event-service          cpu: 15%/70%, memory: 62%/80%               1         1         1          18d
+shopno-platform     foundation-service     Deployment/foundation-service     cpu: 15%/70%, memory: 89%/80%               1         1         1          18d
+shopno-platform     freedomain-service     Deployment/freedomain-service     cpu: 20%/70%, memory: 55%/80%               1         1         1          18d
+shopno-platform     gateway                Deployment/gateway                cpu: 15%/70%, memory: 62%/80%               1         1         1          18d
+shopno-platform     interior-service       Deployment/interior-service       cpu: 15%/70%, memory: 83%/80%               1         1         1          18d
+shopno-platform     license-service        Deployment/license-service        cpu: 15%/70%, memory: 74%/80%               1         1         1          18d
+shopno-platform     mobile-api             Deployment/mobile-api             cpu: 15%/70%, memory: 62%/80%               1         1         1          18d
+shopno-platform     notification-service   Deployment/notification-service   cpu: 20%/70%, memory: 86%/80%               1         1         1          18d
+shopno-platform     report-service         Deployment/report-service         cpu: 15%/70%, memory: 84%/80%               1         1         1          18d
+shopno-platform     search-service         Deployment/search-service         cpu: 15%/70%, memory: 97%/80%               1         1         1          18d
+shopno-platform     storage-service        Deployment/storage-service        cpu: 15%/70%, memory: 72%/80%               1         1         1          18d
+shopno-platform     tenant-router          Deployment/tenant-router          cpu: 15%/70%, memory: 55%/80%               1         1         1          18d
+shopno-platform     training-service       Deployment/training-service       cpu: 15%/70%, memory: 62%/80%               1         1         1          18d
+shopno-platform     web-portal             Deployment/web-portal             cpu: 5%/70%, memory: 9%/80%                 1         1         1          18d
+shopno-platform     worker-service         Deployment/worker-service         cpu: 15%/70%, memory: 83%/80%               1         1         1          18d
+
+===== PVC =====
+NAMESPACE         NAME                        STATUS        VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+shopno-apps       chatwoot-data               Bound         pvc-57e6ad4e-0184-44b4-b509-c3b369bdb8ac   10Gi       RWO            standard       <unset>                 2d14h
+shopno-apps       code-server-data            Bound         pvc-e296b9d0-ab2d-4bcc-8c1f-3b3557b7de8f   50Gi       RWO            local-path     <unset>                 2d18h
+shopno-apps       gitea-data                  Terminating   pvc-da6cc36e-c0eb-4e07-9cb2-ea36dfc6f5e5   10Gi       RWO            standard       <unset>                 23d
+shopno-apps       gitea-etc                   Terminating   pvc-3f343259-62c2-4630-85e4-af8d4b00ebdc   100Mi      RWO            local-path     <unset>                 7d2h
+shopno-apps       kobotoolbox-data            Bound         pvc-0874d61c-ef1e-4c2a-b6e4-a8828dded32a   10Gi       RWO            standard       <unset>                 2d3h
+shopno-apps       metabase-data               Bound         pvc-0ba1cbf5-f75f-48b2-aff5-35d0c72b8ee9   10Gi       RWO            standard       <unset>                 2d14h
+shopno-apps       nextcloud-data              Bound         pvc-6956d272-408e-4aa3-9fc7-efb754c9ca45   10Gi       RWO            standard       <unset>                 2d14h
+shopno-apps       ollama-models               Bound         pvc-cc5c7f8c-a0eb-4ef4-bea0-ebedbb1d6d31   20Gi       RWO            local-path     <unset>                 2d20h
+shopno-apps       onlyoffice-data             Bound         pvc-81a03f8d-a833-458d-b066-327eb8a35d2f   10Gi       RWO            standard       <unset>                 44h
+shopno-apps       superset-data               Bound         pvc-a4a34483-7612-4a2d-8a1e-61658ead125f   10Gi       RWO            standard       <unset>                 2d14h
+shopno-data       minio-data                  Terminating   pvc-fc12fd64-70d1-49f1-8f93-11176a39d0b9   10Gi       RWO            standard       <unset>                 23d
+shopno-data       mongo-pvc                   Terminating   pvc-8cbffc0d-0554-4fb1-9377-5741b917f813   10Gi       RWO            local-path     <unset>                 20d
+shopno-data       opensearch-data             Bound         pvc-d9005436-c7e5-4407-8fcd-14e8f4843460   10Gi       RWO            standard       <unset>                 36h
+shopno-data       postgres-data               Bound         pvc-51e11046-458f-4a7a-a526-1f1161044d1c   10Gi       RWO            standard       <unset>                 2d14h
+shopno-data       redis-data                  Terminating   pvc-45020294-1dee-48d1-a318-f7f145227fff   10Gi       RWO            standard       <unset>                 23d
+shopno-identity   keycloak-data               Bound         pvc-1353048c-5059-42e2-af98-da7e10873116   10Gi       RWO            standard       <unset>                 2d14h
+shopno-identity   oauth-service-data          Bound         pvc-dc39ca6c-781e-40c1-9063-029b4d0cef86   10Gi       RWO            standard       <unset>                 2d14h
+shopno-payments   exchange-service-data       Bound         pvc-f8167327-0da2-48d1-a8fe-66122128f301   10Gi       RWO            local-path     <unset>                 43h
+shopno-payments   payment-service-data        Bound         pvc-6a67f32e-d22b-40fa-b550-562e99c07b01   10Gi       RWO            local-path     <unset>                 43h
+shopno-platform   admin-portal-data           Bound         pvc-a2857661-81be-4174-bcc3-53eadef7aa74   10Gi       RWO            standard       <unset>                 2d14h
+shopno-platform   ai-platform-data            Bound         pvc-14dfeb8a-b250-4037-a49b-1aff43901499   10Gi       RWO            standard       <unset>                 2d14h
+shopno-platform   analytics-service-data      Bound         pvc-b5e8ac3d-daf5-4417-ad2f-b4228e0d204e   10Gi       RWO            standard       <unset>                 2d14h
+shopno-platform   android-portal-data         Bound         pvc-69f51d06-12d2-45b9-9448-fa8b85df044a   10Gi       RWO            standard       <unset>                 2d14h
+shopno-platform   api-service-data            Bound         pvc-e66bbe62-513a-45b5-83bb-203e6728c645   10Gi       RWO            standard       <unset>                 2d14h
+shopno-platform   audit-service-data          Bound         pvc-7ecaa9ce-4393-483d-9b2b-ba5f5220ada7   10Gi       RWO            standard       <unset>                 2d14h
+shopno-platform   domain-service-data         Bound         pvc-2ab35dd5-ef8d-4bc2-a40f-0baf55a9a9d8   10Gi       RWO            standard       <unset>                 2d14h
+shopno-platform   event-service-data          Bound         pvc-1114b491-b2ef-4811-a475-ed2ddb5006ea   10Gi       RWO            standard       <unset>                 2d14h
+shopno-platform   foundation-service-data     Bound         pvc-742d9891-cf1b-4431-baa8-5674064153ce   10Gi       RWO            standard       <unset>                 2d14h
+shopno-platform   freedomain-service-data     Bound         pvc-3c4f3c7f-c0bf-47a8-a357-52bec6fad0e0   10Gi       RWO            standard       <unset>                 2d14h
+shopno-platform   gateway-data                Bound         pvc-cec4c918-1a7c-4d05-972d-09776f8a7609   10Gi       RWO            standard       <unset>                 2d14h
+shopno-platform   interior-service-data       Bound         pvc-27e7f439-0965-42f6-a0de-b11bbd246b32   10Gi       RWO            standard       <unset>                 2d14h
+shopno-platform   license-service-data        Bound         pvc-fdc219fa-4004-4b79-9d0b-709e4bc33d13   10Gi       RWO            standard       <unset>                 2d14h
+shopno-platform   mobile-api-data             Bound         pvc-8d558abb-05e2-48a9-87f9-a65dd544819f   10Gi       RWO            standard       <unset>                 2d14h
+shopno-platform   notification-service-data   Bound         pvc-6d2af624-3a6a-45ab-86a5-08ac72868d73   10Gi       RWO            standard       <unset>                 2d14h
+shopno-platform   report-service-data         Bound         pvc-c99c7b78-9b3c-4f77-a3be-3045786522de   10Gi       RWO            standard       <unset>                 2d14h
+shopno-platform   search-service-data         Bound         pvc-b36b355f-9c64-4512-b02f-f7a029696fba   10Gi       RWO            standard       <unset>                 2d14h
+shopno-platform   storage-service-data        Bound         pvc-335d911d-d8b7-4b58-b327-46d0c60e212b   10Gi       RWO            standard       <unset>                 2d14h
+shopno-platform   tenant-router-data          Bound         pvc-f2a89a14-43b4-4d5e-8653-26a8c5df30bc   10Gi       RWO            standard       <unset>                 2d14h
+shopno-platform   training-service-data       Bound         pvc-474fa31d-327d-43f5-b66d-3d05e4b10b8e   10Gi       RWO            standard       <unset>                 2d14h
+shopno-platform   web-portal-data             Bound         pvc-4e0e9e27-2282-4c1a-96a6-bb3363287406   10Gi       RWO            standard       <unset>                 2d14h
+shopno-platform   worker-service-data         Bound         pvc-f49bcf95-5b02-4e2d-860c-b7c820ee98f9   10Gi       RWO            standard       <unset>                 2d14h
+shopno-tools      session-manager-data        Bound         pvc-5f9a1bb9-1099-451a-9324-0a1a0817e2b7   5Gi        RWO            local-path     <unset>                 2d12h
+
+===== FAILED JOBS =====
+No resources found

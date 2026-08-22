@@ -12,6 +12,7 @@ spec:
         - web-portal.shopnoltd.dpdns.org
         - shopnoltd.dpdns.org
       secretName: shopno-wildcard-tls
+
   rules:
     - host: web-portal.shopnoltd.dpdns.org
       http:
@@ -23,9 +24,18 @@ spec:
                 name: web-portal
                 port:
                   number: 80
+
     - host: shopnoltd.dpdns.org
       http:
         paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: freedomain-service
+                port:
+                  number: 80
+
           - path: /
             pathType: Prefix
             backend:

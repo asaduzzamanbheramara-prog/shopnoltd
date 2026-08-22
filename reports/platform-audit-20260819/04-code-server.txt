@@ -1,0 +1,409 @@
+===== CODE SERVER AUDIT =====
+shopno-apps       pod/code-server-744dc8499f-kkgxr                        1/1     Running   33 (19m ago)     2d18h
+shopno-apps         service/code-server                               ClusterIP      10.43.197.165   <none>                                80/TCP                       23d
+shopno-apps         deployment.apps/code-server                        1/1     1            1           23d
+shopno-apps         replicaset.apps/code-server-5985bddc5c                        0         0         0       6d15h
+shopno-apps         replicaset.apps/code-server-5df67d6d46                        0         0         0       6d15h
+shopno-apps         replicaset.apps/code-server-6cdd5db98c                        0         0         0       6d17h
+shopno-apps         replicaset.apps/code-server-744dc8499f                        1         1         1       2d19h
+shopno-apps         replicaset.apps/code-server-74cd74fb54                        0         0         0       6d16h
+shopno-apps         replicaset.apps/code-server-74d4c4d5d                         0         0         0       6d17h
+shopno-apps         replicaset.apps/code-server-74f57cf669                        0         0         0       6d16h
+shopno-apps         replicaset.apps/code-server-787cf9759b                        0         0         0       6d15h
+shopno-apps         replicaset.apps/code-server-7cf8f7445d                        0         0         0       6d16h
+shopno-apps         replicaset.apps/code-server-97f9dd69f                         0         0         0       6d17h
+shopno-apps         replicaset.apps/code-server-c58554f5d                         0         0         0       6d16h
+
+              name: chatwoot
+              port:
+                number: 80
+          path: /
+          pathType: Prefix
+    tls:
+    - hosts:
+      - chatwoot.shopnoltd.dpdns.org
+      secretName: chatwoot-tls
+  status:
+    loadBalancer:
+      ingress:
+      - ip: 10.43.250.239
+- apiVersion: networking.k8s.io/v1
+  kind: Ingress
+  metadata:
+    annotations:
+      argocd.argoproj.io/tracking-id: shopnoltd:networking.k8s.io/Ingress:shopno-apps/code-server
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"networking.k8s.io/v1","kind":"Ingress","metadata":{"annotations":{"argocd.argoproj.io/tracking-id":"shopnoltd:networking.k8s.io/Ingress:shopno-apps/code-server","cert-manager.io/cluster-issuer":"letsencrypt-prod","nginx.ingress.kubernetes.io/client-body-buffer-size":"1m","nginx.ingress.kubernetes.io/force-ssl-redirect":"true","nginx.ingress.kubernetes.io/proxy-body-size":"100m","nginx.ingress.kubernetes.io/proxy-buffering":"off","nginx.ingress.kubernetes.io/proxy-connect-timeout":"60","nginx.ingress.kubernetes.io/proxy-http-version":"1.1","nginx.ingress.kubernetes.io/proxy-read-timeout":"3600","nginx.ingress.kubernetes.io/proxy-request-buffering":"off","nginx.ingress.kubernetes.io/proxy-send-timeout":"3600","nginx.ingress.kubernetes.io/ssl-redirect":"true"},"labels":{"app.kubernetes.io/name":"code-server","app.kubernetes.io/part-of":"shopnoltd"},"name":"code-server","namespace":"shopno-apps"},"spec":{"ingressClassName":"nginx","rules":[{"host":"code-server.shopnoltd.dpdns.org","http":{"paths":[{"backend":{"service":{"name":"code-server","port":{"number":80}}},"path":"/","pathType":"Prefix"}]}}],"tls":[{"hosts":["code-server.shopnoltd.dpdns.org"],"secretName":"code-server-tls"}]}}
+      nginx.ingress.kubernetes.io/client-body-buffer-size: 1m
+      nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+      nginx.ingress.kubernetes.io/proxy-body-size: 100m
+      nginx.ingress.kubernetes.io/proxy-buffering: "off"
+      nginx.ingress.kubernetes.io/proxy-connect-timeout: "60"
+      nginx.ingress.kubernetes.io/proxy-http-version: "1.1"
+      nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+      nginx.ingress.kubernetes.io/proxy-request-buffering: "off"
+      nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    creationTimestamp: "2026-07-28T05:49:19Z"
+    generation: 3
+    labels:
+      app.kubernetes.io/name: code-server
+      app.kubernetes.io/part-of: shopnoltd
+    name: code-server
+    namespace: shopno-apps
+    resourceVersion: "3176640"
+    uid: 636439f2-ff1a-4bd4-ac28-190e00f4d6ab
+  spec:
+    ingressClassName: nginx
+    rules:
+    - host: code-server.shopnoltd.dpdns.org
+      http:
+        paths:
+        - backend:
+            service:
+              name: code-server
+              port:
+                number: 80
+          path: /
+          pathType: Prefix
+    tls:
+    - hosts:
+      - code-server.shopnoltd.dpdns.org
+      secretName: code-server-tls
+  status:
+    loadBalancer:
+      ingress:
+      - ip: 10.43.250.239
+- apiVersion: networking.k8s.io/v1
+  kind: Ingress
+  metadata:
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"networking.k8s.io/v1","kind":"Ingress","metadata":{"annotations":{"cert-manager.io/cluster-issuer":"letsencrypt-prod","nginx.ingress.kubernetes.io/proxy-body-size":"50m"},"labels":{"app.kubernetes.io/name":"enketo","app.kubernetes.io/part-of":"shopnoltd"},"name":"enketo","namespace":"shopno-apps"},"spec":{"ingressClassName":"nginx","rules":[{"host":"enketo.shopnoltd.dpdns.org","http":{"paths":[{"backend":{"service":{"name":"enketo","port":{"number":8005}}},"path":"/","pathType":"Prefix"}]}}],"tls":[{"hosts":["enketo.shopnoltd.dpdns.org"],"secretName":"enketo-tls"}]}}
+      nginx.ingress.kubernetes.io/proxy-body-size: 50m
+    creationTimestamp: "2026-08-02T23:01:52Z"
+    generation: 4
+    labels:
+      app.kubernetes.io/name: enketo
+      app.kubernetes.io/part-of: shopnoltd
+    name: enketo
+    namespace: shopno-apps
+    resourceVersion: "3176761"
+    uid: a6a0b307-560a-4f47-8949-2d2c9010a681
+  spec:
+    ingressClassName: nginx
+    rules:
+    - host: enketo.shopnoltd.dpdns.org
+      http:
+        paths:
+        - backend:
+            service:
+              name: enketo
+              port:
+                number: 8005
+          path: /
+          pathType: Prefix
+    tls:
+    - hosts:
+      - enketo.shopnoltd.dpdns.org
+      secretName: shopno-wildcard-tls
+  status:
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    argocd.argoproj.io/tracking-id: shopnoltd:apps/Deployment:shopno-apps/code-server
+    deployment.kubernetes.io/revision: "45"
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{"argocd.argoproj.io/tracking-id":"shopnoltd:apps/Deployment:shopno-apps/code-server"},"labels":{"app.kubernetes.io/name":"code-server","app.kubernetes.io/part-of":"shopnoltd"},"name":"code-server","namespace":"shopno-apps"},"spec":{"replicas":1,"selector":{"matchLabels":{"app.kubernetes.io/name":"code-server"}},"strategy":{"rollingUpdate":{"maxSurge":1,"maxUnavailable":0},"type":"RollingUpdate"},"template":{"metadata":{"annotations":{"prometheus.io/path":"/metrics","prometheus.io/port":"8443","prometheus.io/scrape":"true"},"labels":{"app.kubernetes.io/name":"code-server"}},"spec":{"automountServiceAccountToken":false,"containers":[{"env":[{"name":"POD_NAME","valueFrom":{"fieldRef":{"fieldPath":"metadata.name"}}},{"name":"POD_NAMESPACE","valueFrom":{"fieldRef":{"fieldPath":"metadata.namespace"}}}],"envFrom":[{"configMapRef":{"name":"code-server-config"}},{"secretRef":{"name":"code-server-secret"}}],"image":"ghcr.io/asaduzzamanbheramara-prog/shopnoltd-code-server:470a010229144b4a1df84bb80a7957995843a90a","imagePullPolicy":"IfNotPresent","livenessProbe":{"failureThreshold":3,"httpGet":{"path":"/healthz","port":"http"},"initialDelaySeconds":30,"periodSeconds":10,"timeoutSeconds":3},"name":"code-server","ports":[{"containerPort":8443,"name":"http","protocol":"TCP"}],"readinessProbe":{"failureThreshold":3,"httpGet":{"path":"/healthz","port":"http"},"initialDelaySeconds":5,"periodSeconds":5,"timeoutSeconds":3},"resources":{"limits":{"cpu":"1000m","ephemeral-storage":"1Gi","memory":"1Gi"},"requests":{"cpu":"100m","ephemeral-storage":"256Mi","memory":"256Mi"}},"securityContext":{"allowPrivilegeEscalation":false,"capabilities":{"drop":["ALL"]},"readOnlyRootFilesystem":false},"startupProbe":{"failureThreshold":30,"httpGet":{"path":"/healthz","port":"http"},"initialDelaySeconds":10,"periodSeconds":5},"volumeMounts":[{"mountPath":"/config","name":"data"},{"mountPath":"/mnt","name":"data","subPath":"workspace"},{"mountPath":"/tmp","name":"tmp"},{"mountPath":"/run","name":"run-dir"}]}],"initContainers":[{"command":["sh","-c","chown -R 10001:10001 /run"],"image":"busybox:1.36","name":"fix-run-perms","securityContext":{"runAsNonRoot":false,"runAsUser":0},"volumeMounts":[{"mountPath":"/run","name":"run-dir"}]}],"securityContext":{"fsGroup":10001,"runAsGroup":10001,"runAsNonRoot":true,"runAsUser":10001,"seccompProfile":{"type":"RuntimeDefault"}},"serviceAccountName":"code-server","topologySpreadConstraints":[{"labelSelector":{"matchLabels":{"app.kubernetes.io/name":"code-server"}},"maxSkew":1,"topologyKey":"topology.kubernetes.io/zone","whenUnsatisfiable":"ScheduleAnyway"}],"volumes":[{"name":"data","persistentVolumeClaim":{"claimName":"code-server-data"}},{"emptyDir":{},"name":"tmp"},{"emptyDir":{},"name":"run-dir"}]}}}}
+  creationTimestamp: "2026-07-28T05:46:12Z"
+  generation: 82
+  labels:
+    app.kubernetes.io/name: code-server
+    app.kubernetes.io/part-of: shopnoltd
+  name: code-server
+  namespace: shopno-apps
+  resourceVersion: "3188578"
+  uid: b3f09623-a569-4b6c-ad04-27685f555cf2
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: code-server
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/restartedAt: "2026-08-17T20:04:58+06:00"
+        prometheus.io/path: /metrics
+        prometheus.io/port: "8443"
+        prometheus.io/scrape: "true"
+      labels:
+        app.kubernetes.io/name: code-server
+    spec:
+      automountServiceAccountToken: false
+      containers:
+      - env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        envFrom:
+        - configMapRef:
+            name: code-server-config
+        - secretRef:
+            name: code-server-secret
+        image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-code-server:470a010229144b4a1df84bb80a7957995843a90a
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /healthz
+            port: http
+            scheme: HTTP
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 3
+        name: code-server
+        ports:
+        - containerPort: 8443
+          name: http
+          protocol: TCP
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /healthz
+            port: http
+            scheme: HTTP
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          successThreshold: 1
+          timeoutSeconds: 3
+        resources:
+          limits:
+            cpu: "1"
+            ephemeral-storage: 1Gi
+            memory: 1Gi
+          requests:
+            cpu: 100m
+            ephemeral-storage: 256Mi
+            memory: 256Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: false
+          runAsGroup: 10001
+          runAsNonRoot: true
+          runAsUser: 10001
+          seccompProfile:
+            type: RuntimeDefault
+        startupProbe:
+          failureThreshold: 30
+          httpGet:
+            path: /healthz
+            port: http
+            scheme: HTTP
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          successThreshold: 1
+          timeoutSeconds: 1
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /config
+          name: data
+        - mountPath: /mnt
+          name: data
+          subPath: workspace
+        - mountPath: /tmp
+          name: tmp
+        - mountPath: /run
+          name: run-dir
+        - mountPath: /windows-c
+          name: windows-c
+      dnsPolicy: ClusterFirst
+      initContainers:
+      - command:
+        - sh
+        - -c
+        - chown -R 10001:10001 /run
+        image: busybox:1.36
+        imagePullPolicy: IfNotPresent
+        name: fix-run-perms
+        resources:
+          limits:
+            cpu: 500m
+            memory: 512Mi
+          requests:
+            cpu: 50m
+            memory: 64Mi
+        securityContext:
+          runAsNonRoot: false
+          runAsUser: 0
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /run
+          name: run-dir
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext:
+        fsGroup: 10001
+        fsGroupChangePolicy: OnRootMismatch
+        runAsGroup: 10001
+        runAsNonRoot: true
+        runAsUser: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      serviceAccount: code-server
+      serviceAccountName: code-server
+      terminationGracePeriodSeconds: 30
+      topologySpreadConstraints:
+      - labelSelector:
+          matchLabels:
+            app.kubernetes.io/name: code-server
+        maxSkew: 1
+        topologyKey: topology.kubernetes.io/zone
+        whenUnsatisfiable: ScheduleAnyway
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: code-server-data
+      - emptyDir: {}
+        name: tmp
+      - emptyDir: {}
+        name: run-dir
+      - hostPath:
+          path: /mnt/c
+          type: Directory
+        name: windows-c
+status:
+  availableReplicas: 1
+  conditions:
+  - lastTransitionTime: "2026-08-17T14:43:21Z"
+    lastUpdateTime: "2026-08-17T14:43:21Z"
+    message: ReplicaSet "code-server-744dc8499f" has successfully progressed.
+    reason: NewReplicaSetAvailable
+    status: "True"
+    type: Progressing
+  - lastTransitionTime: "2026-08-20T09:06:02Z"
+    lastUpdateTime: "2026-08-20T09:06:02Z"
+    message: Deployment has minimum availability.
+    reason: MinimumReplicasAvailable
+    status: "True"
+    type: Available
+  observedGeneration: 82
+  readyReplicas: 1
+  replicas: 1
+  terminatingReplicas: 0
+  updatedReplicas: 1
+
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    argocd.argoproj.io/tracking-id: shopnoltd:/Service:shopno-apps/code-server
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{"argocd.argoproj.io/tracking-id":"shopnoltd:/Service:shopno-apps/code-server"},"labels":{"app.kubernetes.io/name":"code-server","app.kubernetes.io/part-of":"shopnoltd"},"name":"code-server","namespace":"shopno-apps"},"spec":{"ports":[{"name":"http","port":80,"protocol":"TCP","targetPort":"http"}],"selector":{"app.kubernetes.io/name":"code-server"},"type":"ClusterIP"}}
+  creationTimestamp: "2026-07-28T05:46:05Z"
+  labels:
+    app.kubernetes.io/name: code-server
+    app.kubernetes.io/part-of: shopnoltd
+  name: code-server
+  namespace: shopno-apps
+  resourceVersion: "2882168"
+  uid: 393af3ad-48a5-4f27-98e6-50fcb0f3000d
+spec:
+  clusterIP: 10.43.197.165
+  clusterIPs:
+  - 10.43.197.165
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+  - name: http
+    port: 80
+    protocol: TCP
+    targetPort: http
+  selector:
+    app.kubernetes.io/name: code-server
+  sessionAffinity: None
+  type: ClusterIP
+status:
+  loadBalancer: {}
+
+╔═════════════════════════════════════════════════════════════════════════╗
+║                                                                         ║
+║           You are running this container as a non-root user:            ║
+║   UMASK, custom services, & docker mod functionality will be disabled   ║
+║      and the PUID/PGID environment variables will have no effect.       ║
+║                                                                         ║
+╚═════════════════════════════════════════════════════════════════════════╝
+[migrations] started
+[migrations] no migrations found
+───────────────────────────────────────
+
+      ██╗     ███████╗██╗ ██████╗
+      ██║     ██╔════╝██║██╔═══██╗
+      ██║     ███████╗██║██║   ██║
+      ██║     ╚════██║██║██║   ██║
+      ███████╗███████║██║╚██████╔╝
+      ╚══════╝╚══════╝╚═╝ ╚═════╝
+
+   Brought to you by linuxserver.io
+───────────────────────────────────────
+
+To support LSIO projects visit:
+https://www.linuxserver.io/donate/
+
+───────────────────────────────────────
+GID/UID
+───────────────────────────────────────
+
+User UID:    10001
+User GID:    10001
+───────────────────────────────────────
+Linuxserver.io version: 4.132.0-ls356
+Build-date: 2026-08-10T18:30:56+00:00
+───────────────────────────────────────
+    
+cp: cannot stat '/root/.bashrc': Permission denied
+cp: cannot stat '/root/.profile': Permission denied
+[custom-init] No custom files found, skipping...
+starting with no password
+[2026-08-20T09:05:57.891Z] info  code-server 4.132.0 313bf0359b4d391ba18f1fa131aad8a583bc2919
+[2026-08-20T09:05:57.919Z] info  Using user-data-dir /config/data
+Connection to 127.0.0.1 8443 port [tcp/*] succeeded!
+[2026-08-20T09:05:58.289Z] info  Using config file /config/.config/code-server/config.yaml
+[2026-08-20T09:05:58.289Z] info  HTTP server listening on http://[::]:8443/
+[2026-08-20T09:05:58.293Z] info    - Authentication is disabled
+[2026-08-20T09:05:58.293Z] info    - Not serving HTTPS
+[2026-08-20T09:05:58.294Z] info  Session server listening on /config/data/code-server-ipc.sock
+[ls.io-init] done.
+[09:23:54] 
+
+
+
+
+[reconnection-grace-time] No CLI argument provided, using default: 10800000ms (10800s)
+[09:23:55] [AgentHostChannel] Registered unavailable IPC channel 'agentHostProxy': no --agent-host-bridge-port / --agent-host-bridge-path set.
+[09:23:55] Extension host agent started.

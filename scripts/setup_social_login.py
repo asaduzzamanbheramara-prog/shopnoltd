@@ -24,6 +24,7 @@ import json
 import os
 import sys
 import urllib.error
+import urllib.parse
 import urllib.request
 
 import yaml
@@ -53,9 +54,13 @@ def http(method, path, token=None, body=None):
 def get_admin_token():
     if not ADMIN_PASSWORD:
         sys.exit("Set KEYCLOAK_ADMIN_PASSWORD in your shell before running this script.")
-    body = (
-        f"grant_type=password&client_id=admin-cli"
-        f"&username={ADMIN_USER}&password={ADMIN_PASSWORD}"
+    body = urllib.parse.urlencode(
+        {
+            "grant_type": "password",
+            "client_id": "admin-cli",
+            "username": ADMIN_USER,
+            "password": ADMIN_PASSWORD,
+        }
     ).encode()
     req = urllib.request.Request(
         f"{KEYCLOAK_URL}/realms/master/protocol/openid-connect/token",

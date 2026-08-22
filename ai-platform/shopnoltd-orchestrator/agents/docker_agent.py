@@ -9,10 +9,9 @@ a Kaniko Job instead (see README "Running builds inside the cluster").
 
 import os
 
-from docker.errors import APIError, BuildError
-
 import config
 import docker
+from docker.errors import APIError, BuildError
 
 
 def _dockerfile_relative_to_context(dockerfile_rel: str, context_rel: str) -> str:

@@ -1,0 +1,180 @@
+{
+  "kind": "ConfigMap",
+  "namespace": "shopno-apps",
+  "name": "nextcloud-config",
+  "group": null,
+  "version": "v1",
+  "status": "OutOfSync",
+  "health": null
+}
+{
+  "kind": "PersistentVolumeClaim",
+  "namespace": "shopno-apps",
+  "name": "n8n-data",
+  "group": null,
+  "version": "v1",
+  "status": "OutOfSync",
+  "health": null
+}
+{
+  "kind": "PersistentVolumeClaim",
+  "namespace": "shopno-apps",
+  "name": "owncast-data",
+  "group": null,
+  "version": "v1",
+  "status": "OutOfSync",
+  "health": null
+}
+{
+  "kind": "PersistentVolumeClaim",
+  "namespace": "shopno-data",
+  "name": "opensearch-data",
+  "group": null,
+  "version": "v1",
+  "status": "OutOfSync",
+  "health": null
+}
+{
+  "kind": "PersistentVolumeClaim",
+  "namespace": "shopno-identity",
+  "name": "auth-service-data",
+  "group": null,
+  "version": "v1",
+  "status": "OutOfSync",
+  "health": null
+}
+{
+  "kind": "PersistentVolumeClaim",
+  "namespace": "shopno-monitoring",
+  "name": "alertmanager-data",
+  "group": null,
+  "version": "v1",
+  "status": "OutOfSync",
+  "health": null
+}
+{
+  "kind": "PersistentVolumeClaim",
+  "namespace": "shopno-monitoring",
+  "name": "grafana-data",
+  "group": null,
+  "version": "v1",
+  "status": "OutOfSync",
+  "health": null
+}
+{
+  "kind": "PersistentVolumeClaim",
+  "namespace": "shopno-monitoring",
+  "name": "loki-data",
+  "group": null,
+  "version": "v1",
+  "status": "OutOfSync",
+  "health": null
+}
+{
+  "kind": "PersistentVolumeClaim",
+  "namespace": "shopno-monitoring",
+  "name": "prometheus-data",
+  "group": null,
+  "version": "v1",
+  "status": "OutOfSync",
+  "health": null
+}
+{
+  "kind": "Deployment",
+  "namespace": "shopno-apps",
+  "name": "metabase",
+  "group": "apps",
+  "version": "v1",
+  "status": "OutOfSync",
+  "health": null
+}
+{
+  "kind": "Deployment",
+  "namespace": "shopno-apps",
+  "name": "n8n",
+  "group": "apps",
+  "version": "v1",
+  "status": "OutOfSync",
+  "health": null
+}
+{
+  "kind": "Deployment",
+  "namespace": "shopno-apps",
+  "name": "nextcloud",
+  "group": "apps",
+  "version": "v1",
+  "status": "OutOfSync",
+  "health": null
+}
+{
+  "kind": "Deployment",
+  "namespace": "shopno-apps",
+  "name": "onlyoffice",
+  "group": "apps",
+  "version": "v1",
+  "status": "OutOfSync",
+  "health": null
+}
+{
+  "kind": "Deployment",
+  "namespace": "shopno-apps",
+  "name": "owncast",
+  "group": "apps",
+  "version": "v1",
+  "status": "OutOfSync",
+  "health": null
+}
+{
+  "kind": "Deployment",
+  "namespace": "shopno-apps",
+  "name": "superset",
+  "group": "apps",
+  "version": "v1",
+  "status": "OutOfSync",
+  "health": null
+}
+{
+  "kind": "Deployment",
+  "namespace": "shopno-monitoring",
+  "name": "alertmanager",
+  "group": "apps",
+  "version": "v1",
+  "status": "OutOfSync",
+  "health": null
+}
+{
+  "kind": "Deployment",
+  "namespace": "shopno-monitoring",
+  "name": "grafana",
+  "group": "apps",
+  "version": "v1",
+  "status": "OutOfSync",
+  "health": null
+}
+{
+  "kind": "Deployment",
+  "namespace": "shopno-monitoring",
+  "name": "loki",
+  "group": "apps",
+  "version": "v1",
+  "status": "OutOfSync",
+  "health": null
+}
+{
+  "kind": "Deployment",
+  "namespace": "shopno-monitoring",
+  "name": "prometheus",
+  "group": "apps",
+  "version": "v1",
+  "status": "OutOfSync",
+  "health": null
+}
+{
+  "kind": "Deployment",
+  "namespace": "shopno-tools",
+  "name": "session-manager",
+  "group": "apps",
+  "version": "v1",
+  "status": "OutOfSync",
+  "health": null
+}

@@ -1,18 +1,17 @@
 """Shopnoltd Auth Service."""
 
-from contextlib import asynccontextmanager
 import asyncio
+from contextlib import asynccontextmanager
 
 import structlog
+from app.core.config import settings
+from app.core.db import Base, engine
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from prometheus_client import generate_latest
 from shopno_core.database.redis import redis_client
-from starlette.responses import Response
 from sqlalchemy.exc import OperationalError
-
-from app.core.config import settings
-from app.core.db import Base, engine
+from starlette.responses import Response
 
 log = structlog.get_logger()
 
@@ -24,14 +23,14 @@ _db_init_lock = asyncio.Lock()
 async def _ensure_db_ready(max_retries: int = 30, retry_delay: int = 2):
     """Ensure database is ready with retries."""
     global _db_initialized
-    
+
     if _db_initialized:
         return
-    
+
     async with _db_init_lock:
         if _db_initialized:
             return
-        
+
         for attempt in range(max_retries):
             try:
                 async with engine.begin() as conn:
@@ -58,18 +57,18 @@ async def lifespan(app: FastAPI):
     # Non-blocking startup: initialize DB asynchronously without blocking app start
     try:
         await asyncio.wait_for(_ensure_db_ready(), timeout=60)
-    except asyncio.TimeoutError:
+    except TimeoutError:
         log.warning("auth-service.db_init_timeout", timeout=60)
     except Exception as e:
         log.warning("auth-service.db_init_error", error=str(e))
-    
+
     try:
         await asyncio.wait_for(redis_client.ping(), timeout=10)
-    except asyncio.TimeoutError:
+    except TimeoutError:
         log.warning("auth-service.redis_timeout", timeout=10)
     except Exception as e:
         log.warning("auth-service.redis_error", error=str(e))
-    
+
     log.info("auth-service.started", env=settings.env)
     yield
     await engine.dispose()
@@ -105,20 +104,20 @@ async def readyz():
 
     # Ensure DB is initialized before checking
     await _ensure_db_ready()
-    
+
     try:
         async with engine.connect() as c:
             await c.execute(text("SELECT 1"))
     except Exception as e:
         log.warning("auth-service.readyz_db_check_failed", error=str(e))
         return {"status": "not_ready", "reason": "database"}, 503
-    
+
     try:
         await redis_client.ping()
     except Exception as e:
         log.warning("auth-service.readyz_redis_check_failed", error=str(e))
         return {"status": "not_ready", "reason": "redis"}, 503
-    
+
     return {"status": "ready"}
 
 

@@ -1,0 +1,61 @@
+ M .gitignore
+ M ai-platform/shopnoltd-orchestrator/agents/docker_agent.py
+ M auth-service-main-FIXED.py
+ M auth-service-main.py
+ M k8s/services/admin-portal/kustomization.yaml
+ M k8s/services/ai-platform/kustomization.yaml
+ M k8s/services/alertmanager/kustomization.yaml
+ M k8s/services/analytics-service/kustomization.yaml
+ M k8s/services/android-portal/kustomization.yaml
+ M k8s/services/api-service/kustomization.yaml
+ M k8s/services/audit-service/kustomization.yaml
+ M k8s/services/auth-service/kustomization.yaml
+ M k8s/services/billing-engine/kustomization.yaml
+ M k8s/services/domain-service/kustomization.yaml
+ M k8s/services/event-service/kustomization.yaml
+ M k8s/services/exchange-service/kustomization.yaml
+ M k8s/services/foundation-service/kustomization.yaml
+ M k8s/services/freedomain-service/kustomization.yaml
+ M k8s/services/gateway/kustomization.yaml
+ M k8s/services/gitea/kustomization.yaml
+ M k8s/services/interior-service/kustomization.yaml
+ M k8s/services/jitsi-jicofo/kustomization.yaml
+ M k8s/services/jitsi-jvb/kustomization.yaml
+ M k8s/services/jitsi-prosody/kustomization.yaml
+ M k8s/services/jitsi-web/kustomization.yaml
+ M k8s/services/kobotoolbox/kustomization.yaml
+ M k8s/services/license-service/kustomization.yaml
+ M k8s/services/metabase/kustomization.yaml
+ M k8s/services/mobile-api/kustomization.yaml
+ M k8s/services/nextcloud/configmap.yaml
+ M k8s/services/nextcloud/deployment.yaml
+ M k8s/services/nextcloud/kustomization.yaml
+ M k8s/services/notification-service/kustomization.yaml
+ M k8s/services/oauth-service/kustomization.yaml
+ M k8s/services/onlyoffice/kustomization.yaml
+ M k8s/services/owncast/kustomization.yaml
+ M k8s/services/payment-service/kustomization.yaml
+ M k8s/services/pc-portal/kustomization.yaml
+ M k8s/services/report-service/kustomization.yaml
+ M k8s/services/scheduler-service/kustomization.yaml
+ M k8s/services/search-service/kustomization.yaml
+ M k8s/services/session-manager/kustomization.yaml
+ M k8s/services/storage-service/kustomization.yaml
+ M k8s/services/tenant-router/kustomization.yaml
+ M k8s/services/training-service/kustomization.yaml
+ M k8s/services/web-portal/kustomization.yaml
+ M k8s/services/worker-service/kustomization.yaml
+ M platform/gateway/app/core/config.py
+?? k8s/kustomization.yaml.bak.20260818-193104
+?? k8s/ollama.yaml
+?? k8s/services/session-manager/session-manager-networkpolicy.yaml
+?? k8s/system/cleanup-cronjob.yaml
+?? k8s/system/cleanup-rbac.yaml
+?? mongo-backup-20260819-0258.archive
+?? mongo-backup-full-20260819-0736.archive
+?? redis-backup-20260819-0255.rdb
+?? redis-backup-20260819-0728.rdb
+?? redis-backup-20260819.rdb
+?? reports/next-check/
+?? reports/platform-audit-20260819/
+?? wsl
