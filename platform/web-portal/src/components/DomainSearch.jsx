@@ -57,11 +57,49 @@ export default function DomainSearch() {
     }
   }
 
-  function registerDomain() {
+  async function registerDomain() {
     const value = subdomain.trim().toLowerCase()
+    const token = localStorage.getItem('shopno_token')
 
-    window.location.href =
-      `/register?domain=${encodeURIComponent(value)}`
+    if (!token) {
+      window.location.href = `/login?next=/&domain=${encodeURIComponent(value)}`
+      return
+    }
+
+    setLoading(true)
+
+    try {
+      const response = await fetch(DOMAIN_API, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          subdomain: value,
+          target: 'tenant-router.shopnoltd.dpdns.org',
+          record_type: 'CNAME',
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.detail || 'Registration failed.')
+      }
+
+      setStatus({
+        type: 'available',
+        message: `${data.subdomain} registered! It may take a few minutes to go live.`,
+      })
+    } catch (error) {
+      setStatus({
+        type: 'error',
+        message: error.message || 'Unable to register domain. Please try again.',
+      })
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
