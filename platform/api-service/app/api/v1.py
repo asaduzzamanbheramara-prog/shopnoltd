@@ -63,16 +63,56 @@ async def users_me(creds: HTTPAuthorizationCredentials = Depends(bearer)):
     )
 
 
-@router.get("/wallets")
-async def wallets(creds: HTTPAuthorizationCredentials = Depends(bearer)):
-    try:
-        await verify_token(creds.credentials)
-    except Exception as e:
-        raise HTTPException(status_code=401, detail="Invalid authentication token") from e
+@router.get("/wallet")
+async def wallet(creds: HTTPAuthorizationCredentials = Depends(bearer)):
+    current_user = await user(creds)
+
+    email = current_user.get("email")
+    if not email:
+        raise HTTPException(
+            status_code=400,
+            detail="Authenticated user does not have an email address",
+        )
 
     return await call(
         "GET",
-        "http://billing-engine.shopno-payments.svc.cluster.local:80/api/v1/wallets",
+        f"http://billing-engine.shopno-payments.svc.cluster.local:80/wallet/{email}",
+        creds.credentials,
+    )
+
+
+@router.get("/wallet/ledger")
+async def wallet_ledger(creds: HTTPAuthorizationCredentials = Depends(bearer)):
+    current_user = await user(creds)
+
+    email = current_user.get("email")
+    if not email:
+        raise HTTPException(
+            status_code=400,
+            detail="Authenticated user does not have an email address",
+        )
+
+    return await call(
+        "GET",
+        f"http://billing-engine.shopno-payments.svc.cluster.local:80/wallet/{email}/ledger",
+        creds.credentials,
+    )
+
+
+@router.get("/transactions")
+async def transactions(creds: HTTPAuthorizationCredentials = Depends(bearer)):
+    current_user = await user(creds)
+
+    email = current_user.get("email")
+    if not email:
+        raise HTTPException(
+            status_code=400,
+            detail="Authenticated user does not have an email address",
+        )
+
+    return await call(
+        "GET",
+        f"http://billing-engine.shopno-payments.svc.cluster.local:80/transactions/{email}",
         creds.credentials,
     )
 
@@ -104,12 +144,58 @@ async def notifications(creds: HTTPAuthorizationCredentials = Depends(bearer)):
     )
 
 
-@router.get("/subscription")
-async def subscription(creds: HTTPAuthorizationCredentials = Depends(bearer)):
+@router.get("/billing/gateways")
+async def billing_gateways(
+    creds: HTTPAuthorizationCredentials = Depends(bearer),
+):
+    await user(creds)
+
     return await call(
         "GET",
-        "http://billing-engine.shopno-payments.svc.cluster.local:80/api/v1/subscriptions/me",
+        "http://billing-engine.shopno-payments.svc.cluster.local:80/gateways",
         creds.credentials,
+    )
+
+
+@router.post("/billing/checkout")
+async def billing_checkout(
+    body: dict,
+    creds: HTTPAuthorizationCredentials = Depends(bearer),
+):
+    current_user = await user(creds)
+
+    email = current_user.get("email")
+    if not email:
+        raise HTTPException(
+            status_code=400,
+            detail="Authenticated user does not have an email address",
+        )
+
+    amount = body.get("amount")
+    currency = body.get("currency")
+    gateway = body.get("gateway", "stripe")
+
+    if amount is None or not currency:
+        raise HTTPException(
+            status_code=422,
+            detail="amount and currency are required",
+        )
+
+    payload = {
+        "gateway": gateway,
+        "amount": amount,
+        "currency": currency.upper(),
+        "customer_email": email,
+        "reference": body.get("reference"),
+        "customer_name": (current_user.get("name") or current_user.get("preferred_username")),
+        "customer_phone": body.get("customer_phone"),
+    }
+
+    return await call(
+        "POST",
+        "http://billing-engine.shopno-payments.svc.cluster.local:80/checkout",
+        creds.credentials,
+        json=payload,
     )
 
 

@@ -7,7 +7,7 @@ import httpx
 SERVICES = {
     "auth": "http://oauth-service.shopno-identity.svc.cluster.local:8080",
     "payment": "http://payment-service.shopno-payments.svc.cluster.local:8080",
-    "billing": "http://billing-engine.shopno-payments.svc.cluster.local:8080",
+    "billing": "http://billing-engine.shopno-payments.svc.cluster.local:80",
     "exchange": "http://exchange-service.shopno-payments.svc.cluster.local:8080",
     "social": "http://social-service.shopno-platform.svc.cluster.local:8080",
     "messaging": "http://messaging-service.shopno-platform.svc.cluster.local:8080",

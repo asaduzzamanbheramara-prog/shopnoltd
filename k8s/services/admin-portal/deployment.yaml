@@ -32,7 +32,7 @@ spec:
       containers:
         - name: admin-portal
           image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/admin-portal:latest
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           ports:
             - name: http
               containerPort: 3000

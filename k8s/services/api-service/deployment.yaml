@@ -36,7 +36,7 @@ spec:
       containers:
         - name: api-service
           image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/api-service:latest
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           ports:
             - name: http
               containerPort: 8080
