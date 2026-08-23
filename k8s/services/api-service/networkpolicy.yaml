@@ -40,6 +40,9 @@ spec:
               name: shopno-monitoring
         - namespaceSelector:
             matchLabels:
+              name: shopno-payments
+        - namespaceSelector:
+            matchLabels:
               name: kube-system
       ports:
         - port: 53
