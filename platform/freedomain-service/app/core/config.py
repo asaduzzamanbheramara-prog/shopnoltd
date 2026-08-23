@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     redis_url: str = "redis://redis.shopno-data.svc.cluster.local:6379/0"
     cors_origins: str = "https://shopnoltd.dpdns.org"
     domain_service_url: str = "http://domain-service.shopno-platform.svc.cluster.local:8080"
-    parent_zone: str = "freedomain.shopnoltd.dpdns.org"
+    parent_zone: str = "shopnoltd.dpdns.org"
     keycloak_audience: str = "freedomain-service"
     keycloak_issuer: str = "http://keycloak.shopno-identity.svc.cluster.local/realms/shopnoltd"
 
