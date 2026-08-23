@@ -7,9 +7,11 @@ spec:
   podSelector:
     matchLabels:
       app.kubernetes.io/name: admin-portal
+
   policyTypes:
     - Ingress
     - Egress
+
   ingress:
     - from:
         - namespaceSelector:
@@ -27,6 +29,7 @@ spec:
       ports:
         - port: 3000
           protocol: TCP
+
   egress:
     - to:
         - namespaceSelector:
@@ -51,4 +54,12 @@ spec:
         - port: 6379
           protocol: TCP
         - port: 9000
+          protocol: TCP
+
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: shopno-payments
+      ports:
+        - port: 80
           protocol: TCP
