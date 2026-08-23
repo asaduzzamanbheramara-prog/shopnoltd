@@ -14,9 +14,7 @@ resources:
 - servicemonitor.yaml
 
 labels:
-- includeSelectors: true
-  pairs:
-    app.kubernetes.io/name: billing-engine
 - includeSelectors: false
   pairs:
+    app.kubernetes.io/name: billing-engine
     app.kubernetes.io/part-of: shopnoltd
