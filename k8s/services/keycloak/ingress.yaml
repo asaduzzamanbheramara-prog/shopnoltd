@@ -6,14 +6,13 @@ metadata:
   annotations:
     nginx.ingress.kubernetes.io/proxy-body-size: "50m"
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
-    cert-manager.io/cluster-issuer: letsencrypt-prod
 spec:
   ingressClassName: nginx
   tls:
     - hosts:
         - auth.shopnoltd.dpdns.org
         - keycloak.shopnoltd.dpdns.org
-      secretName: keycloak-auth-tls
+      secretName: shopno-wildcard-tls
   rules:
     - host: auth.shopnoltd.dpdns.org
       http:
