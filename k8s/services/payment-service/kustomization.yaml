@@ -15,9 +15,7 @@ resources:
 - servicemonitor.yaml
 
 labels:
-- includeSelectors: true
-  pairs:
-    app.kubernetes.io/name: payment-service
 - includeSelectors: false
   pairs:
+    app.kubernetes.io/name: payment-service
     app.kubernetes.io/part-of: shopnoltd
