@@ -24,8 +24,16 @@ class NamecheapAdapter(RegistrarAdapter):
         client_ip: str = "0.0.0.0",
     ):
         super().__init__(api_key, api_secret)
-        # Namecheap calls the API key "ApiKey" and requires ApiUser/UserName (usually identical)
-        self.username = username or api_secret or ""
+
+        if not username:
+            raise ValueError("Namecheap username is required")
+
+        if not client_ip or client_ip == "0.0.0.0":
+            raise ValueError("Namecheap client IP is required")
+
+        # Namecheap calls the account username ApiUser/UserName.
+        # It is distinct from the API key and must never fall back to api_secret.
+        self.username = username
         self.client_ip = client_ip
 
     def _base_params(self, command: str) -> dict[str, str]:
@@ -42,11 +50,23 @@ class NamecheapAdapter(RegistrarAdapter):
         params["DomainList"] = domain
         async with httpx.AsyncClient(timeout=15) as c:
             resp = await c.get(NAMECHEAP_API_URL, params=params)
+            resp.raise_for_status()
+
         root = ElementTree.fromstring(resp.text)
         ns = {"nc": "http://api.namecheap.com/xml.response"}
+
+        errors = root.findall(".//nc:Error", ns)
+        if errors:
+            messages = [(error.text or "Unknown Namecheap API error").strip() for error in errors]
+            raise RuntimeError("Namecheap API error: " + "; ".join(messages))
+
+        status = root.get("Status")
+        if status and status.lower() != "ok":
+            raise RuntimeError(f"Namecheap API returned Status={status}")
+
         result = root.find(".//nc:DomainCheckResult", ns)
         if result is None:
-            return {"domain": domain, "available": False, "premium": False}
+            raise RuntimeError("Namecheap API response did not contain DomainCheckResult")
         return {
             "domain": domain,
             "available": result.get("Available") == "true",

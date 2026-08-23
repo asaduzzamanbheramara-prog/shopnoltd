@@ -13,7 +13,7 @@ from app.models.models import Registrar, Zone
 from app.services.registrar_factory import get_adapter
 
 router = APIRouter()
-bearer = HTTPBearer()
+bearer = HTTPBearer(auto_error=False)
 
 
 async def db():
@@ -21,7 +21,16 @@ async def db():
         yield s
 
 
-async def admin(creds: HTTPAuthorizationCredentials = Depends(bearer)):
+async def admin(creds: HTTPAuthorizationCredentials | None = Depends(bearer)):
+    if creds is None:
+        from fastapi import HTTPException
+
+        raise HTTPException(
+            status_code=401,
+            detail="Authentication required",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
     return await verify_token_admin(creds.credentials)
 
 
