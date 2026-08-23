@@ -1,5 +1,7 @@
 import React from 'react'
+import { useNavigate } from 'react-router-dom'
 export default function Pricing() {
+  const navigate = useNavigate()
   const plans = [
     { name: 'Free',    price: 0,    features: ['1 user', '1 GB storage', 'Community support'] },
     { name: 'Starter', price: 9,    features: ['5 users', '50 GB storage', 'Email support'] },
@@ -16,7 +18,12 @@ export default function Pricing() {
             <h2>{p.name}</h2>
             <p style={{ fontSize: 36, fontWeight: 700 }}>${p.price}<span style={{ fontSize: 14, color: '#64748b' }}>/mo</span></p>
             <ul>{p.features.map(f => <li key={f}>{f}</li>)}</ul>
-            <button style={{ width: '100%', padding: 10, background: '#0ea5e9', color: 'white', border: 0, borderRadius: 8 }}>Choose</button>
+            <button
+                onClick={() => navigate(`/register?plan=${p.name.toLowerCase()}`)}
+                style={{ width: '100%', padding: 10, background: '#0ea5e9', color: 'white', border: 0, borderRadius: 8, cursor: 'pointer' }}
+              >
+                Choose
+              </button>
           </div>
         ))}
       </div>
