@@ -59,6 +59,8 @@ async def approve(tx_id: str, user=Depends(require_admin), s: AsyncSession = Dep
     if tx.type.value == "withdrawal":
         w.balance = Decimal(str(w.balance)) - Decimal(str(tx.amount))
         w.frozen = Decimal(str(w.frozen)) - Decimal(str(tx.amount))
+    elif tx.type.value == "deposit":
+        w.balance = Decimal(str(w.balance)) + Decimal(str(tx.amount))
     tx.status = TxStatus.completed
     tx.completed_at = datetime.utcnow()
     tx.approved_by = user["sub"]
