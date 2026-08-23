@@ -1,4 +1,5 @@
 import httpx
+from fastapi import HTTPException
 from shopno_core.security.jwt import JWTError, jwt
 
 from app.core.config import settings
@@ -34,7 +35,19 @@ async def verify_token(token: str) -> dict:
 
 
 async def verify_token_admin(token: str) -> dict:
-    u = await verify_token(token)
+    try:
+        u = await verify_token(token)
+    except (ValueError, JWTError):
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid or expired authentication token",
+            headers={"WWW-Authenticate": "Bearer"},
+        ) from None
+
     if "admin" not in u.get("roles", []):
-        raise PermissionError("admin only")
+        raise HTTPException(
+            status_code=403,
+            detail="Admin privileges required",
+        )
+
     return u

@@ -1,5 +1,7 @@
 """Picks the correct RegistrarAdapter implementation based on a Registrar DB row."""
 
+import os
+
 from app.models.models import Registrar
 from app.services.registrar_adapter import RegistrarAdapter
 from app.services.registrars.cloudflare import CloudflareAdapter
@@ -18,4 +20,21 @@ def get_adapter(registrar: Registrar) -> RegistrarAdapter:
             f"No adapter registered for registrar '{registrar.name}'. "
             f"Known registrars: {list(_ADAPTERS)}"
         )
-    return adapter_cls(api_key=registrar.api_key, api_secret=registrar.api_secret)
+    kwargs = {
+        "api_key": registrar.api_key,
+        "api_secret": registrar.api_secret,
+    }
+
+    if registrar.name.lower() == "namecheap":
+        username = os.getenv("NAMECHEAP_USERNAME")
+        client_ip = os.getenv("NAMECHEAP_CLIENT_IP")
+
+        if not username:
+            raise RuntimeError("NAMECHEAP_USERNAME is not configured")
+        if not client_ip:
+            raise RuntimeError("NAMECHEAP_CLIENT_IP is not configured")
+
+        kwargs["username"] = username
+        kwargs["client_ip"] = client_ip
+
+    return adapter_cls(**kwargs)
