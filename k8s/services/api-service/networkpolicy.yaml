@@ -55,3 +55,13 @@ spec:
           protocol: TCP
         - port: 9000
           protocol: TCP
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: shopno-payments
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: billing-engine
+      ports:
+        - port: 5000
+          protocol: TCP
