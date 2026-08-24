@@ -129,7 +129,7 @@ async def resolve_rate(base: str, quote: str) -> ResolvedRate:
                 base=base,
                 quote=quote,
                 rate=base_to_anchor.rate * anchor_to_quote.rate,
-                source=(f"{base_to_anchor.source}+" f"{anchor_to_quote.source}")[:32],
+                source=(f"{base_to_anchor.source}+{anchor_to_quote.source}")[:32],
                 fetched_at=max(
                     base_to_anchor.fetched_at,
                     anchor_to_quote.fetched_at,
