@@ -35,7 +35,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: domain-service
-          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/domain-service:latest
+          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/domain-service@sha256:2a5ff11113103087e2f0e66452908da89f4ffabf9e0b5142aca575b4b8ffa772
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
@@ -46,6 +46,8 @@ spec:
                 name: domain-service-config
             - secretRef:
                 name: domain-service-secret
+            - secretRef:
+                name: domain-service-namecheap
           env:
             - name: POD_NAME
               valueFrom: { fieldRef: { fieldPath: metadata.name } }
