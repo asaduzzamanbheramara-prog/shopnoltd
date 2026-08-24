@@ -8,7 +8,10 @@ metadata:
 spec:
   replicas: 1
   strategy:
-    type: Recreate
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
   selector:
     matchLabels:
       app.kubernetes.io/name: nextcloud
@@ -23,7 +26,6 @@ spec:
     spec:
       serviceAccountName: nextcloud
       automountServiceAccountToken: false
-
       securityContext:
         runAsNonRoot: true
         runAsUser: 10001
@@ -31,99 +33,51 @@ spec:
         fsGroup: 10001
         seccompProfile:
           type: RuntimeDefault
-
       initContainers:
         - name: seed-php-confd
           image: nextcloud:34.0.2-apache
-          imagePullPolicy: IfNotPresent
-          command:
-            - sh
-            - -c
-            - cp -rL /usr/local/etc/php/conf.d/. /php-confd-writable/
+          command: ["sh", "-c", "cp -rL /usr/local/etc/php/conf.d/. /php-confd-writable/"]
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
-              drop:
-                - ALL
-              add:
-                - FOWNER
+              drop: ["ALL"]
+              add: ["FOWNER"]
           volumeMounts:
             - name: php-confd
               mountPath: /php-confd-writable
-
-        - name: seed-nextcloud-html
-          image: nextcloud:34.0.2-apache
-          imagePullPolicy: IfNotPresent
-          command:
-            - sh
-            - -c
-            - |
-              set -eu
-
-              if [ ! -f /var/www/html/version.php ]; then
-                echo "===== INITIALIZING NEXTCLOUD HTML PVC ====="
-                cp -rL /usr/src/nextcloud/. /var/www/html/
-                echo "Nextcloud application files initialized."
-              else
-                echo "===== NEXTCLOUD HTML PVC ALREADY INITIALIZED ====="
-                cat /var/www/html/version.php | head -20
-              fi
-          securityContext:
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-                - ALL
-              add:
-                - CHOWN
-          volumeMounts:
-            - name: html
-              mountPath: /var/www/html
-
       containers:
         - name: nextcloud
           image: nextcloud:34.0.2-apache
           imagePullPolicy: IfNotPresent
-
           ports:
             - name: http
               containerPort: 80
               protocol: TCP
-
           envFrom:
             - configMapRef:
                 name: nextcloud-config
             - secretRef:
                 name: nextcloud-secret
-
           env:
             - name: POD_NAME
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.name
-
+              valueFrom: { fieldRef: { fieldPath: metadata.name } }
             - name: POD_NAMESPACE
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.namespace
-
+              valueFrom: { fieldRef: { fieldPath: metadata.namespace } }
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: nextcloud-secret
                   key: db-password
-
             - name: NEXTCLOUD_ADMIN_USER
               valueFrom:
                 secretKeyRef:
                   name: nextcloud-secret
                   key: username
-
             - name: NEXTCLOUD_ADMIN_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: nextcloud-secret
                   key: admin-password
-
           resources:
             requests:
               cpu: 100m
@@ -133,74 +87,49 @@ spec:
               cpu: 1000m
               memory: 512Mi
               ephemeral-storage: 1Gi
-
           livenessProbe:
             httpGet:
               path: /status.php
               port: http
-            initialDelaySeconds: 60
+            initialDelaySeconds: 30
             periodSeconds: 10
             timeoutSeconds: 3
             failureThreshold: 3
-
           readinessProbe:
             httpGet:
               path: /status.php
               port: http
-            initialDelaySeconds: 10
+            initialDelaySeconds: 5
             periodSeconds: 5
             timeoutSeconds: 3
             failureThreshold: 3
-
           startupProbe:
             httpGet:
               path: /status.php
               port: http
             initialDelaySeconds: 10
             periodSeconds: 5
-            timeoutSeconds: 3
-            failureThreshold: 60
-
+            failureThreshold: 30
           volumeMounts:
-            - name: html
-              mountPath: /var/www/html
-
             - name: data
               mountPath: /var/lib/nextcloud
-
-            - name: data
-              mountPath: /var/www/html/config
-              subPath: config
-              readOnly: false
-
             - name: tmp
               mountPath: /tmp
-
             - name: php-confd
               mountPath: /usr/local/etc/php/conf.d
-
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
             capabilities:
-              drop:
-                - ALL
-
+              drop: ["ALL"]
       volumes:
-        - name: html
-          persistentVolumeClaim:
-            claimName: nextcloud-html
-
         - name: data
           persistentVolumeClaim:
             claimName: nextcloud-data
-
         - name: tmp
           emptyDir: {}
-
         - name: php-confd
           emptyDir: {}
-
       topologySpreadConstraints:
         - maxSkew: 1
           topologyKey: topology.kubernetes.io/zone
