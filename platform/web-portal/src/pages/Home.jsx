@@ -71,6 +71,127 @@ const SERVICES = [
     url: 'https://cursor.shopnoltd.dpdns.org',
     category: 'Developer',
   },
+  {
+    icon: '🌐',
+    name: 'Website',
+    description: 'Create and manage personal, business, portfolio and custom websites.',
+    url: '/dashboard',
+    category: 'Platform',
+  },
+  {
+    icon: '👤',
+    name: 'Profile',
+    description: 'Create and manage your public personal, creator, developer or business profile.',
+    url: '/dashboard',
+    category: 'Platform',
+  },
+  {
+    icon: '💬',
+    name: 'Messaging',
+    description: 'Direct messages, group conversations, channels and communities.',
+    url: 'https://chat.shopnoltd.dpdns.org',
+    category: 'Communication',
+  },
+  {
+    icon: '👥',
+    name: 'Social',
+    description: 'Create posts, profiles, communities and connect with people.',
+    url: '/dashboard',
+    category: 'Social',
+  },
+  {
+    icon: '📺',
+    name: 'Video',
+    description: 'Create channels, publish videos, organize playlists and build your audience.',
+    url: 'https://live.shopnoltd.dpdns.org',
+    category: 'Media',
+  },
+  {
+    icon: '⚡',
+    name: 'Automation',
+    description: 'Connect Shopnoltd services and automate workflows, notifications and actions.',
+    url: 'https://n8n.shopnoltd.dpdns.org',
+    category: 'Automation',
+  },
+  {
+    icon: '🌍',
+    name: 'Web Workspace',
+    description: 'Access and organize your websites, applications, projects and services in one workspace.',
+    url: '/dashboard',
+    category: 'Platform',
+  },
+  {
+    icon: '🔗',
+    name: 'API',
+    description: 'Connect applications, services, automation and developer tools through Shopnoltd APIs.',
+    url: 'https://api.shopnoltd.dpdns.org',
+    category: 'Developer',
+  },
+  {
+    icon: '👛',
+    name: 'Wallet',
+    description: 'Manage balances, transactions, service usage and payments from one place.',
+    url: 'https://billing.shopnoltd.dpdns.org',
+    category: 'Business',
+  },
+  {
+    icon: '💱',
+    name: 'Exchange',
+    description: 'Manage supported platform balances, transfers and exchange services.',
+    url: 'https://exchange.shopnoltd.dpdns.org',
+    category: 'Business',
+  },
+]
+
+const CONNECTED_PLATFORMS = [
+  {
+    icon: '🌐',
+    name: 'Web & Websites',
+    description: 'Browse, organize and access websites, web apps and connected online services.',
+    url: '/dashboard',
+  },
+  {
+    icon: '👤',
+    name: 'Profiles',
+    description: 'Manage your personal, creator, developer and business profiles from one workspace.',
+    url: '/dashboard',
+  },
+  {
+    icon: '📧',
+    name: 'Mail',
+    description: 'Access Shopnoltd Mail and manage connected email workflows and notifications.',
+    url: 'https://mail.shopnoltd.dpdns.org',
+  },
+  {
+    icon: '💬',
+    name: 'Messaging',
+    description: 'Access conversations, groups, communities and supported messaging connections.',
+    url: 'https://chat.shopnoltd.dpdns.org',
+  },
+  {
+    icon: '📞',
+    name: 'Calls & Meetings',
+    description: 'Access voice, video calls and online meetings through your workspace.',
+    url: 'https://meet.shopnoltd.dpdns.org',
+  },
+  {
+    icon: '👥',
+    name: 'Social',
+    description: 'Organize social profiles, publishing workflows and supported social connections.',
+    url: '/dashboard',
+  },
+  {
+    icon: '📺',
+    name: 'Video',
+    description: 'Manage video channels, publishing, streaming and creator workflows.',
+    url: 'https://live.shopnoltd.dpdns.org',
+  },
+  {
+    icon: '⚡',
+    name: 'Automation Hub',
+    description: 'Automate workflows, notifications and actions between supported services.',
+    url: 'https://n8n.shopnoltd.dpdns.org',
+  },
 ]
 
 const ADMIN_SERVICES = [
@@ -192,6 +313,31 @@ export default function Home() {
           marginTop: 18,
         }}>
           {SERVICES.map((service) => (
+            <ServiceCard
+              key={service.name}
+              service={service}
+            />
+          ))}
+        </div>
+      </section>
+
+      <section style={{ marginTop: 56 }}>
+        <h2>Connected Platforms</h2>
+
+        <p style={{ color: '#64748b', maxWidth: 900, lineHeight: 1.6 }}>
+          One place to access your Shopnoltd services, websites, profiles and
+          supported connected platforms. Use official account connections where
+          available and organize your communication, calling, video, social and
+          automation workflows from your Shopnoltd workspace.
+        </p>
+
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+          gap: 18,
+          marginTop: 18,
+        }}>
+          {CONNECTED_PLATFORMS.map((service) => (
             <ServiceCard
               key={service.name}
               service={service}
