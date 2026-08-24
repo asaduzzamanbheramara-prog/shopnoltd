@@ -19,7 +19,7 @@ data:
   POSTGRES_HOST: "postgres.shopno-data.svc.cluster.local"
   POSTGRES_PORT: "5432"
   POSTGRES_DB: "shopnoltd"
-  POSTGRES_USER: "postgres"
+  POSTGRES_USER: "nextcloud"
 
   NEXTCLOUD_DATA_DIR: "/var/lib/nextcloud"
   NEXTCLOUD_TRUSTED_DOMAINS: "nextcloud.shopnoltd.dpdns.org"
