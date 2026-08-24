@@ -173,11 +173,12 @@ async def register(body: RegisterIn, user=Depends(current_user), s: AsyncSession
     fd = FreeDomain(
         user_id=user["sub"], subdomain=full, target=body.target, record_type=body.record_type
     )
-    s.add(fd)
-    await s.commit()
     try:
-        async with httpx.AsyncClient() as c:
-            await c.post(
+        async with httpx.AsyncClient(
+            timeout=httpx.Timeout(10.0, connect=5.0),
+            follow_redirects=True,
+        ) as c:
+            response = await c.post(
                 f"{settings.domain_service_url}/api/v1/records",
                 json={
                     "zone_id": settings.parent_zone,
@@ -186,11 +187,32 @@ async def register(body: RegisterIn, user=Depends(current_user), s: AsyncSession
                     "content": body.target,
                     "ttl": 300,
                 },
-                headers={"Authorization": "Bearer admin-stub"},
+                headers={
+                    "Authorization": f"Bearer {settings.domain_service_token}",
+                },
             )
-    except Exception:
-        pass
-    return {"id": fd.id, "subdomain": full, "target": body.target}
+            response.raise_for_status()
+    except httpx.HTTPStatusError as exc:
+        raise HTTPException(
+            status_code=502,
+            detail=f"DNS provider rejected domain registration: HTTP {exc.response.status_code}",
+        ) from exc
+    except httpx.HTTPError as exc:
+        raise HTTPException(
+            status_code=502,
+            detail="DNS provider is unavailable",
+        ) from exc
+
+    s.add(fd)
+    await s.commit()
+
+    return {
+        "id": fd.id,
+        "subdomain": full,
+        "target": body.target,
+        "record_type": body.record_type,
+        "active": True,
+    }
 
 
 @router.get("/me")

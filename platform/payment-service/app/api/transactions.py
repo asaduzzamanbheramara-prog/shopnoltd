@@ -29,7 +29,10 @@ async def history(
 ):
     res = await s.execute(
         select(Transaction)
-        .where(Transaction.tenant_id == user.get("tenant_id", "default"))
+        .where(
+            Transaction.tenant_id == user.get("tenant_id", "default"),
+            Transaction.user_id == user["sub"],
+        )
         .order_by(Transaction.created_at.desc())
         .limit(limit)
         .offset(offset)
