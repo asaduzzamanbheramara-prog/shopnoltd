@@ -12,9 +12,20 @@ spec:
   tls:
     - hosts:
         - owncast.shopnoltd.dpdns.org
+        - live.shopnoltd.dpdns.org
       secretName: owncast-tls
   rules:
     - host: owncast.shopnoltd.dpdns.org
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: owncast
+                port:
+                  number: 80
+    - host: live.shopnoltd.dpdns.org
       http:
         paths:
           - path: /

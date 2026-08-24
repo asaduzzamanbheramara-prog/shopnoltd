@@ -12,9 +12,20 @@ spec:
   tls:
     - hosts:
         - chatwoot.shopnoltd.dpdns.org
+        - chat.shopnoltd.dpdns.org
       secretName: chatwoot-tls
   rules:
     - host: chatwoot.shopnoltd.dpdns.org
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: chatwoot
+                port:
+                  number: 80
+    - host: chat.shopnoltd.dpdns.org
       http:
         paths:
           - path: /

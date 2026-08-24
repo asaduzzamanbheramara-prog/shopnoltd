@@ -12,9 +12,20 @@ spec:
   tls:
     - hosts:
         - nextcloud.shopnoltd.dpdns.org
+        - storage.shopnoltd.dpdns.org
       secretName: nextcloud-tls
   rules:
     - host: nextcloud.shopnoltd.dpdns.org
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: nextcloud
+                port:
+                  number: 80
+    - host: storage.shopnoltd.dpdns.org
       http:
         paths:
           - path: /
