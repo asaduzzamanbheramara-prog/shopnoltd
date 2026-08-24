@@ -13,7 +13,7 @@ spec:
     - hosts:
         - ai-platform.shopnoltd.dpdns.org
         - openai.shopnoltd.dpdns.org
-      secretName: ai-platform-tls
+      secretName: shopno-wildcard-tls
   rules:
     - host: ai-platform.shopnoltd.dpdns.org
       http:
