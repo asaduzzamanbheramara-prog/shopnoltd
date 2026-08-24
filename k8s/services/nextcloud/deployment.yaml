@@ -45,6 +45,8 @@ spec:
           volumeMounts:
             - name: php-confd
               mountPath: /php-confd-writable
+            - name: run-tmp
+              mountPath: /run
       containers:
         - name: nextcloud
           image: nextcloud:34.0.2-apache
@@ -113,10 +115,15 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /var/lib/nextcloud
+            - name: data
+              mountPath: /var/www/html/config
+              subPath: config
             - name: tmp
               mountPath: /tmp
             - name: php-confd
               mountPath: /usr/local/etc/php/conf.d
+            - name: apache-run
+              mountPath: /var/run/apache2
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
@@ -129,6 +136,10 @@ spec:
         - name: tmp
           emptyDir: {}
         - name: php-confd
+          emptyDir: {}
+        - name: run-tmp
+          emptyDir: {}
+        - name: apache-run
           emptyDir: {}
       topologySpreadConstraints:
         - maxSkew: 1
