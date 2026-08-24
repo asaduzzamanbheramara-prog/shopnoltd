@@ -27,6 +27,7 @@ spec:
     - hosts:
         - codeserver.shopnoltd.dpdns.org
         - code-server.shopnoltd.dpdns.org
+        - cursor.shopnoltd.dpdns.org
       secretName: code-server-tls
   rules:
     - host: codeserver.shopnoltd.dpdns.org
@@ -40,6 +41,16 @@ spec:
                 port:
                   number: 80
     - host: code-server.shopnoltd.dpdns.org
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: code-server
+                port:
+                  number: 80
+    - host: cursor.shopnoltd.dpdns.org
       http:
         paths:
           - path: /
