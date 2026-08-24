@@ -4,6 +4,7 @@ metadata:
   name: ai-platform
   namespace: shopno-platform
   labels:
+    app: ai-platform
     app.kubernetes.io/name: ai-platform
 spec:
   replicas: 1
@@ -18,6 +19,7 @@ spec:
   template:
     metadata:
       labels:
+        app: ai-platform
         app.kubernetes.io/name: ai-platform
       annotations:
         prometheus.io/scrape: "true"
