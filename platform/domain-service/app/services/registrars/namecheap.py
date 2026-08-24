@@ -38,7 +38,7 @@ class NamecheapAdapter(RegistrarAdapter):
             "Command": command,
         }
 
-    def _check_response_errors(self, root: ElementTree.Element, operation: str) -> None:
+    def _check_response_errors(self, root, operation: str) -> None:
         ns = {"nc": "http://api.namecheap.com/xml.response"}
         errors = root.findall(".//nc:Error", ns)
         if errors:
