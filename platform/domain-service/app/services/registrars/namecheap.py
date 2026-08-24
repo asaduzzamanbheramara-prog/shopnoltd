@@ -1,24 +1,14 @@
 """Namecheap registrar adapter with error handling and sandbox support."""
-
 from typing import Any
 from xml.etree import ElementTree
-
 import httpx
 from app.services.registrar_adapter import RegistrarAdapter
 
 NAMECHEAP_API_PROD = "https://api.namecheap.com/xml.response"
 NAMECHEAP_API_SANDBOX = "https://sandbox.namecheap.com/xml.response"
 
-
 class NamecheapAdapter(RegistrarAdapter):
-    def __init__(
-        self,
-        api_key: str,
-        api_secret: str | None = None,
-        username: str | None = None,
-        client_ip: str = "0.0.0.0",
-        sandbox: bool = False,
-    ):
+    def __init__(self, api_key: str, api_secret: str | None = None, username: str | None = None, client_ip: str = "0.0.0.0", sandbox: bool = False):
         super().__init__(api_key, api_secret)
         if not username:
             raise ValueError("Namecheap username is required")
@@ -30,13 +20,7 @@ class NamecheapAdapter(RegistrarAdapter):
         self.api_url = NAMECHEAP_API_SANDBOX if sandbox else NAMECHEAP_API_PROD
 
     def _base_params(self, command: str) -> dict[str, str]:
-        return {
-            "ApiUser": self.username,
-            "ApiKey": self.api_key,
-            "UserName": self.username,
-            "ClientIp": self.client_ip,
-            "Command": command,
-        }
+        return {"ApiUser": self.username, "ApiKey": self.api_key, "UserName": self.username, "ClientIp": self.client_ip, "Command": command}
 
     def _check_response_errors(self, root, operation: str) -> None:
         ns = {"nc": "http://api.namecheap.com/xml.response"}
@@ -60,11 +44,7 @@ class NamecheapAdapter(RegistrarAdapter):
         result = root.find(".//nc:DomainCheckResult", ns)
         if result is None:
             raise RuntimeError("Namecheap API response did not contain DomainCheckResult")
-        return {
-            "domain": domain,
-            "available": result.get("Available") == "true",
-            "premium": result.get("IsPremiumName") == "true",
-        }
+        return {"domain": domain, "available": result.get("Available") == "true", "premium": result.get("IsPremiumName") == "true"}
 
     async def get_pricing(self, tld: str, years: int = 1) -> dict[str, Any]:
         params = self._base_params("namecheap.users.getPricing")
@@ -98,11 +78,7 @@ class NamecheapAdapter(RegistrarAdapter):
         result = root.find(".//nc:DomainCreateResult", ns)
         if result is None:
             raise RuntimeError("Namecheap API response did not contain DomainCreateResult")
-        return {
-            "domain": domain,
-            "order_id": result.get("OrderID"),
-            "expires_at": result.get("ExpirationDate"),
-        }
+        return {"domain": domain, "order_id": result.get("OrderID"), "expires_at": result.get("ExpirationDate")}
 
     async def renew(self, domain: str, years: int) -> dict[str, Any]:
         params = self._base_params("namecheap.domains.renew")
@@ -115,10 +91,7 @@ class NamecheapAdapter(RegistrarAdapter):
         self._check_response_errors(root, "renew")
         ns = {"nc": "http://api.namecheap.com/xml.response"}
         result = root.find(".//nc:DomainRenewResult", ns)
-        return {
-            "domain": domain,
-            "expires_at": result.get("ExpirationDate") if result is not None else None,
-        }
+        return {"domain": domain, "expires_at": result.get("ExpirationDate") if result is not None else None}
 
     async def transfer(self, domain: str, auth_code: str) -> dict[str, Any]:
         params = self._base_params("namecheap.domains.transfer.create")

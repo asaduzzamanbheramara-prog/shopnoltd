@@ -1,12 +1,10 @@
 import os
-
 from app.models.models import Registrar
 from app.services.registrar_adapter import RegistrarAdapter
 from app.services.registrars.cloudflare import CloudflareAdapter
 from app.services.registrars.namecheap import NamecheapAdapter
 
 _ADAPTERS = {"namecheap": NamecheapAdapter, "cloudflare": CloudflareAdapter}
-
 
 def get_adapter(registrar: Registrar) -> RegistrarAdapter:
     adapter_cls = _ADAPTERS.get(registrar.name.lower())
