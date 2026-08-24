@@ -73,9 +73,11 @@ export default function Register() {
     <main
       style={{
         maxWidth: 520,
-        margin: '60px auto',
-        padding: 32,
+        width: '100%',
+        margin: 'clamp(28px, 8vw, 60px) auto',
+        padding: 'clamp(20px, 5vw, 32px)',
         fontFamily: 'system-ui, sans-serif',
+        boxSizing: 'border-box',
       }}
     >
       <h1>Create your Shopnoltd account</h1>

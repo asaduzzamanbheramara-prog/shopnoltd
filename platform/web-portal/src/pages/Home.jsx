@@ -150,7 +150,9 @@ export default function Home() {
     <main style={{
       maxWidth: 1180,
       margin: '0 auto',
-      padding: '52px 24px 80px',
+      padding: 'clamp(28px, 6vw, 52px) clamp(14px, 4vw, 24px) 80px',
+      boxSizing: 'border-box',
+      width: '100%',
       fontFamily: 'system-ui, sans-serif',
     }}>
       <DomainSearch />
