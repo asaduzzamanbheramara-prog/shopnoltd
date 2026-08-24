@@ -92,7 +92,7 @@ def write_png_rgba(path: Path, width: int, height: int, pixels: bytes) -> None:
     """Write an RGBA 8-bit PNG. `pixels` is row-major, length w*h*4."""
     if len(pixels) != width * height * 4:
         raise ValueError(
-            f"pixel buffer size mismatch: got {len(pixels)}, " f"expected {width*height*4}"
+            f"pixel buffer size mismatch: got {len(pixels)}, expected {width * height * 4}"
         )
     sig = b"\x89PNG\r\n\x1a\n"
     ihdr = struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0)

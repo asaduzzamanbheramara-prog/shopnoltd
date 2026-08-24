@@ -294,18 +294,16 @@ def main() -> int:
             theme=m_theme.group(1) if m_theme else "@style/AppTheme.Shopno",
         )
     else:
-        sys.stderr.write(
-            "warning: overlay has no AndroidManifest.xml; " "skipping manifest patch\n"
-        )
+        sys.stderr.write("warning: overlay has no AndroidManifest.xml; skipping manifest patch\n")
 
     if args.strings and args.strings.is_file():
         print(f"[3/5] applying string swaps from {args.strings}")
         swaps = parse_swap_table(args.strings)
         targets = list(iter_swap_targets(src))
-        print(f"      walking {len(targets)} target files for " f"{len(swaps)} swap pairs")
+        print(f"      walking {len(targets)} target files for {len(swaps)} swap pairs")
         hits = apply_swaps(targets, swaps)
         total_hits = sum(hits.values())
-        print(f"      made {total_hits} replacements across " f"{len(hits)} files")
+        print(f"      made {total_hits} replacements across {len(hits)} files")
     else:
         print("[3/5] no --strings file, skipping")
 
