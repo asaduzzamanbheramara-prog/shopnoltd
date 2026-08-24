@@ -19,6 +19,7 @@ resources:
 - services/api-service
 - services/gateway
 - services/web-portal
+- services/shopnoltd-web
 - services/admin-portal
 - services/tenant-router
 - services/auth-service
