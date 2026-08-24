@@ -28,6 +28,7 @@ def get_adapter(registrar: Registrar) -> RegistrarAdapter:
     if registrar.name.lower() == "namecheap":
         username = os.getenv("NAMECHEAP_USERNAME")
         client_ip = os.getenv("NAMECHEAP_CLIENT_IP")
+        use_sandbox = os.getenv("NAMECHEAP_SANDBOX", "false").lower() == "true"
 
         if not username:
             raise RuntimeError("NAMECHEAP_USERNAME is not configured")
@@ -36,5 +37,6 @@ def get_adapter(registrar: Registrar) -> RegistrarAdapter:
 
         kwargs["username"] = username
         kwargs["client_ip"] = client_ip
+        kwargs["sandbox"] = use_sandbox
 
     return adapter_cls(**kwargs)

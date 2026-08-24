@@ -18,3 +18,8 @@ data:
   MINIO_ENDPOINT: "minio.shopno-data.svc.cluster.local:9000"
   KEYCLOAK_ISSUER: "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
   KEYCLOAK_CLIENT_ID: "domain-service"
+  BILLING_ENGINE_URL: "http://billing-engine.shopno-payments.svc.cluster.local"
+  PAYMENT_SERVICE_URL: "http://payment-service.shopno-payments.svc.cluster.local"
+  NAMECHEAP_SANDBOX: "false"
+  DOMAIN_RENEWAL_CHECK_INTERVAL: "86400"
+  DOMAIN_EXPIRY_WARNING_DAYS: "30"
