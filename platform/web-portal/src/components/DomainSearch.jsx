@@ -4,26 +4,64 @@ const DOMAIN_API =
   import.meta.env.VITE_DOMAIN_API_URL ||
   '/api/v1/domains'
 
+const DOMAIN_SUFFIX = '.shopnoltd.dpdns.org'
+const MAX_LABEL_LENGTH = 63
+
+function normalizeSubdomain(value) {
+  return String(value ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, '')
+    .replace(/^-+/, '')
+    .slice(0, MAX_LABEL_LENGTH)
+}
+
+function validateSubdomain(value) {
+  if (!value) {
+    return 'Enter a domain name first.'
+  }
+
+  if (value.length < 1 || value.length > MAX_LABEL_LENGTH) {
+    return `Domain name must be ${MAX_LABEL_LENGTH} characters or fewer.`
+  }
+
+  if (!/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/.test(value)) {
+    return 'Use only letters, numbers, and hyphens. A domain cannot start or end with a hyphen.'
+  }
+
+  return null
+}
+
 export default function DomainSearch() {
   const [subdomain, setSubdomain] = useState('')
   const [status, setStatus] = useState(null)
   const [loading, setLoading] = useState(false)
 
   async function checkAvailabilityValue(value) {
-    if (!value) {
+    const normalized = normalizeSubdomain(value)
+    const validationError = validateSubdomain(normalized)
+
+    if (validationError) {
       setStatus({
         type: 'error',
-        message: 'Enter a domain name first.',
+        message: validationError,
       })
       return
     }
 
+    setSubdomain(normalized)
     setLoading(true)
     setStatus(null)
 
     try {
       const response = await fetch(
-        `${DOMAIN_API}/check-availability?subdomain=${encodeURIComponent(value)}`
+        `${DOMAIN_API}/check-availability?subdomain=${encodeURIComponent(normalized)}`,
+        {
+          method: 'GET',
+          headers: {
+            Accept: 'application/json',
+          },
+        }
       )
 
       if (!response.ok) {
@@ -35,7 +73,7 @@ export default function DomainSearch() {
       if (data.available) {
         setStatus({
           type: 'available',
-          message: `${data.subdomain} is available!`,
+          message: `${data.subdomain || normalized} is available!`,
         })
       } else {
         setStatus({
@@ -43,7 +81,7 @@ export default function DomainSearch() {
           message: data.reason || 'This domain is unavailable.',
         })
       }
-    } catch (error) {
+    } catch {
       setStatus({
         type: 'error',
         message: 'Unable to check availability. Please try again.',
@@ -61,10 +99,7 @@ export default function DomainSearch() {
       return
     }
 
-    const value = incomingDomain
-      .trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9-]/g, '')
+    const value = normalizeSubdomain(incomingDomain)
 
     if (!value) {
       return
@@ -83,29 +118,46 @@ export default function DomainSearch() {
   async function checkAvailability(event) {
     event.preventDefault()
 
-    const value = subdomain.trim().toLowerCase()
+    const value = normalizeSubdomain(subdomain)
+    setSubdomain(value)
 
     await checkAvailabilityValue(value)
   }
 
   async function registerDomain() {
-    const value = subdomain.trim().toLowerCase()
+    const value = normalizeSubdomain(subdomain)
+    const validationError = validateSubdomain(value)
+
+    if (validationError) {
+      setStatus({
+        type: 'error',
+        message: validationError,
+      })
+      return
+    }
+
+    setSubdomain(value)
+
     const token = localStorage.getItem('shopno_token')
 
     if (!token) {
       sessionStorage.setItem('pending_domain', value)
 
-      window.location.href = `/login?next=/&domain=${encodeURIComponent(value)}`
+      window.location.href =
+        `/login?next=/&domain=${encodeURIComponent(value)}`
+
       return
     }
 
     setLoading(true)
+    setStatus(null)
 
     try {
       const response = await fetch(DOMAIN_API, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Accept: 'application/json',
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
@@ -115,45 +167,86 @@ export default function DomainSearch() {
         }),
       })
 
-      const data = await response.json()
+      let data = {}
+
+      try {
+        data = await response.json()
+      } catch {
+        data = {}
+      }
 
       if (!response.ok) {
-        throw new Error(data.detail || 'Registration failed.')
+        throw new Error(
+          data.detail ||
+          data.message ||
+          'Registration failed.'
+        )
       }
 
       setStatus({
         type: 'available',
-        message: `${data.subdomain} registered! It may take a few minutes to go live.`,
+        message:
+          `${data.subdomain || value} registered! ` +
+          'It may take a few minutes to go live.',
       })
     } catch (error) {
       setStatus({
         type: 'error',
-        message: error.message || 'Unable to register domain. Please try again.',
+        message:
+          error.message ||
+          'Unable to register domain. Please try again.',
       })
     } finally {
       setLoading(false)
     }
   }
 
+  const inputValue = subdomain
+  const canCheck =
+    inputValue.length > 0 &&
+    !loading
+
   return (
     <section
       style={{
+        width: '100%',
         maxWidth: 860,
         margin: '0 auto 60px',
-        padding: '38px 28px',
+        padding: 'clamp(22px, 5vw, 38px) clamp(14px, 4vw, 28px)',
         borderRadius: 20,
+        boxSizing: 'border-box',
         background: 'linear-gradient(135deg, #0ea5e9, #0369a1)',
         color: 'white',
         boxShadow: '0 20px 50px rgba(14,165,233,.25)',
+        overflow: 'hidden',
       }}
     >
-      <div style={{ textAlign: 'center' }}>
-        <div style={{ fontSize: 48, marginBottom: 8 }}>🌐</div>
+      <div
+        style={{
+          width: '100%',
+          maxWidth: 760,
+          margin: '0 auto',
+          textAlign: 'center',
+          boxSizing: 'border-box',
+        }}
+      >
+        <div
+          aria-hidden="true"
+          style={{
+            fontSize: 'clamp(38px, 10vw, 48px)',
+            lineHeight: 1,
+            marginBottom: 10,
+          }}
+        >
+          🌐
+        </div>
 
         <h2
           style={{
-            fontSize: 'clamp(28px, 5vw, 42px)',
+            fontSize: 'clamp(26px, 7vw, 42px)',
+            lineHeight: 1.15,
             margin: '0 0 12px',
+            overflowWrap: 'anywhere',
           }}
         >
           Register your Shopnoltd domain
@@ -163,13 +256,15 @@ export default function DomainSearch() {
           style={{
             margin: '0 auto 28px',
             maxWidth: 650,
-            fontSize: 18,
+            fontSize: 'clamp(15px, 4vw, 18px)',
             lineHeight: 1.6,
             opacity: 0.95,
           }}
         >
-          Search for your name and create your own
-          <strong> .shopnoltd.dpdns.org </strong>
+          Search for your name and create your own{' '}
+          <strong style={{ whiteSpace: 'nowrap' }}>
+            {DOMAIN_SUFFIX}
+          </strong>{' '}
           address.
         </p>
 
@@ -177,70 +272,121 @@ export default function DomainSearch() {
           onSubmit={checkAvailability}
           style={{
             display: 'flex',
-            gap: 10,
-            maxWidth: 680,
+            flexDirection: 'column',
+            gap: 12,
+            width: '100%',
             margin: '0 auto',
-            flexWrap: 'wrap',
-            justifyContent: 'center',
+            boxSizing: 'border-box',
           }}
         >
           <div
             style={{
               display: 'flex',
-              flex: '1 1 420px',
+              alignItems: 'stretch',
+              width: '100%',
               minWidth: 0,
               background: 'white',
-              borderRadius: 10,
+              borderRadius: 12,
               overflow: 'hidden',
+              boxSizing: 'border-box',
+              boxShadow: '0 4px 14px rgba(15,23,42,.12)',
             }}
           >
             <input
-              value={subdomain}
-              onChange={(event) =>
-                setSubdomain(
-                  event.target.value
-                    .toLowerCase()
-                    .replace(/[^a-z0-9-]/g, '')
-                )
-              }
+              id="shopnoltd-domain-input"
+              name="subdomain"
+              type="text"
+              value={inputValue}
+              onChange={(event) => {
+                // Keep typing natural on Android/iOS/desktop.
+                // Normalization happens on blur/submit instead of
+                // aggressively deleting characters during typing.
+                setSubdomain(event.target.value)
+
+                if (status) {
+                  setStatus(null)
+                }
+              }}
+              onBlur={() => {
+                setSubdomain(normalizeSubdomain(subdomain))
+              }}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  event.currentTarget.form?.requestSubmit()
+                }
+              }}
               placeholder="yourcompany"
+              aria-label="Shopnoltd domain name"
+              autoComplete="off"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              inputMode="text"
+              enterKeyHint="search"
+              maxLength={MAX_LABEL_LENGTH}
               style={{
-                flex: 1,
+                flex: '1 1 auto',
+                width: '100%',
+                minWidth: 0,
+                height: 54,
                 border: 'none',
                 outline: 'none',
-                padding: '16px 18px',
-                fontSize: 17,
-                minWidth: 0,
+                padding: '14px 16px',
+                margin: 0,
+                boxSizing: 'border-box',
+                fontSize: '16px',
+                lineHeight: 1.4,
+                color: '#0f172a',
+                background: 'white',
+                WebkitAppearance: 'none',
+                appearance: 'none',
               }}
             />
 
             <span
               style={{
+                flex: '0 0 auto',
                 display: 'flex',
                 alignItems: 'center',
-                padding: '0 16px',
+                justifyContent: 'center',
+                padding: '0 10px',
+                minWidth: 0,
+                maxWidth: '42%',
                 color: '#475569',
                 background: '#f8fafc',
+                borderLeft: '1px solid #e2e8f0',
+                fontSize: 'clamp(11px, 3vw, 15px)',
                 fontWeight: 600,
-                whiteSpace: 'nowrap',
+                lineHeight: 1.2,
+                whiteSpace: 'normal',
+                overflowWrap: 'anywhere',
+                wordBreak: 'break-word',
+                textAlign: 'center',
+                boxSizing: 'border-box',
               }}
             >
-              .shopnoltd.dpdns.org
+              {DOMAIN_SUFFIX}
             </span>
           </div>
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={!canCheck}
             style={{
+              width: '100%',
+              minHeight: 54,
               border: 'none',
-              borderRadius: 10,
-              padding: '16px 22px',
-              background: '#0f172a',
+              borderRadius: 12,
+              padding: '14px 20px',
+              boxSizing: 'border-box',
+              background: loading ? '#334155' : '#0f172a',
               color: 'white',
               fontSize: 16,
+              lineHeight: 1.3,
               fontWeight: 700,
               cursor: loading ? 'wait' : 'pointer',
+              touchAction: 'manipulation',
+              WebkitTapHighlightColor: 'transparent',
             }}
           >
             {loading ? 'Checking...' : 'Check availability'}
@@ -249,40 +395,52 @@ export default function DomainSearch() {
 
         {status && (
           <div
+            role="status"
+            aria-live="polite"
             style={{
               marginTop: 22,
               padding: 16,
-              borderRadius: 10,
+              borderRadius: 12,
               background:
                 status.type === 'available'
                   ? 'rgba(34,197,94,.20)'
-                  : 'rgba(239,68,68,.20)',
-              border:
-                status.type === 'available'
-                  ? '1px solid rgba(134,239,172,.7)'
-                  : '1px solid rgba(252,165,165,.7)',
+                  : status.type === 'taken'
+                    ? 'rgba(251,191,36,.20)'
+                    : 'rgba(248,113,113,.20)',
+              border: '1px solid rgba(255,255,255,.18)',
+              boxSizing: 'border-box',
+              overflowWrap: 'anywhere',
+              lineHeight: 1.5,
             }}
           >
-            <strong>{status.message}</strong>
+            {status.message}
 
             {status.type === 'available' && (
-              <div style={{ marginTop: 14 }}>
-                <button
-                  type="button"
-                  onClick={registerDomain}
-                  style={{
-                    border: 'none',
-                    borderRadius: 8,
-                    padding: '12px 20px',
-                    background: 'white',
-                    color: '#0369a1',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                  }}
-                >
-                  Register this domain →
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={registerDomain}
+                disabled={loading}
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  maxWidth: 420,
+                  minHeight: 52,
+                  margin: '14px auto 0',
+                  border: 'none',
+                  borderRadius: 10,
+                  padding: '13px 18px',
+                  boxSizing: 'border-box',
+                  background: 'white',
+                  color: '#0369a1',
+                  fontSize: 16,
+                  fontWeight: 700,
+                  cursor: loading ? 'wait' : 'pointer',
+                  touchAction: 'manipulation',
+                  WebkitTapHighlightColor: 'transparent',
+                }}
+              >
+                Register this domain →
+              </button>
             )}
           </div>
         )}

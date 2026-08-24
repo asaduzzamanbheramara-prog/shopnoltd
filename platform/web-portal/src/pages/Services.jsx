@@ -78,9 +78,11 @@ export default function Services() {
     <main
       style={{
         maxWidth: 1200,
+        width: '100%',
         margin: '0 auto',
-        padding: '48px 24px',
+        padding: 'clamp(28px, 6vw, 48px) clamp(14px, 4vw, 24px)',
         fontFamily: 'system-ui, sans-serif',
+        boxSizing: 'border-box',
       }}
     >
       <h1>Shopnoltd Services</h1>
