@@ -82,10 +82,16 @@ async def create_deposit(
 
 @router.get("/{tx_id}", response_model=TxOut)
 async def get_deposit(tx_id: str, user=Depends(current_user), s: AsyncSession = Depends(db)):
+    try:
+        transaction_id = uuid.UUID(tx_id)
+    except ValueError as exc:
+        raise HTTPException(400, "invalid transaction id") from exc
+
     res = await s.execute(
         select(Transaction).where(
-            Transaction.id == uuid.UUID(tx_id),
+            Transaction.id == transaction_id,
             Transaction.tenant_id == user.get("tenant_id", "default"),
+            Transaction.user_id == user["sub"],
         )
     )
     tx = res.scalar_one_or_none()
