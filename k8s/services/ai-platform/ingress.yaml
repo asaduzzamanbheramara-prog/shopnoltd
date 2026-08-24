@@ -12,9 +12,20 @@ spec:
   tls:
     - hosts:
         - ai-platform.shopnoltd.dpdns.org
+        - openai.shopnoltd.dpdns.org
       secretName: ai-platform-tls
   rules:
     - host: ai-platform.shopnoltd.dpdns.org
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: ai-platform
+                port:
+                  number: 80
+    - host: openai.shopnoltd.dpdns.org
       http:
         paths:
           - path: /
