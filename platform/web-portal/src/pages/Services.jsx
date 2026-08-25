@@ -2,135 +2,246 @@ const SERVICES = [
   {
     icon: '🌐',
     name: 'Domain Registration',
-    description: 'Register and manage your Shopnoltd domains.',
-    url: '/',
+    description: "Register a real domain through Shopnoltd's registrar service.",
+    url: '/domain-registration',
+    category: 'Platform',
   },
   {
     icon: '📋',
     name: 'ShopnoltdToolbox',
     description: 'ShopnoltdToolbox-powered data collection.',
     url: 'https://kobotoolbox.shopnoltd.dpdns.org',
+    category: 'Productivity',
   },
   {
     icon: '💬',
     name: 'Chat',
-    description: 'Team and customer conversations.',
+    description: 'Customer conversations and team messaging.',
     url: 'https://chat.shopnoltd.dpdns.org',
+    category: 'Communication',
   },
   {
     icon: '📹',
     name: 'Meet',
-    description: 'Video conferencing.',
+    description: 'Video conferencing with Jitsi.',
     url: 'https://meet.shopnoltd.dpdns.org',
+    category: 'Communication',
   },
   {
     icon: '🔴',
     name: 'Live',
     description: 'Self-hosted live streaming.',
     url: 'https://live.shopnoltd.dpdns.org',
-  },
-  {
-    icon: '🤖',
-    name: 'AI',
-    description: 'Shopnoltd AI tools.',
-    url: 'https://ai.shopnoltd.dpdns.org',
-  },
-  {
-    icon: '🧠',
-    name: 'OpenAI',
-    description: 'AI workspace.',
-    url: 'https://openai.shopnoltd.dpdns.org',
+    category: 'Communication',
   },
   {
     icon: '☁️',
+    name: 'Drive',
+    description: 'Cloud file storage and synchronization.',
+    url: 'https://storage.shopnoltd.dpdns.org',
+    category: 'Productivity',
+  },
+  {
+    icon: '✉️',
     name: 'Mail',
-    description: 'Shopnoltd mail services.',
+    description: 'Shopnoltd email services.',
     url: 'https://mail.shopnoltd.dpdns.org',
+    category: 'Communication',
+  },
+  {
+    icon: '🏢',
+    name: 'ERP',
+    description: 'Business management and ERP.',
+    url: 'https://erp.shopnoltd.dpdns.org',
+    category: 'Business',
   },
   {
     icon: '💳',
     name: 'Billing',
-    description: 'Billing and subscriptions.',
+    description: 'Plans, subscriptions and payments.',
     url: 'https://billing.shopnoltd.dpdns.org',
+    category: 'Business',
+  },
+  {
+    icon: '👛',
+    name: 'Wallet',
+    description: 'Manage balances, transactions, service usage and payments from one place.',
+    url: 'https://billing.shopnoltd.dpdns.org',
+    category: 'Business',
+  },
+  {
+    icon: '💱',
+    name: 'Exchange',
+    description: 'Manage supported platform balances, transfers and exchange services.',
+    url: 'https://exchange.shopnoltd.dpdns.org',
+    category: 'Business',
+  },
+  {
+    icon: '🤖',
+    name: 'AI',
+    description: 'Shopnoltd AI workspace.',
+    url: 'https://openai.shopnoltd.dpdns.org',
+    category: 'AI',
   },
   {
     icon: '💻',
-    name: 'Code Server',
+    name: 'Code',
     description: 'Browser-based development environment.',
-    url: 'https://codeserver.shopnoltd.dpdns.org',
+    url: 'https://cursor.shopnoltd.dpdns.org',
+    category: 'Developer',
   },
   {
-    icon: '📊',
-    name: 'Monitoring',
-    description: 'Platform monitoring and dashboards.',
-    url: 'https://monitoring.shopnoltd.dpdns.org',
-  },
-  {
-    icon: '🔌',
+    icon: '🔗',
     name: 'API',
-    description: 'Shopnoltd platform API.',
+    description: 'Connect applications, services, automation and developer tools through Shopnoltd APIs.',
     url: 'https://api.shopnoltd.dpdns.org',
+    category: 'Developer',
+  },
+  {
+    icon: '🌐',
+    name: 'Website',
+    description: 'Create and manage personal, business, portfolio and custom websites.',
+    url: '/dashboard',
+    category: 'Platform',
+  },
+  {
+    icon: '👤',
+    name: 'Profile',
+    description: 'Create and manage your public personal, creator, developer or business profile.',
+    url: '/dashboard',
+    category: 'Platform',
+  },
+  {
+    icon: '🌍',
+    name: 'Web Workspace',
+    description: 'Access and organize your websites, applications, projects and services in one workspace.',
+    url: '/dashboard',
+    category: 'Platform',
+  },
+  {
+    icon: '💬',
+    name: 'Messaging',
+    description: 'Direct messages, group conversations, channels and communities.',
+    url: 'https://chat.shopnoltd.dpdns.org',
+    category: 'Communication',
+  },
+  {
+    icon: '👥',
+    name: 'Social',
+    description: 'Create posts, profiles, communities and connect with people.',
+    url: '/dashboard',
+    category: 'Social',
+  },
+  {
+    icon: '📺',
+    name: 'Video',
+    description: 'Create channels, publish videos, organize playlists and build your audience.',
+    url: 'https://live.shopnoltd.dpdns.org',
+    category: 'Media',
+  },
+  {
+    icon: '⚡',
+    name: 'Automation',
+    description: 'Connect Shopnoltd services and automate workflows, notifications and actions.',
+    url: 'https://n8n.shopnoltd.dpdns.org',
+    category: 'Automation',
   },
 ]
 
-export default function Services() {
+const ADMIN_SERVICES = [
+  {
+    icon: '📊',
+    name: 'Grafana',
+    description: 'Monitoring and observability.',
+    url: 'https://grafana.shopnoltd.dpdns.org',
+  },
+  {
+    icon: '📈',
+    name: 'Prometheus',
+    description: 'Metrics and monitoring.',
+    url: 'https://prometheus.shopnoltd.dpdns.org',
+  },
+  {
+    icon: '⚙️',
+    name: 'ArgoCD',
+    description: 'GitOps deployment management.',
+    url: 'https://argocd.shopnoltd.dpdns.org',
+  },
+  {
+    icon: '🛠️',
+    name: 'Portainer',
+    description: 'Infrastructure management.',
+    url: 'https://portainer.shopnoltd.dpdns.org',
+  },
+]
+
+function ServiceCard({ service }) {
   return (
-    <main
+    <a
+      href={service.url}
+      target={service.url.startsWith('/') ? undefined : '_blank'}
+      rel={service.url.startsWith('/') ? undefined : 'noopener noreferrer'}
       style={{
-        maxWidth: 1200,
-        width: '100%',
-        margin: '0 auto',
-        padding: 'clamp(28px, 6vw, 48px) clamp(14px, 4vw, 24px)',
-        fontFamily: 'system-ui, sans-serif',
-        boxSizing: 'border-box',
+        textDecoration: 'none',
+        color: 'inherit',
+        border: '1px solid #e2e8f0',
+        borderRadius: 14,
+        padding: 24,
+        background: 'white',
+        boxShadow: '0 2px 8px rgba(15, 23, 42, 0.06)',
+        display: 'block',
       }}
     >
-      <h1>Shopnoltd Services</h1>
+      <div style={{ fontSize: 34 }}>{service.icon}</div>
+      <h2 style={{ margin: '12px 0 8px' }}>{service.name}</h2>
+      <p style={{ color: '#64748b', minHeight: 48 }}>{service.description}</p>
+      <span style={{ color: '#0284c7', fontWeight: 600 }}>Open service →</span>
+    </a>
+  )
+}
 
+export default function Services() {
+  return (
+    <main style={{
+      maxWidth: 1200,
+      width: '100%',
+      margin: '0 auto',
+      padding: 'clamp(28px, 6vw, 48px) clamp(14px, 4vw, 24px)',
+      fontFamily: 'system-ui, sans-serif',
+      boxSizing: 'border-box',
+    }}>
+      <h1>Shopnoltd Services</h1>
       <p style={{ color: '#64748b', fontSize: 18 }}>
-        All Shopnoltd services in one place.
+        All Shopnoltd services in one place — the same services available from your homepage.
       </p>
 
-      <div
-        style={{
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+        gap: 18,
+        marginTop: 32,
+      }}>
+        {SERVICES.map((service) => (
+          <ServiceCard key={service.name} service={service} />
+        ))}
+      </div>
+
+      <section style={{ marginTop: 56 }}>
+        <h2>Administration</h2>
+        <p style={{ color: '#64748b' }}>
+          Infrastructure services for authorized administrators.
+        </p>
+        <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
           gap: 18,
-          marginTop: 32,
-        }}
-      >
-        {SERVICES.map((service) => (
-          <a
-            key={service.name}
-            href={service.url}
-            target="_blank"
-            rel="noreferrer"
-            style={{
-              textDecoration: 'none',
-              color: 'inherit',
-              border: '1px solid #e2e8f0',
-              borderRadius: 14,
-              padding: 24,
-              background: 'white',
-              boxShadow: '0 2px 8px rgba(15, 23, 42, 0.06)',
-            }}
-          >
-            <div style={{ fontSize: 34 }}>{service.icon}</div>
-
-            <h2 style={{ margin: '12px 0 8px' }}>
-              {service.name}
-            </h2>
-
-            <p style={{ color: '#64748b', minHeight: 48 }}>
-              {service.description}
-            </p>
-
-            <span style={{ color: '#0284c7', fontWeight: 600 }}>
-              Open service →
-            </span>
-          </a>
-        ))}
-      </div>
+          marginTop: 18,
+        }}>
+          {ADMIN_SERVICES.map((service) => (
+            <ServiceCard key={service.name} service={service} />
+          ))}
+        </div>
+      </section>
     </main>
   )
 }
