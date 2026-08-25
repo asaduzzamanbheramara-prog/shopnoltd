@@ -27,6 +27,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Shopnoltd Domain Service", version="0.1.0", lifespan=lifespan)
+app.include_router(registrars_router, prefix="/api/v1")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins_list,
