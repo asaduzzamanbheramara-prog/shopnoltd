@@ -104,6 +104,7 @@ function App() {
         <Route path="/blog" element={<Blog />} />
         <Route path="/plugins" element={<Plugins />} />
         <Route path="/services" element={<Services />} />
+        <Route path="/domain-registration" element={<DomainRegistration />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/callback" element={<Callback />} />
