@@ -277,6 +277,35 @@ export default function Home() {
       fontFamily: 'system-ui, sans-serif',
     }}>
       <DomainSearch />
+      <section
+        style={{
+          margin: "24px 0",
+          padding: "24px",
+          borderRadius: "16px",
+          background: "linear-gradient(135deg,#0ea5e9,#0369a1)",
+          color: "white"
+        }}
+      >
+        <div style={{fontSize: 36}}>🌐</div>
+        <h2>Domain Registration</h2>
+        <p>Register a real domain through Shopnoltd's registrar service.</p>
+        <a
+          href="/domain-registration"
+          style={{
+            display: "inline-block",
+            marginTop: "10px",
+            padding: "12px 18px",
+            borderRadius: "9px",
+            background: "white",
+            color: "#0369a1",
+            fontWeight: 700,
+            textDecoration: "none"
+          }}
+        >
+          Register a domain →
+        </a>
+      </section>
+
 
       <section style={{
         textAlign: 'center',

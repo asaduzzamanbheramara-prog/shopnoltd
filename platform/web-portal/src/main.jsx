@@ -11,6 +11,8 @@ import ProtectedRoute from './components/ProtectedRoute'
 import Blog from './pages/Blog'
 import Plugins from './pages/Plugins'
 import Services from './pages/Services'
+import DomainRegistration from "./pages/DomainRegistration";
+
 
 const NAV_LINKS = [
   ['Pricing', '/pricing'],
