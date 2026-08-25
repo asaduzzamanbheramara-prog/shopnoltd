@@ -5,13 +5,13 @@ metadata:
   namespace: shopno-apps
   labels:
     app.kubernetes.io/name: nextcloud
+    app.kubernetes.io/part-of: shopnoltd
+  annotations:
+    argocd.argoproj.io/tracking-id: shopnoltd:apps/Deployment:shopno-apps/nextcloud
 spec:
   replicas: 1
   strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0
+    type: Recreate
   selector:
     matchLabels:
       app.kubernetes.io/name: nextcloud
@@ -21,11 +21,12 @@ spec:
         app.kubernetes.io/name: nextcloud
       annotations:
         prometheus.io/scrape: "true"
+        prometheus.io/path: /metrics
         prometheus.io/port: "80"
-        prometheus.io/path: "/metrics"
     spec:
-      serviceAccountName: nextcloud
       automountServiceAccountToken: false
+      serviceAccountName: nextcloud
+
       securityContext:
         runAsNonRoot: true
         runAsUser: 10001
@@ -33,38 +34,78 @@ spec:
         fsGroup: 10001
         seccompProfile:
           type: RuntimeDefault
+
       initContainers:
-        - name: seed-php-confd
+        - name: seed-nextcloud-html
           image: nextcloud:34.0.2-apache
-          command: ["sh", "-c", "cp -rL /usr/local/etc/php/conf.d/. /php-confd-writable/"]
+          imagePullPolicy: IfNotPresent
+          command:
+            - sh
+            - -c
+            - |
+              set -eu
+              echo "Seeding Nextcloud application tree..."
+              cp -rL /usr/src/nextcloud/. /html/
+              echo "Nextcloud application tree:"
+              test -f /html/occ
+              test -f /html/version.php
+              echo "occ and version.php present"
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
-              drop: ["ALL"]
-              add: ["FOWNER"]
+              drop:
+                - ALL
+          volumeMounts:
+            - name: html
+              mountPath: /html
+
+        - name: seed-php-confd
+          image: nextcloud:34.0.2-apache
+          imagePullPolicy: IfNotPresent
+          command:
+            - sh
+            - -c
+            - |
+              set -eu
+              cp -rL /usr/local/etc/php/conf.d/. /php-confd-writable/
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+              add:
+                - FOWNER
           volumeMounts:
             - name: php-confd
               mountPath: /php-confd-writable
             - name: run-tmp
               mountPath: /run
+
       containers:
         - name: nextcloud
           image: nextcloud:34.0.2-apache
           imagePullPolicy: IfNotPresent
+
           ports:
             - name: http
               containerPort: 80
               protocol: TCP
+
           envFrom:
             - configMapRef:
                 name: nextcloud-config
             - secretRef:
                 name: nextcloud-secret
+
           env:
             - name: POD_NAME
-              valueFrom: { fieldRef: { fieldPath: metadata.name } }
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
             - name: POD_NAMESPACE
-              valueFrom: { fieldRef: { fieldPath: metadata.namespace } }
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
@@ -80,6 +121,7 @@ spec:
                 secretKeyRef:
                   name: nextcloud-secret
                   key: admin-password
+
           resources:
             requests:
               cpu: 100m
@@ -89,62 +131,89 @@ spec:
               cpu: 1000m
               memory: 512Mi
               ephemeral-storage: 1Gi
-          livenessProbe:
-            httpGet:
-              path: /status.php
-              port: http
-            initialDelaySeconds: 30
-            periodSeconds: 10
-            timeoutSeconds: 3
-            failureThreshold: 3
-          readinessProbe:
-            httpGet:
-              path: /status.php
-              port: http
-            initialDelaySeconds: 5
-            periodSeconds: 5
-            timeoutSeconds: 3
-            failureThreshold: 3
+
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop:
+                - ALL
+
           startupProbe:
             httpGet:
               path: /status.php
               port: http
+              httpHeaders:
+                - name: Host
+                  value: nextcloud.shopnoltd.dpdns.org
+              scheme: HTTP
+            initialDelaySeconds: 20
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 60
+
+          readinessProbe:
+            httpGet:
+              path: /status.php
+              port: http
+              httpHeaders:
+                - name: Host
+                  value: nextcloud.shopnoltd.dpdns.org
+              scheme: HTTP
             initialDelaySeconds: 10
             periodSeconds: 5
-            failureThreshold: 30
+            timeoutSeconds: 3
+            failureThreshold: 6
+
+          livenessProbe:
+            httpGet:
+              path: /status.php
+              port: http
+              httpHeaders:
+                - name: Host
+                  value: nextcloud.shopnoltd.dpdns.org
+              scheme: HTTP
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 6
+
           volumeMounts:
+            - name: html
+              mountPath: /var/www/html
+
             - name: data
               mountPath: /var/lib/nextcloud
+
             - name: data
               mountPath: /var/www/html/config
               subPath: config
+
             - name: tmp
               mountPath: /tmp
+
             - name: php-confd
               mountPath: /usr/local/etc/php/conf.d
+
             - name: apache-run
               mountPath: /var/run/apache2
-          securityContext:
-            allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: true
-            capabilities:
-              drop: ["ALL"]
+
       volumes:
+        - name: html
+          emptyDir: {}
+
         - name: data
           persistentVolumeClaim:
             claimName: nextcloud-data
+
         - name: tmp
           emptyDir: {}
+
         - name: php-confd
           emptyDir: {}
+
         - name: run-tmp
           emptyDir: {}
+
         - name: apache-run
           emptyDir: {}
-      topologySpreadConstraints:
-        - maxSkew: 1
-          topologyKey: topology.kubernetes.io/zone
-          whenUnsatisfiable: ScheduleAnyway
-          labelSelector:
-            matchLabels:
-              app.kubernetes.io/name: nextcloud
