@@ -38,7 +38,6 @@ class MessageCreate(BaseModel):
 
 
 
-
 class MessageOut(BaseModel):
     id: str
     role: str

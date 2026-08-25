@@ -7,7 +7,7 @@ against runaway tool loops).
 
 import json
 
-from app.ai.client import DEFAULT_MODEL, call_model
+from app.ai.client import call_model, resolve_model
 from app.ai.prompts import get_system_prompt
 from app.ai.tools import execute_tool, get_tool_definitions
 
@@ -16,21 +16,24 @@ MAX_TOKENS = 1024
 
 
 def run_conversation(
-    messages: list[dict], mode: str = "default", model: str = DEFAULT_MODEL
+    messages: list[dict], mode: str = "default", model: str | None = None
 ) -> tuple[str, list[dict]]:
     """
     messages: [{"role": "user"|"assistant", "content": "..."}]
-    model: friendly name from client.MODEL_REGISTRY, e.g. "claude-sonnet", "gpt-4o"
+    model: friendly name from client.MODEL_REGISTRY (manual selection), or
+        None / "auto" to let resolve_model() pick the first configured
+        provider automatically.
     Returns (final_text, full_message_log) — the log includes any
     intermediate tool_use / tool_result turns, useful for debugging or
     storing a full audit trail later.
     """
+    resolved_model = resolve_model(model)
     system_prompt = get_system_prompt(mode)
     working_messages = [{"role": "system", "content": system_prompt}] + list(messages)
 
     for _ in range(MAX_TOOL_ITERATIONS):
         response = call_model(
-            model,
+            resolved_model,
             max_tokens=MAX_TOKENS,
             tools=get_tool_definitions(),
             messages=working_messages,
