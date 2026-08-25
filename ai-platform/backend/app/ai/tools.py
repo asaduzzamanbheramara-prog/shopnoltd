@@ -1,11 +1,11 @@
 """
 Tool-calling framework.
 
-Register a tool with @tool(...), and it becomes available to Claude
+Register a tool with @tool(...), and it becomes available to the model
 automatically via get_tool_definitions(). Milestone 4-6 (GitHub, Kubernetes,
 Docker, Cloudflare) will add tools here — each one should be reviewed
-carefully for safety before being registered, since Claude will be able to
-call it autonomously during a conversation.
+carefully for safety before being registered, since the model will be able
+to call it autonomously during a conversation.
 
 This milestone ships one deliberately harmless example tool
 (get_current_time) to prove the framework works end-to-end.
@@ -18,7 +18,7 @@ TOOL_REGISTRY: dict[str, dict] = {}
 
 
 def tool(name: str, description: str, input_schema: dict):
-    """Decorator that registers a function as a Claude-callable tool."""
+    """Decorator that registers a function as a model-callable tool."""
 
     def decorator(func: Callable):
         TOOL_REGISTRY[name] = {
@@ -44,12 +44,19 @@ def get_current_time(**_kwargs) -> dict:
 
 
 def get_tool_definitions() -> list[dict]:
-    """Returns tool schemas in the shape the Anthropic API expects."""
+    """
+    Returns tool schemas in OpenAI function-calling shape. litellm translates
+    this into whichever format the target provider actually needs (Anthropic,
+    Gemini, etc.) — so this one shape now works for every model in the registry.
+    """
     return [
         {
-            "name": name,
-            "description": meta["description"],
-            "input_schema": meta["input_schema"],
+            "type": "function",
+            "function": {
+                "name": name,
+                "description": meta["description"],
+                "parameters": meta["input_schema"],
+            },
         }
         for name, meta in TOOL_REGISTRY.items()
     ]

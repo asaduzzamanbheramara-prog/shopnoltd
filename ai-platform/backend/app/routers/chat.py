@@ -1,3 +1,4 @@
+from app.ai.client import DEFAULT_MODEL
 from app.ai.engine import run_conversation
 from app.core.deps import get_current_user
 from app.database import get_db
@@ -61,7 +62,7 @@ async def send_message(
         {"role": m.role, "content": m.content} for m in history if m.role in ("user", "assistant")
     ]
 
-    reply_text, _ = run_conversation(claude_messages)
+    reply_text, _ = run_conversation(claude_messages, model=payload.model or DEFAULT_MODEL)
 
     assistant_msg = Message(session_id=session_id, role="assistant", content=reply_text)
     db.add(assistant_msg)

@@ -34,6 +34,9 @@ class ChatSessionOut(BaseModel):
 
 class MessageCreate(BaseModel):
     content: str
+    model: str | None = None
+
+
 
 
 class MessageOut(BaseModel):

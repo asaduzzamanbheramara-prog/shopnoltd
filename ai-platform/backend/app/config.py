@@ -22,8 +22,12 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24
 
-    # Anthropic API (used in Milestone 2 — AI engine)
+    # Model provider keys — add whichever you actually have. Leave blank to
+    # disable that provider (the model registry in ai/client.py skips models
+    # whose provider key is empty).
     ANTHROPIC_API_KEY: str = ""
+    OPENAI_API_KEY: str = ""
+    GEMINI_API_KEY: str = ""
 
 
 settings = Settings()
