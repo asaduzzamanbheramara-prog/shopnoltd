@@ -21,10 +21,10 @@ spec:
       automountServiceAccountToken: false
       containers:
         - name: keycloak
-          image: quay.io/keycloak/keycloak:latest
+          image: quay.io/keycloak/keycloak:26.7.1
           imagePullPolicy: IfNotPresent
           args:
-            - start-dev
+            - start
             - --import-realm
             - --http-host=0.0.0.0
             - --http-management-host=0.0.0.0
@@ -66,24 +66,25 @@ spec:
             httpGet:
               path: /health/live
               port: management
-            initialDelaySeconds: 30
-            periodSeconds: 10
-            timeoutSeconds: 3
-            failureThreshold: 3
+            initialDelaySeconds: 60
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 5
           readinessProbe:
             httpGet:
               path: /health/ready
               port: management
-            initialDelaySeconds: 5
-            periodSeconds: 5
-            timeoutSeconds: 3
-            failureThreshold: 3
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 5
           startupProbe:
             httpGet:
               path: /health/started
               port: management
-            initialDelaySeconds: 10
+            initialDelaySeconds: 15
             periodSeconds: 10
+            timeoutSeconds: 5
             failureThreshold: 60
           volumeMounts:
             - name: data
