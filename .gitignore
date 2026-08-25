@@ -206,3 +206,15 @@ scripts/seed/social-login-secrets.local.yaml
 *.bak.*
 *.archive
 *.rdb
+
+###################################
+# Session audit/report artifacts (SHOPNOLTD-*-YYYYMMDD-HHMMSS.txt pattern)
+###################################
+SHOPNOLTD-*-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9].txt
+*-repair-[0-9]*.txt
+docs/reports/*-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9].txt
+
+# Timestamped scratch/backup directories from live-patch sessions
+.payment-exchange-*-[0-9]*/
+.repair-backup-*/
+*.broken-[0-9]*.yaml
