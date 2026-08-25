@@ -41,6 +41,9 @@ spec:
         - namespaceSelector:
             matchLabels:
               name: kube-system
+        - namespaceSelector:
+            matchLabels:
+              name: shopno-platform
       ports:
         - port: 53
           protocol: UDP
