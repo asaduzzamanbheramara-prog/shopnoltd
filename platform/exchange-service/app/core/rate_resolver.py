@@ -54,10 +54,14 @@ async def _direct_rate(base: str, quote: str) -> ResolvedRate | None:
 
     timestamp = row.fetched_at.isoformat() if row.fetched_at else datetime.utcnow().isoformat()
 
+    rate = float(row.rate)
+    if rate <= 0:
+        return None
+
     return ResolvedRate(
         base=row.base,
         quote=row.quote,
-        rate=float(row.rate),
+        rate=rate,
         source=row.source,
         fetched_at=timestamp,
     )

@@ -10,6 +10,28 @@ from sqlalchemy import select
 router = APIRouter()
 
 
+SUCCESS_STATUSES = {
+    "COMPLETED",
+    "SUCCESS",
+    "PAID",
+    "CAPTURED",
+    "TRADE_SUCCESS",
+}
+
+FAILED_STATUSES = {
+    "FAILED",
+    "EXPIRED",
+    "CANCELED",
+    "CANCELLED",
+}
+
+TERMINAL_STATUSES = {
+    TxStatus.completed,
+    TxStatus.failed,
+    TxStatus.cancelled,
+}
+
+
 @router.post("/{provider}")
 async def webhook(provider: str, request: Request):
     body = await request.body()
@@ -32,8 +54,19 @@ async def webhook(provider: str, request: Request):
         )
         if not external:
             return {"received": True}
-        res = await s.execute(select(Transaction).where(Transaction.external_id == str(external)))
+        res = await s.execute(
+            select(Transaction)
+            .where(Transaction.external_id == str(external))
+            .with_for_update()
+        )
         tx = res.scalar_one_or_none()
+
+        if tx and tx.status in TERMINAL_STATUSES:
+            return {
+                "received": True,
+                "idempotent": True,
+                "status": tx.status.value,
+            }
         if not tx:
             return {"received": True, "warning": "tx not found"}
         status = (
@@ -42,13 +75,13 @@ async def webhook(provider: str, request: Request):
             or event.get("transactionStatus")
             or ""
         ).upper()
-        if status in ("COMPLETED", "SUCCESS", "PAID", "CAPTURED", "TRADE_SUCCESS"):
+        if status in SUCCESS_STATUSES:
             tx.status = TxStatus.completed
             tx.completed_at = datetime.utcnow()
             wr = await s.execute(select(Wallet).where(Wallet.id == tx.wallet_id))
             w = wr.scalar_one()
             w.balance = Decimal(str(w.balance)) + Decimal(str(tx.amount)) - Decimal(str(tx.fee))
-        elif status in ("FAILED", "EXPIRED", "CANCELED", "CANCELLED"):
+        elif status in FAILED_STATUSES:
             tx.status = TxStatus.failed
             tx.completed_at = datetime.utcnow()
             if tx.type.value == "withdrawal":

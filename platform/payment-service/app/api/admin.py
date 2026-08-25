@@ -48,7 +48,14 @@ async def pending(user=Depends(require_admin), s: AsyncSession = Depends(db)):
 
 @router.post("/approve/{tx_id}")
 async def approve(tx_id: str, user=Depends(require_admin), s: AsyncSession = Depends(db)):
-    res = await s.execute(select(Transaction).where(Transaction.id == uuid.UUID(tx_id)))
+    try:
+        transaction_id = uuid.UUID(tx_id)
+    except (ValueError, AttributeError, TypeError) as exc:
+        raise HTTPException(400, "invalid transaction id") from exc
+
+    res = await s.execute(
+        select(Transaction).where(Transaction.id == transaction_id)
+    )
     tx = res.scalar_one_or_none()
     if not tx:
         raise HTTPException(404, "tx not found")
@@ -70,7 +77,14 @@ async def approve(tx_id: str, user=Depends(require_admin), s: AsyncSession = Dep
 
 @router.post("/reject/{tx_id}")
 async def reject(tx_id: str, user=Depends(require_admin), s: AsyncSession = Depends(db)):
-    res = await s.execute(select(Transaction).where(Transaction.id == uuid.UUID(tx_id)))
+    try:
+        transaction_id = uuid.UUID(tx_id)
+    except (ValueError, AttributeError, TypeError) as exc:
+        raise HTTPException(400, "invalid transaction id") from exc
+
+    res = await s.execute(
+        select(Transaction).where(Transaction.id == transaction_id)
+    )
     tx = res.scalar_one_or_none()
     if not tx:
         raise HTTPException(404, "tx not found")
