@@ -27,7 +27,11 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Shopnoltd Domain Service", version="0.1.0", lifespan=lifespan)
-app.include_router(registrars_router, prefix="/api/v1")
+app.include_router(
+    __import__("app.api.registrars", fromlist=["router"]).router,
+    prefix="/api/v1",
+    tags=["domains"],
+)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins_list,
@@ -43,13 +47,6 @@ app.include_router(
     prefix="/api/v1/records",
     tags=["records"],
 )
-app.include_router(
-    __import__("app.api.registrars", fromlist=["router"]).router,
-    prefix="/api/v1/registrars",
-    tags=["registrars"],
-)
-
-
 @app.get("/healthz", include_in_schema=False)
 async def healthz():
     return {"status": "ok"}
