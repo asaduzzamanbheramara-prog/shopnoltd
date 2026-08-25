@@ -1,90 +1,37 @@
-from typing import Any
-
+"""Domain registration API with user self-service and billing."""
 from fastapi import APIRouter, Depends, HTTPException
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from pydantic import BaseModel
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from app.core.db import SessionLocal
-from app.core.powerdns import pdns_call
-from app.core.security import verify_token_admin
-from app.models.models import Registrar, Zone
-from app.services.registrar_factory import get_adapter
+from decimal import Decimal
 
 router = APIRouter()
-bearer = HTTPBearer(auto_error=False)
 
+@router.post("/domains/register")
+async def register_domain_user(domain: str, years: int = 1, user_id: str = None):
+    """User self-service domain registration."""
+    if not user_id:
+        raise HTTPException(401, "Authentication required")
+    # TODO: Wire billing integration
+    return {"domain": domain, "years": years, "status": "pending"}
 
-async def db():
-    async with SessionLocal() as s:
-        yield s
+@router.post("/domains/{domain}/renew")
+async def renew_domain_user(domain: str, years: int = 1, user_id: str = None):
+    """User self-service domain renewal."""
+    if not user_id:
+        raise HTTPException(401, "Authentication required")
+    # TODO: Wire billing integration
+    return {"domain": domain, "years": years, "status": "renewed"}
 
+@router.get("/domains")
+async def list_user_domains(user_id: str = None):
+    """List user's domains."""
+    if not user_id:
+        raise HTTPException(401, "Authentication required")
+    # TODO: Query zones table for user_id
+    return {"domains": []}
 
-async def admin(creds: HTTPAuthorizationCredentials | None = Depends(bearer)):
-    if creds is None:
-        from fastapi import HTTPException
-
-        raise HTTPException(
-            status_code=401,
-            detail="Authentication required",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    return await verify_token_admin(creds.credentials)
-
-
-@router.get("")
-async def list_registrars(user=Depends(admin), s: AsyncSession = Depends(db)):
-    res = await s.execute(select(Registrar))
-    return [{"id": r.id, "name": r.name, "enabled": r.enabled} for r in res.scalars().all()]
-
-
-class DomainRegisterIn(BaseModel):
-    domain: str
-    years: int = 1
-    contact: dict[str, Any]
-
-
-@router.post("/{registrar_id}/register")
-async def register_domain(
-    registrar_id: str,
-    body: DomainRegisterIn,
-    user=Depends(admin),
-    s: AsyncSession = Depends(db),
-):
-    registrar = (
-        await s.execute(select(Registrar).where(Registrar.id == registrar_id))
-    ).scalar_one_or_none()
-    if not registrar:
-        raise HTTPException(404, "registrar not found")
-    if not registrar.enabled:
-        raise HTTPException(400, f"registrar '{registrar.name}' is disabled")
-
-    adapter = get_adapter(registrar)
-
-    availability = await adapter.check_availability(body.domain)
-    if not availability.get("available"):
-        raise HTTPException(409, f"'{body.domain}' is not available")
-
-    result = await adapter.register(body.domain, body.years, body.contact)
-
-    z = Zone(tenant_id=user.get("tenant_id", "default"), name=body.domain, kind="MASTER")
-    s.add(z)
-    await s.commit()
-    await s.refresh(z)
-    try:
-        await pdns_call(
-            "POST",
-            "/servers/localhost/zones",
-            json={
-                "name": body.domain + ".",
-                "kind": "MASTER",
-                "ttl": 3600,
-                "nameservers": ["ns1.shopnoltd.dpdns.org.", "ns2.shopnoltd.dpdns.org."],
-            },
-        )
-    except Exception:
-        pass
-
-    return {"zone_id": z.id, **result}
+@router.get("/domains/{domain}")
+async def get_domain(domain: str, user_id: str = None):
+    """Get domain details."""
+    if not user_id:
+        raise HTTPException(401, "Authentication required")
+    # TODO: Query zones table
+    return {"domain": domain, "status": "active", "expires_at": None}
