@@ -17,6 +17,10 @@ async def convert(body: ConvertIn):
     base = body.from_currency.upper().strip()
     quote = body.to_currency.upper().strip()
 
+    if body.amount <= 0:
+        from fastapi import HTTPException
+        raise HTTPException(400, "amount must be greater than zero")
+
     resolved = await resolve_rate(base, quote)
 
     fee = body.amount * FEE_PCT / 100
