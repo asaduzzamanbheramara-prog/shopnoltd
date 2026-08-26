@@ -22,7 +22,7 @@ data:
   POSTGRES_USER: "nextcloud"
 
   NEXTCLOUD_DATA_DIR: "/var/lib/nextcloud"
-  NEXTCLOUD_TRUSTED_DOMAINS: "nextcloud.shopnoltd.dpdns.org"
+  NEXTCLOUD_TRUSTED_DOMAINS: "nextcloud.shopnoltd.dpdns.org,storage.shopnoltd.dpdns.org"
 
   MINIO_ENDPOINT: "minio.shopno-data.svc.cluster.local:9000"
 
