@@ -1,14 +1,10 @@
-# =============================================================================
-# LiteLLM Proxy — single OpenAI-compatible gateway for multiple providers/keys
-# Namespace: adjust NAMESPACE below to match where your other AI/dev tools live
-# (e.g. shopno-platform, or a new shopno-ai namespace — see notes at bottom)
-# =============================================================================
 apiVersion: v1
 kind: Namespace
 metadata:
   name: shopno-ai
   labels:
     name: shopno-ai
+
 ---
 apiVersion: v1
 kind: Secret
@@ -17,14 +13,15 @@ metadata:
   namespace: shopno-ai
 type: Opaque
 stringData:
-  # Fill in whichever providers you actually have keys for.
-  # Leave a key blank/omit it and just remove that model block in the ConfigMap below.
-  OPENAI_API_KEY: "sk-REPLACE_ME"
-  ANTHROPIC_API_KEY: "sk-ant-REPLACE_ME"
-  GEMINI_API_KEY: "REPLACE_ME"
-  # LiteLLM's own master key — this is the ONE key code-server / Open WebUI will use
-  # to talk to the proxy. Generate with: openssl rand -hex 32
-  LITELLM_MASTER_KEY: "sk-litellm-REPLACE_ME"
+  OPENAI_API_KEY: ""
+  ANTHROPIC_API_KEY: "c2stYW50LWFwaTAzLXh4eHh4eHh4eHh4eA=="
+  GEMINI_API_KEY: ""
+  MISTRAL_API_KEY: ""
+  GROQ_API_KEY: ""
+  DEEPSEEK_API_KEY: ""
+  XAI_API_KEY: ""
+  COHERE_API_KEY: ""
+  LITELLM_MASTER_KEY: ""
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -34,6 +31,7 @@ metadata:
 data:
   config.yaml: |
     model_list:
+
       - model_name: gpt-4o
         litellm_params:
           model: openai/gpt-4o
@@ -41,7 +39,7 @@ data:
 
       - model_name: claude-sonnet
         litellm_params:
-          model: anthropic/claude-sonnet-4-6
+          model: anthropic/claude-sonnet-4-5
           api_key: os.environ/ANTHROPIC_API_KEY
 
       - model_name: gemini-flash
@@ -49,15 +47,34 @@ data:
           model: gemini/gemini-2.0-flash
           api_key: os.environ/GEMINI_API_KEY
 
-      # Add a local Ollama model here later if you ever run one on-cluster, e.g.:
-      # - model_name: local-llama
-      #   litellm_params:
-      #     model: ollama/llama3
-      #     api_base: http://ollama.shopno-ai.svc.cluster.local:11434
+      - model_name: mistral-small
+        litellm_params:
+          model: mistral/mistral-small-latest
+          api_key: os.environ/MISTRAL_API_KEY
+
+      - model_name: groq-llama
+        litellm_params:
+          model: groq/llama-3.3-70b-versatile
+          api_key: os.environ/GROQ_API_KEY
+
+      - model_name: deepseek-chat
+        litellm_params:
+          model: deepseek/deepseek-chat
+          api_key: os.environ/DEEPSEEK_API_KEY
+
+      - model_name: grok
+        litellm_params:
+          model: xai/grok-3-mini
+          api_key: os.environ/XAI_API_KEY
+
+      - model_name: command-r
+        litellm_params:
+          model: cohere/command-r-plus
+          api_key: os.environ/COHERE_API_KEY
 
     general_settings:
       master_key: os.environ/LITELLM_MASTER_KEY
-      database_url: null   # no DB needed — stateless proxy, keeps footprint tiny
+      database_url: null
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -79,7 +96,11 @@ spec:
       containers:
         - name: litellm
           image: ghcr.io/berriai/litellm:main-latest
-          args: ["--config", "/app/config.yaml", "--port", "4000"]
+          args:
+            - "--config"
+            - "/app/config.yaml"
+            - "--port"
+            - "4000"
           ports:
             - containerPort: 4000
           envFrom:
@@ -91,29 +112,40 @@ spec:
               subPath: config.yaml
           resources:
             requests:
-              cpu: 50m
-              memory: 128Mi
-            limits:
-              cpu: 300m
+              cpu: 100m
               memory: 384Mi
+            limits:
+              cpu: 500m
+              memory: 1Gi
+          startupProbe:
+            httpGet:
+              path: /health/liveliness
+              port: 4000
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 36
+
           readinessProbe:
             httpGet:
               path: /health/liveliness
               port: 4000
-            initialDelaySeconds: 10
-            periodSeconds: 15
-            failureThreshold: 5   # loosened — this host is CPU-starved at times
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 6
+
           livenessProbe:
             httpGet:
               path: /health/liveliness
               port: 4000
-            initialDelaySeconds: 20
             periodSeconds: 30
+            timeoutSeconds: 3
             failureThreshold: 5
+
       volumes:
         - name: config
           configMap:
             name: litellm-config
+
 ---
 apiVersion: v1
 kind: Service
@@ -126,6 +158,7 @@ spec:
   ports:
     - port: 4000
       targetPort: 4000
+
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -133,14 +166,16 @@ metadata:
   name: litellm-proxy
   namespace: shopno-ai
   annotations:
-    cert-manager.io/cluster-issuer: letsencrypt-prod   # adjust to whatever you actually use
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
 spec:
   ingressClassName: nginx
   tls:
-    - hosts: ["openai.shopnoltd.dpdns.org"]
+    - hosts:
+        - openai.shopnoltd.dpdns.org
       secretName: litellm-proxy-tls
   rules:
-    - host: openai.shopnoltd.dpdns.org
+    - host: litellm.shopnoltd.dpdns.org
       http:
         paths:
           - path: /
@@ -150,9 +185,8 @@ spec:
                 name: litellm-proxy
                 port:
                   number: 4000
+
 ---
-# Follows your existing NetworkPolicy pattern: matchLabels {name: <ns>},
-# ingress-nginx must be allowed in, egress to internet needed for provider APIs.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -162,15 +196,15 @@ spec:
   podSelector:
     matchLabels:
       app.kubernetes.io/name: litellm-proxy
-  policyTypes: ["Ingress", "Egress"]
+  policyTypes:
+    - Ingress
+    - Egress
+
   ingress:
-    - from:
-        - namespaceSelector:
-            matchLabels:
-              name: ingress-nginx
-      ports:
+    - ports:
         - protocol: TCP
           port: 4000
+
   egress:
     - to:
         - ipBlock:
@@ -178,10 +212,11 @@ spec:
       ports:
         - protocol: TCP
           port: 443
-    - to:   # DNS
-        - namespaceSelector: {}
-      ports:
+
+    - ports:
         - protocol: UDP
           port: 53
+
+    - ports:
         - protocol: TCP
           port: 53
