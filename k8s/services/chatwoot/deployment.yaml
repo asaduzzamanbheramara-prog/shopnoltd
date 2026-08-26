@@ -49,6 +49,11 @@ spec:
             - secretRef:
                 name: chatwoot-secret
           env:
+            - name: SECRET_KEY_BASE
+              valueFrom:
+                secretKeyRef:
+                  name: chatwoot-secret
+                  key: secret-key-base
             - name: POD_NAME
               valueFrom: { fieldRef: { fieldPath: metadata.name } }
             - name: POD_NAMESPACE
