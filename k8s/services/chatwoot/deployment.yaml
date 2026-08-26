@@ -90,6 +90,8 @@ spec:
               mountPath: /var/lib/chatwoot
             - name: tmp
               mountPath: /tmp
+            - name: app-tmp
+              mountPath: /app/tmp
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
@@ -100,6 +102,8 @@ spec:
           persistentVolumeClaim:
             claimName: chatwoot-data
         - name: tmp
+          emptyDir: {}
+        - name: app-tmp
           emptyDir: {}
       topologySpreadConstraints:
         - maxSkew: 1
