@@ -175,7 +175,7 @@ spec:
         - openai.shopnoltd.dpdns.org
       secretName: litellm-proxy-tls
   rules:
-    - host: litellm.shopnoltd.dpdns.org
+    - host: openai.shopnoltd.dpdns.org
       http:
         paths:
           - path: /
