@@ -45,10 +45,22 @@ spec:
             - secretRef:
                 name: superset-secret
           env:
+            - name: SUPERSET__SQLALCHEMY_DATABASE_URI
+              valueFrom:
+                secretKeyRef:
+                  name: superset-db-uri
+                  key: SQLALCHEMY_DATABASE_URI
             - name: POD_NAME
               valueFrom: { fieldRef: { fieldPath: metadata.name } }
             - name: POD_NAMESPACE
               valueFrom: { fieldRef: { fieldPath: metadata.namespace } }
+            - name: SUPERSET_HOME
+              value: /var/lib/superset
+            - name: SQLALCHEMY_DATABASE_URI
+              valueFrom:
+                secretKeyRef:
+                  name: superset-db-uri
+                  key: SQLALCHEMY_DATABASE_URI
           resources:
             requests:
               cpu: 100m
