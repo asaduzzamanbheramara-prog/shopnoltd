@@ -26,7 +26,8 @@ class NamecheapAdapter(RegistrarAdapter):
         errors = root.findall(".//nc:Error", ns)
         if errors:
             messages = [(error.text or "Unknown error").strip() for error in errors]
-            raise RuntimeError(f"Namecheap API error in {operation}: {"; ".join(messages)}")
+            message = "; ".join(messages)
+            raise RuntimeError(f"Namecheap API error in {operation}: {message}")
         status = root.get("Status")
         if status and status.lower() != "ok":
             raise RuntimeError(f"Namecheap API {operation} returned Status={status}")
