@@ -31,6 +31,15 @@ spec:
         - port: 5000
           protocol: TCP
   egress:
+    # External payment/provider APIs
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - port: 443
+          protocol: TCP
+
+    # Internal Shopnoltd services
     - to:
         - namespaceSelector:
             matchLabels:
