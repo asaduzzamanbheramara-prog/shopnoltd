@@ -31,6 +31,15 @@ spec:
           protocol: TCP
 
   egress:
+    # External payment/provider APIs
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - port: 443
+          protocol: TCP
+
+    # Internal Shopnoltd services
     - to:
         - namespaceSelector:
             matchLabels:
@@ -56,6 +65,7 @@ spec:
         - port: 9000
           protocol: TCP
 
+    # Exchange service
     - to:
         - namespaceSelector:
             matchLabels:
@@ -67,6 +77,7 @@ spec:
         - port: 8080
           protocol: TCP
 
+    # Billing engine
     - to:
         - namespaceSelector:
             matchLabels:
