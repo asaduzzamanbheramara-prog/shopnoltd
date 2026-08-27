@@ -34,6 +34,13 @@ spec:
     - to:
         - namespaceSelector:
             matchLabels:
+              name: shopno-apps
+      ports:
+        - port: 11434
+          protocol: TCP
+    - to:
+        - namespaceSelector:
+            matchLabels:
               name: shopno-data
         - namespaceSelector:
             matchLabels:
