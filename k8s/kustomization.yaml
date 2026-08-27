@@ -44,6 +44,7 @@ resources:
 - services/interior-service
 - services/android-portal
 - services/ai-platform
+- ollama.yaml
 - services/ai-gateway
 - services/postgres
 - services/redis
