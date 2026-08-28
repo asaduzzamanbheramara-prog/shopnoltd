@@ -25,12 +25,23 @@ spec:
   ingressClassName: nginx
   tls:
     - hosts:
-        - codeserver.shopnoltd.dpdns.org
+        - code.shopnoltd.dpdns.org
+    - codeserver.shopnoltd.dpdns.org
         - code-server.shopnoltd.dpdns.org
         - cursor.shopnoltd.dpdns.org
       secretName: code-server-tls
   rules:
-    - host: codeserver.shopnoltd.dpdns.org
+    - host: code.shopnoltd.dpdns.org
+    http:
+      paths:
+        - backend:
+            service:
+              name: code-server
+              port:
+                number: 80
+          path: /
+          pathType: Prefix
+  - host: codeserver.shopnoltd.dpdns.org
       http:
         paths:
           - path: /
