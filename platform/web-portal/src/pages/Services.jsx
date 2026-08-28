@@ -21,13 +21,6 @@ const SERVICES = [
     category: 'Communication',
   },
   {
-    icon: '📹',
-    name: 'Meet',
-    description: 'Video conferencing with Jitsi.',
-    url: 'https://meet.shopnoltd.dpdns.org',
-    category: 'Communication',
-  },
-  {
     icon: '🔴',
     name: 'Live',
     description: 'Self-hosted live streaming.',
@@ -36,6 +29,7 @@ const SERVICES = [
   },
   {
     icon: '☁️',
+
     name: 'Drive',
     description: 'Cloud file storage and synchronization.',
     url: 'https://storage.shopnoltd.dpdns.org',
@@ -49,23 +43,9 @@ const SERVICES = [
     category: 'Communication',
   },
   {
-    icon: '🏢',
-    name: 'ERP',
-    description: 'Business management and ERP.',
-    url: 'https://erp.shopnoltd.dpdns.org',
-    category: 'Business',
-  },
-  {
     icon: '💳',
     name: 'Billing',
-    description: 'Plans, subscriptions and payments.',
-    url: 'https://billing.shopnoltd.dpdns.org',
-    category: 'Business',
-  },
-  {
-    icon: '👛',
-    name: 'Wallet',
-    description: 'Manage balances, transactions, service usage and payments from one place.',
+    description: 'Plans, subscriptions, payments and wallet balances in one place.',
     url: 'https://billing.shopnoltd.dpdns.org',
     category: 'Business',
   },
@@ -82,6 +62,7 @@ const SERVICES = [
     description: 'Shopnoltd AI workspace.',
     url: 'https://openai.shopnoltd.dpdns.org',
     category: 'AI',
+
   },
   {
     icon: '💻',
@@ -98,46 +79,11 @@ const SERVICES = [
     category: 'Developer',
   },
   {
-    icon: '🌐',
-    name: 'Website',
-    description: 'Create and manage personal, business, portfolio and custom websites.',
+    icon: '📊',
+    name: 'Dashboard',
+    description: 'Manage your websites, profile, workspace and social presence in one place.',
     url: '/dashboard',
     category: 'Platform',
-  },
-  {
-    icon: '👤',
-    name: 'Profile',
-    description: 'Create and manage your public personal, creator, developer or business profile.',
-    url: '/dashboard',
-    category: 'Platform',
-  },
-  {
-    icon: '🌍',
-    name: 'Web Workspace',
-    description: 'Access and organize your websites, applications, projects and services in one workspace.',
-    url: '/dashboard',
-    category: 'Platform',
-  },
-  {
-    icon: '💬',
-    name: 'Messaging',
-    description: 'Direct messages, group conversations, channels and communities.',
-    url: 'https://chat.shopnoltd.dpdns.org',
-    category: 'Communication',
-  },
-  {
-    icon: '👥',
-    name: 'Social',
-    description: 'Create posts, profiles, communities and connect with people.',
-    url: '/dashboard',
-    category: 'Social',
-  },
-  {
-    icon: '📺',
-    name: 'Video',
-    description: 'Create channels, publish videos, organize playlists and build your audience.',
-    url: 'https://live.shopnoltd.dpdns.org',
-    category: 'Media',
   },
   {
     icon: '⚡',
@@ -149,35 +95,18 @@ const SERVICES = [
 ]
 
 const ADMIN_SERVICES = [
-  {
-    icon: '📊',
-    name: 'Grafana',
-    description: 'Monitoring and observability.',
-    url: 'https://grafana.shopnoltd.dpdns.org',
-  },
-  {
-    icon: '📈',
-    name: 'Prometheus',
-    description: 'Metrics and monitoring.',
-    url: 'https://prometheus.shopnoltd.dpdns.org',
-  },
+
   {
     icon: '⚙️',
     name: 'ArgoCD',
     description: 'GitOps deployment management.',
     url: 'https://argocd.shopnoltd.dpdns.org',
   },
-  {
-    icon: '🛠️',
-    name: 'Portainer',
-    description: 'Infrastructure management.',
-    url: 'https://portainer.shopnoltd.dpdns.org',
-  },
 ]
 
 function ServiceCard({ service }) {
   return (
-    <a
+    
       href={service.url}
       target={service.url.startsWith('/') ? undefined : '_blank'}
       rel={service.url.startsWith('/') ? undefined : 'noopener noreferrer'}
@@ -199,6 +128,7 @@ function ServiceCard({ service }) {
     </a>
   )
 }
+
 
 export default function Services() {
   return (
@@ -231,6 +161,7 @@ export default function Services() {
         <p style={{ color: '#64748b' }}>
           Infrastructure services for authorized administrators.
         </p>
+
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
