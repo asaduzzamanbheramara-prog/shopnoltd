@@ -1495,10 +1495,6 @@ data:
       - hostname: freedomain.shopnoltd.dpdns.org
         service: http://traefik.traefik.svc.cluster.local:80
       # --- Observability ---
-      - hostname: grafana.shopnoltd.dpdns.org
-        service: http://traefik.traefik.svc.cluster.local:80
-      - hostname: prometheus.shopnoltd.dpdns.org
-        service: http://traefik.traefik.svc.cluster.local:80
       - hostname: mail.shopnoltd.dpdns.org
         service: http://traefik.traefik.svc.cluster.local:80
       - hostname: pgadmin.shopnoltd.dpdns.org

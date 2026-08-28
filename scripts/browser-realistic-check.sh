@@ -84,8 +84,6 @@ check_full "kobo.local /kf"   "kobo.local" "/kf"
 check_full "kobo.local /ee"   "kobo.local" "/ee"
 
 echo -e "\n############ MONITORING / ADMIN (internal — branding not expected) ############" | tee -a "$REPORT"
-check_full "Grafana"          "grafana.shopnoltd.dpdns.org"    "/"
-check_full "Prometheus"       "prometheus.shopnoltd.dpdns.org" "/"
 check_full "pgAdmin"          "pgadmin.shopnoltd.dpdns.org"    "/"
 check_full "Portainer"        "portainer.shopnoltd.dpdns.org"  "/"
 
