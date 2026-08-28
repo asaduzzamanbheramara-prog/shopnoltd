@@ -42,10 +42,6 @@ data:
         service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
       - hostname: enketo.shopnoltd.dpdns.org
         service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
-      - hostname: grafana.shopnoltd.dpdns.org
-        service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
-      - hostname: prometheus.shopnoltd.dpdns.org
-        service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
       - hostname: pgadmin.shopnoltd.dpdns.org
         service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
       - hostname: portainer.shopnoltd.dpdns.org
