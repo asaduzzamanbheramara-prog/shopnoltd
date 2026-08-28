@@ -26,7 +26,6 @@ HOSTS = {
     "notification": "shopnoltd.dpdns.org",
     "storage": "shopnoltd.dpdns.org",
     "ai": "api.shopnoltd.dpdns.org",
-    "analytics": "grafana.shopnoltd.dpdns.org",
     "api": "api.shopnoltd.dpdns.org",
     "search": "api.shopnoltd.dpdns.org",
     "audit": "api.shopnoltd.dpdns.org",
