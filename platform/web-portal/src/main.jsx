@@ -12,6 +12,8 @@ import Blog from './pages/Blog'
 import Plugins from './pages/Plugins'
 import Services from './pages/Services'
 import DomainRegistration from "./pages/DomainRegistration";
+import AdminDashboard from './pages/AdminDashboard'
+import AdminRoute from './components/AdminRoute'
 
 
 const NAV_LINKS = [
@@ -109,6 +111,7 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/callback" element={<Callback />} />
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
       </Routes>
     </BrowserRouter>
   )

@@ -106,8 +106,8 @@ const ADMIN_SERVICES = [
 
 function ServiceCard({ service }) {
   return (
-    
-      href={service.url}
+      <a
+        href={service.url}
       target={service.url.startsWith('/') ? undefined : '_blank'}
       rel={service.url.startsWith('/') ? undefined : 'noopener noreferrer'}
       style={{
