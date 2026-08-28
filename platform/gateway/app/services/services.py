@@ -28,6 +28,5 @@ SERVICES = {
     "ai": _svc("ai-platform"),
     "analytics": _svc("analytics-service"),
     "api": _svc("api-service"),
-    "search": _svc("search-service"),
     "audit": _svc("audit-service"),
 }

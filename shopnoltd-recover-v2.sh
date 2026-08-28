@@ -18,7 +18,7 @@ TIER0=(
 )
 # Tier-2 : platform — on, smaller footprint
 TIER2=(
-  "shopno-data/minio" "shopno-data/opensearch"
+  "shopno-data/minio"
   "shopno-platform/domain-service" "shopno-platform/license-service"
   "shopno-platform/notification-service" "shopno-platform/scheduler-service"
   "shopno-monitoring/loki" "shopno-monitoring/alertmanager"
@@ -205,7 +205,7 @@ p4_prioritise() {
 p5_restart() {
   hdr "PHASE 5 · Rolling restart in order (L1 → L2 → L3 → L4 → L5)"
   local order=(
-    "shopno-data/postgres" "shopno-data/redis" "shopno-data/minio" "shopno-data/opensearch"
+    "shopno-data/postgres" "shopno-data/redis" "shopno-data/minio"
     "shopno-identity/keycloak" "shopno-identity/auth-service" "shopno-identity/oauth-service"
     "shopno-platform/gateway" "shopno-platform/api-service" "shopno-platform/tenant-router"
     "shopno-platform/web-portal" "shopno-platform/domain-service" "shopno-platform/scheduler-service"

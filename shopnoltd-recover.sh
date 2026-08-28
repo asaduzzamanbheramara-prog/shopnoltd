@@ -28,7 +28,7 @@ SELECTED_PHASES="0,1,2,3,4,5,6"
 
 # Tier-0 : must stay up (1 replica)
 TIER0=(
-  "shopno-data/postgres" "shopno-data/redis" "shopno-data/minio" "shopno-data/opensearch"
+  "shopno-data/postgres" "shopno-data/redis" "shopno-data/minio"
   "shopno-identity/keycloak" "shopno-identity/auth-service" "shopno-identity/oauth-service"
   "shopno-platform/gateway" "shopno-platform/web-portal" "shopno-platform/tenant-router"
   "shopno-platform/api-service" "shopno-monitoring/prometheus" "shopno-monitoring/grafana"
@@ -223,7 +223,7 @@ p5_restart() {
   hdr "PHASE 5 · Rolling restart in dependency order"
   local order=(
     # L1  storage
-    "shopno-data/postgres" "shopno-data/redis" "shopno-data/minio" "shopno-data/opensearch"
+    "shopno-data/postgres" "shopno-data/redis" "shopno-data/minio"
     # L2  identity
     "shopno-identity/keycloak" "shopno-identity/auth-service" "shopno-identity/oauth-service"
     # L3  platform

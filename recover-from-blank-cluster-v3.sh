@@ -17,12 +17,12 @@ export KUBECONFIG
 # Pass B : platform (the 22 services)
 # Pass C : payments + shopno-apps (heavy hitters last)
 PASS_A=(namespaces ingress/cloudflared
-        services/postgres services/redis services/minio services/opensearch
+        services/postgres services/redis services/minio
         services/keycloak services/auth-service services/oauth-service
         services/prometheus services/grafana services/loki services/alertmanager)
 PASS_B_SVC=$(ls -d k8s/services/*/ | xargs -n1 basename | \
              awk -F/ '{print "services/"$1}' | \
-             grep -E "^services/(api-service|gateway|web-portal|admin-portal|tenant-router|domain-service|freedomain-service|mobile-api|search-service|storage-service|notification-service|report-service|analytics-service|worker-service|training-service|license-service|audit-service|event-service|foundation-service|interior-service|android-portal|ai-platform)$")
+             grep -E "^services/(api-service|gateway|web-portal|admin-portal|tenant-router|domain-service|freedomain-service|mobile-api|storage-service|notification-service|report-service|analytics-service|worker-service|training-service|license-service|audit-service|event-service|foundation-service|interior-service|android-portal|ai-platform)$")
 PASS_C_SVC=(services/payment-service services/exchange-service services/billing-engine
             services/chatwoot services/gitea services/code-server
             services/nextcloud services/onlyoffice services/kobotoolbox

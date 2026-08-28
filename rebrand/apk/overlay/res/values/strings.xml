@@ -74,8 +74,6 @@
     <string name="service_label_stream">Shopno Stream</string>
     <string name="service_url_stream">https://stream.shopnoltd.dpdns.org</string>
 
-    <string name="service_label_search">Shopno Search</string>
-    <string name="service_url_search">https://search.shopnoltd.dpdns.org</string>
 
     <string name="service_label_bi">Shopno BI</string>
     <string name="service_url_bi">https://bi.shopnoltd.dpdns.org</string>

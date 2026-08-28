@@ -42,25 +42,12 @@ async def call(method: str, url: str, user_token: str, **kw):
 
 @router.get("/me")
 async def me(creds: HTTPAuthorizationCredentials = Depends(bearer)):
-    try:
-        await verify_token(creds.credentials)
-    except Exception as e:
-        raise HTTPException(status_code=401, detail="Invalid authentication token") from e
-
-    return await call(
-        "GET",
-        "http://oauth-service.shopno-identity.svc.cluster.local:80/api/v1/users/me",
-        creds.credentials,
-    )
+    return await user(creds)
 
 
 @router.get("/users/me")
 async def users_me(creds: HTTPAuthorizationCredentials = Depends(bearer)):
-    return await call(
-        "GET",
-        "http://oauth-service.shopno-identity.svc.cluster.local:80/api/v1/users/me",
-        creds.credentials,
-    )
+    return await user(creds)
 
 
 @router.get("/wallet")
