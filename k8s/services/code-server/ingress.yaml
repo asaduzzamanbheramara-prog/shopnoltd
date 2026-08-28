@@ -21,27 +21,20 @@ metadata:
 
     nginx.ingress.kubernetes.io/proxy-body-size: "100m"
     nginx.ingress.kubernetes.io/client-body-buffer-size: "1m"
+
 spec:
   ingressClassName: nginx
+
   tls:
     - hosts:
         - code.shopnoltd.dpdns.org
-    - codeserver.shopnoltd.dpdns.org
+        - codeserver.shopnoltd.dpdns.org
         - code-server.shopnoltd.dpdns.org
         - cursor.shopnoltd.dpdns.org
       secretName: code-server-tls
+
   rules:
     - host: code.shopnoltd.dpdns.org
-    http:
-      paths:
-        - backend:
-            service:
-              name: code-server
-              port:
-                number: 80
-          path: /
-          pathType: Prefix
-  - host: codeserver.shopnoltd.dpdns.org
       http:
         paths:
           - path: /
@@ -51,6 +44,18 @@ spec:
                 name: code-server
                 port:
                   number: 80
+
+    - host: codeserver.shopnoltd.dpdns.org
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: code-server
+                port:
+                  number: 80
+
     - host: code-server.shopnoltd.dpdns.org
       http:
         paths:
@@ -61,6 +66,7 @@ spec:
                 name: code-server
                 port:
                   number: 80
+
     - host: cursor.shopnoltd.dpdns.org
       http:
         paths:
