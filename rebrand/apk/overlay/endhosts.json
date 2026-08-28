@@ -32,7 +32,6 @@
     {"id": "logs",     "label": "Shopno Logs",     "url": "https://logs.shopnoltd.dpdns.org",     "icon": "logs",     "description": "Searchable log aggregation."},
     {"id": "alerts",   "label": "Shopno Alerts",   "url": "https://alerts.shopnoltd.dpdns.org",   "icon": "alerts",   "description": "Alert routing and silences."},
     {"id": "stream",   "label": "Shopno Stream",   "url": "https://stream.shopnoltd.dpdns.org",   "icon": "stream",   "description": "Live video streaming for events and broadcasts."},
-    {"id": "search",   "label": "Shopno Search",   "url": "https://search.shopnoltd.dpdns.org",   "icon": "search",   "description": "Unified search across Shopnoltd."},
     {"id": "bi",       "label": "Shopno BI",       "url": "https://bi.shopnoltd.dpdns.org",       "icon": "bi",       "description": "Business intelligence and analytics."},
     {"id": "forms",    "label": "Shopno Forms",    "url": "https://forms.shopnoltd.dpdns.org",    "icon": "forms",    "description": "Build and run data collection forms in the field."},
     {"id": "workflow", "label": "Shopno Workflow", "url": "https://workflow.shopnoltd.dpdns.org", "icon": "workflow", "description": "Automate work across Shopnoltd and your other tools."}

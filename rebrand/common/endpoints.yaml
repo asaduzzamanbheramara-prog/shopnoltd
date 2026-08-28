@@ -99,12 +99,6 @@ shopnoltd:
       upstream: apps/owncast
       icon: stream
       description: Live video streaming for events and broadcasts.
-    - id: search
-      label: Shopno Search
-      url: https://search.shopnoltd.dpdns.org
-      upstream: apps/opensearch
-      icon: search
-      description: Unified search across Shopnoltd.
     - id: bi
       label: Shopno BI
       url: https://bi.shopnoltd.dpdns.org

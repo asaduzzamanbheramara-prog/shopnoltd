@@ -218,3 +218,15 @@ docs/reports/*-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9][0-9][0-9][0-9][0-9
 .payment-exchange-*-[0-9]*/
 .repair-backup-*/
 *.broken-[0-9]*.yaml
+
+# Local/private audit and recovery artifacts
+.core-completion-backup-*/
+.shopno-patch-backup-*/
+SHOPNOLTD_*AUDIT*.txt
+SHOPNOLTD_*VERIFICATION*.txt
+SHOPNOLTD_*READONLY*.txt
+OPEN-ITEMS-MASTER-LIST.md
+shopnoltd-consolidation-roadmap.md
+payoneer.py
+paypal.py
+cd

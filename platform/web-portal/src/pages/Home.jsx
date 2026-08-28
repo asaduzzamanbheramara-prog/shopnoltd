@@ -196,18 +196,6 @@ const CONNECTED_PLATFORMS = [
 
 const ADMIN_SERVICES = [
   {
-    icon: '📊',
-    name: 'Grafana',
-    description: 'Monitoring and observability.',
-    url: 'https://grafana.shopnoltd.dpdns.org',
-  },
-  {
-    icon: '📈',
-    name: 'Prometheus',
-    description: 'Metrics and monitoring.',
-    url: 'https://prometheus.shopnoltd.dpdns.org',
-  },
-  {
     icon: '⚙️',
     name: 'ArgoCD',
     description: 'GitOps deployment management.',

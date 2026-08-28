@@ -7,4 +7,16 @@ export default defineConfig({
       jsxRuntime: 'automatic',
     }),
   ],
+
+  server: {
+    host: '0.0.0.0',
+
+    proxy: {
+      '/api': {
+        target: 'https://api.shopnoltd.dpdns.org',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
+  },
 })
