@@ -5,3 +5,5 @@ export const KEYCLOAK_URL = import.meta.env.VITE_KEYCLOAK_URL || 'https://auth.s
 export const KEYCLOAK_REALM = import.meta.env.VITE_KEYCLOAK_REALM || 'shopnoltd'
 export const KEYCLOAK_CLIENT_ID = import.meta.env.VITE_KEYCLOAK_CLIENT_ID || 'shopnoltd-web'
 export const REDIRECT_URI = `${window.location.origin}/callback`
+
+export const API_URL = import.meta.env.VITE_API_URL || ''
