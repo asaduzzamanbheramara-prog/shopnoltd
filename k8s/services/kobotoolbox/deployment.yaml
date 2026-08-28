@@ -62,7 +62,7 @@ spec:
               value: https
           resources:
             requests:
-              cpu: 250m
+              cpu: 100m
               memory: 512Mi
               ephemeral-storage: 512Mi
             limits:
