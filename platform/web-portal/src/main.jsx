@@ -1,6 +1,6 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom'
 import Home from './pages/Home'
 import Pricing from './pages/Pricing'
 import Login from './pages/Login'
@@ -14,19 +14,28 @@ import Services from './pages/Services'
 import DomainRegistration from "./pages/DomainRegistration";
 import AdminDashboard from './pages/AdminDashboard'
 import AdminRoute from './components/AdminRoute'
+import { isPlatformAdmin } from './lib/jwt'
 
 
-const NAV_LINKS = [
+const PUBLIC_LINKS = [
   ['Pricing', '/pricing'],
   ['Blog', '/blog'],
   ['Plugins', '/plugins'],
   ['Services', '/services'],
-  ['Login', '/login'],
-  ['Register', '/register'],
-  ['Dashboard', '/dashboard'],
 ]
 
 function Nav() {
+  const navigate = useNavigate()
+  const location = useLocation()
+  const token = localStorage.getItem('shopno_token')
+  const loggedIn = !!token
+  const isAdmin = loggedIn && isPlatformAdmin()
+
+  function handleLogout() {
+    localStorage.removeItem('shopno_token')
+    navigate('/')
+  }
+
   return (
     <nav
       style={{
@@ -77,7 +86,7 @@ function Nav() {
           minWidth: 0,
         }}
       >
-        {NAV_LINKS.map(([label, path]) => (
+        {PUBLIC_LINKS.map(([label, path]) => (
           <Link
             key={path}
             to={path}
@@ -91,6 +100,36 @@ function Nav() {
             {label}
           </Link>
         ))}
+        {!loggedIn && (
+          <>
+            <Link key="/login" to="/login" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px', whiteSpace: 'nowrap' }}>Login</Link>
+            <Link key="/register" to="/register" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px', whiteSpace: 'nowrap' }}>Register</Link>
+          </>
+        )}
+        {loggedIn && (
+          <>
+            <Link key="/dashboard" to="/dashboard" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px', whiteSpace: 'nowrap' }}>Dashboard</Link>
+            {isAdmin && (
+              <Link key="/admin" to="/admin" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px', whiteSpace: 'nowrap', fontWeight: 700 }}>Admin</Link>
+            )}
+            <button
+              key="/logout"
+              onClick={handleLogout}
+              style={{
+                color: 'white',
+                background: 'transparent',
+                border: '1px solid rgba(255,255,255,0.5)',
+                borderRadius: 6,
+                padding: '5px 12px',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                fontSize: 14,
+              }}
+            >
+              Logout
+            </button>
+          </>
+        )}
       </div>
     </nav>
   )
