@@ -32,8 +32,6 @@ check "Live (Owncast)"                            "live.shopnoltd.dpdns.org"    
 check "Meet (Jitsi)"                              "meet.shopnoltd.dpdns.org"     "/"
 
 echo -e "\n--- Monitoring ---"
-check "Grafana"                                   "grafana.shopnoltd.dpdns.org"  "/"
-check "Prometheus"                                "prometheus.shopnoltd.dpdns.org" "/"
 
 echo -e "\n--- KoboToolbox Stack ---"
 check "KPI (kc) root"                             "kobo.shopnoltd.dpdns.org"     "/"

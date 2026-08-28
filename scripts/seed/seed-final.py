@@ -341,7 +341,6 @@ HOSTS = {
     "notification":"shopnoltd.dpdns.org",
     "storage":     "shopnoltd.dpdns.org",
     "ai":          "api.shopnoltd.dpdns.org",
-    "analytics":   "grafana.shopnoltd.dpdns.org",
     "api":         "api.shopnoltd.dpdns.org",
     "search":      "api.shopnoltd.dpdns.org",
     "audit":       "api.shopnoltd.dpdns.org",
@@ -1873,7 +1872,6 @@ if os.path.exists(wf):
           - { service: tenant-router,      dockerfile: platform/tenant-router/Dockerfile }
           - { service: billing-engine,     dockerfile: platform/billing-engine/Dockerfile }
           - { service: analytics-service,  dockerfile: platform/analytics-service/Dockerfile }
-          - { service: search-service,     dockerfile: platform/search-service/Dockerfile }
           - { service: storage-service,    dockerfile: platform/storage-service/Dockerfile }
           - { service: notification-service,dockerfile: platform/notification-service/Dockerfile }
           - { service: scheduler-service,  dockerfile: platform/scheduler-service/Dockerfile }
