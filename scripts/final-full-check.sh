@@ -19,8 +19,6 @@ check "Enketo"            "https://enketo.shopnoltd.dpdns.org/"
 check "Chat"              "https://chat.shopnoltd.dpdns.org/"
 check "Live"              "https://live.shopnoltd.dpdns.org/"
 check "Meet"              "https://meet.shopnoltd.dpdns.org/"
-check "Grafana"           "https://grafana.shopnoltd.dpdns.org/"
-check "Prometheus"        "https://prometheus.shopnoltd.dpdns.org/"
 check "Freedomain"        "https://freedomain.shopnoltd.dpdns.org/"
 
 echo -e "\n===================================================================="

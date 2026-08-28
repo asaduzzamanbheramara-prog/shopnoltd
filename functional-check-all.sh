@@ -9,8 +9,6 @@ declare -A SITES=(
   [kobo]="https://kobo.shopnoltd.dpdns.org/"
   [kf]="https://kf.shopnoltd.dpdns.org/"
   [gitea]="https://gitea.shopnoltd.dpdns.org/"
-  [metabase]="https://metabase.shopnoltd.dpdns.org/"
-  [superset]="https://superset.shopnoltd.dpdns.org/"
   [chatwoot]="https://chatwoot.shopnoltd.dpdns.org/"
   [enketo]="https://enketo.shopnoltd.dpdns.org/"
   [n8n]="https://n8n.shopnoltd.dpdns.org/"
@@ -28,8 +26,6 @@ done
 echo
 echo "================ POD HEALTH (known trouble spots) ================"
 for ns_svc in \
-  "shopno-apps:metabase" \
-  "shopno-apps:superset" \
   "shopno-apps:chatwoot" \
   "shopno-apps:enketo" \
   "shopno-apps:n8n" \
@@ -51,10 +47,6 @@ kubectl -n shopno-apps exec deploy/gitea -- test -f /data/gitea/gitea.db \
   && echo "gitea.db EXISTS — install likely completed" \
   || echo "gitea.db MISSING — install wizard not completed yet"
 
-echo
-echo "================ METABASE DUPLICATE POD CHECK ================"
-count=$(kubectl -n shopno-apps get pods -l app=metabase --no-headers 2>/dev/null | wc -l)
-echo "metabase pod count: $count (expect 1 — Recreate strategy)"
 
 echo
 echo "================ RECENT ERROR LOGS (last 5 min) ================"
