@@ -22,7 +22,7 @@ class Settings(BaseSettings):
 
     llm_model: str = "microsoft/Phi-3-mini-4k-instruct"
 
-    llm_url: str = "http://localhost:11434"
+    llm_url: str = "http://ollama.shopno-apps.svc.cluster.local:11434"
 
     inference_timeout_seconds: int = 120
 
