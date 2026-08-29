@@ -220,3 +220,14 @@ spec:
     - ports:
         - protocol: TCP
           port: 53
+
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: shopno-apps
+          podSelector:
+            matchLabels:
+              app: ollama
+      ports:
+        - protocol: TCP
+          port: 11434
