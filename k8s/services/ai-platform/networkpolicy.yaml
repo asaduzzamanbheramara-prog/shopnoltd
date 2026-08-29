@@ -38,6 +38,23 @@ spec:
       ports:
         - port: 11434
           protocol: TCP
+    # AI platform -> internal Gateway/API
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: shopno-platform
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: gateway
+        - namespaceSelector:
+            matchLabels:
+              name: shopno-platform
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: api-service
+      ports:
+        - port: 8080
+          protocol: TCP
     - to:
         - namespaceSelector:
             matchLabels:
