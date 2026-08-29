@@ -227,6 +227,5 @@ SHOPNOLTD_*VERIFICATION*.txt
 SHOPNOLTD_*READONLY*.txt
 OPEN-ITEMS-MASTER-LIST.md
 shopnoltd-consolidation-roadmap.md
-payoneer.py
-paypal.py
-cd
+/payoneer.py
+/paypal.py

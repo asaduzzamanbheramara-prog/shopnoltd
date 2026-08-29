@@ -6,6 +6,8 @@ from app.providers.bkash import BkashProvider
 from app.providers.crypto import CryptoProvider
 from app.providers.manual import ManualProvider
 from app.providers.nagad import NagadProvider
+from app.providers.payoneer import PayoneerProvider
+from app.providers.paypal import PayPalProvider
 from app.providers.razorpay import RazorpayProvider
 from app.providers.sslcommerz import SSLCommerzProvider
 from app.providers.stripe_provider import StripeProvider
@@ -27,7 +29,8 @@ _REG = {
     PaymentMethod.manual: ManualProvider("manual"),
     PaymentMethod.payeer: ManualProvider("payeer"),
     PaymentMethod.rocket: ManualProvider("rocket"),
-    PaymentMethod.paypal: ManualProvider("paypal"),
+    PaymentMethod.paypal: PayPalProvider(),
+    PaymentMethod.payoneer: PayoneerProvider(),
 }
 
 
