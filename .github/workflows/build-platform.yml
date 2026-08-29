@@ -29,7 +29,6 @@ jobs:
           - { service: oauth-service,      dockerfile: platform/oauth-service/Dockerfile }
           - { service: tenant-router,      dockerfile: platform/tenant-router/Dockerfile }
           - { service: analytics-service,  dockerfile: platform/analytics-service/Dockerfile }
-          - { service: search-service,     dockerfile: platform/search-service/Dockerfile }
           - { service: storage-service,    dockerfile: platform/storage-service/Dockerfile }
           - { service: notification-service,dockerfile: platform/notification-service/Dockerfile }
           - { service: scheduler-service,  dockerfile: platform/scheduler-service/Dockerfile }
@@ -51,7 +50,6 @@ jobs:
           - { service: mail-service,       dockerfile: platform/mail-service/Dockerfile }
           - { service: social-service,     dockerfile: platform/social-service/Dockerfile }
           - { service: keycloak,           dockerfile: platform/keycloak/Dockerfile }
-          - { service: superset,           dockerfile: platform/superset/Dockerfile }
           - { service: session-manager,   dockerfile: platform/session-manager/Dockerfile }
     permissions:
       contents: read

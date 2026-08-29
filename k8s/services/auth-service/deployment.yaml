@@ -97,7 +97,8 @@ spec:
               drop: ["ALL"]
       volumes:
         - name: data
-          emptyDir: {}
+          persistentVolumeClaim:
+            claimName: auth-service-data
         - name: tmp
           emptyDir: {}
       topologySpreadConstraints:

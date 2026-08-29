@@ -46,7 +46,7 @@ jobs:
           build-args: |
             BASE_IMAGE=${{ matrix.upstream }}
             APP_CODE=${{ matrix.app }}
-            PACKAGE_NAME=${{ matrix.matrix.package }}
+            PACKAGE_NAME=${{ matrix.package }}
           push: true
           tags: |
             ghcr.io/${{ env.IMAGE_PREFIX }}/${{ matrix.app }}:latest
