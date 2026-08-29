@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 import structlog
 from app.api import (
     admin,
+    admin_tables,
     deposits,
     exchanges,
     transactions,
@@ -77,6 +78,7 @@ app.include_router(transactions.router, prefix="/api/v1/transactions", tags=["tr
 app.include_router(exchanges.router, prefix="/api/v1/exchanges", tags=["exchanges"])
 app.include_router(webhooks.router, prefix="/api/v1/webhooks", tags=["webhooks"])
 app.include_router(admin.router, prefix="/api/v1/admin", tags=["admin"])
+app.include_router(admin_tables.router, prefix="/api/v1/admin", tags=["admin-tables"])
 
 
 @app.get("/healthz", include_in_schema=False)

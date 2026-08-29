@@ -21,7 +21,8 @@ async def db():
 
 async def require_admin(creds: HTTPAuthorizationCredentials = Depends(bearer)):
     user = await verify_token(creds.credentials)
-    if "admin" not in user.get("roles", []):
+    roles = user.get("roles", [])
+    if "platform_admin" not in roles and "admin" not in roles:
         raise HTTPException(403, "admin only")
     return user
 
