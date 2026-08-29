@@ -55,6 +55,30 @@ spec:
           protocol: TCP
         - port: 9000
           protocol: TCP
+
+    # AI platform
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: shopno-platform
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: ai-platform
+      ports:
+        - port: 8080
+          protocol: TCP
+
+    # Local Ollama
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: shopno-apps
+          podSelector:
+            matchLabels:
+              app: ollama
+      ports:
+        - port: 11434
+          protocol: TCP
     - to:
         - ipBlock:
             cidr: 0.0.0.0/0
