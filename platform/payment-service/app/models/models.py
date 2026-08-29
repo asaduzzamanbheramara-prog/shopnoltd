@@ -46,6 +46,7 @@ class PaymentMethod(str, enum.Enum):
     trx = "trx"
     razorpay = "razorpay"
     sslcommerz = "sslcommerz"
+    payoneer = "payoneer"
 
 
 class Wallet(Base):
