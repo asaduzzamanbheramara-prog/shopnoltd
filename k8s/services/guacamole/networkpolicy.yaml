@@ -1,0 +1,79 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: guacamole
+  namespace: shopno-tools
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: guacamole
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: ingress-nginx
+      ports:
+        - port: 8080
+          protocol: TCP
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: guacd
+      ports:
+        - port: 4822
+          protocol: TCP
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: shopno-data
+      ports:
+        - port: 5432
+          protocol: TCP
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: kube-system
+      ports:
+        - port: 53
+          protocol: UDP
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: guacd
+  namespace: shopno-tools
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: guacd
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: guacamole
+      ports:
+        - port: 4822
+          protocol: TCP
+  egress:
+    # Windows host, reached via the WSL2 default gateway IP.
+    # Confirmed via `ip route show default` on 2026-08-30.
+    - to:
+        - ipBlock:
+            cidr: 172.30.192.1/32
+      ports:
+        - port: 5900
+          protocol: TCP
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: kube-system
+      ports:
+        - port: 53
+          protocol: UDP
