@@ -28,6 +28,7 @@ resources:
 - services/payment-service
 - services/exchange-service
 - services/domain-service
+- services/guacamole
 - services/freedomain-service
 - services/mobile-api
 - services/storage-service
