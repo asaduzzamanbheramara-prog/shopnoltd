@@ -21,4 +21,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: yamllint
-        run: pip install --break-system-packages yamllint && yamllint -d "{extends: relaxed, rules: {line-length: disable}}" .
+        run: |
+          pip install --break-system-packages yamllint
+          yamllint -d "{extends: relaxed, rules: {line-length: disable}}" .
