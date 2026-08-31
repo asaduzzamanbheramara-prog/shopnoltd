@@ -19,6 +19,7 @@ metadata:
 spec:
   selector:
     app.kubernetes.io/name: guacamole
+    app.kubernetes.io/component: server
   ports:
     - port: 80
       targetPort: 8080

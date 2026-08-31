@@ -4,7 +4,6 @@ metadata:
   name: guacamole
   namespace: shopno-tools
   annotations:
-    cert-manager.io/cluster-issuer: letsencrypt-prod
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
     nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
     nginx.ingress.kubernetes.io/proxy-http-version: "1.1"
@@ -16,7 +15,7 @@ spec:
   tls:
     - hosts:
         - remote.shopnoltd.dpdns.org
-      secretName: guacamole-tls
+      secretName: shopno-wildcard-tls
   rules:
     - host: remote.shopnoltd.dpdns.org
       http:
