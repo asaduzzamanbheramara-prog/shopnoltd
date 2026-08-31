@@ -6,7 +6,7 @@ metadata:
 data:
   GUACD_HOSTNAME: "guacd"
   GUACD_PORT: "4822"
-  POSTGRES_HOSTNAME: "postgres.shopno-data.svc.cluster.local"
-  POSTGRES_PORT: "5432"
-  POSTGRES_DATABASE: "guacamole"
-  POSTGRES_USER: "guacamole_user"
+  POSTGRESQL_HOSTNAME: "postgres.shopno-data.svc.cluster.local"
+  POSTGRESQL_PORT: "5432"
+  POSTGRESQL_DATABASE: "guacamole"
+  POSTGRESQL_USER: "guacamole_user"
