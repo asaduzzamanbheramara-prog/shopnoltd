@@ -14,9 +14,7 @@ resources:
 - networkpolicy.yaml
 
 labels:
-- includeSelectors: true
-  pairs:
-    app.kubernetes.io/name: guacamole
 - includeSelectors: false
   pairs:
+    app.kubernetes.io/name: guacamole
     app.kubernetes.io/part-of: shopnoltd
