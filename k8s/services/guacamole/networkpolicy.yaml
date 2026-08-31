@@ -70,6 +70,8 @@ spec:
       ports:
         - port: 5900
           protocol: TCP
+        - port: 3389
+          protocol: TCP
     - to:
         - namespaceSelector:
             matchLabels:
