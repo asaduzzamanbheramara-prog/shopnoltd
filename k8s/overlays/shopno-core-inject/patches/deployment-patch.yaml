@@ -14,8 +14,8 @@ spec:
         command: ["/bin/sh", "-c",
           "set -eu; cd /shopno-core; \
            find . -type f -name '*.py' | while read f; do \
-             mkdir -p \"/app/\$(dirname \$f)\"; \
-             cp \"\$f\" \"/app/\$f\"; \
+             mkdir -p \"/app/$(dirname $f)\"; \
+             cp \"$f\" \"/app/$f\"; \
            done; \
            echo shopno_core stub injected"]
         volumeMounts:
