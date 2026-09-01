@@ -4,7 +4,7 @@ import httpx
 from app.services.registrar_adapter import RegistrarAdapter
 
 NAMECHEAP_API_PROD = "https://api.namecheap.com/xml.response"
-NAMECHEAP_API_SANDBOX = "https://sandbox.namecheap.com/xml.response"
+NAMECHEAP_API_SANDBOX = "https://api.sandbox.namecheap.com/xml.response"
 
 class NamecheapAdapter(RegistrarAdapter):
     def __init__(self, api_key: str, api_secret: str | None = None, username: str | None = None, client_ip: str = "0.0.0.0", sandbox: bool = False):
