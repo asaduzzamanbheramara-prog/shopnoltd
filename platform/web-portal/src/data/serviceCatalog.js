@@ -31,7 +31,7 @@ export const SERVICES = [
     icon: '☁️',
     name: 'Drive',
     description: 'Cloud file storage and synchronization.',
-    url: 'https://storage.shopnoltd.dpdns.org',
+    url: 'https://storage-service.shopnoltd.dpdns.org',
     category: 'Productivity',
   },
   {
