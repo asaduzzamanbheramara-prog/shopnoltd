@@ -8,3 +8,6 @@ resources:
   - service.yaml
   - ingress.yaml
   - pvc.yaml
+  - roundcube-deployment.yaml
+  - roundcube-main-config.yaml
+  - cloudflare-origin-rsa-ca.yaml
