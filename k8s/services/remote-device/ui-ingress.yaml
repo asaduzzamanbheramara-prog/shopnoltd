@@ -1,0 +1,22 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: remote-devices
+  namespace: shopno-tools
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - devices.shopnoltd.dpdns.org
+      secretName: shopno-wildcard-tls
+  rules:
+    - host: devices.shopnoltd.dpdns.org
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: remote-device-ui
+                port:
+                  number: 80
