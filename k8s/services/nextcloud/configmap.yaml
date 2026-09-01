@@ -1,0 +1,31 @@
+# TEMPLATE — VERIFY AGAINST LIVE CLUSTER BEFORE COMMITTING.
+# I don't have kubectl access to your cluster, so I could not read the actual
+# values currently in the live `nextcloud-config` ConfigMap. This is a
+# best-effort reconstruction based on the official nextcloud:latest image's
+# expected env vars and your other services' conventions (postgres/redis/minio
+# hostnames match your other shopno-apps services).
+#
+# Before applying, run this on the cluster and diff it against this file:
+#   kubectl -n shopno-apps get configmap nextcloud-config -o yaml
+#
+# If any key here doesn't match the live ConfigMap, use the LIVE value —
+# applying a wrong value (e.g. wrong POSTGRES_HOST) will crash-loop Nextcloud,
+# the same way the Guacamole POSTGRES_* vs POSTGRESQL_* mismatch did.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nextcloud-config
+  namespace: shopno-apps
+data:
+  NEXTCLOUD_TRUSTED_DOMAINS: "nextcloud.shopnoltd.dpdns.org"
+  OVERWRITEPROTOCOL: "https"
+  OVERWRITECLIURL: "https://nextcloud.shopnoltd.dpdns.org"
+  POSTGRES_HOST: "postgres.shopno-data.svc.cluster.local"
+  POSTGRES_DB: "nextcloud"
+  POSTGRES_USER: "nextcloud"
+  REDIS_HOST: "redis.shopno-data.svc.cluster.local"
+  REDIS_HOST_PORT: "6379"
+  OBJECTSTORE_S3_HOST: "minio.shopno-data.svc.cluster.local"
+  OBJECTSTORE_S3_PORT: "9000"
+  OBJECTSTORE_S3_BUCKET: "nextcloud"
+  OBJECTSTORE_S3_USEPATH_STYLE: "true"
