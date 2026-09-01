@@ -6,7 +6,7 @@ data:
   CACHE_URL: redis://redis.shopno-data.svc.cluster.local:6379/1
   CELERY_BROKER_URL: redis://redis.shopno-data.svc.cluster.local:6379/2
   CELERY_RESULT_BACKEND: redis://redis.shopno-data.svc.cluster.local:6379/3
-  DEFAULT_FROM_EMAIL: KoboToolbox <no-reply@shopnoltd.dpdns.org>
+  DEFAULT_FROM_EMAIL: KoboToolbox <noreply@shopnoltd.dpdns.org>
   DJANGO_SETTINGS_MODULE: kobo.settings.prod
   EMAIL_BACKEND: django.core.mail.backends.smtp.EmailBackend
   EMAIL_HOST: smtp-relay.brevo.com
@@ -35,7 +35,7 @@ data:
   REDIS_HOST: redis.shopno-data.svc.cluster.local
   REDIS_PORT: "6379"
   REDIS_URL: redis://redis.shopno-data.svc.cluster.local:6379/0
-  SERVER_EMAIL: no-reply@shopnoltd.dpdns.org
+  SERVER_EMAIL: noreply@shopnoltd.dpdns.org
   SESSION_COOKIE_DOMAIN: .shopnoltd.dpdns.org
   UWSGI_GROUP: root
   UWSGI_USER: root
