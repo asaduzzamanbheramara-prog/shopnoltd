@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - feature/remote-device-agent
     paths:
       - 'platform/remote-device/gateway/**'
       - 'k8s/services/remote-device/deployment.yaml'
