@@ -56,12 +56,15 @@ routers:
    safer version of this: tenant_owner submits a plugin manifest (JSON
    config only, no arbitrary code) that a fixed, audited plugin loader reads
    -- the `plugins` key in tenant settings above is the seed of that.
-3. **Database editing UI** -- direct database-editing endpoints (arbitrary
-   table/row access) are also intentionally not built the same way for the
-   same reason; expose specific, validated fields per resource (as
-   `customers`/`tenant_settings` do) rather than a generic DB editor.
-4. **Frontend** -- `admin-portal`/`web-portal` don't yet call any of this;
-   the API is ready to build a UI against.
+3. **Database editing UI** -- the current web Admin Dashboard now provides
+   authorized table/row browsing and CRUD through the payment-service admin
+   table API. Access remains protected by the platform-admin route and
+   backend authorization; production use should retain audit logging and
+   explicit table/field allowlists for especially sensitive tables.
+4. **Reports and visualization** -- the Admin Dashboard now includes report
+   views and a Three.js service-topology visualization. Future report
+   publishing/export formats can be added without exposing arbitrary server
+   filesystem writes.
 5. **Domain registration workflow** -- "domain registers" (buying/pointing a
    custom domain per tenant) needs a registrar API integration
    (Cloudflare Registrar, Namecheap, etc.) plus DNS automation against the
