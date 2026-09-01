@@ -1,0 +1,207 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: remote-device-ui
+  namespace: shopno-tools
+data:
+  index.html: |
+    <!doctype html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      <title>Shopnoltd Remote Devices</title>
+      <style>
+        body {
+          margin:0;
+          font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+          background:#f5f7fa;
+          color:#172033;
+        }
+        header {
+          padding:24px 32px;
+          background:#111827;
+          color:white;
+        }
+        main {
+          max-width:1100px;
+          margin:30px auto;
+          padding:0 20px;
+        }
+        .toolbar {
+          display:flex;
+          gap:10px;
+          margin-bottom:20px;
+        }
+        input,select,button {
+          padding:11px 13px;
+          border:1px solid #ccd3df;
+          border-radius:8px;
+          font-size:14px;
+        }
+        button {
+          cursor:pointer;
+          background:#111827;
+          color:white;
+          border:0;
+        }
+        .grid {
+          display:grid;
+          grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+          gap:18px;
+        }
+        .card {
+          background:white;
+          border-radius:12px;
+          padding:20px;
+          box-shadow:0 3px 15px rgba(0,0,0,.08);
+        }
+        .status {
+          display:inline-block;
+          padding:4px 9px;
+          border-radius:20px;
+          background:#e5e7eb;
+          font-size:12px;
+        }
+        .online { background:#dcfce7; }
+        .pending { background:#fef3c7; }
+        .offline { background:#fee2e2; }
+        .danger {
+          background:#b91c1c;
+          margin-left:6px;
+        }
+        .token {
+          margin-top:12px;
+          padding:10px;
+          background:#f3f4f6;
+          font-family:monospace;
+          font-size:11px;
+          word-break:break-all;
+        }
+      </style>
+    </head>
+    <body>
+    
+    <header>
+      <h1>Shopnoltd Remote Devices</h1>
+      <div>Add a device, enroll its agent, then connect from any browser.</div>
+    </header>
+    
+    <main>
+      <div class="toolbar">
+        <input id="name" placeholder="Device name">
+        <select id="platform">
+          <option value="windows">Windows</option>
+          <option value="linux">Linux</option>
+          <option value="macos">macOS</option>
+          <option value="android">Android</option>
+          <option value="other">Other</option>
+        </select>
+        <button onclick="addDevice()">Add device</button>
+      </div>
+    
+      <div id="devices" class="grid"></div>
+    </main>
+    
+    <script>
+    async function loadDevices() {
+      const r = await fetch("/api/devices");
+      const devices = await r.json();
+    
+      const root = document.getElementById("devices");
+      root.innerHTML = "";
+    
+      for (const d of devices) {
+        const card = document.createElement("div");
+        card.className = "card";
+    
+        card.innerHTML = `
+          <h2>${escapeHtml(d.name)}</h2>
+          <p>${escapeHtml(d.platform)}</p>
+          <span class="status ${escapeHtml(d.status)}">${escapeHtml(d.status)}</span>
+          <p><small>ID: ${escapeHtml(d.id)}</small></p>
+    
+          ${
+            d.status === "pending"
+            ? `<div class="token">
+                 Enrollment token:<br>
+                 ${escapeHtml(d.enrollment_token || "")}
+               </div>
+               <p><small>Install/enroll the Shopnoltd remote agent using this token.</small></p>`
+            : ""
+          }
+    
+          ${
+            d.status === "online"
+            ? `<button onclick="connectDevice('${encodeURIComponent(d.id)}')">
+                 Connect
+               </button>`
+            : ""
+          }
+    
+          <button class="danger"
+                  onclick="deleteDevice('${encodeURIComponent(d.id)}')">
+            Delete
+          </button>
+        `;
+    
+        root.appendChild(card);
+      }
+    }
+    
+    async function addDevice() {
+      const name = document.getElementById("name").value.trim();
+      const platform = document.getElementById("platform").value;
+    
+      if (!name) {
+        alert("Enter a device name");
+        return;
+      }
+    
+      await fetch("/api/devices", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+          name,
+          platform,
+          owner_id:"local-admin"
+        })
+      });
+    
+      document.getElementById("name").value = "";
+      loadDevices();
+    }
+    
+    async function deleteDevice(id) {
+      if (!confirm("Delete this device?")) return;
+    
+      await fetch("/api/devices/" + id, {
+        method:"DELETE"
+      });
+    
+      loadDevices();
+    }
+    
+    function connectDevice(id) {
+      window.open(
+        "/connect/" + id,
+        "_blank",
+        "noopener"
+      );
+    }
+    
+    function escapeHtml(v) {
+      return String(v)
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+    }
+    
+    loadDevices();
+    setInterval(loadDevices, 10000);
+    </script>
+    
+    </body>
+    </html>

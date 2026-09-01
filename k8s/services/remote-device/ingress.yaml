@@ -1,0 +1,31 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: remote-device-gateway
+  namespace: shopno-tools
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - remote.shopnoltd.dpdns.org
+      secretName: shopno-wildcard-tls
+  rules:
+    - host: remote.shopnoltd.dpdns.org
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: remote-device-gateway
+                port:
+                  name: http
+          - path: /agent
+            pathType: Prefix
+            backend:
+              service:
+                name: remote-device-gateway
+                port:
+                  name: agent
