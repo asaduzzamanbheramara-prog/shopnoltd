@@ -43,6 +43,8 @@ spec:
                 name: kobotoolbox-config
             - secretRef:
                 name: kobotoolbox-secret
+            - secretRef:
+                name: kobotoolbox-smtp
           env:
             - name: POD_NAME
               valueFrom: { fieldRef: { fieldPath: metadata.name } }
