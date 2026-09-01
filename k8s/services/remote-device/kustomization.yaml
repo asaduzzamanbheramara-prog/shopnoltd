@@ -1,0 +1,28 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - namespace.yaml
+
+  # MeshCentral remote-control engine
+  - meshcentral-pvc.yaml
+  - meshcentral-deployment.yaml
+  - meshcentral-service.yaml
+  - meshcentral-ingress.yaml
+
+  # Shopnoltd device registry
+  - registry-pvc.yaml
+  - registry-configmap.yaml
+  - registry-deployment.yaml
+  - registry-service.yaml
+
+  # Remote gateway
+  - deployment.yaml
+  - service.yaml
+  - ingress.yaml
+
+  # Browser device management UI
+  - ui-configmap.yaml
+  - ui-deployment.yaml
+  - ui-service.yaml
+  - ui-ingress.yaml

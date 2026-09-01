@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: remote-device-ui
+  namespace: shopno-tools
+spec:
+  selector:
+    app: remote-device-ui
+  ports:
+    - port: 80
+      targetPort: 80

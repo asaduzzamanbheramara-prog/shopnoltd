@@ -1,0 +1,175 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: remote-device-registry-source
+  namespace: shopno-tools
+data:
+  app.py: |
+    from datetime import datetime, timezone
+    from pathlib import Path
+    from typing import Optional
+    import json
+    import os
+    import secrets
+    import threading
+    
+    from fastapi import FastAPI, HTTPException
+    from pydantic import BaseModel, Field
+    
+    
+    app = FastAPI(title="Shopnoltd Remote Device Registry")
+    
+    DATA_DIR = Path(os.getenv("DATA_DIR", "/data"))
+    DATA_FILE = DATA_DIR / "devices.json"
+    LOCK = threading.Lock()
+    
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    
+    
+    class DeviceCreate(BaseModel):
+        name: str = Field(min_length=1, max_length=120)
+        platform: str = Field(default="unknown", max_length=32)
+        owner_id: str = Field(default="local-admin", max_length=200)
+    
+    
+    class Device(BaseModel):
+        id: str
+        name: str
+        platform: str
+        owner_id: str
+        status: str
+        enrollment_token: Optional[str] = None
+        agent_id: Optional[str] = None
+        last_seen: Optional[str] = None
+        created_at: str
+    
+    
+    class DevicePublic(BaseModel):
+        id: str
+        name: str
+        platform: str
+        owner_id: str
+        status: str
+        agent_id: Optional[str] = None
+        last_seen: Optional[str] = None
+        created_at: str
+    
+    
+    class DeviceCreated(DevicePublic):
+        enrollment_token: str
+    
+    
+    def load():
+        if not DATA_FILE.exists():
+            return []
+    
+        try:
+            value = json.loads(DATA_FILE.read_text())
+            return value if isinstance(value, list) else []
+        except Exception:
+            return []
+    
+    
+    def save(items):
+        tmp = DATA_FILE.with_suffix(".tmp")
+        tmp.write_text(json.dumps(items, indent=2))
+        tmp.replace(DATA_FILE)
+    
+    
+    def public_device(device: dict) -> DevicePublic:
+        return DevicePublic(
+            id=device["id"],
+            name=device["name"],
+            platform=device["platform"],
+            owner_id=device["owner_id"],
+            status=device["status"],
+            agent_id=device.get("agent_id"),
+            last_seen=device.get("last_seen"),
+            created_at=device["created_at"],
+        )
+    
+    
+    @app.get("/health")
+    def health():
+        return {
+            "status": "ok",
+            "service": "remote-device-registry",
+        }
+    
+    
+    @app.get("/api/devices", response_model=list[DevicePublic])
+    def devices():
+        return [public_device(device) for device in load()]
+    
+    
+    @app.post("/api/devices", response_model=DeviceCreated)
+    def create_device(req: DeviceCreate):
+        with LOCK:
+            items = load()
+    
+            now = datetime.now(timezone.utc).isoformat()
+            device_id = secrets.token_urlsafe(18)
+            token = secrets.token_urlsafe(32)
+    
+            device = Device(
+                id=device_id,
+                name=req.name,
+                platform=req.platform,
+                owner_id=req.owner_id,
+                status="pending",
+                enrollment_token=token,
+                created_at=now,
+            )
+    
+            items.append(device.model_dump())
+            save(items)
+    
+            public = public_device(device.model_dump())
+    
+            return DeviceCreated(
+                **public.model_dump(),
+                enrollment_token=token,
+            )
+    
+    
+    @app.post("/api/devices/{device_id}/heartbeat")
+    def heartbeat(device_id: str):
+        with LOCK:
+            items = load()
+    
+            for device in items:
+                if device["id"] == device_id:
+                    device["status"] = "online"
+                    device["last_seen"] = datetime.now(timezone.utc).isoformat()
+                    save(items)
+                    return {"ok": True}
+    
+        raise HTTPException(status_code=404, detail="device not found")
+    
+    
+    @app.post("/api/devices/{device_id}/offline")
+    def offline(device_id: str):
+        with LOCK:
+            items = load()
+    
+            for device in items:
+                if device["id"] == device_id:
+                    device["status"] = "offline"
+                    save(items)
+                    return {"ok": True}
+    
+        raise HTTPException(status_code=404, detail="device not found")
+    
+    
+    @app.delete("/api/devices/{device_id}")
+    def delete_device(device_id: str):
+        with LOCK:
+            items = load()
+            new_items = [x for x in items if x["id"] != device_id]
+    
+            if len(new_items) == len(items):
+                raise HTTPException(status_code=404, detail="device not found")
+    
+            save(new_items)
+    
+        return {"ok": True}
