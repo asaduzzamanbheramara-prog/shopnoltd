@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: meshcentral
+  namespace: shopno-tools
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: meshcentral
+  template:
+    metadata:
+      labels:
+        app: meshcentral
+    spec:
+      containers:
+        - name: meshcentral
+          image: ghcr.io/ylianst/meshcentral:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: https
+              containerPort: 443
+          env:
+            - name: HOSTNAME
+              value: remote-engine.shopnoltd.dpdns.org
+          volumeMounts:
+            - name: data
+              mountPath: /opt/meshcentral/meshcentral-data
+            - name: files
+              mountPath: /opt/meshcentral/meshcentral-files
+          resources:
+            requests:
+              cpu: 50m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 768Mi
+          readinessProbe:
+            tcpSocket:
+              port: https
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: https
+            initialDelaySeconds: 60
+            periodSeconds: 20
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: meshcentral-data
+        - name: files
+          emptyDir: {}

@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: remote-device-registry
+  namespace: shopno-tools
+spec:
+  selector:
+    app: remote-device-registry
+  ports:
+    - port: 8080
+      targetPort: 8080
