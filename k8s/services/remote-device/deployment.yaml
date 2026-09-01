@@ -22,7 +22,7 @@ spec:
 
       containers:
         - name: remote-device-gateway
-          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-remote-device-gateway:825c4f0669cf9f65dedbf63770dc1dab6db06e73
+          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-remote-device-gateway:5df58f3f8f41086d9b77d4a03089020c7366cbef
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
