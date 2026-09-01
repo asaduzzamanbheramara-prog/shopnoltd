@@ -10,7 +10,7 @@ COPY app.py .
 RUN useradd -r -u 10002 shopno \
  && chown -R shopno:shopno /app
 
-USER shopno
+USER 10002:10002
 
 EXPOSE 8080
 
