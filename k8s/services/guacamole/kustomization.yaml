@@ -10,7 +10,7 @@ resources:
 - deployment-guacd.yaml
 - deployment-guacamole.yaml
 - service.yaml
-- ingress.yaml
+
 - networkpolicy.yaml
 
 labels:
