@@ -15,7 +15,7 @@ resources:
   - registry-deployment.yaml
   - registry-service.yaml
 
-  # Remote gateway
+  # Shopnoltd remote gateway
   - deployment.yaml
   - service.yaml
   - ingress.yaml
