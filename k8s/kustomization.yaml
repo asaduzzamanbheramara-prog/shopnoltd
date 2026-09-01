@@ -58,3 +58,4 @@ resources:
 - services/mongodb
 - services/session-manager
 - ingress/cloudflared
+- services/mail

@@ -1,0 +1,118 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: roundcube
+  namespace: shopno-mail
+  labels:
+    app: roundcube
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: roundcube
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+  progressDeadlineSeconds: 600
+  template:
+    metadata:
+      labels:
+        app: roundcube
+    spec:
+      containers:
+        - name: roundcube
+          image: roundcube/roundcubemail:latest
+          imagePullPolicy: IfNotPresent
+
+          env:
+            - name: ROUNDCUBEMAIL_DEFAULT_HOST
+              value: ssl://mailserver.shopno-mailbox.svc.cluster.local
+
+            - name: ROUNDCUBEMAIL_DEFAULT_PORT
+              value: "993"
+
+            - name: ROUNDCUBEMAIL_SMTP_SERVER
+              value: tls://mailserver.shopno-mailbox.svc.cluster.local
+
+            - name: ROUNDCUBEMAIL_SMTP_PORT
+              value: "587"
+
+            - name: ROUNDCUBEMAIL_DB_TYPE
+              value: sqlite
+
+            - name: ROUNDCUBEMAIL_DES_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: roundcube-secret
+                  key: des-key
+
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+              scheme: HTTP
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 6
+
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+              scheme: HTTP
+            initialDelaySeconds: 60
+            periodSeconds: 20
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 6
+
+          volumeMounts:
+            - name: roundcube-main-config
+              mountPath: /var/www/html/config/config.inc.php
+              subPath: config.inc.php
+              readOnly: true
+
+            - name: cloudflare-origin-rsa-ca
+              mountPath: /etc/roundcube/ca
+              readOnly: true
+
+            - name: roundcube-data
+              mountPath: /var/roundcube/db
+
+      volumes:
+        - name: roundcube-main-config
+          configMap:
+            name: roundcube-main-config
+            defaultMode: 420
+            items:
+              - key: config.inc.php
+                path: config.inc.php
+
+        - name: cloudflare-origin-rsa-ca
+          configMap:
+            name: cloudflare-origin-rsa-ca
+            defaultMode: 420
+            items:
+              - key: cloudflare-origin-rsa-root.pem
+                path: cloudflare-origin-rsa-root.pem
+
+        - name: roundcube-data
+          persistentVolumeClaim:
+            claimName: roundcube-data
