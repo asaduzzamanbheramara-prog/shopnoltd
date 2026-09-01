@@ -1,0 +1,18 @@
+# NOTE: this PVC likely already exists live (the deployment already mounts
+# claimName: nextcloud-data). Applying this manifest should be a no-op if the
+# spec matches. Do NOT change accessModes/storageClassName from whatever the
+# live PVC already has — those fields are immutable and mismatches can force
+# a delete+recreate that loses data (per your ArgoCD self-heal PVC note).
+# Verify first:  kubectl -n shopno-apps get pvc nextcloud-data -o yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nextcloud-data
+  namespace: shopno-apps
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: standard
+  resources:
+    requests:
+      storage: 10Gi

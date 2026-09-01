@@ -32,6 +32,7 @@ resources:
 - services/freedomain-service
 - services/mobile-api
 - services/storage-service
+- services/nextcloud
 - services/notification-service
 - services/report-service
 - services/analytics-service
