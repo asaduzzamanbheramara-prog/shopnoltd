@@ -30,8 +30,8 @@ export const SERVICES = [
   {
     icon: '☁️',
     name: 'Drive',
-    description: 'Cloud file storage and synchronization powered by Nextcloud.',
-    url: 'https://nextcloud.shopnoltd.dpdns.org',
+    description: 'Cloud file storage and synchronization.',
+    url: 'https://storage.shopnoltd.dpdns.org',
     category: 'Productivity',
   },
   {
