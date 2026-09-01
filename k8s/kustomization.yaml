@@ -52,6 +52,7 @@ resources:
 - services/keycloak
 - services/gitea
 - services/code-server
+- services/remote-device
 - services/kobotoolbox
 - services/n8n
 - services/owncast
