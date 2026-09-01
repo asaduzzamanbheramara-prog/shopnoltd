@@ -1,4 +1,5 @@
-import { SERVICES, ADMIN_SERVICES } from '../data/serviceCatalog'
+import { SERVICES, CONNECTED_PLATFORMS, ADMIN_SERVICES } from '../data/serviceCatalog'
+import { isPlatformAdmin } from '../lib/jwt'
 
 function ServiceCard({ service }) {
   const isInternal = service.url.startsWith('/')
@@ -48,6 +49,8 @@ function ServiceCard({ service }) {
 }
 
 export default function Services() {
+  const isAdmin = !!localStorage.getItem('shopno_token') && isPlatformAdmin()
+
   return (
     <main
       style={{
@@ -89,10 +92,11 @@ export default function Services() {
       </div>
 
       <section style={{ marginTop: 56 }}>
-        <h2>Administration</h2>
+        <h2>Connected Platforms</h2>
 
-        <p style={{ color: '#64748b' }}>
-          Infrastructure services for authorized administrators.
+        <p style={{ color: '#64748b', fontSize: 18 }}>
+          One place to access your Shopnoltd services, websites, profiles and
+          supported connected platforms.
         </p>
 
         <div
@@ -104,7 +108,7 @@ export default function Services() {
             marginTop: 18,
           }}
         >
-          {ADMIN_SERVICES.map((service) => (
+          {CONNECTED_PLATFORMS.map((service) => (
             <ServiceCard
               key={service.name}
               service={service}
@@ -112,6 +116,33 @@ export default function Services() {
           ))}
         </div>
       </section>
+
+      {isAdmin && (
+        <section style={{ marginTop: 56 }}>
+          <h2>Administration</h2>
+
+          <p style={{ color: '#64748b' }}>
+            Infrastructure services for authorized administrators.
+          </p>
+
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns:
+                'repeat(auto-fit, minmax(240px, 1fr))',
+              gap: 18,
+              marginTop: 18,
+            }}
+          >
+            {ADMIN_SERVICES.map((service) => (
+              <ServiceCard
+                key={service.name}
+                service={service}
+              />
+            ))}
+          </div>
+        </section>
+      )}
     </main>
   )
 }

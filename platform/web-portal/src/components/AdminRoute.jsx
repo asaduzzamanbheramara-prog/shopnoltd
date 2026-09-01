@@ -1,5 +1,5 @@
 import { Navigate } from 'react-router-dom'
-import { getRoles } from '../lib/jwt'
+import { isPlatformAdmin } from '../lib/jwt'
 
 export default function AdminRoute({ children }) {
   const token = localStorage.getItem('shopno_token')
@@ -9,10 +9,10 @@ export default function AdminRoute({ children }) {
     return <Navigate to="/login" replace />
   }
 
-  const roles = getRoles()
-
   // Authenticated but not a platform administrator.
-  if (!roles.includes('platform_admin')) {
+  // Uses the same check as the nav bar (accepts 'platform_admin' OR 'admin')
+  // so anyone who sees the Admin link can actually open it.
+  if (!isPlatformAdmin()) {
     return <Navigate to="/dashboard" replace />
   }
 

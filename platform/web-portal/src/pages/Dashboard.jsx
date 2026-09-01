@@ -1,5 +1,33 @@
 import React, { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { API_URL } from '../config'
+import { SERVICES, ADMIN_SERVICES } from '../data/serviceCatalog'
+import { isPlatformAdmin } from '../lib/jwt'
+
+function QuickLink({ service }) {
+  const isInternal = service.url.startsWith('/')
+  return (
+    <a
+      href={service.url}
+      target={isInternal ? undefined : '_blank'}
+      rel={isInternal ? undefined : 'noopener noreferrer'}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+        textDecoration: 'none',
+        color: 'inherit',
+        padding: '14px 16px',
+        background: 'white',
+        border: '1px solid #e2e8f0',
+        borderRadius: 10,
+      }}
+    >
+      <span style={{ fontSize: 22 }}>{service.icon}</span>
+      <span style={{ fontWeight: 600, color: '#0f172a' }}>{service.name}</span>
+    </a>
+  )
+}
 
 export default function Dashboard() {
   const [me, setMe] = useState(null)
@@ -55,18 +83,70 @@ export default function Dashboard() {
     )
   }
 
+  const isAdmin = isPlatformAdmin()
+
   return (
     <div
       style={{
-        maxWidth: 960,
+        maxWidth: 1180,
         margin: '0 auto',
-        padding: 32,
+        padding: 'clamp(28px, 6vw, 48px) clamp(14px, 4vw, 24px) 80px',
         fontFamily: 'system-ui, sans-serif',
       }}
     >
       <h1>Welcome, {me.email || me.id}</h1>
-      <p>Tenant: {me.tenant_id || 'default'}</p>
-      <p>Roles: {(me.roles || []).join(', ')}</p>
+      <p style={{ color: '#64748b' }}>
+        Tenant: {me.tenant_id || 'default'} · Roles: {(me.roles || []).join(', ') || 'customer'}
+      </p>
+
+      {isAdmin && (
+        <Link
+          to="/admin"
+          style={{
+            display: 'inline-block',
+            marginTop: 12,
+            marginBottom: 8,
+            padding: '10px 16px',
+            borderRadius: 8,
+            background: '#0ea5e9',
+            color: 'white',
+            fontWeight: 600,
+            textDecoration: 'none',
+          }}
+        >
+          Open Admin Dashboard →
+        </Link>
+      )}
+
+      <section style={{ marginTop: 40 }}>
+        <h2>Your services</h2>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+          gap: 12,
+          marginTop: 14,
+        }}>
+          {SERVICES.map((service) => (
+            <QuickLink key={service.name} service={service} />
+          ))}
+        </div>
+      </section>
+
+      {isAdmin && (
+        <section style={{ marginTop: 40 }}>
+          <h2>Administration</h2>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+            gap: 12,
+            marginTop: 14,
+          }}>
+            {ADMIN_SERVICES.map((service) => (
+              <QuickLink key={service.name} service={service} />
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   )
 }
