@@ -1,63 +1,15 @@
-import { SERVICES, ADMIN_SERVICES } from '../data/serviceCatalog'
+import { SERVICES, CONNECTED_PLATFORMS, ADMIN_SERVICES } from '../data/serviceCatalog'
 import DomainSearch from '../components/DomainSearch'
-
-const CONNECTED_PLATFORMS = [
-  {
-    icon: '🌐',
-    name: 'Web & Websites',
-    description: 'Browse, organize and access websites, web apps and connected online services.',
-    url: '/dashboard',
-  },
-  {
-    icon: '👤',
-    name: 'Profiles',
-    description: 'Manage your personal, creator, developer and business profiles from one workspace.',
-    url: '/dashboard',
-  },
-  {
-    icon: '📧',
-    name: 'Mail',
-    description: 'Access Shopnoltd Mail and manage connected email workflows and notifications.',
-    url: 'https://mail.shopnoltd.dpdns.org',
-  },
-  {
-    icon: '💬',
-    name: 'Messaging',
-    description: 'Access conversations, groups, communities and supported messaging connections.',
-    url: 'https://chat.shopnoltd.dpdns.org',
-  },
-  {
-    icon: '📞',
-    name: 'Calls & Meetings',
-    description: 'Access voice, video calls and online meetings through your workspace.',
-    url: 'https://meet.shopnoltd.dpdns.org',
-  },
-  {
-    icon: '👥',
-    name: 'Social',
-    description: 'Organize social profiles, publishing workflows and supported social connections.',
-    url: '/dashboard',
-  },
-  {
-    icon: '📺',
-    name: 'Video',
-    description: 'Manage video channels, publishing, streaming and creator workflows.',
-    url: 'https://live.shopnoltd.dpdns.org',
-  },
-  {
-    icon: '⚡',
-    name: 'Automation Hub',
-    description: 'Automate workflows, notifications and actions between supported services.',
-    url: 'https://n8n.shopnoltd.dpdns.org',
-  },
-]
+import { isPlatformAdmin } from '../lib/jwt'
 
 function ServiceCard({ service }) {
+  const isInternal = service.url.startsWith('/')
+
   return (
     <a
       href={service.url}
-      target="_blank"
-      rel="noopener noreferrer"
+      target={isInternal ? undefined : '_blank'}
+      rel={isInternal ? undefined : 'noopener noreferrer'}
       style={{
         display: 'block',
         textDecoration: 'none',
@@ -98,6 +50,8 @@ function ServiceCard({ service }) {
 }
 
 export default function Home() {
+  const isAdmin = !!localStorage.getItem('shopno_token') && isPlatformAdmin()
+
   return (
     <main style={{
       maxWidth: 1180,
@@ -206,27 +160,29 @@ export default function Home() {
         </div>
       </section>
 
-      <section style={{ marginTop: 56 }}>
-        <h2>Administration</h2>
+      {isAdmin && (
+        <section style={{ marginTop: 56 }}>
+          <h2>Administration</h2>
 
-        <p style={{ color: '#64748b' }}>
-          Infrastructure services for authorized administrators.
-        </p>
+          <p style={{ color: '#64748b' }}>
+            Infrastructure services for authorized administrators.
+          </p>
 
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-          gap: 18,
-          marginTop: 18,
-        }}>
-          {ADMIN_SERVICES.map((service) => (
-            <ServiceCard
-              key={service.name}
-              service={service}
-            />
-          ))}
-        </div>
-      </section>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+            gap: 18,
+            marginTop: 18,
+          }}>
+            {ADMIN_SERVICES.map((service) => (
+              <ServiceCard
+                key={service.name}
+                service={service}
+              />
+            ))}
+          </div>
+        </section>
+      )}
     </main>
   )
 }
