@@ -289,7 +289,26 @@ def api_healthz():
 
 
 @app.get("/api/connect/{device_id}")
-def connect(device_id: str):
+async def connect(device_id: str, request: Request):
+    await verify_admin(request)
+
+    response = await registry_control_request(
+        "GET",
+        "/api/devices",
+    )
+
+    devices = response.json()
+
+    if not any(
+        isinstance(device, dict)
+        and device.get("id") == device_id
+        for device in devices
+    ):
+        raise HTTPException(
+            status_code=404,
+            detail="device not found",
+        )
+
     return {
         "device_id": device_id,
         "engine": "meshcentral",
@@ -298,7 +317,26 @@ def connect(device_id: str):
 
 
 @app.get("/connect/{device_id}")
-def browser_connect(device_id: str):
+async def browser_connect(device_id: str, request: Request):
+    await verify_admin(request)
+
+    response = await registry_control_request(
+        "GET",
+        "/api/devices",
+    )
+
+    devices = response.json()
+
+    if not any(
+        isinstance(device, dict)
+        and device.get("id") == device_id
+        for device in devices
+    ):
+        raise HTTPException(
+            status_code=404,
+            detail="device not found",
+        )
+
     return RedirectResponse(
         url=f"{MESH_URL}/",
         status_code=307,
