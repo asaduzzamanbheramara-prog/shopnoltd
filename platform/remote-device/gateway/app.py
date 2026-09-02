@@ -306,6 +306,73 @@ def browser_connect(device_id: str):
 
 
 # ------------------------------------------------------------
+# Device management
+# ------------------------------------------------------------
+
+@app.get("/api/devices")
+async def list_devices():
+    return await registry_control_request(
+        "GET",
+        "/api/devices",
+    )
+
+
+@app.post("/api/devices")
+async def create_device(
+    request: Request,
+):
+    claims = await verify_admin(request)
+
+    body = await request.body()
+
+    try:
+        payload = json.loads(body.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise HTTPException(
+            status_code=400,
+            detail="invalid JSON body",
+        ) from exc
+
+    if not isinstance(payload, dict):
+        raise HTTPException(
+            status_code=400,
+            detail="JSON object required",
+        )
+
+    payload["owner_id"] = (
+        claims.get("preferred_username")
+        or claims.get("email")
+        or claims.get("sub")
+        or "unknown-admin"
+    )
+
+    body = json.dumps(
+        payload,
+        separators=(",", ":"),
+        sort_keys=True,
+    ).encode()
+
+    return await registry_control_request(
+        "POST",
+        "/api/devices",
+        body,
+    )
+
+
+@app.delete("/api/devices/{device_id}")
+async def delete_device(
+    device_id: str,
+    request: Request,
+):
+    await verify_admin(request)
+
+    return await registry_control_request(
+        "DELETE",
+        f"/api/devices/{device_id}",
+    )
+
+
+# ------------------------------------------------------------
 # Executor API
 # ------------------------------------------------------------
 
