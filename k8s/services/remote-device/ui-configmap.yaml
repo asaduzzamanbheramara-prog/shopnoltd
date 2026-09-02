@@ -81,12 +81,12 @@ data:
       </style>
     </head>
     <body>
-    
+
     <header>
       <h1>Shopnoltd Remote Devices</h1>
       <div>Add a device, enroll its agent, then connect from any browser.</div>
     </header>
-    
+
     <main>
       <div class="toolbar">
         <input id="name" placeholder="Device name">
@@ -99,28 +99,28 @@ data:
         </select>
         <button onclick="addDevice()">Add device</button>
       </div>
-    
+
       <div id="devices" class="grid"></div>
     </main>
-    
+
     <script>
     async function loadDevices() {
       const r = await fetch("/api/devices");
       const devices = await r.json();
-    
+
       const root = document.getElementById("devices");
       root.innerHTML = "";
-    
+
       for (const d of devices) {
         const card = document.createElement("div");
         card.className = "card";
-    
+
         card.innerHTML = `
           <h2>${escapeHtml(d.name)}</h2>
           <p>${escapeHtml(d.platform)}</p>
           <span class="status ${escapeHtml(d.status)}">${escapeHtml(d.status)}</span>
           <p><small>ID: ${escapeHtml(d.id)}</small></p>
-    
+
           ${
             d.status === "pending"
             ? `<div class="token">
@@ -130,7 +130,7 @@ data:
                <p><small>Install/enroll the Shopnoltd remote agent using this token.</small></p>`
             : ""
           }
-    
+
           ${
             d.status === "online"
             ? `<button onclick="connectDevice('${encodeURIComponent(d.id)}')">
@@ -138,26 +138,26 @@ data:
                </button>`
             : ""
           }
-    
+
           <button class="danger"
                   onclick="deleteDevice('${encodeURIComponent(d.id)}')">
             Delete
           </button>
         `;
-    
+
         root.appendChild(card);
       }
     }
-    
+
     async function addDevice() {
       const name = document.getElementById("name").value.trim();
       const platform = document.getElementById("platform").value;
-    
+
       if (!name) {
         alert("Enter a device name");
         return;
       }
-    
+
       await fetch("/api/devices", {
         method:"POST",
         headers:{"Content-Type":"application/json"},
@@ -167,21 +167,21 @@ data:
           owner_id:"local-admin"
         })
       });
-    
+
       document.getElementById("name").value = "";
       loadDevices();
     }
-    
+
     async function deleteDevice(id) {
       if (!confirm("Delete this device?")) return;
-    
+
       await fetch("/api/devices/" + id, {
         method:"DELETE"
       });
-    
+
       loadDevices();
     }
-    
+
     function connectDevice(id) {
       window.open(
         "/connect/" + id,
@@ -189,7 +189,7 @@ data:
         "noopener"
       );
     }
-    
+
     function escapeHtml(v) {
       return String(v)
         .replaceAll("&","&amp;")
@@ -198,10 +198,10 @@ data:
         .replaceAll('"',"&quot;")
         .replaceAll("'","&#039;");
     }
-    
+
     loadDevices();
     setInterval(loadDevices, 10000);
     </script>
-    
+
     </body>
     </html>
