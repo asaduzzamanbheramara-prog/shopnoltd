@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: meshcentral-config-init
+  namespace: shopno-tools
+data:
+  patch-config.js: |
+    const fs = require("fs");
+
+    const file = "/opt/meshcentral/meshcentral-data/config.json";
+
+    const config = JSON.parse(fs.readFileSync(file, "utf8"));
+
+    if (!config.settings) {
+      config.settings = {};
+    }
+
+    if (!config.domains) {
+      config.domains = {};
+    }
+
+    if (!config.domains[""]) {
+      config.domains[""] = {};
+    }
+
+    config.settings.cert = "remote.shopnoltd.dpdns.org";
+    config.settings.tlsOffload = false;
+
+    config.domains[""].certUrl =
+      "https://remote.shopnoltd.dpdns.org";
+
+    config.domains[""].allowedOrigin =
+      "remote.shopnoltd.dpdns.org";
+
+    fs.writeFileSync(
+      file,
+      JSON.stringify(config, null, 2) + "\n",
+      { mode: 0o644 }
+    );
+
+    console.log("MeshCentral origin configuration normalized.");

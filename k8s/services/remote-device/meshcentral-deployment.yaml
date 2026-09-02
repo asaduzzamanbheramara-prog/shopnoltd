@@ -13,6 +13,20 @@ spec:
       labels:
         app: meshcentral
     spec:
+      initContainers:
+        - name: normalize-config
+          image: ghcr.io/ylianst/meshcentral:latest
+          imagePullPolicy: IfNotPresent
+          command:
+            - node
+            - /config-init/patch-config.js
+          volumeMounts:
+            - name: data
+              mountPath: /opt/meshcentral/meshcentral-data
+            - name: config-init
+              mountPath: /config-init
+              readOnly: true
+
       containers:
         - name: meshcentral
           image: ghcr.io/ylianst/meshcentral:latest
@@ -22,7 +36,7 @@ spec:
               containerPort: 443
           env:
             - name: HOSTNAME
-              value: remote-engine.shopnoltd.dpdns.org
+              value: remote.shopnoltd.dpdns.org
           volumeMounts:
             - name: data
               mountPath: /opt/meshcentral/meshcentral-data
@@ -51,3 +65,6 @@ spec:
             claimName: meshcentral-data
         - name: files
           emptyDir: {}
+        - name: config-init
+          configMap:
+            name: meshcentral-config-init
