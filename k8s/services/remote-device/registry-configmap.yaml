@@ -8,23 +8,36 @@ data:
     from datetime import datetime, timezone
     from pathlib import Path
     from typing import Optional
+    import base64
+    import hashlib
+    import hmac
     import json
     import os
     import secrets
     import threading
+    import time
+    import uuid
 
-    from fastapi import FastAPI, HTTPException
+    from fastapi import FastAPI, HTTPException, Request
     from pydantic import BaseModel, Field
 
 
     app = FastAPI(title="Shopnoltd Remote Device Registry")
 
+
     DATA_DIR = Path(os.getenv("DATA_DIR", "/data"))
     DATA_FILE = DATA_DIR / "devices.json"
+    JOB_FILE = DATA_DIR / "executor-jobs.json"
+    NONCE_FILE = DATA_DIR / "executor-nonces.json"
+
     LOCK = threading.Lock()
 
     DATA_DIR.mkdir(parents=True, exist_ok=True)
 
+
+    # ------------------------------------------------------------
+    # Models
+    # ------------------------------------------------------------
 
     class DeviceCreate(BaseModel):
         name: str = Field(min_length=1, max_length=120)
@@ -40,6 +53,9 @@ data:
         status: str
         enrollment_token: Optional[str] = None
         agent_id: Optional[str] = None
+        executor_enabled: bool = False
+        executor_secret_hash: Optional[str] = None
+        executor_last_seen: Optional[str] = None
         last_seen: Optional[str] = None
         created_at: str
 
@@ -51,6 +67,8 @@ data:
         owner_id: str
         status: str
         agent_id: Optional[str] = None
+        executor_enabled: bool = False
+        executor_last_seen: Optional[str] = None
         last_seen: Optional[str] = None
         created_at: str
 
@@ -59,21 +77,83 @@ data:
         enrollment_token: str
 
 
-    def load():
-        if not DATA_FILE.exists():
-            return []
+    class ExecutorEnroll(BaseModel):
+        enrollment_token: str = Field(min_length=10, max_length=500)
+        hostname: str = Field(min_length=1, max_length=255)
+        platform: str = Field(default="unknown", max_length=32)
+        agent_version: str = Field(default="1.0", max_length=32)
+
+
+    class ExecutorHeartbeat(BaseModel):
+        agent_id: str
+        hostname: str = Field(min_length=1, max_length=255)
+        platform: str = Field(default="unknown", max_length=32)
+        version: str = Field(default="1.0", max_length=32)
+
+
+    class JobCreate(BaseModel):
+        device_id: str
+        operation: str = Field(min_length=1, max_length=100)
+        created_by: str | None = None
+
+
+    class JobResult(BaseModel):
+        ok: bool
+        operation: Optional[str] = None
+        duration_seconds: Optional[float] = None
+        result: Optional[dict] = None
+        error: Optional[str] = None
+
+
+    # ------------------------------------------------------------
+    # Storage helpers
+    # ------------------------------------------------------------
+
+    def read_json(path: Path, default):
+        if not path.exists():
+            return default
 
         try:
-            value = json.loads(DATA_FILE.read_text())
-            return value if isinstance(value, list) else []
+            value = json.loads(path.read_text())
+            return value
         except Exception:
-            return []
+            return default
 
 
-    def save(items):
-        tmp = DATA_FILE.with_suffix(".tmp")
-        tmp.write_text(json.dumps(items, indent=2))
-        tmp.replace(DATA_FILE)
+    def write_json(path: Path, value):
+        tmp = path.with_suffix(path.suffix + ".tmp")
+        tmp.write_text(
+            json.dumps(value, indent=2),
+            encoding="utf-8",
+        )
+        tmp.replace(path)
+
+
+    def load_devices():
+        value = read_json(DATA_FILE, [])
+        return value if isinstance(value, list) else []
+
+
+    def save_devices(items):
+        write_json(DATA_FILE, items)
+
+
+    def load_jobs():
+        value = read_json(JOB_FILE, [])
+        return value if isinstance(value, list) else []
+
+
+    def save_jobs(items):
+        write_json(JOB_FILE, items)
+
+
+    def load_nonces():
+        value = read_json(NONCE_FILE, {})
+        return value if isinstance(value, dict) else {}
+
+
+    def save_nonces(items):
+        write_json(NONCE_FILE, items)
 
 
     def public_device(device: dict) -> DevicePublic:
@@ -84,10 +164,16 @@ data:
             owner_id=device["owner_id"],
             status=device["status"],
             agent_id=device.get("agent_id"),
+            executor_enabled=bool(device.get("executor_enabled", False)),
+            executor_last_seen=device.get("executor_last_seen"),
             last_seen=device.get("last_seen"),
             created_at=device["created_at"],
         )
 
+
+    # ------------------------------------------------------------
+    # Health
+    # ------------------------------------------------------------
 
     @app.get("/health")
     def health():
@@ -97,15 +183,23 @@ data:
         }
 
 
+    # ------------------------------------------------------------
+    # Existing device management
+    # ------------------------------------------------------------
+
     @app.get("/api/devices", response_model=list[DevicePublic])
     def devices():
-        return [public_device(device) for device in load()]
+        with LOCK:
+            return [
+                public_device(device)
+                for device in load_devices()
+            ]
 
 
     @app.post("/api/devices", response_model=DeviceCreated)
     def create_device(req: DeviceCreate):
         with LOCK:
-            items = load()
+            items = load_devices()
 
             now = datetime.now(timezone.utc).isoformat()
             device_id = secrets.token_urlsafe(18)
@@ -122,7 +216,7 @@ data:
             )
 
             items.append(device.model_dump())
-            save(items)
+            save_devices(items)
 
             public = public_device(device.model_dump())
 
@@ -132,44 +226,569 @@ data:
             )
 
 
-    @app.post("/api/devices/{device_id}/heartbeat")
-    def heartbeat(device_id: str):
-        with LOCK:
-            items = load()
-
-            for device in items:
-                if device["id"] == device_id:
-                    device["status"] = "online"
-                    device["last_seen"] = datetime.now(timezone.utc).isoformat()
-                    save(items)
-                    return {"ok": True}
-
-        raise HTTPException(status_code=404, detail="device not found")
-
-
-    @app.post("/api/devices/{device_id}/offline")
-    def offline(device_id: str):
-        with LOCK:
-            items = load()
-
-            for device in items:
-                if device["id"] == device_id:
-                    device["status"] = "offline"
-                    save(items)
-                    return {"ok": True}
-
-        raise HTTPException(status_code=404, detail="device not found")
-
-
     @app.delete("/api/devices/{device_id}")
     def delete_device(device_id: str):
         with LOCK:
-            items = load()
-            new_items = [x for x in items if x["id"] != device_id]
+            items = load_devices()
+
+            new_items = [
+                x for x in items
+                if x["id"] != device_id
+            ]
 
             if len(new_items) == len(items):
-                raise HTTPException(status_code=404, detail="device not found")
+                raise HTTPException(
+                    status_code=404,
+                    detail="device not found",
+                )
 
-            save(new_items)
+            save_devices(new_items)
 
         return {"ok": True}
+
+
+    # ------------------------------------------------------------
+    # Secure executor enrollment
+    # ------------------------------------------------------------
+
+    @app.post("/api/devices/{device_id}/executor-enroll")
+    def executor_enroll(
+        device_id: str,
+        req: ExecutorEnroll,
+    ):
+        with LOCK:
+            devices = load_devices()
+
+            for device in devices:
+                if device["id"] != device_id:
+                    continue
+
+                token = device.get("enrollment_token")
+
+                if not token:
+                    raise HTTPException(
+                        status_code=409,
+                        detail="enrollment token unavailable",
+                    )
+
+                if not hmac.compare_digest(
+                    token,
+                    req.enrollment_token,
+                ):
+                    raise HTTPException(
+                        status_code=401,
+                        detail="invalid enrollment token",
+                    )
+
+                # Enrollment token is one-time.
+                device["enrollment_token"] = None
+
+                agent_id = "agent-" + uuid.uuid4().hex
+
+                raw_secret = secrets.token_bytes(32)
+                secret_b64 = base64.b64encode(
+                    raw_secret
+                ).decode()
+
+                secret_hash = hashlib.sha256(
+                    raw_secret
+                ).hexdigest()
+
+                # The executor secret is never stored in plaintext.
+                # The HMAC verification key is a separate SHA-256
+                # derived key so the registry can authenticate without
+                # retaining the bootstrap secret.
+                auth_key = hashlib.sha256(
+                    b"shopnoltd-executor-hmac-v1:" + raw_secret
+                ).digest()
+
+                device["agent_id"] = agent_id
+                device["executor_enabled"] = True
+                device["executor_secret_hash"] = secret_hash
+                device["executor_auth_secret_hash"] = auth_key.hex()
+                device["executor_last_seen"] = (
+                    datetime.now(timezone.utc).isoformat()
+                )
+                device["status"] = "online"
+                device["last_seen"] = (
+                    datetime.now(timezone.utc).isoformat()
+                )
+                device["platform"] = req.platform
+
+                save_devices(devices)
+
+                return {
+                    "ok": True,
+                    "device_id": device_id,
+                    "agent_id": agent_id,
+                    "secret": secret_b64,
+                    "gateway_version": "3.0",
+                }
+
+        raise HTTPException(
+            status_code=404,
+            detail="device not found",
+        )
+
+
+    # ------------------------------------------------------------
+    # Executor authentication
+    # ------------------------------------------------------------
+
+    def authenticate_executor(
+        device_id: str,
+        agent_id: str,
+        timestamp: str,
+        nonce: str,
+        signature: str,
+        method: str,
+        path: str,
+        body: bytes,
+    ):
+        try:
+            ts = int(timestamp)
+        except Exception:
+            raise HTTPException(
+                status_code=401,
+                detail="invalid timestamp",
+            )
+
+        # Five-minute replay window.
+        if abs(int(time.time()) - ts) > 300:
+            raise HTTPException(
+                status_code=401,
+                detail="timestamp outside allowed window",
+            )
+
+        if len(nonce) < 16 or len(nonce) > 128:
+            raise HTTPException(
+                status_code=401,
+                detail="invalid nonce",
+            )
+
+        with LOCK:
+            devices = load_devices()
+
+            device = next(
+                (
+                    d for d in devices
+                    if d["id"] == device_id
+                    and d.get("agent_id") == agent_id
+                    and d.get("executor_enabled") is True
+                ),
+                None,
+            )
+
+            if not device:
+                raise HTTPException(
+                    status_code=401,
+                    detail="executor not authorized",
+                )
+
+            secret_hash = device.get(
+                "executor_secret_hash"
+            )
+
+            if not secret_hash:
+                raise HTTPException(
+                    status_code=401,
+                    detail="executor secret unavailable",
+                )
+
+            # Reconstruct the HMAC key only through a
+            # verification strategy based on the stored hash.
+            #
+            # We cannot recover the original secret from SHA-256,
+            # so the registry stores a derived verification value
+            # and receives a signature generated from the secret.
+            #
+            # This endpoint therefore uses a second deterministic
+            # verification secret derived during enrollment.
+            #
+            # For compatibility, executor_auth_secret_hash is
+            # checked below.
+            auth_hash = device.get("executor_auth_secret_hash")
+
+            if not auth_hash:
+                raise HTTPException(
+                    status_code=401,
+                    detail="executor authentication not initialized",
+                )
+
+            key = bytes.fromhex(auth_hash)
+
+            message = "\n".join(
+                [
+                    timestamp,
+                    nonce,
+                    method.upper(),
+                    path,
+                    body.decode("utf-8"),
+                ]
+            ).encode()
+
+            expected = hmac.new(
+                key,
+                message,
+                hashlib.sha256,
+            ).hexdigest()
+
+            if not hmac.compare_digest(
+                expected,
+                signature,
+            ):
+                raise HTTPException(
+                    status_code=401,
+                    detail="invalid executor signature",
+                )
+
+            nonces = load_nonces()
+            now = int(time.time())
+
+            # Remove nonces older than ten minutes.
+            nonces = {
+                k: v
+                for k, v in nonces.items()
+                if now - int(v) <= 600
+            }
+
+            nonce_key = f"{device_id}:{nonce}"
+
+            if nonce_key in nonces:
+                raise HTTPException(
+                    status_code=401,
+                    detail="replayed nonce",
+                )
+
+            nonces[nonce_key] = now
+
+            # Hard bound replay cache.
+            if len(nonces) > 10000:
+                oldest = sorted(
+                    nonces.items(),
+                    key=lambda x: int(x[1]),
+                )[:2000]
+
+                for key_name, _ in oldest:
+                    nonces.pop(key_name, None)
+
+            save_nonces(nonces)
+
+            return device
+
+
+    # ------------------------------------------------------------
+    # Authenticated heartbeat
+    # ------------------------------------------------------------
+
+    @app.post("/api/executor/heartbeat/{device_id}")
+    async def executor_heartbeat(
+        device_id: str,
+        request: Request,
+        req: ExecutorHeartbeat,
+    ):
+        body = await request.body()
+
+        device = authenticate_executor(
+            device_id,
+            req.agent_id,
+            request.headers.get(
+                "X-Shopnoltd-Timestamp",
+                "",
+            ),
+            request.headers.get(
+                "X-Shopnoltd-Nonce",
+                "",
+            ),
+            request.headers.get(
+                "X-Shopnoltd-Signature",
+                "",
+            ),
+            request.method,
+            request.url.path,
+            body,
+        )
+
+        with LOCK:
+            devices = load_devices()
+
+            for item in devices:
+                if item["id"] == device["id"]:
+                    now = datetime.now(
+                        timezone.utc
+                    ).isoformat()
+
+                    item["status"] = "online"
+                    item["last_seen"] = now
+                    item["executor_last_seen"] = now
+                    item["platform"] = req.platform
+                    save_devices(devices)
+                    break
+
+        return {
+            "ok": True,
+            "device_id": device_id,
+        }
+
+
+    # ------------------------------------------------------------
+    # Authenticated job polling
+    # ------------------------------------------------------------
+
+    @app.get("/api/executor/jobs/{device_id}")
+    async def executor_jobs(
+        device_id: str,
+        request: Request,
+    ):
+        body = await request.body()
+
+        agent_id = request.headers.get(
+            "X-Shopnoltd-Agent",
+            "",
+        )
+
+        authenticate_executor(
+            device_id,
+            agent_id,
+            request.headers.get(
+                "X-Shopnoltd-Timestamp",
+                "",
+            ),
+            request.headers.get(
+                "X-Shopnoltd-Nonce",
+                "",
+            ),
+            request.headers.get(
+                "X-Shopnoltd-Signature",
+                "",
+            ),
+            request.method,
+            request.url.path,
+            body,
+        )
+
+        with LOCK:
+            jobs = load_jobs()
+
+            available = [
+                j for j in jobs
+                if j["device_id"] == device_id
+                and j["status"] == "queued"
+            ]
+
+            if not available:
+                return {"jobs": []}
+
+            job = available[0]
+            job["status"] = "running"
+            job["started_at"] = (
+                datetime.now(timezone.utc).isoformat()
+            )
+
+            save_jobs(jobs)
+
+            return {
+                "jobs": [
+                    {
+                        "id": job["id"],
+                        "device_id": job["device_id"],
+                        "operation": job["operation"],
+                        "created_at": job["created_at"],
+                    }
+                ]
+            }
+
+
+    # ------------------------------------------------------------
+    # Authenticated result submission
+    # ------------------------------------------------------------
+
+    @app.post("/api/executor/jobs/{job_id}/result")
+    async def executor_job_result(
+        job_id: str,
+        request: Request,
+        req: JobResult,
+    ):
+        body = await request.body()
+
+        device_id = request.headers.get(
+            "X-Shopnoltd-Device",
+            "",
+        )
+
+        agent_id = request.headers.get(
+            "X-Shopnoltd-Agent",
+            "",
+        )
+
+        authenticate_executor(
+            device_id,
+            agent_id,
+            request.headers.get(
+                "X-Shopnoltd-Timestamp",
+                "",
+            ),
+            request.headers.get(
+                "X-Shopnoltd-Nonce",
+                "",
+            ),
+            request.headers.get(
+                "X-Shopnoltd-Signature",
+                "",
+            ),
+            request.method,
+            request.url.path,
+            body,
+        )
+
+        with LOCK:
+            jobs = load_jobs()
+
+            for job in jobs:
+                if (
+                    job["id"] == job_id
+                    and job["device_id"] == device_id
+                    and job["status"] == "running"
+                ):
+                    job["status"] = "completed"
+                    job["completed_at"] = (
+                        datetime.now(
+                            timezone.utc
+                        ).isoformat()
+                    )
+                    job["result"] = req.model_dump()
+
+                    save_jobs(jobs)
+
+                    return {"ok": True}
+
+        raise HTTPException(
+            status_code=404,
+            detail="job not found or not running",
+        )
+
+
+    def authenticate_control(request: Request):
+        expected = os.getenv("REGISTRY_CONTROL_TOKEN", "")
+
+        if not expected:
+            raise HTTPException(
+                status_code=503,
+                detail="control authentication is not configured",
+            )
+
+        supplied = request.headers.get(
+            "X-Shopnoltd-Control-Token",
+            "",
+        )
+
+        if not supplied or not hmac.compare_digest(
+            supplied,
+            expected,
+        ):
+            raise HTTPException(
+                status_code=401,
+                detail="invalid control authentication",
+            )
+
+
+    # ------------------------------------------------------------
+    # Internal control-plane job creation
+    # ------------------------------------------------------------
+
+    @app.post("/api/control/jobs")
+    async def create_job(
+        req: JobCreate,
+        request: Request,
+    ):
+        authenticate_control(request)
+        allowed = {
+            "system.info",
+            "windows.info",
+            "wsl.info",
+            "k3s.info",
+            "k8s.pods",
+            "k8s.services",
+            "git.status",
+            "shopnoltd.health",
+            "disk.status",
+            "memory.status",
+            "remote-device.status",
+        }
+
+        if req.operation not in allowed:
+            raise HTTPException(
+                status_code=400,
+                detail="operation not allowed",
+            )
+
+        with LOCK:
+            devices = load_devices()
+
+            device = next(
+                (
+                    d for d in devices
+                    if d["id"] == req.device_id
+                    and d.get("executor_enabled") is True
+                ),
+                None,
+            )
+
+            if not device:
+                raise HTTPException(
+                    status_code=404,
+                    detail="executor device not found",
+                )
+
+            jobs = load_jobs()
+
+            job = {
+                "id": "job-" + uuid.uuid4().hex,
+                "device_id": req.device_id,
+                "operation": req.operation,
+                "status": "queued",
+                "created_at": (
+                    datetime.now(
+                        timezone.utc
+                    ).isoformat()
+                ),
+                "started_at": None,
+                "completed_at": None,
+                "result": None,
+                "created_by": getattr(req, "created_by", None),
+            }
+
+            jobs.append(job)
+
+            # Bound historical queue storage.
+            if len(jobs) > 5000:
+                jobs = jobs[-5000:]
+
+            save_jobs(jobs)
+
+            return {
+                "ok": True,
+                "job_id": job["id"],
+                "device_id": job["device_id"],
+                "operation": job["operation"],
+                "status": job["status"],
+            }
+
+
+    @app.get("/api/control/jobs/{job_id}")
+    def get_job(
+        job_id: str,
+        request: Request,
+    ):
+        authenticate_control(request)
+        with LOCK:
+            jobs = load_jobs()
+
+            for job in jobs:
+                if job["id"] == job_id:
+                    return job
+
+        raise HTTPException(
+            status_code=404,
+            detail="job not found",
+        )
