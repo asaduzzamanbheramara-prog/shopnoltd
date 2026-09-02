@@ -19,7 +19,7 @@ export default function Pricing() {
             <p style={{ fontSize: 36, fontWeight: 700 }}>${p.price}<span style={{ fontSize: 14, color: '#64748b' }}>/mo</span></p>
             <ul>{p.features.map(f => <li key={f}>{f}</li>)}</ul>
             <button
-                onClick={() => navigate(`/register?plan=${p.name.toLowerCase()}`)}
+                onClick={() => navigate(`/checkout?plan=${p.name.toLowerCase()}`)}
                 style={{ width: '100%', padding: 10, background: '#0ea5e9', color: 'white', border: 0, borderRadius: 8, cursor: 'pointer' }}
               >
                 Choose
