@@ -3,16 +3,55 @@ kind: Ingress
 metadata:
   name: remote-devices
   namespace: shopno-tools
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
 spec:
   ingressClassName: nginx
+
   tls:
     - hosts:
         - devices.shopnoltd.dpdns.org
       secretName: shopno-wildcard-tls
+
   rules:
     - host: devices.shopnoltd.dpdns.org
       http:
         paths:
+          # API + connect routes go to the authenticated gateway.
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: remote-device-gateway
+                port:
+                  name: http
+
+          - path: /healthz
+            pathType: Exact
+            backend:
+              service:
+                name: remote-device-gateway
+                port:
+                  name: http
+
+          - path: /health
+            pathType: Exact
+            backend:
+              service:
+                name: remote-device-gateway
+                port:
+                  name: http
+
+          - path: /connect
+            pathType: Prefix
+            backend:
+              service:
+                name: remote-device-gateway
+                port:
+                  name: http
+
+          # Browser UI itself.
           - path: /
             pathType: Prefix
             backend:
