@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - feature/remote-device-agent
+      - feature/direct-pc-executor-20260902
     paths:
       - 'platform/remote-device/gateway/**'
       - 'k8s/services/remote-device/deployment.yaml'
