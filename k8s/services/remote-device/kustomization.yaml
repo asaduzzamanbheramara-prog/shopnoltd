@@ -5,6 +5,7 @@ resources:
 
   # MeshCentral remote-control engine
   - meshcentral-pvc.yaml
+  - meshcentral-config-init.yaml
   - meshcentral-deployment.yaml
   - meshcentral-service.yaml
   - meshcentral-ingress.yaml
