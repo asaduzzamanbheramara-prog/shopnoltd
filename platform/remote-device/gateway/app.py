@@ -310,7 +310,9 @@ def browser_connect(device_id: str):
 # ------------------------------------------------------------
 
 @app.get("/api/devices")
-async def list_devices():
+async def list_devices(request: Request):
+    await verify_admin(request)
+
     return await registry_control_request(
         "GET",
         "/api/devices",
