@@ -28,6 +28,12 @@ spec:
           env:
             - name: DATA_DIR
               value: /data
+            - name: REGISTRY_CONTROL_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: remote-device-control-secret
+                  key: control-token
+                  optional: false
           volumeMounts:
             - name: source
               mountPath: /app

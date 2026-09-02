@@ -24,6 +24,21 @@ spec:
         - name: remote-device-gateway
           image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-remote-device-gateway:51b485a8d0886ffa3cc167f68acc06b54da41387
           imagePullPolicy: IfNotPresent
+          env:
+            - name: REGISTRY_URL
+              value: http://remote-device-registry.shopno-tools.svc.cluster.local:8080
+            - name: MESH_URL
+              value: https://remote-engine.shopnoltd.dpdns.org
+            - name: KEYCLOAK_ISSUER
+              value: https://auth.shopnoltd.dpdns.org/realms/shopnoltd
+            - name: KEYCLOAK_AUDIENCE
+              value: account
+            - name: REGISTRY_CONTROL_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: remote-device-control-secret
+                  key: control-token
+                  optional: false
           ports:
             - name: http
               containerPort: 8080
