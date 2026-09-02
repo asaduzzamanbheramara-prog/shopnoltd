@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { API_URL } from '../config'
 import { SERVICES, ADMIN_SERVICES } from '../data/serviceCatalog'
 import { isPlatformAdmin } from '../lib/jwt'
+import { getTransactions, getWallet } from '../lib/financialApi'
 
 function QuickLink({ service }) {
   const isInternal = service.url.startsWith('/')
@@ -33,6 +34,8 @@ export default function Dashboard() {
   const [me, setMe] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [wallet, setWallet] = useState(null)
+  const [transactionCount, setTransactionCount] = useState(0)
 
   useEffect(() => {
     const token = localStorage.getItem('shopno_token')
@@ -60,6 +63,28 @@ export default function Dashboard() {
       })
       .then((data) => {
         setMe(data)
+
+        return Promise.allSettled([
+          getWallet('BDT'),
+          getTransactions(),
+        ])
+      })
+      .then((results) => {
+        if (!results) return
+
+        const walletResult = results[0]
+        const transactionsResult = results[1]
+
+        if (walletResult?.status === 'fulfilled') {
+          setWallet(walletResult.value)
+        }
+
+        if (transactionsResult?.status === 'fulfilled') {
+          const items = Array.isArray(transactionsResult.value)
+            ? transactionsResult.value
+            : []
+          setTransactionCount(items.length)
+        }
       })
       .catch((err) => {
         console.error('Dashboard profile request failed:', err)
@@ -117,6 +142,81 @@ export default function Dashboard() {
           Open Admin Dashboard →
         </Link>
       )}
+
+      <section style={{ marginTop: 28 }}>
+        <h2>Financial overview</h2>
+
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))',
+            gap: 12,
+            marginTop: 14,
+          }}
+        >
+          <Link
+            to="/wallet"
+            style={{
+              padding: 18,
+              background: 'white',
+              border: '1px solid #e2e8f0',
+              borderRadius: 10,
+              textDecoration: 'none',
+              color: 'inherit',
+            }}
+          >
+            <div style={{ color: '#64748b', fontSize: 14 }}>BDT wallet</div>
+            <div style={{ fontSize: 28, fontWeight: 800 }}>
+              {wallet?.balance ?? '—'}
+            </div>
+          </Link>
+
+          <Link
+            to="/transactions"
+            style={{
+              padding: 18,
+              background: 'white',
+              border: '1px solid #e2e8f0',
+              borderRadius: 10,
+              textDecoration: 'none',
+              color: 'inherit',
+            }}
+          >
+            <div style={{ color: '#64748b', fontSize: 14 }}>Transactions</div>
+            <div style={{ fontSize: 28, fontWeight: 800 }}>
+              {transactionCount}
+            </div>
+          </Link>
+
+          <Link
+            to="/checkout"
+            style={{
+              padding: 18,
+              background: '#0ea5e9',
+              borderRadius: 10,
+              textDecoration: 'none',
+              color: 'white',
+              fontWeight: 700,
+            }}
+          >
+            Open checkout →
+          </Link>
+
+          <Link
+            to="/exchange"
+            style={{
+              padding: 18,
+              background: '#0f172a',
+              borderRadius: 10,
+              textDecoration: 'none',
+              color: 'white',
+              fontWeight: 700,
+            }}
+          >
+            Exchange currencies →
+          </Link>
+        </div>
+      </section>
 
       <section style={{ marginTop: 40 }}>
         <h2>Your services</h2>

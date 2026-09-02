@@ -188,12 +188,42 @@ async def billing_checkout(
 
 @router.get("/rate/{frm}/{to}")
 async def rate(frm: str, to: str, creds: HTTPAuthorizationCredentials = Depends(bearer)):
-    try:
-        await verify_token(creds.credentials)
-    except Exception as e:
-        raise HTTPException(status_code=401, detail="Invalid authentication token") from e
+    await user(creds)
 
-    raise HTTPException(
-        status_code=503,
-        detail="Exchange service is not deployed",
+    return await call(
+        "GET",
+        f"http://exchange-service.shopno-payments.svc.cluster.local:80/api/v1/rates/{frm.upper()}/{to.upper()}",
+        creds.credentials,
+    )
+
+
+@router.post("/exchange/convert")
+async def exchange_convert(
+    body: dict,
+    creds: HTTPAuthorizationCredentials = Depends(bearer),
+):
+    current_user = await user(creds)
+
+    from_currency = str(body.get("from_currency", "")).upper()
+    to_currency = str(body.get("to_currency", "")).upper()
+    amount = body.get("amount")
+
+    if not from_currency or not to_currency or amount is None:
+        raise HTTPException(
+            status_code=422,
+            detail="from_currency, to_currency and amount are required",
+        )
+
+    payload = {
+        "from_currency": from_currency,
+        "to_currency": to_currency,
+        "amount": amount,
+        "user_id": current_user.get("sub") or current_user.get("id"),
+    }
+
+    return await call(
+        "POST",
+        "http://exchange-service.shopno-payments.svc.cluster.local:80/api/v1/convert",
+        creds.credentials,
+        json=payload,
     )
