@@ -22,7 +22,7 @@ spec:
 
       containers:
         - name: remote-device-gateway
-          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-remote-device-gateway:dff08f01be207932a20ee5e74bdae0d08a6ce1e8
+          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-remote-device-gateway:b2c9920c05b8d596bf42901cec1eac0f28d34ad7
           imagePullPolicy: IfNotPresent
           env:
             - name: REGISTRY_URL
