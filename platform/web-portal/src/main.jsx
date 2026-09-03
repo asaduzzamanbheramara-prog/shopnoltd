@@ -13,6 +13,7 @@ import Plugins from './pages/Plugins'
 import Services from './pages/Services'
 import DomainRegistration from "./pages/DomainRegistration";
 import AdminDashboard from './pages/AdminDashboard'
+import AdminInfrastructure from './pages/AdminInfrastructure'
 import AdminRoute from './components/AdminRoute'
 import FinancialCenter from './pages/FinancialCenter'
 import { isPlatformAdmin } from './lib/jwt'
@@ -111,7 +112,10 @@ function Nav() {
           <>
             <Link key="/dashboard" to="/dashboard" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px', whiteSpace: 'nowrap' }}>Dashboard</Link>
             {isAdmin && (
-              <Link key="/admin" to="/admin" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px', whiteSpace: 'nowrap', fontWeight: 700 }}>Admin</Link>
+              <>
+                <Link key="/admin" to="/admin" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px', whiteSpace: 'nowrap', fontWeight: 700 }}>Admin</Link>
+                <Link key="/admin/infrastructure" to="/admin/infrastructure" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px', whiteSpace: 'nowrap', fontWeight: location.pathname.startsWith('/admin/infrastructure') ? 700 : 400 }}>Infrastructure</Link>
+              </>
             )}
             <button
               key="/logout"
@@ -162,6 +166,7 @@ function App() {
         <Route path="/exchange" element={<ProtectedRoute><FinancialCenter view="exchange" /></ProtectedRoute>} />
         <Route path="/reports" element={<ProtectedRoute><FinancialCenter view="reports" /></ProtectedRoute>} />
         <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+        <Route path="/admin/infrastructure" element={<AdminRoute><AdminInfrastructure /></AdminRoute>} />
       </Routes>
     </BrowserRouter>
   )

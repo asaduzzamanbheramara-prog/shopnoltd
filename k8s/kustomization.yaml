@@ -21,6 +21,7 @@ resources:
 - services/web-portal
 - services/shopnoltd-web
 - services/admin-portal
+- services/admin-infrastructure
 - services/tenant-router
 - services/auth-service
 - services/oauth-service
