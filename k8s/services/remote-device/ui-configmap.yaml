@@ -353,7 +353,13 @@ data:
 
             ${
               d.status === "pending"
-              ? `<p><small>Waiting for the authorized remote agent to enroll.</small></p>`
+              ? `
+                <p><small>Waiting for the authorized remote agent to enroll.</small></p>
+                <button type="button"
+                        onclick="regenerateEnrollmentToken('${encodeURIComponent(d.id)}')">
+                  Regenerate enrollment token
+                </button>
+              `
               : ""
             }
 
@@ -498,6 +504,39 @@ data:
         status.textContent = "Copy failed — select the token manually.";
       }
     }
+
+    async function regenerateEnrollmentToken(id) {
+      if (!confirm(
+        "Generate a new one-time enrollment token? The previous token will no longer work."
+      )) {
+        return;
+      }
+
+      try {
+        const response = await apiFetch(
+          "/api/devices/" + id + "/enrollment-token",
+          {
+            method: "POST"
+          }
+        );
+
+        const data = await response.json();
+
+        if (!data.enrollment_token) {
+          throw new Error("Gateway did not return an enrollment token.");
+        }
+
+        showEnrollmentToken(data.enrollment_token);
+      } catch (err) {
+        if (
+          err.message !== "Authentication expired." &&
+          err.message !== "Authentication required."
+        ) {
+          alert(err.message);
+        }
+      }
+    }
+
 
     async function deleteDevice(id) {
       if (!confirm("Delete this device?")) return;
