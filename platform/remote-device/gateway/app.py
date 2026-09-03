@@ -1,5 +1,6 @@
 import json
 import os
+from urllib.parse import urlencode
 
 import httpx
 from fastapi import FastAPI, HTTPException, Request, status
@@ -299,20 +300,43 @@ async def connect(device_id: str, request: Request):
 
     devices = response.json()
 
-    if not any(
-        isinstance(device, dict)
-        and device.get("id") == device_id
-        for device in devices
-    ):
+    device = next(
+        (
+            item
+            for item in devices
+            if isinstance(item, dict)
+            and item.get("id") == device_id
+        ),
+        None,
+    )
+
+    if device is None:
         raise HTTPException(
             status_code=404,
             detail="device not found",
         )
 
+    node_id = device.get("meshcentral_node_id")
+
+    if not node_id:
+        raise HTTPException(
+            status_code=409,
+            detail="MeshCentral device is not linked",
+        )
+
+    connect_url = (
+        f"{MESH_URL}/?"
+        + urlencode({
+            "node": node_id,
+            "viewmode": "11",
+            "hide": "15",
+        })
+    )
+
     return {
         "device_id": device_id,
         "engine": "meshcentral",
-        "connect_url": f"{MESH_URL}/",
+        "connect_url": connect_url,
     }
 
 
@@ -327,18 +351,41 @@ async def browser_connect(device_id: str, request: Request):
 
     devices = response.json()
 
-    if not any(
-        isinstance(device, dict)
-        and device.get("id") == device_id
-        for device in devices
-    ):
+    device = next(
+        (
+            item
+            for item in devices
+            if isinstance(item, dict)
+            and item.get("id") == device_id
+        ),
+        None,
+    )
+
+    if device is None:
         raise HTTPException(
             status_code=404,
             detail="device not found",
         )
 
+    node_id = device.get("meshcentral_node_id")
+
+    if not node_id:
+        raise HTTPException(
+            status_code=409,
+            detail="MeshCentral device is not linked",
+        )
+
+    connect_url = (
+        f"{MESH_URL}/?"
+        + urlencode({
+            "node": node_id,
+            "viewmode": "11",
+            "hide": "15",
+        })
+    )
+
     return RedirectResponse(
-        url=f"{MESH_URL}/",
+        url=connect_url,
         status_code=307,
     )
 

@@ -104,48 +104,277 @@ data:
     </main>
 
     <script>
-    async function loadDevices() {
-      const r = await fetch("/api/devices");
-      const devices = await r.json();
+    const KEYCLOAK_URL = "https://auth.shopnoltd.dpdns.org";
+    const KEYCLOAK_REALM = "shopnoltd";
+    const KEYCLOAK_CLIENT_ID = "shopnoltd-web";
+    const REDIRECT_URI = window.location.origin + "/";
 
+    function base64url(buf) {
+      return btoa(String.fromCharCode(...new Uint8Array(buf)))
+        .replace(/\+/g, "-")
+        .replace(/\//g, "_")
+        .replace(/=+$/, "");
+    }
+
+    function randomString(len = 64) {
+      const arr = new Uint8Array(len);
+      crypto.getRandomValues(arr);
+      return base64url(arr).slice(0, len);
+    }
+
+    async function codeChallengeFor(verifier) {
+      const data = new TextEncoder().encode(verifier);
+      const digest = await crypto.subtle.digest("SHA-256", data);
+      return base64url(digest);
+    }
+
+    function getToken() {
+      return localStorage.getItem("shopno_token") || "";
+    }
+
+    function clearToken() {
+      localStorage.removeItem("shopno_token");
+      localStorage.removeItem("shopno_refresh_token");
+    }
+
+    function showLogin(message = "Sign in with your Shopnoltd administrator account.") {
       const root = document.getElementById("devices");
-      root.innerHTML = "";
 
-      for (const d of devices) {
-        const card = document.createElement("div");
-        card.className = "card";
+      root.innerHTML = `
+        <div class="card">
+          <h2>Authentication required</h2>
+          <p>${escapeHtml(message)}</p>
+          <button onclick="startLogin()">Sign in to Shopnoltd</button>
+        </div>
+      `;
+    }
 
-        card.innerHTML = `
-          <h2>${escapeHtml(d.name)}</h2>
-          <p>${escapeHtml(d.platform)}</p>
-          <span class="status ${escapeHtml(d.status)}">${escapeHtml(d.status)}</span>
-          <p><small>ID: ${escapeHtml(d.id)}</small></p>
+    async function startLogin() {
+      const verifier = randomString(64);
+      const challenge = await codeChallengeFor(verifier);
+      const state = randomString(32);
 
-          ${
-            d.status === "pending"
-            ? `<div class="token">
-                 Enrollment token:<br>
-                 ${escapeHtml(d.enrollment_token || "")}
-               </div>
-               <p><small>Install/enroll the Shopnoltd remote agent using this token.</small></p>`
-            : ""
-          }
+      sessionStorage.setItem("device_pkce_verifier", verifier);
+      sessionStorage.setItem("device_oidc_state", state);
 
-          ${
-            d.status === "online"
-            ? `<button onclick="connectDevice('${encodeURIComponent(d.id)}')">
-                 Connect
-               </button>`
-            : ""
-          }
+      const params = new URLSearchParams({
+        client_id: KEYCLOAK_CLIENT_ID,
+        redirect_uri: REDIRECT_URI,
+        response_type: "code",
+        scope: "openid profile email",
+        state,
+        code_challenge: challenge,
+        code_challenge_method: "S256"
+      });
 
-          <button class="danger"
-                  onclick="deleteDevice('${encodeURIComponent(d.id)}')">
-            Delete
-          </button>
+      window.location.assign(
+        `${KEYCLOAK_URL}/realms/${KEYCLOAK_REALM}/protocol/openid-connect/auth?${params.toString()}`
+      );
+    }
+
+    async function completeLogin() {
+      const params = new URLSearchParams(window.location.search);
+
+      const code = params.get("code");
+      const returnedState = params.get("state");
+      const oauthError = params.get("error");
+      const oauthErrorDescription = params.get("error_description");
+
+      if (oauthError) {
+        throw new Error(oauthErrorDescription || oauthError);
+      }
+
+      if (!code) {
+        return false;
+      }
+
+      const verifier = sessionStorage.getItem("device_pkce_verifier");
+      const expectedState = sessionStorage.getItem("device_oidc_state");
+
+      if (!verifier) {
+        throw new Error("Missing authentication verifier. Please sign in again.");
+      }
+
+      if (!expectedState || returnedState !== expectedState) {
+        sessionStorage.removeItem("device_pkce_verifier");
+        sessionStorage.removeItem("device_oidc_state");
+        throw new Error("Authentication state validation failed. Please sign in again.");
+      }
+
+      const body = new URLSearchParams({
+        grant_type: "authorization_code",
+        client_id: KEYCLOAK_CLIENT_ID,
+        code,
+        redirect_uri: REDIRECT_URI,
+        code_verifier: verifier
+      });
+
+      const response = await fetch(
+        `${KEYCLOAK_URL}/realms/${KEYCLOAK_REALM}/protocol/openid-connect/token`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded"
+          },
+          body
+        }
+      );
+
+      const data = await response.json().catch(() => ({}));
+
+      sessionStorage.removeItem("device_pkce_verifier");
+      sessionStorage.removeItem("device_oidc_state");
+
+      if (!response.ok || !data.access_token) {
+        throw new Error(
+          data.error_description ||
+          data.error ||
+          "Authentication failed."
+        );
+      }
+
+      localStorage.setItem("shopno_token", data.access_token);
+
+      if (data.refresh_token) {
+        localStorage.setItem("shopno_refresh_token", data.refresh_token);
+      }
+
+      window.history.replaceState(
+        {},
+        document.title,
+        window.location.pathname
+      );
+
+      return true;
+    }
+
+    async function apiFetch(path, options = {}) {
+      const token = getToken();
+
+      if (!token) {
+        showLogin();
+        throw new Error("Authentication required.");
+      }
+
+      const headers = {
+        Accept: "application/json",
+        ...(options.headers || {}),
+        Authorization: `Bearer ${token}`
+      };
+
+      const response = await fetch(path, {
+        ...options,
+        headers
+      });
+
+      if (response.status === 401) {
+        clearToken();
+        showLogin("Your Shopnoltd session has expired. Please sign in again.");
+        throw new Error("Authentication expired.");
+      }
+
+      if (response.status === 403) {
+        throw new Error(
+          "Administrator permission is required for the device console."
+        );
+      }
+
+      if (!response.ok) {
+        const body = await response.text();
+        let detail = "";
+
+        try {
+          const parsed = JSON.parse(body);
+          detail = parsed.detail || parsed.message || "";
+        } catch (_) {
+          detail = body;
+        }
+
+        throw new Error(
+          detail || `Request failed with HTTP ${response.status}.`
+        );
+      }
+
+      return response;
+    }
+
+    async function loadDevices() {
+      if (!getToken()) {
+        showLogin();
+        return;
+      }
+
+      try {
+        const r = await apiFetch("/api/devices");
+        const devices = await r.json();
+
+        const root = document.getElementById("devices");
+        root.innerHTML = "";
+
+        if (!Array.isArray(devices) || devices.length === 0) {
+          root.innerHTML = `
+            <div class="card">
+              <h2>No registered devices</h2>
+              <p>Add a device to begin managing authorized remote sessions.</p>
+            </div>
+          `;
+          return;
+        }
+
+        for (const d of devices) {
+          const card = document.createElement("div");
+          card.className = "card";
+
+          const meshLinked = !!d.meshcentral_node_id;
+
+          card.innerHTML = `
+            <h2>${escapeHtml(d.name)}</h2>
+            <p>${escapeHtml(d.platform)}</p>
+            <span class="status ${escapeHtml(d.status)}">${escapeHtml(d.status)}</span>
+            <p><small>ID: ${escapeHtml(d.id)}</small></p>
+
+            ${
+              d.status === "pending"
+              ? `<p><small>Waiting for the authorized remote agent to enroll.</small></p>`
+              : ""
+            }
+
+            ${
+              d.status === "online" && meshLinked
+              ? `<button onclick="connectDevice('${encodeURIComponent(d.id)}')">
+                   Connect
+                 </button>`
+              : ""
+            }
+
+            ${
+              d.status === "online" && !meshLinked
+              ? `<p><small>Device is online, but its MeshCentral link is not configured.</small></p>`
+              : ""
+            }
+
+            <button class="danger"
+                    onclick="deleteDevice('${encodeURIComponent(d.id)}')">
+              Delete
+            </button>
+          `;
+
+          root.appendChild(card);
+        }
+      } catch (err) {
+        if (err.message === "Authentication expired." ||
+            err.message === "Authentication required.") {
+          return;
+        }
+
+        const root = document.getElementById("devices");
+        root.innerHTML = `
+          <div class="card">
+            <h2>Device service unavailable</h2>
+            <p>${escapeHtml(err.message)}</p>
+            <button onclick="loadDevices()">Retry</button>
+          </div>
         `;
-
-        root.appendChild(card);
       }
     }
 
@@ -158,48 +387,135 @@ data:
         return;
       }
 
-      await fetch("/api/devices", {
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({
-          name,
-          platform,
-          owner_id:"local-admin"
-        })
-      });
+      try {
+        const response = await apiFetch("/api/devices", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            name,
+            platform
+          })
+        });
 
-      document.getElementById("name").value = "";
-      loadDevices();
+        const created = await response.json();
+
+        document.getElementById("name").value = "";
+
+        if (created.enrollment_token) {
+          alert(
+            "Device created.\n\nEnrollment token:\n" +
+            created.enrollment_token +
+            "\n\nStore this token securely. It is not displayed in the device list."
+          );
+        }
+
+        await loadDevices();
+      } catch (err) {
+        if (err.message !== "Authentication expired." &&
+            err.message !== "Authentication required.") {
+          alert(err.message);
+        }
+      }
     }
 
     async function deleteDevice(id) {
       if (!confirm("Delete this device?")) return;
 
-      await fetch("/api/devices/" + id, {
-        method:"DELETE"
-      });
+      try {
+        await apiFetch("/api/devices/" + id, {
+          method: "DELETE"
+        });
 
-      loadDevices();
+        await loadDevices();
+      } catch (err) {
+        if (err.message !== "Authentication expired." &&
+            err.message !== "Authentication required.") {
+          alert(err.message);
+        }
+      }
     }
 
-    function connectDevice(id) {
-      window.open(
-        "/connect/" + id,
+    async function connectDevice(id) {
+      const popup = window.open(
+        "about:blank",
         "_blank",
-        "noopener"
+        "noopener,noreferrer"
       );
+
+      try {
+        const response = await apiFetch(
+          "/api/connect/" + id
+        );
+
+        const data = await response.json();
+
+        if (!data.connect_url) {
+          throw new Error("Gateway did not return a MeshCentral connection URL.");
+        }
+
+        if (popup) {
+          popup.location.href = data.connect_url;
+        } else {
+          window.location.assign(data.connect_url);
+        }
+      } catch (err) {
+        if (popup) {
+          popup.close();
+        }
+
+        if (err.message !== "Authentication expired." &&
+            err.message !== "Authentication required.") {
+          alert(err.message);
+        }
+      }
+    }
+
+    function logout() {
+      clearToken();
+      showLogin("You have been signed out of the device console.");
     }
 
     function escapeHtml(v) {
       return String(v)
-        .replaceAll("&","&amp;")
-        .replaceAll("<","&lt;")
-        .replaceAll(">","&gt;")
-        .replaceAll('"',"&quot;")
-        .replaceAll("'","&#039;");
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
     }
 
-    loadDevices();
+    async function initialize() {
+      try {
+        const loggedIn = await completeLogin();
+
+        if (loggedIn) {
+          await loadDevices();
+          return;
+        }
+
+        if (!getToken()) {
+          showLogin();
+          return;
+        }
+
+        await loadDevices();
+      } catch (err) {
+        clearToken();
+
+        const root = document.getElementById("devices");
+        root.innerHTML = `
+          <div class="card">
+            <h2>Authentication failed</h2>
+            <p>${escapeHtml(err.message)}</p>
+            <button onclick="startLogin()">Sign in again</button>
+          </div>
+        `;
+      }
+    }
+
+    initialize();
     setInterval(loadDevices, 10000);
     </script>
 
