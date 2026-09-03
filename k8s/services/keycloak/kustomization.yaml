@@ -19,6 +19,9 @@ configMapGenerator:
 - name: keycloak-realm
   files:
   - realm-shopnoltd.json
+- name: keycloak-client-sync-script
+  files:
+  - client-sync.py
 
 labels:
 - includeSelectors: true
@@ -28,7 +31,3 @@ labels:
   pairs:
     app.kubernetes.io/part-of: shopnoltd
 
-configMapGenerator:
-- name: keycloak-client-sync-script
-  files:
-  - client-sync.py
