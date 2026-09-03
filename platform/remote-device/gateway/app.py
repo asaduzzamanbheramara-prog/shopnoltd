@@ -10,7 +10,7 @@ from jose import JWTError, jwt
 
 app = FastAPI(
     title="Shopnoltd Remote Device Gateway",
-    version="3.1.0",
+    version="3.2.0",
 )
 
 
@@ -62,7 +62,7 @@ async def _jwks():
     return _jwks_cache
 
 
-async def verify_admin(request: Request) -> dict:
+async def verify_user(request: Request) -> dict:
     authorization = request.headers.get("Authorization", "")
 
     if not authorization.startswith("Bearer "):
@@ -122,30 +122,47 @@ async def verify_admin(request: Request) -> dict:
 
     roles = claims.get("roles", [])
 
-    # Support the existing Shopnoltd token convention.
-    # Also accept realm_access.roles for standard Keycloak tokens.
     if not isinstance(roles, list):
         roles = []
 
-    realm_roles = (
-        claims.get("realm_access", {})
-        if isinstance(claims.get("realm_access", {}), dict)
-        else {}
-    )
+    realm_access = claims.get("realm_access", {})
 
-    realm_roles = realm_roles.get("roles", [])
+    if not isinstance(realm_access, dict):
+        realm_access = {}
 
-    all_roles = set(roles) | set(
-        realm_roles if isinstance(realm_roles, list) else []
-    )
+    realm_roles = realm_access.get("roles", [])
 
-    if "platform_admin" not in all_roles:
+    if not isinstance(realm_roles, list):
+        realm_roles = []
+
+    all_roles = set(roles) | set(realm_roles)
+
+    subject = claims.get("sub")
+
+    if not isinstance(subject, str) or not subject.strip():
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="token subject unavailable",
+        )
+
+    return {
+        "claims": claims,
+        "subject": subject,
+        "roles": all_roles,
+        "is_platform_admin": "platform_admin" in all_roles,
+    }
+
+
+async def verify_admin(request: Request) -> dict:
+    identity = await verify_user(request)
+
+    if not identity["is_platform_admin"]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="platform_admin role required",
         )
 
-    return claims
+    return identity
 
 
 async def registry_request(
@@ -263,7 +280,7 @@ def healthz():
         "service": "remote-device-gateway",
         "engine": "meshcentral",
         "executor": "enabled",
-        "version": "3.1.0",
+        "version": "3.2.0",
     }
 
 
@@ -274,7 +291,7 @@ def health():
         "service": "remote-device-gateway",
         "engine": "meshcentral",
         "executor": "enabled",
-        "version": "3.1.0",
+        "version": "3.2.0",
     }
 
 
@@ -285,13 +302,13 @@ def api_healthz():
         "service": "remote-device-gateway",
         "engine": "meshcentral",
         "executor": "enabled",
-        "version": "3.1.0",
+        "version": "3.2.0",
     }
 
 
 @app.get("/api/connect/{device_id}")
 async def connect(device_id: str, request: Request):
-    await verify_admin(request)
+    identity = await verify_user(request)
 
     response = await registry_control_request(
         "GET",
@@ -311,6 +328,15 @@ async def connect(device_id: str, request: Request):
     )
 
     if device is None:
+        raise HTTPException(
+            status_code=404,
+            detail="device not found",
+        )
+
+    if (
+        not identity["is_platform_admin"]
+        and device.get("owner_id") != identity["subject"]
+    ):
         raise HTTPException(
             status_code=404,
             detail="device not found",
@@ -342,7 +368,7 @@ async def connect(device_id: str, request: Request):
 
 @app.get("/connect/{device_id}")
 async def browser_connect(device_id: str, request: Request):
-    await verify_admin(request)
+    identity = await verify_user(request)
 
     response = await registry_control_request(
         "GET",
@@ -362,6 +388,15 @@ async def browser_connect(device_id: str, request: Request):
     )
 
     if device is None:
+        raise HTTPException(
+            status_code=404,
+            detail="device not found",
+        )
+
+    if (
+        not identity["is_platform_admin"]
+        and device.get("owner_id") != identity["subject"]
+    ):
         raise HTTPException(
             status_code=404,
             detail="device not found",
@@ -396,19 +431,31 @@ async def browser_connect(device_id: str, request: Request):
 
 @app.get("/api/devices")
 async def list_devices(request: Request):
-    await verify_admin(request)
+    identity = await verify_user(request)
 
-    return await registry_control_request(
+    response = await registry_control_request(
         "GET",
         "/api/devices",
     )
+
+    devices = response.json()
+
+    if identity["is_platform_admin"]:
+        return devices
+
+    return [
+        device
+        for device in devices
+        if isinstance(device, dict)
+        and device.get("owner_id") == identity["subject"]
+    ]
 
 
 @app.post("/api/devices")
 async def create_device(
     request: Request,
 ):
-    claims = await verify_admin(request)
+    identity = await verify_user(request)
 
     body = await request.body()
 
@@ -426,12 +473,9 @@ async def create_device(
             detail="JSON object required",
         )
 
-    payload["owner_id"] = (
-        claims.get("preferred_username")
-        or claims.get("email")
-        or claims.get("sub")
-        or "unknown-admin"
-    )
+    # NEVER trust owner_id supplied by the browser.
+    # Ownership is always the verified Keycloak subject.
+    payload["owner_id"] = identity["subject"]
 
     body = json.dumps(
         payload,
@@ -451,7 +495,39 @@ async def delete_device(
     device_id: str,
     request: Request,
 ):
-    await verify_admin(request)
+    identity = await verify_user(request)
+
+    response = await registry_control_request(
+        "GET",
+        "/api/devices",
+    )
+
+    devices = response.json()
+
+    device = next(
+        (
+            item
+            for item in devices
+            if isinstance(item, dict)
+            and item.get("id") == device_id
+        ),
+        None,
+    )
+
+    if device is None:
+        raise HTTPException(
+            status_code=404,
+            detail="device not found",
+        )
+
+    if (
+        not identity["is_platform_admin"]
+        and device.get("owner_id") != identity["subject"]
+    ):
+        raise HTTPException(
+            status_code=404,
+            detail="device not found",
+        )
 
     return await registry_control_request(
         "DELETE",
