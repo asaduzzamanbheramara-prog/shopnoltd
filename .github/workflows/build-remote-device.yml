@@ -13,7 +13,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   packages: write
 
 env:
@@ -23,6 +23,7 @@ env:
 jobs:
   build:
     name: Build remote-device-gateway
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
     runs-on: ubuntu-latest
 
     steps:
@@ -50,3 +51,57 @@ jobs:
             ${{ env.IMAGE_NAME }}:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Update GitOps image reference
+        env:
+          IMAGE: ${{ env.IMAGE_NAME }}:${{ github.sha }}
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import os
+          import re
+
+          p = Path("k8s/services/remote-device/deployment.yaml")
+          text = p.read_text()
+
+          image = os.environ["IMAGE"]
+
+          pattern = (
+              r'(?m)^([ \t]+image:) '
+              r'ghcr\.io/asaduzzamanbheramara-prog/'
+              r'shopnoltd-remote-device-gateway:[^\n]+$'
+          )
+
+          updated, count = re.subn(
+              pattern,
+              rf'\1 {image}',
+              text,
+              count=1,
+          )
+
+          if count != 1:
+              raise SystemExit(
+                  "Expected exactly one remote-device-gateway image reference"
+              )
+
+          p.write_text(updated)
+          PY
+
+          git diff --check
+          git diff -- k8s/services/remote-device/deployment.yaml
+
+      - name: Commit GitOps image update
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add k8s/services/remote-device/deployment.yaml
+
+          if git diff --cached --quiet; then
+            echo "No GitOps image change required."
+            exit 0
+          fi
+
+          git commit             -m "chore: update remote-device-gateway image to ${GITHUB_SHA} [skip ci]"
+
+          git push origin HEAD:${GITHUB_REF_NAME}

@@ -45,6 +45,14 @@ data:
         owner_id: str = Field(default="local-admin", max_length=200)
 
 
+    class MeshCentralLink(BaseModel):
+        meshcentral_node_id: str = Field(min_length=1, max_length=500)
+        meshcentral_mesh_id: Optional[str] = Field(
+            default=None,
+            max_length=500,
+        )
+
+
     class Device(BaseModel):
         id: str
         name: str
@@ -58,6 +66,8 @@ data:
         executor_last_seen: Optional[str] = None
         last_seen: Optional[str] = None
         created_at: str
+        meshcentral_node_id: Optional[str] = None
+        meshcentral_mesh_id: Optional[str] = None
 
 
     class DevicePublic(BaseModel):
@@ -71,6 +81,8 @@ data:
         executor_last_seen: Optional[str] = None
         last_seen: Optional[str] = None
         created_at: str
+        meshcentral_node_id: Optional[str] = None
+        meshcentral_mesh_id: Optional[str] = None
 
 
     class DeviceCreated(DevicePublic):
@@ -168,6 +180,8 @@ data:
             executor_last_seen=device.get("executor_last_seen"),
             last_seen=device.get("last_seen"),
             created_at=device["created_at"],
+            meshcentral_node_id=device.get("meshcentral_node_id"),
+            meshcentral_mesh_id=device.get("meshcentral_mesh_id"),
         )
 
 
@@ -224,6 +238,36 @@ data:
                 **public.model_dump(),
                 enrollment_token=token,
             )
+
+
+    @app.post(
+        "/api/devices/{device_id}/meshcentral-link",
+        response_model=DevicePublic,
+    )
+    def link_meshcentral(
+        device_id: str,
+        req: MeshCentralLink,
+        request: Request,
+    ):
+        authenticate_control(request)
+
+        with LOCK:
+            devices = load_devices()
+
+            for device in devices:
+                if device["id"] != device_id:
+                    continue
+
+                device["meshcentral_node_id"] = req.meshcentral_node_id
+                device["meshcentral_mesh_id"] = req.meshcentral_mesh_id
+                save_devices(devices)
+
+                return public_device(device)
+
+        raise HTTPException(
+            status_code=404,
+            detail="device not found",
+        )
 
 
     @app.delete("/api/devices/{device_id}")
