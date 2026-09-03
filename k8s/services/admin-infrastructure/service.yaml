@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: admin-infrastructure
+  namespace: shopno-platform
+  labels:
+    app.kubernetes.io/name: admin-infrastructure
+    app.kubernetes.io/part-of: shopnoltd
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: admin-infrastructure
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+      protocol: TCP
