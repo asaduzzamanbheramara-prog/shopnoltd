@@ -10,6 +10,9 @@ resources:
   - meshcentral-service.yaml
   - meshcentral-ingress.yaml
 
+  # MeshCentral automation control plane
+  - meshcentral-automation.yaml
+
   # Shopnoltd device registry
   - registry-pvc.yaml
   - registry-configmap.yaml
