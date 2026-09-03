@@ -13,6 +13,7 @@ resources:
 - networkpolicy.yaml
 - poddisruptionbudget.yaml
 - servicemonitor.yaml
+- client-sync-job.yaml
 
 configMapGenerator:
 - name: keycloak-realm
@@ -26,3 +27,8 @@ labels:
 - includeSelectors: false
   pairs:
     app.kubernetes.io/part-of: shopnoltd
+
+configMapGenerator:
+- name: keycloak-client-sync-script
+  files:
+  - client-sync.py
