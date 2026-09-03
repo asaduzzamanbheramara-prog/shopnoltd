@@ -497,6 +497,56 @@ async def create_device(
     )
 
 
+@app.post("/api/devices/{device_id}/enrollment-token")
+async def regenerate_enrollment_token(
+    device_id: str,
+    request: Request,
+):
+    identity = await verify_user(request)
+
+    devices = await registry_control_request(
+        "GET",
+        "/api/devices",
+        parse_json=True,
+    )
+
+    device = next(
+        (
+            item
+            for item in devices
+            if isinstance(item, dict)
+            and item.get("id") == device_id
+        ),
+        None,
+    )
+
+    if device is None:
+        raise HTTPException(
+            status_code=404,
+            detail="device not found",
+        )
+
+    if (
+        not identity["is_platform_admin"]
+        and device.get("owner_id") != identity["subject"]
+    ):
+        raise HTTPException(
+            status_code=404,
+            detail="device not found",
+        )
+
+    if device.get("executor_enabled") is True:
+        raise HTTPException(
+            status_code=409,
+            detail="device is already enrolled",
+        )
+
+    return await registry_control_request(
+        "POST",
+        f"/api/devices/{device_id}/enrollment-token",
+    )
+
+
 @app.delete("/api/devices/{device_id}")
 async def delete_device(
     device_id: str,
