@@ -70,6 +70,21 @@ data:
           background:#b91c1c;
           margin-left:6px;
         }
+        .token-panel {
+          margin-bottom:20px;
+        }
+        .token-actions {
+          display:flex;
+          align-items:center;
+          gap:10px;
+          margin-top:12px;
+          flex-wrap:wrap;
+        }
+        .copy-status {
+          font-size:13px;
+          color:#166534;
+          font-weight:600;
+        }
         .token {
           margin-top:12px;
           padding:10px;
@@ -77,6 +92,7 @@ data:
           font-family:monospace;
           font-size:11px;
           word-break:break-all;
+          border-radius:8px;
         }
       </style>
     </head>
@@ -99,6 +115,8 @@ data:
         </select>
         <button onclick="addDevice()">Add device</button>
       </div>
+
+      <div id="enrollment-result"></div>
 
       <div id="devices" class="grid"></div>
     </main>
@@ -404,11 +422,7 @@ data:
         document.getElementById("name").value = "";
 
         if (created.enrollment_token) {
-          alert(
-            "Device created.\n\nEnrollment token:\n" +
-            created.enrollment_token +
-            "\n\nStore this token securely. It is not displayed in the device list."
-          );
+          showEnrollmentToken(created.enrollment_token);
         }
 
         await loadDevices();
@@ -417,6 +431,71 @@ data:
             err.message !== "Authentication required.") {
           alert(err.message);
         }
+      }
+    }
+
+    function showEnrollmentToken(token) {
+      const root = document.getElementById("enrollment-result");
+
+      root.innerHTML = `
+        <div class="card token-panel">
+          <h2>Device created successfully</h2>
+          <p>
+            Copy the enrollment token below and use it to enroll the
+            authorized remote agent on this device.
+          </p>
+
+          <div class="token" id="enrollment-token-value">${escapeHtml(token)}</div>
+
+          <div class="token-actions">
+            <button type="button" onclick="copyEnrollmentToken()">
+              Copy token
+            </button>
+            <span id="copy-status" class="copy-status" aria-live="polite"></span>
+          </div>
+
+          <p>
+            <small>
+              Store this token securely. It is not displayed in the device list.
+            </small>
+          </p>
+        </div>
+      `;
+    }
+
+    async function copyEnrollmentToken() {
+      const tokenElement = document.getElementById("enrollment-token-value");
+      const status = document.getElementById("copy-status");
+
+      if (!tokenElement || !status) {
+        return;
+      }
+
+      const token = tokenElement.textContent || "";
+
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(token);
+        } else {
+          const selection = window.getSelection();
+          const range = document.createRange();
+
+          range.selectNodeContents(tokenElement);
+          selection.removeAllRanges();
+          selection.addRange(range);
+
+          const copied = document.execCommand("copy");
+
+          selection.removeAllRanges();
+
+          if (!copied) {
+            throw new Error("Clipboard copy was blocked.");
+          }
+        }
+
+        status.textContent = "Copied!";
+      } catch (err) {
+        status.textContent = "Copy failed — select the token manually.";
       }
     }
 
