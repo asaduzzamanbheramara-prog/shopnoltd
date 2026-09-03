@@ -222,6 +222,7 @@ async def registry_control_request(
     method: str,
     path: str,
     body: bytes = b"",
+    parse_json: bool = False,
 ):
     if not REGISTRY_CONTROL_TOKEN:
         raise HTTPException(
@@ -248,6 +249,15 @@ async def registry_control_request(
             status_code=503,
             detail=f"registry unavailable: {exc}",
         ) from exc
+
+    if parse_json:
+        try:
+            return response.json()
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=502,
+                detail="registry returned invalid JSON",
+            ) from exc
 
     content_type = response.headers.get(
         "content-type",
@@ -310,12 +320,11 @@ def api_healthz():
 async def connect(device_id: str, request: Request):
     identity = await verify_user(request)
 
-    response = await registry_control_request(
+    devices = await registry_control_request(
         "GET",
         "/api/devices",
+        parse_json=True,
     )
-
-    devices = response.json()
 
     device = next(
         (
@@ -370,12 +379,11 @@ async def connect(device_id: str, request: Request):
 async def browser_connect(device_id: str, request: Request):
     identity = await verify_user(request)
 
-    response = await registry_control_request(
+    devices = await registry_control_request(
         "GET",
         "/api/devices",
+        parse_json=True,
     )
-
-    devices = response.json()
 
     device = next(
         (
@@ -433,12 +441,11 @@ async def browser_connect(device_id: str, request: Request):
 async def list_devices(request: Request):
     identity = await verify_user(request)
 
-    response = await registry_control_request(
+    devices = await registry_control_request(
         "GET",
         "/api/devices",
+        parse_json=True,
     )
-
-    devices = response.json()
 
     if identity["is_platform_admin"]:
         return devices
@@ -497,12 +504,11 @@ async def delete_device(
 ):
     identity = await verify_user(request)
 
-    response = await registry_control_request(
+    devices = await registry_control_request(
         "GET",
         "/api/devices",
+        parse_json=True,
     )
-
-    devices = response.json()
 
     device = next(
         (
