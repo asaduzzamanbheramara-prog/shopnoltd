@@ -26,6 +26,9 @@ spec:
             - name: config-init
               mountPath: /config-init
               readOnly: true
+            - name: mesh-login-key
+              mountPath: /run/secrets/meshcentral
+              readOnly: true
 
       containers:
         - name: meshcentral
@@ -68,3 +71,9 @@ spec:
         - name: config-init
           configMap:
             name: meshcentral-config-init
+        - name: mesh-login-key
+          secret:
+            secretName: meshcentral-automation-secret
+            items:
+              - key: login-key
+                path: login-key
