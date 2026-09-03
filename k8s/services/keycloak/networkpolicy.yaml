@@ -29,6 +29,18 @@ spec:
           protocol: TCP
         - port: 9000
           protocol: TCP
+
+    # Keycloak client-sync hook: HTTP API only; never expose management port 9000
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: shopno-identity
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/component: keycloak-client-sync
+      ports:
+        - port: 8080
+          protocol: TCP
   egress:
     - to:
         - namespaceSelector:
