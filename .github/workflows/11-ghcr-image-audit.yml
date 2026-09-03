@@ -1,0 +1,128 @@
+name: Shopnoltd — 11 GHCR Image Existence Audit
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: read
+
+concurrency:
+  group: shopnoltd-ghcr-image-audit
+  cancel-in-progress: true
+
+jobs:
+  ghcr-audit:
+    name: Check 11 GHCR images
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - analytics-service
+          - audit-service
+          - event-service
+          - interior-service
+          - license-service
+          - mobile-api
+          - report-service
+          - storage-service
+          - tenant-router
+          - training-service
+          - worker-service
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - name: Check GHCR image
+        shell: bash
+        env:
+          IMAGE: ghcr.io/${{ github.repository_owner }}/shopnoltd/${{ matrix.service }}:latest
+        run: |
+          set -u
+
+          echo "============================================================"
+          echo "SHOPNOLTD GHCR READ-ONLY IMAGE AUDIT"
+          echo "============================================================"
+          echo "Service : ${{ matrix.service }}"
+          echo "Image   : $IMAGE"
+          echo
+
+          if docker manifest inspect "$IMAGE" > manifest.json 2>manifest.err; then
+            echo "STATUS: EXISTS"
+            echo
+            echo "----- MANIFEST -----"
+            cat manifest.json
+            echo
+            echo "----- DIGEST / PLATFORM -----"
+            docker manifest inspect "$IMAGE" --verbose 2>/dev/null \
+              | jq -r '
+                  if type == "array" then
+                    .[] |
+                    [
+                      .Descriptor.platform.os // "-",
+                      .Descriptor.platform.architecture // "-",
+                      .Descriptor.digest // "-"
+                    ] | @tsv
+                  else
+                    [
+                      .Descriptor.platform.os // "-",
+                      .Descriptor.platform.architecture // "-",
+                      .Descriptor.digest // "-"
+                    ] | @tsv
+                  end
+                ' 2>/dev/null || true
+            echo
+            echo "RESULT=${{ matrix.service }},EXISTS"
+          else
+            echo "STATUS: NOT-CONFIRMED"
+            echo
+            cat manifest.err || true
+            echo
+            echo "RESULT=${{ matrix.service }},NOT-CONFIRMED"
+          fi
+
+      - name: Check repository image references
+        shell: bash
+        env:
+          SERVICE: ${{ matrix.service }}
+        run: |
+          set -u
+
+          echo
+          echo "----- REPOSITORY IMAGE REFERENCES -----"
+
+          rg -n \
+            "ghcr\.io/.*/${SERVICE}(:[A-Za-z0-9._-]+)?(@sha256:[a-f0-9]+)?" \
+            . \
+            --glob '!**/.git/**' \
+            --glob '!**/node_modules/**' \
+            --glob '!**/__pycache__/**' \
+            2>/dev/null \
+            | head -100 \
+            || echo "No repository reference found."
+
+      - name: Write job summary
+        if: always()
+        shell: bash
+        env:
+          IMAGE: ghcr.io/${{ github.repository_owner }}/shopnoltd/${{ matrix.service }}:latest
+        run: |
+          {
+            echo "## ${{ matrix.service }}"
+            echo
+            echo "**Image:** \`$IMAGE\`"
+            echo
+            if docker manifest inspect "$IMAGE" >/dev/null 2>&1; then
+              echo "✅ **GHCR image exists / registry metadata is accessible.**"
+            else
+              echo "⚠️ **Image was not confirmed.**"
+              echo
+              echo "The tag may be missing or the package may require authentication."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
