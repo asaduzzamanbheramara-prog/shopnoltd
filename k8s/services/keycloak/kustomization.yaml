@@ -17,6 +17,8 @@ resources:
 
 configMapGenerator:
 - name: keycloak-realm
+  options:
+    disableNameSuffixHash: true
   files:
   - realm-shopnoltd.json
 - name: keycloak-client-sync-script
