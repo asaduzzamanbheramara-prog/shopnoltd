@@ -8,6 +8,7 @@ data:
     const fs = require("fs");
 
     const file = "/opt/meshcentral/meshcentral-data/config.json";
+    const loginKeyFile = "/run/secrets/meshcentral/login-key";
 
     const config = JSON.parse(fs.readFileSync(file, "utf8"));
 
@@ -32,10 +33,23 @@ data:
     config.domains[""].allowedOrigin =
       "remote.shopnoltd.dpdns.org";
 
+    if (fs.existsSync(loginKeyFile)) {
+      const loginKey = fs.readFileSync(loginKeyFile, "utf8").trim();
+
+      if (!/^[0-9a-fA-F]{160}$/.test(loginKey)) {
+        throw new Error("meshcentral automation login key must be 80 bytes / 160 hex characters");
+      }
+
+      config.domains[""].loginKey = loginKey;
+    }
+
+    config.domains[""].agentInviteCodes = true;
+    config.domains[""].lockAgentDownload = false;
+
     fs.writeFileSync(
       file,
       JSON.stringify(config, null, 2) + "\n",
       { mode: 0o644 }
     );
 
-    console.log("MeshCentral origin configuration normalized.");
+    console.log("MeshCentral origin, automation authentication and agent invitation configuration normalized.");
