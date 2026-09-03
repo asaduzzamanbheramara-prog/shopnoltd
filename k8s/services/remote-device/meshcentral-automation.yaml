@@ -1,0 +1,316 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: meshcentral-automation
+  namespace: shopno-tools
+  labels:
+    app.kubernetes.io/name: meshcentral-automation
+    app.kubernetes.io/part-of: shopnoltd
+spec:
+  selector:
+    app.kubernetes.io/name: meshcentral-automation
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: meshcentral-automation
+  namespace: shopno-tools
+  labels:
+    app.kubernetes.io/name: meshcentral-automation
+    app.kubernetes.io/part-of: shopnoltd
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: meshcentral-automation
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: meshcentral-automation
+    spec:
+      automountServiceAccountToken: false
+      containers:
+        - name: automation
+          image: ghcr.io/ylianst/meshcentral:latest
+          imagePullPolicy: IfNotPresent
+          command:
+            - node
+            - /app/server.js
+          env:
+            - name: PORT
+              value: "8080"
+            - name: MESH_URL
+              value: https://remote-engine.shopnoltd.dpdns.org
+            - name: MESHCTRL
+              value: /opt/meshcentral/meshcentral/meshctrl.js
+            - name: REGISTRY_URL
+              value: http://remote-device-registry.shopno-tools.svc.cluster.local:8080
+            - name: REGISTRY_CONTROL_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: remote-device-control-secret
+                  key: control-token
+                  optional: false
+            - name: MESH_LOGIN_KEY_FILE
+              value: /run/secrets/meshcentral/login-key
+          ports:
+            - name: http
+              containerPort: 8080
+          volumeMounts:
+            - name: app
+              mountPath: /app
+              readOnly: true
+            - name: mesh-login-key
+              mountPath: /run/secrets/meshcentral
+              readOnly: true
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 20m
+              memory: 96Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+            runAsNonRoot: false
+      volumes:
+        - name: app
+          configMap:
+            name: meshcentral-automation-source
+        - name: mesh-login-key
+          secret:
+            secretName: meshcentral-automation-secret
+            items:
+              - key: login-key
+                path: login-key
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: meshcentral-automation-source
+  namespace: shopno-tools
+data:
+  server.js: |
+    const http = require('http');
+    const fs = require('fs');
+    const crypto = require('crypto');
+    const { execFile } = require('child_process');
+
+    const PORT = Number(process.env.PORT || 8080);
+    const MESH_URL = (process.env.MESH_URL || 'https://remote-engine.shopnoltd.dpdns.org').replace(/\/$/, '');
+    const MESHCTRL = process.env.MESHCTRL || '/opt/meshcentral/meshcentral/meshctrl.js';
+    const REGISTRY_URL = (process.env.REGISTRY_URL || '').replace(/\/$/, '');
+    const CONTROL_TOKEN = process.env.REGISTRY_CONTROL_TOKEN || '';
+    const LOGIN_KEY_FILE = process.env.MESH_LOGIN_KEY_FILE || '/run/secrets/meshcentral/login-key';
+
+    function json(res, status, body) {
+      const data = JSON.stringify(body);
+      res.writeHead(status, {'content-type':'application/json; charset=utf-8'});
+      res.end(data);
+    }
+
+    function runMeshCtrl(args) {
+      return new Promise((resolve, reject) => {
+        execFile('node', [MESHCTRL, ...args], {
+          timeout: 45000,
+          maxBuffer: 8 * 1024 * 1024,
+          env: process.env,
+        }, (error, stdout, stderr) => {
+          if (error) {
+            const detail = (stderr || stdout || error.message).trim().slice(-4000);
+            reject(new Error(detail));
+            return;
+          }
+          resolve((stdout || '').trim());
+        });
+      });
+    }
+
+    function meshArgs(command, extra = []) {
+      return [
+        command,
+        '--url', MESH_URL,
+        '--loginkeyfile', LOGIN_KEY_FILE,
+        '--logindomain', '',
+        ...extra,
+      ];
+    }
+
+    function parseJsonOutput(text) {
+      try { return JSON.parse(text); } catch (_) {}
+      const start = text.indexOf('{');
+      const end = text.lastIndexOf('}');
+      if (start >= 0 && end > start) {
+        try { return JSON.parse(text.slice(start, end + 1)); } catch (_) {}
+      }
+      const a = text.indexOf('[');
+      const b = text.lastIndexOf(']');
+      if (a >= 0 && b > a) {
+        try { return JSON.parse(text.slice(a, b + 1)); } catch (_) {}
+      }
+      return null;
+    }
+
+    function quoteName(id) {
+      return String(id || '').trim();
+    }
+
+    async function registry(method, path, body) {
+      const headers = {
+        'content-type': 'application/json',
+        'x-shopnoltd-control-token': CONTROL_TOKEN,
+      };
+      const response = await fetch(`${REGISTRY_URL}${path}`, {
+        method,
+        headers,
+        body: body === undefined ? undefined : JSON.stringify(body),
+      });
+      const text = await response.text();
+      let data;
+      try { data = JSON.parse(text); } catch (_) { data = {raw:text}; }
+      if (!response.ok) throw new Error(`registry HTTP ${response.status}: ${text.slice(-2000)}`);
+      return data;
+    }
+
+    function deviceGroupName(device) {
+      return `shopnoltd-device-${device.id}`;
+    }
+
+    async function listGroups() {
+      const out = await runMeshCtrl(meshArgs('ListDeviceGroups'));
+      const parsed = parseJsonOutput(out);
+      if (Array.isArray(parsed)) return parsed;
+      if (parsed && Array.isArray(parsed.deviceGroups)) return parsed.deviceGroups;
+      if (parsed && Array.isArray(parsed.groups)) return parsed.groups;
+      throw new Error('MeshCtrl ListDeviceGroups returned an unrecognized response');
+    }
+
+    async function ensureGroup(device) {
+      const name = deviceGroupName(device);
+      const groups = await listGroups();
+      const existing = groups.find(g => String(g.name || g.meshname || '').trim() === name);
+      if (existing) {
+        return {
+          mesh_id: existing._id || existing.id || existing.meshid || existing.meshId,
+          name,
+        };
+      }
+
+      const out = await runMeshCtrl(meshArgs('AddDeviceGroup', ['--name', name]));
+      const parsed = parseJsonOutput(out);
+      let meshId = parsed && (parsed._id || parsed.id || parsed.meshid || parsed.meshId);
+      if (!meshId) {
+        const refreshed = await listGroups();
+        const created = refreshed.find(g => String(g.name || g.meshname || '').trim() === name);
+        meshId = created && (created._id || created.id || created.meshid || created.meshId);
+      }
+      if (!meshId) throw new Error(`MeshCentral group created but id could not be determined for ${name}`);
+      return {mesh_id: meshId, name};
+    }
+
+    async function generateInvite(meshId) {
+      const out = await runMeshCtrl(meshArgs('GenerateInviteLink', [
+        '--id', meshId,
+        '--hours', '24',
+      ]));
+      const match = out.match(/https?:\/\/[^\s\"']+/);
+      if (!match) throw new Error('MeshCtrl did not return an invitation URL');
+      return match[0].replace(/[),.;]+$/, '');
+    }
+
+    async function provision(deviceId) {
+      const devices = await registry('GET', '/api/devices');
+      const device = Array.isArray(devices) ? devices.find(d => d.id === deviceId) : null;
+      if (!device) throw Object.assign(new Error('device not found'), {statusCode:404});
+
+      const group = await ensureGroup(device);
+      await registry('POST', `/api/devices/${encodeURIComponent(deviceId)}/meshcentral-link`, {
+        meshcentral_mesh_id: group.mesh_id,
+      });
+      const inviteUrl = await generateInvite(group.mesh_id);
+      return {
+        ok: true,
+        device_id: deviceId,
+        meshcentral_mesh_id: group.mesh_id,
+        meshcentral_group_name: group.name,
+        invitation_url: inviteUrl,
+        invitation_expires_hours: 24,
+      };
+    }
+
+    async function correlate() {
+      const devices = await registry('GET', '/api/devices');
+      const groups = await listGroups();
+      const groupMap = new Map();
+      for (const g of groups) {
+        const id = g._id || g.id || g.meshid || g.meshId;
+        if (id) groupMap.set(String(id), g);
+      }
+
+      const out = await runMeshCtrl(meshArgs('ListDevices'));
+      const parsed = parseJsonOutput(out);
+      const meshDevices = Array.isArray(parsed) ? parsed :
+        (parsed && (parsed.devices || parsed.deviceList || []));
+
+      let linked = 0;
+      for (const device of devices || []) {
+        const groupName = deviceGroupName(device);
+        const group = [...groupMap.values()].find(g => String(g.name || g.meshname || '').trim() === groupName);
+        if (!group) continue;
+        const meshId = group._id || group.id || group.meshid || group.meshId;
+        const candidates = meshDevices.filter(d => {
+          const mid = d.meshid || d.meshId || d.mesh || d.meshidstr;
+          return mid && String(mid) === String(meshId);
+        });
+        if (candidates.length !== 1) continue;
+        const node = candidates[0];
+        const nodeId = node._id || node.id || node.nodeid || node.nodeId;
+        if (!nodeId) continue;
+        await registry('POST', `/api/devices/${encodeURIComponent(device.id)}/meshcentral-link`, {
+          meshcentral_node_id: String(nodeId),
+          meshcentral_mesh_id: String(meshId),
+        });
+        linked++;
+      }
+      return {ok:true, linked};
+    }
+
+    async function handle(req, res) {
+      if (req.method === 'GET' && req.url === '/healthz') return json(res, 200, {status:'ok', service:'meshcentral-automation'});
+      if (req.method === 'GET' && req.url === '/api/automation/status') return json(res, 200, {ok:true, meshcentral:true});
+
+      if (req.method === 'POST' && req.url === '/api/automation/reconcile') {
+        try { return json(res, 200, await correlate()); }
+        catch (e) { return json(res, e.statusCode || 502, {ok:false, error:e.message}); }
+      }
+
+      const m = req.url.match(/^\/api\/automation\/devices\/([^/]+)\/provision$/);
+      if (req.method === 'POST' && m) {
+        try { return json(res, 200, await provision(decodeURIComponent(m[1]))); }
+        catch (e) { return json(res, e.statusCode || 502, {ok:false, error:e.message}); }
+      }
+
+      json(res, 404, {detail:'not found'});
+    }
+
+    http.createServer((req,res) => handle(req,res).catch(e => json(res,500,{ok:false,error:e.message}))).listen(PORT, '0.0.0.0');
