@@ -9,6 +9,7 @@ import Callback from './pages/Callback'
 import Dashboard from './pages/Dashboard'
 import ProtectedRoute from './components/ProtectedRoute'
 import Blog from './pages/Blog'
+import BlogPost from './pages/BlogPost'
 import Plugins from './pages/Plugins'
 import Services from './pages/Services'
 import DomainRegistration from "./pages/DomainRegistration";
@@ -17,7 +18,6 @@ import AdminInfrastructure from './pages/AdminInfrastructure'
 import AdminRoute from './components/AdminRoute'
 import FinancialCenter from './pages/FinancialCenter'
 import { isPlatformAdmin } from './lib/jwt'
-
 
 const PUBLIC_LINKS = [
   ['Pricing', '/pricing'],
@@ -39,98 +39,34 @@ function Nav() {
   }
 
   return (
-    <nav
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        flexWrap: 'wrap',
-        gap: 12,
-        padding: '12px clamp(14px, 3vw, 24px)',
-        background: '#0ea5e9',
-        color: 'white',
-        boxSizing: 'border-box',
-      }}
-    >
-      <Link
-        to="/"
-        style={{
-          color: 'white',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-          fontWeight: 700,
-          fontSize: 20,
-          textDecoration: 'none',
-          whiteSpace: 'nowrap',
-          marginRight: 'auto',
-        }}
-      >
-        <img
-          src="/logo.svg"
-          alt="Shopnoltd"
-          style={{
-            height: 28,
-            width: 28,
-            objectFit: 'contain',
-            flex: '0 0 auto',
-          }}
-        />
+    <nav style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 12, padding: '12px clamp(14px, 3vw, 24px)', background: '#0ea5e9', color: 'white', boxSizing: 'border-box' }}>
+      <Link to="/" style={{ color: 'white', display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: 20, textDecoration: 'none', whiteSpace: 'nowrap', marginRight: 'auto' }}>
+        <img src="/logo.svg" alt="Shopnoltd" style={{ height: 28, width: 28, objectFit: 'contain', flex: '0 0 auto' }} />
         Shopnoltd
       </Link>
 
-      <div
-        style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          alignItems: 'center',
-          justifyContent: 'flex-end',
-          gap: '8px 16px',
-          minWidth: 0,
-        }}
-      >
+      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'flex-end', gap: '8px 16px', minWidth: 0 }}>
         {PUBLIC_LINKS.map(([label, path]) => (
-          <Link
-            key={path}
-            to={path}
-            style={{
-              color: 'white',
-              textDecoration: 'none',
-              padding: '6px 2px',
-              whiteSpace: 'nowrap',
-            }}
-          >
+          <Link key={path} to={path} style={{ color: 'white', textDecoration: 'none', padding: '6px 2px', whiteSpace: 'nowrap' }}>
             {label}
           </Link>
         ))}
         {!loggedIn && (
           <>
-            <Link key="/login" to="/login" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px', whiteSpace: 'nowrap' }}>Login</Link>
-            <Link key="/register" to="/register" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px', whiteSpace: 'nowrap' }}>Register</Link>
+            <Link to="/login" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px', whiteSpace: 'nowrap' }}>Login</Link>
+            <Link to="/register" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px', whiteSpace: 'nowrap' }}>Register</Link>
           </>
         )}
         {loggedIn && (
           <>
-            <Link key="/dashboard" to="/dashboard" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px', whiteSpace: 'nowrap' }}>Dashboard</Link>
+            <Link to="/dashboard" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px', whiteSpace: 'nowrap' }}>Dashboard</Link>
             {isAdmin && (
               <>
-                <Link key="/admin" to="/admin" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px', whiteSpace: 'nowrap', fontWeight: 700 }}>Admin</Link>
-                <Link key="/admin/infrastructure" to="/admin/infrastructure" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px', whiteSpace: 'nowrap', fontWeight: location.pathname.startsWith('/admin/infrastructure') ? 700 : 400 }}>Infrastructure</Link>
+                <Link to="/admin" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px', whiteSpace: 'nowrap', fontWeight: 700 }}>Admin</Link>
+                <Link to="/admin/infrastructure" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px', whiteSpace: 'nowrap', fontWeight: location.pathname.startsWith('/admin/infrastructure') ? 700 : 400 }}>Infrastructure</Link>
               </>
             )}
-            <button
-              key="/logout"
-              onClick={handleLogout}
-              style={{
-                color: 'white',
-                background: 'transparent',
-                border: '1px solid rgba(255,255,255,0.5)',
-                borderRadius: 6,
-                padding: '5px 12px',
-                cursor: 'pointer',
-                whiteSpace: 'nowrap',
-                fontSize: 14,
-              }}
-            >
+            <button onClick={handleLogout} style={{ color: 'white', background: 'transparent', border: '1px solid rgba(255,255,255,0.5)', borderRadius: 6, padding: '5px 12px', cursor: 'pointer', whiteSpace: 'nowrap', fontSize: 14 }}>
               Logout
             </button>
           </>
@@ -140,17 +76,11 @@ function Nav() {
   )
 }
 
-// Maps the branded public subdomains (each already routed by the ingress/
-// tunnel to this same web-portal pod) to the in-app route that should
-// render when someone lands on "/" via that hostname. Without this, every
-// one of these subdomains just renders <Home /> because React Router only
-// matches on path, not hostname.
 const SUBDOMAIN_ROUTES = {
   'billing.shopnoltd.dpdns.org': '/billing',
   'payment.shopnoltd.dpdns.org': '/payments',
   'exchange.shopnoltd.dpdns.org': '/exchange',
   'admin.shopnoltd.dpdns.org': '/admin',
-  // No dedicated support page yet — send to dashboard rather than a dead end.
   'support.shopnoltd.dpdns.org': '/dashboard',
 }
 
@@ -163,7 +93,6 @@ function SubdomainRedirect() {
     if (target && location.pathname === '/') {
       navigate(target, { replace: true })
     }
-    // Only needs to run once per hostname on initial load at "/".
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -179,6 +108,7 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/pricing" element={<Pricing />} />
         <Route path="/blog" element={<Blog />} />
+        <Route path="/blog/:slug" element={<BlogPost />} />
         <Route path="/plugins" element={<Plugins />} />
         <Route path="/services" element={<Services />} />
         <Route path="/domain-registration" element={<DomainRegistration />} />

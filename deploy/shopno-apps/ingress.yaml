@@ -7,14 +7,15 @@ metadata:
     app.kubernetes.io/name: enketo
     app.kubernetes.io/part-of: shopnoltd
   annotations:
-    cert-manager.io/cluster-issuer: letsencrypt-prod
     nginx.ingress.kubernetes.io/proxy-body-size: "50m"
 spec:
   ingressClassName: nginx
   tls:
     - hosts:
         - enketo.shopnoltd.dpdns.org
-      secretName: enketo-tls
+      # Reuse the existing Shopnoltd wildcard certificate; avoid a new ACME
+      # order for a hostname that is already covered by the wildcard cert.
+      secretName: shopno-wildcard-tls
   rules:
     - host: enketo.shopnoltd.dpdns.org
       http:
