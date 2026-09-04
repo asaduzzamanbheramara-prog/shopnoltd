@@ -1,0 +1,7 @@
+# Apply the cluster-wide Shopnoltd wildcard TLS policy to active application namespaces.
+# These namespaces each carry the namespace-local shopno-wildcard-tls Secret.
+- op: replace
+  path: /spec/tls/0/secretName
+  value: shopno-wildcard-tls
+- op: remove
+  path: /metadata/annotations/cert-manager.io~1cluster-issuer
