@@ -6,4 +6,6 @@ export const KEYCLOAK_REALM = import.meta.env.VITE_KEYCLOAK_REALM || 'shopnoltd'
 export const KEYCLOAK_CLIENT_ID = import.meta.env.VITE_KEYCLOAK_CLIENT_ID || 'shopnoltd-web'
 export const REDIRECT_URI = `${window.location.origin}/callback`
 
-export const API_URL = import.meta.env.VITE_API_URL || ''
+// Financial/user API routes are served by the unified API host. Keep this
+// build-time overrideable for local/dev deployments.
+export const API_URL = import.meta.env.VITE_API_URL || 'https://api.shopnoltd.dpdns.org'
