@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter, Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom'
 import Home from './pages/Home'
@@ -140,10 +140,41 @@ function Nav() {
   )
 }
 
+// Maps the branded public subdomains (each already routed by the ingress/
+// tunnel to this same web-portal pod) to the in-app route that should
+// render when someone lands on "/" via that hostname. Without this, every
+// one of these subdomains just renders <Home /> because React Router only
+// matches on path, not hostname.
+const SUBDOMAIN_ROUTES = {
+  'billing.shopnoltd.dpdns.org': '/billing',
+  'payment.shopnoltd.dpdns.org': '/payments',
+  'exchange.shopnoltd.dpdns.org': '/exchange',
+  'admin.shopnoltd.dpdns.org': '/admin',
+  // No dedicated support page yet — send to dashboard rather than a dead end.
+  'support.shopnoltd.dpdns.org': '/dashboard',
+}
+
+function SubdomainRedirect() {
+  const navigate = useNavigate()
+  const location = useLocation()
+
+  useEffect(() => {
+    const target = SUBDOMAIN_ROUTES[window.location.hostname]
+    if (target && location.pathname === '/') {
+      navigate(target, { replace: true })
+    }
+    // Only needs to run once per hostname on initial load at "/".
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  return null
+}
+
 function App() {
   return (
     <BrowserRouter>
       <Nav />
+      <SubdomainRedirect />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/pricing" element={<Pricing />} />
