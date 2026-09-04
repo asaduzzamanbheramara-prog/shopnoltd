@@ -59,13 +59,14 @@ class Wallet(Base):
     frozen = Column(Numeric(20, 8), default=0, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    __table_args__ = (Index("ix_wallet_user_currency", "user_id", "currency", unique=True),)
+    __table_args__ = (Index("ix_wallet_tenant_user_currency", "tenant_id", "user_id", "currency", unique=True),)
 
 
 class Transaction(Base):
     __tablename__ = "transactions"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     tenant_id = Column(String(64), nullable=False, index=True)
+    user_id = Column(String(64), nullable=False, index=True)
     wallet_id = Column(UUID(as_uuid=True), ForeignKey("wallets.id"), nullable=False)
     type = Column(Enum(TxType), nullable=False)
     method = Column(Enum(PaymentMethod), nullable=False)
@@ -79,3 +80,4 @@ class Transaction(Base):
     approved_by = Column(String(64), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
     completed_at = Column(DateTime, nullable=True)
+    __table_args__ = (Index("ix_tx_external_method", "external_id", "method"),)
