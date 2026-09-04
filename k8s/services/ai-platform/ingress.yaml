@@ -13,7 +13,9 @@ spec:
   tls:
     - hosts:
         - ai-platform.shopnoltd.dpdns.org
-      secretName: ai-platform-tls
+      # Reuse the cluster wildcard certificate already used by the Shopnoltd
+      # public ingress layer. Do not trigger a new ACME certificate issuance.
+      secretName: shopno-wildcard-tls
   rules:
     - host: ai-platform.shopnoltd.dpdns.org
       http:
