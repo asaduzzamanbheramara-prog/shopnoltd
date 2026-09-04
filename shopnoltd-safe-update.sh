@@ -149,7 +149,19 @@ kubectl -n "$ARGO_NS" get application "$APP" \
 
 log "8. STAGE ONLY INTENDED FILES"
 
-git reset >/dev/null 2>&1 || true
+STAGED_BEFORE="$(git diff --cached --name-only)"
+
+if [[ -n "$STAGED_BEFORE" ]]; then
+    echo
+    echo "STOP: staged changes already exist."
+    echo
+    echo "Existing staged files:"
+    printf '%s\n' "$STAGED_BEFORE"
+    echo
+    echo "The safe update workflow will not reset, unstage,"
+    echo "overwrite, or otherwise modify the existing index."
+    exit 2
+fi
 
 git add -- "${UPDATE_FILES[@]}"
 
