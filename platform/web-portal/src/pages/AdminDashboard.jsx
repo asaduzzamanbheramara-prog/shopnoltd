@@ -475,25 +475,31 @@ export default function AdminDashboard() {
     setError('')
 
     try {
-      const candidates = [
-        'https://api.shopnoltd.dpdns.org/healthz',
-        'https://api.shopnoltd.dpdns.org/readyz',
-      ]
-
-      const results = await Promise.allSettled(
-        candidates.map((url) =>
-          fetch(url, {
-            headers: { Accept: 'application/json' },
-          }),
-        ),
+      const response = await fetch(
+        'https://admin-infrastructure.shopnoltd.dpdns.org/api/v1/admin/infrastructure/pods',
+        { headers: authHeaders() },
       )
 
-      const live = results.map((result, index) => ({
-        name: index === 0 ? 'api-service /healthz' : 'api-service /readyz',
-        status: result.status === 'fulfilled' && result.value.ok
-          ? 'healthy'
-          : 'down',
-      }))
+      if (!response.ok) {
+        throw new Error(`infrastructure API returned HTTP ${response.status}`)
+      }
+
+      const pods = await response.json()
+
+      const live = pods.map((pod) => {
+        const phase = String(pod.phase || pod.status || '').toLowerCase()
+        const status =
+          phase.includes('running') || phase.includes('succeeded')
+            ? 'healthy'
+            : phase.includes('pending') || phase.includes('unknown')
+              ? 'degraded'
+              : 'down'
+
+        return {
+          name: pod.namespace ? `${pod.namespace}/${pod.name}` : pod.name,
+          status,
+        }
+      })
 
       setServices(live)
     } catch (err) {
