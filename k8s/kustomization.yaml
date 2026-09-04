@@ -52,6 +52,10 @@ resources:
 - services/minio
 - services/keycloak
 - services/gitea
+- shopno-apps/kobo-worker.yaml
+- services/enketo
+- services/mail
+- services/chatwoot
 - services/code-server
 - services/remote-device
 - services/kobotoolbox
