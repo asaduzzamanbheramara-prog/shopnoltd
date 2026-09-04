@@ -19,7 +19,7 @@ class DepositIn(BaseModel):
     amount: float = Field(gt=0)
     method: PaymentMethod
     return_url: str | None = None
-    metadata: dict = {}
+    metadata: dict = Field(default_factory=dict)
 
 
 class WithdrawalIn(BaseModel):
@@ -27,12 +27,12 @@ class WithdrawalIn(BaseModel):
     amount: float = Field(gt=0)
     method: PaymentMethod
     destination: str
-    metadata: dict = {}
+    metadata: dict = Field(default_factory=dict)
 
 
 class TransferIn(BaseModel):
     to_user_id: str
-    currency: str
+    currency: str = Field(min_length=3, max_length=8)
     amount: float = Field(gt=0)
     note: str | None = None
 
