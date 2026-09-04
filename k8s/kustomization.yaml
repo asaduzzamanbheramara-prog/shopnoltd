@@ -1,12 +1,6 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-
-
-
-
-
-
 resources:
 - namespaces/shopno-platform.yaml
 - namespaces/shopno-apps.yaml
@@ -60,3 +54,13 @@ resources:
 - services/mongodb
 - services/session-manager
 - ingress/cloudflared
+
+patches:
+- path: tls/wildcard-tls.json
+  target:
+    group: networking.k8s.io
+    version: v1
+    kind: Ingress
+    name: .*
+    namespace: ^shopno-(apps|data|identity|mail|monitoring|payments|platform|tools)$
+    annotationSelector: cert-manager.io/cluster-issuer=letsencrypt-prod
