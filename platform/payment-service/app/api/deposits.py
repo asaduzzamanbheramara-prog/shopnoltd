@@ -21,39 +21,45 @@ async def db():
 
 
 async def current_user(creds: HTTPAuthorizationCredentials = Depends(bearer)):
-    return await verify_token(creds.credentials)
+    try:
+        user = await verify_token(creds.credentials)
+    except ValueError as exc:
+        raise HTTPException(401, "invalid or expired authentication token") from exc
+    if not user.get("sub"):
+        raise HTTPException(401, "authentication subject missing")
+    return user
 
 
 @router.post("", response_model=TxOut, status_code=201)
 async def create_deposit(
     body: DepositIn, user=Depends(current_user), s: AsyncSession = Depends(db)
 ):
+    currency = body.currency.upper()
+    tenant_id = user.get("tenant_id", "default")
     if body.amount < settings.min_deposit or body.amount > settings.max_deposit:
         raise HTTPException(400, "amount out of range")
     res = await s.execute(
         select(Wallet).where(
-            Wallet.user_id == user["sub"], Wallet.currency == body.currency.upper()
+            Wallet.tenant_id == tenant_id,
+            Wallet.user_id == user["sub"],
+            Wallet.currency == currency,
         )
     )
     w = res.scalar_one_or_none()
     if not w:
-        w = Wallet(
-            tenant_id=user.get("tenant_id", "default"),
-            user_id=user["sub"],
-            currency=body.currency.upper(),
-            balance=0,
-        )
+        w = Wallet(tenant_id=tenant_id, user_id=user["sub"], currency=currency, balance=0)
         s.add(w)
         await s.flush()
     tx = Transaction(
-        tenant_id=user.get("tenant_id", "default"),
+        tenant_id=tenant_id,
+        user_id=user["sub"],
         wallet_id=w.id,
         type=TxType.deposit,
         method=body.method,
         status=TxStatus.pending,
         amount=body.amount,
         fee=0,
-        currency=body.currency.upper(),
+        currency=currency,
         meta=body.metadata,
     )
     s.add(tx)
@@ -63,20 +69,11 @@ async def create_deposit(
     tx.external_id = out.get("external_id")
     await s.commit()
     return TxOut(
-        id=str(tx.id),
-        type=tx.type,
-        method=tx.method,
-        status=tx.status,
-        amount=float(tx.amount),
-        fee=0,
-        currency=tx.currency,
-        reference=tx.external_id,
-        created_at=tx.created_at.isoformat(),
-        completed_at=None,
-        redirect_url=out.get("redirect_url"),
-        qr_code=out.get("qr_code"),
-        address=out.get("address"),
-        approval_url=out.get("approval_url"),
+        id=str(tx.id), type=tx.type, method=tx.method, status=tx.status,
+        amount=float(tx.amount), fee=0, currency=tx.currency,
+        reference=tx.external_id, created_at=tx.created_at.isoformat(), completed_at=None,
+        redirect_url=out.get("redirect_url"), qr_code=out.get("qr_code"),
+        address=out.get("address"), approval_url=out.get("approval_url"),
     )
 
 
@@ -92,20 +89,15 @@ async def get_deposit(tx_id: str, user=Depends(current_user), s: AsyncSession = 
             Transaction.id == transaction_id,
             Transaction.tenant_id == user.get("tenant_id", "default"),
             Transaction.user_id == user["sub"],
+            Transaction.type == TxType.deposit,
         )
     )
     tx = res.scalar_one_or_none()
     if not tx:
         raise HTTPException(404, "tx not found")
     return TxOut(
-        id=str(tx.id),
-        type=tx.type,
-        method=tx.method,
-        status=tx.status,
-        amount=float(tx.amount),
-        fee=float(tx.fee),
-        currency=tx.currency,
-        reference=tx.external_id,
-        created_at=tx.created_at.isoformat(),
+        id=str(tx.id), type=tx.type, method=tx.method, status=tx.status,
+        amount=float(tx.amount), fee=float(tx.fee), currency=tx.currency,
+        reference=tx.external_id, created_at=tx.created_at.isoformat(),
         completed_at=tx.completed_at.isoformat() if tx.completed_at else None,
     )
