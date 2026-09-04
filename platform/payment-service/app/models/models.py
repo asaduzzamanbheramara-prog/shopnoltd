@@ -38,6 +38,7 @@ class PaymentMethod(str, enum.Enum):
     rocket = "rocket"
     bank = "bank"
     manual = "manual"
+    transfer = "transfer"
     btc = "btc"
     eth = "eth"
     usdt = "usdt"
@@ -59,7 +60,9 @@ class Wallet(Base):
     frozen = Column(Numeric(20, 8), default=0, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    __table_args__ = (Index("ix_wallet_tenant_user_currency", "tenant_id", "user_id", "currency", unique=True),)
+    __table_args__ = (
+        Index("ix_wallet_tenant_user_currency", "tenant_id", "user_id", "currency", unique=True),
+    )
 
 
 class Transaction(Base):
