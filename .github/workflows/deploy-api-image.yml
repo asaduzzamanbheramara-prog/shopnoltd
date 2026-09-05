@@ -6,7 +6,6 @@ on:
     paths:
       - 'platform/api-service/**'
       - 'shared/**'
-      - 'k8s/services/api-service/deployment.yaml'
       - '.github/workflows/deploy-api-image.yml'
   workflow_dispatch:
 
