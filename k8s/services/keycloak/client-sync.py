@@ -146,9 +146,75 @@ def sync_client(token):
                 f"Unable to update Keycloak client (HTTP {code})"
             )
 
+        mapper_query = urllib.parse.urlencode({
+            "client": client_uuid,
+        })
+
+        code, mappers = request(
+            "GET",
+            f"/admin/realms/{REALM}/clients/{client_uuid}/protocol-mappers/models?{mapper_query}",
+            token=token,
+        )
+
+        if code != 200 or not isinstance(mappers, list):
+            raise RuntimeError(
+                f"Unable to query Keycloak protocol mappers (HTTP {code})"
+            )
+
+        audience_mapper = next(
+            (
+                m for m in mappers
+                if m.get("name") == "api-service-audience"
+            ),
+            None,
+        )
+
+        mapper_payload = {
+            "name": "api-service-audience",
+            "protocol": "openid-connect",
+            "protocolMapper": "oidc-audience-mapper",
+            "config": {
+                "included.client.audience": "api-service",
+                "id.token.claim": "false",
+                "access.token.claim": "true",
+                "access.tokenResponse.claim": "false",
+            },
+        }
+
+        if audience_mapper:
+            mapper_id = audience_mapper["id"]
+
+            code, _ = request(
+                "PUT",
+                f"/admin/realms/{REALM}/clients/{client_uuid}/protocol-mappers/models/{mapper_id}",
+                token=token,
+                body=mapper_payload,
+            )
+
+            if code != 204:
+                raise RuntimeError(
+                    f"Unable to update api-service audience mapper (HTTP {code})"
+                )
+
+            print("[OK] updated api-service audience mapper")
+        else:
+            code, _ = request(
+                "POST",
+                f"/admin/realms/{REALM}/clients/{client_uuid}/protocol-mappers/models",
+                token=token,
+                body=mapper_payload,
+            )
+
+            if code != 201:
+                raise RuntimeError(
+                    f"Unable to create api-service audience mapper (HTTP {code})"
+                )
+
+            print("[OK] created api-service audience mapper")
+
         print(
-            "[OK] updated shopnoltd-web "
-            "with devices.shopnoltd.dpdns.org redirect"
+            "[OK] synchronized shopnoltd-web "
+            "with api-service JWT audience"
         )
 
     else:
