@@ -36,17 +36,46 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build and push immutable image
+      - name: Build api-service without cache
         uses: docker/build-push-action@v5
         with:
           context: .
           file: platform/api-service/Dockerfile
-          push: true
+          load: true
+          no-cache: true
           tags: |
             ${{ env.IMAGE }}:${{ github.sha }}
             ${{ env.IMAGE }}:latest
-          cache-from: type=gha,scope=api-service
-          cache-to: type=gha,mode=max,scope=api-service
+
+      - name: Verify image contents and ASGI application
+        run: |
+          set -euo pipefail
+
+          IMAGE="${{ env.IMAGE }}:${{ github.sha }}"
+
+          echo "Checking /app/app/main.py..."
+          SIZE="$(docker run --rm --entrypoint /bin/sh "$IMAGE" -c 'wc -c < /app/app/main.py')"
+          echo "main.py size: ${SIZE} bytes"
+          test "$SIZE" -gt 0
+
+          echo "Checking Python import..."
+          docker run --rm --entrypoint /usr/local/bin/python "$IMAGE" -c '
+          import app.main
+          assert app.main.__file__ == "/app/app/main.py", app.main.__file__
+          assert hasattr(app.main, "app"), "FastAPI app object missing"
+          print("app.main:", app.main.__file__)
+          print("FastAPI app:", app.main.app)
+          '
+
+          echo "Checking Uvicorn import target..."
+          docker run --rm --entrypoint /usr/local/bin/python "$IMAGE" -m uvicorn app.main:app --help >/dev/null
+          echo "API image validation PASSED"
+
+      - name: Push verified image
+        run: |
+          set -euo pipefail
+          docker push "${IMAGE}:${GITHUB_SHA}"
+          docker push "${IMAGE}:latest"
 
       - name: Pin GitOps deployment to this commit image
         run: |
