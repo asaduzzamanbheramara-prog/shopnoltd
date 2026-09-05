@@ -18,5 +18,12 @@ class Settings(BaseSettings):
     def cors_origins_list(self):
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
 
+    @property
+    def cors_origin_regex(self) -> str:
+        # Previously only matched the bare root domain exactly, missing every
+        # subdomain (including this service's own freedomain./domain. hosts).
+        # This regex matches the root domain and any subdomain instead.
+        return r"^https://([a-z0-9-]+\.)*shopnoltd\.dpdns\.org$"
+
 
 settings = Settings()
