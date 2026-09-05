@@ -90,15 +90,20 @@ jobs:
 
       - name: Pin GitOps deployment to this commit image
         run: |
+          set -euo pipefail
           python3 - <<'PY'
           from pathlib import Path
+          import os
+          import re
           p = Path('k8s/services/api-service/deployment.yaml')
           s = p.read_text()
-          old = 'image: ghcr.io/${{ github.repository_owner }}/shopnoltd/api-service:latest'
-          new = 'image: ghcr.io/${{ github.repository_owner }}/shopnoltd/api-service:${{ github.sha }}'
-          if old not in s:
-              raise SystemExit('api-service image reference was not in expected latest form')
-          p.write_text(s.replace(old, new, 1))
+          image = f"ghcr.io/{os.environ['GITHUB_REPOSITORY_OWNER']}/shopnoltd/api-service"
+          new = f"image: {image}:{os.environ['GITHUB_SHA']}"
+          pattern = rf"^\s*image:\s*{re.escape(image)}:[^\s]+\s*$"
+          s2, count = re.subn(pattern, new, s, count=1, flags=re.MULTILINE)
+          if count != 1:
+              raise SystemExit('api-service image reference was not found exactly once in GitOps deployment')
+          p.write_text(s2)
           PY
 
           git config user.name 'github-actions[bot]'
