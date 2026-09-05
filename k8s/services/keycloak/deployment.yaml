@@ -53,6 +53,8 @@ spec:
                 secretKeyRef:
                   name: keycloak-secret
                   key: KC_BOOTSTRAP_ADMIN_PASSWORD
+            - name: JAVA_OPTS_APPEND
+              value: "-Xms256m -Xmx384m -Djava.net.preferIPv4Stack=true"
           resources:
             requests:
               cpu: 100m
