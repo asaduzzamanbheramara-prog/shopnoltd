@@ -47,6 +47,8 @@ spec:
       ports:
         - port: 53
           protocol: UDP
+        - port: 80
+          protocol: TCP
         - port: 443
           protocol: TCP
         - port: 5432
