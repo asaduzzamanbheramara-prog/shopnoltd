@@ -32,7 +32,6 @@ REQUIRED_WEB_ORIGINS = [
     "https://devices.shopnoltd.dpdns.org",
 ]
 
-
 API_AUDIENCE_MAPPER_NAME = "api-service-audience"
 API_AUDIENCE_REPAIR_MAPPER_NAME = "api-service-audience-repaired"
 
@@ -102,6 +101,117 @@ def get_admin_token():
     return payload["access_token"]
 
 
+def sync_api_audience_mapper(token, client_uuid):
+    code, mappers = request(
+        "GET",
+        f"/admin/realms/{REALM}/clients/{client_uuid}/protocol-mappers/models",
+        token=token,
+    )
+
+    if code != 200 or not isinstance(mappers, list):
+        raise RuntimeError(
+            f"Unable to query Keycloak protocol mappers (HTTP {code})"
+        )
+
+    audience_mappers = [
+        m for m in mappers
+        if m.get("name") in {
+            API_AUDIENCE_MAPPER_NAME,
+            API_AUDIENCE_REPAIR_MAPPER_NAME,
+        }
+        and m.get("protocol") == "openid-connect"
+        and m.get("protocolMapper") == "oidc-audience-mapper"
+    ]
+
+    audience_mapper = next(
+        (
+            m for m in audience_mappers
+            if m.get("name") == API_AUDIENCE_MAPPER_NAME
+            and m.get("id")
+        ),
+        None,
+    )
+
+    if audience_mapper is None:
+        audience_mapper = next(
+            (m for m in audience_mappers if m.get("id")),
+            None,
+        )
+
+    # Use a custom audience rather than relying on an api-service Keycloak
+    # client existing. Keycloak documents included.custom.audience as the
+    # deterministic way to add a literal value to the access-token aud claim.
+    mapper_payload = {
+        "protocol": "openid-connect",
+        "protocolMapper": "oidc-audience-mapper",
+        "config": {
+            "included.custom.audience": "api-service",
+            "included.client.audience": "",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "access.tokenResponse.claim": "false",
+        },
+    }
+
+    if audience_mapper:
+        mapper_id = audience_mapper["id"]
+        mapper_payload["id"] = mapper_id
+        mapper_payload["name"] = audience_mapper["name"]
+
+        code, _ = request(
+            "PUT",
+            f"/admin/realms/{REALM}/clients/{client_uuid}/protocol-mappers/models/{mapper_id}",
+            token=token,
+            body=mapper_payload,
+        )
+
+        if code != 204:
+            raise RuntimeError(
+                f"Unable to update api-service audience mapper (HTTP {code})"
+            )
+
+        if audience_mapper["name"] == API_AUDIENCE_REPAIR_MAPPER_NAME:
+            print(
+                "[OK] updated repaired api-service audience mapper "
+                "(malformed canonical mapper ignored)"
+            )
+        else:
+            print("[OK] updated api-service audience mapper")
+    else:
+        malformed_canonical = any(
+            m.get("name") == API_AUDIENCE_MAPPER_NAME
+            and not m.get("id")
+            for m in audience_mappers
+        )
+
+        mapper_payload["name"] = (
+            API_AUDIENCE_REPAIR_MAPPER_NAME
+            if malformed_canonical
+            else API_AUDIENCE_MAPPER_NAME
+        )
+
+        code, _ = request(
+            "POST",
+            f"/admin/realms/{REALM}/clients/{client_uuid}/protocol-mappers/models",
+            token=token,
+            body=mapper_payload,
+        )
+
+        if code != 201:
+            raise RuntimeError(
+                f"Unable to create api-service audience mapper "
+                f"(HTTP {code})"
+            )
+
+        if malformed_canonical:
+            print(
+                "[OK] created repaired api-service audience mapper; "
+                "malformed canonical mapper was left untouched"
+            )
+        else:
+            print("[OK] created api-service audience mapper")
+
+
 def sync_client(token):
     query = urllib.parse.urlencode({"clientId": CLIENT_ID})
 
@@ -150,120 +260,7 @@ def sync_client(token):
                 f"Unable to update Keycloak client (HTTP {code})"
             )
 
-        # The client protocol-mapper endpoint does not require a `client`
-        # query parameter. Use the canonical REST endpoint directly.
-        code, mappers = request(
-            "GET",
-            f"/admin/realms/{REALM}/clients/{client_uuid}/protocol-mappers/models",
-            token=token,
-        )
-
-        if code != 200 or not isinstance(mappers, list):
-            raise RuntimeError(
-                f"Unable to query Keycloak protocol mappers (HTTP {code})"
-            )
-
-        audience_mappers = [
-            m for m in mappers
-            if m.get("name") in {
-                API_AUDIENCE_MAPPER_NAME,
-                API_AUDIENCE_REPAIR_MAPPER_NAME,
-            }
-            and m.get("protocol") == "openid-connect"
-            and m.get("protocolMapper") == "oidc-audience-mapper"
-        ]
-
-        # Prefer the canonical mapper when it has a real server-generated ID.
-        # A malformed mapper with id=null must never be sent to the update API.
-        audience_mapper = next(
-            (
-                m for m in audience_mappers
-                if m.get("name") == API_AUDIENCE_MAPPER_NAME
-                and m.get("id")
-            ),
-            None,
-        )
-
-        if audience_mapper is None:
-            audience_mapper = next(
-                (
-                    m for m in audience_mappers
-                    if m.get("id")
-                ),
-                None,
-            )
-
-        mapper_payload = {
-            "protocol": "openid-connect",
-            "protocolMapper": "oidc-audience-mapper",
-            "config": {
-                "included.client.audience": "api-service",
-                "id.token.claim": "false",
-                "access.token.claim": "true",
-                "access.tokenResponse.claim": "false",
-            },
-        }
-
-        if audience_mapper:
-            mapper_id = audience_mapper["id"]
-            mapper_payload["id"] = mapper_id
-            mapper_payload["name"] = audience_mapper["name"]
-
-            code, _ = request(
-                "PUT",
-                f"/admin/realms/{REALM}/clients/{client_uuid}/protocol-mappers/models/{mapper_id}",
-                token=token,
-                body=mapper_payload,
-            )
-
-            if code != 204:
-                raise RuntimeError(
-                    f"Unable to update api-service audience mapper (HTTP {code})"
-                )
-
-            if audience_mapper["name"] == API_AUDIENCE_REPAIR_MAPPER_NAME:
-                print(
-                    "[OK] updated repaired api-service audience mapper "
-                    "(malformed canonical mapper ignored)"
-                )
-            else:
-                print("[OK] updated api-service audience mapper")
-        else:
-            # If the canonical mapper exists but has id=null, Keycloak's
-            # update endpoint cannot address it. Do not PUT /null and do not
-            # repeatedly attempt to create another mapper with the same name.
-            malformed_canonical = any(
-                m.get("name") == API_AUDIENCE_MAPPER_NAME
-                and not m.get("id")
-                for m in audience_mappers
-            )
-
-            mapper_payload["name"] = (
-                API_AUDIENCE_REPAIR_MAPPER_NAME
-                if malformed_canonical
-                else API_AUDIENCE_MAPPER_NAME
-            )
-
-            code, _ = request(
-                "POST",
-                f"/admin/realms/{REALM}/clients/{client_uuid}/protocol-mappers/models",
-                token=token,
-                body=mapper_payload,
-            )
-
-            if code != 201:
-                raise RuntimeError(
-                    f"Unable to create api-service audience mapper "
-                    f"(HTTP {code})"
-                )
-
-            if malformed_canonical:
-                print(
-                    "[OK] created repaired api-service audience mapper; "
-                    "malformed canonical mapper was left untouched"
-                )
-            else:
-                print("[OK] created api-service audience mapper")
+        sync_api_audience_mapper(token, client_uuid)
 
         print(
             "[OK] synchronized shopnoltd-web "
@@ -296,7 +293,27 @@ def sync_client(token):
                 f"Unable to create Keycloak client (HTTP {code})"
             )
 
+        # Re-query the created client and configure its audience mapper in the
+        # same sync run. This prevents first-login tokens from missing aud=api-service.
+        code, clients = request(
+            "GET",
+            f"/admin/realms/{REALM}/clients?{query}",
+            token=token,
+        )
+
+        if code != 200 or not isinstance(clients, list) or not clients:
+            raise RuntimeError(
+                f"Unable to re-query newly-created Keycloak client (HTTP {code})"
+            )
+
+        client_uuid = clients[0]["id"]
+        sync_api_audience_mapper(token, client_uuid)
+
         print("[OK] created shopnoltd-web client")
+        print(
+            "[OK] synchronized shopnoltd-web "
+            "with api-service JWT audience"
+        )
 
 
 def main():
