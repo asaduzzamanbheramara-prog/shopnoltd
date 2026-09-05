@@ -48,6 +48,9 @@ jobs:
             ${{ env.IMAGE }}:latest
 
       - name: Verify image contents and ASGI application
+        env:
+          DATABASE_URL: postgresql+asyncpg://validation:validation@127.0.0.1:5432/validation
+          REDIS_URL: redis://127.0.0.1:6379/0
         run: |
           set -euo pipefail
 
@@ -59,7 +62,11 @@ jobs:
           test "$SIZE" -gt 0
 
           echo "Checking Python import..."
-          docker run --rm --entrypoint /usr/local/bin/python "$IMAGE" -c '
+          docker run --rm \
+            --entrypoint /usr/local/bin/python \
+            -e DATABASE_URL="$DATABASE_URL" \
+            -e REDIS_URL="$REDIS_URL" \
+            "$IMAGE" -c '
           import app.main
           assert app.main.__file__ == "/app/app/main.py", app.main.__file__
           assert hasattr(app.main, "app"), "FastAPI app object missing"
@@ -68,7 +75,11 @@ jobs:
           '
 
           echo "Checking Uvicorn import target..."
-          docker run --rm --entrypoint /usr/local/bin/python "$IMAGE" -m uvicorn app.main:app --help >/dev/null
+          docker run --rm \
+            --entrypoint /usr/local/bin/python \
+            -e DATABASE_URL="$DATABASE_URL" \
+            -e REDIS_URL="$REDIS_URL" \
+            "$IMAGE" -m uvicorn app.main:app --help >/dev/null
           echo "API image validation PASSED"
 
       - name: Push verified image
