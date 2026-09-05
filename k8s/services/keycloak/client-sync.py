@@ -33,6 +33,10 @@ REQUIRED_WEB_ORIGINS = [
 ]
 
 
+API_AUDIENCE_MAPPER_NAME = "api-service-audience"
+API_AUDIENCE_REPAIR_MAPPER_NAME = "api-service-audience-repaired"
+
+
 def request(method, path, token=None, body=None, form=False):
     data = None
 
@@ -146,13 +150,11 @@ def sync_client(token):
                 f"Unable to update Keycloak client (HTTP {code})"
             )
 
-        mapper_query = urllib.parse.urlencode({
-            "client": client_uuid,
-        })
-
+        # The client protocol-mapper endpoint does not require a `client`
+        # query parameter. Use the canonical REST endpoint directly.
         code, mappers = request(
             "GET",
-            f"/admin/realms/{REALM}/clients/{client_uuid}/protocol-mappers/models?{mapper_query}",
+            f"/admin/realms/{REALM}/clients/{client_uuid}/protocol-mappers/models",
             token=token,
         )
 
@@ -161,16 +163,37 @@ def sync_client(token):
                 f"Unable to query Keycloak protocol mappers (HTTP {code})"
             )
 
+        audience_mappers = [
+            m for m in mappers
+            if m.get("name") in {
+                API_AUDIENCE_MAPPER_NAME,
+                API_AUDIENCE_REPAIR_MAPPER_NAME,
+            }
+            and m.get("protocol") == "openid-connect"
+            and m.get("protocolMapper") == "oidc-audience-mapper"
+        ]
+
+        # Prefer the canonical mapper when it has a real server-generated ID.
+        # A malformed mapper with id=null must never be sent to the update API.
         audience_mapper = next(
             (
-                m for m in mappers
-                if m.get("name") == "api-service-audience"
+                m for m in audience_mappers
+                if m.get("name") == API_AUDIENCE_MAPPER_NAME
+                and m.get("id")
             ),
             None,
         )
 
+        if audience_mapper is None:
+            audience_mapper = next(
+                (
+                    m for m in audience_mappers
+                    if m.get("id")
+                ),
+                None,
+            )
+
         mapper_payload = {
-            "name": "api-service-audience",
             "protocol": "openid-connect",
             "protocolMapper": "oidc-audience-mapper",
             "config": {
@@ -182,6 +205,7 @@ def sync_client(token):
         }
 
         if audience_mapper:
+            mapper_payload["name"] = audience_mapper["name"]
             mapper_id = audience_mapper["id"]
 
             code, _ = request(
@@ -196,8 +220,29 @@ def sync_client(token):
                     f"Unable to update api-service audience mapper (HTTP {code})"
                 )
 
-            print("[OK] updated api-service audience mapper")
+            if audience_mapper["name"] == API_AUDIENCE_REPAIR_MAPPER_NAME:
+                print(
+                    "[OK] updated repaired api-service audience mapper "
+                    "(malformed canonical mapper ignored)"
+                )
+            else:
+                print("[OK] updated api-service audience mapper")
         else:
+            # If the canonical mapper exists but has id=null, Keycloak's
+            # update endpoint cannot address it. Do not PUT /null and do not
+            # repeatedly attempt to create another mapper with the same name.
+            malformed_canonical = any(
+                m.get("name") == API_AUDIENCE_MAPPER_NAME
+                and not m.get("id")
+                for m in audience_mappers
+            )
+
+            mapper_payload["name"] = (
+                API_AUDIENCE_REPAIR_MAPPER_NAME
+                if malformed_canonical
+                else API_AUDIENCE_MAPPER_NAME
+            )
+
             code, _ = request(
                 "POST",
                 f"/admin/realms/{REALM}/clients/{client_uuid}/protocol-mappers/models",
@@ -207,10 +252,17 @@ def sync_client(token):
 
             if code != 201:
                 raise RuntimeError(
-                    f"Unable to create api-service audience mapper (HTTP {code})"
+                    f"Unable to create api-service audience mapper "
+                    f"(HTTP {code})"
                 )
 
-            print("[OK] created api-service audience mapper")
+            if malformed_canonical:
+                print(
+                    "[OK] created repaired api-service audience mapper; "
+                    "malformed canonical mapper was left untouched"
+                )
+            else:
+                print("[OK] created api-service audience mapper")
 
         print(
             "[OK] synchronized shopnoltd-web "
