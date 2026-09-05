@@ -21,6 +21,14 @@ class Settings(BaseSettings):
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
 
     @property
+    def cors_origin_regex(self) -> str:
+        # allow_origins does exact string matching in Starlette's CORSMiddleware,
+        # so a literal "*" embedded in a domain string (e.g. "https://*.shopnoltd.dpdns.org")
+        # never actually matches any real browser Origin header. This regex matches
+        # the bare root domain and any subdomain instead.
+        return r"^https://([a-z0-9-]+\.)*shopnoltd\.dpdns\.org$"
+
+    @property
     def fiat_list(self) -> list[str]:
         return [c.strip() for c in self.supported_fiat.split(",")]
 
