@@ -95,11 +95,12 @@ jobs:
           from pathlib import Path
           import os
           import re
+
           p = Path('k8s/services/api-service/deployment.yaml')
           s = p.read_text()
           image = f"ghcr.io/{os.environ['GITHUB_REPOSITORY_OWNER']}/shopnoltd/api-service"
-          new = f"image: {image}:{os.environ['GITHUB_SHA']}"
-          pattern = rf"^\s*image:\s*{re.escape(image)}:[^\s]+\s*$"
+          pattern = rf"^(?P<indent>[ \t]*)image:\s*{re.escape(image)}:[^\s]+\s*$"
+          new = rf"\g<indent>image: {image}:{os.environ['GITHUB_SHA']}"
           s2, count = re.subn(pattern, new, s, count=1, flags=re.MULTILINE)
           if count != 1:
               raise SystemExit('api-service image reference was not found exactly once in GitOps deployment')
