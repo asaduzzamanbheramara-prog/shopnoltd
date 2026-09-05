@@ -83,24 +83,11 @@ all three routes actually work.
 
 ---
 
-# Separately: code-server AI integration
+## Code-server AI integration
 
-This does NOT use ai-platform at all — ai-platform's API is a custom schema
-(`/chat/sessions/.../messages`), not something Continue.dev can talk to
-directly. Instead, deploy the standalone LiteLLM proxy already sitting in
-your repo at `k8s/services/ai-gateway/01-litellm-proxy.yaml`:
+The standalone LiteLLM proxy previously described here has been removed because
+it is not used by the current `ai-platform` implementation and duplicates the
+LiteLLM dependency already used as a Python library.
 
-1. Edit that file: change `namespace: shopno-ai` to `namespace: shopno-platform`
-   everywhere (to match your actual namespace list), and remove the
-   duplicate `Namespace` resource at the top since `shopno-platform` already
-   exists.
-2. Add `- services/ai-gateway` to `k8s/kustomization.yaml`'s `resources:` list
-   (alongside `services/ai-platform`).
-3. Fill in real API keys + `LITELLM_MASTER_KEY` in that file's Secret.
-4. Commit, push, let ArgoCD sync.
-5. Follow `k8s/services/ai-gateway/02-code-server-continue-setup.md` to wire
-   the Continue extension in code-server to it.
-
-This keeps your product AI feature (ai-platform) and your personal coding
-assistant (code-server + Continue) as two independent, simpler systems
-instead of forcing one API shape to serve both purposes.
+For the free local coding-assistant path, use the existing Ollama deployment in
+`shopno-apps` instead of maintaining a second always-on LiteLLM proxy.
