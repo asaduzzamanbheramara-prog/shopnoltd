@@ -205,8 +205,9 @@ def sync_client(token):
         }
 
         if audience_mapper:
-            mapper_payload["name"] = audience_mapper["name"]
             mapper_id = audience_mapper["id"]
+            mapper_payload["id"] = mapper_id
+            mapper_payload["name"] = audience_mapper["name"]
 
             code, _ = request(
                 "PUT",
