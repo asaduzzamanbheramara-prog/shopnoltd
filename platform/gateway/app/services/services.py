@@ -25,7 +25,7 @@ SERVICES = {
     "messaging": _svc("messaging-service"),  # TODO: no k8s/services/messaging-service yet
     "notification": _svc("notification-service"),
     "storage": _svc("storage-service"),
-    "ai": _svc("ai-platform"),
+    "ai": _svc("ai-platform", 80),
     "analytics": _svc("analytics-service"),
     "api": _svc("api-service"),
     "audit": _svc("audit-service"),
