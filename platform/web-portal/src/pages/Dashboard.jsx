@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { API_URL } from '../config'
 import { SERVICES, ADMIN_SERVICES } from '../data/serviceCatalog'
 import { isPlatformAdmin } from '../lib/jwt'
-import { getTransactions, getWallet } from '../lib/financialApi'
+import {
+  authenticatedRequest,
+  getTransactions,
+  getWallet,
+} from '../lib/financialApi'
 
 function QuickLink({ service }) {
   const isInternal = service.url.startsWith('/')
@@ -46,20 +49,9 @@ export default function Dashboard() {
       return
     }
 
-    fetch(`${API_URL}/api/v1/users/me`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    })
-      .then(async (response) => {
-        if (!response.ok) {
-          const text = await response.text()
-          throw new Error(
-            `Profile request failed (${response.status})${text ? `: ${text}` : ''}`
-          )
-        }
-
-        return response.json()
+    authenticatedRequest('/api/v1/users/me')
+      .then((data) => {
+        return data
       })
       .then((data) => {
         setMe(data)

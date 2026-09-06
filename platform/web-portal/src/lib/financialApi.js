@@ -5,7 +5,7 @@ function token() {
   return localStorage.getItem('shopno_token')
 }
 
-async function request(path, options = {}) {
+export async function authenticatedRequest(path, options = {}) {
   const jwt = token()
   if (!jwt) {
     throw new Error('Authentication required. Please log in.')
@@ -33,7 +33,7 @@ async function request(path, options = {}) {
   if (response.status === 401 && !options._retried) {
     const refreshed = await tryRefresh()
     if (refreshed) {
-      return request(path, { ...options, _retried: true })
+      return authenticatedRequest(path, { ...options, _retried: true })
     }
     localStorage.removeItem('shopno_token')
     throw new Error('Your session has expired. Please log in again.')
@@ -51,19 +51,19 @@ async function request(path, options = {}) {
 }
 
 export function getWallet(currency = 'BDT') {
-  return request(`/api/v1/wallet?currency=${encodeURIComponent(currency)}`)
+  return authenticatedRequest(`/api/v1/wallet?currency=${encodeURIComponent(currency)}`)
 }
 export function getWalletLedger(currency = 'BDT', limit = 50) {
-  return request(
+  return authenticatedRequest(
     `/api/v1/wallet/ledger?currency=${encodeURIComponent(currency)}&limit=${limit}`
   )
 }
 export function getTransactions() {
-  return request('/api/v1/transactions')
+  return authenticatedRequest('/api/v1/transactions')
 }
 export function getPaymentGateways() {
 
-  return request('/api/v1/billing/gateways')
+  return authenticatedRequest('/api/v1/billing/gateways')
 }
 export function createCheckout({
   gateway,
@@ -72,7 +72,7 @@ export function createCheckout({
   reference,
   customer_phone,
 }) {
-  return request('/api/v1/billing/checkout', {
+  return authenticatedRequest('/api/v1/billing/checkout', {
     method: 'POST',
     body: JSON.stringify({
       gateway,
@@ -84,7 +84,7 @@ export function createCheckout({
   })
 }
 export function getExchangeRate(from, to) {
-  return request(
+  return authenticatedRequest(
     `/api/v1/rate/${encodeURIComponent(from)}/${encodeURIComponent(to)}`
   )
 }
@@ -93,7 +93,7 @@ export function convertExchange({
   to_currency,
   amount,
 }) {
-  return request('/api/v1/exchange/convert', {
+  return authenticatedRequest('/api/v1/exchange/convert', {
     method: 'POST',
 
     body: JSON.stringify({
