@@ -1,0 +1,9 @@
+===== shopnoltd-collect-android =====
+HEAD=b186da9434173d2fc47f9ec042f85d520e2ba822
+BRANCH=main
+?? androidshared/build.gradle.kts.backup-20260902-fragment-testing
+?? androidshared/build.gradle.kts.backup-20260902-fragments-test
+?? collect_app/google-services.json.backup-20260902
+?? collect_app/src/debug/google-services.json.backup-20260902
+?? fragments-test/build.gradle.kts.backup-20260902-fragment-testing-release
+?? gradle.properties.backup-20260902-142826

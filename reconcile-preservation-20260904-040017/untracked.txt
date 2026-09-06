@@ -1,0 +1,32 @@
+M  deploy/shopno-apps/enketo.yaml
+M  k8s/kustomization.yaml
+A  k8s/services/ai-platform/ingress.yaml
+M  k8s/services/ai-platform/kustomization.yaml
+M  k8s/services/chatwoot/deployment.yaml
+A  k8s/services/enketo/deployment.yaml
+A  k8s/services/enketo/kustomization.yaml
+A  k8s/services/enketo/networkpolicy.yaml
+A  k8s/services/enketo/service.yaml
+ M shopnoltd-collect-android
+M  shopnoltd-safe-update.sh
+ m vendor/genai-stack
+?? -o
+?? NS=shopno-tools
+?? POD=
+?? echo
+?? export
+?? reconcile-preservation-20260904-040017/staged.patch
+?? reconcile-preservation-20260904-040017/status.txt
+?? reconcile-preservation-20260904-040017/unstaged.patch
+?? reconcile-preservation-20260904-040017/untracked.txt
+?? remote-device-source-backup-20260903-151013/app.py
+?? remote-device-source-backup-20260903-151013/registry-configmap.yaml
+?? remote-device-source-backup-20260903-151013/ui-configmap.yaml
+?? shopnoltd-collect-android-brand-backup-20260902-103322/.circleci/config.yml
+?? shopnoltd-collect-android-brand-backup-20260902-103322/build.gradle
+?? shopnoltd-collect-android-brand-backup-20260902-103322/collect_app/build.gradle
+?? shopnoltd-collect-android-brand-backup-20260902-103322/collect_app/src/androidTest/java/org/odk/collect/android/feature/formmanagement/MatchExactlyTest.kt
+?? shopnoltd-collect-android-brand-backup-20260902-103322/collect_app/src/androidTest/java/org/odk/collect/android/feature/formmanagement/PreviouslyDownloadedOnlyTest.kt
+?? shopnoltd-collect-android-brand-backup-20260902-103322/collect_app/src/androidTest/java/org/odk/collect/android/feature/instancemanagement/AutoSendTest.kt
+?? shopnoltd-collect-android-brand-backup-20260902-103322/strings/src/main/res/values/untranslated.xml
+?? shopnoltd/

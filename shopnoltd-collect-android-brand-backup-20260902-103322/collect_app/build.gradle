@@ -1,0 +1,416 @@
+plugins {
+    alias(libs.plugins.androidApplication)
+    alias(libs.plugins.kotlinAndroid)
+    alias(libs.plugins.kotlinKapt)
+    alias(libs.plugins.kotlinParcelize)
+    alias(libs.plugins.ossLicenses)
+    alias(libs.plugins.safeargs)
+    alias(libs.plugins.composeCompiler)
+}
+apply from: '../config/quality.gradle'
+
+import com.android.ddmlib.DdmPreferences
+
+DdmPreferences.setTimeOut(60000)
+
+ant.condition(property: 'os', value: 'windows') {
+    os(family: 'windows')
+}
+ant.condition(property: 'os', value: 'unix') {
+    os(family: 'unix')
+}
+
+// Build numbers were manually set until 1067
+def LEGACY_BUILD_NUMBER_OFFSET = 1067
+
+// Based on http://stackoverflow.com/questions/17097263#24121734
+def getMasterCommitCount = { ->
+    try {
+        def stdout = new ByteArrayOutputStream()
+        exec {
+            switch (ant.properties.os) {
+                case 'windows':
+                    commandLine 'cmd', '/c', 'git', 'rev-list', '--first-parent', '--count', 'master'
+                    break
+                case 'unix':
+                    commandLine 'git', 'rev-list', '--first-parent', '--count', 'master'
+                    break
+            }
+            standardOutput = stdout
+        }
+        return Integer.parseInt(stdout.toString().trim())
+    } catch (ignored) {
+        return -1
+    }
+}
+
+def getVersionName = { ->
+    try {
+        def stdout = new ByteArrayOutputStream()
+        exec {
+            switch (ant.properties.os) {
+                case 'windows':
+                    commandLine 'cmd', '/c', 'git', 'describe', '--tags', '--dirty', '--always'
+                    break
+                case 'unix':
+                    commandLine 'git', 'describe', '--tags', '--dirty', '--always'
+                    break
+            }
+            standardOutput = stdout
+        }
+        return stdout.toString().trim()
+    } catch (ignored) {
+        return null
+    }
+}
+
+def secrets = getSecrets()
+def googleMapsApiKey = secrets.getProperty('GOOGLE_MAPS_API_KEY', '')
+def mapboxAccessToken = secrets.getProperty('MAPBOX_ACCESS_TOKEN', '')
+def entitiesFilterProjectUrl = secrets.getProperty('ENTITIES_FILTER_PROJECT_URL', '')
+def entitiesFilterSearchProjectUrl = secrets.getProperty('ENTITIES_FILTER_SEARCH_PROJECT_URL', '')
+def thousandMediaFileProjectUrl = secrets.getProperty('THOUSAND_MEDIA_FILE_PROJECT_URL', '')
+def thousandMediaFileEntityListProjectUrl = secrets.getProperty('THOUSAND_MEDIA_FILE_ENTITY_LIST_PROJECT_URL', '')
+
+android {
+    compileSdk libs.versions.compileSdk.get().toInteger()
+
+    buildFeatures {
+        viewBinding true
+        buildConfig true
+        compose true
+    }
+
+    defaultConfig {
+        applicationId('org.shopnoltd.collect')
+        minSdk libs.versions.minSdk.get().toInteger()
+        targetSdkVersion libs.versions.targetSdk.get().toInteger()
+        versionCode 4150
+        versionName getVersionName()
+        testInstrumentationRunner('androidx.test.runner.AndroidJUnitRunner')
+        vectorDrawables.useSupportLibrary = true
+        archivesBaseName = 'ODK-Collect'
+    }
+
+    signingConfigs {
+        release {
+            if (secrets.getProperty('RELEASE_STORE_FILE')) {
+                storeFile file(secrets.getProperty('RELEASE_STORE_FILE'))
+                storePassword secrets.getProperty('RELEASE_STORE_PASSWORD')
+                keyAlias secrets.getProperty('RELEASE_KEY_ALIAS')
+                keyPassword secrets.getProperty('RELEASE_KEY_PASSWORD')
+            }
+        }
+
+        selfSignedRelease {
+            storeFile file('../debug.keystore')
+            storePassword 'android'
+            keyAlias 'androiddebugkey'
+            keyPassword 'android'
+        }
+    }
+
+    buildTypes {
+
+        // Release build for all forks
+        release {
+            if (secrets.getProperty('RELEASE_STORE_FILE')) {
+                signingConfig signingConfigs.release
+            }
+            minifyEnabled(true)
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
+            resValue("string", "GOOGLE_MAPS_API_KEY", googleMapsApiKey)
+            resValue("string", "mapbox_access_token", mapboxAccessToken)
+        }
+
+        // Release build for the official ODK Collect app
+        odkCollectRelease {
+            if (secrets.getProperty('RELEASE_STORE_FILE')) {
+                signingConfig signingConfigs.release
+            }
+            minifyEnabled(true)
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
+            resValue("string", "GOOGLE_MAPS_API_KEY", googleMapsApiKey)
+            resValue("string", "mapbox_access_token", mapboxAccessToken)
+
+            matchingFallbacks = ['release'] // So other modules use release build type for this
+        }
+
+        selfSignedRelease {
+            signingConfig signingConfigs.selfSignedRelease
+
+            minifyEnabled(true)
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
+            resValue("string", "GOOGLE_MAPS_API_KEY", googleMapsApiKey)
+            resValue("string", "mapbox_access_token", mapboxAccessToken)
+
+            matchingFallbacks = ['release'] // So other modules use release build type for this
+        }
+
+        debug {
+            debuggable(true)
+            resValue("string", "GOOGLE_MAPS_API_KEY", googleMapsApiKey)
+            resValue("string", "mapbox_access_token", mapboxAccessToken)
+            buildConfigField("String", "ENTITIES_FILTER_PROJECT_URL", "\"$entitiesFilterProjectUrl\"")
+            buildConfigField("String", "ENTITIES_FILTER_SEARCH_PROJECT_URL", "\"$entitiesFilterSearchProjectUrl\"")
+            buildConfigField("String", "THOUSAND_MEDIA_FILE_PROJECT_URL", "\"$thousandMediaFileProjectUrl\"")
+            buildConfigField("String", "THOUSAND_MEDIA_FILE_ENTITY_LIST_PROJECT_URL", "\"$thousandMediaFileEntityListProjectUrl\"")
+        }
+    }
+
+    applicationVariants.configureEach { variant ->
+        if (variant.getName() == "selfSignedRelease" || variant.getName() == "odkCollectRelease") {
+            variant.outputs.configureEach { output ->
+                outputFileName = new File(outputFileName.replace("${variant.getName()}.apk", "${defaultConfig.versionName}.apk"))
+            }
+        }
+    }
+
+    packaging {
+        resources {
+            // These library licenses will be referenced in-app
+            excludes += ['META-INF/ASL-2.0.txt', 'META-INF/LGPL-3.0.txt']
+
+            // Pick first occurrence of any files that cause conflicts
+            pickFirsts += ['META-INF/DEPENDENCIES', 'META-INF/LICENSE', 'META-INF/LICENSE.txt', 'META-INF/NOTICE', 'META-INF/NOTICE.txt', 'META-INF/services/com.fasterxml.jackson.core.JsonFactory', 'META-INF/services/com.fasterxml.jackson.core.ObjectCodec', 'META-INF/services/javax.ws.rs.ext.MessageBodyReader', 'META-INF/services/javax.ws.rs.ext.MessageBodyWriter', 'draftv4/schema', 'draftv3/schema']
+        }
+
+        // To ensure that ODK Collect is installable on all devices, we don't use
+        // abiFilters to exclude any ABIs; but to keep the APK slim, we include
+        // the Mapbox native library only for 32-bit and 64-bit ARM devices and
+        // omit it for all X86 devices.
+        if (!project.hasProperty("x86Libs")) {
+            exclude 'lib/x86/libmapbox-maps.so'
+            exclude 'lib/x86/libmapbox-common.so'
+            exclude 'lib/x86/libc++_shared.so'
+            exclude 'lib/x86_64/libmapbox-maps.so'
+            exclude 'lib/x86_64/libmapbox-common.so'
+            exclude 'lib/x86_64/libc++_shared.so'
+        }
+
+        /* Exclude large properties files used by BouncyCastle's Picnic implementation (which
+           Collect doesn't use). */
+        exclude 'org/bouncycastle/pqc/crypto/picnic/lowmcL5.bin.properties'
+        exclude 'org/bouncycastle/pqc/crypto/picnic/lowmcL3.bin.properties'
+        exclude 'org/bouncycastle/pqc/crypto/picnic/lowmcL1.bin.properties'
+    }
+
+    compileOptions {
+        coreLibraryDesugaringEnabled true
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    testOptions {
+        unitTests {
+            includeAndroidResources = true
+            returnDefaultValues = true
+
+            all {
+                minHeapSize = '512m'
+                maxHeapSize = project.properties['test.heap.max']
+            }
+        }
+    }
+
+    lint {
+        abortOnError true
+        checkDependencies true
+        checkGeneratedSources true
+        htmlReport true
+        lintConfig file("$rootDir/config/lint.xml")
+        xmlReport true
+    }
+    namespace 'org.odk.collect.android'
+}
+
+configurations.all {
+    resolutionStrategy {
+        cacheDynamicVersionsFor(0, 'seconds')
+        cacheChangingModulesFor(0, 'seconds')
+
+        force 'org.objenesis:objenesis:2.6'
+
+        // Newer Jackson versions cannot be ued until Collect minSDK >= 26 (https://github.com/FasterXML/jackson-databind#android)
+        force 'com.fasterxml.jackson.core:jackson-databind:2.13.5'
+    }
+    
+    transitive = true
+}
+
+dependencies {
+    coreLibraryDesugaring libs.desugar
+
+    implementation project(':shared')
+    implementation project(':androidshared')
+    implementation project(':nbistubs')
+    implementation project(':icons')
+    implementation project(':strings')
+    implementation project(':material')
+    implementation project(':async')
+    implementation project(':analytics')
+    implementation project(':audio-clips')
+    implementation project(':forms')
+    implementation project(':audio-recorder')
+    implementation project(':projects')
+    implementation project(':location')
+    implementation project(':geo')
+    implementation project(':image-loader')
+    implementation project(':errors')
+    implementation project(':upgrade')
+    implementation project(':permissions')
+    implementation(project(':settings')) {
+        exclude group: 'joda-time'
+    }
+    implementation project(':external-app')
+    implementation project(':maps')
+    implementation project(':osmdroid')
+    implementation project(':entities')
+    implementation project(':crash-handler')
+    implementation project(':selfie-camera')
+    implementation project(':qr-code')
+    implementation project(':metadata')
+    implementation project(':google-maps')
+    implementation project(':draw')
+    implementation project(':printer')
+    implementation project(':lists')
+    implementation project(':web-page')
+    implementation project(':db')
+    implementation project(':open-rosa')
+    implementation project(':mobile-device-management')
+
+    if (getSecrets().getProperty('MAPBOX_DOWNLOADS_TOKEN', '') != '') {
+        implementation project(':mapbox')
+    }
+
+    implementation libs.androidxStartup
+    implementation libs.androidxCoreKtx
+    implementation libs.androidxBrowser
+    implementation libs.androidxAppcompat
+    implementation libs.androidxWorkRuntime
+
+    implementation libs.androidxPreferenceKtx
+    implementation libs.androidxFragmentKtx
+
+    implementation libs.androidFlexbox
+
+    implementation libs.playServicesMaps
+    implementation libs.playServicesLocation
+    implementation libs.playServicesOssLicenses
+
+    implementation libs.firebaseAnalytics
+    implementation libs.firebaseCrashlytics
+
+    implementation libs.persianJodaTime
+    implementation libs.myanmarCalendar
+    implementation files('libs/bikram-sambat-1.8.0.jar')
+    implementation libs.commonsIo
+    implementation (libs.opencsv) {
+        exclude group: 'commons-logging'
+    }
+    implementation(libs.javarosa) {
+        exclude group: 'commons-io'
+        exclude group: 'joda-time'
+        exclude group: 'org.slf4j'
+        exclude group: 'org.hamcrest', module: 'hamcrest-all'
+    }
+    implementation libs.gson
+    implementation libs.timber
+    implementation libs.slf4jApi
+    implementation libs.slf4jTimber
+
+    implementation libs.zxingAndroidEmbedded
+
+    implementation libs.danlewAndroidJoda
+
+    implementation(libs.jsoup)
+
+    // Android Architecture Components:
+    implementation libs.androidxLifecycleRuntimeKtx
+    implementation libs.androidxLifecycleLivedataKtx
+    implementation libs.androidxViewpager2
+
+    // Dagger:
+    implementation libs.dagger
+    kapt libs.daggerCompiler
+
+    // Needed for injection into Robolectric tests
+    testAnnotationProcessor libs.daggerCompiler
+
+    // Dagger Android:
+    implementation libs.daggerAndroid
+    annotationProcessor libs.daggerAndroidProcessor
+
+    implementation libs.armen101AudioRecorderView
+
+    implementation(libs.mp4parserMuxer) {
+        exclude group: 'org.hamcrest'
+    }
+
+    implementation libs.splashscreen
+    implementation libs.androidxNavigationFragmentKtx
+
+    var composeBom = platform(libs.androidxComposeBom)
+    implementation(composeBom)
+    implementation(libs.androidXComposeMaterial)
+    implementation(libs.androidXConstraintLayoutCompose)
+
+    testImplementation project(':forms-test')
+
+    // Testing-only dependencies
+    testImplementation libs.junit
+    testImplementation libs.mockitoCore
+    testImplementation libs.mockitoKotlin
+
+    testImplementation project(':androidtest')
+    testImplementation(project(path: ':test-shared')) {
+        exclude group: 'org.robolectric' // Some tests in `collect_app` don't work with newer Robolectric
+    }
+    testImplementation(project(":shadows"))
+    testImplementation(project(":test-forms"))
+
+    testImplementation libs.robolectric
+
+    testImplementation libs.androidxTestExtJunit
+    testImplementation libs.androidxArchCoreTesting
+
+    testImplementation libs.hamcrest
+
+    testImplementation libs.androidxTestEspressoCore
+    testImplementation libs.androidxTestEspressoIntents
+    testImplementation libs.androidxTestCoreKtx
+
+    androidTestImplementation project(':androidtest')
+    androidTestImplementation project(':test-forms')
+
+    androidTestImplementation libs.caverockAndroidsvg
+    androidTestImplementation libs.mockitoAndroid
+    androidTestImplementation libs.androidxTestExtJunit
+    androidTestImplementation libs.androidxTestEspressoCore
+    androidTestImplementation libs.androidxArchCoreTesting
+    androidTestImplementation libs.androidxTestEspressoContrib
+    androidTestImplementation(libs.androidxTestEspressoIntents) {
+        exclude group: 'com.android.support', module: 'support-annotations'
+    }
+
+    androidTestImplementation libs.androidxWorkTesting
+    androidTestImplementation libs.uiautomator
+    androidTestImplementation libs.mockitoKotlin
+
+    debugImplementation project(':fragments-test')
+    debugImplementation(project(':test-shared',)) {
+        exclude group: 'org.robolectric' // Some tests in `collect_app` don't work with newer Robolectric
+    }
+
+    // Real LeakCanary for debug and selfSigned builds only: notifications, analysis, etc
+    debugImplementation libs.leakcanary
+    selfSignedReleaseImplementation libs.leakcanary
+}
+
+// Must be at bottom to prevent dependency collisions
+// https://developers.google.com/android/guides/google-services-plugin
+apply plugin: 'com.google.gms.google-services'
+
+// Must be after google-services to prevent build failure
+// https://stackoverflow.com/a/67995305
+apply plugin: 'com.google.firebase.crashlytics'

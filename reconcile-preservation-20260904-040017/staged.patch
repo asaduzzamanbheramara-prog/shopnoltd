@@ -1,0 +1,241 @@
+diff --git a/deploy/shopno-apps/enketo.yaml b/deploy/shopno-apps/enketo.yaml
+index c3b542e..5b37f32 100644
+--- a/deploy/shopno-apps/enketo.yaml
++++ b/deploy/shopno-apps/enketo.yaml
+@@ -59,7 +59,7 @@ spec:
+             - name: ENKETO_POSTGRES_USER
+               value: "postgres"
+             - name: ENKETO_POSTGRES_PASSWORD
+-              value: "5XuByzqhn6nJyq7iR7xva58iKHLSUSj"
++              value: "REDACTED_USE_POSTGRES_SECRET"
+             - name: ENKETO_POSTGRES_DB
+               value: "enketo"
+           resources:
+diff --git a/k8s/kustomization.yaml b/k8s/kustomization.yaml
+index 54b4672..74f67db 100644
+--- a/k8s/kustomization.yaml
++++ b/k8s/kustomization.yaml
+@@ -52,6 +52,10 @@ resources:
+ - services/minio
+ - services/keycloak
+ - services/gitea
++- shopno-apps/kobo-worker.yaml
++- services/enketo
++- services/mail
++- services/chatwoot
+ - services/code-server
+ - services/remote-device
+ - services/kobotoolbox
+diff --git a/k8s/services/ai-platform/ingress.yaml b/k8s/services/ai-platform/ingress.yaml
+new file mode 100644
+index 0000000..3d5223d
+--- /dev/null
++++ b/k8s/services/ai-platform/ingress.yaml
+@@ -0,0 +1,24 @@
++apiVersion: networking.k8s.io/v1
++kind: Ingress
++metadata:
++  name: ai-platform
++  namespace: shopno-platform
++  annotations:
++    nginx.ingress.kubernetes.io/ssl-redirect: "true"
++spec:
++  ingressClassName: nginx
++  tls:
++    - hosts:
++        - ai-platform.shopnoltd.dpdns.org
++      secretName: shopno-wildcard-tls
++  rules:
++    - host: ai-platform.shopnoltd.dpdns.org
++      http:
++        paths:
++          - path: /
++            pathType: Prefix
++            backend:
++              service:
++                name: ai-platform
++                port:
++                  number: 80
+diff --git a/k8s/services/ai-platform/kustomization.yaml b/k8s/services/ai-platform/kustomization.yaml
+index aaf8155..028cbeb 100644
+--- a/k8s/services/ai-platform/kustomization.yaml
++++ b/k8s/services/ai-platform/kustomization.yaml
+@@ -9,6 +9,7 @@ resources:
+ - pvc.yaml
+ - deployment.yaml
+ - service.yaml
++- ingress.yaml
+ - networkpolicy.yaml
+ - ai-platform-external-https-networkpolicy.yaml
+ - poddisruptionbudget.yaml
+diff --git a/k8s/services/chatwoot/deployment.yaml b/k8s/services/chatwoot/deployment.yaml
+index f7ae096..4819279 100644
+--- a/k8s/services/chatwoot/deployment.yaml
++++ b/k8s/services/chatwoot/deployment.yaml
+@@ -6,7 +6,7 @@ metadata:
+   labels:
+     app.kubernetes.io/name: chatwoot
+ spec:
+-  replicas: 0
++  replicas: 1
+   strategy:
+     type: RollingUpdate
+     rollingUpdate:
+diff --git a/k8s/services/enketo/deployment.yaml b/k8s/services/enketo/deployment.yaml
+new file mode 100644
+index 0000000..9e743e2
+--- /dev/null
++++ b/k8s/services/enketo/deployment.yaml
+@@ -0,0 +1,58 @@
++apiVersion: apps/v1
++kind: Deployment
++metadata:
++  name: enketo
++  namespace: shopno-apps
++  labels:
++    app.kubernetes.io/name: enketo
++spec:
++  replicas: 1
++  selector:
++    matchLabels:
++      app.kubernetes.io/name: enketo
++  template:
++    metadata:
++      labels:
++        app.kubernetes.io/name: enketo
++    spec:
++      containers:
++        - name: enketo
++          image: docker.io/kobotoolbox/enketo-express-extra-widgets:2.0.5
++          imagePullPolicy: IfNotPresent
++          ports:
++            - name: http
++              containerPort: 8005
++          env:
++            - name: ENKETO_URL
++              value: "https://enketo.shopnoltd.dpdns.org"
++            - name: ENKETO_API_URL
++              value: "https://kobo.shopnoltd.dpdns.org"
++            - name: ENKETO_REDIS_HOST
++              value: "redis.shopno-data.svc.cluster.local"
++            - name: ENKETO_REDIS_PORT
++              value: "6379"
++            - name: ENKETO_REDIS_DB
++              value: "5"
++            - name: ENKETO_POSTGRES_HOST
++              value: "postgres.shopno-data.svc.cluster.local"
++            - name: ENKETO_POSTGRES_PORT
++              value: "5432"
++            - name: ENKETO_POSTGRES_USER
++              valueFrom:
++                secretKeyRef:
++                  name: postgres-secret
++                  key: POSTGRES_USER
++            - name: ENKETO_POSTGRES_PASSWORD
++              valueFrom:
++                secretKeyRef:
++                  name: postgres-secret
++                  key: POSTGRES_PASSWORD
++            - name: ENKETO_POSTGRES_DB
++              value: "enketo"
++          resources:
++            requests:
++              cpu: "50m"
++              memory: "128Mi"
++            limits:
++              cpu: "300m"
++              memory: "512Mi"
+diff --git a/k8s/services/enketo/kustomization.yaml b/k8s/services/enketo/kustomization.yaml
+new file mode 100644
+index 0000000..b12cb4e
+--- /dev/null
++++ b/k8s/services/enketo/kustomization.yaml
+@@ -0,0 +1,17 @@
++apiVersion: kustomize.config.k8s.io/v1beta1
++kind: Kustomization
++
++namespace: shopno-apps
++
++resources:
++  - service.yaml
++  - deployment.yaml
++  - networkpolicy.yaml
++
++labels:
++  - includeSelectors: true
++    pairs:
++      app.kubernetes.io/name: enketo
++  - includeSelectors: false
++    pairs:
++      app.kubernetes.io/part-of: shopnoltd
+diff --git a/k8s/services/enketo/networkpolicy.yaml b/k8s/services/enketo/networkpolicy.yaml
+new file mode 100644
+index 0000000..0b68254
+--- /dev/null
++++ b/k8s/services/enketo/networkpolicy.yaml
+@@ -0,0 +1,21 @@
++apiVersion: networking.k8s.io/v1
++kind: NetworkPolicy
++metadata:
++  name: enketo
++  namespace: shopno-apps
++spec:
++  podSelector:
++    matchLabels:
++      app.kubernetes.io/name: enketo
++  policyTypes:
++    - Ingress
++    - Egress
++  ingress:
++    - from:
++        - namespaceSelector: {}
++        - podSelector: {}
++      ports:
++        - port: 8005
++          protocol: TCP
++  egress:
++    - {}
+diff --git a/k8s/services/enketo/service.yaml b/k8s/services/enketo/service.yaml
+new file mode 100644
+index 0000000..a974303
+--- /dev/null
++++ b/k8s/services/enketo/service.yaml
+@@ -0,0 +1,13 @@
++apiVersion: v1
++kind: Service
++metadata:
++  name: enketo
++  namespace: shopno-apps
++spec:
++  type: ClusterIP
++  selector:
++    app.kubernetes.io/name: enketo
++  ports:
++    - name: http
++      port: 8005
++      targetPort: http
+diff --git a/shopnoltd-safe-update.sh b/shopnoltd-safe-update.sh
+index 8356c77..c66ffcc 100644
+--- a/shopnoltd-safe-update.sh
++++ b/shopnoltd-safe-update.sh
+@@ -149,7 +149,19 @@ kubectl -n "$ARGO_NS" get application "$APP" \
+ 
+ log "8. STAGE ONLY INTENDED FILES"
+ 
+-git reset >/dev/null 2>&1 || true
++STAGED_BEFORE="$(git diff --cached --name-only)"
++
++if [[ -n "$STAGED_BEFORE" ]]; then
++    echo
++    echo "STOP: staged changes already exist."
++    echo
++    echo "Existing staged files:"
++    printf '%s\n' "$STAGED_BEFORE"
++    echo
++    echo "The safe update workflow will not reset, unstage,"
++    echo "overwrite, or otherwise modify the existing index."
++    exit 2
++fi
+ 
+ git add -- "${UPDATE_FILES[@]}"
+ 
