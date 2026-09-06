@@ -35,6 +35,7 @@ function Nav() {
 
   function handleLogout() {
     localStorage.removeItem('shopno_token')
+    localStorage.removeItem('shopno_refresh_token')
     navigate('/')
   }
 
