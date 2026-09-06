@@ -1,0 +1,13 @@
+diff --git a/shopnoltd-collect-android b/shopnoltd-collect-android
+index acf70ee..b186da9 160000
+--- a/shopnoltd-collect-android
++++ b/shopnoltd-collect-android
+@@ -1 +1 @@
+-Subproject commit acf70eedb6bd6f6552109b1e39b64511607294bb
++Subproject commit b186da9434173d2fc47f9ec042f85d520e2ba822
+diff --git a/vendor/genai-stack b/vendor/genai-stack
+--- a/vendor/genai-stack
++++ b/vendor/genai-stack
+@@ -1 +1 @@
+-Subproject commit 252d11a81726a641d931d5ac8de10855f4aa048e
++Subproject commit 252d11a81726a641d931d5ac8de10855f4aa048e-dirty

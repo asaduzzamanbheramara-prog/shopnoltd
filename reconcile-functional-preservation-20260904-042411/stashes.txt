@@ -1,0 +1,4 @@
+stash@{0}: On shopnoltd-genai: SHOPNOLTD pre-main-reconciliation 20260904
+stash@{1}: On shopnoltd-genai: WIP-before-remote-device-main-merge-20260902
+stash@{2}: On shopnoltd-genai: TEMP preserve work before web-portal main integration
+stash@{3}: On shopnoltd-genai: WIP before rebasing AI egress policy

@@ -204,3 +204,6 @@ function App() {
 }
 
 ReactDOM.createRoot(document.getElementById('root')).render(<App />)
+
+import { scheduleTokenRefresh } from './lib/tokenRefresh'
+scheduleTokenRefresh()
