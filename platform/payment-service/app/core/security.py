@@ -23,12 +23,24 @@ async def verify_token(token: str) -> dict:
         unverified = jwt.get_unverified_header(token)
         keys = await _jwks()
         key = next(k for k in keys["keys"] if k["kid"] == unverified["kid"])
-        return jwt.decode(
-            token,
-            key,
-            algorithms=[key["alg"]],
-            audience=settings.keycloak_audience,
-            options={"verify_aud": True},
-        )
+        # Accept the service-native audience and the browser/API audience.
+        # Audience validation remains enabled in both cases.
+        last_error = None
+        for audience in (
+            settings.keycloak_audience,
+            settings.keycloak_web_audience,
+        ):
+            try:
+                return jwt.decode(
+                    token,
+                    key,
+                    algorithms=[key["alg"]],
+                    audience=audience,
+                    options={"verify_aud": True},
+                )
+            except JWTError as exc:
+                last_error = exc
+
+        raise ValueError(f"invalid token audience: {last_error}")
     except (JWTError, StopIteration) as e:
         raise ValueError(f"invalid token: {e}") from e

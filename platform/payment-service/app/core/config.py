@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     redis_url: str = "redis://redis.shopno-data.svc.cluster.local:6379/0"
     cors_origins: str = "https://*.shopnoltd.dpdns.org"
     keycloak_issuer: str = "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
-    keycloak_audience: str = "payment-service"
+    keycloak_audience: str = "payment-service"\n    keycloak_web_audience: str = "api-service"
     jwt_audience: str = "shopnoltd"
     exchange_service_url: str = "http://exchange-service.shopno-payments.svc.cluster.local:80"
     billing_engine_url: str = "http://billing-engine.shopno-payments.svc.cluster.local:80"
