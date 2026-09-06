@@ -13,7 +13,7 @@ SERVICES = {
     "messaging": "http://messaging-service.shopno-platform.svc.cluster.local:8080",
     "notification": "http://notification-service.shopno-platform.svc.cluster.local:8080",
     "storage": "http://storage-service.shopno-platform.svc.cluster.local:8080",
-    "ai": "http://ai-platform.shopno-platform.svc.cluster.local:8000",
+    "ai": "http://ai-platform.shopno-platform.svc.cluster.local:80",
     "analytics": "http://analytics-service.shopno-platform.svc.cluster.local:8080",
 }
 
