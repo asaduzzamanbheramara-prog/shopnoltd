@@ -15,7 +15,7 @@ resources:
 - servicemonitor.yaml
 
 labels:
-- includeSelectors: true
+- includeSelectors: false
   pairs:
     app.kubernetes.io/name: api-service
 - includeSelectors: false
