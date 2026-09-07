@@ -84,21 +84,35 @@ export function createCheckout({
   gateway,
   amount,
   currency,
+  base_amount,
+  base_currency,
   reference,
   customer_phone,
 }) {
-  const numericAmount = Number(amount)
-  if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
+  const numericAmount = amount === undefined || amount === null || amount === '' ? null : Number(amount)
+  const numericBaseAmount = base_amount === undefined || base_amount === null || base_amount === '' ? null : Number(base_amount)
+  if (numericAmount !== null && (!Number.isFinite(numericAmount) || numericAmount <= 0)) {
     return Promise.reject(new Error('Amount must be greater than zero.'))
+  }
+  if (numericBaseAmount !== null && (!Number.isFinite(numericBaseAmount) || numericBaseAmount <= 0)) {
+    return Promise.reject(new Error('Base amount must be greater than zero.'))
+  }
+  if (numericAmount === null && numericBaseAmount === null) {
+    return Promise.reject(new Error('Amount or base amount is required.'))
   }
   if (!gateway || !currency) {
     return Promise.reject(new Error('Gateway and currency are required.'))
+  }
+  if (numericBaseAmount !== null && !base_currency) {
+    return Promise.reject(new Error('Base currency is required when base amount is provided.'))
   }
   return authenticatedRequest('/api/v1/billing/checkout', {
     method: 'POST',
     body: JSON.stringify({
       gateway: String(gateway).trim().toLowerCase(),
-      amount: numericAmount,
+      ...(numericAmount !== null ? { amount: numericAmount } : {}),
+      ...(numericBaseAmount !== null ? { base_amount: numericBaseAmount } : {}),
+      ...(base_currency ? { base_currency: String(base_currency).trim().toUpperCase() } : {}),
       currency: String(currency).trim().toUpperCase(),
       reference,
       customer_phone,
