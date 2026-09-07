@@ -10,10 +10,10 @@ PRODUCTION_BASE_URL = "https://api.moneybag.com.bd/api/v2"
 
 
 class MoneybagGateway(PaymentGateway):
-    """Moneybag hosted checkout adapter.
+    """Moneybag hosted-checkout adapter.
 
-    Credentials stay server-side. Checkout creates a hosted session; payment
-    state is trusted only after the backend verifies the Moneybag transaction.
+    The merchant key stays server-side. A successful browser redirect is never
+    treated as payment proof; callers must verify the Moneybag transaction.
     """
 
     name = "moneybag"
@@ -26,7 +26,12 @@ class MoneybagGateway(PaymentGateway):
     def base_url(self) -> str:
         return SANDBOX_BASE_URL if self.sandbox else PRODUCTION_BASE_URL
 
+    def _require_configured(self) -> None:
+        if not self.enabled or not config.MONEYBAG_API_KEY:
+            raise RuntimeError("Moneybag is not configured")
+
     def _headers(self) -> dict[str, str]:
+        self._require_configured()
         return {
             "X-Merchant-API-Key": config.MONEYBAG_API_KEY,
             "Content-Type": "application/json",
@@ -41,15 +46,14 @@ class MoneybagGateway(PaymentGateway):
             raise ValueError("Moneybag currently supports Shopnoltd checkout in BDT only.")
         if amount < 10 or amount > 1_000_000:
             raise ValueError("Moneybag checkout amount must be between 10.00 and 1,000,000.00 BDT.")
-        if not self.enabled:
-            return GatewayResult(
-                gateway=self.name,
-                is_demo=True,
-                status="pending",
-                gateway_reference=reference,
-                redirect_url=None,
-                note="Moneybag is not configured; sandbox/production credentials are required.",
-            )
+        if not reference or len(reference) < 10 or len(reference) > 36:
+            raise ValueError("Moneybag order reference must be between 10 and 36 characters.")
+
+        customer_name = str(kwargs.get("customer_name") or "").strip()
+        customer_email = str(kwargs.get("customer_email") or "").strip()
+        customer_phone = str(kwargs.get("customer_phone") or "").strip()
+        if not customer_name or not customer_email or not customer_phone:
+            raise ValueError("Moneybag checkout requires customer_name, customer_email, and customer_phone.")
 
         base_callback = config.BASE_CALLBACK_URL.rstrip("/")
         payload = {
@@ -57,28 +61,21 @@ class MoneybagGateway(PaymentGateway):
             "order_amount": f"{amount:.2f}",
             "currency": currency,
             "order_description": kwargs.get("product_name", "Shopnoltd Order")[:255],
-            "success_url": kwargs.get(
-                "success_url", f"{base_callback}/webhook/moneybag/success"
-            ),
-            "cancel_url": kwargs.get(
-                "cancel_url", f"{base_callback}/webhook/moneybag/cancel"
-            ),
-            "fail_url": kwargs.get(
-                "fail_url", f"{base_callback}/webhook/moneybag/fail"
-            ),
-            "ipn_url": kwargs.get(
-                "ipn_url", f"{base_callback}/webhook/moneybag/ipn"
-            ),
+            "success_url": kwargs.get("success_url", f"{base_callback}/webhook/moneybag/success"),
+            "cancel_url": kwargs.get("cancel_url", f"{base_callback}/webhook/moneybag/cancel"),
+            "fail_url": kwargs.get("fail_url", f"{base_callback}/webhook/moneybag/fail"),
+            "ipn_url": kwargs.get("ipn_url", f"{base_callback}/webhook/moneybag/ipn"),
             "customer": {
-                "name": kwargs.get("customer_name") or "Shopnoltd Customer",
-                "email": kwargs.get("customer_email") or "customer@example.com",
-                "phone": kwargs.get("customer_phone") or "+8801700000000",
+                "name": customer_name,
+                "email": customer_email,
+                "phone": customer_phone,
                 "address": kwargs.get("customer_address") or "Dhaka",
                 "city": kwargs.get("customer_city") or "Dhaka",
                 "postcode": kwargs.get("customer_postcode") or "1000",
                 "country": "Bangladesh",
             },
         }
+
         response = requests.post(
             f"{self.base_url}/payments/checkout",
             json=payload,
@@ -91,7 +88,7 @@ class MoneybagGateway(PaymentGateway):
         checkout_url = data.get("checkout_url")
         session_id = data.get("session_id")
         if not body.get("success") or not checkout_url or not session_id:
-            raise RuntimeError(f"Moneybag checkout did not return a hosted checkout session: {body}")
+            raise RuntimeError("Moneybag checkout did not return a hosted checkout session")
 
         return GatewayResult(
             gateway=self.name,
@@ -105,8 +102,8 @@ class MoneybagGateway(PaymentGateway):
         )
 
     def verify_transaction(self, transaction_id: str) -> dict[str, Any]:
-        if not self.enabled:
-            raise RuntimeError("Moneybag is not configured")
+        if not transaction_id:
+            raise ValueError("Moneybag transaction_id is required")
         response = requests.get(
             f"{self.base_url}/payments/verify/{transaction_id}",
             headers=self._headers(),
@@ -115,11 +112,10 @@ class MoneybagGateway(PaymentGateway):
         response.raise_for_status()
         body = response.json()
         if not body.get("success"):
-            raise RuntimeError(f"Moneybag verification failed: {body}")
+            raise RuntimeError("Moneybag verification returned an unsuccessful response")
         return body
 
     def verify_webhook(self, payload: bytes, headers: dict[str, str]) -> dict[str, Any]:
         raise NotImplementedError(
-            "Moneybag webhook signature verification is handled by the webhook boundary; "
-            "payment state must still be verified server-side."
+            "Use the Moneybag webhook boundary to validate the raw-body HMAC and replay timestamp."
         )
