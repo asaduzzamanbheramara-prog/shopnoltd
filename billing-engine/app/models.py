@@ -145,7 +145,7 @@ class AuditLog(Base):
 class WalletLedgerEntry(Base):
     __tablename__ = "wallet_ledger_entries"
 
-    id = Column(String(64), primary_key=True)
+    id = Column(String(64), primary_key=True, default=lambda: gen_id("led"))
     user_id = Column(String(64), ForeignKey("users.id"), nullable=False, index=True)
     currency = Column(String(3), nullable=False)
     entry_type = Column(String, nullable=False)  # deposit|deduction|fine|refund|adjustment_credit|adjustment_debit
