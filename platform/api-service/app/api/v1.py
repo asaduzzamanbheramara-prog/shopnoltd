@@ -12,6 +12,7 @@ import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
+from app.core.financial_registry import CURRENCY_REGISTRY, gateway_catalog
 from app.core.security import verify_token
 
 router = APIRouter()
@@ -48,6 +49,54 @@ async def call(method: str, url: str, user_token: str, **kw):
     return r.json() if r.text else None
 
 
+def _runtime_gateway_rows(downstream: dict | None) -> list[dict]:
+    """Merge runtime provider state into the canonical implemented-provider catalog.
+
+    The static registry guarantees that supported-but-unconfigured providers
+    remain visible. The downstream billing engine remains authoritative for
+    credential/admin runtime state.
+    """
+    runtime_rows = downstream.get("gateways", []) if isinstance(downstream, dict) else []
+    runtime = {
+        str(row.get("name", "")).strip().lower(): row
+        for row in runtime_rows
+        if isinstance(row, dict) and str(row.get("name", "")).strip()
+    }
+
+    normalized = []
+    for gateway_id, definition in gateway_catalog().items():
+        source = runtime.get(gateway_id, {})
+        configured = bool(source.get("credentials_configured"))
+        admin_disabled = bool(source.get("admin_disabled"))
+        provider_live = bool(source.get("live"))
+        available = bool(definition["supported"]) and not admin_disabled and configured and provider_live
+        if not definition["supported"]:
+            status = "unsupported"
+        elif admin_disabled:
+            status = "disabled"
+        elif not configured:
+            status = "not_configured"
+        elif not provider_live:
+            status = "unavailable"
+        else:
+            status = "available"
+
+        normalized.append(
+            {
+                **definition,
+                "enabled": not admin_disabled,
+                "configured": configured,
+                "available": available,
+                "activation_required": definition["supported"] and not configured,
+                "status": status,
+                "credentials_configured": configured,
+                "admin_disabled": admin_disabled,
+                "provider_live": provider_live,
+            }
+        )
+    return normalized
+
+
 @router.get("/me")
 async def me(creds: HTTPAuthorizationCredentials = Depends(bearer)):
     return await user(creds)
@@ -60,35 +109,23 @@ async def users_me(creds: HTTPAuthorizationCredentials = Depends(bearer)):
 
 @router.get("/financial/capabilities")
 async def financial_capabilities(creds: HTTPAuthorizationCredentials = Depends(bearer)):
-    """Return the runtime financial capabilities exposed by the billing registry."""
+    """Return canonical gateway, currency and capability metadata."""
     await user(creds)
     gateways_response = await call("GET", f"{PAYMENTS_BASE}/gateways", creds.credentials)
-    gateways = gateways_response.get("gateways", []) if isinstance(gateways_response, dict) else []
-
-    normalized = []
-    currencies = set()
-    for gateway in gateways:
-        if not isinstance(gateway, dict):
-            continue
-        row = dict(gateway)
-        explicit = sorted(
-            {
-                str(currency).strip().upper()
-                for currency in gateway.get("currencies", [])
-                if isinstance(currency, str)
-                and currency.strip()
-                and "and more" not in currency.lower()
-            }
-        )
-        row["currencies"] = explicit
-        row["available"] = bool(gateway.get("live")) and bool(gateway.get("credentials_configured"))
-        currencies.update(explicit)
-        normalized.append(row)
-
+    normalized = _runtime_gateway_rows(gateways_response)
     return {
-        "version": 1,
-        "currencies": sorted(currencies),
+        "version": 2,
+        "currencies": CURRENCY_REGISTRY,
         "gateways": normalized,
+        "payout_providers": [
+            {
+                "id": "payoneer",
+                "name": "Payoneer",
+                "provider": "payoneer",
+                "supported": True,
+                "capabilities": ["payout"],
+            }
+        ],
     }
 
 
@@ -101,13 +138,8 @@ async def wallet(
     email = current_user.get("email")
     if not email:
         raise HTTPException(status_code=400, detail="Authenticated user does not have an email address")
-
     query = f"?currency={quote(currency.upper(), safe='')}" if currency else ""
-    return await call(
-        "GET",
-        f"{PAYMENTS_BASE}/wallet/{quote(email, safe='')}{query}",
-        creds.credentials,
-    )
+    return await call("GET", f"{PAYMENTS_BASE}/wallet/{quote(email, safe='')}{query}", creds.credentials)
 
 
 @router.get("/wallet/{currency}")
@@ -125,7 +157,6 @@ async def wallet_ledger(
     email = current_user.get("email")
     if not email:
         raise HTTPException(status_code=400, detail="Authenticated user does not have an email address")
-
     params = [f"limit={limit}"]
     if currency:
         params.append(f"currency={quote(currency.upper(), safe='')}")
@@ -142,23 +173,12 @@ async def transactions(
     offset: int = Query(default=0, ge=0),
     creds: HTTPAuthorizationCredentials = Depends(bearer),
 ):
-    """Expose a bounded public page from the legacy unpaginated billing endpoint.
-
-    The downstream endpoint currently returns the complete user's transaction
-    list. Keep the public contract paginated while avoiding a second ledger
-    implementation. A later billing-engine DB query can make this efficient
-    without changing the browser contract.
-    """
+    """Expose a bounded public page from the legacy unpaginated billing endpoint."""
     current_user = await user(creds)
     email = current_user.get("email")
     if not email:
         raise HTTPException(status_code=400, detail="Authenticated user does not have an email address")
-
-    data = await call(
-        "GET",
-        f"{PAYMENTS_BASE}/transactions/{quote(email, safe='')}",
-        creds.credentials,
-    )
+    data = await call("GET", f"{PAYMENTS_BASE}/transactions/{quote(email, safe='')}", creds.credentials)
     items = data if isinstance(data, list) else []
     page = items[offset : offset + limit]
     return {
@@ -173,29 +193,17 @@ async def transactions(
 
 @router.get("/feed")
 async def feed(creds: HTTPAuthorizationCredentials = Depends(bearer)):
-    return await call(
-        "GET",
-        "http://social-service.shopno-platform.svc.cluster.local:80/api/v1/feed/me",
-        creds.credentials,
-    )
+    return await call("GET", "http://social-service.shopno-platform.svc.cluster.local:80/api/v1/feed/me", creds.credentials)
 
 
 @router.get("/conversations")
 async def conversations(creds: HTTPAuthorizationCredentials = Depends(bearer)):
-    return await call(
-        "GET",
-        "http://messaging-service.shopno-platform.svc.cluster.local:80/api/v1/conversations",
-        creds.credentials,
-    )
+    return await call("GET", "http://messaging-service.shopno-platform.svc.cluster.local:80/api/v1/conversations", creds.credentials)
 
 
 @router.get("/notifications")
 async def notifications(creds: HTTPAuthorizationCredentials = Depends(bearer)):
-    return await call(
-        "GET",
-        "http://notification-service.shopno-platform.svc.cluster.local:80/api/v1/notifications/me",
-        creds.credentials,
-    )
+    return await call("GET", "http://notification-service.shopno-platform.svc.cluster.local:80/api/v1/notifications/me", creds.credentials)
 
 
 @router.get("/billing/gateways")
@@ -230,37 +238,30 @@ async def billing_checkout(
         raise HTTPException(status_code=422, detail={"code": "INVALID_AMOUNT", "amount": amount})
 
     capability = await call("GET", f"{PAYMENTS_BASE}/gateways", creds.credentials)
-    rows = capability.get("gateways", []) if isinstance(capability, dict) else []
-    gateway_row = next(
-        (g for g in rows if isinstance(g, dict) and str(g.get("name", "")).strip().lower() == gateway),
-        None,
-    )
+    rows = _runtime_gateway_rows(capability)
+    gateway_row = next((g for g in rows if g["id"] == gateway), None)
     if gateway_row is None:
-        raise HTTPException(
-            status_code=422,
-            detail={"code": "GATEWAY_UNSUPPORTED", "gateway": gateway},
-        )
+        raise HTTPException(status_code=422, detail={"code": "GATEWAY_UNSUPPORTED", "gateway": gateway})
 
-    supported = {
-        str(c).strip().upper()
-        for c in gateway_row.get("currencies", [])
-        if isinstance(c, str) and c.strip() and "and more" not in c.lower()
-    }
-    if currency not in supported:
+    if currency not in set(gateway_row["currencies"]):
         raise HTTPException(
             status_code=422,
             detail={
                 "code": "GATEWAY_CURRENCY_UNSUPPORTED",
                 "gateway": gateway,
                 "currency": currency,
-                "supported_currencies": sorted(supported),
+                "supported_currencies": gateway_row["currencies"],
             },
         )
-    if not gateway_row.get("live"):
+    if gateway_row["status"] == "disabled":
+        raise HTTPException(status_code=503, detail={"code": "GATEWAY_DISABLED", "gateway": gateway})
+    if gateway_row["status"] == "not_configured":
         raise HTTPException(
             status_code=503,
-            detail={"code": "GATEWAY_UNAVAILABLE", "gateway": gateway},
+            detail={"code": "GATEWAY_NOT_CONFIGURED", "gateway": gateway},
         )
+    if not gateway_row["available"]:
+        raise HTTPException(status_code=503, detail={"code": "GATEWAY_UNAVAILABLE", "gateway": gateway})
 
     payload = {
         "gateway": gateway,
@@ -294,10 +295,7 @@ async def rate(frm: str, to: str, creds: HTTPAuthorizationCredentials = Depends(
 
 
 @router.post("/exchange/quote")
-async def exchange_quote(
-    body: dict,
-    creds: HTTPAuthorizationCredentials = Depends(bearer),
-):
+async def exchange_quote(body: dict, creds: HTTPAuthorizationCredentials = Depends(bearer)):
     await user(creds)
     from_currency = str(body.get("from_currency", "")).strip().upper()
     to_currency = str(body.get("to_currency", "")).strip().upper()
@@ -310,7 +308,6 @@ async def exchange_quote(
         raise HTTPException(status_code=422, detail="amount must be numeric") from e
     if not math.isfinite(amount_number) or amount_number <= 0:
         raise HTTPException(status_code=422, detail="amount must be greater than zero")
-
     rate_data = await call(
         "GET",
         f"{EXCHANGE_BASE}/api/v1/rates/{quote(from_currency, safe='')}/{quote(to_currency, safe='')}",
@@ -322,7 +319,6 @@ async def exchange_quote(
         raise HTTPException(status_code=502, detail="Exchange service returned an invalid rate") from e
     if not math.isfinite(rate_value) or rate_value <= 0:
         raise HTTPException(status_code=502, detail="Exchange service returned an invalid rate")
-
     return {
         "from_currency": from_currency,
         "to_currency": to_currency,
@@ -335,10 +331,7 @@ async def exchange_quote(
 
 
 @router.post("/exchange/convert")
-async def exchange_convert(
-    body: dict,
-    creds: HTTPAuthorizationCredentials = Depends(bearer),
-):
+async def exchange_convert(body: dict, creds: HTTPAuthorizationCredentials = Depends(bearer)):
     current_user = await user(creds)
     from_currency = str(body.get("from_currency", "")).strip().upper()
     to_currency = str(body.get("to_currency", "")).strip().upper()
@@ -351,16 +344,10 @@ async def exchange_convert(
         raise HTTPException(status_code=422, detail="amount must be numeric") from e
     if not math.isfinite(amount_number) or amount_number <= 0:
         raise HTTPException(status_code=422, detail="amount must be greater than zero")
-
     payload = {
         "from_currency": from_currency,
         "to_currency": to_currency,
         "amount": amount_number,
         "user_id": current_user.get("sub") or current_user.get("id"),
     }
-    return await call(
-        "POST",
-        f"{EXCHANGE_BASE}/api/v1/convert",
-        creds.credentials,
-        json=payload,
-    )
+    return await call("POST", f"{EXCHANGE_BASE}/api/v1/convert", creds.credentials, json=payload)
