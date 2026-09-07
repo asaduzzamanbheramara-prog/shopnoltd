@@ -10,3 +10,5 @@ prometheus-client==0.21.0
 structlog==24.4.0
 python-jose[cryptography]
 cryptography
+openpyxl==3.1.5
+reportlab==4.2.5
