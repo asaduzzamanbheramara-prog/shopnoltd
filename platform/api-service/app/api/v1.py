@@ -1,8 +1,9 @@
 """Versioned REST facade that aggregates downstream services."""
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from fastapi.responses import Response
 
 from app.core.security import verify_token
 
@@ -12,6 +13,7 @@ bearer = HTTPBearer()
 SOCIAL = "http://social-service.shopno-platform.svc.cluster.local:80"
 BILLING = "http://billing-engine.shopno-payments.svc.cluster.local:80"
 EXCHANGE = "http://exchange-service.shopno-payments.svc.cluster.local:80"
+PAYMENT = "http://payment-service.shopno-payments.svc.cluster.local:8080"
 
 
 async def user(creds: HTTPAuthorizationCredentials = Depends(bearer)):
@@ -119,6 +121,31 @@ async def blog_update(post_id: str, body: dict, creds: HTTPAuthorizationCredenti
 @router.delete("/blog/{post_id}")
 async def blog_delete(post_id: str, creds: HTTPAuthorizationCredentials = Depends(bearer)):
     return await call("DELETE", f"{SOCIAL}/api/v1/blog/{post_id}", creds.credentials)
+
+
+@router.post("/webhook/moneybag/ipn")
+async def moneybag_webhook(request: Request):
+    """Public, unauthenticated relay for Moneybag signed IPNs."""
+    body = await request.body()
+    headers = {
+        key: value
+        for key, value in request.headers.items()
+        if key.lower().startswith("x-webhook-")
+    }
+    try:
+        async with httpx.AsyncClient(timeout=20) as client:
+            response = await client.post(
+                f"{PAYMENT}/api/v1/webhooks/moneybag",
+                content=body,
+                headers=headers,
+            )
+    except (httpx.ConnectError, httpx.ConnectTimeout, httpx.ReadTimeout) as exc:
+        raise HTTPException(status_code=503, detail="Payment webhook service unavailable") from exc
+    return Response(
+        content=response.content,
+        status_code=response.status_code,
+        media_type=response.headers.get("content-type", "application/json").split(";", 1)[0],
+    )
 
 
 @router.get("/feed")
