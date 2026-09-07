@@ -28,31 +28,13 @@ def gen_id(prefix: str):
 class User(Base):
     __tablename__ = "users"
 
-    id = Column(
-        String(64),
-        primary_key=True,
-        default=lambda: gen_id("usr"),
-    )
-
-    keycloak_id = Column(
-        String(64),
-        nullable=True,
-    )
-
-    email = Column(
-        String(256),
-        unique=True,
-        nullable=False,
-    )
-
+    id = Column(String(64), primary_key=True, default=lambda: gen_id("usr"))
+    keycloak_id = Column(String(64), nullable=True)
+    email = Column(String(256), unique=True, nullable=False)
     name = Column(String(256))
-
     tenant_id = Column(String(64), nullable=True)
-
     roles = Column(Text)
-
     active = Column(Boolean, default=True)
-
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
@@ -65,13 +47,9 @@ class Wallet(Base):
     __tablename__ = "wallets"
 
     id = Column(String, primary_key=True, default=lambda: gen_id("wal"))
-
     user_id = Column(String(64), ForeignKey("users.id"), nullable=False)
-
     currency = Column(String(3), default="BDT")
-
     balance = Column(Numeric(18, 2), default=0)
-
     updated_at = Column(DateTime, default=datetime.utcnow)
 
 
@@ -84,26 +62,37 @@ class Transaction(Base):
     __tablename__ = "transactions"
 
     id = Column(String, primary_key=True, default=lambda: gen_id("txn"))
-
     user_id = Column(String(64), ForeignKey("users.id"))
-
     gateway = Column(String)
-
     gateway_reference = Column(Text)
-
     amount = Column(Numeric(18, 2))
-
     currency = Column(String(3))
-
     status = Column(String)
-
     is_demo = Column(Boolean)
-
     raw_response = Column(Text)
-
     created_at = Column(DateTime, default=datetime.utcnow)
-
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+# ----------------------------------------------------------
+# MONEYBAG WEBHOOK EVENTS
+# ----------------------------------------------------------
+
+
+class MoneybagWebhookEvent(Base):
+    """Durable Moneybag event identity for exactly-once side-effect handling."""
+
+    __tablename__ = "moneybag_webhook_events"
+
+    id = Column(String(64), primary_key=True, default=lambda: gen_id("mwe"))
+    event_id = Column(String(128), unique=True, nullable=False, index=True)
+    event_type = Column(String(128), nullable=False)
+    transaction_id = Column(String(128), nullable=True)
+    order_id = Column(String(128), nullable=True)
+    payload_sha256 = Column(String(64), nullable=False)
+    status = Column(String(32), nullable=False, default="received")
+    received_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    processed_at = Column(DateTime, nullable=True)
 
 
 # ----------------------------------------------------------
@@ -115,15 +104,10 @@ class PaymentMethod(Base):
     __tablename__ = "payment_methods"
 
     id = Column(String, primary_key=True, default=lambda: gen_id("pm"))
-
     user_id = Column(String(64), ForeignKey("users.id"))
-
     gateway = Column(String)
-
     label = Column(Text)
-
     gateway_token = Column(Text)
-
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
@@ -136,15 +120,10 @@ class Subscription(Base):
     __tablename__ = "subscriptions"
 
     id = Column(String, primary_key=True, default=lambda: gen_id("sub"))
-
     tenant_id = Column(String)
-
     plan = Column(String)
-
     status = Column(String)
-
     started_at = Column(DateTime)
-
     expires_at = Column(DateTime)
 
 
@@ -157,13 +136,9 @@ class AuditLog(Base):
     __tablename__ = "audit_log"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-
     action = Column(String)
-
     user_id = Column(String)
-
     details = Column(Text)
-
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
@@ -171,17 +146,9 @@ class WalletLedgerEntry(Base):
     __tablename__ = "wallet_ledger_entries"
 
     id = Column(String(64), primary_key=True)
-
-    user_id = Column(
-        String(64),
-        ForeignKey("users.id"),
-        nullable=False,
-        index=True,
-    )
+    user_id = Column(String(64), ForeignKey("users.id"), nullable=False, index=True)
     currency = Column(String(3), nullable=False)
-    entry_type = Column(
-        String, nullable=False
-    )  # deposit|deduction|fine|refund|adjustment_credit|adjustment_debit
+    entry_type = Column(String, nullable=False)  # deposit|deduction|fine|refund|adjustment_credit|adjustment_debit
     amount = Column(Float, nullable=False)  # signed: positive=credit, negative=debit
     balance_after = Column(Float, nullable=False)
     reason = Column(Text, nullable=False)
