@@ -47,6 +47,7 @@ class Settings(BaseSettings):
     moneybag_webhook_secret: str = ""
     moneybag_mode: str = "sandbox"
     moneybag_webhook_tolerance_seconds: int = 300
+    moneybag_webhook_url: str = "https://api.shopnoltd.dpdns.org/api/v1/webhook/moneybag/ipn"
     base_callback_url: str = "https://api.shopnoltd.dpdns.org"
     rocket_merchant_id: str = ""
     rocket_merchant_key: str = ""
