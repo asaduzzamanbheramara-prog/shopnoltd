@@ -85,7 +85,7 @@ def user_roles(user: dict) -> set[str]:
 
 async def verify_token_admin(token: str) -> dict:
     user = await verify_token(token)
-    if "admin" not in user_roles(user):
+    if not ({"admin", "platform_admin"} & user_roles(user)):
         raise PermissionError("admin only")
     return user
 
@@ -102,6 +102,6 @@ async def require_admin(credentials: HTTPAuthorizationCredentials = Depends(bear
         user = await verify_token(credentials.credentials)
     except Exception as exc:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired authentication token", headers={"WWW-Authenticate": "Bearer"}) from exc
-    if "admin" not in user_roles(user):
+    if not ({"admin", "platform_admin"} & user_roles(user)):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
     return user
