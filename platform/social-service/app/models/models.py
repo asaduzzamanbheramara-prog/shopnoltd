@@ -75,3 +75,15 @@ class Comment(Base):
     user_id = Column(String(64), nullable=False, index=True)
     body = Column(Text, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
+
+
+class BlogAdminAudit(Base):
+    __tablename__ = "blog_admin_audit"
+    id = Column(String(64), primary_key=True, default=lambda: str(uuid.uuid4()))
+    actor_id = Column(String(128), nullable=False, index=True)
+    tenant_id = Column(String(64), nullable=False, index=True)
+    action = Column(String(64), nullable=False, index=True)
+    operation = Column(String(32), nullable=False)
+    before_json = Column(Text, nullable=True)
+    after_json = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
