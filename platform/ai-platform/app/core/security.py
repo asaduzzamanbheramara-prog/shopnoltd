@@ -63,7 +63,7 @@ async def verify_token(token: str) -> dict:
             token,
             key,
             algorithms=[key["alg"]],
-            audience=settings.keycloak_audiences_list,
+            audience=settings.keycloak_audience,
             options={"verify_aud": True},
         )
     except (JWTError, StopIteration, KeyError) as exc:
