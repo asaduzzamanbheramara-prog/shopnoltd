@@ -94,8 +94,6 @@ async def webhook(provider: str, request: Request):
                 else hashlib.sha256(supplied_event_id.encode()).hexdigest()
             )
         else:
-            # Some providers do not send a stable event ID. The signed raw body
-            # is then the durable retry identity for this delivery.
             event_key = hashlib.sha256(body).hexdigest()
 
         payload_hash = hashlib.sha256(body).hexdigest()
@@ -111,7 +109,7 @@ async def webhook(provider: str, request: Request):
             await s.flush()
         except IntegrityError:
             await s.rollback()
-            return {"received": True, "idempotent": True, "status": tx.status.value}
+            return {"received": True, "idempotent": True}
 
         if tx.status in TERMINAL_STATUSES:
             webhook_event.status = "ignored_terminal"
@@ -126,8 +124,6 @@ async def webhook(provider: str, request: Request):
             or ""
         ).upper()
 
-        # Moneybag's signed webhook is a reconciliation signal. For a success,
-        # verify the authoritative transaction state from Moneybag before crediting.
         if method == PaymentMethod.moneybag and status in SUCCESS_STATUSES:
             verify_id = str(external or order_reference)
             try:
