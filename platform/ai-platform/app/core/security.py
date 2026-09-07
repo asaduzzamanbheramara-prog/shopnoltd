@@ -70,9 +70,22 @@ async def verify_token(token: str) -> dict:
         raise ValueError(f"invalid token: {exc}") from exc
 
 
+def user_roles(user: dict) -> set[str]:
+    """Return effective Keycloak roles from both common JWT claim locations."""
+    roles = set(user.get("roles") or [])
+    realm_access = user.get("realm_access") or {}
+    roles.update(realm_access.get("roles") or [])
+
+    resource_access = user.get("resource_access") or {}
+    for client in resource_access.values():
+        if isinstance(client, dict):
+            roles.update(client.get("roles") or [])
+    return roles
+
+
 async def verify_token_admin(token: str) -> dict:
     user = await verify_token(token)
-    if "admin" not in user.get("roles", []):
+    if "admin" not in user_roles(user):
         raise PermissionError("admin only")
     return user
 
@@ -89,6 +102,6 @@ async def require_admin(credentials: HTTPAuthorizationCredentials = Depends(bear
         user = await verify_token(credentials.credentials)
     except Exception as exc:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired authentication token", headers={"WWW-Authenticate": "Bearer"}) from exc
-    if "admin" not in user.get("roles", []):
+    if "admin" not in user_roles(user):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
     return user
