@@ -5,6 +5,7 @@ from app.providers.binance_pay import BinancePayProvider
 from app.providers.bkash import BkashProvider
 from app.providers.crypto import CryptoProvider
 from app.providers.manual import ManualProvider
+from app.providers.moneybag import MoneybagProvider
 from app.providers.nagad import NagadProvider
 from app.providers.payoneer import PayoneerProvider
 from app.providers.paypal import PayPalProvider
@@ -19,6 +20,7 @@ _REG = {
     PaymentMethod.nagad: NagadProvider(),
     PaymentMethod.razorpay: RazorpayProvider(),
     PaymentMethod.sslcommerz: SSLCommerzProvider(),
+    PaymentMethod.moneybag: MoneybagProvider(),
     PaymentMethod.btc: CryptoProvider("btc"),
     PaymentMethod.eth: CryptoProvider("eth"),
     PaymentMethod.usdt: CryptoProvider("usdt"),
