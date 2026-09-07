@@ -43,6 +43,12 @@ export async function authenticatedRequest(path, options = {}) {
       typeof data === 'object' && data !== null
         ? data.detail || data.message || JSON.stringify(data)
         : data
+    if (detail && typeof detail === 'object' && detail.code) {
+      const error = new Error(detail.message || detail.code)
+      error.code = detail.code
+      error.details = detail
+      throw error
+    }
     throw new Error(
       `Financial API request failed (${response.status})${detail ? `: ${detail}` : ''}`
     )
@@ -65,7 +71,9 @@ export function getWalletLedger(currency = 'BDT', limit = 50) {
 }
 
 export function getTransactions(limit = 50, offset = 0) {
-  return authenticatedRequest(`/api/v1/transactions?limit=${limit}&offset=${offset}`)
+  return authenticatedRequest(`/api/v1/transactions?limit=${limit}&offset=${offset}`).then(
+    (data) => (Array.isArray(data) ? data : data?.items || [])
+  )
 }
 
 export function getPaymentGateways() {
@@ -79,12 +87,19 @@ export function createCheckout({
   reference,
   customer_phone,
 }) {
+  const numericAmount = Number(amount)
+  if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
+    return Promise.reject(new Error('Amount must be greater than zero.'))
+  }
+  if (!gateway || !currency) {
+    return Promise.reject(new Error('Gateway and currency are required.'))
+  }
   return authenticatedRequest('/api/v1/billing/checkout', {
     method: 'POST',
     body: JSON.stringify({
-      gateway,
-      amount: Number(amount),
-      currency: String(currency || '').toUpperCase(),
+      gateway: String(gateway).trim().toLowerCase(),
+      amount: numericAmount,
+      currency: String(currency).trim().toUpperCase(),
       reference,
       customer_phone,
     }),
@@ -97,17 +112,21 @@ export function getExchangeRates(limit = 100) {
 
 export function getExchangeRate(from, to) {
   return authenticatedRequest(
-    `/api/v1/rate/${encodeURIComponent(from.toUpperCase())}/${encodeURIComponent(to.toUpperCase())}`
+    `/api/v1/rate/${encodeURIComponent(String(from).toUpperCase())}/${encodeURIComponent(String(to).toUpperCase())}`
   )
 }
 
 export function getExchangeQuote({ from_currency, to_currency, amount }) {
+  const numericAmount = Number(amount)
+  if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
+    return Promise.reject(new Error('Amount must be greater than zero.'))
+  }
   return authenticatedRequest('/api/v1/exchange/quote', {
     method: 'POST',
     body: JSON.stringify({
-      from_currency: String(from_currency || '').toUpperCase(),
-      to_currency: String(to_currency || '').toUpperCase(),
-      amount: Number(amount),
+      from_currency: String(from_currency || '').trim().toUpperCase(),
+      to_currency: String(to_currency || '').trim().toUpperCase(),
+      amount: numericAmount,
     }),
   })
 }
@@ -117,12 +136,16 @@ export function convertExchange({
   to_currency,
   amount,
 }) {
+  const numericAmount = Number(amount)
+  if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
+    return Promise.reject(new Error('Amount must be greater than zero.'))
+  }
   return authenticatedRequest('/api/v1/exchange/convert', {
     method: 'POST',
     body: JSON.stringify({
-      from_currency: String(from_currency || '').toUpperCase(),
-      to_currency: String(to_currency || '').toUpperCase(),
-      amount: Number(amount),
+      from_currency: String(from_currency || '').trim().toUpperCase(),
+      to_currency: String(to_currency || '').trim().toUpperCase(),
+      amount: numericAmount,
     }),
   })
 }
