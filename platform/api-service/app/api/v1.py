@@ -1,9 +1,4 @@
-"""Versioned REST facade that aggregates downstream services.
-
-The web portal talks only to this facade. Downstream service URLs remain
-internal implementation details so the public financial API can evolve
-without coupling the browser to individual services.
-"""
+"""Versioned REST facade that aggregates downstream services."""
 
 import math
 from urllib.parse import quote
@@ -31,13 +26,11 @@ async def user(creds: HTTPAuthorizationCredentials = Depends(bearer)):
 
 async def call(method: str, url: str, user_token: str, **kw):
     headers = {"Authorization": f"Bearer {user_token}"}
-
     try:
         async with httpx.AsyncClient(timeout=10) as c:
             r = await c.request(method, url, headers=headers, **kw)
     except (httpx.ConnectError, httpx.ConnectTimeout, httpx.ReadTimeout) as e:
         raise HTTPException(status_code=503, detail="Downstream service unavailable") from e
-
     if r.status_code >= 400:
         detail = r.text
         try:
@@ -45,24 +38,16 @@ async def call(method: str, url: str, user_token: str, **kw):
         except Exception:
             pass
         raise HTTPException(status_code=r.status_code, detail=detail)
-
     return r.json() if r.text else None
 
 
 def _runtime_gateway_rows(downstream: dict | None) -> list[dict]:
-    """Merge runtime provider state into the canonical implemented-provider catalog.
-
-    The static registry guarantees that supported-but-unconfigured providers
-    remain visible. The downstream billing engine remains authoritative for
-    credential/admin runtime state.
-    """
     runtime_rows = downstream.get("gateways", []) if isinstance(downstream, dict) else []
     runtime = {
         str(row.get("name", "")).strip().lower(): row
         for row in runtime_rows
         if isinstance(row, dict) and str(row.get("name", "")).strip()
     }
-
     normalized = []
     for gateway_id, definition in gateway_catalog().items():
         source = runtime.get(gateway_id, {})
@@ -80,20 +65,17 @@ def _runtime_gateway_rows(downstream: dict | None) -> list[dict]:
             status = "unavailable"
         else:
             status = "available"
-
-        normalized.append(
-            {
-                **definition,
-                "enabled": not admin_disabled,
-                "configured": configured,
-                "available": available,
-                "activation_required": definition["supported"] and not configured,
-                "status": status,
-                "credentials_configured": configured,
-                "admin_disabled": admin_disabled,
-                "provider_live": provider_live,
-            }
-        )
+        normalized.append({
+            **definition,
+            "enabled": not admin_disabled,
+            "configured": configured,
+            "available": available,
+            "activation_required": definition["supported"] and not configured,
+            "status": status,
+            "credentials_configured": configured,
+            "admin_disabled": admin_disabled,
+            "provider_live": provider_live,
+        })
     return normalized
 
 
@@ -109,31 +91,13 @@ async def users_me(creds: HTTPAuthorizationCredentials = Depends(bearer)):
 
 @router.get("/financial/capabilities")
 async def financial_capabilities(creds: HTTPAuthorizationCredentials = Depends(bearer)):
-    """Return canonical gateway, currency and capability metadata."""
     await user(creds)
     gateways_response = await call("GET", f"{PAYMENTS_BASE}/gateways", creds.credentials)
-    normalized = _runtime_gateway_rows(gateways_response)
-    return {
-        "version": 2,
-        "currencies": CURRENCY_REGISTRY,
-        "gateways": normalized,
-        "payout_providers": [
-            {
-                "id": "payoneer",
-                "name": "Payoneer",
-                "provider": "payoneer",
-                "supported": True,
-                "capabilities": ["payout"],
-            }
-        ],
-    }
+    return {"version": 2, "currencies": CURRENCY_REGISTRY, "gateways": _runtime_gateway_rows(gateways_response), "payout_providers": [{"id": "payoneer", "name": "Payoneer", "provider": "payoneer", "supported": True, "capabilities": ["payout"]}]}
 
 
 @router.get("/wallet")
-async def wallet(
-    currency: str | None = Query(default=None),
-    creds: HTTPAuthorizationCredentials = Depends(bearer),
-):
+async def wallet(currency: str | None = Query(default=None), creds: HTTPAuthorizationCredentials = Depends(bearer)):
     current_user = await user(creds)
     email = current_user.get("email")
     if not email:
@@ -148,11 +112,7 @@ async def wallet_by_currency(currency: str, creds: HTTPAuthorizationCredentials 
 
 
 @router.get("/wallet/ledger")
-async def wallet_ledger(
-    currency: str | None = Query(default=None),
-    limit: int = Query(default=50, ge=1, le=200),
-    creds: HTTPAuthorizationCredentials = Depends(bearer),
-):
+async def wallet_ledger(currency: str | None = Query(default=None), limit: int = Query(default=50, ge=1, le=200), creds: HTTPAuthorizationCredentials = Depends(bearer)):
     current_user = await user(creds)
     email = current_user.get("email")
     if not email:
@@ -160,35 +120,19 @@ async def wallet_ledger(
     params = [f"limit={limit}"]
     if currency:
         params.append(f"currency={quote(currency.upper(), safe='')}")
-    return await call(
-        "GET",
-        f"{PAYMENTS_BASE}/wallet/{quote(email, safe='')}/ledger?{'&'.join(params)}",
-        creds.credentials,
-    )
+    return await call("GET", f"{PAYMENTS_BASE}/wallet/{quote(email, safe='')}/ledger?{'&'.join(params)}", creds.credentials)
 
 
 @router.get("/transactions")
-async def transactions(
-    limit: int = Query(default=50, ge=1, le=200),
-    offset: int = Query(default=0, ge=0),
-    creds: HTTPAuthorizationCredentials = Depends(bearer),
-):
-    """Expose a bounded public page from the legacy unpaginated billing endpoint."""
+async def transactions(limit: int = Query(default=50, ge=1, le=200), offset: int = Query(default=0, ge=0), creds: HTTPAuthorizationCredentials = Depends(bearer)):
     current_user = await user(creds)
     email = current_user.get("email")
     if not email:
         raise HTTPException(status_code=400, detail="Authenticated user does not have an email address")
     data = await call("GET", f"{PAYMENTS_BASE}/transactions/{quote(email, safe='')}", creds.credentials)
     items = data if isinstance(data, list) else []
-    page = items[offset : offset + limit]
-    return {
-        "items": page,
-        "limit": limit,
-        "offset": offset,
-        "count": len(page),
-        "total": len(items),
-        "has_more": offset + limit < len(items),
-    }
+    page = items[offset:offset + limit]
+    return {"items": page, "limit": limit, "offset": offset, "count": len(page), "total": len(items), "has_more": offset + limit < len(items)}
 
 
 @router.get("/feed")
@@ -212,71 +156,40 @@ async def billing_gateways(creds: HTTPAuthorizationCredentials = Depends(bearer)
 
 
 @router.post("/billing/checkout")
-async def billing_checkout(
-    body: dict,
-    creds: HTTPAuthorizationCredentials = Depends(bearer),
-):
+async def billing_checkout(body: dict, creds: HTTPAuthorizationCredentials = Depends(bearer)):
     current_user = await user(creds)
     email = current_user.get("email")
     if not email:
         raise HTTPException(status_code=400, detail="Authenticated user does not have an email address")
-
     amount = body.get("amount")
     currency = str(body.get("currency") or "").strip().upper()
     gateway = str(body.get("gateway") or "").strip().lower()
-
     if amount is None or not currency or not gateway:
-        raise HTTPException(
-            status_code=422,
-            detail={"code": "INVALID_CHECKOUT_REQUEST", "message": "gateway, amount and currency are required"},
-        )
+        raise HTTPException(status_code=422, detail={"code": "INVALID_CHECKOUT_REQUEST", "message": "gateway, amount and currency are required"})
     try:
         amount_number = float(amount)
     except (TypeError, ValueError) as e:
         raise HTTPException(status_code=422, detail={"code": "INVALID_AMOUNT"}) from e
     if not math.isfinite(amount_number) or amount_number <= 0:
         raise HTTPException(status_code=422, detail={"code": "INVALID_AMOUNT", "amount": amount})
-
     capability = await call("GET", f"{PAYMENTS_BASE}/gateways", creds.credentials)
-    rows = _runtime_gateway_rows(capability)
-    gateway_row = next((g for g in rows if g["id"] == gateway), None)
+    gateway_row = next((g for g in _runtime_gateway_rows(capability) if g["id"] == gateway), None)
     if gateway_row is None:
         raise HTTPException(status_code=422, detail={"code": "GATEWAY_UNSUPPORTED", "gateway": gateway})
-
     if currency not in set(gateway_row["currencies"]):
-        raise HTTPException(
-            status_code=422,
-            detail={
-                "code": "GATEWAY_CURRENCY_UNSUPPORTED",
-                "gateway": gateway,
-                "currency": currency,
-                "supported_currencies": gateway_row["currencies"],
-            },
-        )
+        raise HTTPException(status_code=422, detail={"code": "GATEWAY_CURRENCY_UNSUPPORTED", "gateway": gateway, "currency": currency, "supported_currencies": gateway_row["currencies"]})
     if gateway_row["status"] == "disabled":
         raise HTTPException(status_code=503, detail={"code": "GATEWAY_DISABLED", "gateway": gateway})
     if gateway_row["status"] == "not_configured":
         raise HTTPException(status_code=503, detail={"code": "GATEWAY_NOT_CONFIGURED", "gateway": gateway})
     if not gateway_row["available"]:
         raise HTTPException(status_code=503, detail={"code": "GATEWAY_UNAVAILABLE", "gateway": gateway})
-
-    payload = {
-        "gateway": gateway,
-        "amount": amount_number,
-        "currency": currency,
-        "customer_email": email,
-        "reference": body.get("reference"),
-        "customer_name": current_user.get("name") or current_user.get("preferred_username"),
-        "customer_phone": body.get("customer_phone"),
-    }
+    payload = {"gateway": gateway, "amount": amount_number, "currency": currency, "customer_email": email, "reference": body.get("reference"), "customer_name": current_user.get("name") or current_user.get("preferred_username"), "customer_phone": body.get("customer_phone")}
     return await call("POST", f"{PAYMENTS_BASE}/checkout", creds.credentials, json=payload)
 
 
 @router.get("/exchange/rates")
-async def exchange_rates(
-    limit: int = Query(default=100, ge=1, le=500),
-    creds: HTTPAuthorizationCredentials = Depends(bearer),
-):
+async def exchange_rates(limit: int = Query(default=100, ge=1, le=500), creds: HTTPAuthorizationCredentials = Depends(bearer)):
     await user(creds)
     return await call("GET", f"{EXCHANGE_BASE}/api/v1/rates?limit={limit}", creds.credentials)
 
@@ -284,11 +197,7 @@ async def exchange_rates(
 @router.get("/rate/{frm}/{to}")
 async def rate(frm: str, to: str, creds: HTTPAuthorizationCredentials = Depends(bearer)):
     await user(creds)
-    return await call(
-        "GET",
-        f"{EXCHANGE_BASE}/api/v1/rates/{quote(frm.upper(), safe='')}/{quote(to.upper(), safe='')}",
-        creds.credentials,
-    )
+    return await call("GET", f"{EXCHANGE_BASE}/api/v1/rates/{quote(frm.upper(), safe='')}/{quote(to.upper(), safe='')}", creds.credentials)
 
 
 @router.post("/exchange/quote")
@@ -305,26 +214,14 @@ async def exchange_quote(body: dict, creds: HTTPAuthorizationCredentials = Depen
         raise HTTPException(status_code=422, detail="amount must be numeric") from e
     if not math.isfinite(amount_number) or amount_number <= 0:
         raise HTTPException(status_code=422, detail="amount must be greater than zero")
-    rate_data = await call(
-        "GET",
-        f"{EXCHANGE_BASE}/api/v1/rates/{quote(from_currency, safe='')}/{quote(to_currency, safe='')}",
-        creds.credentials,
-    )
+    rate_data = await call("GET", f"{EXCHANGE_BASE}/api/v1/rates/{quote(from_currency, safe='')}/{quote(to_currency, safe='')}", creds.credentials)
     try:
         rate_value = float(rate_data["rate"])
     except (KeyError, TypeError, ValueError) as e:
         raise HTTPException(status_code=502, detail="Exchange service returned an invalid rate") from e
     if not math.isfinite(rate_value) or rate_value <= 0:
-        raise HTTPException(status_code=502, detail="Exchange service returned an invalid rate") from e
-    return {
-        "from_currency": from_currency,
-        "to_currency": to_currency,
-        "amount": amount_number,
-        "rate": rate_value,
-        "converted_amount": amount_number * rate_value,
-        "source": rate_data.get("source"),
-        "fetched_at": rate_data.get("fetched_at"),
-    }
+        raise HTTPException(status_code=502, detail="Exchange service returned an invalid rate")
+    return {"from_currency": from_currency, "to_currency": to_currency, "amount": amount_number, "rate": rate_value, "converted_amount": amount_number * rate_value, "source": rate_data.get("source"), "fetched_at": rate_data.get("fetched_at")}
 
 
 @router.post("/exchange/convert")
@@ -341,10 +238,5 @@ async def exchange_convert(body: dict, creds: HTTPAuthorizationCredentials = Dep
         raise HTTPException(status_code=422, detail="amount must be numeric") from e
     if not math.isfinite(amount_number) or amount_number <= 0:
         raise HTTPException(status_code=422, detail="amount must be greater than zero")
-    payload = {
-        "from_currency": from_currency,
-        "to_currency": to_currency,
-        "amount": amount_number,
-        "user_id": current_user.get("sub") or current_user.get("id"),
-    }
+    payload = {"from_currency": from_currency, "to_currency": to_currency, "amount": amount_number, "user_id": current_user.get("sub") or current_user.get("id")}
     return await call("POST", f"{EXCHANGE_BASE}/api/v1/convert", creds.credentials, json=payload)
