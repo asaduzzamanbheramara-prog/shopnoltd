@@ -12,3 +12,4 @@ python-jose[cryptography]
 cryptography
 openpyxl==3.1.5
 reportlab==4.2.5
+python-multipart==0.0.20
