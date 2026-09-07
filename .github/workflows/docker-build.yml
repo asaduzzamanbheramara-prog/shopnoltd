@@ -32,7 +32,7 @@ jobs:
             tag: v4
 
           - name: ai-platform
-            context: ./platform/ai-platform
+            context: .
             dockerfile: ./platform/ai-platform/Dockerfile
             tag: latest
 
