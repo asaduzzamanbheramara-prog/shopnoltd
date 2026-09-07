@@ -1,0 +1,74 @@
+{
+  "contract_version": 1,
+  "device_types": {
+    "android_shopnoltd_collect": {
+      "product_id": "shopnoltd_collect",
+      "platform": "android",
+      "capabilities": [
+        "forms",
+        "data_collection",
+        "location",
+        "camera",
+        "qr_barcode",
+        "audio",
+        "printing",
+        "offline_storage",
+        "background_sync",
+        "mobile_device_management"
+      ],
+      "automation_actions": [
+        "sync_collection",
+        "refresh_configuration",
+        "request_health",
+        "revoke_device"
+      ],
+      "arbitrary_command_execution": false
+    },
+    "windows_agent": {
+      "platform": "windows",
+      "automation_actions": [
+        "request_health",
+        "start_allowlisted_job",
+        "revoke_device"
+      ],
+      "arbitrary_command_execution": false
+    },
+    "linux_agent": {
+      "platform": "linux",
+      "automation_actions": [
+        "request_health",
+        "start_allowlisted_job",
+        "revoke_device"
+      ],
+      "arbitrary_command_execution": false
+    },
+    "macos_agent": {
+      "platform": "macos",
+      "automation_actions": [
+        "request_health",
+        "start_allowlisted_job",
+        "revoke_device"
+      ],
+      "arbitrary_command_execution": false
+    }
+  },
+  "lifecycle": [
+    "identity",
+    "enrollment",
+    "ownership",
+    "permissions",
+    "capabilities",
+    "automation",
+    "events",
+    "health",
+    "audit",
+    "revocation"
+  ],
+  "security": {
+    "enrollment_tokens": "single_use_and_expiring",
+    "merchant_secrets_on_devices": false,
+    "tenant_isolation_required": true,
+    "audit_required_for_control_actions": true,
+    "capability_checks_required_before_actions": true
+  }
+}
