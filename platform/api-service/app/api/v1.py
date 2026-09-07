@@ -7,7 +7,13 @@ import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from app.core.financial_registry import CURRENCY_REGISTRY, PAYOUT_PROVIDERS, gateway_catalog, payment_method_catalog
+from app.core.financial_registry import (
+    CURRENCY_REGISTRY,
+    PAYOUT_PROVIDERS,
+    capability_matrix,
+    gateway_catalog,
+    payment_method_catalog,
+)
 from app.core.security import verify_token
 
 router = APIRouter()
@@ -98,11 +104,22 @@ async def financial_capabilities(creds: HTTPAuthorizationCredentials = Depends(b
     await user(creds)
     gateways_response = await call("GET", f"{PAYMENTS_BASE}/gateways", creds.credentials)
     return {
-        "version": 3,
+        "version": 4,
         "currencies": CURRENCY_REGISTRY,
         "payment_methods": list(payment_method_catalog().values()),
         "gateways": _runtime_gateway_rows(gateways_response),
         "payout_providers": list(PAYOUT_PROVIDERS.values()),
+        "capability_matrix": capability_matrix(),
+    }
+
+
+@router.get("/financial/capability-matrix")
+async def financial_capability_matrix(creds: HTTPAuthorizationCredentials = Depends(bearer)):
+    await user(creds)
+    return {
+        "version": 1,
+        "items": capability_matrix(),
+        "count": len(capability_matrix()),
     }
 
 
@@ -116,11 +133,6 @@ async def wallet(currency: str | None = Query(default=None), creds: HTTPAuthoriz
     return await call("GET", f"{PAYMENTS_BASE}/wallet/{quote(email, safe='')}{query}", creds.credentials)
 
 
-@router.get("/wallet/{currency}")
-async def wallet_by_currency(currency: str, creds: HTTPAuthorizationCredentials = Depends(bearer)):
-    return await wallet(currency=currency, creds=creds)
-
-
 @router.get("/wallet/ledger")
 async def wallet_ledger(currency: str | None = Query(default=None), limit: int = Query(default=50, ge=1, le=200), creds: HTTPAuthorizationCredentials = Depends(bearer)):
     current_user = await user(creds)
@@ -131,6 +143,11 @@ async def wallet_ledger(currency: str | None = Query(default=None), limit: int =
     if currency:
         params.append(f"currency={quote(currency.upper(), safe='')}")
     return await call("GET", f"{PAYMENTS_BASE}/wallet/{quote(email, safe='')}/ledger?{'&'.join(params)}", creds.credentials)
+
+
+@router.get("/wallet/{currency}")
+async def wallet_by_currency(currency: str, creds: HTTPAuthorizationCredentials = Depends(bearer)):
+    return await wallet(currency=currency, creds=creds)
 
 
 @router.get("/transactions")
@@ -232,7 +249,7 @@ async def exchange_quote(body: dict, creds: HTTPAuthorizationCredentials = Depen
     except (KeyError, TypeError, ValueError) as e:
         raise HTTPException(status_code=502, detail="Exchange service returned an invalid rate") from e
     if not math.isfinite(rate_value) or rate_value <= 0:
-        raise HTTPException(status_code=502, detail="Exchange service returned an invalid rate")
+        raise HTTPException(status_code=502, detail="Exchange service returned an invalid rate") from e
     return {"from_currency": from_currency, "to_currency": to_currency, "amount": amount_number, "rate": rate_value, "converted_amount": amount_number * rate_value, "source": rate_data.get("source"), "fetched_at": rate_data.get("fetched_at")}
 
 
