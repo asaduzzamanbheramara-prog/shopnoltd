@@ -70,6 +70,11 @@ async def register_domain_user(
         raise HTTPException(400, "Authenticated account has no email claim")
     domain = domain.lower().rstrip(".")
 
+    contact_fields = ("given_name", "family_name", "address1", "city", "state", "postal_code", "country", "phone")
+    missing = [field for field in contact_fields if not user.get(field)]
+    if missing:
+        raise HTTPException(400, f"registrant profile is incomplete: missing {', '.join(missing)}")
+
     existing = (await s.execute(select(DomainRegistration).where(DomainRegistration.domain == domain))).scalar_one_or_none()
     if existing:
         raise HTTPException(409, "domain already exists in Shopnoltd registry")
@@ -111,14 +116,14 @@ async def register_domain_user(
         await s.commit()
 
         contact = {
-            "first_name": user.get("given_name") or user.get("name", "Shopnoltd").split(" ")[0],
-            "last_name": user.get("family_name") or "Customer",
-            "address1": user.get("address1") or "Dhaka",
-            "city": user.get("city") or "Dhaka",
-            "state": user.get("state") or "Dhaka",
-            "postal_code": user.get("postal_code") or "1000",
-            "country": user.get("country") or "BD",
-            "phone": user.get("phone") or "+8800000000000",
+            "first_name": user["given_name"],
+            "last_name": user["family_name"],
+            "address1": user["address1"],
+            "city": user["city"],
+            "state": user["state"],
+            "postal_code": user["postal_code"],
+            "country": user["country"],
+            "phone": user["phone"],
             "email": email,
         }
         result = await reg.register(domain, years, contact)
