@@ -1,0 +1,47 @@
+name: Financial PR QA
+
+on:
+  pull_request:
+    paths:
+      - "billing-engine/**"
+      - "platform/api-service/**"
+      - "k8s/services/billing-engine/**"
+      - ".github/workflows/financial-pr-qa.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  billing-engine:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: billing-engine
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install billing dependencies
+        run: python -m pip install -r requirements.txt python-dotenv
+
+      - name: Compile billing application
+        run: python -m compileall -q app tests
+
+      - name: Moneybag webhook unit tests
+        run: python -m unittest discover -s tests -p 'test_*.py' -v
+
+  financial-static:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Compile financial API
+        run: python -m compileall -q platform/api-service/app
