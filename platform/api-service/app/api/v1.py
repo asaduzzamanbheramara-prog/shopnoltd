@@ -116,11 +116,8 @@ async def financial_capabilities(creds: HTTPAuthorizationCredentials = Depends(b
 @router.get("/financial/capability-matrix")
 async def financial_capability_matrix(creds: HTTPAuthorizationCredentials = Depends(bearer)):
     await user(creds)
-    return {
-        "version": 1,
-        "items": capability_matrix(),
-        "count": len(capability_matrix()),
-    }
+    items = capability_matrix()
+    return {"version": 1, "items": items, "count": len(items)}
 
 
 @router.get("/wallet")
@@ -249,7 +246,7 @@ async def exchange_quote(body: dict, creds: HTTPAuthorizationCredentials = Depen
     except (KeyError, TypeError, ValueError) as e:
         raise HTTPException(status_code=502, detail="Exchange service returned an invalid rate") from e
     if not math.isfinite(rate_value) or rate_value <= 0:
-        raise HTTPException(status_code=502, detail="Exchange service returned an invalid rate") from e
+        raise HTTPException(status_code=502, detail="Exchange service returned an invalid rate")
     return {"from_currency": from_currency, "to_currency": to_currency, "amount": amount_number, "rate": rate_value, "converted_amount": amount_number * rate_value, "source": rate_data.get("source"), "fetched_at": rate_data.get("fetched_at")}
 
 
