@@ -110,3 +110,30 @@ def gateway_catalog() -> dict:
 
 def payment_method_catalog() -> dict:
     return deepcopy(PAYMENT_METHOD_REGISTRY)
+
+
+def capability_matrix() -> list[dict]:
+    """Return the explicit gateway × currency × method × operation catalogue.
+
+    This is catalogue truth, not runtime availability. Runtime configuration is
+    intentionally evaluated by the API facade on top of these records.
+    """
+    rows: list[dict] = []
+    for gateway_id, gateway in GATEWAY_REGISTRY.items():
+        currencies = gateway.get("currencies") or [None]
+        methods = gateway.get("payment_methods") or [None]
+        operations = gateway.get("capabilities") or gateway.get("planned_capabilities") or []
+        for currency in currencies:
+            for method in methods:
+                for operation in operations:
+                    implemented = bool(gateway.get("implemented") and operation in gateway.get("capabilities", []))
+                    rows.append({
+                        "gateway": gateway_id,
+                        "currency": currency,
+                        "payment_method": method,
+                        "operation": operation,
+                        "provider_supported": bool(gateway.get("provider_supported")),
+                        "implemented": implemented,
+                        "catalogue_status": "implemented" if implemented else "planned",
+                    })
+    return rows
