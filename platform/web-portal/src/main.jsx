@@ -10,6 +10,7 @@ import Dashboard from './pages/Dashboard'
 import AIWorkspace from './pages/AIWorkspace'
 import ProtectedRoute from './components/ProtectedRoute'
 import Blog from './pages/Blog'
+import BlogAdmin from './pages/BlogAdmin'
 import Plugins from './pages/Plugins'
 import Services from './pages/Services'
 import DomainRegistration from './pages/DomainRegistration'
@@ -56,6 +57,7 @@ function Nav() {
           <Link to="/ai" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px', whiteSpace: 'nowrap', fontWeight: location.pathname === '/ai' ? 700 : 400 }}>AI</Link>
           {isAdmin && <>
             <Link to="/admin" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px', whiteSpace: 'nowrap', fontWeight: 700 }}>Admin</Link>
+            <Link to="/admin/blog" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px', whiteSpace: 'nowrap', fontWeight: location.pathname.startsWith('/admin/blog') ? 700 : 400 }}>Blog editor</Link>
             <Link to="/admin/infrastructure" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px', whiteSpace: 'nowrap', fontWeight: location.pathname.startsWith('/admin/infrastructure') ? 700 : 400 }}>Infrastructure</Link>
           </>}
           <button onClick={handleLogout} style={{ color: 'white', background: 'transparent', border: '1px solid rgba(255,255,255,0.5)', borderRadius: 6, padding: '5px 12px', cursor: 'pointer', whiteSpace: 'nowrap', fontSize: 14 }}>Logout</button>
@@ -112,6 +114,7 @@ function App() {
         <Route path="/exchange" element={<ProtectedRoute><FinancialCenter view="exchange" /></ProtectedRoute>} />
         <Route path="/reports" element={<ProtectedRoute><FinancialCenter view="reports" /></ProtectedRoute>} />
         <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+        <Route path="/admin/blog" element={<AdminRoute><BlogAdmin /></AdminRoute>} />
         <Route path="/admin/infrastructure" element={<AdminRoute><AdminInfrastructure /></AdminRoute>} />
       </Routes>
     </BrowserRouter>
