@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app import fx
+from app.admin_control import router as admin_control_router
 from app.database import Base, engine, get_db
 from app.gateway_admin import is_effectively_live, list_gateway_status, set_gateway_enabled
 from app.gateways import REGISTRY, get_gateway, payoneer_payouts
@@ -16,7 +17,6 @@ from app.security import require_internal_key
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("billing-engine")
-
 
 app = FastAPI(
     title="Shopnoltd Billing Engine",
@@ -33,37 +33,26 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
+app.include_router(admin_control_router)
 
 @app.on_event("startup")
 def startup():
     Base.metadata.create_all(bind=engine)
     logger.info("Database initialized.")
 
-
 def log_action(db: Session, action: str, user_id: str | None, details: dict):
     db.add(AuditLog(action=action, user_id=user_id, details=json.dumps(details)))
     db.commit()
 
-
 def get_or_create_user(db: Session, email: str) -> User:
     user = db.query(User).filter(User.email == email).first()
-
     if user:
         return user
-
-    user = User(
-        email=email,
-        keycloak_id=None,
-        active=True,
-    )
-
+    user = User(email=email, keycloak_id=None, active=True)
     db.add(user)
     db.commit()
     db.refresh(user)
-
     return user
-
 
 def get_or_create_wallet(db: Session, user_id: str, currency: str) -> Wallet:
     wallet = db.query(Wallet).filter(Wallet.user_id == user_id, Wallet.currency == currency).first()
@@ -74,55 +63,37 @@ def get_or_create_wallet(db: Session, user_id: str, currency: str) -> Wallet:
         db.refresh(wallet)
     return wallet
 
-
 @app.get("/health")
 def health():
     return {"status": "ok", "service": "billing-engine", "version": "6.0.0"}
 
-
 @app.get("/gateways")
 def list_gateways(db: Session = Depends(get_db)):
-    """
-    Honest status of every gateway: whether real credentials are configured,
-    whether an admin has disabled it at runtime, and the combined effective
-    live status.
-    """
     status = {s["name"]: s for s in list_gateway_status(db)}
     out = []
     for name, _gw in REGISTRY.items():
         s = status[name]
-        out.append(
-            {
-                "name": name,
-                "live": s["effectively_live"],
-                "credentials_configured": s["credentials_configured"],
-                "admin_disabled": s["admin_disabled"],
-                "currencies": {
-                    "stripe": ["USD", "EUR", "GBP", "AUD", "CAD", "SGD", "and more"],
-                    "paypal": ["USD", "EUR", "GBP", "AUD", "CAD"],
-                    "razorpay": ["INR", "USD"],
-                    "sslcommerz": ["BDT"],
-                    "bkash": ["BDT"],
-                    "nagad": ["BDT"],
-                    "crypto": ["BTC", "ETH", "USDT", "and ~200 more via NOWPayments"],
-                }.get(name, []),
-            }
-        )
+        out.append({
+            "name": name,
+            "live": s["effectively_live"],
+            "credentials_configured": s["credentials_configured"],
+            "admin_disabled": s["admin_disabled"],
+            "currencies": {
+                "stripe": ["USD", "EUR", "GBP", "AUD", "CAD", "SGD", "and more"],
+                "paypal": ["USD", "EUR", "GBP", "AUD", "CAD"],
+                "razorpay": ["INR", "USD"],
+                "sslcommerz": ["BDT"],
+                "bkash": ["BDT"],
+                "nagad": ["BDT"],
+                "crypto": ["BTC", "ETH", "USDT", "and ~200 more via NOWPayments"],
+            }.get(name, []),
+        })
     return {"gateways": out}
-
 
 @app.get("/exchange-rates")
 def exchange_rates():
-    """Live FX rates when EXCHANGE_RATE_API_KEY is set, otherwise an honestly-labeled static snapshot."""
     data = fx.get_rates()
-    return {
-        "base": "USD",
-        "live": data["live"],
-        "fetched_at": data.get("fetched_at"),
-        "rates": data["rates"],
-        "note": data.get("note"),
-    }
-
+    return {"base": "USD", "live": data["live"], "fetched_at": data.get("fetched_at"), "rates": data["rates"], "note": data.get("note")}
 
 @app.get("/exchange-rates/convert")
 def exchange_convert(amount: float, from_currency: str, to_currency: str):
@@ -130,15 +101,7 @@ def exchange_convert(amount: float, from_currency: str, to_currency: str):
         converted, rate = fx.convert_currency(amount, from_currency.upper(), to_currency.upper())
     except ValueError as e:
         raise HTTPException(400, str(e)) from e
-    return {
-        "amount": amount,
-        "from": from_currency.upper(),
-        "to": to_currency.upper(),
-        "converted": converted,
-        "rate": rate,
-        "live": fx.get_rates()["live"],
-    }
-
+    return {"amount": amount, "from": from_currency.upper(), "to": to_currency.upper(), "converted": converted, "rate": rate, "live": fx.get_rates()["live"]}
 
 class PayoneerPayoutRequest(BaseModel):
     payee_id: str
@@ -146,16 +109,9 @@ class PayoneerPayoutRequest(BaseModel):
     currency: str
     description: str = "Shopnoltd payout"
 
-
 @app.post("/payouts/payoneer")
 def send_payoneer_payout(req: PayoneerPayoutRequest):
-    """
-    Pays a seller/affiliate/supplier via Payoneer. This is NOT a customer
-    checkout option -- Payoneer has no public API for customers to pay a
-    merchant directly, only for merchants/marketplaces to pay recipients out.
-    """
     return payoneer_payouts.send_payout(req.payee_id, req.amount, req.currency, req.description)
-
 
 class CheckoutRequest(BaseModel):
     gateway: str
@@ -166,90 +122,41 @@ class CheckoutRequest(BaseModel):
     customer_name: str | None = None
     customer_phone: str | None = None
 
-
 @app.post("/checkout")
 def create_checkout(req: CheckoutRequest, db: Session = Depends(get_db)):
     try:
         gw = get_gateway(req.gateway)
     except KeyError as e:
         raise HTTPException(400, str(e)) from e
-
     if gw.enabled and not is_effectively_live(db, req.gateway):
-        raise HTTPException(
-            503, f"Gateway '{req.gateway}' is currently disabled by an administrator."
-        )
-
+        raise HTTPException(503, f"Gateway '{req.gateway}' is currently disabled by an administrator.")
     user = get_or_create_user(db, req.customer_email)
     reference = req.reference or f"ord_{user.id}_{int(__import__('time').time())}"
-
     try:
-        result = gw.create_payment(
-            amount=req.amount,
-            currency=req.currency,
-            reference=reference,
-            customer_email=req.customer_email,
-            customer_name=req.customer_name,
-            customer_phone=req.customer_phone,
-        )
+        result = gw.create_payment(amount=req.amount, currency=req.currency, reference=reference, customer_email=req.customer_email, customer_name=req.customer_name, customer_phone=req.customer_phone)
     except ValueError as e:
         raise HTTPException(400, str(e)) from e
     except Exception as e:
         logger.exception("Gateway %s create_payment failed", req.gateway)
         raise HTTPException(502, f"{req.gateway} error: {e}") from e
-
-    txn = Transaction(
-        user_id=user.id,
-        gateway=req.gateway,
-        gateway_reference=result.get("gateway_reference"),
-        amount=req.amount,
-        currency=req.currency.upper(),
-        status=result.get("status", "pending"),
-        is_demo=result.get("is_demo", False),
-        raw_response=json.dumps(result),
-    )
+    txn = Transaction(user_id=user.id, gateway=req.gateway, gateway_reference=result.get("gateway_reference"), amount=req.amount, currency=req.currency.upper(), status=result.get("status", "pending"), is_demo=result.get("is_demo", False), raw_response=json.dumps(result))
     db.add(txn)
     db.commit()
     db.refresh(txn)
     log_action(db, "checkout_created", user.id, {"gateway": req.gateway, "txn_id": txn.id})
+    return {"transaction_id": txn.id, "gateway": req.gateway, "is_demo": result.get("is_demo", False), "status": txn.status, "redirect_url": result.get("redirect_url"), "gateway_reference": result.get("gateway_reference"), "note": result.get("note")}
 
-    return {
-        "transaction_id": txn.id,
-        "gateway": req.gateway,
-        "is_demo": result.get("is_demo", False),
-        "status": txn.status,
-        "redirect_url": result.get("redirect_url"),
-        "gateway_reference": result.get("gateway_reference"),
-        "note": result.get("note"),
-    }
-
-
-def _complete_transaction(
-    db: Session, gateway_reference: str, gateway: str, status: str, amount: float | None = None
-):
-    txn = (
-        db.query(Transaction)
-        .filter(Transaction.gateway_reference == gateway_reference, Transaction.gateway == gateway)
-        .first()
-    )
+def _complete_transaction(db: Session, gateway_reference: str, gateway: str, status: str, amount: float | None = None):
+    txn = db.query(Transaction).filter(Transaction.gateway_reference == gateway_reference, Transaction.gateway == gateway).first()
     if not txn:
         logger.warning("Webhook for unknown transaction: %s/%s", gateway, gateway_reference)
         return None
     txn.status = status
     db.commit()
     if status == "completed":
-        apply_ledger_entry(
-            db,
-            txn.user_id,
-            txn.currency,
-            delta=amount if amount is not None else txn.amount,
-            entry_type="deposit",
-            reason=f"Payment completed via {gateway}",
-            reference=txn.id,
-            allow_negative=True,  # deposits are always additive, never blocked
-        )
+        apply_ledger_entry(db, txn.user_id, txn.currency, delta=amount if amount is not None else txn.amount, entry_type="deposit", reason=f"Payment completed via {gateway}", reference=txn.id, allow_negative=True)
     log_action(db, "webhook_processed", txn.user_id, {"gateway": gateway, "status": status})
     return txn
-
 
 @app.post("/webhook/stripe")
 async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
@@ -259,11 +166,8 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
         event = gw.verify_webhook(payload, dict(request.headers))
     except Exception as e:
         raise HTTPException(400, f"Webhook verification failed: {e}") from e
-    _complete_transaction(
-        db, event["gateway_reference"], "stripe", event["status"], event.get("amount")
-    )
+    _complete_transaction(db, event["gateway_reference"], "stripe", event["status"], event.get("amount"))
     return {"received": True}
-
 
 @app.post("/webhook/razorpay")
 async def razorpay_webhook(request: Request, db: Session = Depends(get_db)):
@@ -273,11 +177,8 @@ async def razorpay_webhook(request: Request, db: Session = Depends(get_db)):
         event = gw.verify_webhook(payload, dict(request.headers))
     except Exception as e:
         raise HTTPException(400, f"Webhook verification failed: {e}") from e
-    _complete_transaction(
-        db, event["gateway_reference"], "razorpay", event["status"], event.get("amount")
-    )
+    _complete_transaction(db, event["gateway_reference"], "razorpay", event["status"], event.get("amount"))
     return {"received": True}
-
 
 @app.get("/webhook/sslcommerz/success")
 def sslcommerz_success(val_id: str, tran_id: str, db: Session = Depends(get_db)):
@@ -287,13 +188,11 @@ def sslcommerz_success(val_id: str, tran_id: str, db: Session = Depends(get_db))
     _complete_transaction(db, tran_id, "sslcommerz", status, float(data.get("amount", 0)) or None)
     return {"received": True, "status": status}
 
-
 @app.get("/webhook/sslcommerz/fail")
 @app.get("/webhook/sslcommerz/cancel")
 def sslcommerz_fail_cancel(tran_id: str, db: Session = Depends(get_db)):
     _complete_transaction(db, tran_id, "sslcommerz", "failed")
     return {"received": True, "status": "failed"}
-
 
 @app.get("/webhook/bkash/callback")
 def bkash_callback(paymentID: str, status: str, db: Session = Depends(get_db)):
@@ -303,22 +202,14 @@ def bkash_callback(paymentID: str, status: str, db: Session = Depends(get_db)):
     gw = get_gateway("bkash")
     data = gw.execute_payment(paymentID)
     ok = data.get("transactionStatus") == "Completed"
-    _complete_transaction(
-        db,
-        paymentID,
-        "bkash",
-        "completed" if ok else "failed",
-        float(data.get("amount", 0)) or None,
-    )
+    _complete_transaction(db, paymentID, "bkash", "completed" if ok else "failed", float(data.get("amount", 0)) or None)
     return {"received": True, "status": "completed" if ok else "failed"}
-
 
 @app.get("/webhook/nagad/callback")
 def nagad_callback(payment_ref_id: str, status: str, db: Session = Depends(get_db)):
     ok = status.lower() == "success"
     _complete_transaction(db, payment_ref_id, "nagad", "completed" if ok else "failed")
     return {"received": True, "status": "completed" if ok else "failed"}
-
 
 @app.post("/webhook/crypto")
 async def crypto_webhook(request: Request, db: Session = Depends(get_db)):
@@ -328,11 +219,8 @@ async def crypto_webhook(request: Request, db: Session = Depends(get_db)):
         event = gw.verify_webhook(payload, dict(request.headers))
     except Exception as e:
         raise HTTPException(400, f"Webhook verification failed: {e}") from e
-    _complete_transaction(
-        db, event["gateway_reference"], "crypto", event["status"], event.get("amount")
-    )
+    _complete_transaction(db, event["gateway_reference"], "crypto", event["status"], event.get("amount"))
     return {"received": True}
-
 
 @app.get("/wallet/{email}")
 def get_wallet(email: str, currency: str = "BDT", db: Session = Depends(get_db)):
@@ -342,7 +230,6 @@ def get_wallet(email: str, currency: str = "BDT", db: Session = Depends(get_db))
     wallet = get_or_create_wallet(db, user.id, currency)
     return {"user_id": user.id, "currency": wallet.currency, "balance": wallet.balance}
 
-
 class DeductRequest(BaseModel):
     email: str
     amount: float
@@ -350,25 +237,15 @@ class DeductRequest(BaseModel):
     reason: str
     reference: str | None = None
 
-
 @app.post("/wallet/deduct", dependencies=[Depends(require_internal_key)])
 def deduct_wallet(req: DeductRequest, db: Session = Depends(get_db)):
     user = get_or_create_user(db, req.email)
     try:
-        entry = apply_ledger_entry(
-            db,
-            user.id,
-            req.currency.upper(),
-            delta=-abs(req.amount),
-            entry_type="deduction",
-            reason=req.reason,
-            reference=req.reference,
-        )
+        entry = apply_ledger_entry(db, user.id, req.currency.upper(), delta=-abs(req.amount), entry_type="deduction", reason=req.reason, reference=req.reference)
     except InsufficientBalanceError as e:
         raise HTTPException(402, str(e)) from e
     log_action(db, "wallet_deducted", user.id, {"amount": req.amount, "reason": req.reason})
     return {"balance_after": entry.balance_after, "ledger_entry_id": entry.id}
-
 
 class FineRequest(BaseModel):
     email: str
@@ -378,26 +255,15 @@ class FineRequest(BaseModel):
     reference: str | None = None
     allow_negative_balance: bool = False
 
-
 @app.post("/wallet/fine", dependencies=[Depends(require_internal_key)])
 def fine_wallet(req: FineRequest, db: Session = Depends(get_db)):
     user = get_or_create_user(db, req.email)
     try:
-        entry = apply_ledger_entry(
-            db,
-            user.id,
-            req.currency.upper(),
-            delta=-abs(req.amount),
-            entry_type="fine",
-            reason=req.reason,
-            reference=req.reference,
-            allow_negative=req.allow_negative_balance,
-        )
+        entry = apply_ledger_entry(db, user.id, req.currency.upper(), delta=-abs(req.amount), entry_type="fine", reason=req.reason, reference=req.reference, allow_negative=req.allow_negative_balance)
     except InsufficientBalanceError as e:
         raise HTTPException(402, str(e)) from e
     log_action(db, "wallet_fined", user.id, {"amount": req.amount, "reason": req.reason})
     return {"balance_after": entry.balance_after, "ledger_entry_id": entry.id}
-
 
 class AdjustRequest(BaseModel):
     email: str
@@ -405,83 +271,33 @@ class AdjustRequest(BaseModel):
     currency: str = "BDT"
     reason: str
 
-
 @app.post("/wallet/adjust", dependencies=[Depends(require_internal_key)])
 def adjust_wallet(req: AdjustRequest, db: Session = Depends(get_db)):
     user = get_or_create_user(db, req.email)
-    entry = apply_ledger_entry(
-        db,
-        user.id,
-        req.currency.upper(),
-        delta=req.amount,
-        entry_type="adjustment_credit" if req.amount >= 0 else "adjustment_debit",
-        reason=req.reason,
-        allow_negative=True,
-    )
+    entry = apply_ledger_entry(db, user.id, req.currency.upper(), delta=req.amount, entry_type="adjustment_credit" if req.amount >= 0 else "adjustment_debit", reason=req.reason, allow_negative=True)
     log_action(db, "wallet_adjusted", user.id, {"amount": req.amount, "reason": req.reason})
     return {"balance_after": entry.balance_after, "ledger_entry_id": entry.id}
 
-
 @app.get("/wallet/{email}/ledger")
-def get_wallet_ledger(
-    email: str, currency: str = "BDT", limit: int = 50, db: Session = Depends(get_db)
-):
+def get_wallet_ledger(email: str, currency: str = "BDT", limit: int = 50, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == email).first()
     if not user:
         raise HTTPException(404, "User not found")
-    entries = (
-        db.query(WalletLedgerEntry)
-        .filter(
-            WalletLedgerEntry.user_id == user.id, WalletLedgerEntry.currency == currency.upper()
-        )
-        .order_by(WalletLedgerEntry.created_at.desc())
-        .limit(limit)
-        .all()
-    )
-    return [
-        {
-            "id": e.id,
-            "entry_type": e.entry_type,
-            "amount": e.amount,
-            "balance_after": e.balance_after,
-            "reason": e.reason,
-            "reference": e.reference,
-            "created_at": e.created_at.isoformat(),
-        }
-        for e in entries
-    ]
-
+    entries = db.query(WalletLedgerEntry).filter(WalletLedgerEntry.user_id == user.id, WalletLedgerEntry.currency == currency.upper()).order_by(WalletLedgerEntry.created_at.desc()).limit(limit).all()
+    return [{"id": e.id, "entry_type": e.entry_type, "amount": e.amount, "balance_after": e.balance_after, "reason": e.reason, "reference": e.reference, "created_at": e.created_at.isoformat()} for e in entries]
 
 @app.get("/transactions/{email}")
 def get_transactions(email: str, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == email).first()
     if not user:
         raise HTTPException(404, "User not found")
-    txns = (
-        db.query(Transaction)
-        .filter(Transaction.user_id == user.id)
-        .order_by(Transaction.created_at.desc())
-        .all()
-    )
-    return [
-        {
-            "id": t.id,
-            "gateway": t.gateway,
-            "amount": t.amount,
-            "currency": t.currency,
-            "status": t.status,
-            "is_demo": t.is_demo,
-            "created_at": t.created_at.isoformat() if t.created_at else None,
-        }
-        for t in txns
-    ]
-
+    txns = db.query(Transaction).filter(Transaction.user_id == user.id).order_by(Transaction.created_at.desc()).all()
+    return [{"id": t.id, "gateway": t.gateway, "amount": t.amount, "currency": t.currency, "status": t.status, "is_demo": t.is_demo, "created_at": t.created_at.isoformat() if t.created_at else None} for t in txns]
 
 class GatewayToggleRequest(BaseModel):
     enabled: bool
     note: str | None = None
     actor: str = "admin"
-
 
 @app.post("/admin/gateways/{name}/toggle", dependencies=[Depends(require_internal_key)])
 def toggle_gateway(name: str, req: GatewayToggleRequest, db: Session = Depends(get_db)):
@@ -490,12 +306,7 @@ def toggle_gateway(name: str, req: GatewayToggleRequest, db: Session = Depends(g
     except KeyError as e:
         raise HTTPException(400, str(e)) from e
     log_action(db, "gateway_toggled", req.actor, {"gateway": name, "enabled": req.enabled})
-    return {
-        "gateway": name,
-        "admin_disabled": override.admin_disabled,
-        "effectively_live": is_effectively_live(db, name),
-    }
-
+    return {"gateway": name, "admin_disabled": override.admin_disabled, "effectively_live": is_effectively_live(db, name)}
 
 @app.get("/admin/gateways", dependencies=[Depends(require_internal_key)])
 def admin_gateway_status(db: Session = Depends(get_db)):
