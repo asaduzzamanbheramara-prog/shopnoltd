@@ -50,21 +50,28 @@ export async function authenticatedRequest(path, options = {}) {
   return data
 }
 
+export function getFinancialCapabilities() {
+  return authenticatedRequest('/api/v1/financial/capabilities')
+}
+
 export function getWallet(currency = 'BDT') {
   return authenticatedRequest(`/api/v1/wallet?currency=${encodeURIComponent(currency)}`)
 }
+
 export function getWalletLedger(currency = 'BDT', limit = 50) {
   return authenticatedRequest(
     `/api/v1/wallet/ledger?currency=${encodeURIComponent(currency)}&limit=${limit}`
   )
 }
-export function getTransactions() {
-  return authenticatedRequest('/api/v1/transactions')
-}
-export function getPaymentGateways() {
 
+export function getTransactions(limit = 50, offset = 0) {
+  return authenticatedRequest(`/api/v1/transactions?limit=${limit}&offset=${offset}`)
+}
+
+export function getPaymentGateways() {
   return authenticatedRequest('/api/v1/billing/gateways')
 }
+
 export function createCheckout({
   gateway,
   amount,
@@ -77,17 +84,34 @@ export function createCheckout({
     body: JSON.stringify({
       gateway,
       amount: Number(amount),
-      currency,
+      currency: String(currency || '').toUpperCase(),
       reference,
       customer_phone,
     }),
   })
 }
+
+export function getExchangeRates(limit = 100) {
+  return authenticatedRequest(`/api/v1/exchange/rates?limit=${limit}`)
+}
+
 export function getExchangeRate(from, to) {
   return authenticatedRequest(
-    `/api/v1/rate/${encodeURIComponent(from)}/${encodeURIComponent(to)}`
+    `/api/v1/rate/${encodeURIComponent(from.toUpperCase())}/${encodeURIComponent(to.toUpperCase())}`
   )
 }
+
+export function getExchangeQuote({ from_currency, to_currency, amount }) {
+  return authenticatedRequest('/api/v1/exchange/quote', {
+    method: 'POST',
+    body: JSON.stringify({
+      from_currency: String(from_currency || '').toUpperCase(),
+      to_currency: String(to_currency || '').toUpperCase(),
+      amount: Number(amount),
+    }),
+  })
+}
+
 export function convertExchange({
   from_currency,
   to_currency,
@@ -95,10 +119,9 @@ export function convertExchange({
 }) {
   return authenticatedRequest('/api/v1/exchange/convert', {
     method: 'POST',
-
     body: JSON.stringify({
-      from_currency,
-      to_currency,
+      from_currency: String(from_currency || '').toUpperCase(),
+      to_currency: String(to_currency || '').toUpperCase(),
       amount: Number(amount),
     }),
   })
