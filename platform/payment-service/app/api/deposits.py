@@ -30,6 +30,11 @@ async def create_deposit(
 ):
     if body.amount < settings.min_deposit or body.amount > settings.max_deposit:
         raise HTTPException(400, "amount out of range")
+
+    provider = get_provider(body.method)
+    if hasattr(provider, "enabled") and not provider.enabled:
+        raise HTTPException(503, f"Payment provider '{body.method.value}' is not configured")
+
     res = await s.execute(
         select(Wallet).where(
             Wallet.user_id == user["sub"], Wallet.currency == body.currency.upper()
@@ -58,9 +63,11 @@ async def create_deposit(
     )
     s.add(tx)
     await s.flush()
-    provider = get_provider(body.method)
     out = await provider.create_deposit(tx, return_url=body.return_url)
     tx.external_id = out.get("external_id")
+    if out.get("status") in {"failed", "unavailable"}:
+        await s.rollback()
+        raise HTTPException(503, out.get("note") or f"Payment provider '{body.method.value}' is unavailable")
     await s.commit()
     return TxOut(
         id=str(tx.id),
