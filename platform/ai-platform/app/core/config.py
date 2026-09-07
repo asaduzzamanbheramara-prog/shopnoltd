@@ -22,13 +22,7 @@ class Settings(BaseSettings):
     ai_key_encryption_key: str | None = None
     storage_service_url: str = "http://storage-service.shopno-platform.svc.cluster.local:8080"
     keycloak_issuer: str = "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
-    # Browser users authenticate as shopnoltd-web; service-to-service callers may
-    # use ai-platform. Accept both audiences without weakening issuer/signature checks.
-    keycloak_audiences: str = "shopnoltd-web,ai-platform"
-
-    @property
-    def keycloak_audiences_list(self) -> list[str]:
-        return [item.strip() for item in self.keycloak_audiences.split(",") if item.strip()]
+    keycloak_audience: str = "ai-platform"
 
     @property
     def cors_origins_list(self) -> list[str]:
