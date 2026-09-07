@@ -5,7 +5,6 @@ from sqlalchemy import (
     Boolean,
     Column,
     DateTime,
-    Float,
     ForeignKey,
     Integer,
     Numeric,
@@ -18,11 +17,6 @@ from app.database import Base
 
 def gen_id(prefix: str):
     return f"{prefix}_{uuid.uuid4().hex[:16]}"
-
-
-# ----------------------------------------------------------
-# USERS
-# ----------------------------------------------------------
 
 
 class User(Base):
@@ -38,24 +32,14 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
-# ----------------------------------------------------------
-# WALLETS
-# ----------------------------------------------------------
-
-
 class Wallet(Base):
     __tablename__ = "wallets"
 
     id = Column(String, primary_key=True, default=lambda: gen_id("wal"))
     user_id = Column(String(64), ForeignKey("users.id"), nullable=False)
     currency = Column(String(3), default="BDT")
-    balance = Column(Numeric(18, 2), default=0)
-    updated_at = Column(DateTime, default=datetime.utcnow)
-
-
-# ----------------------------------------------------------
-# TRANSACTIONS
-# ----------------------------------------------------------
+    balance = Column(Numeric(20, 8), default=0, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
 class Transaction(Base):
@@ -65,18 +49,13 @@ class Transaction(Base):
     user_id = Column(String(64), ForeignKey("users.id"))
     gateway = Column(String)
     gateway_reference = Column(Text)
-    amount = Column(Numeric(18, 2))
+    amount = Column(Numeric(20, 8))
     currency = Column(String(3))
     status = Column(String)
     is_demo = Column(Boolean)
     raw_response = Column(Text)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-
-# ----------------------------------------------------------
-# PAYMENT METHODS
-# ----------------------------------------------------------
 
 
 class PaymentMethod(Base):
@@ -90,11 +69,6 @@ class PaymentMethod(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
-# ----------------------------------------------------------
-# SUBSCRIPTIONS
-# ----------------------------------------------------------
-
-
 class Subscription(Base):
     __tablename__ = "subscriptions"
 
@@ -104,11 +78,6 @@ class Subscription(Base):
     status = Column(String)
     started_at = Column(DateTime)
     expires_at = Column(DateTime)
-
-
-# ----------------------------------------------------------
-# AUDIT LOG
-# ----------------------------------------------------------
 
 
 class AuditLog(Base):
@@ -124,14 +93,13 @@ class AuditLog(Base):
 class WalletLedgerEntry(Base):
     __tablename__ = "wallet_ledger_entries"
 
-    # Explicit application-side ID generation is required because this table
-    # has no database-side UUID default in every supported deployment.
     id = Column(String(64), primary_key=True, default=lambda: gen_id("led"))
     user_id = Column(String(64), ForeignKey("users.id"), nullable=False, index=True)
     currency = Column(String(3), nullable=False)
-    entry_type = Column(String, nullable=False)  # deposit|deduction|fine|refund|adjustment_credit|adjustment_debit
-    amount = Column(Float, nullable=False)  # signed: positive=credit, negative=debit
-    balance_after = Column(Float, nullable=False)
+    entry_type = Column(String, nullable=False)
+    # Financial amounts are exact decimals; never use binary floating point here.
+    amount = Column(Numeric(20, 8), nullable=False)
+    balance_after = Column(Numeric(20, 8), nullable=False)
     reason = Column(Text, nullable=False)
     reference = Column(String, nullable=True)
     created_by = Column(String, nullable=True)
