@@ -1,27 +1,31 @@
-import React from 'react'
-
-const POSTS = [
-  {
-    title: 'Welcome to Shopnoltd',
-    date: '2026-09-06',
-    excerpt:
-      'Shopnoltd brings domains, cloud services, billing, payments, exchange, AI and collaboration tools together in one platform.',
-  },
-  {
-    title: 'Shopnoltd Billing and Wallet',
-    date: '2026-09-06',
-    excerpt:
-      'Learn how wallet balances, transactions, billing gateways and checkout work together across the platform.',
-  },
-  {
-    title: 'Shopnoltd Platform Services',
-    date: '2026-09-06',
-    excerpt:
-      'Explore the services available from the Shopnoltd dashboard and service catalog.',
-  },
-]
+import React, { useEffect, useState } from 'react'
 
 export default function Blog() {
+  const [posts, setPosts] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    let active = true
+    fetch('/api/v1/blog?limit=50')
+      .then(async (r) => {
+        if (!r.ok) throw new Error(`Blog API returned ${r.status}`)
+        return r.json()
+      })
+      .then((data) => {
+        if (active) setPosts(Array.isArray(data) ? data : [])
+      })
+      .catch((e) => {
+        if (active) setError(e.message || 'Unable to load blog posts')
+      })
+      .finally(() => {
+        if (active) setLoading(false)
+      })
+    return () => {
+      active = false
+    }
+  }, [])
+
   return (
     <main
       style={{
@@ -36,15 +40,16 @@ export default function Blog() {
         Product updates, platform guides and service news from Shopnoltd.
       </p>
 
-      <div
-        style={{
-          display: 'grid',
-          gap: 16,
-        }}
-      >
-        {POSTS.map((post) => (
+      {loading && <p>Loading posts…</p>}
+      {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
+      {!loading && !error && posts.length === 0 && (
+        <p style={{ color: '#64748b' }}>No published posts yet.</p>
+      )}
+
+      <div style={{ display: 'grid', gap: 16 }}>
+        {posts.map((post) => (
           <article
-            key={post.title}
+            key={post.id}
             style={{
               padding: 24,
               border: '1px solid #e2e8f0',
@@ -52,16 +57,20 @@ export default function Blog() {
               background: 'white',
             }}
           >
-            <div style={{ color: '#64748b', fontSize: 13 }}>
-              {post.date}
+            {post.cover_image && (
+              <img
+                src={post.cover_image}
+                alt=""
+                loading="lazy"
+                style={{ width: '100%', maxHeight: 320, objectFit: 'cover', borderRadius: 8 }}
+              />
+            )}
+            <div style={{ color: '#64748b', fontSize: 13, marginTop: post.cover_image ? 16 : 0 }}>
+              {post.published_at ? new Date(post.published_at).toLocaleDateString() : ''}
             </div>
-
-            <h2 style={{ margin: '8px 0 10px' }}>
-              {post.title}
-            </h2>
-
+            <h2 style={{ margin: '8px 0 10px' }}>{post.title}</h2>
             <p style={{ color: '#475569', lineHeight: 1.6 }}>
-              {post.excerpt}
+              {post.excerpt || post.content?.slice(0, 240)}
             </p>
           </article>
         ))}
