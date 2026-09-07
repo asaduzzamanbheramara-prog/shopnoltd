@@ -1,5 +1,6 @@
 from app.gateways.bkash_gateway import BkashGateway
 from app.gateways.crypto_gateway import CryptoGateway
+from app.gateways.moneybag_gateway import MoneybagGateway
 from app.gateways.nagad_gateway import NagadGateway
 from app.gateways.payoneer_payouts import PayoneerPayouts
 from app.gateways.paypal_gateway import PayPalGateway
@@ -14,10 +15,11 @@ REGISTRY = {
     "sslcommerz": SSLCommerzGateway(),
     "bkash": BkashGateway(),
     "nagad": NagadGateway(),
+    "moneybag": MoneybagGateway(),
     "crypto": CryptoGateway(),
 }
 
-# Not a checkout gateway - kept separate since it's payouts, not "customer pays us".
+# Not a checkout gateway - kept separate since it's payouts, not customer checkout.
 payoneer_payouts = PayoneerPayouts()
 
 
