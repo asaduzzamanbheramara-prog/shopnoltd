@@ -5,7 +5,6 @@ import {
   createCheckout,
   getExchangeRate,
   getFinancialCapabilities,
-  getPaymentGateways,
   getTransactions,
   getWallet,
   getWalletLedger,
