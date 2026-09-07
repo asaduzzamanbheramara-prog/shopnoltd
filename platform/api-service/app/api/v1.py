@@ -9,9 +9,9 @@ from app.core.security import verify_token
 router = APIRouter()
 bearer = HTTPBearer()
 
-SOCIAL = "http://social-service.shopno-platform.svc.cluster.local:80"
+SOCIAL = "http://social-service.shopno-platform.svc.cluster.local:8080"
 BILLING = "http://billing-engine.shopno-payments.svc.cluster.local:80"
-EXCHANGE = "http://exchange-service.shopno-payments.svc.cluster.local:80"
+EXCHANGE = "http://exchange-service.shopno-payments.svc.cluster.local:8080"
 
 
 async def user(creds: HTTPAuthorizationCredentials = Depends(bearer)):
