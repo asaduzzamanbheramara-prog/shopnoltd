@@ -9,6 +9,7 @@ resources:
 - pvc.yaml
 - deployment.yaml
 - service.yaml
+- ingress.yaml
 - networkpolicy.yaml
 - ai-platform-external-https-networkpolicy.yaml
 - poddisruptionbudget.yaml
