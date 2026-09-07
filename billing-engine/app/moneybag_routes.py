@@ -2,15 +2,17 @@ import hashlib
 import hmac
 import json
 import time
+from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app import config
 from app.database import get_db
 from app.gateways import get_gateway
 from app.ledger import apply_ledger_entry
-from app.models import Transaction
+from app.models import MoneybagWebhookEvent, Transaction
 
 router = APIRouter()
 
@@ -27,6 +29,49 @@ def _find_transaction(db: Session, order_id: str) -> Transaction | None:
         .with_for_update()
         .first()
     )
+
+
+def _record_webhook_event(
+    db: Session,
+    *,
+    event_id: str,
+    event_type: str,
+    transaction_id: str,
+    order_id: str,
+    raw_body: bytes,
+) -> MoneybagWebhookEvent | None:
+    """Persist event identity before any webhook side effect.
+
+    The unique event_id is the durable idempotency key. A duplicate delivery
+    is acknowledged without re-running the payment side effect. A different
+    payload using an existing event_id is rejected rather than silently
+    accepting a potentially corrupted/replayed event.
+    """
+    payload_sha256 = hashlib.sha256(raw_body).hexdigest()
+    event = MoneybagWebhookEvent(
+        event_id=event_id,
+        event_type=event_type,
+        transaction_id=transaction_id or None,
+        order_id=order_id or None,
+        payload_sha256=payload_sha256,
+        status="received",
+    )
+    db.add(event)
+    try:
+        db.flush()
+    except IntegrityError:
+        db.rollback()
+        existing = (
+            db.query(MoneybagWebhookEvent)
+            .filter(MoneybagWebhookEvent.event_id == event_id)
+            .first()
+        )
+        if not existing:
+            raise HTTPException(status_code=409, detail="Moneybag webhook event conflict")
+        if existing.payload_sha256 != payload_sha256:
+            raise HTTPException(status_code=409, detail="Moneybag webhook event payload mismatch")
+        return None
+    return event
 
 
 def _verify_and_complete(
@@ -203,13 +248,29 @@ async def moneybag_ipn(request: Request, db: Session = Depends(get_db)):
     data = event.get("data") or {}
     transaction_id = str(data.get("transaction_id") or "")
     order_id = str(data.get("order_id") or data.get("reference") or "")
+
+    persisted_event = _record_webhook_event(
+        db,
+        event_id=event_id,
+        event_type=event_type,
+        transaction_id=transaction_id,
+        order_id=order_id,
+        raw_body=raw_body,
+    )
+    if persisted_event is None:
+        return {"received": True, "event_id": event_id, "duplicate": True}
+
     if not transaction_id or not order_id:
-        # Valid, unknown event: acknowledge it so Moneybag does not retry a
-        # webhook that this version of Shopnoltd cannot act on.
+        persisted_event.status = "ignored"
+        persisted_event.processed_at = datetime.utcnow()
+        db.commit()
         return {"received": True, "event_id": event_id, "ignored": True}
 
     if event_type == "payment.success":
         result = _verify_and_complete(db, transaction_id, order_id)
+        persisted_event.status = "processed" if result.get("verified") else "pending"
+        persisted_event.processed_at = datetime.utcnow()
+        db.commit()
         result["event_id"] = event_id
         return result
 
@@ -219,6 +280,8 @@ async def moneybag_ipn(request: Request, db: Session = Depends(get_db)):
             txn.status = "failed"
         elif event_type == "payment.cancelled":
             txn.status = "cancelled"
-        db.commit()
+    persisted_event.status = "processed"
+    persisted_event.processed_at = datetime.utcnow()
+    db.commit()
 
     return {"received": True, "event_id": event_id, "status": "acknowledged"}
