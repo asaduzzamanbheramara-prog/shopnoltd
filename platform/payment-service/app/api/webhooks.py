@@ -1,11 +1,13 @@
+import hashlib
 from datetime import datetime
 from decimal import Decimal
 
 from app.core.db import SessionLocal
-from app.models.models import PaymentMethod, Transaction, TxStatus, Wallet
+from app.models.models import PaymentMethod, Transaction, TxStatus, Wallet, WebhookEvent
 from app.providers.registry import get_provider
 from fastapi import APIRouter, HTTPException, Request
 from sqlalchemy import or_, select
+from sqlalchemy.exc import IntegrityError
 
 router = APIRouter()
 
@@ -83,18 +85,38 @@ async def webhook(provider: str, request: Request):
         if not tx:
             return {"received": True, "warning": "tx not found"}
 
-        event_id = event.get("event_id") or headers.get("x-webhook-event-id")
-        meta = dict(tx.meta or {})
-        processed_events = list(meta.get("moneybag_webhook_event_ids", []))
-        if event_id and event_id in processed_events:
+        supplied_event_id = event.get("event_id") or headers.get("x-webhook-event-id")
+        if supplied_event_id:
+            supplied_event_id = str(supplied_event_id)
+            event_key = (
+                supplied_event_id
+                if len(supplied_event_id) <= 128
+                else hashlib.sha256(supplied_event_id.encode()).hexdigest()
+            )
+        else:
+            # Some providers do not send a stable event ID. The signed raw body
+            # is then the durable retry identity for this delivery.
+            event_key = hashlib.sha256(body).hexdigest()
+
+        payload_hash = hashlib.sha256(body).hexdigest()
+        webhook_event = WebhookEvent(
+            provider=method.value,
+            event_key=event_key,
+            transaction_id=tx.id,
+            payload_hash=payload_hash,
+            status="received",
+        )
+        s.add(webhook_event)
+        try:
+            await s.flush()
+        except IntegrityError:
+            await s.rollback()
             return {"received": True, "idempotent": True, "status": tx.status.value}
 
         if tx.status in TERMINAL_STATUSES:
-            if event_id and event_id not in processed_events:
-                processed_events.append(event_id)
-                meta["moneybag_webhook_event_ids"] = processed_events[-20:]
-                tx.meta = meta
-                await s.commit()
+            webhook_event.status = "ignored_terminal"
+            webhook_event.processed_at = datetime.utcnow()
+            await s.commit()
             return {"received": True, "idempotent": True, "status": tx.status.value}
 
         status = (
@@ -113,6 +135,8 @@ async def webhook(provider: str, request: Request):
             except Exception as exc:
                 raise HTTPException(502, f"Moneybag verification failed: {exc}") from exc
             if verified not in SUCCESS_STATUSES:
+                webhook_event.status = "verification_pending"
+                await s.commit()
                 return {"received": True, "status": "pending", "verification": verified}
 
         event_amount = data.get("amount") or data.get("order_amount") or event.get("amount")
@@ -138,12 +162,12 @@ async def webhook(provider: str, request: Request):
                 w = wr.scalar_one()
                 w.frozen = Decimal(str(w.frozen)) - Decimal(str(tx.amount))
         else:
+            webhook_event.status = "pending"
+            await s.commit()
             return {"received": True, "status": "pending"}
 
-        if event_id:
-            processed_events.append(event_id)
-            meta["moneybag_webhook_event_ids"] = processed_events[-20:]
-            tx.meta = meta
+        webhook_event.status = "processed"
+        webhook_event.processed_at = datetime.utcnow()
         await s.commit()
 
     return {"received": True, "status": tx.status.value}
