@@ -49,6 +49,7 @@ resources:
 - services/code-server
 - services/remote-device
 - services/kobotoolbox
+- shopno-apps/kobo-worker.yaml
 - services/n8n
 - services/owncast
 - services/mongodb
