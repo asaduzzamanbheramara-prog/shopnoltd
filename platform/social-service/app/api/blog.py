@@ -31,6 +31,15 @@ def can_manage_blog(user: dict) -> bool:
     return bool(roles.intersection({"admin", "platform_admin", "tenant_owner"}))
 
 
+def can_manage_post(user: dict, post: BlogPost) -> bool:
+    if not can_manage_blog(user):
+        return False
+    roles = set(user.get("roles", []))
+    if roles.intersection({"admin", "platform_admin"}):
+        return True
+    return post.tenant_id == user.get("tenant_id", "default")
+
+
 def slugify(value: str) -> str:
     slug = re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
     return slug or "post"
@@ -91,7 +100,11 @@ async def public_blog(
 async def admin_blog(user=Depends(current_user), s: AsyncSession = Depends(db)):
     if not can_manage_blog(user):
         raise HTTPException(403, "Blog management privileges required")
-    res = await s.execute(select(BlogPost).order_by(desc(BlogPost.updated_at)))
+    roles = set(user.get("roles", []))
+    query = select(BlogPost).order_by(desc(BlogPost.updated_at))
+    if not roles.intersection({"admin", "platform_admin"}):
+        query = query.where(BlogPost.tenant_id == user.get("tenant_id", "default"))
+    res = await s.execute(query)
     return [out(p) for p in res.scalars().all()]
 
 
@@ -136,6 +149,8 @@ async def update_blog_post(post_id: str, body: BlogPostIn, user=Depends(current_
     p = (await s.execute(select(BlogPost).where(BlogPost.id == post_id))).scalar_one_or_none()
     if not p:
         raise HTTPException(404, "blog post not found")
+    if not can_manage_post(user, p):
+        raise HTTPException(403, "You cannot manage posts from another tenant")
     slug = slugify(body.slug or body.title)
     conflict = (await s.execute(select(BlogPost).where(BlogPost.slug == slug, BlogPost.id != post_id))).scalar_one_or_none()
     if conflict:
@@ -163,6 +178,8 @@ async def delete_blog_post(post_id: str, user=Depends(current_user), s: AsyncSes
     p = (await s.execute(select(BlogPost).where(BlogPost.id == post_id))).scalar_one_or_none()
     if not p:
         raise HTTPException(404, "blog post not found")
+    if not can_manage_post(user, p):
+        raise HTTPException(403, "You cannot manage posts from another tenant")
     await s.delete(p)
     await s.commit()
     return {"ok": True}
