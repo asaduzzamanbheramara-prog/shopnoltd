@@ -15,7 +15,6 @@ CHECKOUT_OPERATIONS = [
     "recurring", "webhook", "reconciliation", "dispute", "settlement",
 ]
 
-
 PAYMENT_METHOD_REGISTRY = {
     "card": {"id": "card", "name": "Card", "category": "card_network_instrument"},
     "visa": {"id": "visa", "name": "Visa", "category": "card_network"},
@@ -31,6 +30,7 @@ PAYMENT_METHOD_REGISTRY = {
     "swift": {"id": "swift", "name": "SWIFT", "category": "bank_rail"},
     "faster_payments": {"id": "faster_payments", "name": "Faster Payments", "category": "bank_rail"},
     "mobile_wallet": {"id": "mobile_wallet", "name": "Mobile Wallet", "category": "wallet"},
+    "digital_wallet": {"id": "digital_wallet", "name": "Digital Wallet", "category": "wallet"},
     "bkash": {"id": "bkash", "name": "bKash", "category": "mobile_wallet"},
     "nagad": {"id": "nagad", "name": "Nagad", "category": "mobile_wallet"},
     "rocket": {"id": "rocket", "name": "Rocket", "category": "mobile_wallet"},
@@ -48,61 +48,16 @@ PAYMENT_METHOD_REGISTRY = {
     "dbbl_nexus": {"id": "dbbl_nexus", "name": "DBBL Nexus", "category": "local_method"},
 }
 
-
 GATEWAY_REGISTRY = {
-    "stripe": {
-        "id": "stripe", "name": "Stripe", "provider": "stripe",
-        "implemented": True, "provider_supported": True,
-        "capabilities": ["checkout", "webhook"],
-        "currencies": ["USD", "EUR", "GBP", "AUD", "CAD", "SGD"],
-        "payment_methods": ["card", "visa", "mastercard", "amex", "discover", "google_pay", "apple_pay"],
-    },
-    "paypal": {
-        "id": "paypal", "name": "PayPal", "provider": "paypal",
-        "implemented": True, "provider_supported": True,
-        "capabilities": ["checkout", "webhook"],
-        "currencies": ["USD", "EUR", "GBP", "AUD", "CAD"],
-        "payment_methods": ["paypal_wallet", "card", "visa", "mastercard", "amex"],
-    },
-    "razorpay": {
-        "id": "razorpay", "name": "Razorpay", "provider": "razorpay",
-        "implemented": True, "provider_supported": True,
-        "capabilities": ["checkout", "webhook"],
-        "currencies": ["INR", "USD"],
-        "payment_methods": ["card", "visa", "mastercard", "amex", "upi", "bank_transfer", "mobile_wallet"],
-    },
-    "sslcommerz": {
-        "id": "sslcommerz", "name": "SSLCommerz", "provider": "sslcommerz",
-        "implemented": True, "provider_supported": True,
-        "capabilities": ["checkout", "webhook"], "currencies": ["BDT"],
-        "payment_methods": ["card", "visa", "mastercard", "amex", "dbbl_nexus", "bkash", "nagad", "rocket", "bank_transfer"],
-    },
-    "bkash": {
-        "id": "bkash", "name": "bKash", "provider": "bkash",
-        "implemented": True, "provider_supported": True,
-        "capabilities": ["checkout", "webhook"], "currencies": ["BDT"],
-        "payment_methods": ["bkash", "mobile_wallet"],
-    },
-    "nagad": {
-        "id": "nagad", "name": "Nagad", "provider": "nagad",
-        "implemented": True, "provider_supported": True,
-        "capabilities": ["checkout", "webhook"], "currencies": ["BDT"],
-        "payment_methods": ["nagad", "mobile_wallet"],
-    },
-    "moneybag": {
-        "id": "moneybag", "name": "Moneybag", "provider": "moneybag",
-        "implemented": True, "provider_supported": True,
-        "capabilities": ["checkout", "webhook"], "currencies": ["BDT"],
-        "payment_methods": ["visa", "mastercard", "amex", "unionpay", "diners_club", "dbbl_nexus", "bkash", "nagad", "rocket", "upay", "tap"],
-    },
-    "crypto": {
-        "id": "crypto", "name": "Crypto / NOWPayments", "provider": "crypto",
-        "implemented": True, "provider_supported": True,
-        "capabilities": ["checkout", "webhook"], "currencies": ["BTC", "ETH", "USDT"],
-        "payment_methods": ["crypto"],
-    },
+    "stripe": {"id": "stripe", "name": "Stripe", "provider": "stripe", "implemented": True, "provider_supported": True, "capabilities": ["checkout", "webhook"], "currencies": ["USD", "EUR", "GBP", "AUD", "CAD", "SGD"], "payment_methods": ["card", "visa", "mastercard", "amex", "discover", "google_pay", "apple_pay"]},
+    "paypal": {"id": "paypal", "name": "PayPal", "provider": "paypal", "implemented": True, "provider_supported": True, "capabilities": ["checkout", "webhook"], "currencies": ["USD", "EUR", "GBP", "AUD", "CAD"], "payment_methods": ["paypal_wallet", "card", "visa", "mastercard", "amex"]},
+    "razorpay": {"id": "razorpay", "name": "Razorpay", "provider": "razorpay", "implemented": True, "provider_supported": True, "capabilities": ["checkout", "webhook"], "currencies": ["INR", "USD"], "payment_methods": ["card", "visa", "mastercard", "amex", "upi", "bank_transfer", "mobile_wallet"]},
+    "sslcommerz": {"id": "sslcommerz", "name": "SSLCommerz", "provider": "sslcommerz", "implemented": True, "provider_supported": True, "capabilities": ["checkout", "webhook"], "currencies": ["BDT"], "payment_methods": ["card", "visa", "mastercard", "amex", "dbbl_nexus", "bkash", "nagad", "rocket", "bank_transfer"]},
+    "bkash": {"id": "bkash", "name": "bKash", "provider": "bkash", "implemented": True, "provider_supported": True, "capabilities": ["checkout", "webhook"], "currencies": ["BDT"], "payment_methods": ["bkash", "mobile_wallet"]},
+    "nagad": {"id": "nagad", "name": "Nagad", "provider": "nagad", "implemented": True, "provider_supported": True, "capabilities": ["checkout", "webhook"], "currencies": ["BDT"], "payment_methods": ["nagad", "mobile_wallet"]},
+    "moneybag": {"id": "moneybag", "name": "Moneybag", "provider": "moneybag", "implemented": True, "provider_supported": True, "capabilities": ["checkout", "webhook"], "currencies": ["BDT"], "payment_methods": ["visa", "mastercard", "amex", "unionpay", "diners_club", "dbbl_nexus", "bkash", "nagad", "rocket", "upay", "tap"]},
+    "crypto": {"id": "crypto", "name": "Crypto / NOWPayments", "provider": "crypto", "implemented": True, "provider_supported": True, "capabilities": ["checkout", "webhook"], "currencies": ["BTC", "ETH", "USDT"], "payment_methods": ["crypto"]},
 }
-
 
 CATALOG_ONLY_GATEWAYS = {
     "adyen": ("Adyen", ["card", "google_pay", "apple_pay", "alipay", "wechat_pay", "bank_transfer"]),
@@ -137,7 +92,6 @@ for gateway_id, (name, methods) in CATALOG_ONLY_GATEWAYS.items():
         "payment_methods": methods,
     }
 
-
 PAYOUT_PROVIDERS = {
     "payoneer": {
         "id": "payoneer", "name": "Payoneer", "provider": "payoneer",
@@ -146,10 +100,7 @@ PAYOUT_PROVIDERS = {
     },
 }
 
-
-CURRENCY_REGISTRY = sorted(
-    {currency for gateway in GATEWAY_REGISTRY.values() for currency in gateway["currencies"]}
-)
+CURRENCY_REGISTRY = sorted({currency for gateway in GATEWAY_REGISTRY.values() for currency in gateway["currencies"]})
 
 
 def gateway_catalog() -> dict:
