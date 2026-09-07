@@ -1,9 +1,9 @@
 """Canonical financial gateway, payment-method and currency metadata.
 
 The catalogue is deliberately broader than the set of adapters that are live
-in this deployment.  ``implemented`` answers whether Shopnoltd has an adapter;
+in this deployment. ``implemented`` answers whether Shopnoltd has an adapter;
 ``provider_supported`` answers whether the provider/method belongs to the
-supported platform catalogue.  Runtime configuration is layered on top by the
+supported platform catalogue. Runtime configuration is layered on top by the
 financial API facade.
 """
 
@@ -11,17 +11,8 @@ from copy import deepcopy
 
 
 CHECKOUT_OPERATIONS = [
-    "checkout",
-    "authorize",
-    "capture",
-    "verify",
-    "refund",
-    "void",
-    "recurring",
-    "webhook",
-    "reconciliation",
-    "dispute",
-    "settlement",
+    "checkout", "authorize", "capture", "verify", "refund", "void",
+    "recurring", "webhook", "reconciliation", "dispute", "settlement",
 ]
 
 
@@ -44,6 +35,8 @@ PAYMENT_METHOD_REGISTRY = {
     "nagad": {"id": "nagad", "name": "Nagad", "category": "mobile_wallet"},
     "rocket": {"id": "rocket", "name": "Rocket", "category": "mobile_wallet"},
     "upay": {"id": "upay", "name": "upay", "category": "mobile_wallet"},
+    "tap": {"id": "tap", "name": "TAP", "category": "mobile_wallet"},
+    "upi": {"id": "upi", "name": "UPI", "category": "bank_rail"},
     "google_pay": {"id": "google_pay", "name": "Google Pay", "category": "digital_wallet"},
     "apple_pay": {"id": "apple_pay", "name": "Apple Pay", "category": "digital_wallet"},
     "samsung_pay": {"id": "samsung_pay", "name": "Samsung Pay", "category": "digital_wallet"},
@@ -53,14 +46,9 @@ PAYMENT_METHOD_REGISTRY = {
     "wechat_pay": {"id": "wechat_pay", "name": "WeChat Pay", "category": "digital_wallet"},
     "crypto": {"id": "crypto", "name": "Cryptocurrency", "category": "crypto"},
     "dbbl_nexus": {"id": "dbbl_nexus", "name": "DBBL Nexus", "category": "local_method"},
-    "rocket": {"id": "rocket", "name": "Rocket", "category": "local_method"},
-    "tap": {"id": "tap", "name": "TAP", "category": "local_method"},
 }
 
 
-# ``implemented`` means an actual Shopnoltd adapter exists today.  Catalogue-
-# only providers stay visible with ``implemented=False`` so enabling them later
-# does not require changing the public financial contract.
 GATEWAY_REGISTRY = {
     "stripe": {
         "id": "stripe", "name": "Stripe", "provider": "stripe",
@@ -116,9 +104,6 @@ GATEWAY_REGISTRY = {
 }
 
 
-# Major processors are retained in the catalogue before credentials or a
-# provider-specific adapter are installed.  Their live availability remains
-# false until an adapter and runtime configuration exist.
 CATALOG_ONLY_GATEWAYS = {
     "adyen": ("Adyen", ["card", "google_pay", "apple_pay", "alipay", "wechat_pay", "bank_transfer"]),
     "checkout_com": ("Checkout.com", ["card", "google_pay", "apple_pay", "bank_transfer"]),
@@ -168,10 +153,8 @@ CURRENCY_REGISTRY = sorted(
 
 
 def gateway_catalog() -> dict:
-    """Return a defensive copy suitable for enriching with runtime state."""
     return deepcopy(GATEWAY_REGISTRY)
 
 
 def payment_method_catalog() -> dict:
-    """Return the complete platform payment-method catalogue."""
     return deepcopy(PAYMENT_METHOD_REGISTRY)
