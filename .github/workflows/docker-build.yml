@@ -32,6 +32,7 @@ jobs:
             tag: v4
 
           - name: ai-platform
+            image_repo: shopnoltd/ai-platform
             context: .
             dockerfile: ./platform/ai-platform/Dockerfile
             tag: latest
@@ -83,8 +84,8 @@ jobs:
           push: true
           build-args: ${{ matrix.build_args || '' }}
           tags: |
-            ghcr.io/${{ github.repository_owner }}/shopnoltd-${{ matrix.name }}:${{ matrix.tag }}
-            ghcr.io/${{ github.repository_owner }}/shopnoltd-${{ matrix.name }}:latest
-            ghcr.io/${{ github.repository_owner }}/shopnoltd-${{ matrix.name }}:${{ github.sha }}
+            ghcr.io/${{ github.repository_owner }}/${{ matrix.image_repo || format('shopnoltd-{0}', matrix.name) }}:${{ matrix.tag }}
+            ghcr.io/${{ github.repository_owner }}/${{ matrix.image_repo || format('shopnoltd-{0}', matrix.name) }}:latest
+            ghcr.io/${{ github.repository_owner }}/${{ matrix.image_repo || format('shopnoltd-{0}', matrix.name) }}:${{ github.sha }}
           cache-from: type=gha,scope=${{ matrix.name }}
           cache-to: type=gha,mode=max,scope=${{ matrix.name }}
