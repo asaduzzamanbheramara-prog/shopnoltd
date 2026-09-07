@@ -7,6 +7,7 @@ import structlog
 from app.api import (
     admin,
     admin_tables,
+    admin_reports,
     deposits,
     exchanges,
     transactions,
@@ -25,11 +26,8 @@ from shopno_core.database.redis import redis_client
 from starlette.responses import Response
 
 log = structlog.get_logger()
-REQUESTS = Counter(
-    "shopno_payments_http_requests_total", "HTTP requests", ["method", "path", "code"]
-)
+REQUESTS = Counter("shopno_payments_http_requests_total", "HTTP requests", ["method", "path", "code"])
 LATENCY = Histogram("shopno_payments_http_latency_seconds", "HTTP latency", ["path"])
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -41,19 +39,14 @@ async def lifespan(app: FastAPI):
     await engine.dispose()
     await redis_client.aclose()
 
-
 app = FastAPI(title="Shopnoltd Payment Service", version="0.1.0", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://shopnoltd.dpdns.org",
-        "https://www.shopnoltd.dpdns.org",
-    ],
+    allow_origins=["https://shopnoltd.dpdns.org", "https://www.shopnoltd.dpdns.org"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 
 @app.middleware("http")
 async def metrics_middleware(request, call_next):
@@ -69,7 +62,6 @@ async def metrics_middleware(request, call_next):
     REQUESTS.labels(request.method, request.url.path, str(response.status_code)).inc()
     return response
 
-
 app.include_router(wallets.router, prefix="/api/v1/wallets", tags=["wallets"])
 app.include_router(deposits.router, prefix="/api/v1/deposits", tags=["deposits"])
 app.include_router(withdrawals.router, prefix="/api/v1/withdrawals", tags=["withdrawals"])
@@ -79,22 +71,19 @@ app.include_router(exchanges.router, prefix="/api/v1/exchanges", tags=["exchange
 app.include_router(webhooks.router, prefix="/api/v1/webhooks", tags=["webhooks"])
 app.include_router(admin.router, prefix="/api/v1/admin", tags=["admin"])
 app.include_router(admin_tables.router, prefix="/api/v1/admin", tags=["admin-tables"])
-
+app.include_router(admin_reports.router, prefix="/api/v1/admin", tags=["admin-data-reports"])
 
 @app.get("/healthz", include_in_schema=False)
 async def healthz():
     return {"status": "ok"}
 
-
 @app.get("/readyz", include_in_schema=False)
 async def readyz():
     from sqlalchemy import text
-
     async with engine.connect() as c:
         await c.execute(text("SELECT 1"))
     await redis_client.ping()
     return {"status": "ready"}
-
 
 @app.get("/metrics", include_in_schema=False)
 def metrics():
