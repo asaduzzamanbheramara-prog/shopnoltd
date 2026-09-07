@@ -66,7 +66,6 @@ def apply_ledger_entry(
             .first()
         )
         if existing:
-            db.rollback()
             return existing
 
     current_balance = Decimal(str(wallet.balance))
