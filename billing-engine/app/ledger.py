@@ -37,6 +37,10 @@ def apply_ledger_entry(
     Raises InsufficientBalanceError if the result would go negative and
     allow_negative is False (the default - deductions should never silently
     overdraw an account; fines/admin adjustments can opt in explicitly).
+
+    When reference is supplied, the reference is an idempotency key within
+    the same user/currency/entry_type scope. The wallet row is locked before
+    checking it, so concurrent duplicate webhook deliveries serialize safely.
     """
     wallet = (
         db.query(Wallet)
@@ -47,7 +51,23 @@ def apply_ledger_entry(
     if not wallet:
         wallet = Wallet(user_id=user_id, currency=currency, balance=Decimal("0.00"))
         db.add(wallet)
-        db.flush()  # get it locked/created before we compute new_balance below
+        db.flush()
+
+    if reference:
+        existing = (
+            db.query(WalletLedgerEntry)
+            .filter(
+                WalletLedgerEntry.user_id == user_id,
+                WalletLedgerEntry.currency == currency,
+                WalletLedgerEntry.entry_type == entry_type,
+                WalletLedgerEntry.reference == reference,
+            )
+            .order_by(WalletLedgerEntry.created_at.asc())
+            .first()
+        )
+        if existing:
+            db.rollback()
+            return existing
 
     current_balance = Decimal(str(wallet.balance))
     delta = Decimal(str(delta))
