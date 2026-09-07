@@ -43,6 +43,12 @@ export async function authenticatedRequest(path, options = {}) {
       typeof data === 'object' && data !== null
         ? data.detail || data.message || JSON.stringify(data)
         : data
+    if (detail && typeof detail === 'object' && detail.code) {
+      const error = new Error(detail.message || detail.code)
+      error.code = detail.code
+      error.details = detail
+      throw error
+    }
     throw new Error(
       `Financial API request failed (${response.status})${detail ? `: ${detail}` : ''}`
     )
@@ -50,21 +56,30 @@ export async function authenticatedRequest(path, options = {}) {
   return data
 }
 
+export function getFinancialCapabilities() {
+  return authenticatedRequest('/api/v1/financial/capabilities')
+}
+
 export function getWallet(currency = 'BDT') {
   return authenticatedRequest(`/api/v1/wallet?currency=${encodeURIComponent(currency)}`)
 }
+
 export function getWalletLedger(currency = 'BDT', limit = 50) {
   return authenticatedRequest(
     `/api/v1/wallet/ledger?currency=${encodeURIComponent(currency)}&limit=${limit}`
   )
 }
-export function getTransactions() {
-  return authenticatedRequest('/api/v1/transactions')
-}
-export function getPaymentGateways() {
 
+export function getTransactions(limit = 50, offset = 0) {
+  return authenticatedRequest(`/api/v1/transactions?limit=${limit}&offset=${offset}`).then(
+    (data) => (Array.isArray(data) ? data : data?.items || [])
+  )
+}
+
+export function getPaymentGateways() {
   return authenticatedRequest('/api/v1/billing/gateways')
 }
+
 export function createCheckout({
   gateway,
   amount,
@@ -72,34 +87,65 @@ export function createCheckout({
   reference,
   customer_phone,
 }) {
+  const numericAmount = Number(amount)
+  if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
+    return Promise.reject(new Error('Amount must be greater than zero.'))
+  }
+  if (!gateway || !currency) {
+    return Promise.reject(new Error('Gateway and currency are required.'))
+  }
   return authenticatedRequest('/api/v1/billing/checkout', {
     method: 'POST',
     body: JSON.stringify({
-      gateway,
-      amount: Number(amount),
-      currency,
+      gateway: String(gateway).trim().toLowerCase(),
+      amount: numericAmount,
+      currency: String(currency).trim().toUpperCase(),
       reference,
       customer_phone,
     }),
   })
 }
+
+export function getExchangeRates(limit = 100) {
+  return authenticatedRequest(`/api/v1/exchange/rates?limit=${limit}`)
+}
+
 export function getExchangeRate(from, to) {
   return authenticatedRequest(
-    `/api/v1/rate/${encodeURIComponent(from)}/${encodeURIComponent(to)}`
+    `/api/v1/rate/${encodeURIComponent(String(from).toUpperCase())}/${encodeURIComponent(String(to).toUpperCase())}`
   )
 }
+
+export function getExchangeQuote({ from_currency, to_currency, amount }) {
+  const numericAmount = Number(amount)
+  if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
+    return Promise.reject(new Error('Amount must be greater than zero.'))
+  }
+  return authenticatedRequest('/api/v1/exchange/quote', {
+    method: 'POST',
+    body: JSON.stringify({
+      from_currency: String(from_currency || '').trim().toUpperCase(),
+      to_currency: String(to_currency || '').trim().toUpperCase(),
+      amount: numericAmount,
+    }),
+  })
+}
+
 export function convertExchange({
   from_currency,
   to_currency,
   amount,
 }) {
+  const numericAmount = Number(amount)
+  if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
+    return Promise.reject(new Error('Amount must be greater than zero.'))
+  }
   return authenticatedRequest('/api/v1/exchange/convert', {
     method: 'POST',
-
     body: JSON.stringify({
-      from_currency,
-      to_currency,
-      amount: Number(amount),
+      from_currency: String(from_currency || '').trim().toUpperCase(),
+      to_currency: String(to_currency || '').trim().toUpperCase(),
+      amount: numericAmount,
     }),
   })
 }

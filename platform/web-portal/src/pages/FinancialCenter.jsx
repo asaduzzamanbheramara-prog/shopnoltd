@@ -4,7 +4,7 @@ import {
   convertExchange,
   createCheckout,
   getExchangeRate,
-  getPaymentGateways,
+  getFinancialCapabilities,
   getTransactions,
   getWallet,
   getWalletLedger,
@@ -61,6 +61,50 @@ function ErrorBox({ message }) {
   )
 }
 
+function useFinancialCapabilities() {
+  const [capabilities, setCapabilities] = useState(null)
+  const [error, setError] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let active = true
+    getFinancialCapabilities()
+      .then((data) => {
+        if (!active) return
+        setCapabilities(data || null)
+      })
+      .catch((err) => {
+        if (!active) return
+        setError(err.message)
+      })
+      .finally(() => {
+        if (active) setLoading(false)
+      })
+    return () => {
+      active = false
+    }
+  }, [])
+
+  const currencies = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          (capabilities?.currencies || [])
+            .map((currency) => String(currency).trim().toUpperCase())
+            .filter(Boolean)
+        )
+      ).sort(),
+    [capabilities]
+  )
+
+  const gateways = useMemo(
+    () => (capabilities?.gateways || []).filter((gateway) => gateway.available),
+    [capabilities]
+  )
+
+  return { capabilities, currencies, gateways, loading, error }
+}
+
 function FinancialNavigation() {
   const links = [
     ['Billing', '/billing'],
@@ -106,13 +150,24 @@ function FinancialNavigation() {
 }
 
 function WalletView() {
-  const [currency, setCurrency] = useState('BDT')
+  const { currencies, loading: capabilitiesLoading, error: capabilitiesError } =
+    useFinancialCapabilities()
+  const [currency, setCurrency] = useState('')
   const [wallet, setWallet] = useState(null)
   const [ledger, setLedger] = useState([])
   const [error, setError] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (!currency && currencies.length) {
+      setCurrency(currencies[0])
+    } else if (currency && !currencies.includes(currency)) {
+      setCurrency(currencies[0] || '')
+    }
+  }, [currencies, currency])
 
   async function load() {
+    if (!currency) return
     setLoading(true)
     setError(null)
 
@@ -131,44 +186,49 @@ function WalletView() {
   }
 
   useEffect(() => {
-    load()
+    if (currency) load()
   }, [currency])
 
   return (
     <>
       <Card title="Wallet">
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-          <select
-            value={currency}
-            onChange={(e) => setCurrency(e.target.value)}
-            style={{ padding: 10, borderRadius: 8, border: '1px solid #cbd5e1' }}
-          >
-            <option>BDT</option>
-            <option>USD</option>
-            <option>EUR</option>
-            <option>GBP</option>
-          </select>
+        <ErrorBox message={capabilitiesError || error} />
+        {capabilitiesLoading ? (
+          <p>Loading supported currencies…</p>
+        ) : currencies.length === 0 ? (
+          <p style={{ color: '#64748b' }}>No wallet currencies are currently available.</p>
+        ) : (
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+            <select
+              value={currency}
+              onChange={(e) => setCurrency(e.target.value)}
+              style={{ padding: 10, borderRadius: 8, border: '1px solid #cbd5e1' }}
+            >
+              {currencies.map((item) => (
+                <option key={item} value={item}>{item}</option>
+              ))}
+            </select>
 
-          <button
-            onClick={load}
-            style={{
-              padding: '10px 16px',
-              border: 0,
-              borderRadius: 8,
-              background: '#0ea5e9',
-              color: '#fff',
-              cursor: 'pointer',
-            }}
-          >
-            Refresh
-          </button>
-        </div>
-
-        <ErrorBox message={error} />
+            <button
+              onClick={load}
+              disabled={loading}
+              style={{
+                padding: '10px 16px',
+                border: 0,
+                borderRadius: 8,
+                background: '#0ea5e9',
+                color: '#fff',
+                cursor: loading ? 'wait' : 'pointer',
+              }}
+            >
+              {loading ? 'Refreshing…' : 'Refresh'}
+            </button>
+          </div>
+        )}
 
         {loading ? (
           <p>Loading wallet…</p>
-        ) : (
+        ) : wallet ? (
           <div
             style={{
               marginTop: 18,
@@ -177,12 +237,12 @@ function WalletView() {
               background: '#f8fafc',
             }}
           >
-            <div style={{ color: '#64748b' }}>{wallet?.currency || currency}</div>
+            <div style={{ color: '#64748b' }}>{wallet.currency || currency}</div>
             <div style={{ fontSize: 36, fontWeight: 800 }}>
-              {wallet?.balance ?? '0.00'}
+              {wallet.balance ?? '0.00'}
             </div>
           </div>
-        )}
+        ) : null}
       </Card>
 
       <Card title="Wallet Ledger">
@@ -280,19 +340,15 @@ function TransactionsView() {
 }
 
 function GatewayView() {
-  const [gateways, setGateways] = useState([])
-  const [error, setError] = useState(null)
-
-  useEffect(() => {
-    getPaymentGateways()
-      .then((data) => setGateways(data?.gateways || []))
-      .catch((err) => setError(err.message))
-  }, [])
+  const { capabilities, loading, error } = useFinancialCapabilities()
+  const gateways = capabilities?.gateways || []
 
   return (
     <Card title="Payment Gateways">
       <ErrorBox message={error} />
-      {gateways.length === 0 ? (
+      {loading ? (
+        <p>Loading gateway capabilities…</p>
+      ) : gateways.length === 0 ? (
         <p style={{ color: '#64748b' }}>No gateway data returned.</p>
       ) : (
         <div
@@ -314,11 +370,10 @@ function GatewayView() {
               <strong>{gateway.name}</strong>
               <p style={{ marginBottom: 6 }}>
                 Status:{' '}
-                <strong>{gateway.live ? 'LIVE' : 'NOT LIVE'}</strong>
+                <strong>{gateway.available ? 'AVAILABLE' : gateway.live ? 'CONFIGURED' : 'NOT LIVE'}</strong>
               </p>
               <p style={{ margin: 0, color: '#64748b' }}>
-                Credentials:{' '}
-                {gateway.credentials_configured ? 'configured' : 'not configured'}
+                Currencies: {gateway.currencies?.join(', ') || '—'}
               </p>
             </div>
           ))}
@@ -334,36 +389,51 @@ function CheckoutView() {
     () => new URLSearchParams(location.search),
     [location.search]
   )
-
   const requestedPlan = (params.get('plan') || 'starter').toLowerCase()
   const plan = PLAN_NAMES[requestedPlan] ? requestedPlan : 'starter'
 
+  const { currencies, gateways, loading: capabilitiesLoading, error: capabilitiesError } =
+    useFinancialCapabilities()
   const [amount, setAmount] = useState(String(PLAN_PRICES[plan]))
-  const [currency, setCurrency] = useState('USD')
-  const [gateway, setGateway] = useState('stripe')
+  const [currency, setCurrency] = useState('')
+  const [gateway, setGateway] = useState('')
   const [phone, setPhone] = useState('')
-  const [gateways, setGateways] = useState([])
   const [result, setResult] = useState(null)
   const [error, setError] = useState(null)
   const [working, setWorking] = useState(false)
 
+  const compatibleGateways = useMemo(
+    () => gateways.filter((item) => item.currencies?.includes(currency)),
+    [gateways, currency]
+  )
+
   useEffect(() => {
-    getPaymentGateways()
-      .then((data) => {
-        const live = (data?.gateways || []).filter((g) => g.live)
-        setGateways(live)
-        if (live.length && !live.some((g) => g.name === gateway)) {
-          setGateway(live[0].name)
-        }
-      })
-      .catch((err) => setError(err.message))
-  }, [])
+    if (!currency && currencies.length) {
+      setCurrency(currencies.includes('USD') ? 'USD' : currencies[0])
+      return
+    }
+    if (currency && !currencies.includes(currency)) {
+      setCurrency(currencies[0] || '')
+    }
+  }, [currencies, currency])
+
+  useEffect(() => {
+    if (!compatibleGateways.some((item) => item.name === gateway)) {
+      setGateway(compatibleGateways[0]?.name || '')
+    }
+  }, [compatibleGateways, gateway])
 
   async function submit(e) {
     e.preventDefault()
     setWorking(true)
     setError(null)
     setResult(null)
+
+    if (!gateway || !currency) {
+      setError('No compatible payment gateway is currently available for this currency.')
+      setWorking(false)
+      return
+    }
 
     try {
       const data = await createCheckout({
@@ -388,87 +458,97 @@ function CheckoutView() {
 
   return (
     <Card title={`Checkout — ${PLAN_NAMES[plan]}`}>
-      <form onSubmit={submit}>
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-            gap: 14,
-          }}
-        >
-          <label>
-            Amount
-            <input
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              type="number"
-              min="0"
-              step="0.01"
-              required
-              style={{ width: '100%', padding: 10, marginTop: 5, boxSizing: 'border-box' }}
-            />
-          </label>
+      <ErrorBox message={capabilitiesError || error} />
+      {capabilitiesLoading ? (
+        <p>Loading supported currencies and payment gateways…</p>
+      ) : currencies.length === 0 ? (
+        <p style={{ color: '#64748b' }}>No checkout currencies are currently available.</p>
+      ) : (
+        <form onSubmit={submit}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+              gap: 14,
+            }}
+          >
+            <label>
+              Amount
+              <input
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                type="number"
+                min="0.01"
+                step="0.01"
+                required
+                style={{ width: '100%', padding: 10, marginTop: 5, boxSizing: 'border-box' }}
+              />
+            </label>
 
-          <label>
-            Currency
-            <select
-              value={currency}
-              onChange={(e) => setCurrency(e.target.value)}
-              style={{ width: '100%', padding: 10, marginTop: 5 }}
-            >
-              <option>USD</option>
-              <option>BDT</option>
-              <option>EUR</option>
-              <option>GBP</option>
-            </select>
-          </label>
+            <label>
+              Currency
+              <select
+                value={currency}
+                onChange={(e) => setCurrency(e.target.value)}
+                style={{ width: '100%', padding: 10, marginTop: 5 }}
+              >
+                {currencies.map((item) => (
+                  <option key={item} value={item}>{item}</option>
+                ))}
+              </select>
+            </label>
 
-          <label>
-            Gateway
-            <select
-              value={gateway}
-              onChange={(e) => setGateway(e.target.value)}
-              style={{ width: '100%', padding: 10, marginTop: 5 }}
-            >
-              {gateways.length === 0 && <option value="stripe">stripe</option>}
-              {gateways.map((g) => (
-                <option key={g.name} value={g.name}>
-                  {g.name}
-                </option>
-              ))}
-            </select>
-          </label>
+            <label>
+              Gateway
+              <select
+                value={gateway}
+                onChange={(e) => setGateway(e.target.value)}
+                disabled={compatibleGateways.length === 0}
+                style={{ width: '100%', padding: 10, marginTop: 5 }}
+              >
+                {compatibleGateways.map((item) => (
+                  <option key={item.name} value={item.name}>
+                    {item.name}
+                  </option>
+                ))}
+              </select>
+            </label>
 
-          <label>
-            Phone
-            <input
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="Optional"
-              style={{ width: '100%', padding: 10, marginTop: 5, boxSizing: 'border-box' }}
-            />
-          </label>
-        </div>
+            <label>
+              Phone
+              <input
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="Optional"
+                style={{ width: '100%', padding: 10, marginTop: 5, boxSizing: 'border-box' }}
+              />
+            </label>
+          </div>
 
-        <ErrorBox message={error} />
+          {compatibleGateways.length === 0 ? (
+            <p style={{ color: '#9a3412' }}>
+              No currently available gateway supports {currency}.
+            </p>
+          ) : null}
 
-        <button
-          disabled={working}
-          type="submit"
-          style={{
-            marginTop: 20,
-            padding: '12px 20px',
-            border: 0,
-            borderRadius: 8,
-            background: '#0ea5e9',
-            color: '#fff',
-            fontWeight: 700,
-            cursor: working ? 'wait' : 'pointer',
-          }}
-        >
-          {working ? 'Creating checkout…' : 'Continue to payment'}
-        </button>
-      </form>
+          <button
+            disabled={working || compatibleGateways.length === 0}
+            type="submit"
+            style={{
+              marginTop: 20,
+              padding: '12px 20px',
+              border: 0,
+              borderRadius: 8,
+              background: '#0ea5e9',
+              color: '#fff',
+              fontWeight: 700,
+              cursor: working ? 'wait' : 'pointer',
+            }}
+          >
+            {working ? 'Creating checkout…' : 'Continue to payment'}
+          </button>
+        </form>
+      )}
 
       {result && (
         <div
@@ -494,13 +574,22 @@ function CheckoutView() {
 }
 
 function ExchangeView() {
-  const [from, setFrom] = useState('USD')
-  const [to, setTo] = useState('BDT')
+  const { currencies, loading: capabilitiesLoading, error: capabilitiesError } =
+    useFinancialCapabilities()
+  const [from, setFrom] = useState('')
+  const [to, setTo] = useState('')
   const [amount, setAmount] = useState('100')
   const [rate, setRate] = useState(null)
   const [result, setResult] = useState(null)
   const [error, setError] = useState(null)
   const [working, setWorking] = useState(false)
+
+  useEffect(() => {
+    if (!from && currencies.length) setFrom(currencies[0])
+    if (!to && currencies.length) setTo(currencies.find((item) => item !== from) || currencies[0])
+    if (from && !currencies.includes(from)) setFrom(currencies[0] || '')
+    if (to && !currencies.includes(to)) setTo(currencies[0] || '')
+  }, [currencies, from, to])
 
   async function loadRate() {
     setError(null)
@@ -538,88 +627,92 @@ function ExchangeView() {
 
   return (
     <Card title="Exchange">
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
-          gap: 12,
-        }}
-      >
-        <label>
-          From
-          <select
-            value={from}
-            onChange={(e) => setFrom(e.target.value)}
-            style={{ width: '100%', padding: 10, marginTop: 5 }}
+      <ErrorBox message={capabilitiesError || error} />
+      {capabilitiesLoading ? (
+        <p>Loading supported currencies…</p>
+      ) : currencies.length < 1 ? (
+        <p style={{ color: '#64748b' }}>No currencies are currently available.</p>
+      ) : (
+        <>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+              gap: 12,
+            }}
           >
-            <option>USD</option>
-            <option>BDT</option>
-            <option>EUR</option>
-            <option>GBP</option>
-            <option>INR</option>
-          </select>
-        </label>
+            <label>
+              From
+              <select
+                value={from}
+                onChange={(e) => setFrom(e.target.value)}
+                style={{ width: '100%', padding: 10, marginTop: 5 }}
+              >
+                {currencies.map((item) => (
+                  <option key={item} value={item}>{item}</option>
+                ))}
+              </select>
+            </label>
 
-        <label>
-          To
-          <select
-            value={to}
-            onChange={(e) => setTo(e.target.value)}
-            style={{ width: '100%', padding: 10, marginTop: 5 }}
-          >
-            <option>BDT</option>
-            <option>USD</option>
-            <option>EUR</option>
-            <option>GBP</option>
-            <option>INR</option>
-          </select>
-        </label>
+            <label>
+              To
+              <select
+                value={to}
+                onChange={(e) => setTo(e.target.value)}
+                style={{ width: '100%', padding: 10, marginTop: 5 }}
+              >
+                {currencies.map((item) => (
+                  <option key={item} value={item}>{item}</option>
+                ))}
+              </select>
+            </label>
 
-        <label>
-          Amount
-          <input
-            type="number"
-            min="0.000001"
-            step="any"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            style={{ width: '100%', padding: 10, marginTop: 5, boxSizing: 'border-box' }}
-          />
-        </label>
-      </div>
+            <label>
+              Amount
+              <input
+                type="number"
+                min="0.000001"
+                step="any"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                style={{ width: '100%', padding: 10, marginTop: 5, boxSizing: 'border-box' }}
+              />
+            </label>
+          </div>
 
-      <ErrorBox message={error} />
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 16 }}>
+            <button
+              onClick={loadRate}
+              disabled={!from || !to || from === to}
+              style={{
+                padding: '10px 16px',
+                border: 0,
+                borderRadius: 8,
+                background: '#334155',
+                color: '#fff',
+                cursor: 'pointer',
+              }}
+            >
+              Get live rate
+            </button>
 
-      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 16 }}>
-        <button
-          onClick={loadRate}
-          style={{
-            padding: '10px 16px',
-            border: 0,
-            borderRadius: 8,
-            background: '#334155',
-            color: '#fff',
-            cursor: 'pointer',
-          }}
-        >
-          Get live rate
-        </button>
-
-        <button
-          onClick={convert}
-          disabled={working}
-          style={{
-            padding: '10px 16px',
-            border: 0,
-            borderRadius: 8,
-            background: '#0ea5e9',
-            color: '#fff',
-            cursor: working ? 'wait' : 'pointer',
-          }}
-        >
-          {working ? 'Converting…' : 'Convert'}
-        </button>
-      </div>
+            <button
+              onClick={convert}
+              disabled={working || !from || !to || from === to}
+              style={{
+                padding: '10px 16px',
+                border: 0,
+                borderRadius: 8,
+                background: '#0ea5e9',
+                color: '#fff',
+                cursor: working ? 'wait' : 'pointer',
+              }}
+            >
+              {working ? 'Converting…' : 'Convert'}
+            </button>
+          </div>
+        </>
+      )}
 
       {rate && (
         <div style={{ marginTop: 20, padding: 16, background: '#f8fafc', borderRadius: 10 }}>
@@ -668,8 +761,7 @@ function UnsupportedView({ title }) {
           color: '#9a3412',
         }}
       >
-        <strong>This UI route is ready, but the backend contract is not yet
-        exposed.</strong>
+        <strong>This UI route is ready, but the backend contract is not yet exposed.</strong>
         <p>
           No fake financial records are shown. The next backend patch must
           expose the real {title.toLowerCase()} data before this screen can
@@ -707,8 +799,8 @@ export default function FinancialCenter({ view = 'billing' }) {
     >
       <h1>{title}</h1>
       <p style={{ color: '#64748b' }}>
-        Shopnoltd financial services use authenticated platform APIs. No
-        browser-side internal billing secrets are used.
+        Shopnoltd financial services use authenticated platform APIs. Gateway
+        and currency choices are discovered from the live financial capability API.
       </p>
 
       <FinancialNavigation />
@@ -719,9 +811,7 @@ export default function FinancialCenter({ view = 'billing' }) {
         {view === 'billing' ? <GatewayView /> : null}
         {view === 'checkout' ? <CheckoutView /> : null}
         {view === 'exchange' ? <ExchangeView /> : null}
-        {view === 'subscriptions' ? (
-          <UnsupportedView title="Subscriptions" />
-        ) : null}
+        {view === 'subscriptions' ? <UnsupportedView title="Subscriptions" /> : null}
         {view === 'invoices' ? <UnsupportedView title="Invoices" /> : null}
         {view === 'reports' ? <UnsupportedView title="Reports" /> : null}
       </div>
