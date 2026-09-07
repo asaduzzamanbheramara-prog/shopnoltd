@@ -7,7 +7,7 @@ import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from app.core.financial_registry import CURRENCY_REGISTRY, gateway_catalog
+from app.core.financial_registry import CURRENCY_REGISTRY, PAYOUT_PROVIDERS, gateway_catalog, payment_method_catalog
 from app.core.security import verify_token
 
 router = APIRouter()
@@ -54,9 +54,13 @@ def _runtime_gateway_rows(downstream: dict | None) -> list[dict]:
         configured = bool(source.get("credentials_configured"))
         admin_disabled = bool(source.get("admin_disabled"))
         provider_live = bool(source.get("effectively_live", source.get("live")))
-        available = bool(definition["supported"]) and not admin_disabled and configured and provider_live
-        if not definition["supported"]:
+        implemented = bool(definition.get("implemented"))
+        provider_supported = bool(definition.get("provider_supported"))
+        available = implemented and provider_supported and not admin_disabled and configured and provider_live
+        if not provider_supported:
             status = "unsupported"
+        elif not implemented:
+            status = "adapter_not_implemented"
         elif admin_disabled:
             status = "disabled"
         elif not configured:
@@ -67,10 +71,10 @@ def _runtime_gateway_rows(downstream: dict | None) -> list[dict]:
             status = "available"
         normalized.append({
             **definition,
-            "enabled": not admin_disabled,
+            "enabled": not admin_disabled and implemented,
             "configured": configured,
             "available": available,
-            "activation_required": definition["supported"] and not configured,
+            "activation_required": provider_supported and (not configured or not implemented),
             "status": status,
             "credentials_configured": configured,
             "admin_disabled": admin_disabled,
@@ -93,7 +97,13 @@ async def users_me(creds: HTTPAuthorizationCredentials = Depends(bearer)):
 async def financial_capabilities(creds: HTTPAuthorizationCredentials = Depends(bearer)):
     await user(creds)
     gateways_response = await call("GET", f"{PAYMENTS_BASE}/gateways", creds.credentials)
-    return {"version": 2, "currencies": CURRENCY_REGISTRY, "gateways": _runtime_gateway_rows(gateways_response), "payout_providers": [{"id": "payoneer", "name": "Payoneer", "provider": "payoneer", "supported": True, "capabilities": ["payout"]}]}
+    return {
+        "version": 3,
+        "currencies": CURRENCY_REGISTRY,
+        "payment_methods": list(payment_method_catalog().values()),
+        "gateways": _runtime_gateway_rows(gateways_response),
+        "payout_providers": list(PAYOUT_PROVIDERS.values()),
+    }
 
 
 @router.get("/wallet")
@@ -176,12 +186,14 @@ async def billing_checkout(body: dict, creds: HTTPAuthorizationCredentials = Dep
     gateway_row = next((g for g in _runtime_gateway_rows(capability) if g["id"] == gateway), None)
     if gateway_row is None:
         raise HTTPException(status_code=422, detail={"code": "GATEWAY_UNSUPPORTED", "gateway": gateway})
-    if currency not in set(gateway_row["currencies"]):
+    if gateway_row.get("currency_mode") != "provider_defined" and currency not in set(gateway_row["currencies"]):
         raise HTTPException(status_code=422, detail={"code": "GATEWAY_CURRENCY_UNSUPPORTED", "gateway": gateway, "currency": currency, "supported_currencies": gateway_row["currencies"]})
     if gateway_row["status"] == "disabled":
         raise HTTPException(status_code=503, detail={"code": "GATEWAY_DISABLED", "gateway": gateway})
     if gateway_row["status"] == "not_configured":
         raise HTTPException(status_code=503, detail={"code": "GATEWAY_NOT_CONFIGURED", "gateway": gateway})
+    if gateway_row["status"] == "adapter_not_implemented":
+        raise HTTPException(status_code=503, detail={"code": "GATEWAY_UNAVAILABLE", "gateway": gateway, "reason": "adapter_not_implemented"})
     if not gateway_row["available"]:
         raise HTTPException(status_code=503, detail={"code": "GATEWAY_UNAVAILABLE", "gateway": gateway})
     payload = {"gateway": gateway, "amount": amount_number, "currency": currency, "customer_email": email, "reference": body.get("reference"), "customer_name": current_user.get("name") or current_user.get("preferred_username"), "customer_phone": body.get("customer_phone")}
