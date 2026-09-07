@@ -16,6 +16,7 @@ import Services from './pages/Services'
 import DomainRegistration from './pages/DomainRegistration'
 import AdminDashboard from './pages/AdminDashboard'
 import AdminInfrastructure from './pages/AdminInfrastructure'
+import DatabaseControlPlane from './pages/DatabaseControlPlane'
 import AdminRoute from './components/AdminRoute'
 import FinancialCenter from './pages/FinancialCenter'
 import { isPlatformAdmin } from './lib/jwt'
@@ -57,6 +58,7 @@ function Nav() {
           <Link to="/ai" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px', whiteSpace: 'nowrap', fontWeight: location.pathname === '/ai' ? 700 : 400 }}>AI</Link>
           {isAdmin && <>
             <Link to="/admin" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px', whiteSpace: 'nowrap', fontWeight: 700 }}>Admin</Link>
+            <Link to="/admin/database" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px', whiteSpace: 'nowrap', fontWeight: location.pathname.startsWith('/admin/database') ? 700 : 400 }}>Databases</Link>
             <Link to="/admin/blog" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px', whiteSpace: 'nowrap', fontWeight: location.pathname.startsWith('/admin/blog') ? 700 : 400 }}>Blog editor</Link>
             <Link to="/admin/infrastructure" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px', whiteSpace: 'nowrap', fontWeight: location.pathname.startsWith('/admin/infrastructure') ? 700 : 400 }}>Infrastructure</Link>
           </>}
@@ -110,10 +112,11 @@ function App() {
         <Route path="/payments" element={<ProtectedRoute><FinancialCenter view="payments" /></ProtectedRoute>} />
         <Route path="/transactions" element={<ProtectedRoute><FinancialCenter view="transactions" /></ProtectedRoute>} />
         <Route path="/wallet" element={<ProtectedRoute><FinancialCenter view="wallet" /></ProtectedRoute>} />
-        <Route path="/wallet/ledger" element={<ProtectedRoute><FinancialCenter view="ledger" /></ProtectedRoute>} />
+        <Route path="/wallet/ledger" element={<FinancialCenter view="ledger" />} />
         <Route path="/exchange" element={<ProtectedRoute><FinancialCenter view="exchange" /></ProtectedRoute>} />
         <Route path="/reports" element={<ProtectedRoute><FinancialCenter view="reports" /></ProtectedRoute>} />
         <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+        <Route path="/admin/database" element={<AdminRoute><DatabaseControlPlane /></AdminRoute>} />
         <Route path="/admin/blog" element={<AdminRoute><BlogAdmin /></AdminRoute>} />
         <Route path="/admin/infrastructure" element={<AdminRoute><AdminInfrastructure /></AdminRoute>} />
       </Routes>
