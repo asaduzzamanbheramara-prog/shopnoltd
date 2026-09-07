@@ -7,6 +7,7 @@ from prometheus_client import generate_latest
 from starlette.responses import Response
 
 from app.api import convert, history, providers, rates
+from app.api import admin_control
 from app.core.config import settings
 from app.core.db import Base, engine
 from app.core.rate_updater import RateUpdater
@@ -41,6 +42,7 @@ app.include_router(rates.router, prefix="/api/v1/rates", tags=["rates"])
 app.include_router(convert.router, prefix="/api/v1/convert", tags=["convert"])
 app.include_router(providers.router, prefix="/api/v1/providers", tags=["providers"])
 app.include_router(history.router, prefix="/api/v1/history", tags=["history"])
+app.include_router(admin_control.router, prefix="/api/v1", tags=["database-control-plane"])
 
 
 @app.get("/healthz", include_in_schema=False)
