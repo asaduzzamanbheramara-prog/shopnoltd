@@ -14,7 +14,7 @@ from app.api.admin import require_admin
 from app.core.db import Base, SessionLocal
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from fastapi.responses import StreamingResponse
-from sqlalchemy import and_, delete, func, insert, select, update
+from sqlalchemy import String, and_, delete, func, insert, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter()
@@ -60,8 +60,6 @@ def _write_allowed(name):
     if name in READ_ONLY_TABLES: raise HTTPException(403, f"Table '{name}' is read-only")
 
 def _tenant_clause(table, user):
-    # platform_admin intentionally has global scope. If a future delegated
-    # platform role is enabled, this helper prevents cross-tenant access.
     tenant = table.columns.get("tenant_id")
     tenant_id = user.get("tenant_id")
     if tenant is not None and tenant_id and "platform_admin" not in set(user.get("roles", [])):
@@ -106,7 +104,6 @@ async def list_rows(table_name: str, limit: int = Query(50, ge=1, le=MAX_PAGE_SI
         if search_column and search_column not in cols: raise HTTPException(400, f"Unknown filter column '{search_column}'")
         target = [cols[search_column]] if search_column else list(table.columns)
         terms = [c.cast(String).ilike(f"%{search}%") for c in target]
-        from sqlalchemy import or_, String
         predicate = and_(predicate, or_(*terms)) if predicate is not None else or_(*terms)
     stmt = select(table)
     count = select(func.count()).select_from(table)
@@ -197,7 +194,6 @@ async def export_table(table_name: str, format: str = Query("json", pattern="^(j
     _platform_admin(user)
     table = _table(table_name); predicate = _tenant_clause(table, user)
     if search:
-        from sqlalchemy import or_, String
         terms = [c.cast(String).ilike(f"%{search}%") for c in table.columns]
         predicate = and_(predicate, or_(*terms)) if predicate is not None else or_(*terms)
     stmt = select(table).where(predicate) if predicate is not None else select(table)
