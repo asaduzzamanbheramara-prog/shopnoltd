@@ -1,24 +1,40 @@
 """Domain self-service API boundary.
 
-Registration and renewal are deliberately modeled as billing-gated operations.
-A request is never reported as completed until the registrar confirms success.
+Registration and renewal are billing-gated operations. A request is never
+reported as completed until the registrar confirms success.
 """
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+
+from app.core.security import verify_token
 
 router = APIRouter()
+bearer = HTTPBearer()
 
 
-def _require_user(user_id: str | None) -> str:
-    if not user_id or not user_id.strip():
-        raise HTTPException(status_code=401, detail="Authentication required")
-    return user_id.strip()
+async def current_user(creds: HTTPAuthorizationCredentials = Depends(bearer)) -> dict:
+    try:
+        return await verify_token(creds.credentials)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid or expired authentication token",
+            headers={"WWW-Authenticate": "Bearer"},
+        ) from exc
+
+
+def _subject(identity: dict) -> str:
+    subject = identity.get("sub")
+    if not isinstance(subject, str) or not subject.strip():
+        raise HTTPException(status_code=403, detail="Authenticated user subject unavailable")
+    return subject.strip()
 
 
 @router.post("/domains/register")
-async def register_domain_user(domain: str, years: int = 1, user_id: str | None = None):
+async def register_domain_user(domain: str, years: int = 1, identity: dict = Depends(current_user)):
     """Start a domain registration workflow; do not claim registrar success here."""
-    owner = _require_user(user_id)
+    owner = _subject(identity)
     domain = domain.strip().lower()
     if not domain or "." not in domain:
         raise HTTPException(status_code=422, detail="Valid domain is required")
@@ -35,9 +51,9 @@ async def register_domain_user(domain: str, years: int = 1, user_id: str | None 
 
 
 @router.post("/domains/{domain}/renew")
-async def renew_domain_user(domain: str, years: int = 1, user_id: str | None = None):
+async def renew_domain_user(domain: str, years: int = 1, identity: dict = Depends(current_user)):
     """Start a renewal workflow; only a verified registrar response may complete it."""
-    owner = _require_user(user_id)
+    owner = _subject(identity)
     domain = domain.strip().lower()
     if not domain or "." not in domain:
         raise HTTPException(status_code=422, detail="Valid domain is required")
@@ -54,16 +70,16 @@ async def renew_domain_user(domain: str, years: int = 1, user_id: str | None = N
 
 
 @router.get("/domains")
-async def list_user_domains(user_id: str | None = None):
+async def list_user_domains(identity: dict = Depends(current_user)):
     """List domains owned by the authenticated user."""
-    owner = _require_user(user_id)
+    owner = _subject(identity)
     return {"owner_id": owner, "domains": []}
 
 
 @router.get("/domains/{domain}")
-async def get_domain(domain: str, user_id: str | None = None):
+async def get_domain(domain: str, identity: dict = Depends(current_user)):
     """Return domain state without fabricating an active registrar record."""
-    owner = _require_user(user_id)
+    owner = _subject(identity)
     domain = domain.strip().lower()
     return {
         "domain": domain,
