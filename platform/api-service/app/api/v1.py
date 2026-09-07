@@ -256,10 +256,7 @@ async def billing_checkout(
     if gateway_row["status"] == "disabled":
         raise HTTPException(status_code=503, detail={"code": "GATEWAY_DISABLED", "gateway": gateway})
     if gateway_row["status"] == "not_configured":
-        raise HTTPException(
-            status_code=503,
-            detail={"code": "GATEWAY_NOT_CONFIGURED", "gateway": gateway},
-        )
+        raise HTTPException(status_code=503, detail={"code": "GATEWAY_NOT_CONFIGURED", "gateway": gateway})
     if not gateway_row["available"]:
         raise HTTPException(status_code=503, detail={"code": "GATEWAY_UNAVAILABLE", "gateway": gateway})
 
@@ -318,7 +315,7 @@ async def exchange_quote(body: dict, creds: HTTPAuthorizationCredentials = Depen
     except (KeyError, TypeError, ValueError) as e:
         raise HTTPException(status_code=502, detail="Exchange service returned an invalid rate") from e
     if not math.isfinite(rate_value) or rate_value <= 0:
-        raise HTTPException(status_code=502, detail="Exchange service returned an invalid rate")
+        raise HTTPException(status_code=502, detail="Exchange service returned an invalid rate") from e
     return {
         "from_currency": from_currency,
         "to_currency": to_currency,
