@@ -21,12 +21,7 @@ import AdminRoute from './components/AdminRoute'
 import FinancialCenter from './pages/FinancialCenter'
 import { isPlatformAdmin } from './lib/jwt'
 
-const PUBLIC_LINKS = [
-  ['Pricing', '/pricing'],
-  ['Blog', '/blog'],
-  ['Plugins', '/plugins'],
-  ['Services', '/services'],
-]
+const PUBLIC_LINKS = [['Pricing', '/pricing'], ['Blog', '/blog'], ['Plugins', '/plugins'], ['Services', '/services']]
 
 function Nav() {
   const navigate = useNavigate()
@@ -34,34 +29,17 @@ function Nav() {
   const token = localStorage.getItem('shopno_token')
   const loggedIn = !!token
   const isAdmin = loggedIn && isPlatformAdmin()
-
-  function handleLogout() {
-    localStorage.removeItem('shopno_token')
-    localStorage.removeItem('shopno_refresh_token')
-    navigate('/')
-  }
-
+  function handleLogout() { localStorage.removeItem('shopno_token'); localStorage.removeItem('shopno_refresh_token'); navigate('/') }
   return (
     <nav style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 12, padding: '12px clamp(14px, 3vw, 24px)', background: '#0ea5e9', color: 'white', boxSizing: 'border-box' }}>
-      <Link to="/" style={{ color: 'white', display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: 20, textDecoration: 'none', whiteSpace: 'nowrap', marginRight: 'auto' }}>
-        <img src="/logo.svg" alt="Shopnoltd" style={{ height: 28, width: 28, objectFit: 'contain', flex: '0 0 auto' }} />
-        Shopnoltd
-      </Link>
+      <Link to="/" style={{ color: 'white', display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: 20, textDecoration: 'none', whiteSpace: 'nowrap', marginRight: 'auto' }}><img src="/logo.svg" alt="Shopnoltd" style={{ height: 28, width: 28, objectFit: 'contain', flex: '0 0 auto' }} />Shopnoltd</Link>
       <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'flex-end', gap: '8px 16px', minWidth: 0 }}>
         {PUBLIC_LINKS.map(([label, path]) => <Link key={path} to={path} style={{ color: 'white', textDecoration: 'none', padding: '6px 2px', whiteSpace: 'nowrap' }}>{label}</Link>)}
-        {!loggedIn && <>
-          <Link to="/login" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px', whiteSpace: 'nowrap' }}>Login</Link>
-          <Link to="/register" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px', whiteSpace: 'nowrap' }}>Register</Link>
-        </>}
+        {!loggedIn && <><Link to="/login" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px', whiteSpace: 'nowrap' }}>Login</Link><Link to="/register" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px', whiteSpace: 'nowrap' }}>Register</Link></>}
         {loggedIn && <>
           <Link to="/dashboard" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px', whiteSpace: 'nowrap' }}>Dashboard</Link>
           <Link to="/ai" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px', whiteSpace: 'nowrap', fontWeight: location.pathname === '/ai' ? 700 : 400 }}>AI</Link>
-          {isAdmin && <>
-            <Link to="/admin" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px', whiteSpace: 'nowrap', fontWeight: 700 }}>Admin</Link>
-            <Link to="/admin/database" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px', whiteSpace: 'nowrap', fontWeight: location.pathname.startsWith('/admin/database') ? 700 : 400 }}>Databases</Link>
-            <Link to="/admin/blog" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px', whiteSpace: 'nowrap', fontWeight: location.pathname.startsWith('/admin/blog') ? 700 : 400 }}>Blog editor</Link>
-            <Link to="/admin/infrastructure" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px', whiteSpace: 'nowrap', fontWeight: location.pathname.startsWith('/admin/infrastructure') ? 700 : 400 }}>Infrastructure</Link>
-          </>}
+          {isAdmin && <><Link to="/admin" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px', whiteSpace: 'nowrap', fontWeight: 700 }}>Admin</Link><Link to="/admin/database" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px', whiteSpace: 'nowrap', fontWeight: location.pathname.startsWith('/admin/database') ? 700 : 400 }}>Databases</Link><Link to="/admin/blog" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px', whiteSpace: 'nowrap', fontWeight: location.pathname.startsWith('/admin/blog') ? 700 : 400 }}>Blog editor</Link><Link to="/admin/infrastructure" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px', whiteSpace: 'nowrap', fontWeight: location.pathname.startsWith('/admin/infrastructure') ? 700 : 400 }}>Infrastructure</Link></>}
           <button onClick={handleLogout} style={{ color: 'white', background: 'transparent', border: '1px solid rgba(255,255,255,0.5)', borderRadius: 6, padding: '5px 12px', cursor: 'pointer', whiteSpace: 'nowrap', fontSize: 14 }}>Logout</button>
         </>}
       </div>
@@ -69,62 +47,17 @@ function Nav() {
   )
 }
 
-const SUBDOMAIN_ROUTES = {
-  'billing.shopnoltd.dpdns.org': '/billing',
-  'payment.shopnoltd.dpdns.org': '/payments',
-  'exchange.shopnoltd.dpdns.org': '/exchange',
-  'admin.shopnoltd.dpdns.org': '/admin',
-  'support.shopnoltd.dpdns.org': '/dashboard',
-}
-
-function SubdomainRedirect() {
-  const navigate = useNavigate()
-  const location = useLocation()
-  useEffect(() => {
-    const target = SUBDOMAIN_ROUTES[window.location.hostname]
-    if (target && location.pathname === '/') navigate(target, { replace: true })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-  return null
-}
+const SUBDOMAIN_ROUTES = { 'billing.shopnoltd.dpdns.org': '/billing', 'payment.shopnoltd.dpdns.org': '/payments', 'exchange.shopnoltd.dpdns.org': '/exchange', 'admin.shopnoltd.dpdns.org': '/admin', 'support.shopnoltd.dpdns.org': '/dashboard' }
+function SubdomainRedirect() { const navigate = useNavigate(); const location = useLocation(); useEffect(() => { const target = SUBDOMAIN_ROUTES[window.location.hostname]; if (target && location.pathname === '/') navigate(target, { replace: true }) }, []); return null }
 
 function App() {
-  return (
-    <BrowserRouter>
-      <Nav />
-      <SubdomainRedirect />
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/pricing" element={<Pricing />} />
-        <Route path="/blog" element={<Blog />} />
-        <Route path="/plugins" element={<Plugins />} />
-        <Route path="/services" element={<Services />} />
-        <Route path="/domain-registration" element={<DomainRegistration />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/callback" element={<Callback />} />
-        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-        <Route path="/ai" element={<ProtectedRoute><AIWorkspace /></ProtectedRoute>} />
-        <Route path="/billing" element={<ProtectedRoute><FinancialCenter view="billing" /></ProtectedRoute>} />
-        <Route path="/subscriptions" element={<ProtectedRoute><FinancialCenter view="subscriptions" /></ProtectedRoute>} />
-        <Route path="/invoices" element={<ProtectedRoute><FinancialCenter view="invoices" /></ProtectedRoute>} />
-        <Route path="/checkout" element={<ProtectedRoute><FinancialCenter view="checkout" /></ProtectedRoute>} />
-        <Route path="/payments" element={<ProtectedRoute><FinancialCenter view="payments" /></ProtectedRoute>} />
-        <Route path="/transactions" element={<ProtectedRoute><FinancialCenter view="transactions" /></ProtectedRoute>} />
-        <Route path="/wallet" element={<ProtectedRoute><FinancialCenter view="wallet" /></ProtectedRoute>} />
-        <Route path="/wallet/ledger" element={<FinancialCenter view="ledger" />} />
-        <Route path="/exchange" element={<ProtectedRoute><FinancialCenter view="exchange" /></ProtectedRoute>} />
-        <Route path="/reports" element={<ProtectedRoute><FinancialCenter view="reports" /></ProtectedRoute>} />
-        <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
-        <Route path="/admin/database" element={<AdminRoute><DatabaseControlPlane /></AdminRoute>} />
-        <Route path="/admin/blog" element={<AdminRoute><BlogAdmin /></AdminRoute>} />
-        <Route path="/admin/infrastructure" element={<AdminRoute><AdminInfrastructure /></AdminRoute>} />
-      </Routes>
-    </BrowserRouter>
-  )
+  return <BrowserRouter><Nav /><SubdomainRedirect /><Routes>
+    <Route path="/" element={<Home />} /><Route path="/pricing" element={<Pricing />} /><Route path="/blog" element={<Blog />} /><Route path="/plugins" element={<Plugins />} /><Route path="/services" element={<Services />} /><Route path="/domain-registration" element={<DomainRegistration />} /><Route path="/login" element={<Login />} /><Route path="/register" element={<Register />} /><Route path="/callback" element={<Callback />} />
+    <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} /><Route path="/ai" element={<ProtectedRoute><AIWorkspace /></ProtectedRoute>} />
+    <Route path="/billing" element={<ProtectedRoute><FinancialCenter view="billing" /></ProtectedRoute>} /><Route path="/subscriptions" element={<ProtectedRoute><FinancialCenter view="subscriptions" /></ProtectedRoute>} /><Route path="/invoices" element={<ProtectedRoute><FinancialCenter view="invoices" /></ProtectedRoute>} /><Route path="/checkout" element={<ProtectedRoute><FinancialCenter view="checkout" /></ProtectedRoute>} /><Route path="/payments" element={<ProtectedRoute><FinancialCenter view="payments" /></ProtectedRoute>} /><Route path="/transactions" element={<ProtectedRoute><FinancialCenter view="transactions" /></ProtectedRoute>} /><Route path="/wallet" element={<ProtectedRoute><FinancialCenter view="wallet" /></ProtectedRoute>} /><Route path="/wallet/ledger" element={<ProtectedRoute><FinancialCenter view="ledger" /></ProtectedRoute>} /><Route path="/exchange" element={<ProtectedRoute><FinancialCenter view="exchange" /></ProtectedRoute>} /><Route path="/reports" element={<ProtectedRoute><FinancialCenter view="reports" /></ProtectedRoute>} />
+    <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} /><Route path="/admin/database" element={<AdminRoute><DatabaseControlPlane /></AdminRoute>} /><Route path="/admin/blog" element={<AdminRoute><BlogAdmin /></AdminRoute>} /><Route path="/admin/infrastructure" element={<AdminRoute><AdminInfrastructure /></AdminRoute>} />
+  </Routes></BrowserRouter>
 }
-
 ReactDOM.createRoot(document.getElementById('root')).render(<App />)
-
 import { scheduleTokenRefresh } from './lib/tokenRefresh'
 scheduleTokenRefresh()
