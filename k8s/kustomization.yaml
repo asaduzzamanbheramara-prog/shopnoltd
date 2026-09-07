@@ -50,6 +50,7 @@ resources:
 - services/remote-device
 - services/kobotoolbox
 - shopno-apps/kobo-worker.yaml
+- shopno-apps/kobo-beat.yaml
 - services/n8n
 - services/owncast
 - services/mongodb
