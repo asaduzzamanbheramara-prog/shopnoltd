@@ -20,6 +20,7 @@ import DatabaseControlPlane from './pages/DatabaseControlPlaneEnhanced'
 import AdminRoute from './components/AdminRoute'
 import FinancialCenter from './pages/FinancialCenter'
 import { isPlatformAdmin } from './lib/jwt'
+import { scheduleTokenRefresh } from './lib/tokenRefresh'
 
 const PUBLIC_LINKS = [['Pricing', '/pricing'], ['Blog', '/blog'], ['Plugins', '/plugins'], ['Services', '/services']]
 
@@ -58,6 +59,6 @@ function App() {
     <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} /><Route path="/admin/database" element={<AdminRoute><DatabaseControlPlane /></AdminRoute>} /><Route path="/admin/blog" element={<AdminRoute><BlogAdmin /></AdminRoute>} /><Route path="/admin/infrastructure" element={<AdminRoute><AdminInfrastructure /></AdminRoute>} />
   </Routes></BrowserRouter>
 }
+
 ReactDOM.createRoot(document.getElementById('root')).render(<App />)
-import { scheduleTokenRefresh } from './lib/tokenRefresh'
 scheduleTokenRefresh()
