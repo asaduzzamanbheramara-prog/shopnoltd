@@ -43,7 +43,7 @@ class MoneybagProvider(BaseProvider):
             "success_url": return_url or f"{settings.base_callback_url}/checkout/success?ref={reference}",
             "cancel_url": kwargs.get("cancel_url", f"{settings.base_callback_url}/checkout/cancel?ref={reference}"),
             "fail_url": kwargs.get("fail_url", f"{settings.base_callback_url}/checkout/failure?ref={reference}"),
-            "ipn_url": kwargs.get("ipn_url", f"{settings.base_callback_url}/webhook/moneybag"),
+            "ipn_url": kwargs.get("ipn_url", f"{settings.base_callback_url}/api/v1/webhooks/moneybag"),
             "customer": {
                 "name": kwargs.get("customer_name", "Shopnoltd Customer"),
                 "email": kwargs.get("customer_email"),
@@ -87,7 +87,10 @@ class MoneybagProvider(BaseProvider):
         signature = headers.get("x-webhook-signature") or headers.get("X-Webhook-Signature")
         if not timestamp or not signature:
             raise ValueError("missing Moneybag webhook signature headers")
-        ts = int(timestamp)
+        try:
+            ts = int(timestamp)
+        except ValueError as exc:
+            raise ValueError("invalid Moneybag webhook timestamp") from exc
         if abs(int(time.time()) - ts) > settings.moneybag_webhook_tolerance_seconds:
             raise ValueError("stale Moneybag webhook")
         signed = f"{timestamp}.".encode() + request_body
@@ -106,6 +109,7 @@ class MoneybagProvider(BaseProvider):
         }.get(event_type or body.get("event_type"), str(data.get("status", "")).upper())
         return {
             "external_id": data.get("transaction_id") or data.get("payment_transaction_id") or data.get("order_id"),
+            "order_id": data.get("order_id") or body.get("order_id"),
             "status": status,
             "event_id": headers.get("x-webhook-event-id") or headers.get("X-Webhook-Event-Id"),
             "data": data,
