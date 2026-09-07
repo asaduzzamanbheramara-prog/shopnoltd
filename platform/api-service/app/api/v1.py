@@ -13,7 +13,7 @@ bearer = HTTPBearer()
 SOCIAL = "http://social-service.shopno-platform.svc.cluster.local:80"
 BILLING = "http://billing-engine.shopno-payments.svc.cluster.local:80"
 EXCHANGE = "http://exchange-service.shopno-payments.svc.cluster.local:80"
-PAYMENT = "http://payment-service.shopno-payments.svc.cluster.local:8080"
+PAYMENT = "http://payment-service.shopno-payments.svc.cluster.local:80"
 
 
 async def user(creds: HTTPAuthorizationCredentials = Depends(bearer)):
