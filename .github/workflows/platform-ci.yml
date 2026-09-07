@@ -1,0 +1,76 @@
+name: Shopnoltd Platform CI
+
+on:
+  push:
+    branches:
+      - main
+      - "feat/**"
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  python-syntax:
+    name: Python syntax validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Compile Python sources
+        run: |
+          python -m compileall -q \
+            billing-engine/app \
+            platform/ai-platform/app \
+            platform/api-service/app \
+            platform/domain-service/app \
+            platform/payment-service/app \
+            platform/social-service/app
+
+  web-portal:
+    name: Web portal build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: platform/web-portal
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: platform/web-portal/package-lock.json
+      - run: npm ci
+      - run: npm run build
+
+  migration-shape:
+    name: Payment migration validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate migration revision chain
+        run: |
+          python - <<'PY'
+          import re
+          from pathlib import Path
+
+          versions = Path("platform/payment-service/migrations/versions")
+          revisions = {}
+          for path in sorted(versions.glob("*.py")):
+              text = path.read_text()
+              rev = re.search(r'revision\s*=\s*["\']([^"\']+)', text)
+              down = re.search(r'down_revision\s*=\s*["\']([^"\']+)', text)
+              if rev:
+                  revisions[rev.group(1)] = down.group(1) if down else None
+
+          if "0001" not in revisions or "0002" not in revisions:
+              raise SystemExit("payment migration chain is missing 0001 or 0002")
+          if revisions["0002"] != "0001":
+              raise SystemExit("0002 must revise 0001")
+          print("payment migration chain OK")
+          PY
