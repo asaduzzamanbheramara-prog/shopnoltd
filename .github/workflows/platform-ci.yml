@@ -56,21 +56,42 @@ jobs:
       - name: Validate migration revision chain
         run: |
           python - <<'PY'
-          import re
+          import ast
           from pathlib import Path
 
           versions = Path("platform/payment-service/migrations/versions")
           revisions = {}
           for path in sorted(versions.glob("*.py")):
-              text = path.read_text()
-              rev = re.search(r'revision\s*=\s*["\']([^"\']+)', text)
-              down = re.search(r'down_revision\s*=\s*["\']([^"\']+)', text)
-              if rev:
-                  revisions[rev.group(1)] = down.group(1) if down else None
+              tree = ast.parse(path.read_text(), filename=str(path))
+              values = {}
+              for node in tree.body:
+                  if isinstance(node, ast.Assign):
+                      for target in node.targets:
+                          if isinstance(target, ast.Name) and target.id in {"revision", "down_revision"}:
+                              try:
+                                  values[target.id] = ast.literal_eval(node.value)
+                              except Exception:
+                                  pass
+              if "revision" in values:
+                  revisions[values["revision"]] = values.get("down_revision")
 
-          if "0001" not in revisions or "0002" not in revisions:
-              raise SystemExit("payment migration chain is missing 0001 or 0002")
-          if revisions["0002"] != "0001":
-              raise SystemExit("0002 must revise 0001")
-          print("payment migration chain OK")
+          required = {"0001", "0002_admin_audit_log", "0003_webhook_events"}
+          missing = required - revisions.keys()
+          if missing:
+              raise SystemExit(f"payment migration chain missing: {sorted(missing)}")
+          if revisions["0001"] is not None:
+              raise SystemExit("0001 must be the root migration")
+          if revisions["0002_admin_audit_log"] != "0001":
+              raise SystemExit("0002_admin_audit_log must revise 0001")
+          if revisions["0003_webhook_events"] != "0002_admin_audit_log":
+              raise SystemExit("0003_webhook_events must revise 0002_admin_audit_log")
+
+          children = {rev: 0 for rev in revisions}
+          for down in revisions.values():
+              if isinstance(down, str) and down in children:
+                  children[down] += 1
+          heads = sorted(rev for rev, count in children.items() if count == 0)
+          if heads != ["0003_webhook_events"]:
+              raise SystemExit(f"expected one Alembic head at 0003_webhook_events, got {heads}")
+          print("payment migration chain OK: 0001 -> 0002_admin_audit_log -> 0003_webhook_events")
           PY
