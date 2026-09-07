@@ -96,14 +96,14 @@ async def blog(limit: int = Query(20, ge=1, le=100), offset: int = Query(0, ge=0
     return await public_call("GET", f"{SOCIAL}/api/v1/blog", params={"limit": limit, "offset": offset})
 
 
-@router.get("/blog/{slug}")
-async def blog_post(slug: str):
-    return await public_call("GET", f"{SOCIAL}/api/v1/blog/{slug}")
-
-
 @router.get("/blog/admin")
 async def blog_admin(creds: HTTPAuthorizationCredentials = Depends(bearer)):
     return await call("GET", f"{SOCIAL}/api/v1/blog/admin", creds.credentials)
+
+
+@router.get("/blog/{slug}")
+async def blog_post(slug: str):
+    return await public_call("GET", f"{SOCIAL}/api/v1/blog/{slug}")
 
 
 @router.post("/blog")
