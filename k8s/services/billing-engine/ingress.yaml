@@ -13,12 +13,25 @@ spec:
     - hosts:
         - billing-engine.shopnoltd.dpdns.org
       secretName: billing-engine-tls
+    - hosts:
+        - billing.shopnoltd.dpdns.org
+      secretName: shopno-wildcard-tls
   rules:
     - host: billing-engine.shopnoltd.dpdns.org
       http:
         paths:
           - path: /
             pathType: Prefix
+            backend:
+              service:
+                name: billing-engine
+                port:
+                  number: 80
+    - host: billing.shopnoltd.dpdns.org
+      http:
+        paths:
+          - path: /webhook/moneybag/ipn
+            pathType: Exact
             backend:
               service:
                 name: billing-engine
