@@ -17,6 +17,7 @@ from app.models import MoneybagWebhookEvent, Transaction
 router = APIRouter()
 
 _SUCCESS_STATUSES = {"SUCCESS", "COMPLETED", "PAID", "VALID", "VALIDATED"}
+_ALLOWED_EVENTS = {"payment.success", "payment.failed", "payment.cancelled"}
 
 
 def _find_transaction(db: Session, order_id: str) -> Transaction | None:
@@ -40,13 +41,7 @@ def _record_webhook_event(
     order_id: str,
     raw_body: bytes,
 ) -> MoneybagWebhookEvent | None:
-    """Persist event identity before any webhook side effect.
-
-    The unique event_id is the durable idempotency key. A duplicate delivery
-    is acknowledged without re-running the payment side effect. A different
-    payload using an existing event_id is rejected rather than silently
-    accepting a potentially corrupted/replayed event.
-    """
+    """Persist event identity before any webhook side effect."""
     payload_sha256 = hashlib.sha256(raw_body).hexdigest()
     event = MoneybagWebhookEvent(
         event_id=event_id,
@@ -104,6 +99,11 @@ def _verify_and_complete(
     if not txn:
         raise HTTPException(status_code=404, detail="Moneybag order not found")
 
+    if txn.gateway_reference != verified_order_id:
+        raise HTTPException(status_code=400, detail="Moneybag order reference mismatch")
+    if verified_transaction_id != transaction_id:
+        raise HTTPException(status_code=400, detail="Moneybag transaction identity mismatch")
+
     if not verified or status not in _SUCCESS_STATUSES:
         return {
             "received": True,
@@ -117,8 +117,6 @@ def _verify_and_complete(
     if verified_amount is None or abs(verified_amount - float(txn.amount)) > 0.000001:
         raise HTTPException(status_code=400, detail="Moneybag amount mismatch")
 
-    # The transaction row is locked above. A repeated redirect/webhook waits
-    # for the first request, then observes completed and cannot credit twice.
     if txn.status == "completed":
         return {
             "received": True,
@@ -233,11 +231,13 @@ async def moneybag_ipn(request: Request, db: Session = Depends(get_db)):
     raw_body = await request.body()
     signature = request.headers.get("X-Webhook-Signature", "")
     timestamp = request.headers.get("X-Webhook-Timestamp", "")
-    event_id = request.headers.get("X-Webhook-Event-Id")
-    event_type = request.headers.get("X-Webhook-Event-Type", "")
+    header_event_id = request.headers.get("X-Webhook-Event-Id")
+    header_event_type = request.headers.get("X-Webhook-Event-Type", "")
 
-    if not event_id or not event_type:
+    if not header_event_id or not header_event_type:
         raise HTTPException(status_code=400, detail="Missing Moneybag webhook headers")
+    if header_event_type not in _ALLOWED_EVENTS:
+        raise HTTPException(status_code=400, detail="Unsupported Moneybag webhook event type")
     _verify_webhook_signature(raw_body, signature, timestamp)
 
     try:
@@ -245,43 +245,53 @@ async def moneybag_ipn(request: Request, db: Session = Depends(get_db)):
     except json.JSONDecodeError as exc:
         raise HTTPException(status_code=400, detail="Invalid Moneybag webhook JSON") from exc
 
+    body_event_id = str(event.get("event_id") or "")
+    body_event_type = str(event.get("event_type") or "")
+    body_merchant_id = str(event.get("merchant_id") or "")
+    if body_event_id != header_event_id:
+        raise HTTPException(status_code=400, detail="Moneybag event ID mismatch")
+    if body_event_type != header_event_type:
+        raise HTTPException(status_code=400, detail="Moneybag event type mismatch")
+    if config.MONEYBAG_MERCHANT_ID and body_merchant_id != config.MONEYBAG_MERCHANT_ID:
+        raise HTTPException(status_code=400, detail="Moneybag merchant identity mismatch")
+
     data = event.get("data") or {}
     transaction_id = str(data.get("transaction_id") or "")
     order_id = str(data.get("order_id") or data.get("reference") or "")
 
     persisted_event = _record_webhook_event(
         db,
-        event_id=event_id,
-        event_type=event_type,
+        event_id=header_event_id,
+        event_type=header_event_type,
         transaction_id=transaction_id,
         order_id=order_id,
         raw_body=raw_body,
     )
     if persisted_event is None:
-        return {"received": True, "event_id": event_id, "duplicate": True}
+        return {"received": True, "event_id": header_event_id, "duplicate": True}
 
     if not transaction_id or not order_id:
         persisted_event.status = "ignored"
         persisted_event.processed_at = datetime.utcnow()
         db.commit()
-        return {"received": True, "event_id": event_id, "ignored": True}
+        return {"received": True, "event_id": header_event_id, "ignored": True}
 
-    if event_type == "payment.success":
+    if header_event_type == "payment.success":
         result = _verify_and_complete(db, transaction_id, order_id)
         persisted_event.status = "processed" if result.get("verified") else "pending"
         persisted_event.processed_at = datetime.utcnow()
         db.commit()
-        result["event_id"] = event_id
+        result["event_id"] = header_event_id
         return result
 
     txn = _find_transaction(db, order_id)
     if txn and txn.status != "completed":
-        if event_type == "payment.failed":
+        if header_event_type == "payment.failed":
             txn.status = "failed"
-        elif event_type == "payment.cancelled":
+        elif header_event_type == "payment.cancelled":
             txn.status = "cancelled"
     persisted_event.status = "processed"
     persisted_event.processed_at = datetime.utcnow()
     db.commit()
 
-    return {"received": True, "event_id": event_id, "status": "acknowledged"}
+    return {"received": True, "event_id": header_event_id, "status": "acknowledged"}
