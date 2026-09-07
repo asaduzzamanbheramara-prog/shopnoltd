@@ -2,22 +2,40 @@ import React from 'react'
 
 const POSTS = [
   {
-    title: 'Welcome to Shopnoltd',
-    date: '2026-09-06',
+    title: 'Welcome to ShopnoltdToolbox',
+    date: '2026-09-07',
     excerpt:
-      'Shopnoltd brings domains, cloud services, billing, payments, exchange, AI and collaboration tools together in one platform.',
+      'ShopnoltdToolbox brings domain registration, cloud and platform services, billing, payments, wallets, transactions and currency exchange together in one financial platform.',
   },
   {
-    title: 'Shopnoltd Billing and Wallet',
-    date: '2026-09-06',
+    title: 'One Billing and Payment System for Every Service',
+    date: '2026-09-07',
     excerpt:
-      'Learn how wallet balances, transactions, billing gateways and checkout work together across the platform.',
+      'Services use the same Shopnoltd financial layer for checkout, gateway selection, wallet balances, ledger entries, transactions and payment verification instead of separate service-specific payment logic.',
   },
   {
-    title: 'Shopnoltd Platform Services',
-    date: '2026-09-06',
+    title: 'Currency-Aware Pricing and Exchange',
+    date: '2026-09-07',
     excerpt:
-      'Explore the services available from the Shopnoltd dashboard and service catalog.',
+      'Displayed amounts and checkout amounts must follow the selected currency and the current Shopnoltd exchange rate. The original service price is preserved as the pricing source while conversion is calculated explicitly before payment.',
+  },
+  {
+    title: 'Domain Registration Through ShopnoltdToolbox',
+    date: '2026-09-07',
+    excerpt:
+      'Domain availability, registrar registration, billing authorization and payment are connected so a domain purchase is treated as a normal Shopnoltd service transaction.',
+  },
+  {
+    title: 'Gateway and Payment Method Expansion',
+    date: '2026-09-07',
+    excerpt:
+      'ShopnoltdToolbox maintains a broad gateway and payment-method catalogue while separating provider support, implementation, configuration, activation and live availability. Unsupported combinations are never presented as successful payments.',
+  },
+  {
+    title: 'All Services, One Financial Center',
+    date: '2026-09-07',
+    excerpt:
+      'Billing, checkout, payments, wallet, wallet ledger, transactions, subscriptions, invoices, reports and exchange are exposed through the unified financial API so new Shopnoltd services can reuse the same financial foundation.',
   },
 ]
 
@@ -31,9 +49,9 @@ export default function Blog() {
         fontFamily: 'system-ui, sans-serif',
       }}
     >
-      <h1>Shopnoltd Blog</h1>
+      <h1>ShopnoltdToolbox Blog</h1>
       <p style={{ color: '#64748b', marginBottom: 32 }}>
-        Product updates, platform guides and service news from Shopnoltd.
+        Product updates, platform guides, domain services and financial-system news from ShopnoltdToolbox.
       </p>
 
       <div
