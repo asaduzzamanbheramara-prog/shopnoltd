@@ -89,6 +89,35 @@ def _runtime_gateway_rows(downstream: dict | None) -> list[dict]:
     return normalized
 
 
+async def _authoritative_settlement_amount(
+    *, base_amount: float, base_currency: str, settlement_currency: str, user_token: str
+) -> tuple[float, float, dict]:
+    """Convert the service/base price server-side; never trust a browser conversion."""
+    if not math.isfinite(base_amount) or base_amount <= 0:
+        raise HTTPException(status_code=422, detail={"code": "INVALID_BASE_AMOUNT", "amount": base_amount})
+    base_currency = base_currency.strip().upper()
+    settlement_currency = settlement_currency.strip().upper()
+    if not base_currency or not settlement_currency:
+        raise HTTPException(status_code=422, detail={"code": "INVALID_CURRENCY"})
+    if base_currency == settlement_currency:
+        return round(base_amount, 2), 1.0, {"live": True, "source": "identity"}
+    rate_data = await call(
+        "GET",
+        f"{EXCHANGE_BASE}/api/v1/rates/{quote(base_currency, safe='')}/{quote(settlement_currency, safe='')}",
+        user_token,
+    )
+    try:
+        rate = float(rate_data["rate"])
+    except (KeyError, TypeError, ValueError) as e:
+        raise HTTPException(status_code=502, detail={"code": "FX_RATE_INVALID"}) from e
+    if not math.isfinite(rate) or rate <= 0:
+        raise HTTPException(status_code=502, detail={"code": "FX_RATE_INVALID"})
+    converted = round(base_amount * rate, 2)
+    if not math.isfinite(converted) or converted <= 0:
+        raise HTTPException(status_code=502, detail={"code": "FX_CONVERSION_INVALID"})
+    return converted, rate, rate_data
+
+
 @router.get("/me")
 async def me(creds: HTTPAuthorizationCredentials = Depends(bearer)):
     return await user(creds)
@@ -185,17 +214,49 @@ async def billing_checkout(body: dict, creds: HTTPAuthorizationCredentials = Dep
     email = current_user.get("email")
     if not email:
         raise HTTPException(status_code=400, detail="Authenticated user does not have an email address")
-    amount = body.get("amount")
+
     currency = str(body.get("currency") or "").strip().upper()
     gateway = str(body.get("gateway") or "").strip().lower()
-    if amount is None or not currency or not gateway:
-        raise HTTPException(status_code=422, detail={"code": "INVALID_CHECKOUT_REQUEST", "message": "gateway, amount and currency are required"})
-    try:
-        amount_number = float(amount)
-    except (TypeError, ValueError) as e:
-        raise HTTPException(status_code=422, detail={"code": "INVALID_AMOUNT"}) from e
-    if not math.isfinite(amount_number) or amount_number <= 0:
-        raise HTTPException(status_code=422, detail={"code": "INVALID_AMOUNT", "amount": amount})
+    base_currency = str(body.get("base_currency") or "").strip().upper()
+    base_amount_raw = body.get("base_amount")
+    amount_raw = body.get("amount")
+    if not currency or not gateway:
+        raise HTTPException(status_code=422, detail={"code": "INVALID_CHECKOUT_REQUEST", "message": "gateway and currency are required"})
+
+    if base_amount_raw is not None:
+        try:
+            base_amount = float(base_amount_raw)
+        except (TypeError, ValueError) as e:
+            raise HTTPException(status_code=422, detail={"code": "INVALID_BASE_AMOUNT"}) from e
+        if not base_currency:
+            raise HTTPException(status_code=422, detail={"code": "INVALID_CHECKOUT_REQUEST", "message": "base_currency is required with base_amount"})
+        amount_number, fx_rate, fx_meta = await _authoritative_settlement_amount(
+            base_amount=base_amount,
+            base_currency=base_currency,
+            settlement_currency=currency,
+            user_token=creds.credentials,
+        )
+        if amount_raw is not None:
+            try:
+                client_amount = float(amount_raw)
+            except (TypeError, ValueError) as e:
+                raise HTTPException(status_code=422, detail={"code": "INVALID_AMOUNT"}) from e
+            if not math.isfinite(client_amount) or client_amount <= 0:
+                raise HTTPException(status_code=422, detail={"code": "INVALID_AMOUNT"})
+            if abs(round(client_amount, 2) - amount_number) > 0.01:
+                raise HTTPException(status_code=409, detail={"code": "CHECKOUT_AMOUNT_MISMATCH", "expected_amount": amount_number, "currency": currency, "base_amount": base_amount, "base_currency": base_currency, "rate": fx_rate})
+        pricing = {"base_amount": round(base_amount, 2), "base_currency": base_currency, "settlement_amount": amount_number, "settlement_currency": currency, "fx_rate": fx_rate, "fx": fx_meta}
+    else:
+        if amount_raw is None:
+            raise HTTPException(status_code=422, detail={"code": "INVALID_CHECKOUT_REQUEST", "message": "amount or base_amount is required"})
+        try:
+            amount_number = float(amount_raw)
+        except (TypeError, ValueError) as e:
+            raise HTTPException(status_code=422, detail={"code": "INVALID_AMOUNT"}) from e
+        if not math.isfinite(amount_number) or amount_number <= 0:
+            raise HTTPException(status_code=422, detail={"code": "INVALID_AMOUNT", "amount": amount_raw})
+        pricing = {"settlement_amount": amount_number, "settlement_currency": currency, "pricing_source": "explicit_settlement_amount"}
+
     capability = await call("GET", f"{PAYMENTS_BASE}/gateways", creds.credentials)
     gateway_row = next((g for g in _runtime_gateway_rows(capability) if g["id"] == gateway), None)
     if gateway_row is None:
@@ -210,8 +271,21 @@ async def billing_checkout(body: dict, creds: HTTPAuthorizationCredentials = Dep
         raise HTTPException(status_code=503, detail={"code": "GATEWAY_UNAVAILABLE", "gateway": gateway, "reason": "adapter_not_implemented"})
     if not gateway_row["available"]:
         raise HTTPException(status_code=503, detail={"code": "GATEWAY_UNAVAILABLE", "gateway": gateway})
-    payload = {"gateway": gateway, "amount": amount_number, "currency": currency, "customer_email": email, "reference": body.get("reference"), "customer_name": current_user.get("name") or current_user.get("preferred_username"), "customer_phone": body.get("customer_phone")}
-    return await call("POST", f"{PAYMENTS_BASE}/checkout", creds.credentials, json=payload)
+
+    payload = {
+        "gateway": gateway,
+        "amount": amount_number,
+        "currency": currency,
+        "customer_email": email,
+        "reference": body.get("reference"),
+        "customer_name": current_user.get("name") or current_user.get("preferred_username"),
+        "customer_phone": body.get("customer_phone"),
+        "metadata": {"pricing": pricing},
+    }
+    result = await call("POST", f"{PAYMENTS_BASE}/checkout", creds.credentials, json=payload)
+    if isinstance(result, dict):
+        result["pricing"] = pricing
+    return result
 
 
 @router.get("/exchange/rates")
@@ -247,7 +321,7 @@ async def exchange_quote(body: dict, creds: HTTPAuthorizationCredentials = Depen
         raise HTTPException(status_code=502, detail="Exchange service returned an invalid rate") from e
     if not math.isfinite(rate_value) or rate_value <= 0:
         raise HTTPException(status_code=502, detail="Exchange service returned an invalid rate")
-    return {"from_currency": from_currency, "to_currency": to_currency, "amount": amount_number, "rate": rate_value, "converted_amount": amount_number * rate_value, "source": rate_data.get("source"), "fetched_at": rate_data.get("fetched_at")}
+    return {"from_currency": from_currency, "to_currency": to_currency, "amount": amount_number, "rate": rate_value, "converted_amount": round(amount_number * rate_value, 2), "source": rate_data.get("source"), "fetched_at": rate_data.get("fetched_at")}
 
 
 @router.post("/exchange/convert")
