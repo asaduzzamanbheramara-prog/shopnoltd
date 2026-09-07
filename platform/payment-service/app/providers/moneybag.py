@@ -28,10 +28,10 @@ class MoneybagProvider(BaseProvider):
         if not self.enabled:
             return {
                 "external_id": None,
-                "status": "pending",
+                "status": "unavailable",
                 "redirect_url": None,
-                "is_demo": True,
-                "note": "Moneybag is not configured; no payment was sent.",
+                "is_demo": False,
+                "note": "Moneybag credentials are not configured; payment creation is unavailable.",
             }
 
         reference = kwargs.get("reference") or str(tx.id)
@@ -43,7 +43,7 @@ class MoneybagProvider(BaseProvider):
             "success_url": return_url or f"{settings.base_callback_url}/checkout/success?ref={reference}",
             "cancel_url": kwargs.get("cancel_url", f"{settings.base_callback_url}/checkout/cancel?ref={reference}"),
             "fail_url": kwargs.get("fail_url", f"{settings.base_callback_url}/checkout/failure?ref={reference}"),
-            "ipn_url": kwargs.get("ipn_url", f"{settings.base_callback_url}/api/v1/webhooks/moneybag"),
+            "ipn_url": kwargs.get("ipn_url", settings.moneybag_webhook_url),
             "customer": {
                 "name": kwargs.get("customer_name", "Shopnoltd Customer"),
                 "email": kwargs.get("customer_email"),
@@ -117,7 +117,7 @@ class MoneybagProvider(BaseProvider):
 
     async def get_status(self, external_id: str):
         if not self.enabled:
-            return "demo"
+            return "unavailable"
         async with httpx.AsyncClient(timeout=20) as client:
             response = await client.get(
                 f"{self.base_url}/api/v2/payments/verify/{external_id}",
