@@ -1,0 +1,54 @@
+{
+  "contract_version": 1,
+  "trigger_types": [
+    "schedule",
+    "webhook",
+    "payment_succeeded",
+    "payment_failed",
+    "domain_renewal_due",
+    "wallet_threshold",
+    "device_event",
+    "collection_submitted",
+    "service_event",
+    "exchange_rate_changed"
+  ],
+  "action_types": [
+    "send_notification",
+    "create_billing_checkout",
+    "request_device_health",
+    "sync_collection",
+    "refresh_device_configuration",
+    "start_allowlisted_job",
+    "revoke_device"
+  ],
+  "execution": {
+    "idempotency_required": true,
+    "max_retries": 5,
+    "exponential_backoff_required": true,
+    "dead_letter_state": "dead_letter",
+    "audit_every_transition": true
+  },
+  "authorization": {
+    "tenant_isolation_required": true,
+    "owner_or_role_permission_required": true,
+    "capability_check_required_for_device_actions": true,
+    "arbitrary_command_execution": false,
+    "gateway_credentials_exposed_to_automation": false
+  },
+  "financial_rules": {
+    "checkout_must_use_authoritative_base_price": true,
+    "conversion_must_be_server_side": true,
+    "payment_success_requires_verified_gateway_result": true,
+    "wallet_ledger_authority": "billing-engine",
+    "fulfillment_after_verified_payment_only": true
+  },
+  "execution_states": [
+    "queued",
+    "running",
+    "succeeded",
+    "retry_scheduled",
+    "failed",
+    "dead_letter",
+    "cancelled"
+  ]
+}
