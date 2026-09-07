@@ -35,6 +35,9 @@ REQUIRED_WEB_ORIGINS = [
 API_AUDIENCE_MAPPER_NAME = "api-service-audience"
 API_AUDIENCE_REPAIR_MAPPER_NAME = "api-service-audience-repaired"
 
+AI_AUDIENCE_MAPPER_NAME = "ai-platform-audience"
+AI_AUDIENCE_REPAIR_MAPPER_NAME = "ai-platform-audience-repaired"
+
 
 def request(method, path, token=None, body=None, form=False):
     data = None
@@ -101,7 +104,14 @@ def get_admin_token():
     return payload["access_token"]
 
 
-def sync_api_audience_mapper(token, client_uuid):
+def sync_audience_mapper(
+    token,
+    client_uuid,
+    *,
+    canonical_name,
+    repair_name,
+    audience,
+):
     code, mappers = request(
         "GET",
         f"/admin/realms/{REALM}/clients/{client_uuid}/protocol-mappers/models",
@@ -115,10 +125,7 @@ def sync_api_audience_mapper(token, client_uuid):
 
     audience_mappers = [
         m for m in mappers
-        if m.get("name") in {
-            API_AUDIENCE_MAPPER_NAME,
-            API_AUDIENCE_REPAIR_MAPPER_NAME,
-        }
+        if m.get("name") in {canonical_name, repair_name}
         and m.get("protocol") == "openid-connect"
         and m.get("protocolMapper") == "oidc-audience-mapper"
     ]
@@ -126,7 +133,7 @@ def sync_api_audience_mapper(token, client_uuid):
     audience_mapper = next(
         (
             m for m in audience_mappers
-            if m.get("name") == API_AUDIENCE_MAPPER_NAME
+            if m.get("name") == canonical_name
             and m.get("id")
         ),
         None,
@@ -138,14 +145,11 @@ def sync_api_audience_mapper(token, client_uuid):
             None,
         )
 
-    # Use a custom audience rather than relying on an api-service Keycloak
-    # client existing. Keycloak documents included.custom.audience as the
-    # deterministic way to add a literal value to the access-token aud claim.
     mapper_payload = {
         "protocol": "openid-connect",
         "protocolMapper": "oidc-audience-mapper",
         "config": {
-            "included.custom.audience": "api-service",
+            "included.custom.audience": audience,
             "included.client.audience": "",
             "id.token.claim": "false",
             "access.token.claim": "true",
@@ -167,27 +171,26 @@ def sync_api_audience_mapper(token, client_uuid):
 
         if code != 204:
             raise RuntimeError(
-                f"Unable to update api-service audience mapper (HTTP {code})"
+                f"Unable to update {audience} audience mapper (HTTP {code})"
             )
 
-        if audience_mapper["name"] == API_AUDIENCE_REPAIR_MAPPER_NAME:
+        if audience_mapper["name"] == repair_name:
             print(
-                "[OK] updated repaired api-service audience mapper "
+                f"[OK] updated repaired {audience} audience mapper "
                 "(malformed canonical mapper ignored)"
             )
         else:
-            print("[OK] updated api-service audience mapper")
+            print(f"[OK] updated {audience} audience mapper")
+
     else:
         malformed_canonical = any(
-            m.get("name") == API_AUDIENCE_MAPPER_NAME
+            m.get("name") == canonical_name
             and not m.get("id")
             for m in audience_mappers
         )
 
         mapper_payload["name"] = (
-            API_AUDIENCE_REPAIR_MAPPER_NAME
-            if malformed_canonical
-            else API_AUDIENCE_MAPPER_NAME
+            repair_name if malformed_canonical else canonical_name
         )
 
         code, _ = request(
@@ -199,18 +202,37 @@ def sync_api_audience_mapper(token, client_uuid):
 
         if code != 201:
             raise RuntimeError(
-                f"Unable to create api-service audience mapper "
+                f"Unable to create {audience} audience mapper "
                 f"(HTTP {code})"
             )
 
         if malformed_canonical:
             print(
-                "[OK] created repaired api-service audience mapper; "
+                f"[OK] created repaired {audience} audience mapper; "
                 "malformed canonical mapper was left untouched"
             )
         else:
-            print("[OK] created api-service audience mapper")
+            print(f"[OK] created {audience} audience mapper")
 
+
+def sync_api_audience_mapper(token, client_uuid):
+    sync_audience_mapper(
+        token,
+        client_uuid,
+        canonical_name=API_AUDIENCE_MAPPER_NAME,
+        repair_name=API_AUDIENCE_REPAIR_MAPPER_NAME,
+        audience="api-service",
+    )
+
+
+def sync_ai_audience_mapper(token, client_uuid):
+    sync_audience_mapper(
+        token,
+        client_uuid,
+        canonical_name=AI_AUDIENCE_MAPPER_NAME,
+        repair_name=AI_AUDIENCE_REPAIR_MAPPER_NAME,
+        audience="ai-platform",
+    )
 
 def sync_client(token):
     query = urllib.parse.urlencode({"clientId": CLIENT_ID})
@@ -261,10 +283,11 @@ def sync_client(token):
             )
 
         sync_api_audience_mapper(token, client_uuid)
+        sync_ai_audience_mapper(token, client_uuid)
 
         print(
             "[OK] synchronized shopnoltd-web "
-            "with api-service JWT audience"
+            "with api-service and ai-platform JWT audiences"
         )
 
     else:
@@ -308,11 +331,12 @@ def sync_client(token):
 
         client_uuid = clients[0]["id"]
         sync_api_audience_mapper(token, client_uuid)
+        sync_ai_audience_mapper(token, client_uuid)
 
         print("[OK] created shopnoltd-web client")
         print(
             "[OK] synchronized shopnoltd-web "
-            "with api-service JWT audience"
+            "with api-service and ai-platform JWT audiences"
         )
 
 
