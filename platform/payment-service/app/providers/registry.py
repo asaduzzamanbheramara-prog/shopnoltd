@@ -1,4 +1,4 @@
-"""Provider registry."""
+"""Provider registry and runtime deposit capabilities."""
 
 from app.models.models import PaymentMethod
 from app.providers.binance_pay import BinancePayProvider
@@ -35,8 +35,46 @@ _REG = {
     PaymentMethod.payoneer: PayoneerProvider(),
 }
 
+# Deposit currencies are deliberately explicit at the payment boundary.  This
+# prevents a provider from receiving a currency it cannot actually settle and
+# keeps payout-only integrations out of customer checkout.
+_DEPOSIT_CURRENCIES = {
+    PaymentMethod.stripe: {"USD", "EUR", "GBP", "AUD", "CAD", "SGD", "JPY", "HKD", "NZD", "CHF"},
+    PaymentMethod.paypal: {"USD", "EUR", "GBP", "AUD", "CAD", "JPY", "HKD", "SGD"},
+    PaymentMethod.binance: {"USDT", "USDC", "BTC", "ETH", "BNB", "BUSD"},
+    PaymentMethod.razorpay: {"INR", "USD"},
+    PaymentMethod.sslcommerz: {"BDT"},
+    PaymentMethod.bkash: {"BDT"},
+    PaymentMethod.nagad: {"BDT"},
+    PaymentMethod.moneybag: {"BDT"},
+    PaymentMethod.btc: {"BTC"},
+    PaymentMethod.eth: {"ETH"},
+    PaymentMethod.usdt: {"USDT"},
+    PaymentMethod.bnb: {"BNB"},
+    PaymentMethod.sol: {"SOL"},
+    PaymentMethod.trx: {"TRX"},
+    PaymentMethod.bank: {"BDT", "USD", "EUR", "GBP", "INR"},
+    PaymentMethod.manual: {"BDT", "USD", "EUR", "GBP", "INR"},
+    PaymentMethod.payeer: {"USD", "EUR", "RUB"},
+    PaymentMethod.rocket: {"BDT"},
+}
+
+
+class UnsupportedProvider(ValueError):
+    """Raised when a method is registered but not valid for the requested operation."""
+
 
 def get_provider(method: PaymentMethod):
-    if method not in _REG:
-        raise ValueError(f"unsupported method: {method}")
-    return _REG[method]
+    try:
+        return _REG[method]
+    except KeyError as exc:
+        raise UnsupportedProvider(f"unsupported payment method: {method}") from exc
+
+
+def supported_deposit_currencies(method: PaymentMethod) -> frozenset[str]:
+    """Return currencies accepted for customer deposits by this method."""
+    return frozenset(_DEPOSIT_CURRENCIES.get(method, set()))
+
+
+def supports_deposit(method: PaymentMethod, currency: str) -> bool:
+    return currency.upper() in supported_deposit_currencies(method)
