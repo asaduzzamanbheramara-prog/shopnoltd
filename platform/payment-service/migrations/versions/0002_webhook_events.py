@@ -1,13 +1,13 @@
 """durable webhook event idempotency
-Revision ID: 0002
-Revises: 0001
+Revision ID: 0003_webhook_events
+Revises: 0002_admin_audit_log
 """
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
-revision = "0002"
-down_revision = "0001"
+revision = "0003_webhook_events"
+down_revision = "0002_admin_audit_log"
 branch_labels = None
 depends_on = None
 
