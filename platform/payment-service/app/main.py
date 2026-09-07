@@ -8,6 +8,7 @@ from app.api import (
     admin,
     admin_tables,
     admin_reports,
+    admin_backups,
     deposits,
     exchanges,
     transactions,
@@ -72,6 +73,7 @@ app.include_router(webhooks.router, prefix="/api/v1/webhooks", tags=["webhooks"]
 app.include_router(admin.router, prefix="/api/v1/admin", tags=["admin"])
 app.include_router(admin_tables.router, prefix="/api/v1/admin", tags=["admin-tables"])
 app.include_router(admin_reports.router, prefix="/api/v1/admin", tags=["admin-data-reports"])
+app.include_router(admin_backups.router, prefix="/api/v1/admin", tags=["admin-backups"])
 
 @app.get("/healthz", include_in_schema=False)
 async def healthz():
