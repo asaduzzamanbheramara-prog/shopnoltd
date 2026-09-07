@@ -37,7 +37,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: ai-platform
-          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-ai-platform:latest
+          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/ai-platform:latest
           imagePullPolicy: Always
           ports:
             - name: http
