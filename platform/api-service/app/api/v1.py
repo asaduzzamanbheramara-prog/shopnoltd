@@ -68,7 +68,9 @@ def _runtime_gateway_rows(downstream: dict | None) -> list[dict]:
         source = runtime.get(gateway_id, {})
         configured = bool(source.get("credentials_configured"))
         admin_disabled = bool(source.get("admin_disabled"))
-        provider_live = bool(source.get("live"))
+        # billing-engine exposes this as `effectively_live`; retain `live` as a
+        # compatibility fallback for older downstream responses.
+        provider_live = bool(source.get("effectively_live", source.get("live")))
         available = bool(definition["supported"]) and not admin_disabled and configured and provider_live
         if not definition["supported"]:
             status = "unsupported"
@@ -307,7 +309,7 @@ async def exchange_quote(body: dict, creds: HTTPAuthorizationCredentials = Depen
     except (TypeError, ValueError) as e:
         raise HTTPException(status_code=422, detail="amount must be numeric") from e
     if not math.isfinite(amount_number) or amount_number <= 0:
-        raise HTTPException(status_code=422, detail="amount must be greater than zero")
+        raise HTTPException(status_code=422, detail="amount must be greater than zero") from e
     rate_data = await call(
         "GET",
         f"{EXCHANGE_BASE}/api/v1/rates/{quote(from_currency, safe='')}/{quote(to_currency, safe='')}",
@@ -343,7 +345,7 @@ async def exchange_convert(body: dict, creds: HTTPAuthorizationCredentials = Dep
     except (TypeError, ValueError) as e:
         raise HTTPException(status_code=422, detail="amount must be numeric") from e
     if not math.isfinite(amount_number) or amount_number <= 0:
-        raise HTTPException(status_code=422, detail="amount must be greater than zero")
+        raise HTTPException(status_code=422, detail="amount must be greater than zero") from e
     payload = {
         "from_currency": from_currency,
         "to_currency": to_currency,
