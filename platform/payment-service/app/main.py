@@ -7,8 +7,11 @@ import structlog
 from app.api import (
     admin,
     admin_tables,
+    admin_reports,
+    admin_backups,
     deposits,
     exchanges,
+    methods,
     transactions,
     transfers,
     wallets,
@@ -25,9 +28,7 @@ from shopno_core.database.redis import redis_client
 from starlette.responses import Response
 
 log = structlog.get_logger()
-REQUESTS = Counter(
-    "shopno_payments_http_requests_total", "HTTP requests", ["method", "path", "code"]
-)
+REQUESTS = Counter("shopno_payments_http_requests_total", "HTTP requests", ["method", "path", "code"])
 LATENCY = Histogram("shopno_payments_http_latency_seconds", "HTTP latency", ["path"])
 
 
@@ -45,10 +46,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="Shopnoltd Payment Service", version="0.1.0", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://shopnoltd.dpdns.org",
-        "https://www.shopnoltd.dpdns.org",
-    ],
+    allow_origin_regex=r"https://([a-z0-9-]+\.)?shopnoltd\.dpdns\.org",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -77,8 +75,11 @@ app.include_router(transfers.router, prefix="/api/v1/transfers", tags=["transfer
 app.include_router(transactions.router, prefix="/api/v1/transactions", tags=["transactions"])
 app.include_router(exchanges.router, prefix="/api/v1/exchanges", tags=["exchanges"])
 app.include_router(webhooks.router, prefix="/api/v1/webhooks", tags=["webhooks"])
+app.include_router(methods.router, prefix="/api/v1/methods", tags=["methods"])
 app.include_router(admin.router, prefix="/api/v1/admin", tags=["admin"])
 app.include_router(admin_tables.router, prefix="/api/v1/admin", tags=["admin-tables"])
+app.include_router(admin_reports.router, prefix="/api/v1/admin", tags=["admin-data-reports"])
+app.include_router(admin_backups.router, prefix="/api/v1/admin", tags=["admin-backups"])
 
 
 @app.get("/healthz", include_in_schema=False)
@@ -89,7 +90,6 @@ async def healthz():
 @app.get("/readyz", include_in_schema=False)
 async def readyz():
     from sqlalchemy import text
-
     async with engine.connect() as c:
         await c.execute(text("SELECT 1"))
     await redis_client.ping()

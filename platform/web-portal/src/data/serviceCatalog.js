@@ -16,7 +16,7 @@ export const SERVICES = [
   SERVICE('💳', 'Billing & Subscriptions', 'Plans, subscriptions, invoices, wallets and billing operations.', 'https://billing.shopnoltd.dpdns.org', 'Business'),
   SERVICE('💰', 'Payments & Wallet', 'Payment methods, deposits, transactions and wallet operations.', 'https://shopnoltd.dpdns.org/wallet', 'Business'),
   SERVICE('💱', 'Exchange', 'Supported currency/exchange operations and rates.', 'https://exchange.shopnoltd.dpdns.org', 'Business'),
-  SERVICE('🤖', 'AI Workspace', 'Shopnoltd AI services, model routing and automation.', 'https://ai-platform.shopnoltd.dpdns.org', 'AI'),
+  SERVICE('🤖', 'AI Workspace', 'Authenticated Shopnoltd AI chat with active-model routing.', '/ai', 'AI'),
   SERVICE('💻', 'Code Server', 'Browser-based development environment.', 'https://code-server.shopnoltd.dpdns.org', 'Developer'),
   SERVICE('🦊', 'Git', 'Git repositories and collaborative source control.', 'https://gitea.shopnoltd.dpdns.org', 'Developer'),
   SERVICE('🔗', 'API', 'Platform APIs for applications, services, automation and integrations.', 'https://api.shopnoltd.dpdns.org/openapi.json', 'Developer'),
@@ -47,6 +47,7 @@ export const CONNECTED_PLATFORMS = [
 
 export const ADMIN_SERVICES = [
   SERVICE('🛡️', 'Platform Admin', 'Unified administration for users, tenants, services, database operations, reports and platform controls.', 'https://admin.shopnoltd.dpdns.org', 'Administration'),
+  SERVICE('🤖', 'AI Model Administration', 'Manage AI providers and models, activation, defaults, connectivity tests and credentials.', '/admin/ai', 'Administration'),
   SERVICE('🗄️', 'Database & Tables', 'Browse and manage authorized database tables and rows with RBAC/audit controls.', '/admin', 'Administration'),
   SERVICE('📊', 'Reports & Analytics', 'Generate, review and publish platform reports and operational analytics.', '/admin', 'Administration'),
   SERVICE('🧊', '3D / HD / 4K Visualization', 'Interactive service topology and visualization workspace for platform operations.', '/admin', 'Visualization'),

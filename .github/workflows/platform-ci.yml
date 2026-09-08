@@ -1,0 +1,100 @@
+name: Shopnoltd Platform CI
+
+on:
+  push:
+    branches:
+      - main
+      - "feat/**"
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  python-syntax:
+    name: Python syntax validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Compile Python sources
+        run: |
+          python -m compileall -q \
+            billing-engine/app \
+            platform/ai-platform/app \
+            platform/api-service/app \
+            platform/domain-service/app \
+            platform/payment-service/app \
+            platform/social-service/app
+
+  web-portal:
+    name: Web portal build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: platform/web-portal
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: platform/web-portal/package-lock.json
+      - run: npm ci
+      - run: npm run build
+
+  migration-shape:
+    name: Payment migration validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Validate migration revision chain
+        run: |
+          python - <<'PY'
+          import ast
+          from pathlib import Path
+
+          versions = Path("platform/payment-service/migrations/versions")
+          revisions = {}
+          for path in sorted(versions.glob("*.py")):
+              tree = ast.parse(path.read_text(), filename=str(path))
+              values = {}
+              for node in tree.body:
+                  if isinstance(node, ast.Assign):
+                      for target in node.targets:
+                          if isinstance(target, ast.Name) and target.id in {"revision", "down_revision"}:
+                              try:
+                                  values[target.id] = ast.literal_eval(node.value)
+                              except Exception:
+                                  pass
+              if "revision" in values:
+                  revisions[values["revision"]] = values.get("down_revision")
+
+          required = {"0001", "0002_admin_audit_log", "0003_webhook_events"}
+          missing = required - revisions.keys()
+          if missing:
+              raise SystemExit(f"payment migration chain missing: {sorted(missing)}")
+          if revisions["0001"] is not None:
+              raise SystemExit("0001 must be the root migration")
+          if revisions["0002_admin_audit_log"] != "0001":
+              raise SystemExit("0002_admin_audit_log must revise 0001")
+          if revisions["0003_webhook_events"] != "0002_admin_audit_log":
+              raise SystemExit("0003_webhook_events must revise 0002_admin_audit_log")
+
+          children = {rev: 0 for rev in revisions}
+          for down in revisions.values():
+              if isinstance(down, str) and down in children:
+                  children[down] += 1
+          heads = sorted(rev for rev, count in children.items() if count == 0)
+          if heads != ["0003_webhook_events"]:
+              raise SystemExit(f"expected one Alembic head at 0003_webhook_events, got {heads}")
+          print("payment migration chain OK: 0001 -> 0002_admin_audit_log -> 0003_webhook_events")
+          PY

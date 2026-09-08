@@ -4,7 +4,7 @@ from app.core.config import settings
 from app.core.db import SessionLocal
 from app.core.security import verify_token
 from app.models.models import Transaction, TxStatus, TxType, Wallet
-from app.providers.registry import get_provider
+from app.providers.registry import get_provider, supports_deposit
 from app.schemas.schemas import DepositIn, TxOut
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -28,11 +28,27 @@ async def current_user(creds: HTTPAuthorizationCredentials = Depends(bearer)):
 async def create_deposit(
     body: DepositIn, user=Depends(current_user), s: AsyncSession = Depends(db)
 ):
+    currency = body.currency.upper()
     if body.amount < settings.min_deposit or body.amount > settings.max_deposit:
         raise HTTPException(400, "amount out of range")
+
+    try:
+        provider = get_provider(body.method)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+
+    if not supports_deposit(body.method, currency):
+        raise HTTPException(
+            400,
+            f"Payment method '{body.method.value}' does not support deposits in {currency}",
+        )
+
+    if hasattr(provider, "enabled") and not provider.enabled:
+        raise HTTPException(503, f"Payment provider '{body.method.value}' is not configured")
+
     res = await s.execute(
         select(Wallet).where(
-            Wallet.user_id == user["sub"], Wallet.currency == body.currency.upper()
+            Wallet.user_id == user["sub"], Wallet.currency == currency
         )
     )
     w = res.scalar_one_or_none()
@@ -40,7 +56,7 @@ async def create_deposit(
         w = Wallet(
             tenant_id=user.get("tenant_id", "default"),
             user_id=user["sub"],
-            currency=body.currency.upper(),
+            currency=currency,
             balance=0,
         )
         s.add(w)
@@ -53,14 +69,27 @@ async def create_deposit(
         status=TxStatus.pending,
         amount=body.amount,
         fee=0,
-        currency=body.currency.upper(),
+        currency=currency,
         meta=body.metadata,
     )
     s.add(tx)
     await s.flush()
-    provider = get_provider(body.method)
-    out = await provider.create_deposit(tx, return_url=body.return_url)
+    try:
+        out = await provider.create_deposit(tx, return_url=body.return_url)
+    except NotImplementedError as exc:
+        await s.rollback()
+        raise HTTPException(400, str(exc)) from exc
+    except (ValueError, RuntimeError) as exc:
+        await s.rollback()
+        raise HTTPException(503, str(exc)) from exc
+    except Exception:
+        await s.rollback()
+        raise HTTPException(502, "payment provider request failed")
+
     tx.external_id = out.get("external_id")
+    if out.get("status") in {"failed", "unavailable"}:
+        await s.rollback()
+        raise HTTPException(503, out.get("note") or f"Payment provider '{body.method.value}' is unavailable")
     await s.commit()
     return TxOut(
         id=str(tx.id),

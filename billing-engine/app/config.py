@@ -77,6 +77,15 @@ NAGAD_SANDBOX = _env("NAGAD_SANDBOX", "true").lower() != "false"
 NAGAD_ENABLED = bool(NAGAD_MERCHANT_ID and NAGAD_MERCHANT_PRIVATE_KEY and NAGAD_PG_PUBLIC_KEY)
 
 # ---------------------------------------------------------------------------
+# Moneybag (Bangladesh hosted checkout + signed webhooks)
+# ---------------------------------------------------------------------------
+MONEYBAG_API_KEY = _env("MONEYBAG_API_KEY")
+MONEYBAG_WEBHOOK_SECRET = _env("MONEYBAG_WEBHOOK_SECRET")
+MONEYBAG_MODE = _env("MONEYBAG_MODE", "sandbox")  # "sandbox" or "live"
+MONEYBAG_WEBHOOK_TOLERANCE_SECONDS = int(_env("MONEYBAG_WEBHOOK_TOLERANCE_SECONDS", "300"))
+MONEYBAG_ENABLED = bool(MONEYBAG_API_KEY)
+
+# ---------------------------------------------------------------------------
 # Crypto (Bitcoin + ~200 other coins) via NOWPayments
 # Chosen over building raw blockchain nodes/wallets yourself: NOWPayments is a
 # non-custodial payment processor - coins settle straight to your own wallet
@@ -116,5 +125,6 @@ GATEWAY_STATUS = {
     "sslcommerz": SSLCOMMERZ_ENABLED,
     "bkash": BKASH_ENABLED,
     "nagad": NAGAD_ENABLED,
+    "moneybag": MONEYBAG_ENABLED,
     "crypto": CRYPTO_ENABLED,
 }
