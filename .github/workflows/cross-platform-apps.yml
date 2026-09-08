@@ -1,0 +1,132 @@
+name: Shopnoltd Cross-Platform Apps
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'apps/desktop-shell/**'
+      - 'apps/mobile-shell/**'
+      - '.github/workflows/cross-platform-apps.yml'
+  pull_request:
+    paths:
+      - 'apps/desktop-shell/**'
+      - 'apps/mobile-shell/**'
+      - '.github/workflows/cross-platform-apps.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  desktop:
+    name: Desktop (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            target: win
+            artifact: windows-installer
+          - os: ubuntu-latest
+            target: linux
+            artifact: linux-installers
+          - os: macos-latest
+            target: mac
+            artifact: macos-installer
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: apps/desktop-shell
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: apps/desktop-shell/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Package Shopnoltd desktop application
+        run: npx electron-builder --config electron-builder.web.json --${{ matrix.target }} --publish never
+
+      - name: Upload desktop installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: shopnoltd-${{ matrix.artifact }}
+          path: apps/desktop-shell/release/web-portal/*
+          if-no-files-found: error
+
+  mobile-android:
+    name: Mobile (Android phone/tablet)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile-shell
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: apps/mobile-shell/package-lock.json
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Sync Capacitor Android project
+        run: npm run sync:web
+
+      - name: Build Android debug APK
+        working-directory: apps/mobile-shell/android
+        run: ./gradlew assembleDebug
+
+      - name: Upload Android APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: shopnoltd-mobile-android-phone-tablet
+          path: apps/mobile-shell/android/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+  mobile-ios:
+    name: Mobile (iPhone/iPad)
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: apps/mobile-shell
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: apps/mobile-shell/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Sync Capacitor iOS project
+        run: npm run sync:web
+
+      - name: Validate iOS project
+        working-directory: apps/mobile-shell/ios/App
+        run: xcodebuild -project App.xcodeproj -scheme App -sdk iphonesimulator -configuration Debug CODE_SIGNING_ALLOWED=NO build
