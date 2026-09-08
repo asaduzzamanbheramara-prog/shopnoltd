@@ -6,7 +6,7 @@ import "./style.css";
 const API = import.meta.env.VITE_ANDROID_CLOUD_API || "/api";
 
 function authHeader() {
-  const token = localStorage.getItem("shopnoltd_access_token");
+  const token = localStorage.getItem("shopno_token") || localStorage.getItem("shopnoltd_access_token");
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
@@ -83,12 +83,9 @@ function App() {
       {!session ? (
         <section className="start-card">
           <h2>Launch Android</h2>
-          <p>
-            Start an isolated Shopnoltd Android device. Touch, mouse, keyboard, audio, mock GPS and APK testing
-            are handled by the browser workspace.
-          </p>
+          <p>Start an isolated Shopnoltd Android device with browser touch, mouse, keyboard, audio, mock GPS and APK testing.</p>
           <button disabled={busy} onClick={start}>{busy ? "Starting…" : "Launch Android"}</button>
-          <small>Sessions are automatically cleaned up after inactivity.</small>
+          <small>Sign in to Shopnoltd first. Sessions are automatically cleaned up after inactivity.</small>
         </section>
       ) : (
         <section className="workspace">
