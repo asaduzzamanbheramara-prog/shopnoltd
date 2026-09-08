@@ -37,6 +37,9 @@ spec:
             - secretRef:
                 name: api-service-secret
                 optional: true
+            - secretRef:
+                name: android-cloud-turn-secret
+                optional: true
           resources:
             requests:
               cpu: 50m
