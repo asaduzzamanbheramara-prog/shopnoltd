@@ -3352,7 +3352,7 @@ metadata:
   name: litellm-provider-keys
   namespace: shopno-ai
 stringData:
-  ANTHROPIC_API_KEY: c2stYW50LWFwaTAzLXh4eHh4eHh4eHh4eA==
+  ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
   COHERE_API_KEY: ""
   DEEPSEEK_API_KEY: ""
   GEMINI_API_KEY: ""
@@ -3365,7 +3365,7 @@ type: Opaque
 ---
 apiVersion: v1
 data:
-  credentials.json: eyJBY2NvdW50VGFnIjoiYjkxNTk0ZmQ1NjBjNThhMDljNDNmZGNiNzA3NTI5NzEiLCJUdW5uZWxTZWNyZXQiOiJNMkppWW1FeVl6Y3RaREJoT0MwME4yVmtMV0V6WWpZdE5tRXhOekpqWm1JNE56WTAiLCJUdW5uZWxJRCI6IjVkNmUwMzdhLTdjMDktNDc4OC04NTMyLTExZGJhNWZjMWE3MiIsIkVuZHBvaW50IjoiIn0=
+  credentials.json: ${CREDENTIALS_JSON}
 kind: Secret
 metadata:
   name: cloudflared-creds
