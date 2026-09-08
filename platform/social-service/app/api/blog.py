@@ -26,18 +26,16 @@ async def current_user(creds: HTTPAuthorizationCredentials | None = Depends(bear
     return await verify_token(creds.credentials)
 
 
-def can_manage_blog(user: dict) -> bool:
+def is_staff(user: dict) -> bool:
     roles = set(user.get("roles", []))
-    return bool(roles.intersection({"admin", "platform_admin", "tenant_owner"}))
+    return bool(roles.intersection({"admin", "platform_admin"}))
 
 
 def can_manage_post(user: dict, post: BlogPost) -> bool:
-    if not can_manage_blog(user):
-        return False
-    roles = set(user.get("roles", []))
-    if roles.intersection({"admin", "platform_admin"}):
+    if is_staff(user):
         return True
-    return post.tenant_id == user.get("tenant_id", "default")
+    tenant_id = user.get("tenant_id", "default")
+    return post.tenant_id == tenant_id and post.author_id == user.get("sub")
 
 
 def slugify(value: str) -> str:
@@ -96,9 +94,23 @@ async def public_blog(
     return [out(p) for p in res.scalars().all()]
 
 
+@router.get("/mine", response_model=list[BlogPostOut])
+async def my_blog(user=Depends(current_user), s: AsyncSession = Depends(db)):
+    query = (
+        select(BlogPost)
+        .where(
+            BlogPost.tenant_id == user.get("tenant_id", "default"),
+            BlogPost.author_id == user.get("sub"),
+        )
+        .order_by(desc(BlogPost.updated_at))
+    )
+    res = await s.execute(query)
+    return [out(p) for p in res.scalars().all()]
+
+
 @router.get("/admin", response_model=list[BlogPostOut])
 async def admin_blog(user=Depends(current_user), s: AsyncSession = Depends(db)):
-    if not can_manage_blog(user):
+    if not is_staff(user) and "tenant_owner" not in set(user.get("roles", [])):
         raise HTTPException(403, "Blog management privileges required")
     roles = set(user.get("roles", []))
     query = select(BlogPost).order_by(desc(BlogPost.updated_at))
@@ -119,8 +131,6 @@ async def get_blog_post(slug: str, s: AsyncSession = Depends(db)):
 
 @router.post("", response_model=BlogPostOut, status_code=201)
 async def create_blog_post(body: BlogPostIn, user=Depends(current_user), s: AsyncSession = Depends(db)):
-    if not can_manage_blog(user):
-        raise HTTPException(403, "Blog management privileges required")
     slug = slugify(body.slug or body.title)
     if (await s.execute(select(BlogPost).where(BlogPost.slug == slug))).scalar_one_or_none():
         raise HTTPException(409, "slug already exists")
@@ -144,13 +154,11 @@ async def create_blog_post(body: BlogPostIn, user=Depends(current_user), s: Asyn
 
 @router.put("/{post_id}", response_model=BlogPostOut)
 async def update_blog_post(post_id: str, body: BlogPostIn, user=Depends(current_user), s: AsyncSession = Depends(db)):
-    if not can_manage_blog(user):
-        raise HTTPException(403, "Blog management privileges required")
     p = (await s.execute(select(BlogPost).where(BlogPost.id == post_id))).scalar_one_or_none()
     if not p:
         raise HTTPException(404, "blog post not found")
     if not can_manage_post(user, p):
-        raise HTTPException(403, "You cannot manage posts from another tenant")
+        raise HTTPException(403, "You cannot manage this blog post")
     slug = slugify(body.slug or body.title)
     conflict = (await s.execute(select(BlogPost).where(BlogPost.slug == slug, BlogPost.id != post_id))).scalar_one_or_none()
     if conflict:
@@ -173,13 +181,11 @@ async def update_blog_post(post_id: str, body: BlogPostIn, user=Depends(current_
 
 @router.delete("/{post_id}")
 async def delete_blog_post(post_id: str, user=Depends(current_user), s: AsyncSession = Depends(db)):
-    if not can_manage_blog(user):
-        raise HTTPException(403, "Blog management privileges required")
     p = (await s.execute(select(BlogPost).where(BlogPost.id == post_id))).scalar_one_or_none()
     if not p:
         raise HTTPException(404, "blog post not found")
     if not can_manage_post(user, p):
-        raise HTTPException(403, "You cannot manage posts from another tenant")
+        raise HTTPException(403, "You cannot manage this blog post")
     await s.delete(p)
     await s.commit()
     return {"ok": True}
