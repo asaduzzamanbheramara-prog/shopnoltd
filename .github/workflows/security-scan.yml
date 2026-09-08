@@ -64,14 +64,18 @@ jobs:
           changed = []
           unresolved = []
           safe_dirs = ('docs/', 'examples/', 'example/', 'tests/fixtures/', 'test/fixtures/', 'fixtures/')
-          assignment = re.compile(r'^(?P<indent>\s*)(?P<key>[A-Za-z_][A-Za-z0-9_.-]*)(?P<sep>\s*(?:=|:|:=)\s*)(?P<quote>["\']?)(?P<value>.*?)(?P=quote)\s*$')
-          secret_pattern = re.compile(r'^[A-Za-z0-9_./+@:-]{8,}$')
+          assignment = re.compile(
+              r'^(?P<indent>\s*)(?P<prefix>(?:export\s+)?[A-Za-z_][A-Za-z0-9_.-]*\s*(?:=|:=|:)\s*)'
+              r'(?P<quote>["\']?)(?P<value>.*?)(?P=quote)(?P<suffix>\s*(?:#.*)?\r?\n?)$'
+          )
 
           for item in findings:
-              path = item.get('File', '')
-              secret = item.get('Secret', '')
+              path = str(item.get('File') or '').replace('\\', '/')
+              secret = item.get('Secret') or ''
               line_no = int(item.get('StartLine') or 0)
               rule = item.get('RuleID', 'unknown')
+              if path.startswith('./'):
+                  path = path[2:]
               if not path or not secret or not line_no:
                   unresolved.append((path, rule, line_no)); continue
               p = Path(path)
@@ -81,18 +85,32 @@ jobs:
               if line_no > len(lines):
                   unresolved.append((path, rule, line_no)); continue
               original = lines[line_no - 1]
-              if secret not in original or not secret_pattern.match(secret):
+              if secret not in original or '\n' in secret or '\r' in secret:
                   unresolved.append((path, rule, line_no)); continue
 
               new_line = None
               if path.startswith(safe_dirs):
                   new_line = original.replace(secret, '<REDACTED_SECRET>', 1)
               else:
-                  m = assignment.match(original.rstrip('\n'))
+                  m = assignment.match(original)
                   if m and m.group('value') == secret:
-                      key = re.sub(r'[^A-Za-z0-9]+', '_', m.group('key')).upper().strip('_')
-                      if key and len(key) >= 3:
-                          new_line = original.replace(secret, '${' + key + '}', 1)
+                      # Only replace when the finding is the complete RHS of a simple assignment.
+                      # This avoids changing embedded strings or application logic heuristically.
+                      new_line = (
+                          m.group('indent') + m.group('prefix') + m.group('quote') +
+                          '${' + re.sub(r'[^A-Za-z0-9]+', '_', m.group('prefix')).upper().strip('_') + '}' +
+                          m.group('quote') + m.group('suffix')
+                      )
+                      key_match = re.search(r'(?:export\s+)?([A-Za-z_][A-Za-z0-9_.-]*)\s*(?:=|:=|:)', m.group('prefix'))
+                      key = key_match.group(1) if key_match else ''
+                      key = re.sub(r'[^A-Za-z0-9]+', '_', key).upper().strip('_')
+                      if not key or len(key) < 3:
+                          new_line = None
+                      else:
+                          new_line = (
+                              m.group('indent') + m.group('prefix') + m.group('quote') +
+                              '${' + key + '}' + m.group('quote') + m.group('suffix')
+                          )
 
               if new_line is None or new_line == original:
                   unresolved.append((path, rule, line_no)); continue
