@@ -14,6 +14,7 @@ resources:
   - registry-configmap-v4.yaml
   - registry-deployment.yaml
   - registry-service.yaml
+  - registry-networkpolicy.yaml
 
   # Shopnoltd remote gateway
   - deployment.yaml
