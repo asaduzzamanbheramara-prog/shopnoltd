@@ -6,6 +6,8 @@ namespace: shopno-monitoring
 resources:
   - serviceaccount.yaml
   - rbac.yaml
+  - kube-state-metrics.yaml
+  - node-exporter.yaml
   - prometheus-config.yaml
   - prometheus-rules.yaml
   - prometheus-pvc.yaml
