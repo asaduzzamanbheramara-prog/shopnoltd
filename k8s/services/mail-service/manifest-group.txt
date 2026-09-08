@@ -1,0 +1,1 @@
+Manifest grouping for the Shopnoltd mail service.

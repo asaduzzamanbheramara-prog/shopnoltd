@@ -18,7 +18,7 @@ spec:
         image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/mail-service:latest
         imagePullPolicy: Always
         ports:
-        - containerPort: 8000
+        - containerPort: 8080
         envFrom:
         - configMapRef:
             name: mail-service-config

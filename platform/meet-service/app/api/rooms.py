@@ -1,3 +1,5 @@
+import hashlib
+import hmac
 import secrets
 from datetime import datetime, timedelta
 
@@ -26,6 +28,25 @@ async def current_user(creds: HTTPAuthorizationCredentials = Depends(bearer)):
     return await verify_token(creds.credentials)
 
 
+def hash_password(password: str) -> str:
+    salt = secrets.token_bytes(16)
+    digest = hashlib.scrypt(password.encode("utf-8"), salt=salt, n=2**14, r=8, p=1)
+    return f"scrypt${salt.hex()}${digest.hex()}"
+
+
+def verify_password(password: str, encoded: str) -> bool:
+    try:
+        scheme, salt_hex, digest_hex = encoded.split("$", 2)
+        if scheme != "scrypt":
+            return False
+        salt = bytes.fromhex(salt_hex)
+        expected = bytes.fromhex(digest_hex)
+        actual = hashlib.scrypt(password.encode("utf-8"), salt=salt, n=2**14, r=8, p=1)
+        return hmac.compare_digest(actual, expected)
+    except (ValueError, TypeError):
+        return False
+
+
 def make_jitsi_jwt(room: str, user_id: str, name: str, moderator: bool) -> str:
     return pyjwt.encode(
         {
@@ -48,7 +69,7 @@ async def create(body: RoomIn, user=Depends(current_user), s: AsyncSession = Dep
         tenant_id=user.get("tenant_id", "default"),
         name=body.name,
         owner_id=user["sub"],
-        password_hash=secrets.hash(body.password) if body.password else None,
+        password_hash=hash_password(body.password) if body.password else None,
         is_recording=1 if body.recording else 0,
     )
     s.add(r)
@@ -78,9 +99,9 @@ async def join(
     r = res.scalar_one_or_none()
     if not r:
         raise HTTPException(404, "room not found")
-    if r.password_hash and not secrets.compare_digest(
-        secrets.hash(password) if password else "", r.password_hash
-    ):
+    if r.password_hash and not password:
+        raise HTTPException(403, "password required")
+    if r.password_hash and not verify_password(password, r.password_hash):
         raise HTTPException(403, "wrong password")
     p = (
         await s.execute(

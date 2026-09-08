@@ -57,6 +57,7 @@ resources:
 - services/owncast
 - services/mongodb
 - services/session-manager
+- services/mail
 - ingress/cloudflared
 
 patches:
