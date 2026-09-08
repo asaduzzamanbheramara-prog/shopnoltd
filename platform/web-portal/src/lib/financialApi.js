@@ -1,5 +1,6 @@
-import { API_URL } from '../config'
 import { tryRefresh } from './tokenRefresh'
+
+const API_URL = 'https://payment-service.shopnoltd.dpdns.org'
 
 function token() {
   return localStorage.getItem('shopno_token')
@@ -51,31 +52,24 @@ export async function authenticatedRequest(path, options = {}) {
 }
 
 export function getWallet(currency = 'BDT') {
-  return authenticatedRequest(`/api/v1/wallet?currency=${encodeURIComponent(currency)}`)
+  return authenticatedRequest(`/api/v1/wallets/${encodeURIComponent(currency)}`)
 }
 export function getWalletLedger(currency = 'BDT', limit = 50) {
   return authenticatedRequest(
-    `/api/v1/wallet/ledger?currency=${encodeURIComponent(currency)}&limit=${limit}`
+    `/api/v1/wallets/${encodeURIComponent(currency)}/ledger?limit=${limit}`
   )
 }
 export function getTransactions() {
   return authenticatedRequest('/api/v1/transactions')
 }
 export function getPaymentGateways() {
-
-  return authenticatedRequest('/api/v1/billing/gateways')
+  return authenticatedRequest('/api/v1/methods')
 }
-export function createCheckout({
-  gateway,
-  amount,
-  currency,
-  reference,
-  customer_phone,
-}) {
-  return authenticatedRequest('/api/v1/billing/checkout', {
+export function createCheckout({ gateway, amount, currency, reference, customer_phone }) {
+  return authenticatedRequest('/api/v1/deposits', {
     method: 'POST',
     body: JSON.stringify({
-      gateway,
+      method: gateway,
       amount: Number(amount),
       currency,
       reference,
@@ -85,17 +79,12 @@ export function createCheckout({
 }
 export function getExchangeRate(from, to) {
   return authenticatedRequest(
-    `/api/v1/rate/${encodeURIComponent(from)}/${encodeURIComponent(to)}`
+    `/api/v1/exchanges/rate?from_currency=${encodeURIComponent(from)}&to_currency=${encodeURIComponent(to)}`
   )
 }
-export function convertExchange({
-  from_currency,
-  to_currency,
-  amount,
-}) {
-  return authenticatedRequest('/api/v1/exchange/convert', {
+export function convertExchange({ from_currency, to_currency, amount }) {
+  return authenticatedRequest('/api/v1/exchanges/convert', {
     method: 'POST',
-
     body: JSON.stringify({
       from_currency,
       to_currency,
