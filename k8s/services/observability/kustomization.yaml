@@ -21,9 +21,9 @@ resources:
   - loki-service.yaml
   - grafana-datasources.yaml
   - grafana-dashboards.yaml
-  - grafana-pvc.yaml
   - grafana-deployment.yaml
   - grafana-service.yaml
+  - grafana-ingress.yaml
 
 labels:
   - includeSelectors: false
