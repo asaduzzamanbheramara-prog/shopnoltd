@@ -1,11 +1,20 @@
 import { useState } from "react";
 
-const API_BASE = "/api/v1/domains";
+const API_BASE = "https://domain.shopnoltd.dpdns.org/api/v1";
+
+function authHeaders() {
+  const token =
+    localStorage.getItem("shopno_token") ||
+    localStorage.getItem("access_token");
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
 
 export default function DomainRegistration() {
   const [domain, setDomain] = useState("");
+  const [years, setYears] = useState(1);
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [registering, setRegistering] = useState(false);
 
   async function checkAvailability(e) {
     e.preventDefault();
@@ -30,11 +39,9 @@ export default function DomainRegistration() {
 
     try {
       const response = await fetch(
-        `${API_BASE}/check-availability?domain=${encodeURIComponent(value)}`,
+        `${API_BASE}/domains/check?domain=${encodeURIComponent(value)}`,
         {
-          headers: {
-            Accept: "application/json",
-          },
+          headers: { Accept: "application/json", ...authHeaders() },
         }
       );
 
@@ -45,15 +52,26 @@ export default function DomainRegistration() {
       }
 
       if (data.available) {
+        let pricing = null;
+        try {
+          const tld = value.split(".").pop();
+          const priceRes = await fetch(
+            `${API_BASE}/domains/pricing?tld=${encodeURIComponent(tld)}&years=${years}`,
+            { headers: { Accept: "application/json", ...authHeaders() } }
+          );
+          if (priceRes.ok) pricing = await priceRes.json();
+        } catch {
+          /* pricing is best-effort; registration re-fetches it server-side anyway */
+        }
         setResult({
           type: "available",
           message: `${value} is available!`,
-          data,
+          data: { ...data, ...pricing },
         });
       } else {
         setResult({
           type: "taken",
-          message: data.reason || `${value} is not available.`,
+          message: `${value} is not available.`,
           data,
         });
       }
@@ -67,29 +85,52 @@ export default function DomainRegistration() {
     }
   }
 
-  function registerDomain() {
+  async function registerDomain() {
     const token =
       localStorage.getItem("shopno_token") ||
       localStorage.getItem("access_token");
 
     if (!token) {
-      window.location.href =
-        `/login?next=${encodeURIComponent(
-          `/domain-registration?domain=${domain}`
-        )}`;
+      window.location.href = `/login?next=${encodeURIComponent(
+        `/domain-registration?domain=${domain}`
+      )}`;
       return;
     }
 
-    /*
-     * Do not silently charge the user.
-     * The backend registration endpoint must perform the
-     * Shopnoltd billing authorization before Namecheap registration.
-     */
-    setResult({
+    setRegistering(true);
+    setResult((prev) => ({
+      ...prev,
       type: "info",
-      message:
-        "Domain is available. Continue through Shopnoltd billing to complete registration.",
-    });
+      message: "Charging your wallet and registering…",
+    }));
+
+    try {
+      const response = await fetch(
+        `${API_BASE}/domains/register?domain=${encodeURIComponent(domain)}&years=${years}`,
+        {
+          method: "POST",
+          headers: { Accept: "application/json", ...authHeaders() },
+        }
+      );
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.detail || `Registration failed (${response.status})`);
+      }
+
+      setResult({
+        type: "registered",
+        message: `${data.domain} registered! Charged ${data.currency} ${data.charged_amount}.`,
+        data,
+      });
+    } catch (err) {
+      setResult({
+        type: "error",
+        message: err.message || "Domain registration failed.",
+      });
+    } finally {
+      setRegistering(false);
+    }
   }
 
   return (
@@ -138,11 +179,7 @@ export default function DomainRegistration() {
       >
         <form
           onSubmit={checkAvailability}
-          style={{
-            display: "flex",
-            gap: 12,
-            flexWrap: "wrap",
-          }}
+          style={{ display: "flex", gap: 12, flexWrap: "wrap" }}
         >
           <input
             value={domain}
@@ -162,6 +199,19 @@ export default function DomainRegistration() {
               boxSizing: "border-box",
             }}
           />
+
+          <select
+            value={years}
+            onChange={(e) => setYears(Number(e.target.value))}
+            aria-label="Registration years"
+            style={{ height: 56, borderRadius: 10, border: 0, padding: "0 12px" }}
+          >
+            {[1, 2, 3, 5, 10].map((y) => (
+              <option key={y} value={y}>
+                {y} year{y > 1 ? "s" : ""}
+              </option>
+            ))}
+          </select>
 
           <button
             type="submit"
@@ -199,7 +249,7 @@ export default function DomainRegistration() {
 
             {result.data?.price != null && (
               <div>
-                Price: {result.data.currency || "USD"} {result.data.price}
+                Price: {result.data.currency || "USD"} {result.data.price} for {years} year(s)
               </div>
             )}
 
@@ -207,6 +257,7 @@ export default function DomainRegistration() {
               <button
                 type="button"
                 onClick={registerDomain}
+                disabled={registering}
                 style={{
                   marginTop: 14,
                   minHeight: 48,
@@ -216,10 +267,10 @@ export default function DomainRegistration() {
                   background: "white",
                   color: "#075985",
                   fontWeight: 700,
-                  cursor: "pointer",
+                  cursor: registering ? "wait" : "pointer",
                 }}
               >
-                Register this domain →
+                {registering ? "Registering..." : "Register this domain →"}
               </button>
             )}
           </div>
@@ -249,12 +300,8 @@ export default function DomainRegistration() {
             }}
           >
             <div style={{ fontSize: 30 }}>{icon}</div>
-            <h2 style={{ margin: "10px 0 6px", fontSize: 20 }}>
-              {title}
-            </h2>
-            <p style={{ margin: 0, color: "#64748b", lineHeight: 1.5 }}>
-              {text}
-            </p>
+            <h2 style={{ margin: "10px 0 6px", fontSize: 20 }}>{title}</h2>
+            <p style={{ margin: 0, color: "#64748b", lineHeight: 1.5 }}>{text}</p>
           </div>
         ))}
       </section>
