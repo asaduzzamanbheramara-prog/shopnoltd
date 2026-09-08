@@ -21,10 +21,21 @@ class Room(Base):
 class Participant(Base):
     __tablename__ = "room_participants"
     id = Column(String(64), primary_key=True, default=lambda: str(uuid.uuid4()))
-    room_id = Column(
-        String(64), ForeignKey("rooms.id", ondelete="CASCADE"), nullable=False, index=True
-    )
+    room_id = Column(String(64), ForeignKey("rooms.id", ondelete="CASCADE"), nullable=False, index=True)
     user_id = Column(String(64), nullable=False, index=True)
-    role = Column(String(16), default="member")  # moderator, member
+    role = Column(String(16), default="member")
     joined_at = Column(DateTime, default=datetime.utcnow)
     left_at = Column(DateTime)
+
+
+class CallSession(Base):
+    __tablename__ = "call_sessions"
+    id = Column(String(64), primary_key=True, default=lambda: str(uuid.uuid4()))
+    tenant_id = Column(String(64), nullable=False, index=True)
+    room_id = Column(String(64), ForeignKey("rooms.id", ondelete="CASCADE"), nullable=False, index=True)
+    initiator_id = Column(String(64), nullable=False, index=True)
+    call_type = Column(String(16), nullable=False, default="video")  # audio, video
+    state = Column(String(16), nullable=False, default="ringing")  # ringing, active, ended, rejected, missed
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    answered_at = Column(DateTime)
+    ended_at = Column(DateTime)
