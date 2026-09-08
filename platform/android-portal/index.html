@@ -3,23 +3,46 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>ShopnoltdCollect — ShopnoltdToolbox</title>
+  <title>Shopnoltd Android Apps — ShopnoltdToolbox</title>
   <link rel="manifest" href="/manifest.json" />
   <style>
-    body { font-family: system-ui, sans-serif; max-width: 720px; margin: 2rem auto; padding: 0 1rem; color: #0f172a; }
+    body { font-family: system-ui, sans-serif; max-width: 860px; margin: 2rem auto; padding: 0 1rem; color: #0f172a; }
     h1 { color: #0ea5e9; }
+    .intro { margin-bottom: 1.5rem; }
     .apk { border: 1px solid #e2e8f0; border-radius: 12px; padding: 1rem; margin: 1rem 0; }
     .apk h2 { margin: 0 0 .5rem; }
-    a.btn { display: inline-block; padding: .5rem 1rem; background: #0ea5e9; color: white; text-decoration: none; border-radius: 8px; }
+    .meta { color: #475569; font-size: .92rem; }
+    a.btn { display: inline-block; padding: .6rem 1rem; background: #0ea5e9; color: white; text-decoration: none; border-radius: 8px; }
+    .note { background: #f8fafc; border-radius: 10px; padding: 1rem; margin-top: 1.5rem; }
   </style>
 </head>
 <body>
-  <h1>ShopnoltdCollect</h1>
-  <p>Official ShopnoltdToolbox Android data-collection application.</p>
+  <h1>Shopnoltd Android Apps</h1>
+  <p class="intro">Official ShopnoltdToolbox Android distribution center. Only first-party native applications are listed here.</p>
+
+  <div class="apk">
+    <h2>Shopnoltd</h2>
+    <p>Main Shopnoltd mobile application for the customer platform and its integrated services.</p>
+    <p class="meta">QA channel: debug-signed until official release signing is configured.</p>
+    <a class="btn" href="/downloads/Shopnoltd.apk">Download Shopnoltd APK</a>
+  </div>
+
+  <div class="apk">
+    <h2>Shopnoltd Admin</h2>
+    <p>Native administration application for Shopnoltd platform operations and management.</p>
+    <p class="meta">QA channel: debug-signed until official release signing is configured.</p>
+    <a class="btn" href="/downloads/Shopnoltd-Admin.apk">Download Shopnoltd Admin APK</a>
+  </div>
+
   <div class="apk">
     <h2>ShopnoltdCollect</h2>
-    <p>Offline forms, GPS/location, camera/media, QR/barcode, audio, printing and background sync.</p>
+    <p>Official ShopnoltdToolbox data-collection application with offline forms, GPS/location, camera/media, QR/barcode, audio, printing and background sync.</p>
+    <p class="meta">Separate native project and release channel. KoboCollect/ODK remains the underlying compatibility foundation.</p>
     <a class="btn" href="/downloads/ShopnoltdCollect.apk">Download ShopnoltdCollect APK</a>
+  </div>
+
+  <div class="note">
+    <strong>Other Shopnoltd services:</strong> AI, billing, wallet, payments, exchange, domains, blog, mail, meeting, drive, code server, analytics and APIs remain web/API services. They are intentionally not represented by fake APK downloads.
   </div>
 </body>
 </html>
