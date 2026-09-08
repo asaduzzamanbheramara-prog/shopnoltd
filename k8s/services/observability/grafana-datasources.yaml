@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-datasources
+  namespace: shopno-monitoring
+data:
+  datasources.yaml: |
+    apiVersion: 1
+    datasources:
+      - name: Shopnoltd Prometheus
+        uid: shopnoltd-prometheus
+        type: prometheus
+        access: proxy
+        url: http://prometheus.shopno-monitoring.svc.cluster.local:9090
+        isDefault: true
+        editable: false
+      - name: Shopnoltd Loki
+        uid: shopnoltd-loki
+        type: loki
+        access: proxy
+        url: http://loki.shopno-monitoring.svc.cluster.local:3100
+        editable: false
