@@ -35,11 +35,7 @@ class PayoneerProvider(BaseProvider):
             raise ValueError("Payoneer payouts require a payee_id.")
 
         if not self.enabled:
-            return {
-                "external_id": f"demo-payout-{tx.id}",
-                "status": "pending",
-                "note": "Payoneer not configured (missing program id / API credentials) - demo mode.",
-            }
+            raise RuntimeError("Payoneer payout credentials are not configured")
 
         async with httpx.AsyncClient(timeout=15) as c:
             resp = await c.post(
@@ -67,7 +63,7 @@ class PayoneerProvider(BaseProvider):
 
     async def get_status(self, external_id):
         if not self.enabled:
-            return "demo"
+            return "unavailable"
         async with httpx.AsyncClient(timeout=15) as c:
             resp = await c.get(
                 f"{self.base_url}/programs/{settings.payoneer_program_id}/payouts/{external_id}",

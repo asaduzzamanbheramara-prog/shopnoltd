@@ -7,14 +7,17 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import Callback from './pages/Callback'
 import Dashboard from './pages/Dashboard'
+import AIWorkspace from './pages/AIWorkspace'
 import ProtectedRoute from './components/ProtectedRoute'
 import Blog from './pages/Blog'
+import BlogAdmin from './pages/BlogAdmin'
 import BlogPost from './pages/BlogPost'
 import Plugins from './pages/Plugins'
 import Services from './pages/Services'
 import DomainRegistration from "./pages/DomainRegistration";
 import AdminDashboard from './pages/AdminDashboard'
 import AdminInfrastructure from './pages/AdminInfrastructure'
+import DatabaseControlPlane from './pages/DatabaseControlPlaneEnhanced'
 import AdminRoute from './components/AdminRoute'
 import FinancialCenter from './pages/FinancialCenter'
 import { isPlatformAdmin } from './lib/jwt'
@@ -189,6 +192,7 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/callback" element={<Callback />} />
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/ai" element={<ProtectedRoute><AIWorkspace /></ProtectedRoute>} />
         <Route path="/billing" element={<ProtectedRoute><FinancialCenter view="billing" /></ProtectedRoute>} />
         <Route path="/subscriptions" element={<ProtectedRoute><FinancialCenter view="subscriptions" /></ProtectedRoute>} />
         <Route path="/invoices" element={<ProtectedRoute><FinancialCenter view="invoices" /></ProtectedRoute>} />
@@ -200,6 +204,8 @@ function App() {
         <Route path="/exchange" element={<ProtectedRoute><FinancialCenter view="exchange" /></ProtectedRoute>} />
         <Route path="/reports" element={<ProtectedRoute><FinancialCenter view="reports" /></ProtectedRoute>} />
         <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+        <Route path="/admin/database" element={<AdminRoute><DatabaseControlPlane /></AdminRoute>} />
+        <Route path="/admin/blog" element={<AdminRoute><BlogAdmin /></AdminRoute>} />
         <Route path="/admin/infrastructure" element={<AdminRoute><AdminInfrastructure /></AdminRoute>} />
       </Routes>
     </BrowserRouter>

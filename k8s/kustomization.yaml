@@ -23,11 +23,13 @@ resources:
 - services/payment-service
 - services/exchange-service
 - services/domain-service
+- services/vpn-service.yaml
 - services/guacamole
 - services/freedomain-service
 - services/mobile-api
 - services/storage-service
 - services/notification-service
+- services/social-service
 - services/report-service
 - services/analytics-service
 - services/worker-service
@@ -49,6 +51,8 @@ resources:
 - services/code-server
 - services/remote-device
 - services/kobotoolbox
+- shopno-apps/kobo-worker.yaml
+- shopno-apps/kobo-beat.yaml
 - services/n8n
 - services/owncast
 - services/mongodb

@@ -17,6 +17,7 @@ from app.core.security import decrypt_secret
 from app.db.models import AIModel, AIProvider, ProviderType
 from app.services.adapters.anthropic_adapter import AnthropicAdapter
 from app.services.adapters.base import BaseAdapter, InferenceResult
+from app.services.adapters.google_adapter import GoogleAdapter
 from app.services.adapters.ollama_adapter import OllamaAdapter
 from app.services.adapters.openai_adapter import OpenAIAdapter
 
@@ -24,9 +25,9 @@ ADAPTER_MAP: dict[ProviderType, type[BaseAdapter]] = {
     ProviderType.openai: OpenAIAdapter,
     ProviderType.anthropic: AnthropicAdapter,
     ProviderType.ollama: OllamaAdapter,
-    ProviderType.azure_openai: OpenAIAdapter,  # Azure OpenAI is wire-compatible enough for chat/completions
-    ProviderType.custom: OpenAIAdapter,  # any OpenAI-compatible server (vLLM, LM Studio, etc.)
-    # ProviderType.google: add a GoogleAdapter here when needed
+    ProviderType.google: GoogleAdapter,
+    ProviderType.azure_openai: OpenAIAdapter,
+    ProviderType.custom: OpenAIAdapter,
 }
 
 
@@ -39,28 +40,23 @@ async def _resolve_model(db: AsyncSession, model_name: str | None) -> tuple[AIMo
         stmt = (
             select(AIModel)
             .join(AIProvider)
-            .where(
-                AIModel.model_name == model_name,
-                AIModel.is_active,
-                AIProvider.is_active,
-            )  # noqa: E712
+            .where(AIModel.model_name == model_name, AIModel.is_active, AIProvider.is_active)
         )
     else:
         stmt = (
             select(AIModel)
             .join(AIProvider)
-            .where(AIModel.is_active, AIProvider.is_active, AIModel.is_default)  # noqa: E712
+            .where(AIModel.is_active, AIProvider.is_active, AIModel.is_default)
             .order_by(AIModel.priority.asc())
         )
     result = await db.execute(stmt)
     model = result.scalars().first()
 
     if model is None and model_name is None:
-        # No explicit default set — fall back to any active model, lowest priority number first.
         stmt = (
             select(AIModel)
             .join(AIProvider)
-            .where(AIModel.is_active, AIProvider.is_active)  # noqa: E712
+            .where(AIModel.is_active, AIProvider.is_active)
             .order_by(AIModel.priority.asc())
         )
         result = await db.execute(stmt)
@@ -84,27 +80,19 @@ def _build_adapter(provider: AIProvider) -> BaseAdapter:
             f"No adapter implemented for provider type '{provider.provider_type}'."
         )
     api_key = decrypt_secret(provider.api_key_encrypted) if provider.api_key_encrypted else None
-    return adapter_cls(
-        api_key=api_key, base_url=provider.base_url, extra_config=provider.extra_config or {}
-    )
+    return adapter_cls(api_key=api_key, base_url=provider.base_url, extra_config=provider.extra_config or {})
 
 
-async def run_inference(
-    db: AsyncSession, prompt: str, model_name: str | None = None
-) -> InferenceResult:
+async def run_inference(db: AsyncSession, prompt: str, model_name: str | None = None) -> InferenceResult:
     model, provider = await _resolve_model(db, model_name)
     adapter = _build_adapter(provider)
     try:
-        return await adapter.generate(
-            model.model_name, prompt, timeout=settings.inference_timeout_seconds
-        )
+        return await adapter.generate(model.model_name, prompt, timeout=settings.inference_timeout_seconds)
     except Exception as exc:
-        # One fallback attempt to the next-highest-priority active model, if one exists
-        # and it's different from the one that just failed.
         fallback_stmt = (
             select(AIModel)
             .join(AIProvider)
-            .where(AIModel.is_active, AIProvider.is_active, AIModel.id != model.id)  # noqa: E712
+            .where(AIModel.is_active, AIProvider.is_active, AIModel.id != model.id)
             .order_by(AIModel.priority.asc())
         )
         result = await db.execute(fallback_stmt)
@@ -113,10 +101,7 @@ async def run_inference(
             raise ModelNotAvailableError(
                 f"Inference failed on '{model.model_name}' and no fallback model is available: {exc}"
             ) from exc
-
-        provider_result = await db.execute(
-            select(AIProvider).where(AIProvider.id == fallback_model.provider_id)
-        )
+        provider_result = await db.execute(select(AIProvider).where(AIProvider.id == fallback_model.provider_id))
         fallback_provider = provider_result.scalar_one()
         fallback_adapter = _build_adapter(fallback_provider)
         return await fallback_adapter.generate(

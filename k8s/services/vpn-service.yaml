@@ -1,0 +1,102 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vpn-service
+  namespace: shopno-apps
+  labels:
+    app.kubernetes.io/name: vpn-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: vpn-service
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: vpn-service
+    spec:
+      containers:
+        - name: vpn-service
+          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/vpn-service:latest
+          imagePullPolicy: Always
+          securityContext:
+            capabilities:
+              add: [NET_ADMIN, NET_RAW]
+          ports:
+            - name: http
+              containerPort: 8080
+            - name: wireguard
+              containerPort: 51820
+              protocol: UDP
+          env:
+            - name: VPN_ADMIN_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: vpn-service-secret
+                  key: admin-token
+            - name: WG_SERVER_ENDPOINT
+              value: vpn.shopnoltd.dpdns.org:51820
+            - name: WG_NETWORK
+              value: 10.77.0.0/24
+            - name: WG_SERVER_ADDRESS
+              value: 10.77.0.1/24
+            - name: VPN_DATA_DIR
+              value: /data
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          readinessProbe:
+            httpGet: {path: /readyz, port: 8080}
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: {path: /healthz, port: 8080}
+            initialDelaySeconds: 15
+            periodSeconds: 20
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: vpn-service-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vpn-service
+  namespace: shopno-apps
+spec:
+  selector:
+    app.kubernetes.io/name: vpn-service
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+    - name: wireguard
+      port: 51820
+      targetPort: wireguard
+      protocol: UDP
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: vpn-service-data
+  namespace: shopno-apps
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vpn-service-udp
+  namespace: shopno-apps
+spec:
+  type: LoadBalancer
+  selector:
+    app.kubernetes.io/name: vpn-service
+  ports:
+    - name: wireguard
+      port: 51820
+      targetPort: 51820
+      protocol: UDP

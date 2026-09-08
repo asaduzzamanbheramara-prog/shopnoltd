@@ -13,7 +13,8 @@ class Settings(BaseSettings):
     redis_url: str = "redis://redis.shopno-data.svc.cluster.local:6379/0"
     cors_origins: str = "https://*.shopnoltd.dpdns.org"
     keycloak_issuer: str = "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
-    keycloak_audience: str = "payment-service"\n    keycloak_web_audience: str = "api-service"
+    keycloak_audience: str = "payment-service"
+    keycloak_web_audience: str = "api-service"
     jwt_audience: str = "shopnoltd"
     exchange_service_url: str = "http://exchange-service.shopno-payments.svc.cluster.local:80"
     billing_engine_url: str = "http://billing-engine.shopno-payments.svc.cluster.local:80"
@@ -42,7 +43,12 @@ class Settings(BaseSettings):
     sslcommerz_store_id: str = ""
     sslcommerz_store_password: str = ""
     sslcommerz_sandbox: bool = True
-    base_callback_url: str = "https://api.shopnoltd.dpdns.org"
+    moneybag_api_key: str = ""
+    moneybag_webhook_secret: str = ""
+    moneybag_mode: str = "sandbox"
+    moneybag_webhook_tolerance_seconds: int = 300
+    moneybag_webhook_url: str = "https://payment-service.shopnoltd.dpdns.org/api/v1/webhooks/moneybag"
+    base_callback_url: str = "https://payment-service.shopnoltd.dpdns.org"
     rocket_merchant_id: str = ""
     rocket_merchant_key: str = ""
     admin_approval_required: bool = True
