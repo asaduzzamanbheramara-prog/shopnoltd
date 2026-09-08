@@ -1,5 +1,4 @@
 from decimal import Decimal
-import uuid
 
 from app.core.db import SessionLocal
 from app.core.security import verify_token
@@ -60,6 +59,20 @@ class ConvertOut(BaseModel):
     transaction_id: str
 
 
+def _existing_result(existing: Transaction, frm: str, to: str, reference: str) -> ConvertOut:
+    meta = existing.meta or {}
+    return ConvertOut(
+        from_amount=float(meta["from_amount"]),
+        to_amount=float(meta["to_amount"]),
+        rate=float(meta["rate"]),
+        fee=float(existing.fee),
+        from_currency=frm,
+        to_currency=to,
+        reference=reference,
+        transaction_id=str(existing.id),
+    )
+
+
 @router.post("/convert", response_model=ConvertOut)
 async def do_convert(body: ConvertIn, user=Depends(current_user), s: AsyncSession = Depends(db)):
     frm = body.from_currency.upper().strip()
@@ -77,17 +90,7 @@ async def do_convert(body: ConvertIn, user=Depends(current_user), s: AsyncSessio
         )
     )
     if existing:
-        meta = existing.meta or {}
-        return ConvertOut(
-            from_amount=float(meta["from_amount"]),
-            to_amount=float(meta["to_amount"]),
-            rate=float(meta["rate"]),
-            fee=float(existing.fee),
-            from_currency=frm,
-            to_currency=to,
-            reference=reference,
-            transaction_id=str(existing.id),
-        )
+        return _existing_result(existing, frm, to, reference)
 
     try:
         converted = await convert(frm, to, body.amount)
@@ -101,9 +104,9 @@ async def do_convert(body: ConvertIn, user=Depends(current_user), s: AsyncSessio
     if from_amount <= 0 or to_amount <= 0 or rate_value <= 0 or fee < 0:
         raise HTTPException(502, "Exchange provider returned an invalid conversion")
 
-    # Lock both wallets in deterministic order so concurrent exchanges cannot
-    # overspend a wallet or deadlock each other. The entire debit/credit and
-    # both immutable ledger entries are one database transaction.
+    # Lock both wallets in deterministic order. The second idempotency check
+    # happens after the locks so concurrent requests using the same key cannot
+    # both create a money-moving exchange.
     user_id = user["sub"]
     wallets = {}
     for currency in sorted([frm, to]):
@@ -125,6 +128,17 @@ async def do_convert(body: ConvertIn, user=Depends(current_user), s: AsyncSessio
             else:
                 raise HTTPException(404, f"{frm} wallet not found")
         wallets[currency] = wallet
+
+    existing = await s.scalar(
+        select(Transaction).where(
+            Transaction.user_id == user_id,
+            Transaction.type == TxType.exchange,
+            Transaction.reference == reference,
+            Transaction.status == TxStatus.completed,
+        )
+    )
+    if existing:
+        return _existing_result(existing, frm, to, reference)
 
     source = wallets[frm]
     destination = wallets[to]
