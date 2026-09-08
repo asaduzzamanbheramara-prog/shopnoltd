@@ -47,12 +47,37 @@ jobs:
         working-directory: apps/mobile-shell
         run: npm run sync:${{ matrix.config }}
 
+      - name: Apply native application identity
+        working-directory: apps/mobile-shell/android
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          package = "${{ matrix.package }}"
+          app_name = "Shopnoltd Admin" if package.endswith(".admin") else "Shopnoltd"
+          gradle = Path("app/build.gradle")
+          text = gradle.read_text()
+          text = text.replace('applicationId "org.shopnoltd.app"', f'applicationId "{package}"')
+          gradle.write_text(text)
+          strings = Path("app/src/main/res/values/strings.xml")
+          text = strings.read_text()
+          text = text.replace('<string name="app_name">Shopnoltd</string>', f'<string name="app_name">{app_name}</string>')
+          text = text.replace('<string name="title_activity_main">Shopnoltd</string>', f'<string name="title_activity_main">{app_name}</string>')
+          text = text.replace('<string name="package_name">org.shopnoltd.app</string>', f'<string name="package_name">{package}</string>')
+          text = text.replace('<string name="custom_url_scheme">org.shopnoltd.app</string>', f'<string name="custom_url_scheme">{package}</string>')
+          strings.write_text(text)
+          PY
+
       - name: Verify Android identity
         working-directory: apps/mobile-shell/android
         run: |
           set -euo pipefail
           grep -q 'applicationId "${{ matrix.package }}"' app/build.gradle
-          grep -q 'app_name">\(Shopnoltd\|Shopnoltd Admin\)<' app/src/main/res/values/strings.xml
+          if [ "${{ matrix.app }}" = "shopnoltd-admin" ]; then
+            grep -q '<string name="app_name">Shopnoltd Admin</string>' app/src/main/res/values/strings.xml
+          else
+            grep -q '<string name="app_name">Shopnoltd</string>' app/src/main/res/values/strings.xml
+          fi
 
       - name: Build installable QA APK
         working-directory: apps/mobile-shell/android
@@ -65,9 +90,9 @@ jobs:
           apk="app/build/outputs/apk/debug/app-debug.apk"
           test -s "$apk"
           apksigner verify --verbose "$apk"
-          mkdir -p ../../../../dist
-          cp "$apk" "../../../../dist/${{ matrix.app }}.apk"
-          sha256sum "../../../../dist/${{ matrix.app }}.apk" > "../../../../dist/${{ matrix.app }}-SHA256.txt"
+          mkdir -p ../../../dist
+          cp "$apk" "../../../dist/${{ matrix.app }}.apk"
+          sha256sum "../../../dist/${{ matrix.app }}.apk" > "../../../dist/${{ matrix.app }}-SHA256.txt"
 
       - name: Upload CI artifact
         uses: actions/upload-artifact@v4
