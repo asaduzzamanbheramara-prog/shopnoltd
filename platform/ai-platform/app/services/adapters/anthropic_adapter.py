@@ -8,9 +8,10 @@ ANTHROPIC_VERSION = "2023-06-01"
 
 class AnthropicAdapter(BaseAdapter):
     async def generate(self, model_name: str, prompt: str, timeout: int) -> InferenceResult:
+        api_key = self.require_api_key("Anthropic")
         base = self.base_url or DEFAULT_BASE_URL
         headers = {
-            "x-api-key": self.api_key,
+            "x-api-key": api_key,
             "anthropic-version": ANTHROPIC_VERSION,
             "content-type": "application/json",
         }
@@ -34,11 +35,13 @@ class AnthropicAdapter(BaseAdapter):
         return InferenceResult(text=text, tokens_used=tokens, raw=data)
 
     async def health_check(self, timeout: int = 5) -> bool:
-        # Anthropic has no cheap "list models" ping historically usable across all keys;
-        # do a minimal 1-token request instead.
+        # Anthropic has no universally cheap model-list ping; use the configured
+        # health-check model for a minimal request. The request is intentionally
+        # one token and is only used by the admin connectivity test.
+        api_key = self.require_api_key("Anthropic")
         base = self.base_url or DEFAULT_BASE_URL
         headers = {
-            "x-api-key": self.api_key,
+            "x-api-key": api_key,
             "anthropic-version": ANTHROPIC_VERSION,
             "content-type": "application/json",
         }
