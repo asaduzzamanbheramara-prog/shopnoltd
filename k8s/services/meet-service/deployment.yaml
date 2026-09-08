@@ -30,6 +30,16 @@ spec:
             - configMapRef:
                 name: meet-service-config
           env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: meet-service-secret
+                  key: DATABASE_URL
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: meet-service-secret
+                  key: REDIS_URL
             - name: JITSI_JWT_SECRET
               valueFrom:
                 secretKeyRef:
