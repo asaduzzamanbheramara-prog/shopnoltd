@@ -42,6 +42,9 @@ app.include_router(
     __import__("app.api.v2", fromlist=["router"]).router, prefix="/api/v2", tags=["social-work"]
 )
 app.include_router(
+    __import__("app.api.v2_blog", fromlist=["router"]).router, prefix="/api/v2", tags=["blog"]
+)
+app.include_router(
     __import__("app.api.graphql", fromlist=["router"]).router, prefix="/graphql", tags=["graphql"]
 )
 app.include_router(
