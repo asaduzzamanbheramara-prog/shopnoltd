@@ -142,13 +142,20 @@ jobs:
           print(f'Unresolved finding count: {len(unresolved)}')
           if not unique_changed:
               print('No safe deterministic remediation was available; the blocking Gitleaks job remains authoritative.')
+              print('changed=false')
               raise SystemExit(0)
+          print('changed=true')
           PY
 
           git diff --check
-          test -n "$(git status --short)"
+          if git diff --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Commit safe remediation
+        if: steps.remediate.outputs.changed == 'true'
         shell: bash
         env:
           HEAD_BRANCH: ${{ github.head_ref }}
@@ -162,6 +169,7 @@ jobs:
           git push origin "HEAD:${HEAD_BRANCH}"
 
       - name: Trigger fresh security scan
+        if: steps.remediate.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           HEAD_BRANCH: ${{ github.head_ref }}
