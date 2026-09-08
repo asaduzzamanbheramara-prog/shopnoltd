@@ -12,6 +12,7 @@ RUN apt-get update \
 
 WORKDIR /opt/aemu
 RUN git clone --depth 1 --branch "${AEMU_REF}" "${AEMU_REPO}" . \
+    && sed -i 's/emulator_address = f"localhost:{emulator_port}"/emulator_address = os.getenv("EMULATOR_HOST", f"localhost:{emulator_port}")/' gateway/src/videobridge_gateway/gateway_server.py \
     && pip install --no-cache-dir ./gateway
 
 COPY entrypoint.sh /usr/local/bin/android-cloud-gateway
