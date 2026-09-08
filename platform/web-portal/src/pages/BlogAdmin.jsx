@@ -1,12 +1,7 @@
 import React, { useEffect, useState } from 'react'
+import { platformApi } from '../lib/platformApi'
 
-const API_BASE = 'https://social-service.shopnoltd.dpdns.org/api/v1/blog'
 const EMPTY = { id: null, title: '', slug: '', excerpt: '', content: '', cover_image: '', status: 'draft' }
-
-function authHeaders() {
-  const token = localStorage.getItem('shopno_token')
-  return token ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' }
-}
 
 export default function BlogAdmin() {
   const [posts, setPosts] = useState([])
@@ -15,9 +10,7 @@ export default function BlogAdmin() {
   const [busy, setBusy] = useState(false)
 
   async function load() {
-    const r = await fetch(`${API_BASE}/admin`, { headers: authHeaders() })
-    if (!r.ok) throw new Error(`Unable to load blog admin (${r.status})`)
-    setPosts(await r.json())
+    setPosts(await platformApi.adminBlog())
   }
 
   useEffect(() => { load().catch((e) => setMessage(e.message)) }, [])
@@ -29,11 +22,9 @@ export default function BlogAdmin() {
     setMessage('')
     try {
       const body = { ...form, status: publish ? 'published' : form.status }
-      const method = form.id ? 'PUT' : 'POST'
-      const url = form.id ? `${API_BASE}/${form.id}` : API_BASE
-      const r = await fetch(url, { method, headers: authHeaders(), body: JSON.stringify(body) })
-      const data = await r.json()
-      if (!r.ok) throw new Error(data.detail || `Save failed (${r.status})`)
+      const data = form.id
+        ? await platformApi.updateBlogPost(form.id, body)
+        : await platformApi.createBlogPost(body)
       setForm(data)
       await load()
       setMessage(publish ? 'Published.' : 'Draft saved.')
@@ -46,14 +37,13 @@ export default function BlogAdmin() {
 
   async function remove(id) {
     if (!window.confirm('Delete this post?')) return
-    const r = await fetch(`${API_BASE}/${id}`, { method: 'DELETE', headers: authHeaders() })
-    if (!r.ok) {
-      const data = await r.json().catch(() => ({}))
-      setMessage(data.detail || 'Delete failed')
-      return
+    try {
+      await platformApi.deleteBlogPost(id)
+      setForm(EMPTY)
+      await load()
+    } catch (e) {
+      setMessage(e.message)
     }
-    setForm(EMPTY)
-    await load()
   }
 
   return (
