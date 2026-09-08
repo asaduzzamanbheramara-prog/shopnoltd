@@ -4,11 +4,12 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
   schedule:
     - cron: "0 3 * * *"
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   secret-scan:
@@ -21,17 +22,33 @@ jobs:
       - name: Gitleaks
         shell: bash
         run: |
-          set -euo pipefail
+          set +e
           docker run --rm \
-            -v "$PWD:/repo:ro" \
+            -v "$PWD:/repo:rw" \
             zricethezav/gitleaks:latest \
-            detect --source=/repo --no-git --redact --exit-code 2
+            detect --source=/repo --no-git --redact --report-format json --report-path=/repo/gitleaks-report.json --exit-code 2
+          status=$?
+          if [ ! -f gitleaks-report.json ]; then
+            printf '[]\n' > gitleaks-report.json
+          fi
+          exit "$status"
+      - name: Upload redacted Gitleaks report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gitleaks-report-${{ github.sha }}
+          path: gitleaks-report.json
+          if-no-files-found: error
+          retention-days: 7
 
   auto-remediate-safe-findings:
     name: Auto-remediate safe secret findings
     needs: secret-scan
     if: failure() && github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: write
     steps:
       - name: Checkout PR head
         uses: actions/checkout@v4
@@ -124,7 +141,8 @@ jobs:
           print(f'Automatically remediated {len(unique_changed)} file(s).')
           print(f'Unresolved finding count: {len(unresolved)}')
           if not unique_changed:
-              raise SystemExit('No safe deterministic secret remediation was possible')
+              print('No safe deterministic remediation was available; the blocking Gitleaks job remains authoritative.')
+              raise SystemExit(0)
           PY
 
           git diff --check
@@ -142,6 +160,14 @@ jobs:
           git diff --cached --check
           git commit -m "ci: automatically remediate safe secret findings"
           git push origin "HEAD:${HEAD_BRANCH}"
+
+      - name: Trigger fresh security scan
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_BRANCH: ${{ github.head_ref }}
+        run: |
+          set -euo pipefail
+          gh workflow run security-scan.yml --repo "${GITHUB_REPOSITORY}" --ref "${HEAD_BRANCH}"
 
   image-scan:
     name: Scan images for vulnerabilities
