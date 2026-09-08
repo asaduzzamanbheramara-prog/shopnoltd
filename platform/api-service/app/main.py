@@ -11,6 +11,7 @@ from starlette.responses import Response
 
 from app.core.config import settings
 from app.core.db import Base, engine
+from app.models.work import Work, WorkAssignment, WorkSubmission  # noqa: F401
 
 log = structlog.get_logger()
 
@@ -26,7 +27,7 @@ async def lifespan(app: FastAPI):
     await redis_client.aclose()
 
 
-app = FastAPI(title="Shopnoltd Unified API Service", version="0.1.0", lifespan=lifespan)
+app = FastAPI(title="Shopnoltd Unified API Service", version="0.2.0", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origin_regex=settings.cors_origin_regex,
@@ -36,6 +37,9 @@ app.add_middleware(
 )
 app.include_router(
     __import__("app.api.v1", fromlist=["router"]).router, prefix="/api/v1", tags=["v1"]
+)
+app.include_router(
+    __import__("app.api.v2", fromlist=["router"]).router, prefix="/api/v2", tags=["social-work"]
 )
 app.include_router(
     __import__("app.api.graphql", fromlist=["router"]).router, prefix="/graphql", tags=["graphql"]
