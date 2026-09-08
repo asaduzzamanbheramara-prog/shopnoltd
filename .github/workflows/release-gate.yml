@@ -1,0 +1,109 @@
+name: Production Release Gate
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Git ref to verify
+        required: false
+        default: main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-release-gate-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  repository-validation:
+    name: Repository validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 1
+
+      - name: Install kustomize
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -sSfL https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.4.3/kustomize_v5.4.3_linux_amd64.tar.gz | tar -xz
+          sudo mv kustomize /usr/local/bin/kustomize
+          kustomize version
+
+      - name: Validate Kubernetes manifests
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -d k8s
+          test -n "$(find k8s -type f \( -name '*.yaml' -o -name '*.yml' \) -print -quit)"
+          kustomize build k8s/ > /tmp/release-gate-rendered.yaml
+          test -s /tmp/release-gate-rendered.yaml
+
+      - name: Validate release gate documentation
+        run: test -s docs/OBSERVABILITY-RELEASE-GATE.md
+
+  public-smoke:
+    name: Public endpoint smoke tests
+    needs: repository-validation
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: root
+            url: 'https://shopnoltd.dpdns.org'
+          - name: api
+            url: 'https://api.shopnoltd.dpdns.org/healthz'
+          - name: auth
+            url: 'https://auth.shopnoltd.dpdns.org'
+          - name: ai
+            url: 'https://ai-platform.shopnoltd.dpdns.org/healthz'
+    steps:
+      - name: Probe ${{ matrix.name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          url='${{ matrix.url }}'
+          ok=0
+          for attempt in 1 2 3 4 5; do
+            code="$(curl -k -L -sS -o /tmp/body -w '%{http_code}' --connect-timeout 10 --max-time 30 "$url" || true)"
+            case "$code" in
+              2*|3*)
+                ok=1
+                echo "${{ matrix.name }} reachable with HTTP $code"
+                break
+                ;;
+              *)
+                echo "${{ matrix.name }} attempt $attempt returned HTTP ${code:-000}"
+                sleep $((attempt * 5))
+                ;;
+            esac
+          done
+          test "$ok" -eq 1
+
+  release-summary:
+    name: Release gate summary
+    needs:
+      - repository-validation
+      - public-smoke
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require every release gate to pass
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "repository-validation=${{ needs.repository-validation.result }}"
+          echo "public-smoke=${{ needs.public-smoke.result }}"
+          test '${{ needs.repository-validation.result }}' = success
+          test '${{ needs.public-smoke.result }}' = success

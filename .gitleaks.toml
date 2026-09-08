@@ -1,0 +1,37 @@
+title = "Shopnoltd secret scanning policy"
+useDefault = true
+
+[[allowlists]]
+description = "Public package-signing GPG keys embedded in generated image metadata"
+condition = "AND"
+regexTarget = "line"
+paths = [
+  '''^branding/(kpi|kobocat)-image\.json$''',
+  '''^platform/session-manager/branding/(kpi|kobocat)-image\.json$''',
+]
+regexes = [
+  '''GPG_KEY=[A-F0-9]{40}''',
+]
+
+[[allowlists]]
+description = "Immutable Shopnoltd container image digests are identifiers, not credentials"
+condition = "AND"
+regexTarget = "line"
+paths = [
+  '''^k8s/services/api-service/deployment\.yaml$''',
+  '''^oauth-service/k8s/deployment\.yaml$''',
+]
+regexes = [
+  '''image:\s*ghcr\.io/asaduzzamanbheramara-prog/shopnoltd(?:/api-service|-oauth):[0-9a-f]{40}\s*$''',
+]
+
+[[allowlists]]
+description = "Seed code accesses a request password field; it is not a hardcoded secret"
+condition = "AND"
+regexTarget = "line"
+paths = [
+  '''^scripts/seed/seed-all\.py$''',
+]
+regexes = [
+  '''body\.password''',
+]

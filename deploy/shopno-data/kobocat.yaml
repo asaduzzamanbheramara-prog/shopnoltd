@@ -5,7 +5,7 @@ metadata:
   namespace: shopno-data
 type: Opaque
 stringData:
-  KOBO_DB_PASSWORD: "KUSEZeFnjWKY997vtX9eayS3XBICDJG"
+  KOBO_DB_PASSWORD: "${KOBO_DB_PASSWORD}"
   DJANGO_SECRET_KEY: "kobo-secret-key-change-in-production-xyz123"
 ---
 apiVersion: v1
