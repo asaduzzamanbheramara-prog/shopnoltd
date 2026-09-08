@@ -4,21 +4,29 @@ on:
   push:
     branches:
       - main
+      - automation/ci-cd-release-gate-20260909
     paths:
       - "oauth-service/**"
+      - "oauth-service/k8s/deployment.yaml"
+      - ".github/workflows/build-oauth-service.yml"
+  workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   packages: write
 
+concurrency:
+  group: oauth-service-build-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  IMAGE: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-oauth
+  DEPLOYMENT: oauth-service/k8s/deployment.yaml
+
 jobs:
-
   build:
-
     runs-on: ubuntu-latest
-
     steps:
-
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -38,9 +46,57 @@ jobs:
           context: ./oauth-service
           file: ./oauth-service/Dockerfile
           push: true
-
           platforms: linux/amd64
-
           tags: |
-            ghcr.io/asaduzzamanbheramara-prog/shopnoltd-oauth:latest
-            ghcr.io/asaduzzamanbheramara-prog/shopnoltd-oauth:${{ github.sha }}
+            ${{ env.IMAGE }}:latest
+            ${{ env.IMAGE }}:${{ github.sha }}
+
+  promote:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 2
+
+      - name: Promote immutable image into GitOps
+        env:
+          IMAGE: ${{ env.IMAGE }}
+          SHA: ${{ github.sha }}
+          FILE: ${{ env.DEPLOYMENT }}
+        run: |
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          p = Path(os.environ['FILE'])
+          text = p.read_text()
+          prefix = os.environ['IMAGE'] + ':'
+          lines = text.splitlines(keepends=True)
+          matches = [i for i, line in enumerate(lines) if 'image:' in line and prefix in line]
+          if len(matches) != 1:
+              raise SystemExit(f'expected exactly one owned image reference, found {len(matches)}')
+          i = matches[0]
+          line = lines[i]
+          before, after = line.split(prefix, 1)
+          newline = '\n' if line.endswith('\n') else ''
+          lines[i] = before + prefix + os.environ['SHA'] + newline
+          p.write_text(''.join(lines))
+          PY
+
+          git diff --check
+          git diff -- "$FILE"
+          grep -F "image: ${IMAGE}:${SHA}" "$FILE"
+
+      - name: Commit GitOps promotion
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$DEPLOYMENT"
+          if git diff --cached --quiet; then
+            echo "No GitOps image change required."
+            exit 0
+          fi
+          git commit -m "chore: update oauth image to ${GITHUB_SHA} [skip ci]"
+          git push origin "${GITHUB_REF_NAME}"
