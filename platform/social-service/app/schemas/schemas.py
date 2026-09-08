@@ -3,8 +3,8 @@ from pydantic import BaseModel, Field
 
 class PostIn(BaseModel):
     content: str = Field(min_length=1, max_length=5000)
-    media: list = []
-    visibility: str = "public"
+    media: list = Field(default_factory=list, max_length=50)
+    visibility: str = Field(default="public", pattern="^(public|tenant|followers|private)$")
     scheduled_at: str | None = None
 
 
@@ -25,7 +25,12 @@ class PostOut(BaseModel):
 
 class CommentIn(BaseModel):
     body: str = Field(min_length=1, max_length=2000)
+    parent_id: str | None = None
 
 
 class ShareIn(BaseModel):
-    target: str = "internal"
+    target: str = Field(default="internal", pattern="^(internal|copy|twitter|facebook|linkedin)$")
+
+
+class ReactionIn(BaseModel):
+    reaction: str = Field(min_length=1, max_length=32)

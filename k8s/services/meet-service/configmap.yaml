@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: meet-service-config
+data:
+  ENV: production
+  APP_NAME: shopnoltd-meet-service
+  JITSI_JWT_APP_ID: shopnoltd
+  JITSI_URL: https://meet.shopnoltd.dpdns.org
+  KEYCLOAK_ISSUER: https://auth.shopnoltd.dpdns.org/realms/shopnoltd
+  KEYCLOAK_AUDIENCE: meet-service
+  CORS_ORIGINS: https://shopnoltd.dpdns.org
