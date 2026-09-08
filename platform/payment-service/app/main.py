@@ -12,8 +12,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from prometheus_client import Counter, Histogram, generate_latest
 from shopno_core.database.redis import redis_client
-from starlette.responses import Response
 from sqlalchemy import text
+from starlette.responses import Response
 
 log = structlog.get_logger()
 REQUESTS = Counter("shopno_payments_http_requests_total", "HTTP requests", ["method", "path", "code"])
@@ -26,6 +26,7 @@ async def lifespan(app: FastAPI):
         await conn.run_sync(Base.metadata.create_all)
         await conn.execute(text("ALTER TABLE transactions ADD COLUMN IF NOT EXISTS user_id VARCHAR(64)"))
         await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_transactions_user_id ON transactions (user_id)"))
+        await conn.execute(text("UPDATE transactions t SET user_id = w.user_id FROM wallets w WHERE t.wallet_id = w.id AND t.user_id IS NULL"))
     await redis_client.ping()
     log.info("payment-service.started", env=settings.env, version=settings.version)
     yield
