@@ -10,6 +10,7 @@ resources:
 - namespaces/shopno-payments.yaml
 - namespaces/shopno-tools.yaml
 - namespaces/shopno-ingress.yaml
+- services/observability
 - services/api-service
 - services/gateway
 - services/web-portal
