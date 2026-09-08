@@ -1,7 +1,12 @@
 import { tryRefresh } from './tokenRefresh'
 
-const PAYMENT_API_URL =
-  import.meta.env.VITE_PAYMENT_API_URL || 'https://payment-service.shopnoltd.dpdns.org'
+// Keep browser financial traffic on the unified API origin. The API service
+// proxies to payment-service internally, so payment/exchange hosts are never
+// exposed as browser dependencies.
+const FINANCIAL_API_URL =
+  import.meta.env.VITE_API_URL ||
+  import.meta.env.VITE_API_BASE_URL ||
+  'https://api.shopnoltd.dpdns.org'
 
 function token() {
   return localStorage.getItem('shopno_token')
@@ -18,7 +23,7 @@ export async function authenticatedRequest(path, options = {}) {
     ...(options.body ? { 'Content-Type': 'application/json' } : {}),
     ...(options.headers || {}),
   }
-  const response = await fetch(`${PAYMENT_API_URL}${path}`, {
+  const response = await fetch(`${FINANCIAL_API_URL}${path}`, {
     ...options,
     headers,
   })
@@ -57,13 +62,18 @@ export function getWallet(currency = 'BDT') {
 }
 
 export function getWalletLedger(currency = 'BDT', limit = 50) {
+  const boundedLimit = Math.min(Math.max(Number(limit) || 50, 1), 200)
   return authenticatedRequest(
-    `/api/v1/wallets/${encodeURIComponent(currency.toUpperCase())}/ledger?limit=${limit}`
+    `/api/v1/wallets/${encodeURIComponent(currency.toUpperCase())}/ledger?limit=${boundedLimit}`
   )
 }
 
-export function getTransactions() {
-  return authenticatedRequest('/api/v1/transactions')
+export function getTransactions(limit = 50, offset = 0) {
+  const boundedLimit = Math.min(Math.max(Number(limit) || 50, 1), 200)
+  const boundedOffset = Math.max(Number(offset) || 0, 0)
+  return authenticatedRequest(
+    `/api/v1/transactions?limit=${boundedLimit}&offset=${boundedOffset}`
+  )
 }
 
 export function getPaymentGateways() {
@@ -76,7 +86,7 @@ export function createCheckout({ gateway, amount, currency, reference, customer_
     body: JSON.stringify({
       method: gateway,
       amount: Number(amount),
-      currency,
+      currency: String(currency).toUpperCase(),
       return_url: `${window.location.origin}/checkout/complete?ref=${encodeURIComponent(
         reference || ''
       )}`,
@@ -87,7 +97,9 @@ export function createCheckout({ gateway, amount, currency, reference, customer_
 
 export function getExchangeRate(from, to) {
   return authenticatedRequest(
-    `/api/v1/exchanges/rate?from_currency=${encodeURIComponent(from)}&to_currency=${encodeURIComponent(to)}`
+    `/api/v1/exchanges/rate?from_currency=${encodeURIComponent(
+      String(from).toUpperCase()
+    )}&to_currency=${encodeURIComponent(String(to).toUpperCase())}`
   )
 }
 
@@ -96,8 +108,8 @@ export function convertExchange({ from_currency, to_currency, amount, idempotenc
   return authenticatedRequest('/api/v1/exchanges/convert', {
     method: 'POST',
     body: JSON.stringify({
-      from_currency,
-      to_currency,
+      from_currency: String(from_currency).toUpperCase(),
+      to_currency: String(to_currency).toUpperCase(),
       amount: Number(amount),
       idempotency_key: key,
     }),
