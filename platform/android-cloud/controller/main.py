@@ -71,8 +71,7 @@ def emulator_pod(session: Session) -> client.V1Pod:
     return client.V1Pod(
         metadata=client.V1ObjectMeta(name=session.emulator_name, namespace=NAMESPACE, labels={"app.kubernetes.io/name": "android-emulator", "shopnoltd.dev/session": session.session_id}),
         spec=client.V1PodSpec(
-            restart_policy="Never",
-            automount_service_account_token=False,
+            restart_policy="Never", automount_service_account_token=False,
             containers=[client.V1Container(
                 name="emulator", image=EMULATOR_IMAGE, image_pull_policy="IfNotPresent",
                 ports=[client.V1ContainerPort(name="grpc", container_port=8554), client.V1ContainerPort(name="adb", container_port=5555)],
@@ -105,19 +104,25 @@ def svc(name: str, selector: dict[str, str], port: int, target: int) -> client.V
 
 def gateway_ingress(session: Session) -> client.V1Ingress:
     path = f"/sessions/{session.session_id}(/|$)(.*)"
+    annotations = {
+        "nginx.ingress.kubernetes.io/use-regex": "true",
+        "nginx.ingress.kubernetes.io/rewrite-target": "/$2",
+        "nginx.ingress.kubernetes.io/configuration-snippet": f"proxy_set_header X-Shopnoltd-Session {session.session_id};",
+        "nginx.ingress.kubernetes.io/proxy-read-timeout": "3600",
+        "nginx.ingress.kubernetes.io/proxy-send-timeout": "3600",
+    }
     return client.V1Ingress(
-        metadata=client.V1ObjectMeta(name=session.gateway_name, namespace=NAMESPACE, annotations={"nginx.ingress.kubernetes.io/use-regex": "true", "nginx.ingress.kubernetes.io/rewrite-target": "/$2", "nginx.ingress.kubernetes.io/proxy-read-timeout": "3600", "nginx.ingress.kubernetes.io/proxy-send-timeout": "3600"}),
+        metadata=client.V1ObjectMeta(name=session.gateway_name, namespace=NAMESPACE, annotations=annotations),
         spec=client.V1IngressSpec(ingress_class_name="nginx", rules=[client.V1IngressRule(host=PUBLIC_HOST, http=client.V1HTTPIngressRuleValue(paths=[client.V1HTTPIngressPath(path=path, path_type="ImplementationSpecific", backend=client.V1IngressBackend(service=client.V1IngressServiceBackend(name=session.gateway_name, port=client.V1ServiceBackendPort(number=8080)))]))]),
     )
 
 def create_kube_session(session: Session) -> None:
-    created: list[tuple[str, str]] = []
     try:
-        core.create_namespaced_pod(NAMESPACE, emulator_pod(session)); created.append(("pod", session.emulator_name))
-        core.create_namespaced_service(NAMESPACE, svc(session.emulator_name, {"shopnoltd.dev/session": session.session_id, "app.kubernetes.io/name": "android-emulator"}, 8554, 8554)); created.append(("service", session.emulator_name))
-        core.create_namespaced_pod(NAMESPACE, gateway_pod(session)); created.append(("pod", session.gateway_name))
-        core.create_namespaced_service(NAMESPACE, svc(session.gateway_name, {"shopnoltd.dev/session": session.session_id, "app.kubernetes.io/name": "android-cloud-gateway"}, 8080, 8080)); created.append(("service", session.gateway_name))
-        networking.create_namespaced_ingress(NAMESPACE, gateway_ingress(session)); created.append(("ingress", session.gateway_name))
+        core.create_namespaced_pod(NAMESPACE, emulator_pod(session))
+        core.create_namespaced_service(NAMESPACE, svc(session.emulator_name, {"shopnoltd.dev/session": session.session_id, "app.kubernetes.io/name": "android-emulator"}, 8554, 8554))
+        core.create_namespaced_pod(NAMESPACE, gateway_pod(session))
+        core.create_namespaced_service(NAMESPACE, svc(session.gateway_name, {"shopnoltd.dev/session": session.session_id, "app.kubernetes.io/name": "android-cloud-gateway"}, 8080, 8080))
+        networking.create_namespaced_ingress(NAMESPACE, gateway_ingress(session))
     except Exception:
         delete_kube_session(session)
         raise
