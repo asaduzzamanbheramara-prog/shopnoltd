@@ -63,7 +63,7 @@ jobs:
           - name: root
             url: 'https://shopnoltd.dpdns.org'
           - name: api
-            url: 'https://api.shopnoltd.dpdns.org/health'
+            url: 'https://api.shopnoltd.dpdns.org/healthz'
           - name: auth
             url: 'https://auth.shopnoltd.dpdns.org'
           - name: ai
