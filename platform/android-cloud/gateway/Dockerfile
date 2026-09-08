@@ -11,7 +11,8 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /opt/aemu
-RUN git clone --depth 1 --branch "${AEMU_REF}" "${AEMU_REPO}" . \
+RUN git clone --depth 1 --branch master "${AEMU_REPO}" . \
+    && git checkout "${AEMU_REF}" \
     && sed -i 's/emulator_address = f"localhost:{emulator_port}"/emulator_address = os.getenv("EMULATOR_HOST", f"localhost:{emulator_port}")/' gateway/src/videobridge_gateway/gateway_server.py \
     && pip install --no-cache-dir ./gateway
 
