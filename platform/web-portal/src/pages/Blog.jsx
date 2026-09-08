@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 
+const API_BASE = 'https://social-service.shopnoltd.dpdns.org/api/v1/blog'
 const PAGE_SIZE = 9
 const stripHtml = value => String(value || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
 
@@ -13,7 +14,7 @@ function PostCard({ post }) {
 
 function Article({ slug }) {
   const [post, setPost] = useState(null); const [error, setError] = useState(''); const [loading, setLoading] = useState(true)
-  useEffect(() => { let active = true; setLoading(true); fetch(`/api/v1/blog/${encodeURIComponent(slug)}`).then(async r => { if (!r.ok) throw new Error(r.status === 404 ? 'Article not found' : `Blog API returned ${r.status}`); return r.json() }).then(data => active && setPost(data)).catch(e => active && setError(e.message)).finally(() => active && setLoading(false)); return () => { active = false } }, [slug])
+  useEffect(() => { let active = true; setLoading(true); fetch(`${API_BASE}/${encodeURIComponent(slug)}`).then(async r => { if (!r.ok) throw new Error(r.status === 404 ? 'Article not found' : `Blog API returned ${r.status}`); return r.json() }).then(data => active && setPost(data)).catch(e => active && setError(e.message)).finally(() => active && setLoading(false)); return () => { active = false } }, [slug])
   if (loading) return <main style={page}>Loading article…</main>
   if (error || !post) return <main style={page}><Link to="/blog">← Back to blog</Link><h1 style={{ marginTop: 24 }}>{error || 'Article not found'}</h1></main>
   return <main style={{ ...page, maxWidth: 960 }}><Link to="/blog" style={{ color: '#0369a1', fontWeight: 700, textDecoration: 'none' }}>← Back to blog</Link>{post.cover_image && <img src={post.cover_image} alt="" style={{ width: '100%', maxHeight: 480, objectFit: 'cover', borderRadius: 18, marginTop: 20 }} />}<div style={{ color: '#64748b', marginTop: 24 }}>{post.published_at ? new Date(post.published_at).toLocaleDateString() : ''}</div><h1 style={{ fontSize: 'clamp(34px,6vw,56px)', lineHeight: 1.08, margin: '10px 0 20px' }}>{post.title}</h1>{post.excerpt && <p style={{ fontSize: 19, color: '#475569', lineHeight: 1.7 }}>{post.excerpt}</p>}<article style={{ fontSize: 17, lineHeight: 1.85, color: '#1e293b', whiteSpace: 'pre-wrap' }}>{stripHtml(post.content)}</article></main>
@@ -24,7 +25,7 @@ const page = { maxWidth: 1100, margin: '0 auto', padding: 'clamp(28px,6vw,52px) 
 export default function Blog() {
   const { slug } = useParams()
   const [posts, setPosts] = useState([]); const [loading, setLoading] = useState(true); const [error, setError] = useState(''); const [query, setQuery] = useState(''); const [pageNo, setPageNo] = useState(1)
-  useEffect(() => { if (slug) return; let active = true; setLoading(true); fetch('/api/v1/blog?limit=50').then(async r => { if (!r.ok) throw new Error(`Blog API returned ${r.status}`); return r.json() }).then(data => active && setPosts(Array.isArray(data) ? data : [])).catch(e => active && setError(e.message || 'Unable to load blog posts')).finally(() => active && setLoading(false)); return () => { active = false } }, [slug])
+  useEffect(() => { if (slug) return; let active = true; setLoading(true); fetch(`${API_BASE}?limit=50`).then(async r => { if (!r.ok) throw new Error(`Blog API returned ${r.status}`); return r.json() }).then(data => active && setPosts(Array.isArray(data) ? data : [])).catch(e => active && setError(e.message || 'Unable to load blog posts')).finally(() => active && setLoading(false)); return () => { active = false } }, [slug])
   const filtered = useMemo(() => posts.filter(post => `${post.title} ${post.excerpt || ''} ${stripHtml(post.content)}`.toLowerCase().includes(query.toLowerCase())), [posts, query])
   const visible = filtered.slice((pageNo - 1) * PAGE_SIZE, pageNo * PAGE_SIZE)
   if (slug) return <Article slug={slug} />
