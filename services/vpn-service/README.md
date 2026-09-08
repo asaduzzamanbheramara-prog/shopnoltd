@@ -14,7 +14,7 @@ Do not commit the VPN admin token. Provision it into `shopno-apps` before the de
 
 ```bash
 export VPN_ADMIN_TOKEN='REPLACE_WITH_A_NEW_RANDOM_TOKEN'
-./scripts/create_vpn_secret.sh
+bash scripts/create_vpn_secret.sh
 unset VPN_ADMIN_TOKEN
 ```
 
