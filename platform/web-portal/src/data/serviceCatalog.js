@@ -15,7 +15,7 @@ export const SERVICES = [
   SERVICE('🔴', 'Live Streaming', 'Authenticated live-stream creation and creator workflows.', 'https://live.shopnoltd.dpdns.org', 'Media'),
   SERVICE('📰', 'Social Feed', 'Posts, reactions, comments, shares, follows and discovery.', '/feed', 'Social'),
   SERVICE('☁️', 'Cloud Storage', 'Cloud files, objects and storage workflows.', '/dashboard', 'Productivity'),
-  SERVICE('✉️', 'Mail', 'Shopnoltd mailbox, email and notification workflows.', '/dashboard', 'Communication'),
+  SERVICE('✉️', 'Mail', 'Shopnoltd mailbox, email and notification workflows.', 'https://mail.shopnoltd.dpdns.org', 'Communication'),
   SERVICE('💳', 'Billing & Subscriptions', 'Plans, subscriptions, invoices and billing operations.', '/billing', 'Business'),
   SERVICE('💰', 'Payments & Wallet', 'Payment methods, deposits, transactions and wallet operations.', '/wallet', 'Business'),
   SERVICE('💱', 'Exchange', 'Supported currency and exchange operations with ledger-backed settlement.', '/exchange', 'Business'),
@@ -50,7 +50,7 @@ export const CONNECTED_PLATFORMS = [
 
 export const ADMIN_SERVICES = [
   SERVICE('🛡️', 'Platform Admin', 'Unified administration for users, tenants, services, database operations, reports and platform controls.', '/admin', 'Administration'),
-  SERVICE('🤖', 'AI Model Administration', 'Manage AI providers and models, activation, defaults, connectivity tests and credentials.', '/admin/ai', 'Administration'),
+  SERVICE('🤖', 'AI Model Administration', 'Manage AI providers and models, activation, defaults, connectivity tests and credentials from the authorized admin workspace.', '/admin', 'Administration'),
   SERVICE('🗄️', 'Database & Tables', 'Browse and manage authorized database tables and rows with RBAC/audit controls.', '/admin/database', 'Administration'),
   SERVICE('📊', 'Reports & Analytics', 'Generate, review and publish platform reports and operational analytics.', '/reports', 'Visualization'),
   SERVICE('🧊', '3D / HD / 4K Visualization', 'Interactive service topology and visualization workspace for platform operations.', '/admin', 'Visualization'),
