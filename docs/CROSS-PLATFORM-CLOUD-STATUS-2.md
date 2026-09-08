@@ -1,0 +1,1 @@
+Cross-platform Shopnoltd Cloud includes Windows, Linux, macOS, Android phone/tablet, and iPhone/iPad targets. GitHub Actions validates the desktop and mobile application projects; real-device runtime and production signing remain explicit release gates.
