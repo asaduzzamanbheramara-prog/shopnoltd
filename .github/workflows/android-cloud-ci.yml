@@ -22,11 +22,13 @@ jobs:
         run: python3 -m py_compile platform/android-cloud/controller/main.py
 
       - name: Validate gateway shell
-        run: shellcheck platform/android-cloud/gateway/entrypoint.sh
+        run: bash -n platform/android-cloud/gateway/entrypoint.sh
+
+      - name: Setup kustomize
+        uses: imranismail/setup-kustomize@v2
 
       - name: Validate Kubernetes bundle
-        uses: imranismail/setup-kustomize@v2
-      - run: kustomize build k8s/services/android-cloud >/tmp/android-cloud-rendered.yaml
+        run: kustomize build k8s/services/android-cloud >/tmp/android-cloud-rendered.yaml
 
       - name: Build controller image
         run: docker build -f platform/android-cloud/controller/Dockerfile -t shopnoltd/android-cloud-controller:test .
