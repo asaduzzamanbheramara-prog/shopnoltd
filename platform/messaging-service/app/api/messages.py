@@ -1,3 +1,4 @@
+import json
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -9,6 +10,7 @@ from app.core.db import SessionLocal
 from app.core.security import verify_token
 from app.models.models import Message, MessageReaction, Participant
 from app.schemas.schemas import MsgIn, MsgOut
+from shopno_core.database.redis import redis_client
 
 router = APIRouter()
 bearer = HTTPBearer()
@@ -42,6 +44,10 @@ async def require_member(conv_id: str, user_id: str, s: AsyncSession):
     return p
 
 
+async def publish_event(event: dict):
+    await redis_client.publish(f"shopnoltd:messaging:{event['conversation_id']}", json.dumps(event))
+
+
 @router.post("/c/{conv_id}", response_model=MsgOut, status_code=201)
 async def send(conv_id: str, body: MsgIn, user=Depends(current_user), s: AsyncSession = Depends(db)):
     await require_member(conv_id, user["sub"], s)
@@ -59,7 +65,9 @@ async def send(conv_id: str, body: MsgIn, user=Depends(current_user), s: AsyncSe
     s.add(m)
     await s.commit()
     await s.refresh(m)
-    return out(m)
+    result = out(m)
+    await publish_event({"type": "message", "conversation_id": conv_id, "message": result.model_dump()})
+    return result
 
 
 @router.get("/c/{conv_id}", response_model=list[MsgOut])
@@ -87,7 +95,9 @@ async def edit(msg_id: str, body: MsgIn, user=Depends(current_user), s: AsyncSes
     m.body, m.attachments, m.edited_at = body.body, body.attachments, datetime.utcnow()
     await s.commit()
     await s.refresh(m)
-    return out(m)
+    result = out(m)
+    await publish_event({"type": "message.updated", "conversation_id": m.conversation_id, "message": result.model_dump()})
+    return result
 
 
 @router.post("/{msg_id}/reactions")
@@ -103,6 +113,8 @@ async def react(msg_id: str, reaction: str = Query(..., min_length=1, max_length
     if not existing:
         s.add(MessageReaction(message_id=msg_id, user_id=user["sub"], reaction=reaction))
         await s.commit()
+        await publish_event({"type": "reaction", "conversation_id": m.conversation_id, "message_id": msg_id,
+                             "user_id": user["sub"], "reaction": reaction})
     return {"reacted": True, "reaction": reaction}
 
 
@@ -119,6 +131,8 @@ async def unreact(msg_id: str, reaction: str = Query(..., min_length=1, max_leng
     if r:
         await s.delete(r)
         await s.commit()
+        await publish_event({"type": "reaction.removed", "conversation_id": m.conversation_id, "message_id": msg_id,
+                             "user_id": user["sub"], "reaction": reaction})
     return {"unreacted": True, "reaction": reaction}
 
 
@@ -137,7 +151,9 @@ async def mark_read(conv_id: str, user=Depends(current_user), s: AsyncSession = 
     p = await require_member(conv_id, user["sub"], s)
     p.last_read_at = datetime.utcnow()
     await s.commit()
-    return {"read_at": p.last_read_at.isoformat()}
+    result = p.last_read_at.isoformat()
+    await publish_event({"type": "read", "conversation_id": conv_id, "user_id": user["sub"], "read_at": result})
+    return {"read_at": result}
 
 
 @router.delete("/{msg_id}")
@@ -149,4 +165,6 @@ async def delete(msg_id: str, user=Depends(current_user), s: AsyncSession = Depe
         raise HTTPException(403, "not your message")
     m.deleted_at = datetime.utcnow()
     await s.commit()
+    await publish_event({"type": "message.deleted", "conversation_id": m.conversation_id, "message_id": m.id,
+                         "user_id": user["sub"], "deleted_at": m.deleted_at.isoformat()})
     return {"ok": True, "deleted_at": m.deleted_at.isoformat()}
