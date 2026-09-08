@@ -16,9 +16,10 @@ RUN apt-get update \
 WORKDIR /opt/aemu
 RUN git clone --depth 1 --branch master "${AEMU_REPO}" . \
     && git checkout "${AEMU_REF}" \
-    && git clone --depth 1 "${AEMU_PROTO_REPO}" hardware/google/aemu \
+    && git clone --depth 1 --no-checkout "${AEMU_PROTO_REPO}" hardware/google/aemu \
     && cd hardware/google/aemu \
-    && git checkout "${AEMU_PROTO_REF}" \
+    && git fetch --depth 1 origin "${AEMU_PROTO_REF}" \
+    && git checkout --detach "${AEMU_PROTO_REF}" \
     && cd /opt/aemu \
     && test -f hardware/google/aemu/protos/services/emulator-controller/emulator_controller.proto \
     && test -f hardware/google/aemu/protos/services/webrtc/rtc_service_v2.proto \
