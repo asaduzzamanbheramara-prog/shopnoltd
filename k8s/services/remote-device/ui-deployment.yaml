@@ -31,4 +31,4 @@ spec:
       volumes:
         - name: html
           configMap:
-            name: remote-device-ui
+            name: remote-device-ui-v2
