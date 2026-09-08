@@ -7,6 +7,9 @@ on:
   schedule:
     - cron: "0 3 * * *"
 
+permissions:
+  contents: write
+
 jobs:
   secret-scan:
     name: Scan for leaked secrets
@@ -23,6 +26,128 @@ jobs:
             -v "$PWD:/repo:ro" \
             zricethezav/gitleaks:latest \
             detect --source=/repo --no-git --redact --exit-code 2
+
+  auto-remediate-safe-findings:
+    name: Auto-remediate safe secret findings
+    needs: secret-scan
+    if: failure() && github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 1
+
+      - name: Detect and remediate safe findings
+        id: remediate
+        shell: bash
+        env:
+          HEAD_BRANCH: ${{ github.head_ref }}
+        run: |
+          set -euo pipefail
+          rm -f /tmp/gitleaks.json /tmp/gitleaks-findings.txt
+
+          docker run --rm \
+            -v "$PWD:/repo:rw" \
+            zricethezav/gitleaks:latest \
+            detect --source=/repo --no-git --report-format json --report-path=/repo/.gitleaks-auto-remediation.json --exit-code 2 || true
+
+          python3 - <<'PY'
+          import json
+          import os
+          import re
+          from pathlib import Path
+
+          report = Path('.gitleaks-auto-remediation.json')
+          if not report.exists():
+              raise SystemExit('Gitleaks report was not produced')
+
+          findings = json.loads(report.read_text(encoding='utf-8') or '[]')
+          changed = []
+          unresolved = []
+
+          safe_dirs = ('docs/', 'examples/', 'example/', 'tests/fixtures/', 'test/fixtures/', 'fixtures/')
+          assignment = re.compile(r'^(?P<indent>\\s*)(?P<key>[A-Za-z_][A-Za-z0-9_.-]*)(?P<sep>\\s*(?:=|:|:=)\\s*)(?P<quote>[\"\']?)(?P<value>.*?)(?P=quote)\\s*$')
+          secret_pattern = re.compile(r'^[A-Za-z0-9_./+@:-]{8,}$')
+
+          for item in findings:
+              path = item.get('File', '')
+              secret = item.get('Secret', '')
+              line_no = int(item.get('StartLine') or 0)
+              rule = item.get('RuleID', 'unknown')
+
+              if not path or not secret or not line_no:
+                  unresolved.append((path, rule, line_no))
+                  continue
+
+              p = Path(path)
+              if not p.is_file():
+                  unresolved.append((path, rule, line_no))
+                  continue
+
+              lines = p.read_text(encoding='utf-8', errors='strict').splitlines(keepends=True)
+              if line_no > len(lines):
+                  unresolved.append((path, rule, line_no))
+                  continue
+
+              original = lines[line_no - 1]
+              if secret not in original or not secret_pattern.match(secret):
+                  unresolved.append((path, rule, line_no))
+                  continue
+
+              new_line = None
+              if path.startswith(safe_dirs):
+                  new_line = original.replace(secret, '<REDACTED_SECRET>')
+              else:
+                  m = assignment.match(original.rstrip('\n'))
+                  if m and m.group('value') == secret:
+                      key = re.sub(r'[^A-Za-z0-9]+', '_', m.group('key')).upper().strip('_')
+                      if key and len(key) >= 3:
+                          replacement = '${' + key + '}'
+                          new_line = original.replace(secret, replacement, 1)
+
+              if new_line is None or new_line == original:
+                  unresolved.append((path, rule, line_no))
+                  continue
+
+              lines[line_no - 1] = new_line
+              p.write_text(''.join(lines), encoding='utf-8')
+              changed.append(path)
+
+          report.unlink(missing_ok=True)
+          Path('/tmp/gitleaks-findings.txt').write_text(
+              '\n'.join(f'{p}|{r}|line={l}' for p, r, l in unresolved),
+              encoding='utf-8',
+          )
+
+          unique_changed = sorted(set(changed))
+          print(f'Automatically remediated {len(unique_changed)} file(s).')
+          print(f'Unresolved finding count: {len(unresolved)}')
+
+          if not unique_changed:
+              raise SystemExit('No safe deterministic secret remediation was possible')
+          PY
+
+          git diff --check
+          if git diff --quiet; then
+            echo "No file changes were produced."
+            exit 1
+          fi
+
+      - name: Commit safe remediation
+        shell: bash
+        env:
+          HEAD_BRANCH: ${{ github.head_ref }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "ci: automatically remediate safe secret findings [skip ci]"
+          git push origin "HEAD:${HEAD_BRANCH}"
+
   image-scan:
     name: Scan images for vulnerabilities
     runs-on: ubuntu-latest
