@@ -9,6 +9,7 @@ import Callback from './pages/Callback'
 import Dashboard from './pages/Dashboard'
 import ProtectedRoute from './components/ProtectedRoute'
 import Blog from './pages/Blog'
+import BlogPost from './pages/BlogPost'
 import Plugins from './pages/Plugins'
 import Services from './pages/Services'
 import DomainRegistration from "./pages/DomainRegistration";
@@ -180,6 +181,7 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/pricing" element={<Pricing />} />
         <Route path="/blog" element={<Blog />} />
+        <Route path="/blog/:slug" element={<BlogPost />} />
         <Route path="/plugins" element={<Plugins />} />
         <Route path="/services" element={<Services />} />
         <Route path="/domain-registration" element={<DomainRegistration />} />
