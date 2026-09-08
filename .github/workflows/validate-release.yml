@@ -44,10 +44,24 @@ jobs:
             https://github.com/yannh/kubeconform/releases/download/v0.7.0/kubeconform-linux-amd64.tar.gz
           tar -xzf /tmp/kubeconform.tar.gz -C /tmp kubeconform
           sudo install /tmp/kubeconform /usr/local/bin/kubeconform
-      - name: Validate YAML manifests
+      - name: Validate Kubernetes resource YAML
         run: |
-          find k8s -type f \( -name '*.yaml' -o -name '*.yml' \) -print0 \
+          find k8s -type f \( -name '*.yaml' -o -name '*.yml' \) \
+            ! -path '*/patches/*' \
+            ! -name '*-patch.yaml' \
+            ! -name '*-patch.yml' \
+            -print0 \
             | xargs -0 -r kubeconform -strict -ignore-missing-schemas -summary
+      - name: Validate Kustomize overlays
+        run: |
+          if [ -d k8s/overlays ]; then
+            find k8s/overlays -name kustomization.yaml -print0 | while IFS= read -r -d '' k; do
+              dir="$(dirname "$k")"
+              echo "Validating Kustomize overlay: $dir"
+              kubectl kustomize "$dir" >/tmp/kustomize-rendered.yaml
+              kubeconform -strict -ignore-missing-schemas -summary /tmp/kustomize-rendered.yaml
+            done
+          fi
 
   android-reference:
     name: Validate Android integration references
