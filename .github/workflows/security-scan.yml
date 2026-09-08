@@ -74,7 +74,11 @@ jobs:
               secret = item.get('Secret') or ''
               line_no = int(item.get('StartLine') or 0)
               rule = item.get('RuleID', 'unknown')
-              if path.startswith('./'):
+              if path.startswith('/repo/'):
+                  path = path[len('/repo/'):]
+              elif path == '/repo':
+                  path = ''
+              elif path.startswith('./'):
                   path = path[2:]
               if not path or not secret or not line_no:
                   unresolved.append((path, rule, line_no)); continue
@@ -94,19 +98,13 @@ jobs:
               else:
                   m = assignment.match(original)
                   if m and m.group('value') == secret:
-                      # Only replace when the finding is the complete RHS of a simple assignment.
-                      # This avoids changing embedded strings or application logic heuristically.
-                      new_line = (
-                          m.group('indent') + m.group('prefix') + m.group('quote') +
-                          '${' + re.sub(r'[^A-Za-z0-9]+', '_', m.group('prefix')).upper().strip('_') + '}' +
-                          m.group('quote') + m.group('suffix')
+                      key_match = re.search(
+                          r'(?:export\s+)?([A-Za-z_][A-Za-z0-9_.-]*)\s*(?:=|:=|:)',
+                          m.group('prefix')
                       )
-                      key_match = re.search(r'(?:export\s+)?([A-Za-z_][A-Za-z0-9_.-]*)\s*(?:=|:=|:)', m.group('prefix'))
                       key = key_match.group(1) if key_match else ''
                       key = re.sub(r'[^A-Za-z0-9]+', '_', key).upper().strip('_')
-                      if not key or len(key) < 3:
-                          new_line = None
-                      else:
+                      if key and len(key) >= 3:
                           new_line = (
                               m.group('indent') + m.group('prefix') + m.group('quote') +
                               '${' + key + '}' + m.group('quote') + m.group('suffix')
