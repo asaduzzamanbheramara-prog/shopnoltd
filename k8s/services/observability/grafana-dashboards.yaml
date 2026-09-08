@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-provider
+  namespace: shopno-monitoring
+data:
+  dashboards.yaml: |
+    apiVersion: 1
+    providers:
+      - name: Shopnoltd
+        orgId: 1
+        folder: Shopnoltd
+        type: file
+        disableDeletion: true
+        editable: false
+        options:
+          path: /var/lib/grafana/dashboards
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-shopnoltd
+  namespace: shopno-monitoring
+data:
+  shopnoltd-overview.json: |
+    {
+      "title": "Shopnoltd Platform Overview",
+      "uid": "shopnoltd-overview",
+      "schemaVersion": 39,
+      "version": 1,
+      "refresh": "30s",
+      "time": {"from": "now-6h", "to": "now"},
+      "panels": [
+        {"type":"timeseries","title":"Targets Up","gridPos":{"x":0,"y":0,"w":12,"h":8},"targets":[{"expr":"sum(up)","legendFormat":"up"}]},
+        {"type":"timeseries","title":"HTTP Request Rate","gridPos":{"x":12,"y":0,"w":12,"h":8},"targets":[{"expr":"sum(rate(http_requests_total[5m]))","legendFormat":"requests/s"}]},
+        {"type":"timeseries","title":"Container Restarts","gridPos":{"x":0,"y":8,"w":12,"h":8},"targets":[{"expr":"sum(increase(kube_pod_container_status_restarts_total[1h]))","legendFormat":"restarts"}]},
+        {"type":"timeseries","title":"Memory Utilization","gridPos":{"x":12,"y":8,"w":12,"h":8},"targets":[{"expr":"1 - sum(node_memory_MemAvailable_bytes) / sum(node_memory_MemTotal_bytes)","legendFormat":"utilization"}]}
+      ]
+    }
