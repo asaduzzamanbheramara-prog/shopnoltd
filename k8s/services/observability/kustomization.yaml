@@ -8,6 +8,7 @@ resources:
   - rbac.yaml
   - kube-state-metrics.yaml
   - node-exporter.yaml
+  - alloy-logs.yaml
   - prometheus-config.yaml
   - prometheus-rules.yaml
   - prometheus-pvc.yaml
