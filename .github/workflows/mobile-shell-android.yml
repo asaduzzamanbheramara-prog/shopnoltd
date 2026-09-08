@@ -47,7 +47,8 @@ jobs:
         run: npm run sync:web
 
       - name: Build Shopnoltd debug APK
-        run: bash ./android/gradlew --no-daemon --stacktrace assembleWebDebug
+        working-directory: apps/mobile-shell/android
+        run: bash ./gradlew --no-daemon --stacktrace assembleWebDebug
 
       - name: Verify and package Shopnoltd APK
         shell: bash
@@ -66,7 +67,8 @@ jobs:
         run: npm run sync:admin
 
       - name: Build Shopnoltd Admin debug APK
-        run: bash ./android/gradlew --no-daemon --stacktrace assembleAdminDebug
+        working-directory: apps/mobile-shell/android
+        run: bash ./gradlew --no-daemon --stacktrace assembleAdminDebug
 
       - name: Verify and package Shopnoltd Admin APK
         shell: bash
