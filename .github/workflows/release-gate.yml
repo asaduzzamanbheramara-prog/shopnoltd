@@ -55,7 +55,6 @@ jobs:
   public-smoke:
     name: Public endpoint smoke tests
     needs: repository-validation
-    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -100,13 +99,11 @@ jobs:
     if: always()
     runs-on: ubuntu-latest
     steps:
-      - name: Require all applicable gates to pass
+      - name: Require every release gate to pass
         shell: bash
         run: |
           set -euo pipefail
           echo "repository-validation=${{ needs.repository-validation.result }}"
           echo "public-smoke=${{ needs.public-smoke.result }}"
           test '${{ needs.repository-validation.result }}' = success
-          if [ '${{ github.event_name }}' != 'pull_request' ]; then
-            test '${{ needs.public-smoke.result }}' = success
-          fi
+          test '${{ needs.public-smoke.result }}' = success
