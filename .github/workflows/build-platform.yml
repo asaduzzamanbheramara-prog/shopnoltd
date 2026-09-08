@@ -75,7 +75,7 @@ jobs:
         if: steps.check.outputs.skip == 'false'
         uses: docker/build-push-action@v6
         with:
-          context: .
+          context: ${{ matrix.service == 'vpn-service' && 'services/vpn-service' || '.' }}
           file: ${{ matrix.dockerfile }}
           push: true
           tags: |
