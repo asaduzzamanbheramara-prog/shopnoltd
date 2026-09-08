@@ -1,93 +1,98 @@
-# AI Platform — Multi-Provider Model Management (Phase 1)
+# Shopnoltd AI Platform — Provider and Model Management
 
-Adds provider/model CRUD + activation to `ai-platform`, replacing the single
-hardcoded Ollama URL with a router that can call OpenAI, Anthropic, Ollama,
-Azure OpenAI, or any OpenAI-compatible endpoint — selected at runtime from
-the database, not from env vars.
+The Shopnoltd AI platform provides a database-backed multi-provider model
+registry. Provider credentials are encrypted at rest and are never returned
+raw by the API. Runtime inference resolves an active model and its provider,
+constructs the appropriate adapter, and can fall back to another active model
+when the selected model fails.
 
-## What this does NOT touch
-- Your existing `llm_model` / `llm_url` config fields are kept as fallback
-  only — nothing currently reading them breaks.
-- Doesn't change auth for other services; `require_admin` here expects the
-  same JWT your other `shopno-platform` services already validate (adjust
-  `app/core/security.py` if your actual decode logic differs from this
-  RS256/HS256 guess — check how `gateway` currently validates tokens and
-  mirror it exactly).
+## Supported provider types
 
-## 1. Files — where they go
-Copy everything under `app/` into `platform/ai-platform/app/`, merging
-`core/config.py` and `api/inference.py` with what's already there (they're
-drop-in replacements, not separate modules). Copy `alembic/versions/...` into
-your existing alembic setup, **after setting `down_revision` to your current
-head** — check with `alembic current` in the ai-platform service.
+- `openai`
+- `anthropic`
+- `google` (Gemini)
+- `ollama`
+- `azure_openai`
+- `custom` (OpenAI-compatible endpoint)
 
-## 2. New dependencies
-Add to `requirements.txt` (or `pyproject.toml`) for `ai-platform`:
-```
-cryptography>=42.0
-sqlalchemy[asyncio]>=2.0
-asyncpg>=0.29
-alembic>=1.13
-httpx>=0.27
-```
+Ollama does not require an API key. Credential-backed providers require an
+API key before their connectivity test or inference can succeed.
 
-## 3. Database
-Create the `ai_platform` database on your shared Postgres if it doesn't
-already exist (per your established per-service-database pattern), then run:
-```
-alembic upgrade head
-```
+## Credential lifecycle
 
-## 4. Encryption key secret
-```
-python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
-kubectl -n shopno-platform create secret generic ai-platform-encryption \
-  --from-literal=AI_KEY_ENCRYPTION_KEY='<paste-key>'
-```
-Then wire it into the `ai-platform` Deployment env (see
-`k8s/ai-platform-encryption-secret.yaml` for the exact snippet), and add it
-to your kustomize source — not just a live patch, per your drift concerns.
+Provider API keys are accepted only through the authenticated admin provider
+API, encrypted with `AI_KEY_ENCRYPTION_KEY`, stored as encrypted database
+values, and returned only as masked values. The encryption key is supplied to
+the workload through the Kubernetes `ai-platform-encryption` Secret and must
+never be committed to Git.
 
-## 5. Router registration
-See `app/main_router_registration_snippet.py` — add those three
-`include_router` calls to your existing `main.py`.
+The deployment also imports the normal `ai-platform-secret` for service
+configuration. The encryption key is deliberately a separate Secret so it can
+be rotated independently of provider records.
 
-## 6. Quick usage
-```bash
-# Register a provider (API key encrypted at rest, never returned raw)
-curl -X POST https://<gateway>/api/ai/providers \
-  -H "Authorization: Bearer $ADMIN_JWT" -H "Content-Type: application/json" \
-  -d '{"name":"anthropic-prod","provider_type":"anthropic","api_key":"sk-ant-...","is_active":true}'
+## Provider API
 
-# Register a model under that provider
-curl -X POST https://<gateway>/api/ai/models/providers/<provider_id> \
-  -H "Authorization: Bearer $ADMIN_JWT" -H "Content-Type: application/json" \
-  -d '{"model_name":"claude-sonnet-4-6","display_name":"Claude Sonnet 4.6","is_active":true,"is_default":true}'
+The authenticated admin endpoints are:
 
-# Test connectivity/auth for a provider without spending tokens on a full call
-curl -X POST https://<gateway>/api/ai/providers/<provider_id>/test -H "Authorization: Bearer $ADMIN_JWT"
+- `GET /api/ai/providers` — list providers with masked credentials
+- `POST /api/ai/providers` — create a provider
+- `GET /api/ai/providers/{provider_id}` — inspect provider metadata
+- `PATCH /api/ai/providers/{provider_id}` — update provider metadata/credential
+- `POST /api/ai/providers/{provider_id}/activate` — enable a provider
+- `POST /api/ai/providers/{provider_id}/deactivate` — disable a provider
+- `POST /api/ai/providers/{provider_id}/test` — verify provider connectivity/auth
+- `DELETE /api/ai/providers/{provider_id}` — remove a provider and its models
 
-# Run inference against whichever model is currently default/active
-curl -X POST https://<gateway>/api/ai/infer \
-  -H "Content-Type: application/json" -d '{"prompt":"hello"}'
-```
+The connectivity test is designed to be safe for operators: missing
+credentials and provider failures are reported without returning upstream
+response bodies, authorization headers, or stored credentials.
 
-## 7. One thing worth checking first
-Your original debug session showed `kubectl get pods -l app=ai-platform`
-returning **zero pods** in `shopno-platform`. Before any of this is useful,
-confirm the deployment actually exists and is running:
-```
-kubectl -n shopno-platform get deploy,pods -l app=ai-platform
-```
-If it's missing entirely, that's a separate fix (deployment manifest applied?
-label mismatch? different label key?) before this module has anywhere to run.
+## Model API
 
-## Next phases (not built yet, per your priority order)
-- **Phase 2**: Social login (Google/Facebook/GitHub) — this should be wired
-  as Identity Providers inside your existing Keycloak (`shopno-identity`),
-  not a custom OAuth implementation. I'll need your current Keycloak realm
-  export or admin access details to scope exact steps.
-- **Phase 3**: Billing/payment/exchange — since you already have a gateway
-  account, next step is telling me which gateway (Stripe / SSLCommerz /
-  other) so I can match their SDK and webhook signature verification
-  correctly rather than guessing.
+Models are registered under providers and can be activated/deactivated and
+prioritized. Inference selects the requested active model when one is supplied;
+otherwise it selects the active default/highest-priority model. If the first
+active model fails, the router attempts another active model rather than
+silently returning a demo/stub response.
+
+## Runtime configuration
+
+Kubernetes provides:
+
+- `ai-platform-config` ConfigMap for non-secret runtime configuration
+- `ai-platform-secret` Secret for service secrets/configuration
+- `ai-platform-encryption` Secret containing `AI_KEY_ENCRYPTION_KEY`
+- the AI platform Deployment with persistent data storage and readiness checks
+
+The encryption Secret is intentionally not represented as plaintext YAML in
+this repository. Provision it through the cluster's secret-management process
+before enabling credential-backed providers.
+
+## Operational setup
+
+Generate a Fernet key using the `cryptography` package and provision it as
+`AI_KEY_ENCRYPTION_KEY` in the cluster Secret. Do not paste the generated key
+into Git, tickets, logs, CI output, or chat.
+
+After deployment, the release validation should cover:
+
+1. provider creation with a test credential;
+2. masked credential response (never the raw key);
+3. provider connectivity test;
+4. model creation and activation;
+5. real inference through the platform API;
+6. invalid/missing credential handling;
+7. fallback to another active provider/model;
+8. encryption-key mismatch handling;
+9. secret redaction in application errors/logs.
+
+## Important release distinction
+
+A successful Kubernetes build or deployment proves that the AI service can
+start; it does **not** prove that an external provider credential is valid.
+Each external provider must be tested with its real cluster configuration.
+Ollama must likewise be tested against the configured runtime endpoint.
+
+Keep provider credentials in Kubernetes/secret-management infrastructure and
+keep the Git repository limited to code, non-secret configuration, manifests,
+and documentation.
