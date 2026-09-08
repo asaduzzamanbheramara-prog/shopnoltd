@@ -26,7 +26,7 @@ async def lifespan(app: FastAPI):
     await redis_client.aclose()
 
 
-app = FastAPI(title="Shopnoltd Social Service", version="0.3.0", lifespan=lifespan)
+app = FastAPI(title="Shopnoltd Social Service", version="0.4.0", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origin_regex=settings.cors_origin_regex,
@@ -58,6 +58,11 @@ app.include_router(
     __import__("app.api.follows", fromlist=["router"]).router,
     prefix="/api/v1/follows",
     tags=["follows"],
+)
+app.include_router(
+    __import__("app.api.post_views", fromlist=["router"]).router,
+    prefix="/api/v1/views",
+    tags=["views"],
 )
 
 
