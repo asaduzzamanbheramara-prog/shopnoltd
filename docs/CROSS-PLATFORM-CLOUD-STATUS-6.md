@@ -1,1 +1,0 @@
-Shopnoltd Cloud cross-platform targets: Windows, Linux, macOS, Android phone/tablet, iPhone/iPad, and browser control. One identity and device control plane; platform-specific capabilities are reported truthfully.
