@@ -1,0 +1,1 @@
+Shopnoltd cross-platform application targets: Windows, Linux, macOS, Android phone/tablet, iPhone/iPad. Shared OIDC identity, enrollment, authorization and device-cloud control plane. Runtime device tests and signing are release gates.
