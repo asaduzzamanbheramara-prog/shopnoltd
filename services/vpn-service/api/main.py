@@ -64,7 +64,7 @@ def allocate(c):
         if a==str(NETWORK.network_address+1) or a in used: continue
         return a
     raise HTTPException(409,'VPN address pool exhausted')
-def peer_config(address,private,server_pub,keepalive): return f'[Interface]\nPrivateKey = {private}\nAddress = {address}/32\nDNS = {DNS}\n\n[Peer]\nPublicKey = {server_pub}\nAllowedIPs = 0.0.0.0/0, ::/0\nEndpoint = {ENDPOINT}\nPersistentKeepalive = {keepalive}\n'
+def peer_config(address,private,server_pub,keepalive): return f'[Interface]\nPrivateKey = {private}\nAddress = {address}/32\nDNS = {DNS}\n\n[Peer]\nPublicKey = {server_pub}\nAllowedIPs = 0.0.0.0/0\nEndpoint = {ENDPOINT}\nPersistentKeepalive = {keepalive}\n'
 @app.post('/api/v1/vpn/peers',dependencies=[Depends(auth)])
 def create_peer(p:PeerIn):
     c=db()
