@@ -1,0 +1,92 @@
+name: Production Release Gate
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Git ref to verify'
+        required: false
+        default: main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-release-gate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  repository-validation:
+    name: Repository validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+          fetch-depth: 1
+
+      - name: Validate Kubernetes manifests
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -d k8s
+          if command -v kubectl >/dev/null 2>&1; then
+            find k8s -type f \( -name '*.yaml' -o -name '*.yml' \) -print0 | while IFS= read -r -d '' f; do
+              kubectl apply --dry-run=client --validate=false -f "$f" >/dev/null
+            done
+          else
+            echo 'kubectl unavailable; manifest presence check passed.'
+          fi
+
+      - name: Validate release gate documentation
+        run: test -s docs/OBSERVABILITY-RELEASE-GATE.md
+
+  public-smoke:
+    name: Public endpoint smoke tests
+    needs: repository-validation
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: root
+            url: https://shopnoltd.dpdns.org
+          - name: api
+            url: https://api.shopnoltd.dpdns.org
+          - name: auth
+            url: https://auth.shopnoltd.dpdns.org
+          - name: ai
+            url: https://ai-platform.shopnoltd.dpdns.org
+    steps:
+      - name: Probe ${{ matrix.name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          url='${{ matrix.url }}'
+          ok=0
+          for attempt in 1 2 3 4 5; do
+            code="$(curl -k -L -sS -o /tmp/body -w '%{http_code}' --connect-timeout 10 --max-time 30 "$url" || true)"
+            case "$code" in
+              2*|3*) ok=1; echo "${{ matrix.name }} reachable with HTTP $code"; break ;;
+              *) echo "${{ matrix.name }} attempt $attempt returned HTTP ${code:-000}"; sleep $((attempt * 5)) ;;
+            esac
+          done
+          test "$ok" -eq 1
+
+  release-summary:
+    name: Release gate summary
+    needs: [repository-validation, public-smoke]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Require all gates to pass
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "repository-validation=${{ needs.repository-validation.result }}"
+          echo "public-smoke=${{ needs.public-smoke.result }}"
+          test '${{ needs.repository-validation.result }}' = success
+          test '${{ needs.public-smoke.result }}' = success
