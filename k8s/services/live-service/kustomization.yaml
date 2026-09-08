@@ -4,4 +4,8 @@ kind: Kustomization
 resources:
   - deployment.yaml
   - service.yaml
-  - ingress.yaml
+  - configmap.yaml
+  - networkpolicy.yaml
+
+# Runtime secret is provisioned by the cluster secret manager.
+# secret.example.yaml is documentation only and is intentionally not rendered.
