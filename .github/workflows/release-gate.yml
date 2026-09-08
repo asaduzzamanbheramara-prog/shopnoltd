@@ -2,13 +2,15 @@ name: Production Release Gate
 
 on:
   pull_request:
-    branches: [main]
+    branches:
+      - main
   push:
-    branches: [main]
+    branches:
+      - main
   workflow_dispatch:
     inputs:
       ref:
-        description: 'Git ref to verify'
+        description: Git ref to verify
         required: false
         default: main
 
@@ -42,11 +44,13 @@ jobs:
               kubectl apply --dry-run=client --validate=false -f "$f" >/dev/null
             else
               python3 - "$f" <<'PY'
-import pathlib, sys
-p = pathlib.Path(sys.argv[1])
-text = p.read_text(encoding='utf-8')
+import pathlib
+import sys
+
+path = pathlib.Path(sys.argv[1])
+text = path.read_text(encoding="utf-8")
 if not text.strip():
-    raise SystemExit(f'empty manifest: {p}')
+    raise SystemExit(f"empty manifest: {path}")
 PY
             fi
           done < <(find k8s -type f \( -name '*.yaml' -o -name '*.yml' \) -print0)
@@ -65,13 +69,13 @@ PY
       matrix:
         include:
           - name: root
-            url: https://shopnoltd.dpdns.org
+            url: 'https://shopnoltd.dpdns.org'
           - name: api
-            url: https://api.shopnoltd.dpdns.org
+            url: 'https://api.shopnoltd.dpdns.org'
           - name: auth
-            url: https://auth.shopnoltd.dpdns.org
+            url: 'https://auth.shopnoltd.dpdns.org'
           - name: ai
-            url: https://ai-platform.shopnoltd.dpdns.org
+            url: 'https://ai-platform.shopnoltd.dpdns.org'
     steps:
       - name: Probe ${{ matrix.name }}
         shell: bash
@@ -82,17 +86,26 @@ PY
           for attempt in 1 2 3 4 5; do
             code="$(curl -k -L -sS -o /tmp/body -w '%{http_code}' --connect-timeout 10 --max-time 30 "$url" || true)"
             case "$code" in
-              2*|3*) ok=1; echo "${{ matrix.name }} reachable with HTTP $code"; break ;;
-              *) echo "${{ matrix.name }} attempt $attempt returned HTTP ${code:-000}"; sleep $((attempt * 5)) ;;
+              2*|3*)
+                ok=1
+                echo "${{ matrix.name }} reachable with HTTP $code"
+                break
+                ;;
+              *)
+                echo "${{ matrix.name }} attempt $attempt returned HTTP ${code:-000}"
+                sleep $((attempt * 5))
+                ;;
             esac
           done
           test "$ok" -eq 1
 
   release-summary:
     name: Release gate summary
-    needs: [repository-validation, public-smoke]
-    runs-on: ubuntu-latest
+    needs:
+      - repository-validation
+      - public-smoke
     if: always()
+    runs-on: ubuntu-latest
     steps:
       - name: Require all applicable gates to pass
         shell: bash
