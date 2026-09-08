@@ -4,85 +4,71 @@ kind: Job
 metadata:
   name: postgres-platform-migration
   namespace: shopno-data
-
+  annotations:
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/sync-wave: "-10"
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
 
 spec:
-
   backoffLimit: 3
 
   template:
-
+    metadata:
+      labels:
+        app.kubernetes.io/name: postgres-migration
+        app.kubernetes.io/part-of: shopnoltd
     spec:
-
       restartPolicy: Never
 
-
       containers:
-
       - name: migration
-
         image: postgres:16
 
-
         envFrom:
-
         - secretRef:
             name: postgres-secret
 
-
         command:
-
         - /bin/bash
-
         - -c
-
         - |
-
-          export PGPASSWORD=$POSTGRES_PASSWORD
-
+          set -euo pipefail
+          export PGPASSWORD="$POSTGRES_PASSWORD"
 
           until pg_isready \
-          -h $POSTGRES_HOST \
-          -p $POSTGRES_PORT \
-          -U $POSTGRES_USER
-          do
+            -h "${POSTGRES_HOST:-postgres}" \
+            -p "${POSTGRES_PORT:-5432}" \
+            -U "$POSTGRES_USER"; do
             sleep 3
           done
 
-
           echo "Running database migration"
 
+          shopt -s nullglob
+          files=(/sql/*.sql)
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "ERROR: no SQL migration files mounted"
+            exit 1
+          fi
 
-          for file in /sql/*.sql
-          do
-
+          for file in "${files[@]}"; do
             echo "Executing $file"
-
-
             psql \
-            -h $POSTGRES_HOST \
-            -p $POSTGRES_PORT \
-            -U $POSTGRES_USER \
-            -d $POSTGRES_DB \
-            -f $file || true
-
-
+              -h "${POSTGRES_HOST:-postgres}" \
+              -p "${POSTGRES_PORT:-5432}" \
+              -U "$POSTGRES_USER" \
+              -d "${POSTGRES_DB:-postgres}" \
+              -v ON_ERROR_STOP=1 \
+              -f "$file"
           done
 
-
-          echo "Migration finished"
-
+          echo "Migration finished successfully"
 
         volumeMounts:
-
         - name: sql
           mountPath: /sql
 
-
       volumes:
-
       - name: sql
-
         configMap:
-
           name: postgres-platform-migrations

@@ -29,24 +29,40 @@ async def create_withdrawal(body: WithdrawalIn, user=Depends(current_user), s: A
     if body.amount < settings.min_withdrawal or body.amount > settings.max_withdrawal:
         raise HTTPException(400, "amount out of range")
     currency = body.currency.upper()
-    res = await s.execute(select(Wallet).where(Wallet.user_id == user["sub"], Wallet.currency == currency))
+    try:
+        provider = get_provider(body.method)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    if hasattr(provider, "enabled") and not provider.enabled:
+        raise HTTPException(503, f"Payment provider '{body.method.value}' is not configured")
+
+    # Serialize withdrawals for the same wallet so concurrent requests cannot
+    # both observe the same available balance and over-reserve funds.
+    res = await s.execute(
+        select(Wallet)
+        .where(Wallet.user_id == user["sub"], Wallet.currency == currency)
+        .with_for_update()
+    )
     w = res.scalar_one_or_none()
     if not w:
         raise HTTPException(404, "wallet not found")
-    if Decimal(str(w.balance)) - Decimal(str(w.frozen)) < Decimal(str(body.amount)):
+    amount = Decimal(str(body.amount))
+    balance = Decimal(str(w.balance))
+    frozen = Decimal(str(w.frozen))
+    if balance - frozen < amount:
         raise HTTPException(400, "insufficient available funds")
-    w.frozen = Decimal(str(w.frozen)) + Decimal(str(body.amount))
+
+    w.frozen = frozen + amount
     tx = Transaction(
         tenant_id=user.get("tenant_id", "default"), user_id=user["sub"], wallet_id=w.id,
         type=TxType.withdrawal, method=body.method,
         status=TxStatus.requires_approval if settings.admin_approval_required else TxStatus.processing,
-        amount=body.amount, currency=currency, fee=body.amount * settings.platform_fee_pct / 100,
+        amount=body.amount, currency=currency, fee=amount * settings.platform_fee_pct / 100,
         meta=body.metadata,
     )
     s.add(tx)
     await s.flush()
     try:
-        provider = get_provider(body.method)
         out = await provider.create_withdrawal(tx, destination=body.destination)
     except NotImplementedError as exc:
         await s.rollback(); raise HTTPException(400, str(exc)) from exc

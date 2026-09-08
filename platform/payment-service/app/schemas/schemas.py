@@ -19,6 +19,7 @@ class DepositIn(BaseModel):
     amount: float = Field(gt=0)
     method: PaymentMethod
     return_url: str | None = None
+    idempotency_key: str = Field(min_length=8, max_length=128)
     metadata: dict = {}
 
 

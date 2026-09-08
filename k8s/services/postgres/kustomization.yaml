@@ -13,6 +13,7 @@ resources:
 - networkpolicy.yaml
 - poddisruptionbudget.yaml
 - servicemonitor.yaml
+- migration
 
 labels:
 - includeSelectors: true
