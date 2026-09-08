@@ -21,13 +21,16 @@ jobs:
       - run: |
           python - <<'PY'
           import os
+          import tempfile
           os.environ['VPN_ADMIN_TOKEN'] = 'ci-token'
+          os.environ['VPN_DATA_DIR'] = tempfile.mkdtemp(prefix='vpn-ci-')
           from fastapi.testclient import TestClient
           from api.main import app
           c = TestClient(app)
           r = c.get('/healthz')
           assert r.status_code == 200 and r.json()['status'] == 'ok'
-          print('VPN API health test passed')
+          assert c.get('/api/v1/vpn/peers').status_code == 401
+          print('VPN API health/auth guard test passed')
           PY
   docker:
     runs-on: ubuntu-latest
