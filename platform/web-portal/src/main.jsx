@@ -21,12 +21,17 @@ import AdminInfrastructure from './pages/AdminInfrastructure'
 import DatabaseControlPlane from './pages/DatabaseControlPlaneEnhanced'
 import AdminRoute from './components/AdminRoute'
 import FinancialCenter from './pages/FinancialCenter'
+import SocialFeed from './pages/SocialFeed'
+import PostDetail from './pages/PostDetail'
+import WorkHub from './pages/WorkHub'
+import AccountHub from './pages/AccountHub'
 import { isPlatformAdmin } from './lib/jwt'
 
 const PUBLIC_LINKS = [
   ['Pricing', '/pricing'],
+  ['Feed', '/feed'],
+  ['Work', '/work'],
   ['Blog', '/blog'],
-  ['Plugins', '/plugins'],
   ['Services', '/services'],
 ]
 
@@ -50,10 +55,15 @@ function Nav() {
         Shopnoltd
       </Link>
       <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'flex-end', gap: '8px 16px', minWidth: 0 }}>
-        {PUBLIC_LINKS.map(([label, path]) => <Link key={path} to={path} style={{ color: 'white', textDecoration: 'none', padding: '6px 2px', whiteSpace: 'nowrap' }}>{label}</Link>)}
+        {PUBLIC_LINKS.map(([label, path]) => <Link key={path} to={path} style={{ color: 'white', textDecoration: 'none', padding: '6px 2px', whiteSpace: 'nowrap', fontWeight: location.pathname === path ? 700 : 400 }}>{label}</Link>)}
         {!loggedIn && <><Link to="/login" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px' }}>Login</Link><Link to="/register" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px' }}>Register</Link></>}
         {loggedIn && <>
           <Link to="/dashboard" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px' }}>Dashboard</Link>
+          <Link to="/wallet" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px' }}>Wallet</Link>
+          <Link to="/notifications" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px' }}>Notifications</Link>
+          <Link to="/account" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px' }}>Account</Link>
+          <Link to="/my-active-work" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px' }}>My Active Works</Link>
+          <Link to="/my-submission" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px' }}>My Submission</Link>
           <Link to="/my-blog" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px', fontWeight: location.pathname.startsWith('/my-blog') ? 700 : 400 }}>My Blog</Link>
           {isAdmin && <>
             <Link to="/admin" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px', fontWeight: 700 }}>Admin</Link>
@@ -93,6 +103,14 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/pricing" element={<Pricing />} />
+        <Route path="/feed" element={<SocialFeed />} />
+        <Route path="/post/:id" element={<PostDetail />} />
+        <Route path="/work" element={<ProtectedRoute><WorkHub /></ProtectedRoute>} />
+        <Route path="/create-work" element={<ProtectedRoute><WorkHub /></ProtectedRoute>} />
+        <Route path="/my-active-work" element={<ProtectedRoute><WorkHub /></ProtectedRoute>} />
+        <Route path="/my-submission" element={<ProtectedRoute><WorkHub /></ProtectedRoute>} />
+        <Route path="/account" element={<ProtectedRoute><AccountHub /></ProtectedRoute>} />
+        <Route path="/notifications" element={<ProtectedRoute><AccountHub /></ProtectedRoute>} />
         <Route path="/blog" element={<Blog />} />
         <Route path="/blog/:slug" element={<BlogPost />} />
         <Route path="/plugins" element={<Plugins />} />
