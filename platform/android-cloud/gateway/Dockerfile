@@ -4,7 +4,8 @@ ARG AEMU_REPO=https://github.com/google/android-emulator-container-scripts.git
 ARG AEMU_REF=0654f694b46794fae4b178f1e1a17cb60c5d2d34
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    BAZEL_ROOT=/opt/aemu
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends git ca-certificates \
