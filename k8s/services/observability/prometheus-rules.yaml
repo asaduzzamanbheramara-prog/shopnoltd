@@ -1,0 +1,59 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-rules
+  namespace: shopno-monitoring
+data:
+  shopnoltd.yml: |
+    groups:
+      - name: shopnoltd-platform
+        rules:
+          - alert: ShopnoltdPrometheusTargetDown
+            expr: up == 0
+            for: 5m
+            labels:
+              severity: warning
+              platform: shopnoltd
+            annotations:
+              summary: "Prometheus target is down"
+              description: "{{ $labels.job }} target {{ $labels.instance }} has been unavailable for more than 5 minutes."
+
+          - alert: ShopnoltdPodCrashLooping
+            expr: increase(kube_pod_container_status_restarts_total[15m]) > 3
+            for: 5m
+            labels:
+              severity: warning
+              platform: shopnoltd
+            annotations:
+              summary: "Pod is repeatedly restarting"
+              description: "{{ $labels.namespace }}/{{ $labels.pod }} container {{ $labels.container }} restarted more than 3 times in 15 minutes."
+
+          - alert: ShopnoltdPodNotReady
+            expr: kube_pod_status_ready{condition="true"} == 0
+            for: 10m
+            labels:
+              severity: warning
+              platform: shopnoltd
+            annotations:
+              summary: "Pod is not ready"
+              description: "{{ $labels.namespace }}/{{ $labels.pod }} has not been ready for 10 minutes."
+
+          - alert: ShopnoltdNodeMemoryPressure
+            expr: (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) > 0.90
+            for: 10m
+            labels:
+              severity: warning
+              platform: shopnoltd
+            annotations:
+              summary: "Node memory usage is high"
+              description: "{{ $labels.instance }} has more than 90% memory utilization."
+
+          - alert: ShopnoltdNodeFilesystemPressure
+            expr: (1 - node_filesystem_avail_bytes{fstype!~"tmpfs|overlay"} / node_filesystem_size_bytes{fstype!~"tmpfs|overlay"}) > 0.90
+            for: 15m
+            labels:
+              severity: warning
+              platform: shopnoltd
+            annotations:
+              summary: "Node filesystem usage is high"
+              description: "{{ $labels.instance }} filesystem {{ $labels.mountpoint }} is above 90% utilization."
