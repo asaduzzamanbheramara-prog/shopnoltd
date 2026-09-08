@@ -2,7 +2,7 @@ apiVersion: batch/v1
 kind: Job
 
 metadata:
-  generateName: postgres-platform-migration-
+  name: postgres-platform-migration
   namespace: shopno-data
   annotations:
     argocd.argoproj.io/hook: Sync
