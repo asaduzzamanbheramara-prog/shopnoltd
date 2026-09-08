@@ -1,0 +1,60 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: social-service
+  namespace: shopno-platform
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: social-service
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: ingress-nginx
+        - namespaceSelector:
+            matchLabels:
+              name: shopno-ingress
+        - namespaceSelector:
+            matchLabels:
+              name: shopno-platform
+        - namespaceSelector:
+            matchLabels:
+              name: shopno-monitoring
+      ports:
+        - port: 8080
+          protocol: TCP
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: shopno-data
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 5432
+          protocol: TCP
+        - port: 6379
+          protocol: TCP
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: shopno-identity
+      ports:
+        - port: 80
+          protocol: TCP
+        - port: 443
+          protocol: TCP
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: shopno-platform
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: storage-service
+      ports:
+        - port: 80
+          protocol: TCP

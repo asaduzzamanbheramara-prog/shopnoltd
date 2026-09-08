@@ -14,15 +14,24 @@ class Settings(BaseSettings):
     keycloak_issuer: str = "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
     keycloak_audience: str = "domain-service"
 
+    # Server-to-server billing authorization. Keep this in a Kubernetes Secret.
+    billing_engine_url: str = "http://billing-engine.shopno-payments.svc.cluster.local:5000"
+    billing_internal_key: str = ""
+    billing_currency: str = "USD"
+
+    # Namecheap registrar configuration. API access must be enabled and the
+    # caller IP must be whitelisted in Namecheap before production use.
+    namecheap_api_key: str = ""
+    namecheap_username: str = ""
+    namecheap_client_ip: str = ""
+    namecheap_sandbox: bool = True
+
     @property
     def cors_origins_list(self):
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
 
     @property
     def cors_origin_regex(self) -> str:
-        # Previously only matched the bare root domain exactly, missing every
-        # subdomain (including this service's own freedomain./domain. hosts).
-        # This regex matches the root domain and any subdomain instead.
         return r"^https://([a-z0-9-]+\.)*shopnoltd\.dpdns\.org$"
 
 
