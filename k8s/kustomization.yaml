@@ -23,6 +23,7 @@ resources:
 - services/payment-service
 - services/exchange-service
 - services/domain-service
+- services/vpn-service.yaml
 - services/guacamole
 - services/freedomain-service
 - services/mobile-api
