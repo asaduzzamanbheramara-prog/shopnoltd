@@ -6,12 +6,17 @@ on:
       - main
     paths:
       - "k8s/services/code-server/image/**"
+      - "k8s/services/code-server/deployment.yaml"
       - ".github/workflows/build-code-server.yml"
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   packages: write
+
+concurrency:
+  group: code-server-build-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   REGISTRY: ghcr.io
@@ -46,3 +51,36 @@ jobs:
             ${{ env.IMAGE_NAME }}:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Promote immutable image to GitOps
+        env:
+          IMAGE: ${{ env.IMAGE_NAME }}:${{ github.sha }}
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import os
+          import re
+
+          path = Path("k8s/services/code-server/deployment.yaml")
+          text = path.read_text()
+          image = os.environ["IMAGE"]
+          pattern = r'(?m)^([ \t]+image:) ghcr\.io/asaduzzamanbheramara-prog/shopnoltd-code-server:[^\n]+$'
+          updated, count = re.subn(pattern, rf'\1 {image}', text, count=1)
+          if count != 1:
+              raise SystemExit("Expected exactly one code-server image reference")
+          path.write_text(updated)
+          PY
+          git diff --check
+          git diff -- k8s/services/code-server/deployment.yaml
+
+      - name: Commit GitOps image update
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add k8s/services/code-server/deployment.yaml
+          if git diff --cached --quiet; then
+            echo "No GitOps image change required."
+            exit 0
+          fi
+          git commit -m "chore: update code-server image to ${GITHUB_SHA} [skip ci]"
+          git push origin HEAD:${GITHUB_REF_NAME}
