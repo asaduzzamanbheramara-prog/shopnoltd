@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 
+const API_BASE = 'https://social-service.shopnoltd.dpdns.org/api/v1/blog'
 const EMPTY = { id: null, title: '', slug: '', excerpt: '', content: '', cover_image: '', status: 'draft' }
 
 function authHeaders() {
@@ -14,7 +15,7 @@ export default function BlogAdmin() {
   const [busy, setBusy] = useState(false)
 
   async function load() {
-    const r = await fetch('/api/v1/blog/admin', { headers: authHeaders() })
+    const r = await fetch(`${API_BASE}/admin`, { headers: authHeaders() })
     if (!r.ok) throw new Error(`Unable to load blog admin (${r.status})`)
     setPosts(await r.json())
   }
@@ -29,7 +30,7 @@ export default function BlogAdmin() {
     try {
       const body = { ...form, status: publish ? 'published' : form.status }
       const method = form.id ? 'PUT' : 'POST'
-      const url = form.id ? `/api/v1/blog/${form.id}` : '/api/v1/blog'
+      const url = form.id ? `${API_BASE}/${form.id}` : API_BASE
       const r = await fetch(url, { method, headers: authHeaders(), body: JSON.stringify(body) })
       const data = await r.json()
       if (!r.ok) throw new Error(data.detail || `Save failed (${r.status})`)
@@ -45,7 +46,7 @@ export default function BlogAdmin() {
 
   async function remove(id) {
     if (!window.confirm('Delete this post?')) return
-    const r = await fetch(`/api/v1/blog/${id}`, { method: 'DELETE', headers: authHeaders() })
+    const r = await fetch(`${API_BASE}/${id}`, { method: 'DELETE', headers: authHeaders() })
     if (!r.ok) {
       const data = await r.json().catch(() => ({}))
       setMessage(data.detail || 'Delete failed')
