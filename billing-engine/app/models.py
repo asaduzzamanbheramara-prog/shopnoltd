@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, Numeric, String, Text
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import UUID, JSONB
 
 from app.database import Base
 
@@ -27,7 +27,9 @@ class User(Base):
 class Wallet(Base):
     __tablename__ = "wallets"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    # Native PostgreSQL UUID storage, exposed to this service as strings so
+    # existing JSON responses remain backward compatible.
+    id = Column(UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid.uuid4()))
     tenant_id = Column(String(64), nullable=False, default="default")
     user_id = Column(String(64), ForeignKey("users.id"), nullable=False)
     currency = Column(String(8), default="BDT")
@@ -40,10 +42,10 @@ class Wallet(Base):
 class Transaction(Base):
     __tablename__ = "transactions"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid.uuid4()))
     tenant_id = Column(String(64), nullable=False, default="default")
     user_id = Column(String(64), ForeignKey("users.id"))
-    wallet_id = Column(UUID(as_uuid=True), ForeignKey("wallets.id"), nullable=True)
+    wallet_id = Column(UUID(as_uuid=False), ForeignKey("wallets.id"), nullable=True)
     type = Column(String(32), nullable=False, default="deposit")
     method = Column(String(32), nullable=False, default="manual")
     status = Column(String(32))
@@ -53,11 +55,12 @@ class Transaction(Base):
     external_id = Column(String(128))
     reference = Column(String(128))
     idempotency_key = Column(String(128), nullable=True)
-    meta = Column(Text, nullable=True)
+    meta = Column(JSONB, nullable=False, default=dict)
     approved_by = Column(String(64), nullable=True)
     completed_at = Column(DateTime, nullable=True)
 
-    # Compatibility fields retained for the billing gateway/webhook handlers.
+    # Compatibility fields retained for the existing billing gateway/webhook
+    # handlers while both services converge on the canonical model.
     gateway = Column(String)
     gateway_reference = Column(Text)
     is_demo = Column(Boolean)
