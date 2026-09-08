@@ -90,9 +90,11 @@ async def verify_token(token: str) -> dict:
 async def verify_token_admin(token: str) -> dict:
     user = await verify_token(token)
 
-    roles = user.get("roles", [])
+    realm_access = user.get("realm_access") or {}
+    roles = set(user.get("roles") or [])
+    roles.update(realm_access.get("roles") or [])
 
-    if "admin" not in roles:
+    if not ({"admin", "platform_admin"} & roles):
         raise PermissionError("admin only")
 
     return user
@@ -123,7 +125,11 @@ async def require_admin(
             headers={"WWW-Authenticate": "Bearer"},
         ) from exc
 
-    if "admin" not in user.get("roles", []):
+    realm_access = user.get("realm_access") or {}
+    roles = set(user.get("roles") or [])
+    roles.update(realm_access.get("roles") or [])
+
+    if not ({"admin", "platform_admin"} & roles):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required",
