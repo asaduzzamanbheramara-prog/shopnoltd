@@ -13,10 +13,18 @@ KUBE_HOST = os.getenv("KUBE_HOST", "https://kubernetes.default.svc")
 KUBE_TOKEN_FILE = Path(os.getenv("KUBE_TOKEN_FILE", "/var/run/secrets/kubernetes.io/serviceaccount/token"))
 KUBE_CA_FILE = Path(os.getenv("KUBE_CA_FILE", "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"))
 KEYCLOAK_ISSUER = os.getenv("KEYCLOAK_ISSUER", "https://auth.shopnoltd.dpdns.org/realms/shopnoltd").rstrip("/")
-KEYCLOAK_AUDIENCE = os.getenv("KEYCLOAK_AUDIENCE", "shopnoltd-web")
+KEYCLOAK_JWKS_URL = os.getenv(
+    "KEYCLOAK_JWKS_URL",
+    f"{KEYCLOAK_ISSUER}/protocol/openid-connect/certs",
+)
+KEYCLOAK_AUDIENCES = {
+    value.strip()
+    for value in os.getenv("KEYCLOAK_AUDIENCES", os.getenv("KEYCLOAK_AUDIENCE", "shopnoltd-web")).split(",")
+    if value.strip()
+}
 CORS_ORIGINS = [x.strip() for x in os.getenv("CORS_ORIGINS", "https://shopnoltd.dpdns.org,https://admin-portal.shopnoltd.dpdns.org").split(",") if x.strip()]
 
-app = FastAPI(title=APP_NAME, version="1.0.0")
+app = FastAPI(title=APP_NAME, version="1.1.0")
 bearer = HTTPBearer(auto_error=True)
 _jwks_cache: Optional[dict[str, Any]] = None
 
@@ -30,18 +38,26 @@ app.add_middleware(
 
 
 def _kube_headers() -> dict[str, str]:
+    if not KUBE_TOKEN_FILE.exists():
+        raise HTTPException(status_code=503, detail="kubernetes service-account token is missing")
     return {"Authorization": f"Bearer {KUBE_TOKEN_FILE.read_text().strip()}", "Accept": "application/json"}
 
 
-async def _jwks() -> dict[str, Any]:
+async def _jwks(refresh: bool = False) -> dict[str, Any]:
     global _jwks_cache
-    if _jwks_cache:
+    if _jwks_cache and not refresh:
         return _jwks_cache
-    async with httpx.AsyncClient(timeout=10) as client:
-        response = await client.get(f"{KEYCLOAK_ISSUER}/protocol/openid-connect/certs")
-        response.raise_for_status()
-        _jwks_cache = response.json()
-    return _jwks_cache
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            response = await client.get(KEYCLOAK_JWKS_URL)
+            response.raise_for_status()
+            payload = response.json()
+            if not isinstance(payload, dict) or not payload.get("keys"):
+                raise ValueError("Keycloak JWKS response has no signing keys")
+            _jwks_cache = payload
+            return payload
+    except (httpx.HTTPError, ValueError) as exc:
+        raise HTTPException(status_code=503, detail="identity provider signing keys unavailable") from exc
 
 
 async def require_admin(credentials: HTTPAuthorizationCredentials = Depends(bearer)) -> dict[str, Any]:
@@ -49,16 +65,22 @@ async def require_admin(credentials: HTTPAuthorizationCredentials = Depends(bear
     try:
         unverified = jwt.get_unverified_header(token)
         keys = await _jwks()
-        key = next(item for item in keys["keys"] if item["kid"] == unverified["kid"])
+        key = next((item for item in keys["keys"] if item.get("kid") == unverified.get("kid")), None)
+        if key is None:
+            keys = await _jwks(refresh=True)
+            key = next((item for item in keys["keys"] if item.get("kid") == unverified.get("kid")), None)
+        if key is None:
+            raise JWTError("unknown signing key")
+
         claims = jwt.decode(
             token,
             key,
             algorithms=[key["alg"]],
-            audience=KEYCLOAK_AUDIENCE,
+            audience=list(KEYCLOAK_AUDIENCES) if KEYCLOAK_AUDIENCES else None,
             issuer=KEYCLOAK_ISSUER,
-            options={"verify_aud": True, "verify_iss": True},
+            options={"verify_aud": bool(KEYCLOAK_AUDIENCES), "verify_iss": True},
         )
-    except (JWTError, StopIteration, KeyError, httpx.HTTPError) as exc:
+    except (JWTError, StopIteration, KeyError, TypeError) as exc:
         raise HTTPException(status_code=401, detail="invalid authentication token") from exc
 
     roles = claims.get("roles", []) or claims.get("realm_access", {}).get("roles", [])
