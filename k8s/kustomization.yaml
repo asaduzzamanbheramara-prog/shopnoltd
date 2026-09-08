@@ -10,7 +10,7 @@ resources:
 - namespaces/shopno-payments.yaml
 - namespaces/shopno-tools.yaml
 - namespaces/shopno-ingress.yaml
-- k8s/metrics-server
+- metrics-server
 - services/observability
 - services/api-service
 - services/gateway
