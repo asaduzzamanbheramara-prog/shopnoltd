@@ -1,16 +1,18 @@
-name: Build Android APKs
+name: Build Shopnoltd Android Apps
+
 on:
   push:
     branches: [main]
     paths:
-      - 'mobile/**'
+      - 'apps/mobile-shell/**'
       - 'branding/**'
       - 'platform/mobile-api/**'
       - '.github/workflows/build-mobile.yml'
   workflow_dispatch:
-env:
-  REGISTRY: ghcr.io
-  IMAGE_PREFIX: ${{ github.repository_owner }}/shopnoltd
+
+permissions:
+  contents: write
+
 jobs:
   build:
     name: Build ${{ matrix.app }}
@@ -19,49 +21,101 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { app: shopno-survey, upstream: kobotoolbox/kobocollect, package: com.shopnoltd.survey }
-          - { app: shopno-chat,   upstream: chatwoot/chatwoot-mobile, package: com.shopnoltd.chat }
-          - { app: shopno-meet,   upstream: jitsi/jitsi-meet-sdk, package: com.shopnoltd.meet }
-          - { app: shopno-live,   upstream: owncast/owncast-mobile, package: com.shopnoltd.live }
-          - { app: shopno-drive,  upstream: nextcloud/android, package: com.shopnoltd.drive }
-          - { app: shopno-mail,   upstream: k9mail/app, package: com.shopnoltd.mail }
-    permissions:
-      contents: read
-      packages: write
+          - app: shopnoltd
+            config: web-portal
+            package: org.shopnoltd.app
+          - app: shopnoltd-admin
+            config: admin-portal
+            package: org.shopnoltd.admin
+
     steps:
-      - uses: actions/checkout@v4
-      - name: Login to GHCR
-        uses: docker/login-action@v3
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      - name: Build & push APK container
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: mobile/Dockerfile.android
-          build-args: |
-            BASE_IMAGE=${{ matrix.upstream }}
-            APP_CODE=${{ matrix.app }}
-            PACKAGE_NAME=${{ matrix.package }}
-          push: true
-          tags: |
-            ghcr.io/${{ env.IMAGE_PREFIX }}/${{ matrix.app }}:latest
-            ghcr.io/${{ env.IMAGE_PREFIX }}/${{ matrix.app }}:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-      - name: Extract APK to release artifact
+          node-version: 20
+          cache: npm
+          cache-dependency-path: apps/mobile-shell/package-lock.json
+
+      - name: Install mobile shell dependencies
+        working-directory: apps/mobile-shell
+        run: npm ci
+
+      - name: Select branded app configuration
+        working-directory: apps/mobile-shell
+        run: npm run sync:${{ matrix.config }}
+
+      - name: Apply native application identity
+        working-directory: apps/mobile-shell/android
         run: |
-          docker pull ghcr.io/${{ env.IMAGE_PREFIX }}/${{ matrix.app }}:${{ github.sha }}
-          docker create --name extract-${{ matrix.app }} ghcr.io/${{ env.IMAGE_PREFIX }}/${{ matrix.app }}:${{ github.sha }}
-          mkdir -p dist
-          docker cp extract-${{ matrix.app }}:/apk/${{ matrix.app }}.apk dist/${{ matrix.app }}.apk || true
-          docker rm extract-${{ matrix.app }}
-      - uses: actions/upload-artifact@v4
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          package = "${{ matrix.package }}"
+          app_name = "Shopnoltd Admin" if package.endswith(".admin") else "Shopnoltd"
+          gradle = Path("app/build.gradle")
+          text = gradle.read_text()
+          text = text.replace('applicationId "org.shopnoltd.app"', f'applicationId "{package}"')
+          gradle.write_text(text)
+          strings = Path("app/src/main/res/values/strings.xml")
+          text = strings.read_text()
+          text = text.replace('<string name="app_name">Shopnoltd</string>', f'<string name="app_name">{app_name}</string>')
+          text = text.replace('<string name="title_activity_main">Shopnoltd</string>', f'<string name="title_activity_main">{app_name}</string>')
+          text = text.replace('<string name="package_name">org.shopnoltd.app</string>', f'<string name="package_name">{package}</string>')
+          text = text.replace('<string name="custom_url_scheme">org.shopnoltd.app</string>', f'<string name="custom_url_scheme">{package}</string>')
+          strings.write_text(text)
+          PY
+
+      - name: Verify Android identity
+        working-directory: apps/mobile-shell/android
+        run: |
+          set -euo pipefail
+          grep -q 'applicationId "${{ matrix.package }}"' app/build.gradle
+          if [ "${{ matrix.app }}" = "shopnoltd-admin" ]; then
+            grep -q '<string name="app_name">Shopnoltd Admin</string>' app/src/main/res/values/strings.xml
+          else
+            grep -q '<string name="app_name">Shopnoltd</string>' app/src/main/res/values/strings.xml
+          fi
+
+      - name: Build installable QA APK
+        working-directory: apps/mobile-shell/android
+        run: ./gradlew :app:assembleDebug --no-daemon --stacktrace
+
+      - name: Verify APK
+        working-directory: apps/mobile-shell/android
+        run: |
+          set -euo pipefail
+          apk="app/build/outputs/apk/debug/app-debug.apk"
+          test -s "$apk"
+          apksigner verify --verbose "$apk"
+          mkdir -p ../../../dist
+          cp "$apk" "../../../dist/${{ matrix.app }}.apk"
+          sha256sum "../../../dist/${{ matrix.app }}.apk" > "../../../dist/${{ matrix.app }}-SHA256.txt"
+
+      - name: Upload CI artifact
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.app }}-apk
-          path: dist/${{ matrix.app }}.apk
-          if-no-files-found: warn
+          path: |
+            dist/${{ matrix.app }}.apk
+            dist/${{ matrix.app }}-SHA256.txt
+
+      - name: Publish latest QA release
+        if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag="${{ matrix.app }}-latest"
+          if ! gh release view "$tag" >/dev/null 2>&1; then
+            gh release create "$tag" \
+              --title "${{ matrix.app }} latest QA" \
+              --notes "Latest installable Shopnoltd QA Android build. Official production signing must be configured before production distribution." \
+              --prerelease
+          fi
+          gh release upload "$tag" \
+            "dist/${{ matrix.app }}.apk" \
+            "dist/${{ matrix.app }}-SHA256.txt" \
+            --clobber

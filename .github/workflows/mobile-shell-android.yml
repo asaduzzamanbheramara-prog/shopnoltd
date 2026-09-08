@@ -1,0 +1,111 @@
+name: Shopnoltd Mobile Shell Android
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/mobile-shell/**"
+      - ".github/workflows/mobile-shell-android.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "apps/mobile-shell/**"
+      - ".github/workflows/mobile-shell-android.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  android-qa:
+    name: Build first-party Shopnoltd Android QA APKs
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile-shell
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v5
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: apps/mobile-shell/package-lock.json
+
+      - name: Install JavaScript dependencies
+        run: npm ci
+
+      - name: Select Shopnoltd web configuration
+        run: npm run sync:web
+
+      - name: Build Shopnoltd debug APK
+        working-directory: apps/mobile-shell/android
+        run: bash ./gradlew --no-daemon --stacktrace assembleWebDebug
+
+      - name: Verify and package Shopnoltd APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          apk="android/app/build/outputs/apk/web/debug/app-web-debug.apk"
+          test -s "$apk"
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose "$apk"
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$apk" | grep -F "package: name='org.shopnoltd.app'"
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$apk" | grep -F "application-label:'Shopnoltd'"
+          cp "$apk" dist/Shopnoltd.apk
+          sha256sum dist/Shopnoltd.apk > dist/Shopnoltd-SHA256.txt
+
+      - name: Select Shopnoltd Admin configuration
+        run: npm run sync:admin
+
+      - name: Build Shopnoltd Admin debug APK
+        working-directory: apps/mobile-shell/android
+        run: bash ./gradlew --no-daemon --stacktrace assembleAdminDebug
+
+      - name: Verify and package Shopnoltd Admin APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk="android/app/build/outputs/apk/admin/debug/app-admin-debug.apk"
+          test -s "$apk"
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose "$apk"
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$apk" | grep -F "package: name='org.shopnoltd.admin'"
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$apk" | grep -F "application-label:'Shopnoltd Admin'"
+          cp "$apk" dist/Shopnoltd-Admin.apk
+          sha256sum dist/Shopnoltd-Admin.apk > dist/Shopnoltd-Admin-SHA256.txt
+
+      - name: Upload QA APKs
+        uses: actions/upload-artifact@v4
+        with:
+          name: shopnoltd-android-qa
+          path: apps/mobile-shell/dist/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Publish latest QA release
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        working-directory: apps/mobile-shell
+        run: |
+          set -euo pipefail
+          tag="shopnoltd-mobile-latest"
+          if ! gh release view "$tag" >/dev/null 2>&1; then
+            gh release create "$tag" \
+              --title "Shopnoltd mobile latest" \
+              --notes "Latest first-party Shopnoltd Android QA builds. These APKs are debug-signed for QA until official release-signing credentials are configured." \
+              --prerelease
+          fi
+          gh release upload "$tag" dist/Shopnoltd.apk --clobber
+          gh release upload "$tag" dist/Shopnoltd-SHA256.txt --clobber
+          gh release upload "$tag" dist/Shopnoltd-Admin.apk --clobber
+          gh release upload "$tag" dist/Shopnoltd-Admin-SHA256.txt --clobber
