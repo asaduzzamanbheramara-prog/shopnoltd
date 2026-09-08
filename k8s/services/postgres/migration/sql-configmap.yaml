@@ -5,23 +5,40 @@ metadata:
   namespace: shopno-data
 
 data:
+  011-payment-idempotency.sql: |
+    -- Customer-initiated payment idempotency.
+    -- Safe for existing transactions: historical rows keep NULL keys.
+    ALTER TABLE transactions
+        ADD COLUMN IF NOT EXISTS idempotency_key VARCHAR(128);
+
+    CREATE UNIQUE INDEX IF NOT EXISTS uq_transaction_deposit_idempotency
+        ON transactions (tenant_id, user_id, type, idempotency_key)
+        WHERE idempotency_key IS NOT NULL;
 
   run-migrations.sh: |
     #!/bin/bash
-    set -e
+    set -euo pipefail
 
-    export PGPASSWORD=$POSTGRES_PASSWORD
+    export PGPASSWORD="$POSTGRES_PASSWORD"
 
     echo "Running Shopnoltd database migration"
 
-    for file in /sql/*.sql
-    do
-        echo "Executing $file"
-        psql \
-        -h postgres \
-        -U $POSTGRES_USER \
-        -d postgres \
-        -f $file || true
+    shopt -s nullglob
+    files=(/sql/*.sql)
+    if [ "${#files[@]}" -eq 0 ]; then
+      echo "ERROR: no SQL migration files mounted"
+      exit 1
+    fi
+
+    for file in "${files[@]}"; do
+      echo "Executing $file"
+      psql \
+        -h "${POSTGRES_HOST:-postgres}" \
+        -p "${POSTGRES_PORT:-5432}" \
+        -U "$POSTGRES_USER" \
+        -d "${POSTGRES_DB:-postgres}" \
+        -v ON_ERROR_STOP=1 \
+        -f "$file"
     done
 
-    echo "Migration completed"
+    echo "Migration completed successfully"
