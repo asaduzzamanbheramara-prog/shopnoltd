@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: meet-service-config
+data:
+  ENV: production
+  APP_NAME: shopnoltd-meet-service
+  DATABASE_URL: postgresql+asyncpg://shopno:REPLACE_ME@postgres.shopno-data.svc.cluster.local:5432/meet
+  REDIS_URL: redis://redis.shopno-data.svc.cluster.local:6379/0
+  JITSI_JWT_APP_ID: shopnoltd
+  JITSI_URL: https://meet.shopnoltd.dpdns.org
+  KEYCLOAK_ISSUER: https://auth.shopnoltd.dpdns.org/realms/shopnoltd
+  KEYCLOAK_AUDIENCE: meet-service
+  CORS_ORIGINS: https://shopnoltd.dpdns.org
