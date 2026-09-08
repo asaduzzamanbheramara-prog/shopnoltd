@@ -49,7 +49,7 @@ spec:
       volumes:
         - name: source
           configMap:
-            name: remote-device-registry-source
+            name: remote-device-registry-source-v4
         - name: data
           persistentVolumeClaim:
             claimName: remote-device-registry
