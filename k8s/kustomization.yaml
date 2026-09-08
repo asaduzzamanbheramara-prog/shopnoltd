@@ -40,6 +40,7 @@ resources:
 - services/foundation-service
 - services/interior-service
 - services/android-portal
+- services/android-cloud
 - services/ai-platform
 - ollama.yaml
 - services/ai-gateway

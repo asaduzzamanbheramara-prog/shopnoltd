@@ -1,0 +1,49 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: android-cloud-isolation
+  namespace: shopno-android
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: shopno-platform
+      ports:
+        - protocol: TCP
+          port: 8080
+        - protocol: TCP
+          port: 8554
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: android-cloud-gateway
+      ports:
+        - protocol: TCP
+          port: 8554
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: android-emulator
+      ports:
+        - protocol: TCP
+          port: 8554
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    - ports:
+        - protocol: TCP
+          port: 80
+        - protocol: TCP
+          port: 443
+        - protocol: UDP
+          port: 443
