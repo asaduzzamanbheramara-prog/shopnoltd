@@ -5,19 +5,26 @@ on:
     branches:
       - main
       - feature/admin-kubernetes-argocd-20260903
+      - automation/ci-cd-release-gate-20260909
     paths:
       - 'platform/admin-infrastructure/**'
       - 'shared/libraries/python/shopno_core/**'
+      - 'k8s/services/admin-infrastructure/deployment.yaml'
       - '.github/workflows/build-admin-infrastructure.yml'
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   packages: write
+
+concurrency:
+  group: admin-infrastructure-build-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   REGISTRY: ghcr.io
   IMAGE: ghcr.io/${{ github.repository_owner }}/shopnoltd-admin-infrastructure
+  DEPLOYMENT: k8s/services/admin-infrastructure/deployment.yaml
 
 jobs:
   build:
@@ -40,3 +47,49 @@ jobs:
             ${{ env.IMAGE }}:${{ github.sha }}
           cache-from: type=gha,scope=admin-infrastructure
           cache-to: type=gha,mode=max,scope=admin-infrastructure
+
+  promote:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 2
+
+      - name: Promote immutable image into GitOps
+        env:
+          IMAGE: ${{ env.IMAGE }}
+          SHA: ${{ github.sha }}
+          FILE: ${{ env.DEPLOYMENT }}
+        run: |
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          p = Path(os.environ['FILE'])
+          text = p.read_text()
+          prefix = os.environ['IMAGE'] + ':'
+          lines = text.splitlines(keepends=True)
+          matches = [i for i, line in enumerate(lines) if 'image:' in line and prefix in line]
+          if len(matches) != 1:
+              raise SystemExit(f'expected exactly one owned image reference, found {len(matches)}')
+          i = matches[0]
+          lines[i] = lines[i].replace(prefix + lines[i].split(prefix, 1)[1].strip(), prefix + os.environ['SHA'] + ('\n' if lines[i].endswith('\n') else ''))
+          p.write_text(''.join(lines))
+          PY
+
+          git diff --check
+          git diff -- "$FILE"
+          grep -F "image: ${IMAGE}:${SHA}" "$FILE"
+
+      - name: Commit GitOps promotion
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$DEPLOYMENT"
+          if git diff --cached --quiet; then
+            echo "No GitOps image change required."
+            exit 0
+          fi
+          git commit -m "chore: update admin-infrastructure image to ${GITHUB_SHA} [skip ci]"
+          git push origin "${GITHUB_REF_NAME}"
