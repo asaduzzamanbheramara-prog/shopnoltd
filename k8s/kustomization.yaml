@@ -58,9 +58,6 @@ resources:
 - services/mongodb
 - services/session-manager
 - services/mail
-- services/messaging-service
-- services/meet-service
-- services/live-service
 - ingress/cloudflared
 
 patches:
