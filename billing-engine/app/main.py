@@ -37,8 +37,38 @@ app.add_middleware(
 
 @app.on_event("startup")
 def startup():
-    Base.metadata.create_all(bind=engine)
-    logger.info("Database initialized.")
+    import time
+    from sqlalchemy.exc import OperationalError
+
+    max_attempts = 60
+    delay_seconds = 2
+
+    for attempt in range(1, max_attempts + 1):
+        try:
+            Base.metadata.create_all(bind=engine)
+            logger.info(
+                "Database initialized successfully on attempt %d/%d.",
+                attempt,
+                max_attempts,
+            )
+            return
+        except OperationalError as exc:
+            if attempt == max_attempts:
+                logger.exception(
+                    "Database initialization failed after %d attempts.",
+                    max_attempts,
+                )
+                raise
+
+            logger.warning(
+                "Database unavailable during startup "
+                "(attempt %d/%d); retrying in %ds: %s",
+                attempt,
+                max_attempts,
+                delay_seconds,
+                exc,
+            )
+            time.sleep(delay_seconds)
 
 
 def log_action(db: Session, action: str, user_id: str | None, details: dict):
