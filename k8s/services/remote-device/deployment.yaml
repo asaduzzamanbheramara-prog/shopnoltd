@@ -61,3 +61,10 @@ spec:
               port: http
             initialDelaySeconds: 15
             periodSeconds: 20
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
