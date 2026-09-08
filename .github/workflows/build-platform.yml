@@ -4,6 +4,7 @@ on:
     branches: [main]
     paths:
       - 'platform/**'
+      - 'services/vpn-service/**'
       - 'shared/**'
       - '.github/workflows/build-platform.yml'
   workflow_dispatch:
@@ -18,39 +19,40 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { service: domain-service,        dockerfile: platform/domain-service/Dockerfile }
-          - { service: interior-service,      dockerfile: platform/interior-service/Dockerfile }
-          - { service: event-service,         dockerfile: platform/event-service/Dockerfile }
-          - { service: foundation-service,    dockerfile: platform/foundation-service/Dockerfile }
-          - { service: training-service,      dockerfile: platform/training-service/Dockerfile }
-          - { service: freedomain-service,    dockerfile: platform/freedomain-service/Dockerfile }
-          - { service: api-service,         dockerfile: platform/api-service/Dockerfile }
-          - { service: gateway,            dockerfile: platform/gateway/Dockerfile }
-          - { service: oauth-service,      dockerfile: platform/oauth-service/Dockerfile }
-          - { service: tenant-router,      dockerfile: platform/tenant-router/Dockerfile }
-          - { service: analytics-service,  dockerfile: platform/analytics-service/Dockerfile }
-          - { service: storage-service,    dockerfile: platform/storage-service/Dockerfile }
-          - { service: notification-service,dockerfile: platform/notification-service/Dockerfile }
-          - { service: scheduler-service,  dockerfile: platform/scheduler-service/Dockerfile }
-          - { service: worker-service,     dockerfile: platform/worker-service/Dockerfile }
-          - { service: payment-service,    dockerfile: platform/payment-service/Dockerfile }
-          - { service: exchange-service,   dockerfile: platform/exchange-service/Dockerfile }
-          - { service: auth-service,       dockerfile: platform/auth-service/Dockerfile }
-          - { service: audit-service,      dockerfile: platform/audit-service/Dockerfile }
-          - { service: report-service,     dockerfile: platform/report-service/Dockerfile }
-          - { service: license-service,    dockerfile: platform/license-service/Dockerfile }
-          - { service: mobile-api,         dockerfile: platform/mobile-api/Dockerfile }
-          - { service: ai-platform,        dockerfile: platform/ai-platform/Dockerfile }
-          - { service: admin-portal,       dockerfile: platform/admin-portal/Dockerfile }
-          - { service: web-portal,         dockerfile: platform/web-portal/Dockerfile }
-          - { service: android-portal,     dockerfile: platform/android-portal/Dockerfile }
-          - { service: messaging-service,  dockerfile: platform/messaging-service/Dockerfile }
-          - { service: meet-service,       dockerfile: platform/meet-service/Dockerfile }
-          - { service: live-service,       dockerfile: platform/live-service/Dockerfile }
-          - { service: mail-service,       dockerfile: platform/mail-service/Dockerfile }
-          - { service: social-service,     dockerfile: platform/social-service/Dockerfile }
-          - { service: keycloak,           dockerfile: platform/keycloak/Dockerfile }
-          - { service: session-manager,   dockerfile: platform/session-manager/Dockerfile }
+          - { service: domain-service, dockerfile: platform/domain-service/Dockerfile }
+          - { service: interior-service, dockerfile: platform/interior-service/Dockerfile }
+          - { service: event-service, dockerfile: platform/event-service/Dockerfile }
+          - { service: foundation-service, dockerfile: platform/foundation-service/Dockerfile }
+          - { service: training-service, dockerfile: platform/training-service/Dockerfile }
+          - { service: freedomain-service, dockerfile: platform/freedomain-service/Dockerfile }
+          - { service: api-service, dockerfile: platform/api-service/Dockerfile }
+          - { service: gateway, dockerfile: platform/gateway/Dockerfile }
+          - { service: oauth-service, dockerfile: platform/oauth-service/Dockerfile }
+          - { service: tenant-router, dockerfile: platform/tenant-router/Dockerfile }
+          - { service: analytics-service, dockerfile: platform/analytics-service/Dockerfile }
+          - { service: storage-service, dockerfile: platform/storage-service/Dockerfile }
+          - { service: notification-service, dockerfile: platform/notification-service/Dockerfile }
+          - { service: scheduler-service, dockerfile: platform/scheduler-service/Dockerfile }
+          - { service: worker-service, dockerfile: platform/worker-service/Dockerfile }
+          - { service: payment-service, dockerfile: platform/payment-service/Dockerfile }
+          - { service: exchange-service, dockerfile: platform/exchange-service/Dockerfile }
+          - { service: auth-service, dockerfile: platform/auth-service/Dockerfile }
+          - { service: audit-service, dockerfile: platform/audit-service/Dockerfile }
+          - { service: report-service, dockerfile: platform/report-service/Dockerfile }
+          - { service: license-service, dockerfile: platform/license-service/Dockerfile }
+          - { service: mobile-api, dockerfile: platform/mobile-api/Dockerfile }
+          - { service: ai-platform, dockerfile: platform/ai-platform/Dockerfile }
+          - { service: admin-portal, dockerfile: platform/admin-portal/Dockerfile }
+          - { service: web-portal, dockerfile: platform/web-portal/Dockerfile }
+          - { service: android-portal, dockerfile: platform/android-portal/Dockerfile }
+          - { service: messaging-service, dockerfile: platform/messaging-service/Dockerfile }
+          - { service: meet-service, dockerfile: platform/meet-service/Dockerfile }
+          - { service: live-service, dockerfile: platform/live-service/Dockerfile }
+          - { service: mail-service, dockerfile: platform/mail-service/Dockerfile }
+          - { service: social-service, dockerfile: platform/social-service/Dockerfile }
+          - { service: keycloak, dockerfile: platform/keycloak/Dockerfile }
+          - { service: session-manager, dockerfile: platform/session-manager/Dockerfile }
+          - { service: vpn-service, dockerfile: services/vpn-service/Dockerfile }
     permissions:
       contents: read
       packages: write
@@ -71,7 +73,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
       - name: Build & push
         if: steps.check.outputs.skip == 'false'
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: ${{ matrix.dockerfile }}
