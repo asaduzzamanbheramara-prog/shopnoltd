@@ -81,10 +81,17 @@ class Transaction(Base):
     currency = Column(String(8), nullable=False)
     external_id = Column(String(128), index=True, nullable=True)
     reference = Column(String(128), nullable=True)
+    # Client-supplied idempotency key for customer-initiated financial writes.
+    # Uniqueness is scoped by tenant/user/type so the same key cannot create
+    # duplicate deposits while different users may independently reuse a key.
+    idempotency_key = Column(String(128), nullable=True)
     meta = Column(JSONB, default=dict)
     approved_by = Column(String(64), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
     completed_at = Column(DateTime, nullable=True)
+    __table_args__ = (
+        Index("uq_transaction_deposit_idempotency", "tenant_id", "user_id", "type", "idempotency_key", unique=True),
+    )
 
 
 class WebhookEvent(Base):
