@@ -25,23 +25,19 @@ jobs:
             context: .
             dockerfile: Dockerfile
             tag: latest
-
           - name: api-service
             context: ./ai-platform/backend
             dockerfile: ./ai-platform/backend/Dockerfile
             tag: v4
-
           - name: ai-platform
             image_repo: shopnoltd/ai-platform
             context: .
             dockerfile: ./platform/ai-platform/Dockerfile
             tag: latest
-
           - name: billing-engine
             context: ./billing-engine
             dockerfile: ./billing-engine/Dockerfile
             tag: v6
-
           - name: shopnoltd-web
             context: .
             dockerfile: ./platform/web-portal/Dockerfile
@@ -51,22 +47,30 @@ jobs:
               VITE_KEYCLOAK_URL=https://auth.shopnoltd.dpdns.org
               VITE_KEYCLOAK_REALM=shopnoltd
               VITE_KEYCLOAK_CLIENT_ID=shopnoltd-web
-
           - name: android-portal
             context: .
             dockerfile: ./platform/android-portal/Dockerfile
             tag: latest
-
+          - name: android-cloud-controller
+            context: .
+            dockerfile: ./platform/android-cloud/controller/Dockerfile
+            tag: latest
+          - name: android-cloud-gateway
+            context: ./platform/android-cloud/gateway
+            dockerfile: ./platform/android-cloud/gateway/Dockerfile
+            tag: latest
+          - name: android-cloud-web
+            context: .
+            dockerfile: ./platform/android-cloud/web/Dockerfile
+            tag: latest
           - name: oauth
             context: ./oauth-service
             dockerfile: ./oauth-service/Dockerfile
             tag: v1
-
           - name: live
             context: ./live-service
             dockerfile: ./live-service/Dockerfile
             tag: v1
-
           - name: postgres-combined
             context: ./docker/postgres-combined
             dockerfile: ./docker/postgres-combined/Dockerfile
