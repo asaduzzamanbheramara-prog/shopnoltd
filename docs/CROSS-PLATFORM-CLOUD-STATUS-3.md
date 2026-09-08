@@ -1,0 +1,1 @@
+Cross-platform targets are Windows, Linux, macOS, Android phone/tablet, and iPhone/iPad, with one Shopnoltd identity and device-cloud control plane. Runtime and signing remain explicit production gates.
