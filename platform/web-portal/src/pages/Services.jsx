@@ -7,9 +7,11 @@ const ALL = [...SERVICES, ...CONNECTED_PLATFORMS]
 function ServiceCard({ service, admin = false }) {
   const internal = service.url.startsWith('/')
   const action = admin ? 'Open administration' : service.category === 'Social & Messaging' ? 'Configure integration' : internal ? 'Open workspace' : 'Open service'
+  const badge = internal ? 'Shopnoltd' : service.category === 'Social & Messaging' ? 'Integration' : 'External service'
+  const badgeStyle = internal ? { color: '#047857', background: '#ecfdf5' } : service.category === 'Social & Messaging' ? { color: '#7c3aed', background: '#f5f3ff' } : { color: '#0369a1', background: '#eff6ff' }
   return (
     <a href={service.url} target={internal ? undefined : '_blank'} rel={internal ? undefined : 'noopener noreferrer'} style={{ textDecoration: 'none', color: 'inherit', border: '1px solid #e2e8f0', borderRadius: 16, padding: 22, background: 'white', boxShadow: '0 3px 12px rgba(15,23,42,.06)', display: 'flex', flexDirection: 'column', minHeight: 190 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start' }}><span style={{ fontSize: 34 }}>{service.icon}</span><span style={{ fontSize: 12, fontWeight: 700, color: internal ? '#047857' : '#0369a1', background: internal ? '#ecfdf5' : '#eff6ff', padding: '5px 8px', borderRadius: 999 }}>{internal ? 'Shopnoltd' : 'Connected'}</span></div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start' }}><span style={{ fontSize: 34 }}>{service.icon}</span><span style={{ ...badgeStyle, fontSize: 12, fontWeight: 700, padding: '5px 8px', borderRadius: 999 }}>{badge}</span></div>
       <h2 style={{ margin: '12px 0 8px', fontSize: 20 }}>{service.name}</h2>
       <p style={{ color: '#64748b', lineHeight: 1.5, margin: 0, flex: 1 }}>{service.description}</p>
       <span style={{ color: '#0284c7', fontWeight: 700, marginTop: 16 }}>{action} →</span>
@@ -30,7 +32,7 @@ export default function Services() {
   const services = filtered.filter(item => SERVICES.some(x => x.name === item.name))
   const connected = filtered.filter(item => CONNECTED_PLATFORMS.some(x => x.name === item.name))
   return <main style={{ maxWidth: 1200, width: '100%', margin: '0 auto', padding: 'clamp(28px,6vw,52px) clamp(14px,4vw,24px) 80px', boxSizing: 'border-box', fontFamily: 'system-ui,sans-serif' }}>
-    <section style={{ padding: '28px clamp(20px,5vw,44px)', borderRadius: 20, background: 'linear-gradient(135deg,#0ea5e9,#0369a1)', color: 'white' }}><div style={{ fontSize: 40 }}>🧭</div><h1 style={{ fontSize: 'clamp(32px,5vw,48px)', margin: '8px 0' }}>Shopnoltd Services</h1><p style={{ maxWidth: 760, lineHeight: 1.7, opacity: .95, marginBottom: 0 }}>One service directory for your workspace, business tools, developer tools, communications and supported integrations.</p></section>
+    <section style={{ padding: '28px clamp(20px,5vw,44px)', borderRadius: 20, background: 'linear-gradient(135deg,#0ea5e9,#0369a1)', color: 'white' }}><div style={{ fontSize: 40 }}>🧭</div><h1 style={{ fontSize: 'clamp(32px,5vw,48px)', margin: '8px 0' }}>Shopnoltd Services</h1><p style={{ maxWidth: 760, lineHeight: 1.7, marginBottom: 0, opacity: .95 }}>One service directory for your workspace, business tools, developer tools, communications and supported integrations.</p></section>
     <section style={{ display: 'grid', gridTemplateColumns: 'minmax(220px,1fr) minmax(180px,240px)', gap: 12, marginTop: 24 }}><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search services, tools or integrations…" aria-label="Search services" style={{ padding: 13, border: '1px solid #cbd5e1', borderRadius: 10, fontSize: 15 }} /><select value={category} onChange={e => setCategory(e.target.value)} aria-label="Filter by category" style={{ padding: 13, border: '1px solid #cbd5e1', borderRadius: 10, background: 'white', fontSize: 15 }}>{categories.map(item => <option key={item}>{item}</option>)}</select></section>
     <p style={{ color: '#64748b', fontSize: 14, marginTop: 12 }}>{filtered.length} services and connected platforms shown.</p>
     <Section title="Shopnoltd Services" description="Core services available through the Shopnoltd workspace." items={services} />
