@@ -101,7 +101,7 @@ jobs:
         id: android-apk
         shell: bash
         run: |
-          APK_PATH="$(find app/build/outputs/apk -type f -name '*.apk' | head -n 1)"
+          APK_PATH="$(find android/app/build/outputs/apk -type f -name '*.apk' | head -n 1)"
           test -n "$APK_PATH"
           echo "path=$APK_PATH" >> "$GITHUB_OUTPUT"
           echo "Generated APK: $APK_PATH"
@@ -110,7 +110,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: shopnoltd-mobile-android-phone-tablet
-          path: apps/mobile-shell/android/${{ steps.android-apk.outputs.path }}
+          path: apps/mobile-shell/${{ steps.android-apk.outputs.path }}
           if-no-files-found: error
 
   mobile-ios:
