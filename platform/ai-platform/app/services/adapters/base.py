@@ -18,6 +18,12 @@ class BaseAdapter(ABC):
         self.base_url = base_url
         self.extra_config = extra_config or {}
 
+    def require_api_key(self, provider_label: str) -> str:
+        """Fail locally and safely when a credential-backed provider has no key."""
+        if not self.api_key or not self.api_key.strip():
+            raise RuntimeError(f"{provider_label} provider has no API key configured")
+        return self.api_key
+
     @abstractmethod
     async def generate(self, model_name: str, prompt: str, timeout: int) -> InferenceResult: ...
 
