@@ -1,0 +1,1 @@
+Shopnoltd Cloud now treats Windows, Linux, macOS, Android phones/tablets, iPhone/iPad, and browser control as one cross-platform device ecosystem. See `docs/CROSS-PLATFORM-CLOUD.md` and `docs/CROSS-PLATFORM-CLOUD-IMPLEMENTATION.md` for the architecture and release gates.
