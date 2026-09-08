@@ -29,6 +29,10 @@ class TxType(str, enum.Enum):
 
 
 class PaymentMethod(str, enum.Enum):
+    # Internal wallet-to-wallet transfer. This is intentionally a method value
+    # rather than a provider so transfer transactions remain representable by
+    # the same transaction schema and API response model.
+    transfer = "transfer"
     stripe = "stripe"
     paypal = "paypal"
     binance = "binance"
