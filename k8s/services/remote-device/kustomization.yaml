@@ -21,7 +21,7 @@ resources:
   - ingress.yaml
 
   # Browser device management UI
-  - ui-configmap.yaml
+  - ui-configmap-v2.yaml
   - ui-deployment.yaml
   - ui-service.yaml
   - ui-ingress.yaml
