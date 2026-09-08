@@ -25,18 +25,18 @@ The Android Emulator container exposes gRPC/WebRTC on 8554 and ADB on 5555. The 
 - Emulator ADB and gRPC ports are cluster-internal; they are never exposed by an Ingress.
 - The emulator pod is isolated by NetworkPolicy.
 - Arbitrary remote shell execution is not exposed by the controller.
-- APK installation is intentionally handled through the authenticated device workspace rather than embedding merchant/payment secrets in an APK.
+- APK installation is handled through the authenticated device workspace rather than embedding merchant/payment secrets in an APK.
 - Default capacity is one active emulator session on the current single-node cluster. Increase only after KVM, CPU, RAM, and storage capacity are verified.
 
 ## WebRTC / TURN
 
-The emulator's WebRTC media path is peer-to-peer after signaling. A public TURN service is therefore recommended for users behind NAT/firewalls. The controller accepts `ANDROID_CLOUD_TURN_URLS`, `ANDROID_CLOUD_TURN_USERNAME`, and `ANDROID_CLOUD_TURN_CREDENTIAL` and passes the configured ICE/TURN information to the browser gateway.
+The emulator's WebRTC media path is peer-to-peer after signaling. A public TURN service is therefore recommended for users behind NAT/firewalls. The controller accepts `ANDROID_CLOUD_TURN_URLS`, `ANDROID_CLOUD_TURN_USERNAME`, and `ANDROID_CLOUD_TURN_CREDENTIAL` and passes the configured ICE/TURN information to the browser workspace.
 
-Cloudflare Realtime TURN supports UDP, TCP, and TLS TURN transports, which is useful for a Shopnoltd deployment behind a Cloudflare Tunnel. citeturn8search0turn8search2
+Cloudflare Realtime TURN supports UDP, TCP, and TLS TURN transports. Configure its temporary credentials as Kubernetes secrets rather than committing them to Git.
 
 ## Runtime requirements
 
-The official Google emulator container images require Linux/KVM; Google's documentation specifically notes that Docker Desktop on Windows/macOS is not supported for KVM acceleration. The Shopnoltd k3s node therefore needs `/dev/kvm` available to the Kubernetes workload. citeturn1search0turn3view0
+The official Google emulator container images require Linux/KVM. Docker Desktop on Windows/macOS is not a supported KVM runtime for these hosted emulator containers. The Shopnoltd k3s node therefore needs `/dev/kvm` available to the Kubernetes workload.
 
 ## Initial device profile
 
@@ -46,11 +46,11 @@ The official Google emulator container images require Linux/KVM; Google's docume
 - 3 GiB memory request / 4 GiB limit
 - 8 GiB ephemeral storage
 - no public ADB
-- one active session per user by default
+- one active session on the current single-node cluster
 - automatic cleanup after 30 minutes of inactivity
 
-The hosted image is pinned to Google's published `30-google-x64:30.1.2` image. citeturn1search0
+The hosted image is pinned to Google's published `30-google-x64:30.1.2` image.
 
 ## Current deployment boundary
 
-The GitOps manifests and controller/UI are included here, but the first rollout must pass a node preflight for `/dev/kvm` and WebRTC/TURN connectivity. If KVM is unavailable, the Android Cloud service deliberately reports `capacity_unavailable` rather than pretending that an ordinary Kubernetes container is a physical Android device.
+The GitOps manifests and controller/UI are included here, but the first rollout must pass a node preflight for `/dev/kvm` and WebRTC/TURN connectivity. If KVM is unavailable, the Android Cloud service must report capacity unavailable rather than pretending that an ordinary Kubernetes container is a physical Android device.
