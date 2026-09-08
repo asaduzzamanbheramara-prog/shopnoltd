@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: live-service-config
+data:
+  ENV: production
+  APP_NAME: shopnoltd-live-service
+  DATABASE_URL: postgresql+asyncpg://shopno:REPLACE_ME@postgres.shopno-data.svc.cluster.local:5432/live
+  REDIS_URL: redis://redis.shopno-data.svc.cluster.local:6379/0
+  OWNCAST_ADMIN_URL: https://live.shopnoltd.dpdns.org
+  STORAGE_SERVICE_URL: http://storage-service.shopno-platform.svc.cluster.local:8080
+  KEYCLOAK_ISSUER: https://auth.shopnoltd.dpdns.org/realms/shopnoltd
+  KEYCLOAK_AUDIENCE: live-service
+  CORS_ORIGINS: https://shopnoltd.dpdns.org
