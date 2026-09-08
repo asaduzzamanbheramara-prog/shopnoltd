@@ -43,15 +43,7 @@ jobs:
             if command -v kubectl >/dev/null 2>&1; then
               kubectl apply --dry-run=client --validate=false -f "$f" >/dev/null
             else
-              python3 - "$f" <<'PY'
-              import pathlib
-              import sys
-
-              path = pathlib.Path(sys.argv[1])
-              text = path.read_text(encoding="utf-8")
-              if not text.strip():
-                  raise SystemExit(f"empty manifest: {path}")
-              PY
+              python3 -c 'import pathlib,sys; p=pathlib.Path(sys.argv[1]); t=p.read_text(encoding="utf-8"); raise SystemExit(f"empty manifest: {p}") if not t.strip() else None' "$f"
             fi
           done < <(find k8s -type f \( -name '*.yaml' -o -name '*.yml' \) -print0)
           test "$found" -eq 1
