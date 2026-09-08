@@ -44,7 +44,7 @@ jobs:
   auto-remediate-safe-findings:
     name: Auto-remediate safe secret findings
     needs: secret-scan
-    if: failure() && github.event_name == 'pull_request'
+    if: always() && github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     permissions:
       contents: write
