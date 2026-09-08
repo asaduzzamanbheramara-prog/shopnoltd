@@ -16,6 +16,13 @@ spec:
           port: 8080
         - protocol: TCP
           port: 8554
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: android-cloud-gateway
+      ports:
+        - protocol: TCP
+          port: 8554
   egress:
     - to:
         - podSelector:
