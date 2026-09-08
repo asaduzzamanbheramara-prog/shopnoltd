@@ -52,6 +52,11 @@ jobs:
               VITE_KEYCLOAK_REALM=shopnoltd
               VITE_KEYCLOAK_CLIENT_ID=shopnoltd-web
 
+          - name: android-portal
+            context: .
+            dockerfile: ./platform/android-portal/Dockerfile
+            tag: latest
+
           - name: oauth
             context: ./oauth-service
             dockerfile: ./oauth-service/Dockerfile
