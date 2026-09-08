@@ -27,7 +27,7 @@ async def lifespan(app: FastAPI):
     await redis_client.aclose()
 
 
-app = FastAPI(title="Shopnoltd Unified API Service", version="0.2.0", lifespan=lifespan)
+app = FastAPI(title="Shopnoltd Unified API Service", version="0.3.0", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origin_regex=settings.cors_origin_regex,
@@ -35,36 +35,26 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-app.include_router(
-    __import__("app.api.v1", fromlist=["router"]).router, prefix="/api/v1", tags=["v1"]
-)
-app.include_router(
-    __import__("app.api.v2", fromlist=["router"]).router, prefix="/api/v2", tags=["social-work"]
-)
-app.include_router(
-    __import__("app.api.v2_blog", fromlist=["router"]).router, prefix="/api/v2", tags=["blog"]
-)
-app.include_router(
-    __import__("app.api.graphql", fromlist=["router"]).router, prefix="/graphql", tags=["graphql"]
-)
-app.include_router(
-    __import__("app.api.health", fromlist=["router"]).router, prefix="", tags=["health"]
-)
+app.include_router(__import__("app.api.v1", fromlist=["router"]).router, prefix="/api/v1", tags=["v1"])
+app.include_router(__import__("app.api.comms", fromlist=["router"]).router, prefix="/api/v1", tags=["communications"])
+app.include_router(__import__("app.api.v2", fromlist=["router"]).router, prefix="/api/v2", tags=["social-work"])
+app.include_router(__import__("app.api.v2_blog", fromlist=["router"]).router, prefix="/api/v2", tags=["blog"])
+app.include_router(__import__("app.api.graphql", fromlist=["router"]).router, prefix="/graphql", tags=["graphql"])
+app.include_router(__import__("app.api.health", fromlist=["router"]).router, prefix="", tags=["health"])
 
 
 @app.get("/healthz", include_in_schema=False)
 async def healthz():
-    return {"status": "ok"}
+    return {"status": "ok", "communications": True}
 
 
 @app.get("/readyz", include_in_schema=False)
 async def readyz():
     from sqlalchemy import text
-
-    async with engine.connect() as c:
-        await c.execute(text("SELECT 1"))
+    async with engine.connect() as conn:
+        await conn.execute(text("SELECT 1"))
     await redis_client.ping()
-    return {"status": "ready"}
+    return {"status": "ready", "communications": True}
 
 
 @app.get("/metrics", include_in_schema=False)
