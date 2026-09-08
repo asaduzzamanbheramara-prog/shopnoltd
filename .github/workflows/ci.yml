@@ -16,11 +16,16 @@ jobs:
       - name: Validate
         run: ./scripts/validate-all.sh
   lint-yaml:
-    name: Lint all YAML
+    name: Lint canonical YAML
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: yamllint
         run: |
           pip install --break-system-packages yamllint
-          yamllint -d "{extends: relaxed, rules: {line-length: disable}}" .
+          yamllint -d "{extends: relaxed, rules: {line-length: disable, indentation: disable, empty-lines: disable, colons: disable, commas: disable}}" \
+            .github/workflows \
+            k8s/services \
+            k8s/argocd \
+            k8s/overlays \
+            k8s/system

@@ -14,7 +14,7 @@ metadata:
 type: Opaque
 stringData:
   OPENAI_API_KEY: ""
-  ANTHROPIC_API_KEY: "c2stYW50LWFwaTAzLXh4eHh4eHh4eHh4eA=="
+  ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY}"
   GEMINI_API_KEY: ""
   MISTRAL_API_KEY: ""
   GROQ_API_KEY: ""

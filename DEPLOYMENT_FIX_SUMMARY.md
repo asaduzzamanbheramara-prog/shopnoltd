@@ -99,9 +99,9 @@ KEYCLOAK_URL: https://auth.example.com
 ```yaml
 # Secret contains all sensitive data:
 database-url: postgresql+asyncpg://postgres:5XuByzqhn6nJyq7iR7xva58iKHLSUSj@10.102.49.130:5432/shopnoltd
-db-password: 5XuByzqhn6nJyq7iR7xva58iKHLSUSj
-api-key: 5XuByzqhn6nJyq7iR7xva58iKHLSUSj
-jwt-secret: 5XuByzqhn6nJyq7iR7xva58iKHLSUSj
+db-password: ${DB_PASSWORD}
+api-key: ${API_KEY}
+jwt-secret: ${JWT_SECRET}
 
 # ConfigMap contains ONLY non-sensitive config:
 KEYCLOAK_URL: https://auth.shopnoltd.dpdns.org
