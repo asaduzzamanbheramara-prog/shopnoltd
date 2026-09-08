@@ -1,0 +1,1 @@
+Release note: Shopnoltd Cloud supports Windows, Linux, macOS, Android phone/tablet, and iPhone/iPad targets through a shared authenticated control plane. CI validates application builds; real-device runtime and signing remain production gates.
