@@ -80,13 +80,19 @@ export function getPaymentGateways() {
   return authenticatedRequest('/api/v1/billing/gateways')
 }
 
-export function createCheckout({ gateway, amount, currency, reference, customer_phone }) {
+export function createCheckout({ gateway, amount, currency, reference, customer_phone, idempotency_key }) {
+  // Prefer a caller-supplied key. A stable reference also gives browser retries
+  // the same key; otherwise generate a cryptographically unique key per attempt.
+  const key =
+    idempotency_key ||
+    (reference ? `checkout:${String(reference).slice(0, 112)}` : crypto.randomUUID())
   return authenticatedRequest('/api/v1/deposits', {
     method: 'POST',
     body: JSON.stringify({
       method: gateway,
       amount: Number(amount),
       currency: String(currency).toUpperCase(),
+      idempotency_key: key,
       return_url: `${window.location.origin}/checkout/complete?ref=${encodeURIComponent(
         reference || ''
       )}`,
