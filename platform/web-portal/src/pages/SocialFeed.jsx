@@ -5,12 +5,13 @@ import { platformApi } from '../lib/platformApi'
 const shell = { maxWidth: 900, margin: '0 auto', padding: '28px 16px 80px', fontFamily: 'system-ui, sans-serif' }
 const card = { background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14, padding: 18, marginBottom: 14 }
 
-function PostCard({ post, refresh }) {
+function PostCard({ post, refresh, following, toggleFollow }) {
   const navigate = useNavigate()
   const [liked, setLiked] = useState(false)
   const [comments, setComments] = useState([])
   const [comment, setComment] = useState('')
   const [busy, setBusy] = useState(false)
+  const isFollowing = following.has(String(post.user_id))
 
   useEffect(() => {
     platformApi.view(post.id).catch(() => {})
@@ -44,8 +45,14 @@ function PostCard({ post, refresh }) {
   const direct = `${window.location.origin}/post/${post.id}`
   return (
     <article style={card}>
-      <div style={{ color: '#64748b', fontSize: 13, marginBottom: 10 }}>
-        <b style={{ color: '#0f172a' }}>{post.user_id}</b> · {post.published_at ? new Date(post.published_at).toLocaleString() : ''}
+      <div style={{ color: '#64748b', fontSize: 13, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+        <b style={{ color: '#0f172a' }}>{post.user_id}</b>
+        {String(post.user_id) !== String(localStorage.getItem('shopno_user_id') || '') && (
+          <button onClick={() => toggleFollow(post.user_id)} style={{ padding: '3px 8px' }}>
+            {isFollowing ? 'Following' : 'Follow'}
+          </button>
+        )}
+        · {post.published_at ? new Date(post.published_at).toLocaleString() : ''}
       </div>
       <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{post.content}</div>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 16 }}>
@@ -70,10 +77,17 @@ export default function SocialFeed() {
   const [content, setContent] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [following, setFollowing] = useState(new Set())
 
   const load = () => {
     setLoading(true)
-    platformApi.globalFeed().then(data => setPosts(Array.isArray(data) ? data : (data?.items || []))).catch(e => setError(e.message)).finally(() => setLoading(false))
+    Promise.all([
+      platformApi.globalFeed(),
+      platformApi.following().catch(() => []),
+    ]).then(([feed, followed]) => {
+      setPosts(Array.isArray(feed) ? feed : (feed?.items || []))
+      setFollowing(new Set((Array.isArray(followed) ? followed : []).map(String)))
+    }).catch(e => setError(e.message)).finally(() => setLoading(false))
   }
   useEffect(load, [])
 
@@ -82,13 +96,26 @@ export default function SocialFeed() {
     try { await platformApi.createPost(content.trim()); setContent(''); load() } catch (e) { alert(e.message) }
   }
 
+  async function toggleFollow(userId) {
+    const key = String(userId)
+    try {
+      if (following.has(key)) {
+        await platformApi.unfollow(userId)
+        setFollowing(current => { const next = new Set(current); next.delete(key); return next })
+      } else {
+        await platformApi.follow(userId)
+        setFollowing(current => new Set(current).add(key))
+      }
+    } catch (e) { alert(e.message) }
+  }
+
   function refresh(id, likeCount, commentCount) {
     setPosts(current => current.map(p => p.id === id ? { ...p, ...(likeCount !== undefined ? { like_count: likeCount } : {}), ...(commentCount !== undefined ? { comment_count: commentCount } : {}) } : p))
   }
 
   return <div style={shell}>
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
-      <div><h1 style={{ marginBottom: 4 }}>Shopnoltd Feed</h1><p style={{ color: '#64748b', marginTop: 0 }}>Create, watch, like, comment and share content with direct links.</p></div>
+      <div><h1 style={{ marginBottom: 4 }}>Shopnoltd Feed</h1><p style={{ color: '#64748b', marginTop: 0 }}>Create, watch, like, comment, share and follow with direct post links.</p></div>
       <Link to="/work" style={{ padding: '9px 13px', background: '#0ea5e9', color: '#fff', borderRadius: 8, textDecoration: 'none', fontWeight: 700 }}>Find Work</Link>
     </div>
     <section style={card}>
@@ -98,6 +125,6 @@ export default function SocialFeed() {
     {loading && <p>Loading feed…</p>}
     {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
     {!loading && posts.length === 0 && <div style={card}>No posts yet. Be the first to publish.</div>}
-    {posts.map(post => <PostCard key={post.id} post={post} refresh={refresh} />)}
+    {posts.map(post => <PostCard key={post.id} post={post} refresh={refresh} following={following} toggleFollow={toggleFollow} />)}
   </div>
 }
