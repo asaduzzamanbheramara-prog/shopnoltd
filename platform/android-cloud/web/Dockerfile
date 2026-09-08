@@ -2,6 +2,7 @@ FROM node:20-alpine AS build
 WORKDIR /src
 COPY platform/android-cloud/web/package.json ./package.json
 RUN npm install --no-audit --no-fund
+COPY platform/android-cloud/web/vite.config.js ./vite.config.js
 COPY platform/android-cloud/web/index.html ./index.html
 COPY platform/android-cloud/web/src ./src
 RUN npm run build
