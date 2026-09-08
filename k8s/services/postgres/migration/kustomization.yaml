@@ -5,7 +5,13 @@ namespace: shopno-data
 
 resources:
 - migrate-job.yaml
-- sql-configmap.yaml
+
+configMapGenerator:
+- name: postgres-platform-migrations
+  files:
+  - 012-payment-schema-reconciliation.sql
+  options:
+    disableNameSuffixHash: true
 
 labels:
 - includeSelectors: false
