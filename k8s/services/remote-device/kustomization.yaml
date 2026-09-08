@@ -2,7 +2,6 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
-
   # MeshCentral remote-control engine
   - meshcentral-pvc.yaml
   - meshcentral-config-init.yaml
@@ -12,9 +11,10 @@ resources:
 
   # Shopnoltd device registry
   - registry-pvc.yaml
-  - registry-configmap.yaml
+  - registry-configmap-v4.yaml
   - registry-deployment.yaml
   - registry-service.yaml
+  - registry-networkpolicy.yaml
 
   # Shopnoltd remote gateway
   - deployment.yaml
@@ -22,7 +22,7 @@ resources:
   - ingress.yaml
 
   # Browser device management UI
-  - ui-configmap.yaml
+  - ui-configmap-v2.yaml
   - ui-deployment.yaml
   - ui-service.yaml
   - ui-ingress.yaml

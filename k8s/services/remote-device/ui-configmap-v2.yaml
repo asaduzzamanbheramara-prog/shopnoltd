@@ -1,0 +1,66 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: remote-device-ui-v2
+  namespace: shopno-tools
+data:
+  index.html: |
+    <!doctype html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      <title>Shopnoltd Cloud Devices</title>
+      <style>
+        body{margin:0;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f5f7fa;color:#172033}
+        header{padding:24px 32px;background:#111827;color:#fff}
+        main{max-width:1400px;margin:24px auto;padding:0 18px}
+        .toolbar,.summary{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:18px}
+        input,select,button{padding:10px 12px;border:1px solid #ccd3df;border-radius:8px;font-size:14px}
+        button{cursor:pointer;background:#111827;color:#fff;border:0}.danger{background:#b91c1c}.muted{color:#667085}
+        .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:16px}
+        .card{background:#fff;border-radius:12px;padding:18px;box-shadow:0 3px 15px rgba(0,0,0,.08)}
+        .status{display:inline-block;padding:4px 9px;border-radius:20px;background:#e5e7eb;font-size:12px}.online{background:#dcfce7}.pending{background:#fef3c7}.offline{background:#fee2e2}
+        .row{display:flex;justify-content:space-between;gap:14px;border-top:1px solid #edf0f4;padding:7px 0}.row:first-child{border-top:0}.value{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;word-break:break-all;text-align:right}
+        .chips{display:flex;gap:6px;flex-wrap:wrap}.chip{background:#eef2ff;padding:4px 8px;border-radius:999px;font-size:12px}.vpn{background:#dcfce7}.profile{margin-top:12px}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+        .token{margin-top:12px;padding:10px;background:#f3f4f6;font-family:monospace;font-size:11px;word-break:break-all;border-radius:8px}
+      </style>
+    </head>
+    <body>
+    <header><h1>Shopnoltd Cloud Devices</h1><div>One authenticated place for Windows, Linux, macOS, Android, iPhone/iPad and browser device profiles.</div></header>
+    <main>
+      <div class="toolbar">
+        <input id="name" placeholder="Device name">
+        <select id="platform"><option value="windows">Windows</option><option value="linux">Linux</option><option value="macos">macOS</option><option value="android">Android phone/tablet</option><option value="ios">iPhone/iPad</option><option value="browser">Browser</option><option value="other">Other</option></select>
+        <input id="filter" placeholder="Filter name, platform, IP, VPN IP" oninput="render()">
+        <button onclick="addDevice()">Add device</button><button onclick="loadDevices()">Refresh</button><button onclick="logout()">Sign out</button>
+      </div>
+      <div id="enrollment-result"></div>
+      <div id="summary" class="summary"></div>
+      <div id="devices" class="grid"></div>
+    </main>
+    <script>
+    const KEYCLOAK_URL="https://auth.shopnoltd.dpdns.org",REALM="shopnoltd",CLIENT_ID="shopnoltd-web",REDIRECT_URI=window.location.origin+"/";
+    let devices=[];
+    function esc(v){return String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;")}
+    function token(){return localStorage.getItem("shopno_token")||""}
+    function clear(){localStorage.removeItem("shopno_token");localStorage.removeItem("shopno_refresh_token")}
+    function b64(a){return btoa(String.fromCharCode(...new Uint8Array(a))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/g,"")}
+    function rnd(n=64){const a=new Uint8Array(n);crypto.getRandomValues(a);return b64(a).slice(0,n)}
+    async function challenge(v){return b64(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(v)))}
+    function showLogin(message="Sign in with your Shopnoltd administrator account."){document.getElementById("devices").innerHTML=`<div class="card"><h2>Authentication required</h2><p>${esc(message)}</p><button onclick="login()">Sign in</button></div>`}
+    async function login(){const v=rnd(),s=rnd(32);sessionStorage.setItem("device_verifier",v);sessionStorage.setItem("device_state",s);const p=new URLSearchParams({client_id:CLIENT_ID,redirect_uri:REDIRECT_URI,response_type:"code",scope:"openid profile email",state:s,code_challenge:await challenge(v),code_challenge_method:"S256"});location.assign(`${KEYCLOAK_URL}/realms/${REALM}/protocol/openid-connect/auth?${p}`)}
+    async function completeLogin(){const q=new URLSearchParams(location.search),code=q.get("code");if(!code)return false;const v=sessionStorage.getItem("device_verifier"),s=sessionStorage.getItem("device_state");if(!v||q.get("state")!==s)throw Error("Authentication state validation failed.");const body=new URLSearchParams({grant_type:"authorization_code",client_id:CLIENT_ID,code,redirect_uri:REDIRECT_URI,code_verifier:v});const r=await fetch(`${KEYCLOAK_URL}/realms/${REALM}/protocol/openid-connect/token`,{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body});const d=await r.json().catch(()=>({}));sessionStorage.removeItem("device_verifier");sessionStorage.removeItem("device_state");if(!r.ok||!d.access_token)throw Error(d.error_description||d.error||"Authentication failed.");localStorage.setItem("shopno_token",d.access_token);if(d.refresh_token)localStorage.setItem("shopno_refresh_token",d.refresh_token);history.replaceState({},document.title,location.pathname);return true}
+    async function api(path,opt={}){if(!token()){showLogin();throw Error("Authentication required.")}const r=await fetch(path,{...opt,headers:{Accept:"application/json",...(opt.headers||{}),Authorization:`Bearer ${token()}`}});if(r.status===401){clear();showLogin("Your session expired. Please sign in again.");throw Error("Authentication expired.")}if(r.status===403)throw Error("Administrator permission is required.");if(!r.ok){let t=await r.text(),d=t;try{d=JSON.parse(t).detail||t}catch(_){}throw Error(d||`HTTP ${r.status}`)}return r}
+    function ips(d){const n=d.network_profile||{};const local=n.local_ips||[],vpn=n.vpn_ips||[];return `<div class="profile"><div class="row"><span>Public IP</span><span class="value">${esc(n.public_ip||"not reported")}</span></div><div class="row"><span>Local IP</span><span class="value">${esc(local.join(", ")||"not reported")}</span></div><div class="row"><span>VPN IP</span><span class="value">${esc(vpn.join(", ")||"not reported")}</span></div>${n.vpn_provider?`<div class="row"><span>VPN</span><span class="value">${esc(n.vpn_provider)}${n.vpn_interface?` / ${esc(n.vpn_interface)}`:""}</span></div>`:""}</div>`}
+    function render(){const q=document.getElementById("filter").value.toLowerCase();const list=devices.filter(d=>JSON.stringify(d).toLowerCase().includes(q));const counts={};devices.forEach(d=>counts[d.platform]=(counts[d.platform]||0)+1);document.getElementById("summary").innerHTML=`<b>${devices.length} devices</b>`+Object.entries(counts).map(([k,v])=>`<span class="chip">${esc(k)}: ${v}</span>`).join("");const root=document.getElementById("devices");root.innerHTML=list.length?list.map(d=>{const p=d.platform_profile||{};const sp=d.system_profile||{};const mesh=!!d.meshcentral_node_id;return `<div class="card"><h2>${esc(d.name)}</h2><div class="chips"><span class="chip">${esc(p.label||d.platform)}</span><span class="status ${esc(d.status)}">${esc(d.status)}</span></div><div class="row"><span>Hostname</span><span class="value">${esc(d.hostname||"not reported")}</span></div><div class="row"><span>Agent</span><span class="value">${esc(d.agent_version||"not enrolled")}</span></div><div class="row"><span>System</span><span class="value">${esc(sp.system||sp.platform||"not reported")}</span></div>${ips(d)}<div class="row"><span>Capabilities</span><span class="value">${esc(String(p.remote_control||""))}</span></div><div class="actions">${d.status==="pending"?`<button onclick="regen('${encodeURIComponent(d.id)}')">Regenerate token</button>`:""}${d.status==="online"&&mesh?`<button onclick="connect('${encodeURIComponent(d.id)}')">Connect</button>`:""}<button class="danger" onclick="del('${encodeURIComponent(d.id)}')">Delete</button></div></div>`}).join(""):"<div class='card'><h2>No matching devices</h2><p class='muted'>Enroll an authorized device agent to populate its profile, public IP, local IPs and VPN IPs.</p></div>"}
+    async function loadDevices(){try{devices=await(await api("/api/devices")).json();render()}catch(e){if(!["Authentication required","Authentication expired"].includes(e.message))document.getElementById("devices").innerHTML=`<div class='card'><h2>Device service unavailable</h2><p>${esc(e.message)}</p></div>`}}
+    async function addDevice(){const name=document.getElementById("name").value.trim(),platform=document.getElementById("platform").value;if(!name)return alert("Enter a device name");try{const d=await(await api("/api/devices",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name,platform})})).json();document.getElementById("name").value="";document.getElementById("enrollment-result").innerHTML=`<div class='card token'><b>Enrollment token</b><br>${esc(d.enrollment_token)}<br><small>Use this one-time token only on the authorized device.</small></div>`;loadDevices()}catch(e){alert(e.message)}}
+    async function regen(id){if(!confirm("Generate a new one-time enrollment token?"))return;try{const d=await(await api(`/api/devices/${id}/enrollment-token`,{method:"POST"})).json();document.getElementById("enrollment-result").innerHTML=`<div class='card token'><b>Enrollment token</b><br>${esc(d.enrollment_token)}</div>`}catch(e){alert(e.message)}}
+    async function del(id){if(!confirm("Delete this device?"))return;try{await api(`/api/devices/${id}`,{method:"DELETE"});loadDevices()}catch(e){alert(e.message)}}
+    async function connect(id){const w=open("about:blank","_blank");try{const d=await(await api(`/api/connect/${id}`)).json();if(!d.connect_url)throw Error("No connection URL returned.");if(w)w.location=d.connect_url;else location=d.connect_url}catch(e){if(w)w.close();alert(e.message)}}
+    function logout(){clear();showLogin("You have been signed out.")}
+    async function init(){try{if(await completeLogin()){await loadDevices();return}if(!token())showLogin();else await loadDevices()}catch(e){clear();showLogin(e.message)}}
+    init();setInterval(()=>token()&&loadDevices(),10000);
+    </script>
+    </body></html>

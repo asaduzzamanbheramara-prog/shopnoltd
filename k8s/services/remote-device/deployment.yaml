@@ -28,7 +28,7 @@ spec:
             - name: REGISTRY_URL
               value: http://remote-device-registry.shopno-tools.svc.cluster.local:8080
             - name: MESH_URL
-              value: https://remote-engine.shopnoltd.dpdns.org
+              value: https://remote.shopnoltd.dpdns.org
             - name: KEYCLOAK_ISSUER
               value: https://auth.shopnoltd.dpdns.org/realms/shopnoltd
             - name: KEYCLOAK_AUDIENCE
