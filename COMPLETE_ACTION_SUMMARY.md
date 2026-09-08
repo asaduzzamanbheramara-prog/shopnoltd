@@ -163,17 +163,17 @@ b'{"status":"ok"}'
 ### Auth-Service Secret (`shopno-identity` namespace)
 ```yaml
 database-url: postgresql+asyncpg://postgres:5XuByzqhn6nJyq7iR7xva58iKHLSUSj@10.102.49.130:5432/shopnoltd
-db-password: 5XuByzqhn6nJyq7iR7xva58iKHLSUSj
-admin-password: 5XuByzqhn6nJyq7iR7xva58iKHLSUSj
-api-key: 5XuByzqhn6nJyq7iR7xva58iKHLSUSj
-jwt-secret: 5XuByzqhn6nJyq7iR7xva58iKHLSUSj
+db-password: ${DB_PASSWORD}
+admin-password: ${ADMIN_PASSWORD}
+api-key: ${API_KEY}
+jwt-secret: ${JWT_SECRET}
 ```
 
 ### PostgreSQL Secret (`shopno-data` namespace)
 ```yaml
 POSTGRES_DB: shopnoltd
 POSTGRES_USER: postgres
-POSTGRES_PASSWORD: 5XuByzqhn6nJyq7iR7xva58iKHLSUSj
+POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
 ```
 
 ### Probe Configuration
