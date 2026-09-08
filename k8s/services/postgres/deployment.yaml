@@ -5,6 +5,8 @@ metadata:
   namespace: shopno-data
   labels:
     app.kubernetes.io/name: postgres
+  annotations:
+    argocd.argoproj.io/sync-wave: "-20"
 spec:
   replicas: 1
   strategy:
