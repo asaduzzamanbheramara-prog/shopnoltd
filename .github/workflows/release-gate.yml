@@ -63,11 +63,11 @@ jobs:
           - name: root
             url: 'https://shopnoltd.dpdns.org'
           - name: api
-            url: 'https://api.shopnoltd.dpdns.org'
+            url: 'https://api.shopnoltd.dpdns.org/health'
           - name: auth
             url: 'https://auth.shopnoltd.dpdns.org'
           - name: ai
-            url: 'https://ai-platform.shopnoltd.dpdns.org'
+            url: 'https://ai-platform.shopnoltd.dpdns.org/healthz'
     steps:
       - name: Probe ${{ matrix.name }}
         shell: bash
