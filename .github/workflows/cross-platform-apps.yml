@@ -31,8 +31,8 @@ jobs:
             target: linux
             artifact: linux-installers
           - os: macos-latest
-            target: mac
-            artifact: macos-installer
+            target: macos-installer
+            builder_target: mac
     runs-on: ${{ matrix.os }}
     defaults:
       run:
@@ -52,7 +52,7 @@ jobs:
         run: npm ci
 
       - name: Package Shopnoltd desktop application
-        run: npx electron-builder --config electron-builder.web.json --${{ matrix.target }} --publish never
+        run: npx electron-builder --config electron-builder.web.json --${{ matrix.builder_target || matrix.target }} --publish never
 
       - name: Upload desktop installer
         uses: actions/upload-artifact@v4
@@ -97,11 +97,20 @@ jobs:
         working-directory: apps/mobile-shell/android
         run: bash ./gradlew assembleDebug
 
+      - name: Locate generated Android APK
+        id: android-apk
+        shell: bash
+        run: |
+          APK_PATH="$(find app/build/outputs/apk -type f -name '*.apk' | head -n 1)"
+          test -n "$APK_PATH"
+          echo "path=$APK_PATH" >> "$GITHUB_OUTPUT"
+          echo "Generated APK: $APK_PATH"
+
       - name: Upload Android APK
         uses: actions/upload-artifact@v4
         with:
           name: shopnoltd-mobile-android-phone-tablet
-          path: apps/mobile-shell/android/app/build/outputs/apk/debug/*.apk
+          path: apps/mobile-shell/android/${{ steps.android-apk.outputs.path }}
           if-no-files-found: error
 
   mobile-ios:
