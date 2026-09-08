@@ -66,31 +66,142 @@ async def users_me(creds: HTTPAuthorizationCredentials = Depends(bearer)):
     return await user(creds)
 
 
+# ---------------------------------------------------------------------------
+# Financial facade
+# ---------------------------------------------------------------------------
+# The browser uses api.shopnoltd.dpdns.org only. The concrete payment service
+# remains the source of truth for wallets, transactions, deposits and exchange
+# settlement, including its idempotency and atomic wallet logic.
+
+
+@router.get("/wallets")
+async def wallets(creds: HTTPAuthorizationCredentials = Depends(bearer)):
+    return await call("GET", f"{PAYMENT}/api/v1/wallets", creds.credentials)
+
+
+@router.get("/wallets/{currency}")
+async def payment_wallet(currency: str, creds: HTTPAuthorizationCredentials = Depends(bearer)):
+    return await call("GET", f"{PAYMENT}/api/v1/wallets/{currency.upper()}", creds.credentials)
+
+
+@router.get("/wallets/{currency}/ledger")
+async def payment_wallet_ledger(
+    currency: str,
+    limit: int = Query(50, ge=1, le=200),
+    creds: HTTPAuthorizationCredentials = Depends(bearer),
+):
+    return await call(
+        "GET",
+        f"{PAYMENT}/api/v1/wallets/{currency.upper()}/ledger",
+        creds.credentials,
+        params={"limit": limit},
+    )
+
+
 @router.get("/wallet")
 async def wallet(creds: HTTPAuthorizationCredentials = Depends(bearer), currency: str = Query("BDT")):
-    current_user = await user(creds)
-    email = current_user.get("email")
-    if not email:
-        raise HTTPException(status_code=400, detail="Authenticated user does not have an email address")
-    return await call("GET", f"{BILLING}/wallet/{email}", creds.credentials, params={"currency": currency.upper()})
+    return await call("GET", f"{PAYMENT}/api/v1/wallets/{currency.upper()}", creds.credentials)
 
 
 @router.get("/wallet/ledger")
-async def wallet_ledger(creds: HTTPAuthorizationCredentials = Depends(bearer), currency: str = Query("BDT")):
-    current_user = await user(creds)
-    email = current_user.get("email")
-    if not email:
-        raise HTTPException(status_code=400, detail="Authenticated user does not have an email address")
-    return await call("GET", f"{BILLING}/wallet/{email}/ledger", creds.credentials, params={"currency": currency.upper()})
+async def wallet_ledger(
+    creds: HTTPAuthorizationCredentials = Depends(bearer),
+    currency: str = Query("BDT"),
+    limit: int = Query(50, ge=1, le=200),
+):
+    return await call(
+        "GET",
+        f"{PAYMENT}/api/v1/wallets/{currency.upper()}/ledger",
+        creds.credentials,
+        params={"limit": limit},
+    )
 
 
 @router.get("/transactions")
-async def transactions(creds: HTTPAuthorizationCredentials = Depends(bearer)):
-    current_user = await user(creds)
-    email = current_user.get("email")
-    if not email:
-        raise HTTPException(status_code=400, detail="Authenticated user does not have an email address")
-    return await call("GET", f"{BILLING}/transactions/{email}", creds.credentials)
+async def transactions(
+    creds: HTTPAuthorizationCredentials = Depends(bearer),
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+):
+    return await call(
+        "GET",
+        f"{PAYMENT}/api/v1/transactions",
+        creds.credentials,
+        params={"limit": limit, "offset": offset},
+    )
+
+
+@router.get("/billing/gateways")
+async def billing_gateways(creds: HTTPAuthorizationCredentials = Depends(bearer)):
+    methods = await call("GET", f"{PAYMENT}/api/v1/methods", creds.credentials)
+    items = methods.get("methods", []) if isinstance(methods, dict) else []
+    gateways = []
+    for item in items:
+        enabled = bool(item.get("enabled", True))
+        method = item.get("id") or item.get("name")
+        gateways.append(
+            {
+                "name": method,
+                "id": method,
+                "display_name": item.get("display_name") or str(method).replace("_", " ").title(),
+                "enabled": enabled,
+                "available": enabled,
+                "live": enabled,
+                "currencies": item.get("currencies") or [],
+            }
+        )
+    return {"gateways": gateways}
+
+
+@router.get("/methods")
+async def payment_methods(creds: HTTPAuthorizationCredentials = Depends(bearer)):
+    return await call("GET", f"{PAYMENT}/api/v1/methods", creds.credentials)
+
+
+@router.post("/deposits")
+async def payment_deposit(body: dict, creds: HTTPAuthorizationCredentials = Depends(bearer)):
+    return await call("POST", f"{PAYMENT}/api/v1/deposits", creds.credentials, json=body)
+
+
+@router.get("/deposits/{tx_id}")
+async def payment_deposit_detail(tx_id: str, creds: HTTPAuthorizationCredentials = Depends(bearer)):
+    return await call("GET", f"{PAYMENT}/api/v1/deposits/{tx_id}", creds.credentials)
+
+
+@router.post("/withdrawals")
+async def payment_withdrawal(body: dict, creds: HTTPAuthorizationCredentials = Depends(bearer)):
+    return await call("POST", f"{PAYMENT}/api/v1/withdrawals", creds.credentials, json=body)
+
+
+@router.post("/transfers")
+async def payment_transfer(body: dict, creds: HTTPAuthorizationCredentials = Depends(bearer)):
+    return await call("POST", f"{PAYMENT}/api/v1/transfers", creds.credentials, json=body)
+
+
+@router.get("/exchanges/rate")
+async def payment_exchange_rate(
+    from_currency: str,
+    to_currency: str,
+    creds: HTTPAuthorizationCredentials = Depends(bearer),
+):
+    return await call(
+        "GET",
+        f"{PAYMENT}/api/v1/exchanges/rate",
+        creds.credentials,
+        params={"from_currency": from_currency.upper(), "to_currency": to_currency.upper()},
+    )
+
+
+@router.post("/exchanges/convert")
+async def payment_exchange_convert(body: dict, creds: HTTPAuthorizationCredentials = Depends(bearer)):
+    payload = dict(body)
+    payload["from_currency"] = str(payload.get("from_currency", "")).upper()
+    payload["to_currency"] = str(payload.get("to_currency", "")).upper()
+    if not payload["from_currency"] or not payload["to_currency"] or payload.get("amount") is None:
+        raise HTTPException(status_code=422, detail="from_currency, to_currency and amount are required")
+    if not payload.get("idempotency_key"):
+        raise HTTPException(status_code=422, detail="idempotency_key is required")
+    return await call("POST", f"{PAYMENT}/api/v1/exchanges/convert", creds.credentials, json=payload)
 
 
 @router.get("/blog")
@@ -163,12 +274,6 @@ async def notifications(creds: HTTPAuthorizationCredentials = Depends(bearer)):
     return await call("GET", "http://notification-service.shopno-platform.svc.cluster.local:80/api/v1/notifications/me", creds.credentials)
 
 
-@router.get("/billing/gateways")
-async def billing_gateways(creds: HTTPAuthorizationCredentials = Depends(bearer)):
-    await user(creds)
-    return await call("GET", f"{BILLING}/gateways", creds.credentials)
-
-
 @router.post("/billing/checkout")
 async def billing_checkout(body: dict, creds: HTTPAuthorizationCredentials = Depends(bearer)):
     current_user = await user(creds)
@@ -194,22 +299,9 @@ async def billing_checkout(body: dict, creds: HTTPAuthorizationCredentials = Dep
 
 @router.get("/rate/{frm}/{to}")
 async def rate(frm: str, to: str, creds: HTTPAuthorizationCredentials = Depends(bearer)):
-    await user(creds)
-    return await call("GET", f"{EXCHANGE}/api/v1/rates/{frm.upper()}/{to.upper()}", creds.credentials)
+    return await payment_exchange_rate(frm, to, creds)
 
 
 @router.post("/exchange/convert")
 async def exchange_convert(body: dict, creds: HTTPAuthorizationCredentials = Depends(bearer)):
-    current_user = await user(creds)
-    from_currency = str(body.get("from_currency", "")).upper()
-    to_currency = str(body.get("to_currency", "")).upper()
-    amount = body.get("amount")
-    if not from_currency or not to_currency or amount is None:
-        raise HTTPException(status_code=422, detail="from_currency, to_currency and amount are required")
-    payload = {
-        "from_currency": from_currency,
-        "to_currency": to_currency,
-        "amount": amount,
-        "user_id": current_user.get("sub") or current_user.get("id"),
-    }
-    return await call("POST", f"{EXCHANGE}/api/v1/convert", creds.credentials, json=payload)
+    return await payment_exchange_convert(body, creds)
