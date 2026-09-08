@@ -3,6 +3,8 @@ kind: Deployment
 metadata:
   name: billing-engine
   namespace: shopno-payments
+  annotations:
+    argocd.argoproj.io/sync-wave: "-20"
 spec:
   replicas: 1
   revisionHistoryLimit: 3
