@@ -51,6 +51,18 @@ jobs:
             context: .
             dockerfile: ./platform/android-portal/Dockerfile
             tag: latest
+          - name: android-cloud-controller
+            context: .
+            dockerfile: ./platform/android-cloud/controller/Dockerfile
+            tag: latest
+          - name: android-cloud-gateway
+            context: ./platform/android-cloud/gateway
+            dockerfile: ./platform/android-cloud/gateway/Dockerfile
+            tag: latest
+          - name: android-cloud-web
+            context: .
+            dockerfile: ./platform/android-cloud/web/Dockerfile
+            tag: latest
           - name: oauth
             context: ./oauth-service
             dockerfile: ./oauth-service/Dockerfile

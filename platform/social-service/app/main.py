@@ -26,7 +26,7 @@ async def lifespan(app: FastAPI):
     await redis_client.aclose()
 
 
-app = FastAPI(title="Shopnoltd Social Service", version="0.4.0", lifespan=lifespan)
+app = FastAPI(title="Shopnoltd Social Service", version="0.5.0", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origin_regex=settings.cors_origin_regex,
@@ -34,41 +34,20 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-app.include_router(
-    __import__("app.api.posts", fromlist=["router"]).router, prefix="/api/v1/posts", tags=["posts"]
-)
-app.include_router(
-    __import__("app.api.blog", fromlist=["router"]).router, prefix="/api/v1/blog", tags=["blog"]
-)
-app.include_router(
-    __import__("app.api.admin_data", fromlist=["router"]).router, prefix="/api/v1/admin/blog-data", tags=["blog-admin-data"]
-)
-app.include_router(
-    __import__("app.api.feed", fromlist=["router"]).router, prefix="/api/v1/feed", tags=["feed"]
-)
-app.include_router(
-    __import__("app.api.likes", fromlist=["router"]).router, prefix="/api/v1/likes", tags=["likes"]
-)
-app.include_router(
-    __import__("app.api.shares", fromlist=["router"]).router,
-    prefix="/api/v1/shares",
-    tags=["shares"],
-)
-app.include_router(
-    __import__("app.api.follows", fromlist=["router"]).router,
-    prefix="/api/v1/follows",
-    tags=["follows"],
-)
-app.include_router(
-    __import__("app.api.post_views", fromlist=["router"]).router,
-    prefix="/api/v1/views",
-    tags=["views"],
-)
+app.include_router(__import__("app.api.posts", fromlist=["router"]).router, prefix="/api/v1/posts", tags=["posts"])
+app.include_router(__import__("app.api.blog", fromlist=["router"]).router, prefix="/api/v1/blog", tags=["blog"])
+app.include_router(__import__("app.api.admin_data", fromlist=["router"]).router, prefix="/api/v1/admin/blog-data", tags=["blog-admin-data"])
+app.include_router(__import__("app.api.feed", fromlist=["router"]).router, prefix="/api/v1/feed", tags=["feed"])
+app.include_router(__import__("app.api.likes", fromlist=["router"]).router, prefix="/api/v1/likes", tags=["likes"])
+app.include_router(__import__("app.api.shares", fromlist=["router"]).router, prefix="/api/v1/shares", tags=["shares"])
+app.include_router(__import__("app.api.follows", fromlist=["router"]).router, prefix="/api/v1/follows", tags=["follows"])
+app.include_router(__import__("app.api.post_views", fromlist=["router"]).router, prefix="/api/v1/views", tags=["views"])
+app.include_router(__import__("app.api.reactions", fromlist=["router"]).router, prefix="/api/v1/reactions", tags=["reactions"])
 
 
 @app.get("/healthz", include_in_schema=False)
 async def healthz():
-    return {"status": "ok"}
+    return {"status": "ok", "social": True}
 
 
 @app.get("/readyz", include_in_schema=False)
@@ -78,7 +57,7 @@ async def readyz():
     async with engine.connect() as c:
         await c.execute(text("SELECT 1"))
     await redis_client.ping()
-    return {"status": "ready"}
+    return {"status": "ready", "social": True}
 
 
 @app.get("/metrics", include_in_schema=False)

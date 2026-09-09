@@ -22,25 +22,19 @@ async def current_user(creds: HTTPAuthorizationCredentials = Depends(bearer)):
 
 
 @router.post("/{post_id}", status_code=201)
-async def share(
-    post_id: str, body: ShareIn, user=Depends(current_user), s: AsyncSession = Depends(db)
-):
-    s.add(Share(post_id=post_id, user_id=user["sub"], target=body.target))
-    p = (await s.execute(select(Post).where(Post.id == post_id))).scalar_one_or_none()
-    if not p:
+async def share(post_id: str, body: ShareIn, user=Depends(current_user), s: AsyncSession = Depends(db)):
+    post = (await s.execute(select(Post).where(Post.id == post_id))).scalar_one_or_none()
+    if not post:
         raise HTTPException(404, "post not found")
-    p.share_count = (p.share_count or 0) + 1
+    if body.target in {"twitter", "facebook", "linkedin"}:
+        raise HTTPException(501, f"{body.target} sharing requires an enabled provider integration")
+    s.add(Share(post_id=post_id, user_id=user["sub"], target=body.target))
+    post.share_count = (post.share_count or 0) + 1
     await s.commit()
-    if body.target == "twitter":
-        # placeholder for real Twitter API
-        pass
-    return {"shared": True, "share_count": p.share_count, "target": body.target}
+    return {"shared": True, "share_count": post.share_count, "target": body.target, "share_url": f"/post/{post_id}"}
 
 
 @router.get("/{post_id}")
 async def sharers(post_id: str, s: AsyncSession = Depends(db)):
     res = await s.execute(select(Share).where(Share.post_id == post_id))
-    return [
-        {"user_id": sh.user_id, "target": sh.target, "created_at": sh.created_at.isoformat()}
-        for sh in res.scalars().all()
-    ]
+    return [{"user_id": sh.user_id, "target": sh.target, "created_at": sh.created_at.isoformat()} for sh in res.scalars().all()]

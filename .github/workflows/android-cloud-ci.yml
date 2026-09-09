@@ -1,0 +1,36 @@
+name: Shopnoltd Android Cloud CI
+
+on:
+  pull_request:
+    paths:
+      - "platform/android-cloud/**"
+      - "k8s/services/android-cloud/**"
+      - "k8s/kustomization.yaml"
+      - ".github/workflows/android-cloud-ci.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validate Python controller syntax
+        run: python -m py_compile platform/android-cloud/controller/main.py
+      - name: Validate gateway shell
+        run: bash -n platform/android-cloud/gateway/entrypoint.sh
+      - name: Validate Kubernetes bundle
+        run: kubectl kustomize k8s/services/android-cloud >/tmp/android-cloud-rendered.yaml
+      - name: Validate rendered bundle is non-empty
+        run: test -s /tmp/android-cloud-rendered.yaml
+      - name: Build controller image
+        run: docker build -f platform/android-cloud/controller/Dockerfile -t shopnoltd/android-cloud-controller:test .
+      - name: Build gateway image
+        run: docker build -f platform/android-cloud/gateway/Dockerfile -t shopnoltd/android-cloud-gateway:test platform/android-cloud/gateway
+      - name: Build browser workspace image
+        run: docker build -f platform/android-cloud/web/Dockerfile -t shopnoltd/android-cloud-web:test .

@@ -20,13 +20,14 @@ async def lifespan(app: FastAPI):
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     await redis_client.ping()
+    app.state.redis = redis_client
     log.info("messaging-service.started", env=settings.env)
     yield
     await engine.dispose()
     await redis_client.aclose()
 
 
-app = FastAPI(title="Shopnoltd Messaging Service", version="0.1.0", lifespan=lifespan)
+app = FastAPI(title="Shopnoltd Messaging Service", version="0.2.0", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origin_regex=settings.cors_origin_regex,
@@ -44,11 +45,16 @@ app.include_router(
     prefix="/api/v1/messages",
     tags=["messages"],
 )
+app.include_router(
+    __import__("app.api.realtime", fromlist=["router"]).router,
+    prefix="/api/v1/realtime",
+    tags=["realtime"],
+)
 
 
 @app.get("/healthz", include_in_schema=False)
 async def healthz():
-    return {"status": "ok"}
+    return {"status": "ok", "realtime": True}
 
 
 @app.get("/readyz", include_in_schema=False)
@@ -58,7 +64,7 @@ async def readyz():
     async with engine.connect() as c:
         await c.execute(text("SELECT 1"))
     await redis_client.ping()
-    return {"status": "ready"}
+    return {"status": "ready", "realtime": True}
 
 
 @app.get("/metrics", include_in_schema=False)
