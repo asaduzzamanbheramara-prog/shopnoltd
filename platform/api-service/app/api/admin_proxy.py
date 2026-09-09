@@ -48,14 +48,27 @@ async def proxy(request: Request, base: str, path: str, token: str, *, content: 
     )
 
 
+# Payment/service-owned data facade. Write routes are deliberately proxied even
+# where the upstream adapter rejects generic writes, so the browser never needs
+# a second origin and receives the owning service's policy response.
 @router.api_route("/admin/tables", methods=["GET"])
 async def admin_tables(request: Request, token: str = Depends(current_token)):
     return await proxy(request, PAYMENT, "/api/v1/admin/tables", token)
 
 
-@router.api_route("/admin/tables/{name}", methods=["GET"])
+@router.api_route("/admin/tables/{name}", methods=["GET", "POST"])
 async def admin_table(request: Request, name: str, token: str = Depends(current_token)):
     return await proxy(request, PAYMENT, f"/api/v1/admin/tables/{name}", token)
+
+
+@router.api_route("/admin/tables/{name}/{record_id}", methods=["PUT", "DELETE"])
+async def admin_table_row(request: Request, name: str, record_id: str, token: str = Depends(current_token)):
+    return await proxy(request, PAYMENT, f"/api/v1/admin/tables/{name}/{record_id}", token)
+
+
+@router.api_route("/admin/tables/{name}/bulk-delete", methods=["POST"])
+async def admin_table_bulk_delete(request: Request, name: str, token: str = Depends(current_token)):
+    return await proxy(request, PAYMENT, f"/api/v1/admin/tables/{name}/bulk-delete", token)
 
 
 @router.api_route("/admin/tables/{name}/analysis", methods=["GET"])
@@ -68,6 +81,13 @@ async def admin_table_export(request: Request, name: str, token: str = Depends(c
     return await proxy(request, PAYMENT, f"/api/v1/admin/tables/{name}/export", token)
 
 
+@router.api_route("/admin/data-reports/{name}/pdf", methods=["GET"])
+async def admin_table_report(request: Request, name: str, token: str = Depends(current_token)):
+    return await proxy(request, PAYMENT, f"/api/v1/admin/data-reports/{name}/pdf", token)
+
+
+# Blog data facade. All browser traffic stays on api.shopnoltd.dpdns.org while
+# the social service remains the owner of blog data and tenant/business rules.
 @router.api_route("/admin/blog-data/schema", methods=["GET"])
 async def admin_blog_schema(request: Request, token: str = Depends(current_token)):
     return await proxy(request, SOCIAL, "/api/v1/admin/blog-data/schema", token)
