@@ -57,11 +57,17 @@ jobs:
           - name: billing
             url: https://billing.shopnoltd.dpdns.org/health
             mode: health
-          - name: payment
-            url: https://payment.shopnoltd.dpdns.org/healthz
+          - name: payment-ui
+            url: https://payment.shopnoltd.dpdns.org
+            mode: web
+          - name: payment-backend
+            url: https://payment-service.shopnoltd.dpdns.org/healthz
             mode: health
-          - name: exchange
-            url: https://exchange.shopnoltd.dpdns.org/healthz
+          - name: exchange-ui
+            url: https://exchange.shopnoltd.dpdns.org
+            mode: web
+          - name: exchange-backend
+            url: https://exchange-service.shopnoltd.dpdns.org/healthz
             mode: health
           - name: domain
             url: https://domain.shopnoltd.dpdns.org/healthz
