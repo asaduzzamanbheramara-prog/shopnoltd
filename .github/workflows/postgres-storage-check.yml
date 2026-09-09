@@ -1,0 +1,41 @@
+name: PostgreSQL storage capacity check
+
+on:
+  schedule:
+    - cron: '37 18 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: postgres-storage-check
+  cancel-in-progress: false
+
+env:
+  POSTGRES_NAMESPACE: shopno-data
+  POSTGRES_DEPLOYMENT: postgres
+  MAX_USED_PERCENT: '80'
+
+jobs:
+  storage:
+    name: Check PostgreSQL PVC usage
+    runs-on: [self-hosted, linux, shopnoltd, k3s]
+    timeout-minutes: 10
+    steps:
+      - name: Checkout main source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Verify Kubernetes access
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v kubectl >/dev/null
+          test -f "${KUBECONFIG:-$HOME/.kube/config}"
+          kubectl cluster-info >/dev/null
+
+      - name: Check PostgreSQL storage
+        shell: bash
+        run: ./ops/backup/check-postgres-storage.sh
