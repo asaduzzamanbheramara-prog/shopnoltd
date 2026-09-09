@@ -1,0 +1,137 @@
+name: Self-hosted k3s GitOps deployment
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'k8s/**'
+      - '.github/workflows/self-hosted-k3s-gitops.yml'
+  workflow_dispatch:
+
+# Never run this workflow for pull requests. A self-hosted runner has access to
+# the private cluster and must only execute trusted main-branch source.
+permissions:
+  contents: read
+
+concurrency:
+  group: self-hosted-k3s-gitops-main
+  cancel-in-progress: false
+
+env:
+  ARGOCD_NAMESPACE: argocd
+  ARGOCD_APP: shopnoltd
+  MIGRATION_NAMESPACE: shopno-data
+  MIGRATION_JOB: postgres-platform-migration
+  CLOUDFLARED_NAMESPACE: shopno-ingress
+  CLOUDFLARED_DEPLOYMENT: cloudflared
+
+jobs:
+  deploy-and-verify:
+    name: Reconcile GitOps and verify k3s
+    runs-on: [self-hosted, linux, shopnoltd, k3s]
+    timeout-minutes: 30
+    steps:
+      - name: Checkout trusted main revision
+        uses: actions/checkout@v4
+
+      - name: Verify runner prerequisites
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v kubectl >/dev/null || { echo 'kubectl is required on the self-hosted runner'; exit 1; }
+          test -f "${KUBECONFIG:-$HOME/.kube/config}" || { echo 'KUBECONFIG is not configured on the runner'; exit 1; }
+          kubectl version --client
+          kubectl cluster-info
+          kubectl auth can-i get applications.argoproj.io -n "$ARGOCD_NAMESPACE"
+          kubectl auth can-i patch applications.argoproj.io -n "$ARGOCD_NAMESPACE"
+          kubectl auth can-i get jobs,pods -n "$MIGRATION_NAMESPACE"
+          kubectl auth can-i get deployments -n "$CLOUDFLARED_NAMESPACE"
+
+      - name: Validate rendered Kubernetes source
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v kustomize >/dev/null || { echo 'kustomize is required on the self-hosted runner'; exit 1; }
+          kustomize build k8s >/tmp/shopnoltd-rendered.yaml
+          test -s /tmp/shopnoltd-rendered.yaml
+          echo "Rendered $(wc -l </tmp/shopnoltd-rendered.yaml) lines from GitHub revision $GITHUB_SHA"
+
+      - name: Request Argo CD hard refresh and sync
+        shell: bash
+        env:
+          GIT_REVISION: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          kubectl -n "$ARGOCD_NAMESPACE" annotate application "$ARGOCD_APP" \
+            argocd.argoproj.io/refresh=hard --overwrite
+          kubectl -n "$ARGOCD_NAMESPACE" patch application "$ARGOCD_APP" \
+            --type merge \
+            -p "{\"operation\":{\"sync\":{\"revision\":\"$GIT_REVISION\"}}}"
+
+      - name: Wait for Argo CD sync
+        shell: bash
+        run: |
+          set -euo pipefail
+          deadline=$((SECONDS + 900))
+          while [ "$SECONDS" -lt "$deadline" ]; do
+            sync="$(kubectl -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o jsonpath='{.status.sync.status}')"
+            health="$(kubectl -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o jsonpath='{.status.health.status}')"
+            phase="$(kubectl -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o jsonpath='{.status.operationState.phase}')"
+            revision="$(kubectl -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o jsonpath='{.status.sync.revision}')"
+            echo "ArgoCD: sync=$sync health=$health phase=$phase revision=$revision"
+            if [ "$sync" = "Synced" ] && [ "$health" = "Healthy" ]; then
+              echo "ArgoCD reconciliation succeeded."
+              exit 0
+            fi
+            sleep 15
+          done
+          echo "ArgoCD reconciliation did not reach Synced/Healthy within 15 minutes."
+          exit 1
+
+      - name: Verify Cloudflared image matches GitHub source
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected="$(grep -E '^[[:space:]]*image:[[:space:]]*cloudflare/cloudflared:' k8s/ingress/cloudflared/deployment.yaml | head -1 | awk '{print $2}')"
+          live="$(kubectl -n "$CLOUDFLARED_NAMESPACE" get deployment "$CLOUDFLARED_DEPLOYMENT" -o jsonpath='{.spec.template.spec.containers[0].image}')"
+          echo "GitHub source image: $expected"
+          echo "Live image:          $live"
+          test -n "$expected"
+          test "$live" = "$expected"
+          kubectl -n "$CLOUDFLARED_NAMESPACE" rollout status deployment/"$CLOUDFLARED_DEPLOYMENT" --timeout=180s
+
+      - name: Verify migration hook completed
+        shell: bash
+        run: |
+          set -euo pipefail
+          if kubectl -n "$MIGRATION_NAMESPACE" get job "$MIGRATION_JOB" >/dev/null 2>&1; then
+            succeeded="$(kubectl -n "$MIGRATION_NAMESPACE" get job "$MIGRATION_JOB" -o jsonpath='{.status.succeeded}')"
+            echo "Migration job succeeded=$succeeded"
+            test "$succeeded" = "1"
+          else
+            echo "Migration hook Job is absent after successful ArgoCD reconciliation; hook-delete-policy may have removed it after success."
+          fi
+
+      - name: Collect migration and Argo CD diagnostics on failure
+        if: failure()
+        shell: bash
+        run: |
+          set +e
+          echo '===== ARGOCD APPLICATION ====='
+          kubectl -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o yaml
+          echo '===== ARGOCD OPERATION MESSAGE ====='
+          kubectl -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o jsonpath='{.status.operationState.message}'
+          echo
+          echo '===== MIGRATION JOB ====='
+          kubectl -n "$MIGRATION_NAMESPACE" get job "$MIGRATION_JOB" -o wide
+          kubectl -n "$MIGRATION_NAMESPACE" describe job "$MIGRATION_JOB"
+          echo '===== MIGRATION PODS ====='
+          kubectl -n "$MIGRATION_NAMESPACE" get pods -l job-name="$MIGRATION_JOB" -o wide
+          echo '===== MIGRATION LOGS ====='
+          kubectl -n "$MIGRATION_NAMESPACE" logs job/"$MIGRATION_JOB" --all-containers --tail=300
+          echo '===== MIGRATION EVENTS ====='
+          kubectl -n "$MIGRATION_NAMESPACE" get events --sort-by=.lastTimestamp | tail -100
+          echo '===== CLOUDFLARED ====='
+          kubectl -n "$CLOUDFLARED_NAMESPACE" get deployment "$CLOUDFLARED_DEPLOYMENT" -o wide
+          kubectl -n "$CLOUDFLARED_NAMESPACE" get pods -l app.kubernetes.io/name=cloudflared -o wide
+          kubectl -n "$CLOUDFLARED_NAMESPACE" logs deployment/"$CLOUDFLARED_DEPLOYMENT" --tail=120
