@@ -12,7 +12,7 @@ class Post(Base):
     tenant_id = Column(String(64), nullable=False, index=True)
     user_id = Column(String(64), nullable=False, index=True)
     content = Column(Text, nullable=False)
-    media = Column(String, default=list)  # JSON array of object keys in MinIO
+    media = Column(String, default=list)
     visibility = Column(String(16), default="public")
     auto_posted: bool = False
     auto_posted2: bool = False
@@ -22,6 +22,7 @@ class Post(Base):
     share_count = Column(Integer, default=0)
     comment_count = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
 class BlogPost(Base):
@@ -49,6 +50,16 @@ class Like(Base):
     __table_args__ = (Index("ix_like_post_user", "post_id", "user_id", unique=True),)
 
 
+class Reaction(Base):
+    __tablename__ = "reactions"
+    id = Column(String(64), primary_key=True, default=lambda: str(uuid.uuid4()))
+    post_id = Column(String(64), ForeignKey("posts.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(String(64), nullable=False, index=True)
+    reaction = Column(String(32), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    __table_args__ = (Index("ix_reaction_post_user_type", "post_id", "user_id", "reaction", unique=True),)
+
+
 class Share(Base):
     __tablename__ = "shares"
     id = Column(String(64), primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -73,8 +84,10 @@ class Comment(Base):
     id = Column(String(64), primary_key=True, default=lambda: str(uuid.uuid4()))
     post_id = Column(String(64), ForeignKey("posts.id", ondelete="CASCADE"), nullable=False, index=True)
     user_id = Column(String(64), nullable=False, index=True)
+    parent_id = Column(String(64), ForeignKey("comments.id", ondelete="CASCADE"), nullable=True, index=True)
     body = Column(Text, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
 class BlogAdminAudit(Base):

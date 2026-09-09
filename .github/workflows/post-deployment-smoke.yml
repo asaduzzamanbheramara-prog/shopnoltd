@@ -75,6 +75,9 @@ jobs:
           - name: devices
             url: https://devices.shopnoltd.dpdns.org
             mode: web
+          - name: android-cloud
+            url: https://android.shopnoltd.dpdns.org
+            mode: web
           - name: chat
             url: https://chat.shopnoltd.dpdns.org
             mode: web

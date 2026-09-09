@@ -9,8 +9,6 @@ on:
       - '.github/workflows/self-hosted-k3s-gitops.yml'
   workflow_dispatch:
 
-# Never run this workflow for pull requests. A self-hosted runner has access to
-# the private cluster and must only execute trusted main-branch source.
 permissions:
   contents: read
 
@@ -27,6 +25,7 @@ env:
   CLOUDFLARED_DEPLOYMENT: cloudflared
   CLOUDFLARE_SECRET_NAMESPACE: shopno-ingress
   CLOUDFLARE_SECRET_NAME: cloudflare-api-token
+  PLATFORM_NAMESPACE: shopno-platform
 
 jobs:
   deploy-and-verify:
@@ -51,6 +50,7 @@ jobs:
           kubectl auth can-i patch applications.argoproj.io -n "$ARGOCD_NAMESPACE"
           kubectl auth can-i get jobs,pods -n "$MIGRATION_NAMESPACE"
           kubectl auth can-i get deployments -n "$CLOUDFLARED_NAMESPACE"
+          kubectl auth can-i get deployments -n "$PLATFORM_NAMESPACE"
           kubectl auth can-i get secret/"$CLOUDFLARE_SECRET_NAME" -n "$CLOUDFLARE_SECRET_NAMESPACE"
 
       - name: Validate rendered Kubernetes source
@@ -112,6 +112,15 @@ jobs:
           test "$live" = "$expected"
           kubectl -n "$CLOUDFLARED_NAMESPACE" rollout status deployment/"$CLOUDFLARED_DEPLOYMENT" --timeout=180s
 
+      - name: Verify platform communications and Android Cloud rollouts
+        shell: bash
+        run: |
+          set -euo pipefail
+          for deployment in messaging-service meet-service live-service android-cloud-controller android-cloud-web; do
+            echo "Waiting for $PLATFORM_NAMESPACE/$deployment"
+            kubectl -n "$PLATFORM_NAMESPACE" rollout status deployment/"$deployment" --timeout=180s
+          done
+
       - name: Verify migration hook completed
         shell: bash
         run: |
@@ -143,6 +152,8 @@ jobs:
           kubectl -n "$MIGRATION_NAMESPACE" logs job/"$MIGRATION_JOB" --all-containers --tail=300
           echo '===== MIGRATION EVENTS ====='
           kubectl -n "$MIGRATION_NAMESPACE" get events --sort-by=.lastTimestamp | tail -100
+          echo '===== PLATFORM COMMUNICATIONS / ANDROID ====='
+          kubectl -n "$PLATFORM_NAMESPACE" get deployments,pods -l 'app.kubernetes.io/part-of=shopnoltd' -o wide
           echo '===== CLOUDFLARED ====='
           kubectl -n "$CLOUDFLARE_SECRET_NAMESPACE" get secret "$CLOUDFLARE_SECRET_NAME" -o jsonpath='{.type}'
           echo
