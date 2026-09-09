@@ -17,6 +17,7 @@ env:
   POSTGRES_DEPLOYMENT: postgres
   BACKUP_BRANCH: database-backups
   BACKUP_WORKDIR: /tmp/shopnoltd-postgres-backup
+  MAX_USED_PERCENT: '80'
 
 jobs:
   backup:
@@ -43,6 +44,10 @@ jobs:
           test -f "${KUBECONFIG:-$HOME/.kube/config}" || { echo 'KUBECONFIG is not configured on the runner'; exit 1; }
           kubectl cluster-info >/dev/null
           kubectl -n "$POSTGRES_NAMESPACE" get deployment "$POSTGRES_DEPLOYMENT" >/dev/null
+
+      - name: Check PostgreSQL storage capacity before dump
+        shell: bash
+        run: bash ./ops/backup/check-postgres-storage.sh
 
       - name: Dump and encrypt database
         shell: bash
