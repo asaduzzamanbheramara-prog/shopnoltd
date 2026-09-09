@@ -1,0 +1,3 @@
+# Real Cloudflare credentials must never be committed.
+secret.env
+*.secret.env
