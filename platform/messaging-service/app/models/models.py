@@ -10,7 +10,7 @@ class Conversation(Base):
     __tablename__ = "conversations"
     id = Column(String(64), primary_key=True, default=lambda: str(uuid.uuid4()))
     tenant_id = Column(String(64), nullable=False, index=True)
-    type = Column(String(16), default="direct")  # direct, group
+    type = Column(String(16), default="direct")  # direct, group, channel
     title = Column(String(128))
     created_at = Column(DateTime, default=datetime.utcnow)
 
@@ -18,9 +18,7 @@ class Conversation(Base):
 class Participant(Base):
     __tablename__ = "participants"
     id = Column(String(64), primary_key=True, default=lambda: str(uuid.uuid4()))
-    conversation_id = Column(
-        String(64), ForeignKey("conversations.id", ondelete="CASCADE"), nullable=False, index=True
-    )
+    conversation_id = Column(String(64), ForeignKey("conversations.id", ondelete="CASCADE"), nullable=False, index=True)
     user_id = Column(String(64), nullable=False, index=True)
     role = Column(String(16), default="member")
     joined_at = Column(DateTime, default=datetime.utcnow)
@@ -31,12 +29,22 @@ class Participant(Base):
 class Message(Base):
     __tablename__ = "messages"
     id = Column(String(64), primary_key=True, default=lambda: str(uuid.uuid4()))
-    conversation_id = Column(
-        String(64), ForeignKey("conversations.id", ondelete="CASCADE"), nullable=False, index=True
-    )
+    conversation_id = Column(String(64), ForeignKey("conversations.id", ondelete="CASCADE"), nullable=False, index=True)
     sender_id = Column(String(64), nullable=False, index=True)
     body = Column(Text, nullable=False)
     attachments = Column(String, default=list)
+    client_message_id = Column(String(128), nullable=True, index=True)
+    reply_to_id = Column(String(64), nullable=True, index=True)
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
     edited_at = Column(DateTime)
     deleted_at = Column(DateTime)
+
+
+class MessageReaction(Base):
+    __tablename__ = "message_reactions"
+    id = Column(String(64), primary_key=True, default=lambda: str(uuid.uuid4()))
+    message_id = Column(String(64), ForeignKey("messages.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(String(64), nullable=False, index=True)
+    reaction = Column(String(32), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    __table_args__ = (Index("ix_message_reaction_user", "message_id", "user_id", "reaction", unique=True),)
