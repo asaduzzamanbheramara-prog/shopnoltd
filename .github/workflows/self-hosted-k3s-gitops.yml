@@ -51,8 +51,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          command -v kustomize >/dev/null || { echo 'kustomize is required on the self-hosted runner'; exit 1; }
-          kustomize build k8s >/tmp/shopnoltd-rendered.yaml
+          kubectl kustomize k8s >/tmp/shopnoltd-rendered.yaml
           test -s /tmp/shopnoltd-rendered.yaml
           echo "Rendered $(wc -l </tmp/shopnoltd-rendered.yaml) lines from GitHub revision $GITHUB_SHA"
 
