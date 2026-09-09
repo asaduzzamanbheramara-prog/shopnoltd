@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { platformApi } from '../lib/platformApi'
 
 const EMPTY = { id: null, title: '', slug: '', excerpt: '', content: '', cover_image: '', status: 'draft' }
@@ -9,14 +9,24 @@ export default function MyBlog() {
   const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const fileRef = useRef(null)
 
-  async function load() {
-    const data = await platformApi.myBlog()
-    setPosts(Array.isArray(data) ? data : [])
-  }
+  const load = useCallback(async () => {
+    setLoading(true)
+    try {
+      const data = await platformApi.myBlog()
+      setPosts(Array.isArray(data) ? data : [])
+      setMessage('')
+    } catch (e) {
+      setPosts([])
+      setMessage(`Unable to load My Blog: ${e?.message || 'request failed'}`)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
-  useEffect(() => { load().catch(e => setMessage(e.message)) }, [])
+  useEffect(() => { load() }, [load])
 
   function editPost(post) {
     setMessage('')
@@ -34,7 +44,7 @@ export default function MyBlog() {
       setForm(prev => ({ ...prev, cover_image: result.url }))
       setMessage('Cover image uploaded. Save the post to keep it.')
     } catch (e) {
-      setMessage(e.message)
+      setMessage(e?.message || 'Cover image upload failed.')
     } finally {
       setUploading(false)
     }
@@ -67,7 +77,7 @@ export default function MyBlog() {
       }
       setMessage(publish ? 'Published.' : 'Draft saved.')
     } catch (e) {
-      setMessage(e.message)
+      setMessage(e?.message || 'Unable to save the post.')
     } finally {
       setBusy(false)
     }
@@ -90,7 +100,7 @@ export default function MyBlog() {
       await load()
       setMessage('Post deleted.')
     } catch (e) {
-      setMessage(e.message)
+      setMessage(e?.message || 'Unable to delete the post.')
     } finally {
       setBusy(false)
     }
@@ -99,26 +109,29 @@ export default function MyBlog() {
   function newPost() {
     setMessage('')
     setForm(EMPTY)
-    fileRef.current?.focus()
   }
 
   return (
     <main style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 20px 80px', fontFamily: 'system-ui, sans-serif' }}>
-      <h1>My blog</h1>
-      <p style={{ color: '#64748b' }}>Write, save drafts, edit, publish/unpublish and delete your own posts.</p>
+      <h1>My Blog</h1>
+      <p style={{ color: '#64748b' }}>Write, upload a cover image, save drafts, edit, publish/unpublish and delete your own posts.</p>
       {message && <div role="status" style={{ margin: '12px 0', padding: 10, borderRadius: 8, background: '#f1f5f9' }}>{message}</div>}
+      <div style={{ marginBottom: 16, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <button onClick={newPost} disabled={busy || uploading}>New post</button>
+        <button onClick={load} disabled={busy || uploading || loading}>{loading ? 'Loading…' : 'Refresh'}</button>
+      </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(260px,.8fr) minmax(420px,1.4fr)', gap: 24 }}>
         <section>
-          <button onClick={newPost} style={{ marginBottom: 12 }}>New post</button>
-          {posts.length === 0 && <p style={{ color: '#64748b' }}>No posts yet. Create your first draft.</p>}
-          {posts.map(post => (
+          {loading && <p style={{ color: '#64748b' }}>Loading your posts…</p>}
+          {!loading && posts.length === 0 && <p style={{ color: '#64748b' }}>No posts yet. Create your first draft.</p>}
+          {!loading && posts.map(post => (
             <div key={post.id} style={{ border: '1px solid #e2e8f0', borderRadius: 8, padding: 12, marginBottom: 8 }}>
               {post.cover_image && <img src={post.cover_image} alt="" loading="lazy" style={{ width: '100%', height: 110, objectFit: 'cover', borderRadius: 6, marginBottom: 8 }} />}
               <strong>{post.title || 'Untitled'}</strong>
               <div style={{ fontSize: 12, color: '#64748b' }}>{post.status} · {post.slug}</div>
               <div style={{ marginTop: 8, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                <button onClick={() => editPost(post)}>Edit</button>
-                <button disabled={busy} onClick={() => remove(post.id)}>Delete</button>
+                <button onClick={() => editPost(post)} disabled={busy || uploading}>Edit</button>
+                <button disabled={busy || uploading} onClick={() => remove(post.id)}>Delete</button>
               </div>
             </div>
           ))}
