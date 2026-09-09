@@ -85,13 +85,20 @@ jobs:
           test -s k8s/services/vpn-service.yaml
           test -s k8s/services/vpn-service-ingress.yaml
           test -s k8s/services/social-service/ingress.yaml
+          test -s k8s/services/chatwoot/deployment.yaml
 
       - name: Validate release gate documentation
         run: test -s docs/OBSERVABILITY-RELEASE-GATE.md
 
+  # Public endpoints are production runtime checks. A pull request runs against
+  # an unmerged Git ref, while these URLs point at the already deployed main
+  # environment. Running this matrix on PRs therefore tests unrelated production
+  # state rather than the proposed source. The trusted self-hosted main workflow
+  # reconciles the merge first, and this same matrix remains fail-closed on pushes.
   public-smoke:
     name: Public endpoint smoke tests
     needs: repository-validation
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -148,11 +155,17 @@ jobs:
     if: always()
     runs-on: ubuntu-latest
     steps:
-      - name: Require every release gate to pass
+      - name: Require repository validation on every event
         shell: bash
         run: |
           set -euo pipefail
           echo "repository-validation=${{ needs.repository-validation.result }}"
-          echo "public-smoke=${{ needs.public-smoke.result }}"
           test '${{ needs.repository-validation.result }}' = success
+
+      - name: Require production smoke on deployed events
+        if: github.event_name != 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "public-smoke=${{ needs.public-smoke.result }}"
           test '${{ needs.public-smoke.result }}' = success
