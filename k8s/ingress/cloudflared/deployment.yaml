@@ -21,7 +21,7 @@ spec:
         runAsUser: 10001
       containers:
         - name: cloudflared
-          image: cloudflare/cloudflared:2024.9.1
+          image: cloudflare/cloudflared:2026.8.3
           args: ["tunnel", "--config", "/etc/cloudflared/config.yml", "--metrics", "0.0.0.0:2000", "run"]
           resources:
             requests: { cpu: 50m, memory: 64Mi }
