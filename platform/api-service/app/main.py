@@ -40,6 +40,8 @@ app.include_router(__import__("app.api.v1", fromlist=["router"]).router, prefix=
 app.include_router(__import__("app.api.admin_proxy", fromlist=["router"]).router, prefix="/api/v1", tags=["admin-data-facade"])
 app.include_router(__import__("app.api.domain_proxy", fromlist=["router"]).router, prefix="/api/v1", tags=["domain-facade"])
 app.include_router(__import__("app.api.v2", fromlist=["router"]).router, prefix="/api/v2", tags=["social-work"])
+# Must precede the legacy blog facade because that facade also has /blog/{slug}.
+app.include_router(__import__("app.api.v2_blog_user", fromlist=["router"]).router, prefix="/api/v2", tags=["blog-user"])
 app.include_router(__import__("app.api.v2_blog", fromlist=["router"]).router, prefix="/api/v2", tags=["blog"])
 app.include_router(__import__("app.api.v3_work", fromlist=["router"]).router, prefix="/api/v3", tags=["verified-work"])
 app.include_router(__import__("app.api.graphql", fromlist=["router"]).router, prefix="/graphql", tags=["graphql"])
