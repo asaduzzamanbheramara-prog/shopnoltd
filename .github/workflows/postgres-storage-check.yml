@@ -38,4 +38,4 @@ jobs:
 
       - name: Check PostgreSQL storage
         shell: bash
-        run: ./ops/backup/check-postgres-storage.sh
+        run: bash ./ops/backup/check-postgres-storage.sh
