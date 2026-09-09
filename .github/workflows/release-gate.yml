@@ -116,7 +116,13 @@ jobs:
           set -euo pipefail
           url='${{ matrix.url }}'
           ok=0
-          for attempt in 1 2 3 4 5; do
+          attempts=5
+          if [ '${{ matrix.name }}' = 'chat' ]; then
+            # Chatwoot declares a startup window of up to 160s; allow the public
+            # gate to observe that declared startup window instead of failing early.
+            attempts=12
+          fi
+          for attempt in $(seq 1 "$attempts"); do
             code="$(curl -k -L -sS -o /tmp/body -w '%{http_code}' --connect-timeout 10 --max-time 30 "$url" || true)"
             case "$code" in
               2*|3*|401|403)
@@ -125,8 +131,10 @@ jobs:
                 break
                 ;;
               *)
-                echo "${{ matrix.name }} attempt $attempt returned HTTP ${code:-000}"
-                sleep $((attempt * 5))
+                echo "${{ matrix.name }} attempt $attempt/$attempts returned HTTP ${code:-000}"
+                if [ "$attempt" -lt "$attempts" ]; then
+                  sleep 10
+                fi
                 ;;
             esac
           done
