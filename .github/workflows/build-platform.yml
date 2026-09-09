@@ -4,6 +4,7 @@ on:
     branches: [main]
     paths:
       - 'platform/**'
+      - 'billing-engine/**'
       - 'services/vpn-service/**'
       - 'shared/**'
       - '.github/workflows/build-platform.yml'
@@ -53,6 +54,7 @@ jobs:
           - { service: keycloak, dockerfile: platform/keycloak/Dockerfile }
           - { service: session-manager, dockerfile: platform/session-manager/Dockerfile }
           - { service: vpn-service, dockerfile: services/vpn-service/Dockerfile }
+          - { service: billing-engine, dockerfile: billing-engine/Dockerfile }
     permissions:
       contents: read
       packages: write
