@@ -28,7 +28,10 @@ spec:
         - name: cloudflared
           image: cloudflare/cloudflared:2026.8.3@sha256:51c9cefcb4569df44e1ad403ab1d3d8065aa8e84339bcfc6aee75502e1140339
           imagePullPolicy: IfNotPresent
-          args: ["tunnel", "--config", "/etc/cloudflared/config.yml", "--protocol", "http2", "--metrics", "0.0.0.0:2000", "run"]
+          # Let cloudflared choose QUIC or HTTP/2 based on the node's actual
+          # outbound connectivity. Forcing HTTP/2 can break the tunnel when
+          # TCP/7844 is blocked even though UDP/7844 is available.
+          args: ["tunnel", "--config", "/etc/cloudflared/config.yml", "--protocol", "auto", "--metrics", "0.0.0.0:2000", "run"]
           resources:
             requests: { cpu: 50m, memory: 64Mi }
             limits:   { cpu: 200m, memory: 128Mi }
