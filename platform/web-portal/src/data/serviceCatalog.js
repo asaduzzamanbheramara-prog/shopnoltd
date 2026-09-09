@@ -31,6 +31,15 @@ export const SERVICES = [
   SERVICE('🖥️', 'Device Console', 'Browse registered devices and launch authorized remote sessions.', 'https://devices.shopnoltd.dpdns.org', 'Remote Access'),
 ]
 
+// Business applications are real website-builder targets. They intentionally route through
+// the persisted domain/site workflow instead of pretending that a backend deployment exists.
+export const BUSINESS_SERVICES = [
+  SERVICE('👥', 'HR', 'Create an HR application for employees, attendance, leave, payroll, performance and reports.', '/create-website?type=hr', 'Business Apps'),
+  SERVICE('🛒', 'POS', 'Create a POS application for products, sales, inventory, customers and reports.', '/create-website?type=pos', 'Business Apps'),
+  SERVICE('🧾', 'POS Billing System', 'Create a POS billing application for invoices, receipts, payments, stock and cashier workflows.', '/create-website?type=pos_billing', 'Business Apps'),
+  SERVICE('🏢', 'ERP', 'Create an ERP application for finance, inventory, sales, purchasing, HR and reporting.', '/create-website?type=erp', 'Business Apps'),
+]
+
 export const CONNECTED_PLATFORMS = [
   SERVICE('🌐', 'Web & Websites', 'Organize Shopnoltd websites, web apps and connected services.', '/dashboard', 'Connected'),
   SERVICE('👤', 'Profiles & Accounts', 'Manage personal, creator, developer and business profiles.', '/account', 'Connected'),
