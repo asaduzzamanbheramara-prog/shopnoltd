@@ -138,7 +138,7 @@ async def _plan(items, operation, user, s):
             if existing:
                 raise HTTPException(409, "row already exists for supplied id/slug")
             action = "insert"
-        elif operation in {"update", "merge"}:
+        elif operation in {"update", "merge", "replace"}:
             if not existing:
                 raise HTTPException(404, "no matching row for supplied id/slug")
             action = "update"
@@ -167,7 +167,7 @@ async def _read_rows(user, s):
 async def schema(user=Depends(current_user)):
     if not can_manage_blog(user):
         raise HTTPException(403, "Blog management privileges required")
-    return {"entity": "blog_posts", "operations": ["add", "update", "upsert", "merge", "delete", "replace_rows", "create_table"], "schema_replacement": False, "match_keys": ["id", "slug"], "fields": [c.name for c in BlogPost.__table__.columns], "tenant_scoped": True, "transactional": True}
+    return {"entity": "blog_posts", "operations": ["check", "add", "add_below", "update", "replace", "upsert", "merge", "delete", "publish", "unpublish", "replace_rows", "export", "import"], "schema_replacement": False, "match_keys": ["id", "slug"], "fields": [c.name for c in BlogPost.__table__.columns], "tenant_scoped": True, "transactional": True}
 
 
 @router.get("/analysis")
@@ -183,6 +183,114 @@ async def analysis(user=Depends(current_user), s: AsyncSession = Depends(db)):
     for p in posts:
         status[p.status] = status.get(p.status, 0) + 1
     return {"rows": len(posts), "columns": len(BlogPost.__table__.columns), "status_distribution": status, "published_with_content": sum(1 for p in posts if p.status == "published" and p.content), "avg_title_length": round(sum(len(p.title) for p in posts) / len(posts), 2) if posts else 0, "visualization": {"recommended": "2d+3d", "dimensions": ["status", "created_at", "published_at"]}}
+
+
+@router.get("/check")
+async def check(user=Depends(current_user), s: AsyncSession = Depends(db)):
+    if not can_manage_blog(user):
+        raise HTTPException(403, "Blog management privileges required")
+    rows = await _read_rows(user, s)
+    errors = []
+    slugs = {}
+    for item in rows:
+        slug = item.get("slug")
+        if not item.get("title") or not item.get("content"):
+            errors.append({"id": item.get("id"), "error": "title/content is required"})
+        if slug:
+            if slug in slugs:
+                errors.append({"id": item.get("id"), "error": f"duplicate slug: {slug}"})
+            slugs[slug] = item.get("id")
+        if item.get("status") == "published" and not item.get("published_at"):
+            errors.append({"id": item.get("id"), "error": "published row has no published_at"})
+    return {"ok": not errors, "rows_checked": len(rows), "errors": errors}
+
+
+@router.post("/rows")
+async def create_row(payload: dict, user=Depends(current_user), s: AsyncSession = Depends(db)):
+    if not can_manage_blog(user):
+        raise HTTPException(403, "Blog management privileges required")
+    data = _prepare_insert(payload, user)
+    existing = await _match(s, payload, user)
+    if existing:
+        raise HTTPException(409, "row already exists for supplied id/slug")
+    post = BlogPost(**data)
+    s.add(post)
+    try:
+        await s.flush()
+        values = _row(post)
+        await _audit(s, user, "create", "add", None, values)
+        await s.commit()
+        return values
+    except HTTPException:
+        await s.rollback(); raise
+    except Exception as exc:
+        await s.rollback(); raise HTTPException(409, f"Add failed: {exc}") from exc
+
+
+@router.put("/rows/{record_id}")
+async def update_row(record_id: str, payload: dict, replace: bool = False, user=Depends(current_user), s: AsyncSession = Depends(db)):
+    if not can_manage_blog(user):
+        raise HTTPException(403, "Blog management privileges required")
+    query = select(BlogPost).where(BlogPost.id == record_id)
+    scope = _scope(user)
+    if scope is not None:
+        query = query.where(scope)
+    post = (await s.execute(query)).scalar_one_or_none()
+    if post is None:
+        raise HTTPException(404, "Record not found")
+    before = _row(post)
+    data = _clean(payload, partial=not replace)
+    if replace:
+        for field in ("title", "slug", "excerpt", "content", "cover_image", "status"):
+            if field not in data:
+                data[field] = None if field in {"excerpt", "cover_image"} else ("draft" if field == "status" else "")
+    for key, value in data.items():
+        setattr(post, key, value)
+    if post.status == "published" and not post.published_at:
+        post.published_at = datetime.utcnow()
+    if post.status == "draft":
+        post.published_at = None
+    try:
+        await s.flush(); after = _row(post); await _audit(s, user, "replace" if replace else "update", "replace" if replace else "update", before, after); await s.commit(); return after
+    except HTTPException:
+        await s.rollback(); raise
+    except Exception as exc:
+        await s.rollback(); raise HTTPException(409, f"Update failed: {exc}") from exc
+
+
+@router.post("/rows/{record_id}/publish")
+async def publish_row(record_id: str, published: bool = True, user=Depends(current_user), s: AsyncSession = Depends(db)):
+    if not can_manage_blog(user):
+        raise HTTPException(403, "Blog management privileges required")
+    query = select(BlogPost).where(BlogPost.id == record_id)
+    scope = _scope(user)
+    if scope is not None:
+        query = query.where(scope)
+    post = (await s.execute(query)).scalar_one_or_none()
+    if post is None:
+        raise HTTPException(404, "Record not found")
+    before = _row(post)
+    post.status = "published" if published else "draft"
+    post.published_at = datetime.utcnow() if published else None
+    await s.flush(); after = _row(post); await _audit(s, user, "publish" if published else "unpublish", "publish", before, after); await s.commit()
+    return after
+
+
+@router.delete("/rows/{record_id}")
+async def delete_row(record_id: str, confirm: bool = False, user=Depends(current_user), s: AsyncSession = Depends(db)):
+    if not can_manage_blog(user):
+        raise HTTPException(403, "Blog management privileges required")
+    if not confirm:
+        raise HTTPException(400, "destructive delete requires confirm=true")
+    query = select(BlogPost).where(BlogPost.id == record_id)
+    scope = _scope(user)
+    if scope is not None:
+        query = query.where(scope)
+    post = (await s.execute(query)).scalar_one_or_none()
+    if post is None:
+        raise HTTPException(404, "Record not found")
+    before = _row(post); await s.delete(post); await _audit(s, user, "delete", "delete", before, None); await s.commit()
+    return {"ok": True, "deleted": record_id}
 
 
 @router.get("/export")
