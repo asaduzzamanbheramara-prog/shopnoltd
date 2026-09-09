@@ -14,9 +14,10 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /opt/aemu
-RUN git clone --depth 1 --branch master "${AEMU_REPO}" . \
-    && git checkout "${AEMU_REF}" \
-    && git clone --depth 1 --no-checkout "${AEMU_PROTO_REPO}" hardware/google/aemu \
+RUN git clone --filter=blob:none --no-checkout "${AEMU_REPO}" . \
+    && git fetch --depth 1 origin "${AEMU_REF}" \
+    && git checkout --detach "${AEMU_REF}" \
+    && git clone --filter=blob:none --no-checkout "${AEMU_PROTO_REPO}" hardware/google/aemu \
     && cd hardware/google/aemu \
     && git fetch --depth 1 origin "${AEMU_PROTO_REF}" \
     && git checkout --detach "${AEMU_PROTO_REF}" \
