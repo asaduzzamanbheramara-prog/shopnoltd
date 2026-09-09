@@ -49,6 +49,7 @@ jobs:
               "audit-service", "report-service", "license-service", "mobile-api", "ai-platform",
               "admin-portal", "web-portal", "android-portal", "messaging-service", "meet-service",
               "live-service", "mail-service", "social-service", "keycloak", "session-manager", "vpn-service",
+              "billing-engine",
           }
 
           pattern = re.compile(rf"({re.escape(prefix)}/(?P<service>[A-Za-z0-9._-]+)):[^\s\"']+")
@@ -69,8 +70,6 @@ jobs:
           print("Changed manifests:")
           for item in changed:
               print(f" - {item}")
-          if not changed:
-              print("No matching pinned images required an update.")
           with open(os.environ["GITHUB_ENV"], "a") as env:
               env.write("PROMOTION_CHANGED=" + ("true" if changed else "false") + "\n")
           PY
