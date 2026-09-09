@@ -19,4 +19,7 @@ spec:
       storage: 10Gi
 
   storageClassName: standard
+  # Keep the existing PVC intact. Expand only after the live StorageClass
+  # reports volume-expansion support and measured usage justifies it.
+  # Next practical target: 20Gi or larger; never shrink/recreate this PVC.
   # storageClassName: standard  # Use standard for Docker Desktop/Minikube
