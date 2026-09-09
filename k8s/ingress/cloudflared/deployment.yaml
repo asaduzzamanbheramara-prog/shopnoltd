@@ -16,6 +16,11 @@ spec:
         app.kubernetes.io/name: cloudflared
     spec:
       serviceAccountName: cloudflared
+      # Run the tunnel connector on the node network so Cloudflare egress is
+      # independent of the pod overlay/CNI datapath. Cluster DNS remains
+      # available for the origin service through ClusterFirstWithHostNet.
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
       securityContext:
         runAsNonRoot: true
         runAsUser: 65532
