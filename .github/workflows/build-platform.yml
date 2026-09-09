@@ -78,7 +78,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ${{ matrix.context || (matrix.service == 'vpn-service' && 'services/vpn-service' || '.') }}
-          file: ${{ matrix.context && 'Dockerfile' || matrix.dockerfile }}
+          file: ${{ matrix.dockerfile }}
           push: true
           tags: |
             ghcr.io/${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:latest
