@@ -14,11 +14,8 @@ concurrency:
 
 env:
   POSTGRES_NAMESPACE: shopno-data
-  POSTGRES_SECRET: postgres-secret
-  POSTGRES_SERVICE: postgres
-  POSTGRES_PORT: '5432'
+  POSTGRES_DEPLOYMENT: postgres
   BACKUP_BRANCH: database-backups
-  BACKUP_RETENTION_DAYS: '14'
   BACKUP_WORKDIR: /tmp/shopnoltd-postgres-backup
 
 jobs:
@@ -34,18 +31,18 @@ jobs:
 
       - name: Verify backup environment
         shell: bash
+        env:
+          BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
         run: |
           set -euo pipefail
           command -v kubectl >/dev/null
           command -v openssl >/dev/null
           command -v sha256sum >/dev/null
-          command -v gzip >/dev/null
           command -v git >/dev/null
           test -n "${BACKUP_ENCRYPTION_KEY:-}" || { echo 'BACKUP_ENCRYPTION_KEY GitHub secret is required'; exit 1; }
           test -f "${KUBECONFIG:-$HOME/.kube/config}" || { echo 'KUBECONFIG is not configured on the runner'; exit 1; }
           kubectl cluster-info >/dev/null
-          kubectl -n "$POSTGRES_NAMESPACE" get service "$POSTGRES_SERVICE" >/dev/null
-          kubectl -n "$POSTGRES_NAMESPACE" get secret "$POSTGRES_SECRET" >/dev/null
+          kubectl -n "$POSTGRES_NAMESPACE" get deployment "$POSTGRES_DEPLOYMENT" >/dev/null
 
       - name: Dump and encrypt database
         shell: bash
@@ -56,33 +53,16 @@ jobs:
           umask 077
           rm -rf "$BACKUP_WORKDIR"
           mkdir -p "$BACKUP_WORKDIR"
-
-          PGUSER="$(kubectl -n "$POSTGRES_NAMESPACE" get secret "$POSTGRES_SECRET" -o jsonpath='{.data.POSTGRES_USER}' | base64 -d)"
-          PGDATABASE="$(kubectl -n "$POSTGRES_NAMESPACE" get secret "$POSTGRES_SECRET" -o jsonpath='{.data.POSTGRES_DB}' | base64 -d)"
-          PGPASSWORD="$(kubectl -n "$POSTGRES_NAMESPACE" get secret "$POSTGRES_SECRET" -o jsonpath='{.data.POSTGRES_PASSWORD}' | base64 -d)"
-          export PGUSER PGDATABASE PGPASSWORD
-          echo "::add-mask::$PGUSER"
-          echo "::add-mask::$PGDATABASE"
-          echo "::add-mask::$PGPASSWORD"
           echo "::add-mask::$BACKUP_ENCRYPTION_KEY"
-
-          kubectl -n "$POSTGRES_NAMESPACE" port-forward "service/$POSTGRES_SERVICE" "${POSTGRES_PORT}:5432" >/tmp/shopnoltd-pg-port-forward.log 2>&1 &
-          PF_PID=$!
-          trap 'kill "$PF_PID" >/dev/null 2>&1 || true' EXIT
-
-          for _ in $(seq 1 30); do
-            if PGPASSWORD="$PGPASSWORD" pg_isready -h 127.0.0.1 -p "$POSTGRES_PORT" -U "$PGUSER" -d "$PGDATABASE" >/dev/null 2>&1; then break; fi
-            sleep 2
-          done
-          PGPASSWORD="$PGPASSWORD" pg_isready -h 127.0.0.1 -p "$POSTGRES_PORT" -U "$PGUSER" -d "$PGDATABASE"
 
           timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
           raw="$BACKUP_WORKDIR/shopnoltd-${timestamp}.dump"
           encrypted="$BACKUP_WORKDIR/shopnoltd-${timestamp}.dump.enc"
 
-          PGPASSWORD="$PGPASSWORD" pg_dump --format=custom --no-owner --no-acl \
-            --host=127.0.0.1 --port="$POSTGRES_PORT" \
-            --username="$PGUSER" --dbname="$PGDATABASE" > "$raw"
+          kubectl -n "$POSTGRES_NAMESPACE" exec "deployment/$POSTGRES_DEPLOYMENT" -- \
+            sh -c 'export PGPASSWORD="$POSTGRES_PASSWORD"; pg_dump --format=custom --no-owner --no-acl --username="$POSTGRES_USER" --dbname="$POSTGRES_DB"' \
+            > "$raw"
+          test -s "$raw"
 
           openssl enc -aes-256-cbc -pbkdf2 -iter 600000 -salt \
             -in "$raw" -out "$encrypted" -pass env:BACKUP_ENCRYPTION_KEY
@@ -90,7 +70,7 @@ jobs:
 
           sha256sum "$encrypted" > "$encrypted.sha256"
           printf '%s\n' "$timestamp" > "$BACKUP_WORKDIR/timestamp.txt"
-          printf '%s\n' "${GITHUB_SHA}" > "$BACKUP_WORKDIR/source-revision.txt"
+          printf '%s\n' "$GITHUB_SHA" > "$BACKUP_WORKDIR/source-revision.txt"
 
       - name: Verify encrypted backup integrity
         shell: bash
@@ -98,6 +78,7 @@ jobs:
           BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
         run: |
           set -euo pipefail
+          echo "::add-mask::$BACKUP_ENCRYPTION_KEY"
           cd "$BACKUP_WORKDIR"
           sha256sum -c ./*.sha256
           encrypted="$(find . -maxdepth 1 -name '*.dump.enc' -print -quit)"
@@ -131,7 +112,7 @@ jobs:
           cat > backup/README.md <<'EOF'
 # Shopnoltd PostgreSQL backup
 
-This branch contains only the latest **encrypted** PostgreSQL backup produced by the trusted self-hosted runner.
+This branch contains only the latest encrypted PostgreSQL backup produced by the trusted self-hosted runner.
 
 The encryption key is never stored in GitHub. It is supplied at runtime through the `BACKUP_ENCRYPTION_KEY` GitHub Actions secret.
 
@@ -146,4 +127,4 @@ EOF
         shell: bash
         run: |
           set +e
-          rm -rf "$BACKUP_WORKDIR" /tmp/shopnoltd-restore-test.dump /tmp/shopnoltd-pg-port-forward.log
+          rm -rf "$BACKUP_WORKDIR" /tmp/shopnoltd-restore-test.dump
