@@ -6,6 +6,16 @@ Production PostgreSQL data remains on the k3s PostgreSQL PVC. GitHub is the sour
 
 The live database is never committed to `main`, and plaintext SQL/dump files are excluded by `.gitignore`.
 
+## Database storage capacity
+
+The current PostgreSQL PVC request is **10 GiB**. That is a reasonable starting capacity, but it is tight for the full Shopnoltd platform because database growth can come from users/authentication, domains, billing/payment/wallet ledgers, work/evidence records, social/chat/messaging, AI/provider usage, CMS/blog data and audit/event records.
+
+Do not delete or recreate `postgres-data` to increase capacity. First verify that the live `standard` StorageClass supports volume expansion, then perform a controlled PVC expansion. A practical next capacity target is **20 GiB or larger**, based on measured usage and the available host disk; do not blindly resize until the live storage backend is confirmed expandable.
+
+The repository now includes `ops/backup/check-postgres-storage.sh` and `.github/workflows/postgres-storage-check.yml`. The check fails when the PostgreSQL filesystem reaches 80% usage so capacity can be expanded before exhaustion. The guard does not resize or recreate the PVC.
+
+Extra host storage is also useful for the overall platform because PostgreSQL, OpenSearch, MinIO, Redis and other stateful workloads share the k3s node. Backup working files are temporary and are removed after the encrypted backup completes, so they should not be treated as PostgreSQL data capacity.
+
 ## Required environment/secret
 
 Create the GitHub Actions repository secret:
@@ -28,7 +38,7 @@ A local environment can follow `ops/backup/backup.env.example`, but the real `.e
 6. force-updates the `database-backups` branch so GitHub keeps the latest encrypted snapshot;
 7. removes plaintext and temporary backup material from the runner.
 
-The backup branch is deliberately single-snapshot to prevent unbounded Git history growth. For longer historical retention, use an external object-storage backup in addition to this GitHub recovery copy.
+The backup branch is deliberately single-snapshot to prevent unbounded Git history growth. For longer historical retention, use an external object-storage backup in addition to this GitHub recovery copy. The encrypted GitHub copy is a recovery layer, not a replacement for capacity planning or an independent backup target.
 
 ## Manual restore
 
@@ -83,6 +93,7 @@ systemctl is-active k3s
 systemctl list-units 'actions.runner.*.service' --all
 kubectl get nodes
 kubectl -n argocd get application shopnoltd
+bash ops/backup/check-postgres-storage.sh
 ```
 
 Then run the normal public smoke/release gates. A successful backup workflow alone does not prove that the public website is healthy.
