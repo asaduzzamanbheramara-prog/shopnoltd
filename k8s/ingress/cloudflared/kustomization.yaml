@@ -4,6 +4,5 @@ namespace: shopno-ingress
 resources:
 - deployment.yaml
 - configmap.yaml
-- secret.yaml
 - rbac.yaml
 - service.yaml
