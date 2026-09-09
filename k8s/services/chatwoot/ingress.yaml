@@ -5,6 +5,9 @@ metadata:
   namespace: shopno-apps
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-prod
+    external-dns.alpha.kubernetes.io/hostname: chat.shopnoltd.dpdns.org,chatwoot.shopnoltd.dpdns.org
+    external-dns.alpha.kubernetes.io/target: 5d6e037a-7c09-4788-8532-11dba5fc1a72.cfargotunnel.com
+    external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"
     traefik.ingress.kubernetes.io/router.tls: "true"
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
 spec:
