@@ -9,6 +9,7 @@ on:
     paths:
       - 'k8s/**'
       - '.github/workflows/post-deployment-smoke.yml'
+      - 'platform/web-portal/**'
   workflow_dispatch:
 
 permissions:
@@ -35,8 +36,14 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: root
+          - name: home
             url: https://shopnoltd.dpdns.org
+            mode: web
+          - name: services
+            url: https://shopnoltd.dpdns.org/services
+            mode: web
+          - name: website-builder
+            url: https://shopnoltd.dpdns.org/create-website?type=hr
             mode: web
           - name: api
             url: https://api.shopnoltd.dpdns.org/healthz
