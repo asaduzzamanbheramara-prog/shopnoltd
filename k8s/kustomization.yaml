@@ -26,6 +26,7 @@ resources:
 - services/exchange-service
 - services/domain-service
 - services/vpn-service.yaml
+- services/vpn-service-ingress.yaml
 - services/guacamole
 - services/freedomain-service
 - services/mobile-api
