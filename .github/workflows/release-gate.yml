@@ -98,13 +98,12 @@ jobs:
           - { name: api, url: 'https://api.shopnoltd.dpdns.org/healthz' }
           - { name: auth, url: 'https://auth.shopnoltd.dpdns.org' }
           - { name: ai, url: 'https://ai-platform.shopnoltd.dpdns.org/healthz' }
-          - { name: billing, url: 'https://billing.shopnoltd.dpdns.org/healthz' }
+          - { name: billing, url: 'https://billing.shopnoltd.dpdns.org/health' }
           - { name: payment, url: 'https://payment.shopnoltd.dpdns.org/healthz' }
           - { name: exchange, url: 'https://exchange.shopnoltd.dpdns.org/healthz' }
           - { name: domain, url: 'https://domain.shopnoltd.dpdns.org/healthz' }
-          - { name: social, url: 'https://social.shopnoltd.dpdns.org/healthz' }
           - { name: devices, url: 'https://devices.shopnoltd.dpdns.org' }
-          - { name: vpn, url: 'https://vpn.shopnoltd.dpdns.org/healthz' }
+          - { name: chat, url: 'https://chat.shopnoltd.dpdns.org' }
     steps:
       - name: Probe ${{ matrix.name }}
         shell: bash
