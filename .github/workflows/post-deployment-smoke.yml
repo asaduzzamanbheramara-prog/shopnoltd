@@ -4,6 +4,11 @@ on:
   workflow_run:
     workflows: ["Promote built images"]
     types: [completed]
+  push:
+    branches: [main]
+    paths:
+      - 'k8s/**'
+      - '.github/workflows/post-deployment-smoke.yml'
   workflow_dispatch:
 
 permissions:
@@ -22,6 +27,7 @@ jobs:
     name: Verify ${{ matrix.name }}
     if: >-
       github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'push' ||
       (github.event.workflow_run.conclusion == 'success' &&
        github.event.workflow_run.head_branch == 'main')
     runs-on: ubuntu-latest
@@ -117,7 +123,7 @@ jobs:
 
   deployment-verification:
     name: Deployment verification gate
-    if: always() && (github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main'))
+    if: always() && (github.event_name == 'workflow_dispatch' || github.event_name == 'push' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main'))
     needs: [verify-required-services]
     runs-on: ubuntu-latest
     steps:
