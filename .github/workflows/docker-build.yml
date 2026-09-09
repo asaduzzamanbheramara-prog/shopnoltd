@@ -35,7 +35,7 @@ jobs:
             dockerfile: ./platform/ai-platform/Dockerfile
             tag: latest
           - name: billing-engine
-            context: ./billing-engine
+            context: .
             dockerfile: ./billing-engine/Dockerfile
             tag: v6
           - name: shopnoltd-web
