@@ -82,6 +82,12 @@ jobs:
           test -s billing-engine/app/fx.py
           test -s billing-engine/app/ledger.py
           test -s platform/api-service/app/core/financial_registry.py
+          test -s billing-engine/app/moneybag_routes.py
+          test -s platform/payment-service/migrations/versions/0004_transaction_ownership.py
+          test -s platform/android-cloud/controller/main.py
+          test -s platform/android-cloud/gateway/Dockerfile
+          test -s platform/android-cloud/web/src/main.jsx
+          test -s k8s/services/android-cloud/kustomization.yaml
           test -s k8s/services/vpn-service.yaml
           test -s k8s/services/vpn-service-ingress.yaml
           test -s k8s/services/social-service/ingress.yaml
@@ -90,11 +96,6 @@ jobs:
       - name: Validate release gate documentation
         run: test -s docs/OBSERVABILITY-RELEASE-GATE.md
 
-  # Public endpoints are production runtime checks. A pull request runs against
-  # an unmerged Git ref, while these URLs point at the already deployed main
-  # environment. Running this matrix on PRs therefore tests unrelated production
-  # state rather than the proposed source. The trusted self-hosted main workflow
-  # reconciles the merge first, and this same matrix remains fail-closed on pushes.
   public-smoke:
     name: Public endpoint smoke tests
     needs: repository-validation
@@ -113,6 +114,7 @@ jobs:
           - { name: exchange, url: 'https://exchange.shopnoltd.dpdns.org/healthz' }
           - { name: domain, url: 'https://domain.shopnoltd.dpdns.org/healthz' }
           - { name: devices, url: 'https://devices.shopnoltd.dpdns.org' }
+          - { name: android-cloud, url: 'https://android.shopnoltd.dpdns.org' }
           - { name: chat, url: 'https://chat.shopnoltd.dpdns.org' }
           - { name: social, url: 'https://social.shopnoltd.dpdns.org/healthz' }
           - { name: vpn, url: 'https://vpn.shopnoltd.dpdns.org/healthz' }
@@ -125,8 +127,6 @@ jobs:
           ok=0
           attempts=5
           if [ '${{ matrix.name }}' = 'chat' ]; then
-            # Chatwoot declares a startup window of up to 160s; allow the public
-            # gate to observe that declared startup window instead of failing early.
             attempts=12
           fi
           for attempt in $(seq 1 "$attempts"); do
