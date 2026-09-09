@@ -5,6 +5,7 @@ metadata:
   namespace: shopno-platform
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-prod
+    external-dns.alpha.kubernetes.io/hostname: social.shopnoltd.dpdns.org,social-service.shopnoltd.dpdns.org
     traefik.ingress.kubernetes.io/router.tls: "true"
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
 spec:
