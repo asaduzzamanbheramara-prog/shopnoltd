@@ -36,9 +36,7 @@ class TransferIn(BaseModel):
     currency: str = Field(min_length=3, max_length=8)
     amount: float = Field(gt=0)
     note: str | None = None
-    # Optional for backwards compatibility. Work settlements provide a stable
-    # work reference; ordinary legacy transfers remain supported.
-    idempotency_key: str | None = Field(default=None, min_length=8, max_length=128)
+    idempotency_key: str = Field(min_length=8, max_length=128)
 
 
 class TxOut(BaseModel):
