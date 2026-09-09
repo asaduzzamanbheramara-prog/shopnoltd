@@ -11,9 +11,20 @@ spec:
   ingressClassName: nginx
   tls:
     - hosts:
+        - social.shopnoltd.dpdns.org
         - social-service.shopnoltd.dpdns.org
       secretName: social-service-tls
   rules:
+    - host: social.shopnoltd.dpdns.org
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: social-service
+                port:
+                  number: 80
     - host: social-service.shopnoltd.dpdns.org
       http:
         paths:
