@@ -82,6 +82,9 @@ jobs:
           test -s billing-engine/app/fx.py
           test -s billing-engine/app/ledger.py
           test -s platform/api-service/app/core/financial_registry.py
+          test -s k8s/services/vpn-service.yaml
+          test -s k8s/services/vpn-service-ingress.yaml
+          test -s k8s/services/social-service/ingress.yaml
 
       - name: Validate release gate documentation
         run: test -s docs/OBSERVABILITY-RELEASE-GATE.md
@@ -104,6 +107,8 @@ jobs:
           - { name: domain, url: 'https://domain.shopnoltd.dpdns.org/healthz' }
           - { name: devices, url: 'https://devices.shopnoltd.dpdns.org' }
           - { name: chat, url: 'https://chat.shopnoltd.dpdns.org' }
+          - { name: social, url: 'https://social.shopnoltd.dpdns.org/healthz' }
+          - { name: vpn, url: 'https://vpn.shopnoltd.dpdns.org/healthz' }
     steps:
       - name: Probe ${{ matrix.name }}
         shell: bash
