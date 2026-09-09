@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
+import { tryRefresh } from '../lib/tokenRefresh'
 
 const AI_BASE = 'https://ai-platform.shopnoltd.dpdns.org'
 
 async function request(path, options = {}) {
-  const token = localStorage.getItem('shopno_token')
-  const response = await fetch(`${AI_BASE}${path}`, {
+  const makeRequest = (token) => fetch(`${AI_BASE}${path}`, {
     ...options,
     headers: {
       Accept: 'application/json',
@@ -13,6 +13,20 @@ async function request(path, options = {}) {
       ...(options.headers || {}),
     },
   })
+
+  let token = localStorage.getItem('shopno_token')
+  let response = await makeRequest(token)
+
+  // Access tokens are short-lived. Refresh once and retry so an otherwise
+  // valid signed-in session does not get stuck on the AI auth error.
+  if (response.status === 401 && localStorage.getItem('shopno_refresh_token')) {
+    const refreshed = await tryRefresh()
+    if (refreshed) {
+      token = refreshed
+      response = await makeRequest(token)
+    }
+  }
+
   const text = await response.text()
   let data = null
   try { data = text ? JSON.parse(text) : null } catch { data = text }
@@ -31,16 +45,25 @@ export default function AIWorkspace() {
   const [loadingModels, setLoadingModels] = useState(true)
   const [error, setError] = useState('')
 
+  async function loadModels() {
+    setLoadingModels(true)
+    setError('')
+    try {
+      const items = await request('/api/v1/inference/models')
+      const list = Array.isArray(items) ? items : []
+      setModels(list)
+      const preferred = list.find((item) => item.is_default) || list[0]
+      if (preferred) setModel(preferred.model_name)
+    } catch (err) {
+      setModels([])
+      setError(err.message)
+    } finally {
+      setLoadingModels(false)
+    }
+  }
+
   useEffect(() => {
-    request('/api/v1/inference/models')
-      .then((items) => {
-        const list = Array.isArray(items) ? items : []
-        setModels(list)
-        const preferred = list.find((item) => item.is_default) || list[0]
-        if (preferred) setModel(preferred.model_name)
-      })
-      .catch((err) => setError(err.message))
-      .finally(() => setLoadingModels(false))
+    loadModels()
   }, [])
 
   async function submit(event) {
@@ -68,6 +91,10 @@ export default function AIWorkspace() {
       <p style={{ color: '#64748b' }}>Authenticated Shopnoltd AI inference with the currently active model registry.</p>
 
       {error && <div style={{ margin: '16px 0', padding: 12, borderRadius: 8, background: '#fef2f2', color: '#991b1b' }}>{error}</div>}
+
+      <div style={{ margin: '16px 0', display: 'flex', gap: 8 }}>
+        <button onClick={loadModels} disabled={loadingModels || loading}>{loadingModels ? 'Loading…' : 'Refresh models'}</button>
+      </div>
 
       <form onSubmit={submit} style={{ display: 'grid', gap: 14, marginTop: 24 }}>
         <label>
