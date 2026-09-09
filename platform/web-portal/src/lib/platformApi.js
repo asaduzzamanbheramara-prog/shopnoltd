@@ -18,6 +18,7 @@ async function request(path, options = {}) {
 
 export const platformApi = {
   me: () => request('/api/v1/users/me'),
+  currencies: () => request('/api/v2/currencies'),
   feed: () => request('/api/v2/social/feed'),
   globalFeed: () => request('/api/v2/social/global'),
   createPost: (content, visibility = 'public') => request('/api/v2/social/posts', { method: 'POST', body: JSON.stringify({ content, visibility, media: [] }) }),
@@ -42,7 +43,11 @@ export const platformApi = {
   updateBlogPost: (id, body) => request(`/api/v2/blog/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
   deleteBlogPost: (id) => request(`/api/v2/blog/${id}`, { method: 'DELETE' }),
   works: (status = 'open') => request(`/api/v2/works?status=${encodeURIComponent(status)}`),
+  work: (id) => request(`/api/v2/works/${encodeURIComponent(id)}`),
   createWork: (body) => request('/api/v2/works', { method: 'POST', body: JSON.stringify(body) }),
+  updateWork: (id, body) => request(`/api/v2/works/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  publishWork: (id) => request(`/api/v2/works/${encodeURIComponent(id)}/publish`, { method: 'POST' }),
+  closeWork: (id) => request(`/api/v2/works/${encodeURIComponent(id)}/close`, { method: 'POST' }),
   activeWorks: () => request('/api/v2/works/active/me'),
   submissions: () => request('/api/v2/submissions/me'),
   creatorSubmissions: () => request('/api/v2/works/created/me/submissions'),
