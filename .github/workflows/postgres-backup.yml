@@ -1,0 +1,135 @@
+name: PostgreSQL encrypted backup
+
+on:
+  schedule:
+    - cron: '17 18 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: postgres-backup
+  cancel-in-progress: false
+
+env:
+  POSTGRES_NAMESPACE: shopno-data
+  POSTGRES_DEPLOYMENT: postgres
+  BACKUP_BRANCH: database-backups
+  BACKUP_WORKDIR: /tmp/shopnoltd-postgres-backup
+  MAX_USED_PERCENT: '80'
+
+jobs:
+  backup:
+    name: Dump, encrypt, verify and store PostgreSQL backup
+    runs-on: [self-hosted, linux, shopnoltd, k3s]
+    timeout-minutes: 30
+    steps:
+      - name: Checkout main source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Verify backup environment
+        shell: bash
+        env:
+          BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
+        run: |
+          set -euo pipefail
+          command -v kubectl >/dev/null
+          command -v openssl >/dev/null
+          command -v sha256sum >/dev/null
+          command -v git >/dev/null
+          test -n "${BACKUP_ENCRYPTION_KEY:-}" || { echo 'BACKUP_ENCRYPTION_KEY GitHub secret is required'; exit 1; }
+          test -f "${KUBECONFIG:-$HOME/.kube/config}" || { echo 'KUBECONFIG is not configured on the runner'; exit 1; }
+          kubectl cluster-info >/dev/null
+          kubectl -n "$POSTGRES_NAMESPACE" get deployment "$POSTGRES_DEPLOYMENT" >/dev/null
+
+      - name: Check PostgreSQL storage capacity before dump
+        shell: bash
+        run: bash ./ops/backup/check-postgres-storage.sh
+
+      - name: Dump and encrypt database
+        shell: bash
+        env:
+          BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
+        run: |
+          set -euo pipefail
+          umask 077
+          rm -rf "$BACKUP_WORKDIR"
+          mkdir -p "$BACKUP_WORKDIR"
+          echo "::add-mask::$BACKUP_ENCRYPTION_KEY"
+
+          timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
+          raw="$BACKUP_WORKDIR/shopnoltd-${timestamp}.dump"
+          encrypted="$BACKUP_WORKDIR/shopnoltd-${timestamp}.dump.enc"
+
+          kubectl -n "$POSTGRES_NAMESPACE" exec "deployment/$POSTGRES_DEPLOYMENT" -- \
+            sh -c 'export PGPASSWORD="$POSTGRES_PASSWORD"; pg_dump --format=custom --no-owner --no-acl --username="$POSTGRES_USER" --dbname="$POSTGRES_DB"' \
+            > "$raw"
+          test -s "$raw"
+
+          openssl enc -aes-256-cbc -pbkdf2 -iter 600000 -salt \
+            -in "$raw" -out "$encrypted" -pass env:BACKUP_ENCRYPTION_KEY
+          rm -f "$raw"
+
+          sha256sum "$encrypted" > "$encrypted.sha256"
+          printf '%s\n' "$timestamp" > "$BACKUP_WORKDIR/timestamp.txt"
+          printf '%s\n' "$GITHUB_SHA" > "$BACKUP_WORKDIR/source-revision.txt"
+
+      - name: Verify encrypted backup integrity
+        shell: bash
+        env:
+          BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
+        run: |
+          set -euo pipefail
+          echo "::add-mask::$BACKUP_ENCRYPTION_KEY"
+          cd "$BACKUP_WORKDIR"
+          sha256sum -c ./*.sha256
+          encrypted="$(find . -maxdepth 1 -name '*.dump.enc' -print -quit)"
+          test -n "$encrypted"
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 \
+            -in "$encrypted" -out /tmp/shopnoltd-restore-test.dump \
+            -pass env:BACKUP_ENCRYPTION_KEY
+          test -s /tmp/shopnoltd-restore-test.dump
+          rm -f /tmp/shopnoltd-restore-test.dump
+
+      - name: Publish latest encrypted backup to GitHub backup branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          encrypted="$(find "$BACKUP_WORKDIR" -maxdepth 1 -name '*.dump.enc' -print -quit)"
+          checksum="$(find "$BACKUP_WORKDIR" -maxdepth 1 -name '*.dump.enc.sha256' -print -quit)"
+          test -n "$encrypted"
+          test -n "$checksum"
+
+          git config user.name 'shopnoltd-backup-bot'
+          git config user.email 'shopnoltd-backup-bot@users.noreply.github.com'
+          git fetch origin "$BACKUP_BRANCH" || true
+          git switch --orphan "$BACKUP_BRANCH"
+          git rm -rf . >/dev/null 2>&1 || true
+          git clean -fdx >/dev/null 2>&1 || true
+          mkdir -p backup
+          cp "$encrypted" backup/latest.dump.enc
+          cp "$checksum" backup/latest.dump.enc.sha256
+          cp "$BACKUP_WORKDIR/timestamp.txt" backup/timestamp.txt
+          cp "$BACKUP_WORKDIR/source-revision.txt" backup/source-revision.txt
+          cat > backup/README.md <<'EOF'
+          # Shopnoltd PostgreSQL backup
+
+          This branch contains only the latest encrypted PostgreSQL backup produced by the trusted self-hosted runner.
+
+          The encryption key is never stored in GitHub. It is supplied at runtime through the `BACKUP_ENCRYPTION_KEY` GitHub Actions secret.
+
+          Restore only through the documented recovery procedure in `docs/DISASTER-RECOVERY.md`.
+          EOF
+          git add backup
+          git commit -m "backup: encrypted PostgreSQL snapshot"
+          git push --force origin "$BACKUP_BRANCH"
+
+      - name: Cleanup local backup material
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          rm -rf "$BACKUP_WORKDIR" /tmp/shopnoltd-restore-test.dump
