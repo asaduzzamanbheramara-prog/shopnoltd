@@ -26,6 +26,10 @@ data:
         service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
       - hostname: chat.shopnoltd.dpdns.org
         service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
+      - hostname: social.shopnoltd.dpdns.org
+        service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
+      - hostname: social-service.shopnoltd.dpdns.org
+        service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
       - hostname: freedomain.shopnoltd.dpdns.org
         service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
       - hostname: live.shopnoltd.dpdns.org
