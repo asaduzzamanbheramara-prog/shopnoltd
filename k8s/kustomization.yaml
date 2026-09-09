@@ -33,6 +33,9 @@ resources:
 - services/storage-service
 - services/notification-service
 - services/social-service
+- services/messaging-service
+- services/meet-service
+- services/live-service
 - services/report-service
 - services/analytics-service
 - services/worker-service
