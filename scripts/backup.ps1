@@ -1,21 +1,35 @@
-# Shopnoltd Database Backup Script
-$timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
-$backupDir = "C:\Users\asadu\shopnoltd-backups\$timestamp"
-New-Item -ItemType Directory -Force -Path $backupDir
+# Shopnoltd PostgreSQL backup helper
+#
+# The old version wrote a plaintext SQL dump and referenced obsolete Docker
+# volumes. Do not use that pattern on this project.
+#
+# Canonical backup path:
+#   .github/workflows/postgres-backup.yml
+#
+# Requirements for a manual run:
+#   - GitHub CLI (`gh`) authenticated to this repository
+#   - GitHub Actions secret BACKUP_ENCRYPTION_KEY configured
+#   - the trusted self-hosted k3s runner online
+#
+# This helper triggers the same encrypted backup workflow used by the nightly
+# schedule. No database password, plaintext dump, or encryption key is stored
+# by this script.
 
-# Backup PostgreSQL
-kubectl exec deployment/postgres-prod -- pg_dump -U shopnoltd shopnoltd > "$backupDir\database.sql"
+$ErrorActionPreference = 'Stop'
 
-# Backup Docker volumes
-docker run --rm -v shopnoltd_postgres-data:/data -v $backupDir:/backup alpine tar czf /backup/postgres-data.tar.gz -C /data .
+if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
+    throw "GitHub CLI (gh) is required. Install/authenticate it before running this helper."
+}
 
-# Backup configs
-Copy-Item C:\Users\asadu\.cloudflared "$backupDir\cloudflared-config" -Recurse
+$repo = 'asaduzzamanbheramara-prog/shopnoltd'
+$workflow = 'postgres-backup.yml'
 
-# Upload to cloud (optional)
-# aws s3 cp $backupDir s3://shopnoltd-backups/$timestamp/ --recursive
+Write-Host "Triggering canonical encrypted PostgreSQL backup workflow..."
+gh workflow run $workflow --repo $repo
 
-# Cleanup old backups (keep last 7 days)
-Get-ChildItem "C:\Users\asadu\shopnoltd-backups" -Directory | Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-7) } | Remove-Item -Recurse -Force
+if ($LASTEXITCODE -ne 0) {
+    throw "Failed to dispatch $workflow."
+}
 
-Write-Host "Backup completed: $backupDir"
+Write-Host "Backup workflow dispatched successfully."
+Write-Host "Monitor with: gh run list --repo $repo --workflow $workflow --limit 5"
