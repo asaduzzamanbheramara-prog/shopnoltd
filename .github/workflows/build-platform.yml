@@ -54,7 +54,7 @@ jobs:
           - { service: keycloak, dockerfile: platform/keycloak/Dockerfile }
           - { service: session-manager, dockerfile: platform/session-manager/Dockerfile }
           - { service: vpn-service, dockerfile: services/vpn-service/Dockerfile }
-          - { service: billing-engine, dockerfile: billing-engine/Dockerfile }
+          - { service: billing-engine, dockerfile: billing-engine/Dockerfile, context: billing-engine }
     permissions:
       contents: read
       packages: write
@@ -77,8 +77,8 @@ jobs:
         if: steps.check.outputs.skip == 'false'
         uses: docker/build-push-action@v6
         with:
-          context: ${{ matrix.service == 'vpn-service' && 'services/vpn-service' || '.' }}
-          file: ${{ matrix.dockerfile }}
+          context: ${{ matrix.context || (matrix.service == 'vpn-service' && 'services/vpn-service' || '.') }}
+          file: ${{ matrix.context && 'Dockerfile' || matrix.dockerfile }}
           push: true
           tags: |
             ghcr.io/${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:latest
