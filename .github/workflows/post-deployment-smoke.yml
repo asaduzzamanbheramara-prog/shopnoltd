@@ -1,0 +1,131 @@
+name: Post-deployment smoke
+
+on:
+  workflow_run:
+    workflows: ["Promote built images"]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: post-deployment-smoke-main
+  cancel-in-progress: false
+
+env:
+  ATTEMPTS: "20"
+  DELAY_SECONDS: "15"
+
+jobs:
+  verify-required-services:
+    name: Verify ${{ matrix.name }}
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'main')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: root
+            url: https://shopnoltd.dpdns.org
+            mode: web
+          - name: api
+            url: https://api.shopnoltd.dpdns.org/healthz
+            mode: health
+          - name: auth
+            url: https://auth.shopnoltd.dpdns.org
+            mode: web
+          - name: ai
+            url: https://ai-platform.shopnoltd.dpdns.org/healthz
+            mode: health
+          - name: billing
+            url: https://billing.shopnoltd.dpdns.org/health
+            mode: health
+          - name: payment
+            url: https://payment.shopnoltd.dpdns.org/healthz
+            mode: health
+          - name: exchange
+            url: https://exchange.shopnoltd.dpdns.org/healthz
+            mode: health
+          - name: domain
+            url: https://domain.shopnoltd.dpdns.org/healthz
+            mode: health
+          - name: devices
+            url: https://devices.shopnoltd.dpdns.org
+            mode: web
+          - name: chat
+            url: https://chat.shopnoltd.dpdns.org
+            mode: web
+          - name: social
+            url: https://social.shopnoltd.dpdns.org/healthz
+            mode: health
+          - name: vpn
+            url: https://vpn.shopnoltd.dpdns.org/healthz
+            mode: health
+    steps:
+      - name: Wait for Argo CD reconciliation window
+        shell: bash
+        run: sleep 90
+
+      - name: Poll endpoint until healthy
+        shell: bash
+        env:
+          CHECK_URL: ${{ matrix.url }}
+          CHECK_MODE: ${{ matrix.mode }}
+          CHECK_NAME: ${{ matrix.name }}
+        run: |
+          set -u
+          for attempt in $(seq 1 "$ATTEMPTS"); do
+            tmp="$(mktemp)"
+            code="$(curl --silent --show-error --location --max-time 20 --output "$tmp" --write-out '%{http_code}' "$CHECK_URL" || true)"
+
+            if [ "$CHECK_MODE" = "health" ]; then
+              ok=0
+              case "$code" in
+                2??) ok=1 ;;
+              esac
+            else
+              ok=0
+              case "$code" in
+                2??|3??|401|403) ok=1 ;;
+              esac
+            fi
+
+            if [ "$ok" -eq 1 ]; then
+              echo "PASS: $CHECK_NAME -> HTTP $code (attempt $attempt)"
+              rm -f "$tmp"
+              exit 0
+            fi
+
+            echo "WAIT: $CHECK_NAME -> HTTP $code (attempt $attempt/$ATTEMPTS)"
+            if [ -s "$tmp" ]; then
+              head -c 500 "$tmp" | tr '\n' ' ' || true
+              echo
+            fi
+            rm -f "$tmp"
+
+            if [ "$attempt" -lt "$ATTEMPTS" ]; then
+              sleep "$DELAY_SECONDS"
+            fi
+          done
+
+          echo "FAIL: $CHECK_NAME did not become healthy: $CHECK_URL"
+          exit 1
+
+  deployment-verification:
+    name: Deployment verification gate
+    if: always() && (github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main'))
+    needs: [verify-required-services]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require all essential public services to pass
+        shell: bash
+        run: |
+          if [ "${{ needs.verify-required-services.result }}" != "success" ]; then
+            echo "Post-deployment verification FAILED: one or more required services are unhealthy."
+            exit 1
+          fi
+          echo "Post-deployment verification PASSED: all required public services are healthy."
