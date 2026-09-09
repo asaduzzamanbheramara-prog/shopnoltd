@@ -33,9 +33,10 @@ class WithdrawalIn(BaseModel):
 
 class TransferIn(BaseModel):
     to_user_id: str
-    currency: str
+    currency: str = Field(min_length=3, max_length=8)
     amount: float = Field(gt=0)
     note: str | None = None
+    idempotency_key: str = Field(min_length=8, max_length=128)
 
 
 class TxOut(BaseModel):
