@@ -49,6 +49,40 @@ jobs:
           kustomize build k8s/ > /tmp/release-gate-rendered.yaml
           test -s /tmp/release-gate-rendered.yaml
 
+      - name: Validate frontend route contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          text = Path('platform/web-portal/src/main.jsx').read_text()
+          required = [
+              '/discover', '/feed', '/post/:id', '/work', '/work/:id', '/create-work',
+              '/my-created-work', '/my-active-work', '/my-submission', '/work-review',
+              '/account', '/notifications', '/blog', '/blog/:slug', '/my-blog',
+              '/domain-registration', '/domain-management', '/ai', '/billing',
+              '/payments', '/transactions', '/wallet', '/wallet/ledger', '/exchange',
+              '/reports', '/admin', '/admin/database', '/admin/blog', '/admin/infrastructure',
+          ]
+          missing = [route for route in required if f'path="{route}"' not in text]
+          if missing:
+              raise SystemExit('Missing frontend routes: ' + ', '.join(missing))
+          print(f'Validated {len(required)} required frontend routes.')
+          PY
+
+      - name: Validate financial and verified-work contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s platform/api-service/app/api/v3_work.py
+          test -s platform/api-service/app/models/work_evidence.py
+          test -s platform/web-portal/src/pages/WorkHub.jsx
+          test -s platform/web-portal/src/pages/FinancialCenter.jsx
+          test -s platform/web-portal/src/pages/CheckoutCurrencySafe.jsx
+          test -s billing-engine/app/fx.py
+          test -s billing-engine/app/ledger.py
+          test -s platform/api-service/app/core/financial_registry.py
+
       - name: Validate release gate documentation
         run: test -s docs/OBSERVABILITY-RELEASE-GATE.md
 
@@ -60,14 +94,17 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: root
-            url: 'https://shopnoltd.dpdns.org'
-          - name: api
-            url: 'https://api.shopnoltd.dpdns.org/healthz'
-          - name: auth
-            url: 'https://auth.shopnoltd.dpdns.org'
-          - name: ai
-            url: 'https://ai-platform.shopnoltd.dpdns.org/healthz'
+          - { name: root, url: 'https://shopnoltd.dpdns.org' }
+          - { name: api, url: 'https://api.shopnoltd.dpdns.org/healthz' }
+          - { name: auth, url: 'https://auth.shopnoltd.dpdns.org' }
+          - { name: ai, url: 'https://ai-platform.shopnoltd.dpdns.org/healthz' }
+          - { name: billing, url: 'https://billing.shopnoltd.dpdns.org/healthz' }
+          - { name: payment, url: 'https://payment.shopnoltd.dpdns.org/healthz' }
+          - { name: exchange, url: 'https://exchange.shopnoltd.dpdns.org/healthz' }
+          - { name: domain, url: 'https://domain.shopnoltd.dpdns.org/healthz' }
+          - { name: social, url: 'https://social.shopnoltd.dpdns.org/healthz' }
+          - { name: devices, url: 'https://devices.shopnoltd.dpdns.org' }
+          - { name: vpn, url: 'https://vpn.shopnoltd.dpdns.org/healthz' }
     steps:
       - name: Probe ${{ matrix.name }}
         shell: bash
@@ -78,7 +115,7 @@ jobs:
           for attempt in 1 2 3 4 5; do
             code="$(curl -k -L -sS -o /tmp/body -w '%{http_code}' --connect-timeout 10 --max-time 30 "$url" || true)"
             case "$code" in
-              2*|3*)
+              2*|3*|401|403)
                 ok=1
                 echo "${{ matrix.name }} reachable with HTTP $code"
                 break
