@@ -7,6 +7,7 @@ from app.schemas.schemas import TransferIn, TxOut
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter()
@@ -26,26 +27,30 @@ async def current_user(creds: HTTPAuthorizationCredentials = Depends(bearer)):
 async def internal_transfer(body: TransferIn, user=Depends(current_user), s: AsyncSession = Depends(db)):
     if body.to_user_id == user["sub"]:
         raise HTTPException(400, "cannot transfer to the same user")
-    currency = body.currency.upper()
+
+    currency = body.currency.upper().strip()
     amount = Decimal(str(body.amount))
+    if len(currency) < 3 or len(currency) > 8:
+        raise HTTPException(400, "invalid currency code")
     if amount <= 0:
         raise HTTPException(400, "amount must be greater than zero")
-    reference = body.note if body.note and body.note.startswith("work:") else None
 
-    if reference:
-        existing = await s.scalar(
-            select(Transaction).where(
-                Transaction.user_id == user["sub"],
-                Transaction.type == TxType.transfer,
-                Transaction.reference == reference,
-                Transaction.status == TxStatus.completed,
-            )
+    reference = f"transfer:{body.idempotency_key}"
+    existing = await s.scalar(
+        select(Transaction).where(
+            Transaction.user_id == user["sub"],
+            Transaction.type == TxType.transfer,
+            Transaction.reference == reference,
+            Transaction.status == TxStatus.completed,
         )
-        if existing:
-            return TxOut(id=str(existing.id), type=existing.type, method=existing.method, status=existing.status,
-                         amount=float(existing.amount), fee=float(existing.fee), currency=existing.currency,
-                         reference=existing.reference, created_at=existing.created_at.isoformat(),
-                         completed_at=existing.completed_at.isoformat() if existing.completed_at else None)
+    )
+    if existing:
+        return TxOut(
+            id=str(existing.id), type=existing.type, method=existing.method, status=existing.status,
+            amount=float(existing.amount), fee=float(existing.fee), currency=existing.currency,
+            reference=existing.reference, created_at=existing.created_at.isoformat(),
+            completed_at=existing.completed_at.isoformat() if existing.completed_at else None,
+        )
 
     users = sorted([user["sub"], body.to_user_id])
     wallets = {}
@@ -56,10 +61,34 @@ async def internal_transfer(body: TransferIn, user=Depends(current_user), s: Asy
         if not wallet:
             if uid != body.to_user_id:
                 raise HTTPException(404, "source wallet not found")
-            wallet = Wallet(tenant_id=user.get("tenant_id", "default"), user_id=uid, currency=currency, balance=0)
+            wallet = Wallet(
+                tenant_id=user.get("tenant_id", "default"),
+                user_id=uid,
+                currency=currency,
+                balance=0,
+            )
             s.add(wallet)
             await s.flush()
         wallets[uid] = wallet
+
+    # Re-check idempotency after acquiring wallet locks so concurrent retries
+    # using the same key cannot create two money movements.
+    existing = await s.scalar(
+        select(Transaction).where(
+            Transaction.user_id == user["sub"],
+            Transaction.type == TxType.transfer,
+            Transaction.reference == reference,
+            Transaction.status == TxStatus.completed,
+        )
+    )
+    if existing:
+        await s.rollback()
+        return TxOut(
+            id=str(existing.id), type=existing.type, method=existing.method, status=existing.status,
+            amount=float(existing.amount), fee=float(existing.fee), currency=existing.currency,
+            reference=existing.reference, created_at=existing.created_at.isoformat(),
+            completed_at=existing.completed_at.isoformat() if existing.completed_at else None,
+        )
 
     src = wallets[user["sub"]]
     dst = wallets[body.to_user_id]
@@ -73,16 +102,38 @@ async def internal_transfer(body: TransferIn, user=Depends(current_user), s: Asy
         tenant_id=user.get("tenant_id", "default"), user_id=user["sub"], wallet_id=src.id,
         type=TxType.transfer, method=PaymentMethod.transfer, status=TxStatus.completed,
         amount=-amount, currency=currency, fee=0, reference=reference,
-        meta={"to": body.to_user_id, "note": body.note},
+        meta={"to": body.to_user_id, "note": body.note, "idempotency_key": body.idempotency_key},
     )
     dst_tx = Transaction(
         tenant_id=user.get("tenant_id", "default"), user_id=body.to_user_id, wallet_id=dst.id,
         type=TxType.transfer, method=PaymentMethod.transfer, status=TxStatus.completed,
         amount=amount, currency=currency, fee=0, reference=reference,
-        meta={"from": user["sub"], "note": body.note},
+        meta={"from": user["sub"], "note": body.note, "idempotency_key": body.idempotency_key},
     )
     s.add_all([src_tx, dst_tx])
-    await s.commit()
-    return TxOut(id=str(src_tx.id), type=src_tx.type, method=src_tx.method, status=src_tx.status,
-                 amount=float(src_tx.amount), fee=0, currency=src_tx.currency, reference=src_tx.reference,
-                 created_at=src_tx.created_at.isoformat(), completed_at=src_tx.created_at.isoformat())
+    try:
+        await s.commit()
+    except IntegrityError:
+        await s.rollback()
+        existing = await s.scalar(
+            select(Transaction).where(
+                Transaction.user_id == user["sub"],
+                Transaction.type == TxType.transfer,
+                Transaction.reference == reference,
+                Transaction.status == TxStatus.completed,
+            )
+        )
+        if not existing:
+            raise
+        return TxOut(
+            id=str(existing.id), type=existing.type, method=existing.method, status=existing.status,
+            amount=float(existing.amount), fee=float(existing.fee), currency=existing.currency,
+            reference=existing.reference, created_at=existing.created_at.isoformat(),
+            completed_at=existing.completed_at.isoformat() if existing.completed_at else None,
+        )
+
+    return TxOut(
+        id=str(src_tx.id), type=src_tx.type, method=src_tx.method, status=src_tx.status,
+        amount=float(src_tx.amount), fee=0, currency=src_tx.currency, reference=src_tx.reference,
+        created_at=src_tx.created_at.isoformat(), completed_at=src_tx.created_at.isoformat(),
+    )
