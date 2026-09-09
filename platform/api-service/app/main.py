@@ -44,6 +44,11 @@ app.include_router(
     tags=["admin-data-facade"],
 )
 app.include_router(
+    __import__("app.api.domain_proxy", fromlist=["router"]).router,
+    prefix="/api/v1",
+    tags=["domain-facade"],
+)
+app.include_router(
     __import__("app.api.v2", fromlist=["router"]).router, prefix="/api/v2", tags=["social-work"]
 )
 app.include_router(
