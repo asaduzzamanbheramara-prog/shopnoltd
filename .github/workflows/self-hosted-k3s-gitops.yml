@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'k8s/**'
+      - 'ops/cloudflare/**'
       - '.github/workflows/self-hosted-k3s-gitops.yml'
   workflow_dispatch:
 
@@ -24,6 +25,8 @@ env:
   MIGRATION_JOB: postgres-platform-migration
   CLOUDFLARED_NAMESPACE: shopno-ingress
   CLOUDFLARED_DEPLOYMENT: cloudflared
+  CLOUDFLARE_SECRET_NAMESPACE: shopno-ingress
+  CLOUDFLARE_SECRET_NAME: cloudflare-api-token
 
 jobs:
   deploy-and-verify:
@@ -39,6 +42,8 @@ jobs:
         run: |
           set -euo pipefail
           command -v kubectl >/dev/null || { echo 'kubectl is required on the self-hosted runner'; exit 1; }
+          command -v curl >/dev/null || { echo 'curl is required on the self-hosted runner'; exit 1; }
+          command -v jq >/dev/null || { echo 'jq is required on the self-hosted runner'; exit 1; }
           test -f "${KUBECONFIG:-$HOME/.kube/config}" || { echo 'KUBECONFIG is not configured on the runner'; exit 1; }
           kubectl version --client
           kubectl cluster-info
@@ -46,6 +51,7 @@ jobs:
           kubectl auth can-i patch applications.argoproj.io -n "$ARGOCD_NAMESPACE"
           kubectl auth can-i get jobs,pods -n "$MIGRATION_NAMESPACE"
           kubectl auth can-i get deployments -n "$CLOUDFLARED_NAMESPACE"
+          kubectl auth can-i get secret/"$CLOUDFLARE_SECRET_NAME" -n "$CLOUDFLARE_SECRET_NAMESPACE"
 
       - name: Validate rendered Kubernetes source
         shell: bash
@@ -86,6 +92,13 @@ jobs:
           done
           echo "ArgoCD reconciliation did not reach Synced/Healthy within 15 minutes."
           exit 1
+
+      - name: Reconcile Cloudflare Tunnel DNS
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x ops/cloudflare/ensure-tunnel-dns.sh
+          ops/cloudflare/ensure-tunnel-dns.sh
 
       - name: Verify Cloudflared image matches GitHub source
         shell: bash
@@ -131,6 +144,8 @@ jobs:
           echo '===== MIGRATION EVENTS ====='
           kubectl -n "$MIGRATION_NAMESPACE" get events --sort-by=.lastTimestamp | tail -100
           echo '===== CLOUDFLARED ====='
+          kubectl -n "$CLOUDFLARE_SECRET_NAMESPACE" get secret "$CLOUDFLARE_SECRET_NAME" -o jsonpath='{.type}'
+          echo
           kubectl -n "$CLOUDFLARED_NAMESPACE" get deployment "$CLOUDFLARED_DEPLOYMENT" -o wide
           kubectl -n "$CLOUDFLARED_NAMESPACE" get pods -l app.kubernetes.io/name=cloudflared -o wide
           kubectl -n "$CLOUDFLARED_NAMESPACE" logs deployment/"$CLOUDFLARED_DEPLOYMENT" --tail=120
