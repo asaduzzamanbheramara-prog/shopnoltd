@@ -13,6 +13,10 @@ configMapGenerator:
   options:
     disableNameSuffixHash: true
 
+generatorOptions:
+  annotations:
+    argocd.argoproj.io/sync-wave: "-11"
+
 labels:
 - includeSelectors: false
   pairs:
