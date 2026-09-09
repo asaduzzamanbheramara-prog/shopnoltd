@@ -1,8 +1,8 @@
 """Browser-safe admin data facade.
 
-The portal must use the unified API origin. This router exposes only the
-existing service-owned admin data endpoints; it does not create a generic
-cross-service SQL interface or bypass service authorization.
+The portal uses the unified API origin. This router exposes service-owned admin
+operations without creating a generic cross-service SQL interface or bypassing
+service authorization.
 """
 
 import httpx
@@ -68,9 +68,34 @@ async def admin_table_export(request: Request, name: str, token: str = Depends(c
     return await proxy(request, PAYMENT, f"/api/v1/admin/tables/{name}/export", token)
 
 
+@router.api_route("/admin/blog-data/schema", methods=["GET"])
+async def admin_blog_schema(request: Request, token: str = Depends(current_token)):
+    return await proxy(request, SOCIAL, "/api/v1/admin/blog-data/schema", token)
+
+
 @router.api_route("/admin/blog-data/analysis", methods=["GET"])
 async def admin_blog_analysis(request: Request, token: str = Depends(current_token)):
     return await proxy(request, SOCIAL, "/api/v1/admin/blog-data/analysis", token)
+
+
+@router.api_route("/admin/blog-data/check", methods=["GET"])
+async def admin_blog_check(request: Request, token: str = Depends(current_token)):
+    return await proxy(request, SOCIAL, "/api/v1/admin/blog-data/check", token)
+
+
+@router.api_route("/admin/blog-data/rows", methods=["POST"])
+async def admin_blog_create(request: Request, token: str = Depends(current_token)):
+    return await proxy(request, SOCIAL, "/api/v1/admin/blog-data/rows", token)
+
+
+@router.api_route("/admin/blog-data/rows/{record_id}", methods=["PUT", "DELETE"])
+async def admin_blog_row(request: Request, record_id: str, token: str = Depends(current_token)):
+    return await proxy(request, SOCIAL, f"/api/v1/admin/blog-data/rows/{record_id}", token)
+
+
+@router.api_route("/admin/blog-data/rows/{record_id}/publish", methods=["POST"])
+async def admin_blog_publish(request: Request, record_id: str, token: str = Depends(current_token)):
+    return await proxy(request, SOCIAL, f"/api/v1/admin/blog-data/rows/{record_id}/publish", token)
 
 
 @router.api_route("/admin/blog-data/export", methods=["GET"])
