@@ -48,9 +48,7 @@ function PostCard({ post, refresh, following, toggleFollow }) {
       <div style={{ color: '#64748b', fontSize: 13, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
         <b style={{ color: '#0f172a' }}>{post.user_id}</b>
         {String(post.user_id) !== String(localStorage.getItem('shopno_user_id') || '') && (
-          <button onClick={() => toggleFollow(post.user_id)} style={{ padding: '3px 8px' }}>
-            {isFollowing ? 'Following' : 'Follow'}
-          </button>
+          <button onClick={() => toggleFollow(post.user_id)} style={{ padding: '3px 8px' }}>{isFollowing ? 'Following' : 'Follow'}</button>
         )}
         · {post.published_at ? new Date(post.published_at).toLocaleString() : ''}
       </div>
@@ -79,21 +77,40 @@ export default function SocialFeed() {
   const [error, setError] = useState('')
   const [following, setFollowing] = useState(new Set())
 
-  const load = () => {
+  async function load() {
     setLoading(true)
-    Promise.all([
-      platformApi.globalFeed(),
-      platformApi.following().catch(() => []),
-    ]).then(([feed, followed]) => {
+    setError('')
+    try {
+      // Global is the canonical discovery feed. If an older deployment still
+      // lacks that facade, fall back to the authenticated personal feed rather
+      // than rendering a confusing raw "Not Found" page/message.
+      let feed
+      try {
+        feed = await platformApi.globalFeed()
+      } catch (globalError) {
+        if (!/404|not found/i.test(globalError.message || '')) throw globalError
+        feed = await platformApi.feed()
+      }
+      const followed = await platformApi.following().catch(() => [])
       setPosts(Array.isArray(feed) ? feed : (feed?.items || []))
       setFollowing(new Set((Array.isArray(followed) ? followed : []).map(String)))
-    }).catch(e => setError(e.message)).finally(() => setLoading(false))
+    } catch (e) {
+      setPosts([])
+      setError(`Feed could not be loaded: ${e.message}`)
+    } finally {
+      setLoading(false)
+    }
   }
-  useEffect(load, [])
+
+  useEffect(() => { load() }, [])
 
   async function create() {
     if (!content.trim()) return
-    try { await platformApi.createPost(content.trim()); setContent(''); load() } catch (e) { alert(e.message) }
+    try {
+      await platformApi.createPost(content.trim())
+      setContent('')
+      await load()
+    } catch (e) { setError(`Post could not be published: ${e.message}`) }
   }
 
   async function toggleFollow(userId) {
@@ -106,7 +123,7 @@ export default function SocialFeed() {
         await platformApi.follow(userId)
         setFollowing(current => new Set(current).add(key))
       }
-    } catch (e) { alert(e.message) }
+    } catch (e) { setError(e.message) }
   }
 
   function refresh(id, likeCount, commentCount) {
@@ -123,8 +140,8 @@ export default function SocialFeed() {
       <button onClick={create} style={{ marginTop: 10, padding: '9px 15px', border: 0, borderRadius: 8, background: '#0ea5e9', color: '#fff', fontWeight: 700 }}>Publish</button>
     </section>
     {loading && <p>Loading feed…</p>}
-    {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
-    {!loading && posts.length === 0 && <div style={card}>No posts yet. Be the first to publish.</div>}
+    {error && <div role="alert" style={{ ...card, color: '#b91c1c' }}>{error} <button onClick={load} style={{ marginLeft: 8 }}>Retry</button></div>}
+    {!loading && !error && posts.length === 0 && <div style={card}>No posts yet. Be the first to publish.</div>}
     {posts.map(post => <PostCard key={post.id} post={post} refresh={refresh} following={following} toggleFollow={toggleFollow} />)}
   </div>
 }
