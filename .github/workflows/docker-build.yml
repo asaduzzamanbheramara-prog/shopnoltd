@@ -1,112 +1,23 @@
-name: Build and Push Shopnoltd Images
+# Disabled legacy build matrix.
+# The former workflow built every image on every push and contained stale
+# paths such as ai-platform/backend that do not exist in this repository.
+# Automatic production image build/promotion is now handled by
+# .github/workflows/build-platform.yml with affected-service detection.
+
+name: "[DISABLED] Legacy Docker Build Matrix"
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
 
 permissions:
   contents: read
-  packages: write
-
-env:
-  REGISTRY: ghcr.io
-  IMAGE_PREFIX: shopnoltd
 
 jobs:
-  build:
+  disabled:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: frontend
-            context: .
-            dockerfile: Dockerfile
-            tag: latest
-          - name: api-service
-            context: ./ai-platform/backend
-            dockerfile: ./ai-platform/backend/Dockerfile
-            tag: v4
-          - name: ai-platform
-            image_repo: shopnoltd/ai-platform
-            context: .
-            dockerfile: ./platform/ai-platform/Dockerfile
-            tag: latest
-          - name: billing-engine
-            context: ./billing-engine
-            dockerfile: ./billing-engine/Dockerfile
-            tag: v6
-          - name: shopnoltd-web
-            context: .
-            dockerfile: ./platform/web-portal/Dockerfile
-            tag: latest
-            build_args: |
-              VITE_API_URL=https://api.shopnoltd.dpdns.org
-              VITE_KEYCLOAK_URL=https://auth.shopnoltd.dpdns.org
-              VITE_KEYCLOAK_REALM=shopnoltd
-              VITE_KEYCLOAK_CLIENT_ID=shopnoltd-web
-          - name: android-portal
-            context: .
-            dockerfile: ./platform/android-portal/Dockerfile
-            tag: latest
-          - name: android-cloud-controller
-            context: .
-            dockerfile: ./platform/android-cloud/controller/Dockerfile
-            tag: latest
-          - name: android-cloud-gateway
-            context: ./platform/android-cloud/gateway
-            dockerfile: ./platform/android-cloud/gateway/Dockerfile
-            tag: latest
-          - name: android-cloud-web
-            context: .
-            dockerfile: ./platform/android-cloud/web/Dockerfile
-            tag: latest
-          - name: oauth
-            context: ./oauth-service
-            dockerfile: ./oauth-service/Dockerfile
-            tag: v1
-          - name: live
-            context: .
-            dockerfile: ./platform/live-service/Dockerfile
-            tag: v2
-          - name: mail
-            context: .
-            dockerfile: ./platform/mail-service/Dockerfile
-            tag: v1
-          - name: messaging
-            context: .
-            dockerfile: ./platform/messaging-service/Dockerfile
-            tag: v1
-          - name: meet
-            context: .
-            dockerfile: ./platform/meet-service/Dockerfile
-            tag: v1
-          - name: postgres-combined
-            context: ./docker/postgres-combined
-            dockerfile: ./docker/postgres-combined/Dockerfile
-            tag: pg16-postgis3.5-pgvector0.8.6
-
     steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and Push
-        uses: docker/build-push-action@v6
-        with:
-          context: ${{ matrix.context }}
-          file: ${{ matrix.dockerfile }}
-          push: true
-          build-args: ${{ matrix.build_args || '' }}
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/${{ matrix.image_repo || format('shopnoltd-{0}', matrix.name) }}:${{ matrix.tag }}
-            ghcr.io/${{ github.repository_owner }}/${{ matrix.image_repo || format('shopnoltd-{0}', matrix.name) }}:latest
-            ghcr.io/${{ github.repository_owner }}/${{ matrix.image_repo || format('shopnoltd-{0}', matrix.name) }}:${{ github.sha }}
-          cache-from: type=gha,scope=${{ matrix.name }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.name }}
+      - name: Explain replacement pipeline
+        run: |
+          echo 'Legacy docker-build.yml is intentionally disabled.'
+          echo 'Use build-platform.yml for affected-service GHCR builds and GitOps image promotion.'
+          echo 'Android Cloud has its dedicated CI workflow.'
