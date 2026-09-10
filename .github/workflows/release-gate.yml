@@ -102,13 +102,11 @@ jobs:
     needs: repository-validation
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 35
     steps:
       - name: Determine whether this commit requires GitOps reconciliation
         id: deployment-scope
         shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           files="$(gh api \
@@ -136,7 +134,7 @@ jobs:
         run: |
           set -euo pipefail
           workflow='self-hosted-k3s-gitops.yml'
-          deadline=$((SECONDS + 1200))
+          deadline=$((SECONDS + 2100))
           while [ "$SECONDS" -lt "$deadline" ]; do
             runs="$(gh api \
               -H 'Accept: application/vnd.github+json' \
