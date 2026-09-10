@@ -241,5 +241,5 @@ jobs:
           kubectl --request-timeout=30s -n "$CLOUDFLARE_SECRET_NAMESPACE" get secret "$CLOUDFLARE_SECRET_NAME" -o jsonpath='{.type}'
           echo
           kubectl --request-timeout=30s -n "$CLOUDFLARED_NAMESPACE" get deployment "$CLOUDFLARED_DEPLOYMENT" -o wide
-          kubectl --request-timeout=30s -n "$CLOUDFARED_NAMESPACE" get pods -l app.kubernetes.io/name=cloudflared -o wide
-          kubectl --request-timeout=30s -n "$CLOUDFARED_NAMESPACE" logs deployment/"$CLOUDFLARED_DEPLOYMENT" --tail=250
+          kubectl --request-timeout=30s -n "$CLOUDFLARED_NAMESPACE" get pods -l app.kubernetes.io/name=cloudflared -o wide
+          kubectl --request-timeout=30s -n "$CLOUDFLARED_NAMESPACE" logs deployment/"$CLOUDFLARED_DEPLOYMENT" --tail=250
