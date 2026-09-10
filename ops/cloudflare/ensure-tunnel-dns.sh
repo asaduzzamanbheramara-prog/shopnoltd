@@ -2,9 +2,8 @@
 set -euo pipefail
 
 # Idempotently ensure public service hostnames point at the existing Cloudflare Tunnel.
-# The API token is supplied at runtime only; it is never stored in Git or printed.
-# Preferred source is the existing Kubernetes Secret on the trusted self-hosted runner.
-# A GitHub Actions secret/runtime environment variable may be used as a safe fallback.
+# The API token is read from an existing Kubernetes Secret on the trusted self-hosted
+# runner; it is never stored in Git or printed.
 
 ZONE_NAME="${CLOUDFLARE_ZONE_NAME:-shopnoltd.dpdns.org}"
 SECRET_NAMESPACE="${CLOUDFLARE_SECRET_NAMESPACE:-shopno-ingress}"
@@ -15,26 +14,20 @@ command -v kubectl >/dev/null || { echo "ERROR: kubectl is required" >&2; exit 1
 command -v curl >/dev/null || { echo "ERROR: curl is required" >&2; exit 1; }
 command -v jq >/dev/null || { echo "ERROR: jq is required" >&2; exit 1; }
 
-CLOUDFLARE_API_TOKEN="${CLOUDFLARE_API_TOKEN:-}"
-secret_json=""
-
-if [ -z "$CLOUDFLARE_API_TOKEN" ] && kubectl -n "$SECRET_NAMESPACE" get secret "$SECRET_NAME" >/dev/null 2>&1; then
-  secret_json="$(kubectl -n "$SECRET_NAMESPACE" get secret "$SECRET_NAME" -o json)"
-  mapfile -t keys < <(jq -r '.data | keys[]' <<<"$secret_json")
-  if [ "${#keys[@]}" -ne 1 ]; then
-    echo "ERROR: expected exactly one data key in ${SECRET_NAMESPACE}/${SECRET_NAME}; found ${#keys[@]}." >&2
-    exit 1
-  fi
-  secret_key="${keys[0]}"
-  CLOUDFLARE_API_TOKEN="$(jq -r --arg k "$secret_key" '.data[$k]' <<<"$secret_json" | base64 -d)"
+secret_json="$(kubectl -n "$SECRET_NAMESPACE" get secret "$SECRET_NAME" -o json)"
+mapfile -t keys < <(jq -r '.data | keys[]' <<<"$secret_json")
+if [ "${#keys[@]}" -ne 1 ]; then
+  echo "ERROR: expected exactly one data key in ${SECRET_NAMESPACE}/${SECRET_NAME}; found ${#keys[@]}." >&2
+  exit 1
 fi
 
+secret_key="${keys[0]}"
+CLOUDFLARE_API_TOKEN="$(jq -r --arg k "$secret_key" '.data[$k]' <<<"$secret_json" | base64 -d)"
 export CLOUDFLARE_API_TOKEN
 trap 'unset CLOUDFLARE_API_TOKEN secret_json' EXIT
 
 if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
-  echo "ERROR: Cloudflare DNS API token is unavailable." >&2
-  echo "Provide the existing ${SECRET_NAMESPACE}/${SECRET_NAME} Secret or the runtime CLOUDFLARE_API_TOKEN credential." >&2
+  echo "ERROR: Cloudflare API token Secret is empty." >&2
   exit 1
 fi
 
