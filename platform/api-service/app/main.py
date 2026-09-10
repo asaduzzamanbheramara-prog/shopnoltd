@@ -28,13 +28,14 @@ async def lifespan(app: FastAPI):
     await redis_client.aclose()
 
 
-app = FastAPI(title="Shopnoltd Unified API Service", version="0.4.1", lifespan=lifespan)
+app = FastAPI(title="Shopnoltd Unified API Service", version="0.4.2", lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origin_regex=settings.cors_origin_regex, allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 app.include_router(__import__("app.api.v1", fromlist=["router"]).router, prefix="/api/v1", tags=["v1"])
 app.include_router(__import__("app.api.admin_proxy", fromlist=["router"]).router, prefix="/api/v1", tags=["admin-data-facade"])
 app.include_router(__import__("app.api.domain_proxy", fromlist=["router"]).router, prefix="/api/v1", tags=["domain-facade"])
 app.include_router(__import__("app.api.freedomain_proxy", fromlist=["router"]).router, prefix="/api/v1", tags=["free-domain-facade"])
 app.include_router(__import__("app.api.ai_proxy", fromlist=["router"]).router, prefix="/api/v1", tags=["ai-facade"])
+app.include_router(__import__("app.api.storage_proxy", fromlist=["router"]).router, prefix="/api/v1", tags=["storage-facade"])
 app.include_router(__import__("app.api.v2", fromlist=["router"]).router, prefix="/api/v2", tags=["social-work"])
 # Must precede the legacy blog facade because that facade also has /blog/{slug}.
 app.include_router(__import__("app.api.v2_blog_user", fromlist=["router"]).router, prefix="/api/v2", tags=["blog-user"])
