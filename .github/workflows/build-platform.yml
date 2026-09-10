@@ -15,6 +15,10 @@ permissions:
   contents: write
   packages: write
 
+concurrency:
+  group: platform-build-promote-main
+  cancel-in-progress: false
+
 env:
   REGISTRY: ghcr.io
   IMAGE_PREFIX: ${{ github.repository_owner }}/shopnoltd
@@ -85,12 +89,12 @@ jobs:
           else:
               changed = subprocess.check_output(['git', 'diff', '--name-only', before, sha], text=True).splitlines()
 
-          all_services = 'ALL' in changed
-          shared_changed = all_services or any(p == 'shared' or p.startswith('shared/') for p in changed)
+          shared_changed = 'ALL' in changed or any(p == 'shared' or p.startswith('shared/') for p in changed)
+          workflow_changed = any(p == '.github/workflows/build-platform.yml' for p in changed)
           result = []
           for service, (dockerfile, context) in services.items():
               prefix = dockerfile.rsplit('/Dockerfile', 1)[0]
-              affected = shared_changed or any(p == prefix or p.startswith(prefix + '/') for p in changed)
+              affected = shared_changed or workflow_changed or any(p == prefix or p.startswith(prefix + '/') for p in changed)
               if service == 'billing-engine':
                   affected = affected or any(p == 'billing-engine' or p.startswith('billing-engine/') for p in changed)
               if service == 'vpn-service':
@@ -98,10 +102,8 @@ jobs:
               if affected:
                   result.append({'service': service, 'dockerfile': dockerfile, 'context': context})
 
-          # A workflow-only change should still validate/build the complete platform once.
           if not result:
               result = [{'service': s, 'dockerfile': d, 'context': c} for s, (d, c) in services.items()]
-
           print('Affected services:', ', '.join(x['service'] for x in result))
           with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
               f.write('matrix=' + json.dumps({'include': result}, separators=(',', ':')) + '\n')
@@ -155,11 +157,12 @@ jobs:
         env:
           SOURCE_SHA: ${{ github.sha }}
           IMAGE_OWNER: ${{ github.repository_owner }}
+          MATRIX: ${{ needs.detect-changes.outputs.matrix }}
         shell: bash
         run: |
           set -euo pipefail
           python3 - <<'PY'
-          import json, os, re, subprocess
+          import json, os, re
           matrix = json.loads(os.environ['MATRIX'])['include']
           services = {x['service'] for x in matrix}
           owner = os.environ['IMAGE_OWNER']
@@ -170,20 +173,20 @@ jobs:
                   if not name.endswith(('.yaml', '.yml')):
                       continue
                   path = os.path.join(root, name)
-                  text = open(path, encoding='utf-8').read()
+                  with open(path, encoding='utf-8') as f:
+                      text = f.read()
                   original = text
                   for service in services:
                       image = f'ghcr.io/{owner}/shopnoltd/{service}'
                       text = re.sub(re.escape(image) + r':[A-Za-z0-9_.-]+', image + ':' + sha, text)
                   if text != original:
-                      open(path, 'w', encoding='utf-8').write(text)
+                      with open(path, 'w', encoding='utf-8') as f:
+                          f.write(text)
                       changed += 1
           print(f'Updated {changed} GitOps manifest files for: {sorted(services)}')
           if changed == 0:
-              print('No matching GitOps image references were found; build remains published but no deployment manifest is changed.')
+              print('No matching GitOps image references were found; image remains published but no manifest is changed.')
           PY
-        env:
-          MATRIX: ${{ needs.detect-changes.outputs.matrix }}
       - name: Commit manifest promotion
         shell: bash
         run: |
