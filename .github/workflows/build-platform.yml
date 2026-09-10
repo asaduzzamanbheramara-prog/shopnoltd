@@ -1,4 +1,5 @@
-name: Build platform images
+name: Build and promote platform images
+
 on:
   push:
     branches: [main]
@@ -9,79 +10,190 @@ on:
       - 'shared/**'
       - '.github/workflows/build-platform.yml'
   workflow_dispatch:
+
+permissions:
+  contents: write
+  packages: write
+
 env:
   REGISTRY: ghcr.io
   IMAGE_PREFIX: ${{ github.repository_owner }}/shopnoltd
+
 jobs:
+  detect-changes:
+    name: Detect affected services
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.detect.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - id: detect
+        env:
+          BEFORE: ${{ github.event.before }}
+          SHA: ${{ github.sha }}
+          EVENT_NAME: ${{ github.event_name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os, subprocess
+
+          services = {
+            'domain-service': ('platform/domain-service/Dockerfile', '.'),
+            'interior-service': ('platform/interior-service/Dockerfile', '.'),
+            'event-service': ('platform/event-service/Dockerfile', '.'),
+            'foundation-service': ('platform/foundation-service/Dockerfile', '.'),
+            'training-service': ('platform/training-service/Dockerfile', '.'),
+            'freedomain-service': ('platform/freedomain-service/Dockerfile', '.'),
+            'api-service': ('platform/api-service/Dockerfile', '.'),
+            'gateway': ('platform/gateway/Dockerfile', '.'),
+            'oauth-service': ('platform/oauth-service/Dockerfile', '.'),
+            'tenant-router': ('platform/tenant-router/Dockerfile', '.'),
+            'analytics-service': ('platform/analytics-service/Dockerfile', '.'),
+            'storage-service': ('platform/storage-service/Dockerfile', '.'),
+            'notification-service': ('platform/notification-service/Dockerfile', '.'),
+            'scheduler-service': ('platform/scheduler-service/Dockerfile', '.'),
+            'worker-service': ('platform/worker-service/Dockerfile', '.'),
+            'payment-service': ('platform/payment-service/Dockerfile', '.'),
+            'exchange-service': ('platform/exchange-service/Dockerfile', '.'),
+            'auth-service': ('platform/auth-service/Dockerfile', '.'),
+            'audit-service': ('platform/audit-service/Dockerfile', '.'),
+            'report-service': ('platform/report-service/Dockerfile', '.'),
+            'license-service': ('platform/license-service/Dockerfile', '.'),
+            'mobile-api': ('platform/mobile-api/Dockerfile', '.'),
+            'ai-platform': ('platform/ai-platform/Dockerfile', '.'),
+            'admin-portal': ('platform/admin-portal/Dockerfile', '.'),
+            'web-portal': ('platform/web-portal/Dockerfile', '.'),
+            'android-portal': ('platform/android-portal/Dockerfile', '.'),
+            'messaging-service': ('platform/messaging-service/Dockerfile', '.'),
+            'meet-service': ('platform/meet-service/Dockerfile', '.'),
+            'live-service': ('platform/live-service/Dockerfile', '.'),
+            'mail-service': ('platform/mail-service/Dockerfile', '.'),
+            'social-service': ('platform/social-service/Dockerfile', '.'),
+            'keycloak': ('platform/keycloak/Dockerfile', '.'),
+            'session-manager': ('platform/session-manager/Dockerfile', '.'),
+            'vpn-service': ('services/vpn-service/Dockerfile', 'services/vpn-service'),
+            'billing-engine': ('billing-engine/Dockerfile', 'billing-engine'),
+          }
+
+          before = os.environ.get('BEFORE', '')
+          sha = os.environ['SHA']
+          if os.environ.get('EVENT_NAME') == 'workflow_dispatch' or not before or set(before) == {'0'}:
+              changed = ['ALL']
+          else:
+              changed = subprocess.check_output(['git', 'diff', '--name-only', before, sha], text=True).splitlines()
+
+          all_services = 'ALL' in changed
+          shared_changed = all_services or any(p == 'shared' or p.startswith('shared/') for p in changed)
+          result = []
+          for service, (dockerfile, context) in services.items():
+              prefix = dockerfile.rsplit('/Dockerfile', 1)[0]
+              affected = shared_changed or any(p == prefix or p.startswith(prefix + '/') for p in changed)
+              if service == 'billing-engine':
+                  affected = affected or any(p == 'billing-engine' or p.startswith('billing-engine/') for p in changed)
+              if service == 'vpn-service':
+                  affected = affected or any(p == 'services/vpn-service' or p.startswith('services/vpn-service/') for p in changed)
+              if affected:
+                  result.append({'service': service, 'dockerfile': dockerfile, 'context': context})
+
+          # A workflow-only change should still validate/build the complete platform once.
+          if not result:
+              result = [{'service': s, 'dockerfile': d, 'context': c} for s, (d, c) in services.items()]
+
+          print('Affected services:', ', '.join(x['service'] for x in result))
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+              f.write('matrix=' + json.dumps({'include': result}, separators=(',', ':')) + '\n')
+          PY
+
   build:
     name: Build ${{ matrix.service }}
+    needs: detect-changes
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - { service: domain-service, dockerfile: platform/domain-service/Dockerfile }
-          - { service: interior-service, dockerfile: platform/interior-service/Dockerfile }
-          - { service: event-service, dockerfile: platform/event-service/Dockerfile }
-          - { service: foundation-service, dockerfile: platform/foundation-service/Dockerfile }
-          - { service: training-service, dockerfile: platform/training-service/Dockerfile }
-          - { service: freedomain-service, dockerfile: platform/freedomain-service/Dockerfile }
-          - { service: api-service, dockerfile: platform/api-service/Dockerfile }
-          - { service: gateway, dockerfile: platform/gateway/Dockerfile }
-          - { service: oauth-service, dockerfile: platform/oauth-service/Dockerfile }
-          - { service: tenant-router, dockerfile: platform/tenant-router/Dockerfile }
-          - { service: analytics-service, dockerfile: platform/analytics-service/Dockerfile }
-          - { service: storage-service, dockerfile: platform/storage-service/Dockerfile }
-          - { service: notification-service, dockerfile: platform/notification-service/Dockerfile }
-          - { service: scheduler-service, dockerfile: platform/scheduler-service/Dockerfile }
-          - { service: worker-service, dockerfile: platform/worker-service/Dockerfile }
-          - { service: payment-service, dockerfile: platform/payment-service/Dockerfile }
-          - { service: exchange-service, dockerfile: platform/exchange-service/Dockerfile }
-          - { service: auth-service, dockerfile: platform/auth-service/Dockerfile }
-          - { service: audit-service, dockerfile: platform/audit-service/Dockerfile }
-          - { service: report-service, dockerfile: platform/report-service/Dockerfile }
-          - { service: license-service, dockerfile: platform/license-service/Dockerfile }
-          - { service: mobile-api, dockerfile: platform/mobile-api/Dockerfile }
-          - { service: ai-platform, dockerfile: platform/ai-platform/Dockerfile }
-          - { service: admin-portal, dockerfile: platform/admin-portal/Dockerfile }
-          - { service: web-portal, dockerfile: platform/web-portal/Dockerfile }
-          - { service: android-portal, dockerfile: platform/android-portal/Dockerfile }
-          - { service: messaging-service, dockerfile: platform/messaging-service/Dockerfile }
-          - { service: meet-service, dockerfile: platform/meet-service/Dockerfile }
-          - { service: live-service, dockerfile: platform/live-service/Dockerfile }
-          - { service: mail-service, dockerfile: platform/mail-service/Dockerfile }
-          - { service: social-service, dockerfile: platform/social-service/Dockerfile }
-          - { service: keycloak, dockerfile: platform/keycloak/Dockerfile }
-          - { service: session-manager, dockerfile: platform/session-manager/Dockerfile }
-          - { service: vpn-service, dockerfile: services/vpn-service/Dockerfile }
-          - { service: billing-engine, dockerfile: billing-engine/Dockerfile, context: billing-engine }
-    permissions:
-      contents: read
-      packages: write
+      matrix: ${{ fromJSON(needs.detect-changes.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v4
-      - name: Skip if Dockerfile missing
-        id: check
-        run: '[ -f "${{ matrix.dockerfile }}" ] && echo "skip=false" >> "$GITHUB_OUTPUT" || echo "skip=true" >> "$GITHUB_OUTPUT"'
-      - name: Login to GHCR
-        if: steps.check.outputs.skip == 'false'
-        uses: docker/login-action@v3
+      - name: Validate build context
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f '${{ matrix.dockerfile }}'
+          test -d '${{ matrix.context }}'
+          if [ '${{ matrix.service }}' = 'billing-engine' ]; then test -d billing-engine/app; fi
+          if [ '${{ matrix.service }}' = 'vpn-service' ]; then test -d services/vpn-service; fi
+      - uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Set up Docker Buildx
-        if: steps.check.outputs.skip == 'false'
-        uses: docker/setup-buildx-action@v3
-      - name: Build & push
-        if: steps.check.outputs.skip == 'false'
+      - uses: docker/setup-buildx-action@v3
+      - name: Build and push immutable image
         uses: docker/build-push-action@v6
         with:
-          context: ${{ matrix.context || (matrix.service == 'vpn-service' && 'services/vpn-service' || '.') }}
+          context: ${{ matrix.context }}
           file: ${{ matrix.dockerfile }}
           push: true
           tags: |
-            ghcr.io/${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:latest
             ghcr.io/${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:${{ github.sha }}
+            ghcr.io/${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:latest
           cache-from: type=gha,scope=${{ matrix.service }}
           cache-to: type=gha,mode=max,scope=${{ matrix.service }}
+
+  promote:
+    name: Promote built images to GitOps manifests
+    needs: [detect-changes, build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 2
+      - name: Pin affected GitOps images to this source revision
+        env:
+          SOURCE_SHA: ${{ github.sha }}
+          IMAGE_OWNER: ${{ github.repository_owner }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os, re, subprocess
+          matrix = json.loads(os.environ['MATRIX'])['include']
+          services = {x['service'] for x in matrix}
+          owner = os.environ['IMAGE_OWNER']
+          sha = os.environ['SOURCE_SHA']
+          changed = 0
+          for root, _, files in os.walk('k8s'):
+              for name in files:
+                  if not name.endswith(('.yaml', '.yml')):
+                      continue
+                  path = os.path.join(root, name)
+                  text = open(path, encoding='utf-8').read()
+                  original = text
+                  for service in services:
+                      image = f'ghcr.io/{owner}/shopnoltd/{service}'
+                      text = re.sub(re.escape(image) + r':[A-Za-z0-9_.-]+', image + ':' + sha, text)
+                  if text != original:
+                      open(path, 'w', encoding='utf-8').write(text)
+                      changed += 1
+          print(f'Updated {changed} GitOps manifest files for: {sorted(services)}')
+          if changed == 0:
+              print('No matching GitOps image references were found; build remains published but no deployment manifest is changed.')
+          PY
+        env:
+          MATRIX: ${{ needs.detect-changes.outputs.matrix }}
+      - name: Commit manifest promotion
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add k8s
+          if git diff --cached --quiet; then
+            echo 'No manifest promotion commit required.'
+            exit 0
+          fi
+          git commit -m "chore(gitops): promote affected images for ${GITHUB_SHA}"
+          git push origin HEAD:main
