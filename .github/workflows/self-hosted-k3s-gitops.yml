@@ -17,6 +17,7 @@ env:
   ARGOCD_APP: shopnoltd
   MIGRATION_NAMESPACE: shopno-data
   MIGRATION_JOB: postgres-platform-migration
+  MIGRATION_CONFIGMAP: postgres-platform-migrations
   CLOUDFLARED_NAMESPACE: shopno-ingress
   CLOUDFLARED_DEPLOYMENT: cloudflared
   CLOUDFLARE_SECRET_NAMESPACE: shopno-ingress
@@ -58,7 +59,7 @@ jobs:
           test -s /tmp/shopnoltd-rendered.yaml
           echo "Rendered $(wc -l </tmp/shopnoltd-rendered.yaml) lines from GitHub revision $GITHUB_SHA"
 
-      - name: Terminate stale Argo CD operation and request exact sync
+      - name: Repair migration prerequisite and terminate stale Argo CD operation
         shell: bash
         env:
           GIT_REVISION: ${{ github.sha }}
@@ -67,45 +68,57 @@ jobs:
 
           echo '===== ARGO CD PRE-SYNC STATE ====='
           kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o jsonpath='{.status.sync.status}{" / "}{.status.health.status}{" / "}{.status.operationState.phase}{" / "}{.status.sync.revision}{"\n"}'
-          operation="$(timeout 45s kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o jsonpath='{.spec.operation}' 2>/dev/null || true)"
+
+          # The old operation can survive with an empty spec.operation while waiting
+          # forever on a hook whose generated ConfigMap was never materialized.
+          # Materialize only this exact source-owned ConfigMap first, then remove the
+          # known-stale hook without waiting for Kubernetes final deletion.
+          if ! timeout 30s kubectl --request-timeout=30s -n "$MIGRATION_NAMESPACE" get configmap "$MIGRATION_CONFIGMAP" >/dev/null 2>&1; then
+            echo 'Migration ConfigMap is absent; materializing the source-owned ConfigMap before recreating the hook.'
+            test -f k8s/services/postgres/migration/012-payment-schema-reconciliation.sql
+            kubectl create configmap "$MIGRATION_CONFIGMAP" \
+              --from-file=012-payment-schema-reconciliation.sql=k8s/services/postgres/migration/012-payment-schema-reconciliation.sql \
+              --dry-run=client -o yaml \
+              | kubectl --request-timeout=30s -n "$MIGRATION_NAMESPACE" apply -f -
+            kubectl --request-timeout=30s -n "$MIGRATION_NAMESPACE" annotate configmap "$MIGRATION_CONFIGMAP" \
+              argocd.argoproj.io/sync-wave=-11 --overwrite
+          else
+            echo 'Migration ConfigMap exists; preserving it.'
+          fi
+
+          if timeout 30s kubectl --request-timeout=30s -n "$MIGRATION_NAMESPACE" get job "$MIGRATION_JOB" >/dev/null 2>&1; then
+            echo 'Removing the known-stale migration hook without waiting on pod termination.'
+            timeout 30s kubectl --request-timeout=30s -n "$MIGRATION_NAMESPACE" delete job "$MIGRATION_JOB" --ignore-not-found --wait=false
+          fi
+
+          # If the Application spec contains an explicit operation, clear it. If the
+          # operation only survives in status, allow the repaired hook to finish; the
+          # controller can then accept the new exact revision below.
+          operation="$(timeout 30s kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o jsonpath='{.spec.operation}' 2>/dev/null || true)"
           if [ -n "$operation" ]; then
-            echo 'Existing Argo CD operation detected; removing stale operation before starting the requested revision.'
-            timeout 60s kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" patch application "$ARGOCD_APP" \
+            echo 'Clearing explicit Argo CD operation from the Application spec.'
+            timeout 45s kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" patch application "$ARGOCD_APP" \
               --type=json \
               -p='[{"op":"remove","path":"/spec/operation"}]'
-
-            cleared=0
-            for _ in {1..20}; do
-              operation="$(timeout 15s kubectl --request-timeout=15s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o jsonpath='{.spec.operation}' 2>/dev/null || true)"
-              if [ -z "$operation" ]; then
-                echo 'Stale Argo CD operation cleared.'
-                cleared=1
-                break
-              fi
-              sleep 3
-            done
-
-            test "$cleared" -eq 1
           else
-            echo 'No existing Argo CD operation; starting a fresh sync.'
+            echo 'No explicit Argo CD operation remains in spec; repaired migration hook will release the stale status operation.'
           fi
 
-          # A previously created migration hook can remain Running forever when its
-          # generated ConfigMap was never materialized. Only remove that known-stale
-          # hook when the ConfigMap is absent; a healthy migration is left untouched.
-          if timeout 30s kubectl --request-timeout=30s -n "$MIGRATION_NAMESPACE" get job "$MIGRATION_JOB" >/dev/null 2>&1; then
-            if ! timeout 30s kubectl --request-timeout=30s -n "$MIGRATION_NAMESPACE" get configmap postgres-platform-migrations >/dev/null 2>&1; then
-              echo 'Stale PostgreSQL migration hook detected without its required ConfigMap; deleting the blocked hook so Argo CD can recreate it in sync-wave order.'
-              timeout 60s kubectl --request-timeout=30s -n "$MIGRATION_NAMESPACE" delete job "$MIGRATION_JOB" --ignore-not-found
-            else
-              echo 'PostgreSQL migration ConfigMap exists; preserving the current migration hook.'
+          echo "Waiting briefly for the repaired migration hook/controller state before requesting revision $GIT_REVISION"
+          for _ in {1..30}; do
+            phase="$(timeout 15s kubectl --request-timeout=15s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o jsonpath='{.status.operationState.phase}' 2>/dev/null || true)"
+            message="$(timeout 15s kubectl --request-timeout=15s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o jsonpath='{.status.operationState.message}' 2>/dev/null || true)"
+            echo "ArgoCD phase=$phase message=$message"
+            if [ "$phase" != "Running" ]; then
+              break
             fi
-          fi
+            sleep 5
+          done
 
           echo "Requesting exact Argo CD sync for revision $GIT_REVISION"
-          timeout 60s kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" annotate application "$ARGOCD_APP" \
+          timeout 45s kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" annotate application "$ARGOCD_APP" \
             argocd.argoproj.io/refresh=hard --overwrite
-          timeout 90s kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" patch application "$ARGOCD_APP" \
+          timeout 60s kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" patch application "$ARGOCD_APP" \
             --type merge \
             -p "{\"operation\":{\"sync\":{\"revision\":\"$GIT_REVISION\"}}}"
           echo 'Exact Argo CD sync request accepted.'
@@ -228,5 +241,5 @@ jobs:
           kubectl --request-timeout=30s -n "$CLOUDFLARE_SECRET_NAMESPACE" get secret "$CLOUDFLARE_SECRET_NAME" -o jsonpath='{.type}'
           echo
           kubectl --request-timeout=30s -n "$CLOUDFLARED_NAMESPACE" get deployment "$CLOUDFLARED_DEPLOYMENT" -o wide
-          kubectl --request-timeout=30s -n "$CLOUDFLARED_NAMESPACE" get pods -l app.kubernetes.io/name=cloudflared -o wide
-          kubectl --request-timeout=30s -n "$CLOUDFLARED_NAMESPACE" logs deployment/"$CLOUDFLARED_DEPLOYMENT" --tail=250
+          kubectl --request-timeout=30s -n "$CLOUDFARED_NAMESPACE" get pods -l app.kubernetes.io/name=cloudflared -o wide
+          kubectl --request-timeout=30s -n "$CLOUDFARED_NAMESPACE" logs deployment/"$CLOUDFLARED_DEPLOYMENT" --tail=250
