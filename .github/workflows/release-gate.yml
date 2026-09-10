@@ -109,21 +109,36 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          files="$(gh api \
-            -H 'Accept: application/vnd.github+json' \
-            "/repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}" \
-            --paginate \
-            --jq '.files[]?.filename' || true)"
 
-          echo 'Changed files:'
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            echo 'deployment_required=true' >> "$GITHUB_OUTPUT"
+            echo 'Manual release-gate dispatch requires GitOps reconciliation.'
+            exit 0
+          fi
+
+          files="$(python3 - <<'PY'
+          import json, os
+          event_path = os.environ['GITHUB_EVENT_PATH']
+          event = json.load(open(event_path, encoding='utf-8'))
+          seen = []
+          for commit in event.get('commits', []):
+              for key in ('added', 'modified', 'removed'):
+                  for path in commit.get(key, []) or []:
+                      if path not in seen:
+                          seen.append(path)
+          print('\n'.join(seen))
+          PY
+          )"
+
+          echo 'Changed files from push event:'
           printf '%s\n' "$files"
 
           if grep -Eq '^(k8s/|ops/cloudflare/|\.github/workflows/self-hosted-k3s-gitops\.yml$)' <<<"$files"; then
             echo 'deployment_required=true' >> "$GITHUB_OUTPUT"
-            echo 'This commit changes deployment-controlled files; a matching self-hosted GitOps run is required.'
+            echo 'This push changes deployment-controlled files; a matching self-hosted GitOps run is required.'
           else
             echo 'deployment_required=false' >> "$GITHUB_OUTPUT"
-            echo 'No deployment-controlled files changed; self-hosted GitOps reconciliation is not required for this commit.'
+            echo 'No deployment-controlled files changed; self-hosted GitOps reconciliation is not required for this push.'
           fi
 
       - name: Wait for matching self-hosted deployment run
@@ -159,7 +174,7 @@ jobs:
 
       - name: Confirm GitOps was not required
         if: steps.deployment-scope.outputs.deployment_required == 'false'
-        run: echo 'GitOps deployment gate satisfied because this commit has no deployment-controlled changes.'
+        run: echo 'GitOps deployment gate satisfied because this push has no deployment-controlled changes.'
 
   public-smoke:
     name: Public endpoint smoke tests
