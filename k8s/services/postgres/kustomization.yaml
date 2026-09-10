@@ -16,10 +16,6 @@ resources:
 - migration
 
 labels:
-- includeSelectors: true
-  includeTemplates: false
-  pairs:
-    app.kubernetes.io/name: postgres
 - includeSelectors: false
   pairs:
     app.kubernetes.io/part-of: shopnoltd
