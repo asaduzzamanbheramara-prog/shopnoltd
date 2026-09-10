@@ -22,7 +22,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: live-service
-          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/live-service:latest
+          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/live-service:0a471fd8a8627dc989e102720d188dede60d9d99
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
