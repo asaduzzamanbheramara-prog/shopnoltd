@@ -1,0 +1,63 @@
+name: Browser and platform contract
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+    paths:
+      - 'platform/web-portal/**'
+      - 'platform/api-service/**'
+      - 'platform/social-service/**'
+      - 'platform/ai-platform/**'
+      - 'platform/domain-service/**'
+      - 'platform/freedomain-service/**'
+      - 'platform/storage-service/**'
+      - 'billing-engine/**'
+      - 'services/vpn-service/**'
+      - 'k8s/**'
+      - 'scripts/validate-browser-contract.py'
+      - '.github/workflows/browser-contract.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    name: Validate full browser/API contract
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate browser contract
+        run: python3 scripts/validate-browser-contract.py
+      - name: Validate required backend modules
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m compileall -q \
+            platform/api-service/app \
+            platform/social-service/app \
+            platform/ai-platform/app \
+            platform/domain-service/app \
+            platform/freedomain-service/app \
+            platform/storage-service/app \
+            billing-engine/app \
+            services/vpn-service
+      - name: Validate frontend package manifests
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s platform/web-portal/package.json
+          test -s platform/web-portal/package-lock.json
+          test -s platform/web-portal/src/main.jsx
+          test -s platform/web-portal/src/lib/platformApi.js
+          test -s platform/web-portal/src/lib/financialApi.js
+      - name: Render Kubernetes source
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -sSfL https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.4.3/kustomize_v5.4.3_linux_amd64.tar.gz | tar -xz
+          sudo mv kustomize /usr/local/bin/kustomize
+          kustomize build k8s/ >/tmp/shopnoltd-rendered.yaml
+          test -s /tmp/shopnoltd-rendered.yaml
