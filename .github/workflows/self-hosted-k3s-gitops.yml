@@ -65,26 +65,27 @@ jobs:
         run: |
           set -euo pipefail
 
-          operation="$(kubectl -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o jsonpath='{.spec.operation}' 2>/dev/null || true)"
+          echo '===== ARGO CD PRE-SYNC STATE ====='
+          kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o jsonpath='{.status.sync.status}{" / "}{.status.health.status}{" / "}{.status.operationState.phase}{" / "}{.status.sync.revision}{"\n"}'
+          operation="$(timeout 45s kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o jsonpath='{.spec.operation}' 2>/dev/null || true)"
           if [ -n "$operation" ]; then
             echo 'Existing Argo CD operation detected; removing stale operation before starting the requested revision.'
-            kubectl -n "$ARGOCD_NAMESPACE" patch application "$ARGOCD_APP" \
+            timeout 60s kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" patch application "$ARGOCD_APP" \
               --type=json \
               -p='[{"op":"remove","path":"/spec/operation"}]'
 
+            cleared=0
             for _ in {1..20}; do
-              operation="$(kubectl -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o jsonpath='{.spec.operation}' 2>/dev/null || true)"
+              operation="$(timeout 15s kubectl --request-timeout=15s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o jsonpath='{.spec.operation}' 2>/dev/null || true)"
               if [ -z "$operation" ]; then
                 echo 'Stale Argo CD operation cleared.'
+                cleared=1
                 break
               fi
               sleep 3
             done
 
-            if [ -n "$operation" ]; then
-              echo 'Argo CD operation remained present after termination attempt.'
-              exit 1
-            fi
+            test "$cleared" -eq 1
           else
             echo 'No existing Argo CD operation; starting a fresh sync.'
           fi
@@ -92,20 +93,22 @@ jobs:
           # A previously created migration hook can remain Running forever when its
           # generated ConfigMap was never materialized. Only remove that known-stale
           # hook when the ConfigMap is absent; a healthy migration is left untouched.
-          if kubectl -n "$MIGRATION_NAMESPACE" get job "$MIGRATION_JOB" >/dev/null 2>&1; then
-            if ! kubectl -n "$MIGRATION_NAMESPACE" get configmap postgres-platform-migrations >/dev/null 2>&1; then
+          if timeout 30s kubectl --request-timeout=30s -n "$MIGRATION_NAMESPACE" get job "$MIGRATION_JOB" >/dev/null 2>&1; then
+            if ! timeout 30s kubectl --request-timeout=30s -n "$MIGRATION_NAMESPACE" get configmap postgres-platform-migrations >/dev/null 2>&1; then
               echo 'Stale PostgreSQL migration hook detected without its required ConfigMap; deleting the blocked hook so Argo CD can recreate it in sync-wave order.'
-              kubectl -n "$MIGRATION_NAMESPACE" delete job "$MIGRATION_JOB" --ignore-not-found
+              timeout 60s kubectl --request-timeout=30s -n "$MIGRATION_NAMESPACE" delete job "$MIGRATION_JOB" --ignore-not-found
             else
               echo 'PostgreSQL migration ConfigMap exists; preserving the current migration hook.'
             fi
           fi
 
-          kubectl -n "$ARGOCD_NAMESPACE" annotate application "$ARGOCD_APP" \
+          echo "Requesting exact Argo CD sync for revision $GIT_REVISION"
+          timeout 60s kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" annotate application "$ARGOCD_APP" \
             argocd.argoproj.io/refresh=hard --overwrite
-          kubectl -n "$ARGOCD_NAMESPACE" patch application "$ARGOCD_APP" \
+          timeout 90s kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" patch application "$ARGOCD_APP" \
             --type merge \
             -p "{\"operation\":{\"sync\":{\"revision\":\"$GIT_REVISION\"}}}"
+          echo 'Exact Argo CD sync request accepted.'
 
       - name: Wait for Argo CD sync
         shell: bash
@@ -113,10 +116,10 @@ jobs:
           set -euo pipefail
           deadline=$((SECONDS + 900))
           while [ "$SECONDS" -lt "$deadline" ]; do
-            sync="$(kubectl -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o jsonpath='{.status.sync.status}')"
-            health="$(kubectl -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o jsonpath='{.status.health.status}')"
-            phase="$(kubectl -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o jsonpath='{.status.operationState.phase}')"
-            revision="$(kubectl -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o jsonpath='{.status.sync.revision}')"
+            sync="$(kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o jsonpath='{.status.sync.status}')"
+            health="$(kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o jsonpath='{.status.health.status}')"
+            phase="$(kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o jsonpath='{.status.operationState.phase}')"
+            revision="$(kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o jsonpath='{.status.sync.revision}')"
             echo "ArgoCD: sync=$sync health=$health phase=$phase revision=$revision"
             if [ "$sync" = "Synced" ] && [ "$health" = "Healthy" ]; then
               echo "ArgoCD reconciliation succeeded."
@@ -138,12 +141,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          kubectl -n "$CLOUDFLARED_NAMESPACE" rollout restart deployment/"$CLOUDFLARED_DEPLOYMENT"
-          kubectl -n "$CLOUDFLARED_NAMESPACE" rollout status deployment/"$CLOUDFLARED_DEPLOYMENT" --timeout=180s
+          kubectl --request-timeout=30s -n "$CLOUDFLARED_NAMESPACE" rollout restart deployment/"$CLOUDFLARED_DEPLOYMENT"
+          kubectl --request-timeout=30s -n "$CLOUDFLARED_NAMESPACE" rollout status deployment/"$CLOUDFLARED_DEPLOYMENT" --timeout=180s
           sleep 20
-          ready="$(kubectl -n "$CLOUDFLARED_NAMESPACE" get pods -l app.kubernetes.io/name=cloudflared -o jsonpath='{range .items[*]}{.status.containerStatuses[0].ready}{"\n"}{end}' | grep -c '^true$' || true)"
+          ready="$(kubectl --request-timeout=30s -n "$CLOUDFLARED_NAMESPACE" get pods -l app.kubernetes.io/name=cloudflared -o jsonpath='{range .items[*]}{.status.containerStatuses[0].ready}{"\n"}{end}' | grep -c '^true$' || true)"
           test "$ready" -ge 1
-          logs="$(kubectl -n "$CLOUDFLARED_NAMESPACE" logs deployment/"$CLOUDFLARED_DEPLOYMENT" --tail=250 2>&1 || true)"
+          logs="$(kubectl --request-timeout=30s -n "$CLOUDFLARED_NAMESPACE" logs deployment/"$CLOUDFLARED_DEPLOYMENT" --tail=250 2>&1 || true)"
           printf '%s\n' "$logs"
           if ! grep -Eiq 'registered tunnel connection|connection.*registered' <<<"$logs"; then
             echo 'Cloudflared did not report a registered tunnel connection after restart.'
@@ -172,12 +175,12 @@ jobs:
         run: |
           set -euo pipefail
           expected="$(grep -E '^[[:space:]]*image:[[:space:]]*cloudflare/cloudflared:' k8s/ingress/cloudflared/deployment.yaml | head -1 | awk '{print $2}')"
-          live="$(kubectl -n "$CLOUDFLARED_NAMESPACE" get deployment "$CLOUDFLARED_DEPLOYMENT" -o jsonpath='{.spec.template.spec.containers[0].image}')"
+          live="$(kubectl --request-timeout=30s -n "$CLOUDFLARED_NAMESPACE" get deployment "$CLOUDFLARED_DEPLOYMENT" -o jsonpath='{.spec.template.spec.containers[0].image}')"
           echo "GitHub source image: $expected"
           echo "Live image:          $live"
           test -n "$expected"
           test "$live" = "$expected"
-          kubectl -n "$CLOUDFLARED_NAMESPACE" rollout status deployment/"$CLOUDFLARED_DEPLOYMENT" --timeout=180s
+          kubectl --request-timeout=30s -n "$CLOUDFLARED_NAMESPACE" rollout status deployment/"$CLOUDFLARED_DEPLOYMENT" --timeout=180s
 
       - name: Verify platform communications and Android Cloud rollouts
         shell: bash
@@ -185,15 +188,15 @@ jobs:
           set -euo pipefail
           for deployment in messaging-service meet-service live-service android-cloud-controller android-cloud-web; do
             echo "Waiting for $PLATFORM_NAMESPACE/$deployment"
-            kubectl -n "$PLATFORM_NAMESPACE" rollout status deployment/"$deployment" --timeout=180s
+            kubectl --request-timeout=30s -n "$PLATFORM_NAMESPACE" rollout status deployment/"$deployment" --timeout=180s
           done
 
       - name: Verify migration hook completed
         shell: bash
         run: |
           set -euo pipefail
-          if kubectl -n "$MIGRATION_NAMESPACE" get job "$MIGRATION_JOB" >/dev/null 2>&1; then
-            succeeded="$(kubectl -n "$MIGRATION_NAMESPACE" get job "$MIGRATION_JOB" -o jsonpath='{.status.succeeded}')"
+          if kubectl --request-timeout=30s -n "$MIGRATION_NAMESPACE" get job "$MIGRATION_JOB" >/dev/null 2>&1; then
+            succeeded="$(kubectl --request-timeout=30s -n "$MIGRATION_NAMESPACE" get job "$MIGRATION_JOB" -o jsonpath='{.status.succeeded}')"
             echo "Migration job succeeded=$succeeded"
             test "$succeeded" = "1"
           else
@@ -206,24 +209,24 @@ jobs:
         run: |
           set +e
           echo '===== ARGOCD APPLICATION ====='
-          kubectl -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o yaml
+          kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o yaml
           echo '===== ARGOCD OPERATION MESSAGE ====='
-          kubectl -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o jsonpath='{.status.operationState.message}'
+          kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o jsonpath='{.status.operationState.message}'
           echo
           echo '===== MIGRATION JOB ====='
-          kubectl -n "$MIGRATION_NAMESPACE" get job "$MIGRATION_JOB" -o wide
-          kubectl -n "$MIGRATION_NAMESPACE" describe job "$MIGRATION_JOB"
+          kubectl --request-timeout=30s -n "$MIGRATION_NAMESPACE" get job "$MIGRATION_JOB" -o wide
+          kubectl --request-timeout=30s -n "$MIGRATION_NAMESPACE" describe job "$MIGRATION_JOB"
           echo '===== MIGRATION PODS ====='
-          kubectl -n "$MIGRATION_NAMESPACE" get pods -l job-name="$MIGRATION_JOB" -o wide
+          kubectl --request-timeout=30s -n "$MIGRATION_NAMESPACE" get pods -l job-name="$MIGRATION_JOB" -o wide
           echo '===== MIGRATION LOGS ====='
-          kubectl -n "$MIGRATION_NAMESPACE" logs job/"$MIGRATION_JOB" --all-containers --tail=300
+          kubectl --request-timeout=30s -n "$MIGRATION_NAMESPACE" logs job/"$MIGRATION_JOB" --all-containers --tail=300
           echo '===== MIGRATION EVENTS ====='
-          kubectl -n "$MIGRATION_NAMESPACE" get events --sort-by=.lastTimestamp | tail -100
+          kubectl --request-timeout=30s -n "$MIGRATION_NAMESPACE" get events --sort-by=.lastTimestamp | tail -100
           echo '===== PLATFORM COMMUNICATIONS / ANDROID ====='
-          kubectl -n "$PLATFORM_NAMESPACE" get deployments,pods -l 'app.kubernetes.io/part-of=shopnoltd' -o wide
+          kubectl --request-timeout=30s -n "$PLATFORM_NAMESPACE" get deployments,pods -l 'app.kubernetes.io/part-of=shopnoltd' -o wide
           echo '===== CLOUDFLARED ====='
-          kubectl -n "$CLOUDFLARE_SECRET_NAMESPACE" get secret "$CLOUDFLARE_SECRET_NAME" -o jsonpath='{.type}'
+          kubectl --request-timeout=30s -n "$CLOUDFLARE_SECRET_NAMESPACE" get secret "$CLOUDFLARE_SECRET_NAME" -o jsonpath='{.type}'
           echo
-          kubectl -n "$CLOUDFLARED_NAMESPACE" get deployment "$CLOUDFLARED_DEPLOYMENT" -o wide
-          kubectl -n "$CLOUDFLARED_NAMESPACE" get pods -l app.kubernetes.io/name=cloudflared -o wide
-          kubectl -n "$CLOUDFLARED_NAMESPACE" logs deployment/"$CLOUDFLARED_DEPLOYMENT" --tail=250
+          kubectl --request-timeout=30s -n "$CLOUDFLARED_NAMESPACE" get deployment "$CLOUDFLARED_DEPLOYMENT" -o wide
+          kubectl --request-timeout=30s -n "$CLOUDFLARED_NAMESPACE" get pods -l app.kubernetes.io/name=cloudflared -o wide
+          kubectl --request-timeout=30s -n "$CLOUDFLARED_NAMESPACE" logs deployment/"$CLOUDFLARED_DEPLOYMENT" --tail=250
