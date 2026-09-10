@@ -10,6 +10,7 @@ metadata:
 spec:
   selector:
     app.kubernetes.io/name: postgres
+    app.kubernetes.io/component: database
 
   ports:
     - name: postgres

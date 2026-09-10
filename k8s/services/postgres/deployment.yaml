@@ -5,6 +5,7 @@ metadata:
   namespace: shopno-data
   labels:
     app.kubernetes.io/name: postgres
+    app.kubernetes.io/component: database
   annotations:
     argocd.argoproj.io/sync-wave: "-20"
 spec:
@@ -14,10 +15,12 @@ spec:
   selector:
     matchLabels:
       app.kubernetes.io/name: postgres
+      app.kubernetes.io/component: database
   template:
     metadata:
       labels:
         app.kubernetes.io/name: postgres
+        app.kubernetes.io/component: database
     spec:
       securityContext:
         fsGroup: 999
