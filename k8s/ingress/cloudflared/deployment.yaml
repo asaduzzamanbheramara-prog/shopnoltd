@@ -56,7 +56,5 @@ spec:
               readOnly: true
       volumes:
         - name: config
-          configMap:
-            name: cloudflared-config
-        - name: creds
-              secretName: cloudflared-creds
+          secret:
+            secretName: cloudflared-creds
