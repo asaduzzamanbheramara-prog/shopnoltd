@@ -28,7 +28,7 @@ async def lifespan(app: FastAPI):
     await redis_client.aclose()
 
 
-app = FastAPI(title="Shopnoltd Unified API Service", version="0.3.0", lifespan=lifespan)
+app = FastAPI(title="Shopnoltd Unified API Service", version="0.4.0", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origin_regex=settings.cors_origin_regex,
@@ -39,6 +39,7 @@ app.add_middleware(
 app.include_router(__import__("app.api.v1", fromlist=["router"]).router, prefix="/api/v1", tags=["v1"])
 app.include_router(__import__("app.api.admin_proxy", fromlist=["router"]).router, prefix="/api/v1", tags=["admin-data-facade"])
 app.include_router(__import__("app.api.domain_proxy", fromlist=["router"]).router, prefix="/api/v1", tags=["domain-facade"])
+app.include_router(__import__("app.api.ai_proxy", fromlist=["router"]).router, prefix="/api/v1", tags=["ai-facade"])
 app.include_router(__import__("app.api.v2", fromlist=["router"]).router, prefix="/api/v2", tags=["social-work"])
 # Must precede the legacy blog facade because that facade also has /blog/{slug}.
 app.include_router(__import__("app.api.v2_blog_user", fromlist=["router"]).router, prefix="/api/v2", tags=["blog-user"])
@@ -47,9 +48,11 @@ app.include_router(__import__("app.api.v3_work", fromlist=["router"]).router, pr
 app.include_router(__import__("app.api.graphql", fromlist=["router"]).router, prefix="/graphql", tags=["graphql"])
 app.include_router(__import__("app.api.health", fromlist=["router"]).router, prefix="", tags=["health"])
 
+
 @app.get("/healthz", include_in_schema=False)
 async def healthz():
     return {"status": "ok"}
+
 
 @app.get("/readyz", include_in_schema=False)
 async def readyz():
@@ -58,6 +61,7 @@ async def readyz():
         await c.execute(text("SELECT 1"))
     await redis_client.ping()
     return {"status": "ready"}
+
 
 @app.get("/metrics", include_in_schema=False)
 def metrics():
