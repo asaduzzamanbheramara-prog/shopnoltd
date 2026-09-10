@@ -52,15 +52,29 @@ BACKUP_ENCRYPTION_KEY='...' ./ops/backup/restore-postgres.sh
 
 The script decrypts the backup locally and streams it to `pg_restore` inside the trusted PostgreSQL pod. It never commits the decrypted database to Git.
 
-## Windows reboot recovery
+## Windows reboot, resume, and local-server availability
 
-Run `ops/windows/install-shopnoltd-autostart.ps1` once from an elevated PowerShell prompt on the Windows host. It creates a Windows Scheduled Task that starts the configured WSL distribution at Windows boot.
+Run `ops/windows/install-shopnoltd-autostart.ps1` once from an **elevated PowerShell 7** prompt on the Windows host. The installer creates/updates the `Shopnoltd-WSL-Autostart` Scheduled Task with three recovery triggers:
+
+- Windows boot;
+- Windows user logon;
+- Windows resume from sleep/hibernate.
+
+The triggers are intentionally idempotent: starting an already-running WSL distribution is harmless. Inside WSL, systemd then starts enabled services such as k3s and the GitHub Actions runner.
+
+### Important sleep behavior
+
+A Windows PC that is actually asleep suspends the WSL virtual machine. Therefore **the local Shopnoltd server cannot remain publicly available while Windows is sleeping**. For a local PC to behave like an always-on server, the installer defaults to disabling **AC sleep and hibernation** while leaving the display sleep/timeout unchanged. The screen can turn off while WSL/k3s remains available.
+
+If you intentionally want the PC to sleep, install with `-AllowSleep`. The resume trigger will restart WSL when Windows wakes, but service availability during the sleep interval is not possible.
+
+For true 24/7 availability while the physical PC is powered off, asleep, or disconnected, Shopnoltd must eventually run on an always-on server or external cluster.
 
 Inside WSL, systemd must be enabled and the following services must be enabled:
 
 ```bash
 sudo systemctl enable k3s
-sudo systemctl enable actions.runner.*.service
+sudo systemctl list-units 'actions.runner.*.service' --all
 ```
 
 The existing `ops/github-runner/bootstrap-k3s-runner.sh` installs the GitHub runner as a system service. It requires a short-lived `RUNNER_TOKEN` only during initial registration and does not store that token in Git.
@@ -68,8 +82,9 @@ The existing `ops/github-runner/bootstrap-k3s-runner.sh` installs the GitHub run
 Normal recovery chain:
 
 ```text
-Windows boot
-  -> WSL starts
+Windows boot/resume/logon
+  -> Shopnoltd-WSL-Autostart task
+  -> WSL
   -> WSL systemd
   -> k3s
   -> PostgreSQL PVC
@@ -80,8 +95,6 @@ Windows boot
   -> Cloudflare
   -> public Shopnoltd services
 ```
-
-This makes a normal PC/Windows reboot self-recovering. It does not provide availability while the physical PC is completely powered off; for that, production must eventually run on an always-on node or external cluster.
 
 ## Verification checklist
 
@@ -94,6 +107,13 @@ systemctl list-units 'actions.runner.*.service' --all
 kubectl get nodes
 kubectl -n argocd get application shopnoltd
 bash ops/backup/check-postgres-storage.sh
+```
+
+From elevated PowerShell:
+
+```powershell
+Get-ScheduledTask -TaskName 'Shopnoltd-WSL-Autostart' | Select-Object TaskName, State
+powercfg /query SCHEME_CURRENT SUB_SLEEP STANDBYIDLE
 ```
 
 Then run the normal public smoke/release gates. A successful backup workflow alone does not prove that the public website is healthy.
