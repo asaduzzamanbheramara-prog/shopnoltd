@@ -46,6 +46,7 @@ jobs:
           kubectl auth can-i get applications.argoproj.io -n "$ARGOCD_NAMESPACE"
           kubectl auth can-i patch applications.argoproj.io -n "$ARGOCD_NAMESPACE"
           kubectl auth can-i get jobs -n "$MIGRATION_NAMESPACE"
+          kubectl auth can-i patch jobs -n "$MIGRATION_NAMESPACE"
           kubectl auth can-i get pods -n "$MIGRATION_NAMESPACE"
           kubectl auth can-i get deployments -n "$CLOUDFLARED_NAMESPACE"
           kubectl auth can-i get deployments -n "$PLATFORM_NAMESPACE"
@@ -69,29 +70,46 @@ jobs:
           echo '===== ARGO CD PRE-SYNC STATE ====='
           kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o jsonpath='{.status.sync.status}{" / "}{.status.health.status}{" / "}{.status.operationState.phase}{" / "}{.status.sync.revision}{"\n"}'
 
-          # The stale operation must be terminated before deleting its hook. Otherwise
-          # Argo can continue waiting on or recreating the same hook while the Job has
-          # a deletion timestamp, leaving the Application permanently Running.
+          # Pause automated sync first. This closes the race where Argo automatically
+          # starts a new sync after the workflow observes no explicit spec.operation.
+          automated="$(timeout 30s kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o jsonpath='{.spec.syncPolicy.automated}' 2>/dev/null || true)"
+          if [ -n "$automated" ]; then
+            echo 'Temporarily disabling Argo CD automated sync while repairing the stale hook.'
+            timeout 45s kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" patch application "$ARGOCD_APP" \
+              --type=json \
+              -p='[{"op":"remove","path":"/spec/syncPolicy/automated"}]'
+          else
+            echo 'Argo CD automated sync is already disabled.'
+          fi
+
+          # Terminate any explicit operation. Automated sync is paused above so a new
+          # operation cannot race this cleanup.
           operation="$(timeout 30s kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o jsonpath='{.spec.operation}' 2>/dev/null || true)"
           if [ -n "$operation" ]; then
-            echo 'Clearing explicit Argo CD operation from the Application spec before touching the migration hook.'
+            echo 'Clearing explicit Argo CD operation before touching the migration hook.'
             timeout 45s kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" patch application "$ARGOCD_APP" \
               --type=json \
               -p='[{"op":"remove","path":"/spec/operation"}]'
           else
-            echo 'No explicit Argo CD operation remains in spec; checking for a stale status operation.'
+            echo 'No explicit Argo CD operation remains in spec.'
           fi
 
-          echo 'Waiting for the Argo CD controller to observe operation termination.'
-          for _ in {1..24}; do
+          echo 'Waiting for the Argo CD controller to stop the stale operation.'
+          operation_stopped=0
+          for _ in {1..36}; do
             phase="$(timeout 15s kubectl --request-timeout=15s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o jsonpath='{.status.operationState.phase}' 2>/dev/null || true)"
             message="$(timeout 15s kubectl --request-timeout=15s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o jsonpath='{.status.operationState.message}' 2>/dev/null || true)"
             echo "ArgoCD phase=$phase message=$message"
             if [ "$phase" != "Running" ]; then
+              operation_stopped=1
               break
             fi
             sleep 5
           done
+          if [ "$operation_stopped" -ne 1 ]; then
+            echo 'Argo CD operation is still Running after 180 seconds; aborting repair rather than racing the controller.'
+            exit 1
+          fi
 
           # Materialize only this exact source-owned ConfigMap if it is absent.
           if ! timeout 30s kubectl --request-timeout=30s -n "$MIGRATION_NAMESPACE" get configmap "$MIGRATION_CONFIGMAP" >/dev/null 2>&1; then
@@ -110,17 +128,48 @@ jobs:
           if timeout 30s kubectl --request-timeout=30s -n "$MIGRATION_NAMESPACE" get job "$MIGRATION_JOB" >/dev/null 2>&1; then
             echo 'Removing the stale migration hook without waiting for Kubernetes pod termination.'
             timeout 30s kubectl --request-timeout=30s -n "$MIGRATION_NAMESPACE" delete job "$MIGRATION_JOB" --ignore-not-found --wait=false
-            echo 'Waiting for the stale migration Job to disappear before requesting a new sync.'
-            for _ in {1..24}; do
+            echo 'Waiting for the stale migration Job to disappear.'
+            removed=0
+            for _ in {1..12}; do
               if ! timeout 15s kubectl --request-timeout=15s -n "$MIGRATION_NAMESPACE" get job "$MIGRATION_JOB" >/dev/null 2>&1; then
                 echo 'Stale migration Job removed.'
+                removed=1
                 break
               fi
               echo 'Migration Job is still terminating; waiting 5 seconds.'
               sleep 5
             done
-            if timeout 15s kubectl --request-timeout=15s -n "$MIGRATION_NAMESPACE" get job "$MIGRATION_JOB" >/dev/null 2>&1; then
-              echo 'Stale migration Job did not finish deletion within 120 seconds.'
+
+            # The stuck object is specifically blocked by Argo's hook finalizer. Once
+            # the stale Argo operation is stopped and automated sync is paused, removing
+            # only that finalizer lets Kubernetes complete deletion without touching the
+            # PostgreSQL Deployment, PVC, or database contents.
+            if [ "$removed" -ne 1 ]; then
+              echo 'Migration Job is still terminating; inspecting finalizers.'
+              finalizers="$(timeout 15s kubectl --request-timeout=15s -n "$MIGRATION_NAMESPACE" get job "$MIGRATION_JOB" -o jsonpath='{.metadata.finalizers}' 2>/dev/null || true)"
+              deletion_timestamp="$(timeout 15s kubectl --request-timeout=15s -n "$MIGRATION_NAMESPACE" get job "$MIGRATION_JOB" -o jsonpath='{.metadata.deletionTimestamp}' 2>/dev/null || true)"
+              echo "deletionTimestamp=$deletion_timestamp"
+              echo "finalizers=$finalizers"
+              if grep -q 'argocd.argoproj.io/hook-finalizer' <<<"$finalizers"; then
+                echo 'Removing the stale Argo hook finalizer from the already-deleting migration Job.'
+                timeout 30s kubectl --request-timeout=30s -n "$MIGRATION_NAMESPACE" patch job "$MIGRATION_JOB" \
+                  --type=json \
+                  -p='[{"op":"remove","path":"/metadata/finalizers"}]'
+              fi
+
+              for _ in {1..12}; do
+                if ! timeout 15s kubectl --request-timeout=15s -n "$MIGRATION_NAMESPACE" get job "$MIGRATION_JOB" >/dev/null 2>&1; then
+                  echo 'Stale migration Job removed after finalizer cleanup.'
+                  removed=1
+                  break
+                fi
+                echo 'Migration Job is still terminating after finalizer cleanup; waiting 5 seconds.'
+                sleep 5
+              done
+            fi
+
+            if [ "$removed" -ne 1 ]; then
+              echo 'Stale migration Job did not finish deletion after finalizer cleanup.'
               kubectl --request-timeout=15s -n "$MIGRATION_NAMESPACE" get job "$MIGRATION_JOB" -o jsonpath='deletionTimestamp={.metadata.deletionTimestamp}{"\n"}finalizers={.metadata.finalizers}{"\n"}'
               exit 1
             fi
@@ -153,6 +202,16 @@ jobs:
           done
           echo "ArgoCD reconciliation did not reach Synced/Healthy within 15 minutes."
           exit 1
+
+      - name: Restore Argo CD automated sync policy
+        if: success()
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo 'Restoring source-defined Argo CD automated sync policy.'
+          timeout 45s kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" patch application "$ARGOCD_APP" \
+            --type=json \
+            -p='[{"op":"add","path":"/spec/syncPolicy/automated","value":{"prune":false,"selfHeal":true}}]'
 
       - name: Reconcile Cloudflare Tunnel DNS
         shell: bash
