@@ -12,6 +12,12 @@ on:
 permissions:
   contents: read
 
+# Only the newest main revision should be allowed to mutate the cluster.
+# Older queued/running GitOps jobs must not deploy stale manifests.
+concurrency:
+  group: self-hosted-k3s-gitops-main
+  cancel-in-progress: true
+
 env:
   ARGOCD_NAMESPACE: argocd
   ARGOCD_APP: shopnoltd
