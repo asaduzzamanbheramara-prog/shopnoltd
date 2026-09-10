@@ -71,9 +71,12 @@ spec:
               cpu: 1000m
               memory: 512Mi
               ephemeral-storage: 1Gi
+          # Chatwoot does not provide a stable lightweight /healthz endpoint.
+          # Use the application root for HTTP health checks so a valid Rails
+          # process is not kept unready solely because /api is not a health route.
           livenessProbe:
             httpGet:
-              path: /api
+              path: /
               port: http
             initialDelaySeconds: 45
             periodSeconds: 10
@@ -81,7 +84,7 @@ spec:
             failureThreshold: 5
           readinessProbe:
             httpGet:
-              path: /api
+              path: /
               port: http
             initialDelaySeconds: 15
             periodSeconds: 5
@@ -89,7 +92,7 @@ spec:
             failureThreshold: 6
           startupProbe:
             httpGet:
-              path: /api
+              path: /
               port: http
             initialDelaySeconds: 10
             periodSeconds: 5
