@@ -44,7 +44,8 @@ jobs:
           kubectl cluster-info
           kubectl auth can-i get applications.argoproj.io -n "$ARGOCD_NAMESPACE"
           kubectl auth can-i patch applications.argoproj.io -n "$ARGOCD_NAMESPACE"
-          kubectl auth can-i get jobs,pods -n "$MIGRATION_NAMESPACE"
+          kubectl auth can-i get jobs -n "$MIGRATION_NAMESPACE"
+          kubectl auth can-i get pods -n "$MIGRATION_NAMESPACE"
           kubectl auth can-i get deployments -n "$CLOUDFLARED_NAMESPACE"
           kubectl auth can-i get deployments -n "$PLATFORM_NAMESPACE"
           kubectl auth can-i get secret/"$CLOUDFLARE_SECRET_NAME" -n "$CLOUDFLARE_SECRET_NAMESPACE"
@@ -86,6 +87,18 @@ jobs:
             fi
           else
             echo 'No existing Argo CD operation; starting a fresh sync.'
+          fi
+
+          # A previously created migration hook can remain Running forever when its
+          # generated ConfigMap was never materialized. Only remove that known-stale
+          # hook when the ConfigMap is absent; a healthy migration is left untouched.
+          if kubectl -n "$MIGRATION_NAMESPACE" get job "$MIGRATION_JOB" >/dev/null 2>&1; then
+            if ! kubectl -n "$MIGRATION_NAMESPACE" get configmap postgres-platform-migrations >/dev/null 2>&1; then
+              echo 'Stale PostgreSQL migration hook detected without its required ConfigMap; deleting the blocked hook so Argo CD can recreate it in sync-wave order.'
+              kubectl -n "$MIGRATION_NAMESPACE" delete job "$MIGRATION_JOB" --ignore-not-found
+            else
+              echo 'PostgreSQL migration ConfigMap exists; preserving the current migration hook.'
+            fi
           fi
 
           kubectl -n "$ARGOCD_NAMESPACE" annotate application "$ARGOCD_APP" \
