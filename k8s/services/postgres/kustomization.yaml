@@ -17,6 +17,7 @@ resources:
 
 labels:
 - includeSelectors: true
+  includeTemplates: false
   pairs:
     app.kubernetes.io/name: postgres
 - includeSelectors: false
