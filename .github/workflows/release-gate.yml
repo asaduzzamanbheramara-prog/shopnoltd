@@ -107,6 +107,8 @@ jobs:
       - name: Determine whether this commit requires GitOps reconciliation
         id: deployment-scope
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
 
@@ -116,21 +118,19 @@ jobs:
             exit 0
           fi
 
-          files="$(python3 - <<'PY'
-          import json, os
-          event_path = os.environ['GITHUB_EVENT_PATH']
-          event = json.load(open(event_path, encoding='utf-8'))
-          seen = []
-          for commit in event.get('commits', []):
-              for key in ('added', 'modified', 'removed'):
-                  for path in commit.get(key, []) or []:
-                      if path not in seen:
-                          seen.append(path)
-          print('\n'.join(seen))
-          PY
-          )"
+          before="$(jq -r '.before // empty' "$GITHUB_EVENT_PATH")"
+          after="$(jq -r '.after // empty' "$GITHUB_EVENT_PATH")"
+          if [ -z "$after" ]; then
+            after="$GITHUB_SHA"
+          fi
 
-          echo 'Changed files from push event:'
+          files=""
+          if [ -n "$before" ] && [ "$before" != "0000000000000000000000000000000000000000" ] && [ "$before" != "$after" ]; then
+            compare="$(gh api -H 'Accept: application/vnd.github+json' "/repos/${GITHUB_REPOSITORY}/compare/${before}...${after}")"
+            files="$(jq -r '.files[]?.filename // empty' <<<"$compare")"
+          fi
+
+          echo 'Changed files from push comparison:'
           printf '%s\n' "$files"
 
           if grep -Eq '^(k8s/|ops/cloudflare/|\.github/workflows/self-hosted-k3s-gitops\.yml$)' <<<"$files"; then
