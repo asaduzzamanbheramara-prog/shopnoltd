@@ -128,16 +128,8 @@ jobs:
           kubectl -n "$CLOUDFLARED_NAMESPACE" rollout restart deployment/"$CLOUDFLARED_DEPLOYMENT"
           kubectl -n "$CLOUDFLARED_NAMESPACE" rollout status deployment/"$CLOUDFLARED_DEPLOYMENT" --timeout=180s
           sleep 20
-          pods="$(kubectl -n "$CLOUDFLARED_NAMESPACE" get pods -l app.kubernetes.io/name=cloudflared -o name)"
-          test -n "$pods"
-          ready=0
-          for pod in $pods; do
-            if kubectl -n "$CLOUDFLARED_NAMESPACE" exec "$pod" -- curl -fsS http://127.0.0.1:2000/ready >/dev/null 2>&1; then
-              ready=1
-              break
-            fi
-          done
-          test "$ready" -eq 1
+          ready="$(kubectl -n "$CLOUDFLARED_NAMESPACE" get pods -l app.kubernetes.io/name=cloudflared -o jsonpath='{range .items[*]}{.status.containerStatuses[0].ready}{"\n"}{end}' | grep -c '^true$' || true)"
+          test "$ready" -ge 1
           logs="$(kubectl -n "$CLOUDFLARED_NAMESPACE" logs deployment/"$CLOUDFLARED_DEPLOYMENT" --tail=250 2>&1 || true)"
           printf '%s\n' "$logs"
           if ! grep -Eiq 'registered tunnel connection|connection.*registered' <<<"$logs"; then
