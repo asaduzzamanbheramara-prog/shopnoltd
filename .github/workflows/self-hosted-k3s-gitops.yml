@@ -57,12 +57,37 @@ jobs:
           test -s /tmp/shopnoltd-rendered.yaml
           echo "Rendered $(wc -l </tmp/shopnoltd-rendered.yaml) lines from GitHub revision $GITHUB_SHA"
 
-      - name: Request Argo CD hard refresh and sync
+      - name: Terminate stale Argo CD operation and request exact sync
         shell: bash
         env:
           GIT_REVISION: ${{ github.sha }}
         run: |
           set -euo pipefail
+
+          operation="$(kubectl -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o jsonpath='{.spec.operation}' 2>/dev/null || true)"
+          if [ -n "$operation" ]; then
+            echo 'Existing Argo CD operation detected; removing stale operation before starting the requested revision.'
+            kubectl -n "$ARGOCD_NAMESPACE" patch application "$ARGOCD_APP" \
+              --type=json \
+              -p='[{"op":"remove","path":"/spec/operation"}]'
+
+            for _ in {1..20}; do
+              operation="$(kubectl -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o jsonpath='{.spec.operation}' 2>/dev/null || true)"
+              if [ -z "$operation" ]; then
+                echo 'Stale Argo CD operation cleared.'
+                break
+              fi
+              sleep 3
+            done
+
+            if [ -n "$operation" ]; then
+              echo 'Argo CD operation remained present after termination attempt.'
+              exit 1
+            fi
+          else
+            echo 'No existing Argo CD operation; starting a fresh sync.'
+          fi
+
           kubectl -n "$ARGOCD_NAMESPACE" annotate application "$ARGOCD_APP" \
             argocd.argoproj.io/refresh=hard --overwrite
           kubectl -n "$ARGOCD_NAMESPACE" patch application "$ARGOCD_APP" \
