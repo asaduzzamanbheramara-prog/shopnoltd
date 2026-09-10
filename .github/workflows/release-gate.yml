@@ -16,6 +16,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: production-release-gate-${{ github.workflow }}-${{ github.ref }}
@@ -96,9 +97,48 @@ jobs:
       - name: Validate release gate documentation
         run: test -s docs/OBSERVABILITY-RELEASE-GATE.md
 
+  wait-for-gitops:
+    name: Wait for self-hosted k3s reconciliation
+    needs: repository-validation
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Wait for matching self-hosted deployment run
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          workflow='self-hosted-k3s-gitops.yml'
+          deadline=$((SECONDS + 1200))
+          while [ "$SECONDS" -lt "$deadline" ]; do
+            runs="$(gh api \
+              -H 'Accept: application/vnd.github+json' \
+              "/repos/${GITHUB_REPOSITORY}/actions/workflows/${workflow}/runs?branch=main&event=push&per_page=20" \
+              | jq -r --arg sha "$GITHUB_SHA" '[.workflow_runs[] | select(.head_sha == $sha)] | sort_by(.created_at) | reverse | .[0] // empty')"
+            if [ -n "$runs" ]; then
+              run_id="$(jq -r '.id' <<<"$runs")"
+              status="$(jq -r '.status' <<<"$runs")"
+              conclusion="$(jq -r '.conclusion // empty' <<<"$runs")"
+              echo "self-hosted-k3s-gitops run=$run_id status=$status conclusion=${conclusion:-pending}"
+              if [ "$status" = completed ]; then
+                test "$conclusion" = success
+                exit 0
+              fi
+            else
+              echo "Waiting for self-hosted-k3s-gitops run for $GITHUB_SHA"
+            fi
+            sleep 15
+          done
+          echo 'Timed out waiting for self-hosted k3s GitOps reconciliation.'
+          exit 1
+
   public-smoke:
     name: Public endpoint smoke tests
-    needs: repository-validation
+    needs:
+      - repository-validation
+      - wait-for-gitops
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     strategy:
@@ -151,6 +191,7 @@ jobs:
     name: Release gate summary
     needs:
       - repository-validation
+      - wait-for-gitops
       - public-smoke
     if: always()
     runs-on: ubuntu-latest
@@ -161,6 +202,14 @@ jobs:
           set -euo pipefail
           echo "repository-validation=${{ needs.repository-validation.result }}"
           test '${{ needs.repository-validation.result }}' = success
+
+      - name: Require GitOps reconciliation on deployed events
+        if: github.event_name != 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "wait-for-gitops=${{ needs.wait-for-gitops.result }}"
+          test '${{ needs.wait-for-gitops.result }}' = success
 
       - name: Require production smoke on deployed events
         if: github.event_name != 'pull_request'

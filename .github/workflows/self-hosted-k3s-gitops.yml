@@ -121,6 +121,39 @@ jobs:
           chmod +x ops/cloudflare/ensure-tunnel-dns.sh
           ops/cloudflare/ensure-tunnel-dns.sh
 
+      - name: Restart and verify Cloudflared tunnel connector
+        shell: bash
+        run: |
+          set -euo pipefail
+          kubectl -n "$CLOUDFLARED_NAMESPACE" rollout restart deployment/"$CLOUDFLARED_DEPLOYMENT"
+          kubectl -n "$CLOUDFLARED_NAMESPACE" rollout status deployment/"$CLOUDFLARED_DEPLOYMENT" --timeout=180s
+          sleep 20
+          ready="$(kubectl -n "$CLOUDFLARED_NAMESPACE" get pods -l app.kubernetes.io/name=cloudflared -o jsonpath='{range .items[*]}{.status.containerStatuses[0].ready}{"\n"}{end}' | grep -c '^true$' || true)"
+          test "$ready" -ge 1
+          logs="$(kubectl -n "$CLOUDFLARED_NAMESPACE" logs deployment/"$CLOUDFLARED_DEPLOYMENT" --tail=250 2>&1 || true)"
+          printf '%s\n' "$logs"
+          if ! grep -Eiq 'registered tunnel connection|connection.*registered' <<<"$logs"; then
+            echo 'Cloudflared did not report a registered tunnel connection after restart.'
+            exit 1
+          fi
+          echo 'Cloudflared reported a registered tunnel connection.'
+
+          for url in \
+            https://shopnoltd.dpdns.org \
+            https://api.shopnoltd.dpdns.org/healthz \
+            https://chat.shopnoltd.dpdns.org; do
+            ok=0
+            for attempt in {1..6}; do
+              code="$(curl -k -L -sS -o /tmp/cloudflare-smoke-body -w '%{http_code}' --connect-timeout 10 --max-time 30 "$url" || true)"
+              echo "$url attempt $attempt/6 -> HTTP ${code:-000}"
+              case "$code" in
+                2*|3*|401|403) ok=1; break ;;
+              esac
+              sleep 10
+            done
+            test "$ok" -eq 1
+          done
+
       - name: Verify Cloudflared image matches GitHub source
         shell: bash
         run: |
@@ -180,4 +213,4 @@ jobs:
           echo
           kubectl -n "$CLOUDFLARED_NAMESPACE" get deployment "$CLOUDFLARED_DEPLOYMENT" -o wide
           kubectl -n "$CLOUDFLARED_NAMESPACE" get pods -l app.kubernetes.io/name=cloudflared -o wide
-          kubectl -n "$CLOUDFLARED_NAMESPACE" logs deployment/"$CLOUDFLARED_DEPLOYMENT" --tail=120
+          kubectl -n "$CLOUDFLARED_NAMESPACE" logs deployment/"$CLOUDFLARED_DEPLOYMENT" --tail=250

@@ -6,7 +6,11 @@ metadata:
   labels:
     app.kubernetes.io/name: cloudflared
 spec:
-  replicas: 2
+  # The k3s target is a single-node control plane. With hostNetwork enabled,
+  # multiple replicas would contend for the fixed metrics/readiness port 2000
+  # on the same node. Keep one connector here so the tunnel remains deterministic
+  # and the readiness/liveness probes cannot collide.
+  replicas: 1
   selector:
     matchLabels:
       app.kubernetes.io/name: cloudflared
