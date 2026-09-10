@@ -1,81 +1,60 @@
-# Shopno Ltd (shopnoltd)
+# Shopnoltd
 
-Multi-tenant platform: domain/subdomain registration with auto-provisioned
-per-user services, an admin control plane, and user-facing site management
-(theme/code/publish), payments, and storage — built as independent FastAPI
-services behind a gateway, with React admin/web portals.
+Shopnoltd is a multi-service platform with a React web portal, authenticated FastAPI API layer, Keycloak identity, financial services, domains, AI, social/blog, Work, ShopnoltdCollect/Android Cloud, VPN/device services, storage, and Kubernetes/GitOps deployment.
 
-This README reflects what is **actually implemented** in this repo today,
-not the eventual full vision. Update it as real features land.
+**Source of truth:** GitHub `main`. Production delivery is GitHub Actions → GHCR → ArgoCD/k3s. Browser business operations use the unified `https://api.shopnoltd.dpdns.org` origin; internal service DNS and credentials remain server-side.
 
-## What's real right now
+## Functional surface
 
-| Service | Path | Status |
+| Area | Browser capability | Security boundary |
 |---|---|---|
-| Gateway | `platform/gateway` | Basic routing + Keycloak-based auth check |
-| Auth service | `platform/auth-service` | Session + auth API |
-| OAuth service | `platform/oauth-service` | Node/Express OAuth routes |
-| Domain service | `platform/domain-service` | Zones/records/registrars API, PowerDNS client |
-| Payment service | `platform/payment-service` | Wallets, transactions, exchange rates; provider stubs for Stripe / bKash / crypto / Binance Pay / manual |
-| Storage service | `platform/storage-service` | Buckets/objects API over MinIO (S3-compatible) |
-| Admin portal | `platform/admin-portal` | React app — Users, Tenants, Payments, Plans, Streams, App Releases, **3D Dashboard** |
-| Web portal | `platform/web-portal` | React app — Register, Login, Dashboard, Pricing, Blog, Plugins |
+| Authentication | Keycloak direct login, refresh/session handling, role-protected admin routes; Google/GitHub broker support when configured in Keycloak | Keycloak/OIDC |
+| Social | Feed, Discover, posts, direct post URLs, likes, comments/replies, shares, follows, views, notifications | social-service |
+| Blog | Public published posts; user/admin draft, edit, publish/unpublish, delete, cover media | social-service + tenant scope |
+| Work | Browse, create, configure task links/media, publish/close, accept, persisted Before/Start/Working/End lifecycle, server-time/watch verification, evidence, submission and approval | api-service + financial ledger |
+| Wallet/finance | Wallets, ledger, transactions, checkout, gateway catalog, FX quote/conversion and protected settlement | payment/billing/exchange services |
+| Domains | Paid-domain availability/registration/renewal and authenticated domain management | domain-service + registrar |
+| Free domains | Tenant-scoped `*.shopnoltd.dpdns.org` provisioning and deactivation | freedomain-service |
+| AI | Authenticated inference and active model catalog; provider/model administration for authorized admins | ai-platform |
+| Database control | Service-owned inspection, search, analysis, export, PDF reporting, and guarded content CRUD/import | owning service policies; no unrestricted SQL |
+| Storage | Authenticated object mutations through the unified API; published public assets remain cacheable | storage-service |
+| Android/Collect | ShopnoltdCollect branding and Android Cloud/device workflows where the corresponding deployment is enabled | android-cloud/device services |
+| VPN/devices | Authenticated device/VPN lifecycle and browser connection entry points | vpn/device services |
 
-Roughly 25 other directories under `platform/` (analytics, mail, meet,
-messaging, notification, license, audit, etc.) currently contain **only a
-Dockerfile and the same generic FastAPI boilerplate** — they are placeholders,
-not working services yet. Treat anything not in the table above as "not built."
+## Financial gateway policy
 
-Two top-level directories (`api-service`, `tenant-router`) are also stubs
-(Dockerfile only, no app code).
+The billing engine contains adapters for Stripe, PayPal, Razorpay, SSLCommerz, bKash, Nagad, Moneybag and crypto/NOWPayments, with Payoneer handled as a payout integration. Google Pay is treated as a payment-method capability of a compatible processor (for example Stripe), not as a fabricated independent processor. Rocket/Payeer/manual methods remain explicitly manual unless a verified online provider integration is configured.
 
-## Known gaps (fix before deploying anywhere real)
+A gateway is shown as **live** only when its required runtime credentials/configuration and provider contract are present. Secrets are never committed to Git. Repeated callbacks must be idempotent and wallet credit must happen exactly once.
 
-1. **No license.** `LICENSE` was empty — this repo currently has no stated
-   usage terms. A placeholder "all rights reserved" notice is included; get
-   an actual license decision (proprietary vs. open-core, etc.) from whoever
-   owns the business before this goes anywhere public.
-2. **`docker-compose.yml` was empty.** The one in this fix wires up the
-   services that have real code (see table above) plus Postgres/Redis/MinIO.
-3. **Auth depends on Keycloak, which isn't provisioned anywhere in this repo.**
-   `auth-service`, `oauth-service`, and `gateway` all reference a Keycloak
-   issuer URL. You need to stand one up (or swap the auth approach) before
-   login actually works end-to-end.
-4. **`domain-service` depends on PowerDNS**, also not included yet.
-5. **Config defaults point at Kubernetes-internal DNS** (e.g.
-   `postgres.data.svc.cluster.local`), which won't resolve locally — use the
-   `.env` overrides in `.env.example`.
-6. **A copy of a third-party APK (`APKPure_3.20.7402_apkpure.com.apk`) is
-   committed at repo root.** That's someone else's proprietary software —
-   remove it. Redistributing it (rebranded or not) isn't something to build
-   on top of.
-7. **KoboToolbox branding overlay** (`branding/`) appears to be legitimate
-   white-labeling of the open-source KoboToolbox/KoBoCollect stack — keep the
-   required upstream license/attribution notices intact when you ship this.
+## Database control policy
 
-## Running locally
+Database operations are deliberately **service-owned**, not an unrestricted browser SQL console. The admin UI provides the requested operational lifecycle where the owning service supports it: check/inspect, add, update/modify, upsert/merge, delete, replace-row imports, save, import/export, analysis and reports. Financial, identity, audit and security records remain protected behind their domain APIs so an accidental generic edit cannot create or destroy money or credentials.
 
-```bash
-cp .env.example .env
-# edit .env with real values (see comments in the file)
-docker compose up --build
-```
+Blog data additionally supports tenant-scoped CRUD, draft/publish/unpublish, transactional CSV/JSON/XLSX import/export, validation, audit records and PDF reporting. Analysis charts are responsive and resolution-independent for HD/4K displays; CSS perspective is used for a lightweight 3D presentation without pretending that a 2D report is a true 3D data cube.
 
-This starts: Postgres, Redis, MinIO, gateway, auth-service, oauth-service,
-domain-service, payment-service, storage-service, admin-portal, web-portal.
+## Domains
 
-It will **not** fully function end-to-end yet because of gaps #3 and #4
-above — you'll be able to hit each service's `/healthz` and its own API
-routes, but login and domain provisioning need Keycloak/PowerDNS wired in.
+- `shopnoltd.com` is a paid-domain/registrar workflow and must be registered through the configured registrar integration.
+- `a.shopnoltd.dpdns.org` is a free tenant subdomain under the Shopnoltd parent zone; it is not treated as an independently registrable domain.
+- Paid-domain registration and renewal remain service-owned and billing-aware.
 
-## Suggested next steps, in order
+## Authentication
 
-1. Stand up Keycloak + PowerDNS locally (or swap auth/DNS approach) so
-   auth-service and domain-service actually work end-to-end.
-2. Build the real registration → auto-provision flow: web-portal `Register`
-   → auth-service creates account → domain-service registers
-   subdomain → a new tenant instance gets provisioned.
-3. Flesh out admin-portal's `Tenants`/`Users` pages to actually call the real
-   APIs (verify what's wired vs. still using mock data).
-4. Decide license/ownership, replace the placeholder LICENSE.
-5. Remove the committed third-party APK.
+All protected portal pages use the same Keycloak access token. Direct login and configured social brokers are handled by Keycloak so billing, payment, exchange, AI, domains, social/blog and Work do not maintain separate browser identities.
+
+Google/Gmail and GitHub login buttons cannot be made operational by frontend code alone: the corresponding Keycloak Identity Provider must have valid provider credentials and callback configuration in the deployment runtime.
+
+## Work accounting
+
+Work rewards are server-authoritative. Before Work evidence is required before Start; Work elapsed time is measured server-side; watch credit requires plausible playback progress and visibility/readiness; social actions are evidence-only unless independently verified; required evidence/watch gates submission; and approved earnings use the same financial ledger rather than a second wallet.
+
+## CI/CD and release gate
+
+Every main push/PR is checked for Kubernetes rendering, required frontend routes, financial/Work contracts and the required API/browser facades. Deployed main changes wait for the self-hosted k3s GitOps reconciliation and then run public endpoint smoke tests. A release is not considered fully live merely because a UI component or adapter exists; runtime credentials and end-to-end verification are required.
+
+See `docs/FULL-FUNCTIONALITY-GATE.md` and `docs/OBSERVABILITY-RELEASE-GATE.md` for the executable release contract.
+
+## Important runtime rule
+
+Do not commit API keys, webhook secrets, passwords, enrollment tokens, kubeconfigs or test credentials. The Moneybag credentials and other secrets pasted into chat should be treated as exposed and rotated/replaced in the provider and Kubernetes runtime configuration before production use.
