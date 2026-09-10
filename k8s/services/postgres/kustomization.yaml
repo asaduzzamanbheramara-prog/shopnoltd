@@ -19,3 +19,5 @@ labels:
 - includeSelectors: false
   pairs:
     app.kubernetes.io/part-of: shopnoltd
+
+# Trigger a fresh GitOps reconciliation from the corrected main manifest.
