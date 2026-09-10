@@ -13,6 +13,9 @@ spec:
     - Egress
   ingress:
     - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: postgres-migration
         - namespaceSelector:
             matchLabels:
               name: shopno-data
