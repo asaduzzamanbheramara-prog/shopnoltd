@@ -45,7 +45,6 @@ jobs:
           kubectl cluster-info
           kubectl auth can-i get applications.argoproj.io -n "$ARGOCD_NAMESPACE"
           kubectl auth can-i patch applications.argoproj.io -n "$ARGOCD_NAMESPACE"
-          kubectl auth can-i patch applications/status -n "$ARGOCD_NAMESPACE"
           kubectl auth can-i get jobs -n "$MIGRATION_NAMESPACE"
           kubectl auth can-i patch jobs -n "$MIGRATION_NAMESPACE"
           kubectl auth can-i get pods -n "$MIGRATION_NAMESPACE"
@@ -88,8 +87,8 @@ jobs:
 
           phase="$(timeout 30s kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o jsonpath='{.status.operationState.phase}' 2>/dev/null || true)"
           if [ "$phase" = "Running" ]; then
-            echo 'Requesting Argo CD operation termination through the Application status subresource.'
-            timeout 45s kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" patch application "$ARGOCD_APP" --subresource=status --type=merge -p='{"status":{"operationState":{"phase":"Terminating"}}}'
+            echo 'Requesting Argo CD operation termination through the Application status field.'
+            timeout 45s kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" patch application "$ARGOCD_APP" --type=merge -p='{"status":{"operationState":{"phase":"Terminating"}}}'
           else
             echo "No Running Argo CD operation requires termination (phase=${phase:-none})."
           fi
