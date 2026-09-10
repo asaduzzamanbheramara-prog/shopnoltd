@@ -1,0 +1,1 @@
+This directory is intentionally rendered from the root k8s kustomization so PostgreSQL labels do not rewrite the migration pod identity.
