@@ -52,6 +52,8 @@ data:
         service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
       - hostname: mail.shopnoltd.dpdns.org
         service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
+      - hostname: android.shopnoltd.dpdns.org
+        service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
       - hostname: shopnoltdandroid.shopnoltd.dpdns.org
         service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
       - hostname: shopnoltdpc.shopnoltd.dpdns.org
