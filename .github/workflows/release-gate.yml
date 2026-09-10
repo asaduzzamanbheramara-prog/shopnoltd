@@ -104,7 +104,32 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
+      - name: Determine whether this commit requires GitOps reconciliation
+        id: deployment-scope
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          files="$(gh api \
+            -H 'Accept: application/vnd.github+json' \
+            "/repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}" \
+            --paginate \
+            --jq '.files[]?.filename' || true)"
+
+          echo 'Changed files:'
+          printf '%s\n' "$files"
+
+          if grep -Eq '^(k8s/|ops/cloudflare/|\.github/workflows/self-hosted-k3s-gitops\.yml$)' <<<"$files"; then
+            echo 'deployment_required=true' >> "$GITHUB_OUTPUT"
+            echo 'This commit changes deployment-controlled files; a matching self-hosted GitOps run is required.'
+          else
+            echo 'deployment_required=false' >> "$GITHUB_OUTPUT"
+            echo 'No deployment-controlled files changed; self-hosted GitOps reconciliation is not required for this commit.'
+          fi
+
       - name: Wait for matching self-hosted deployment run
+        if: steps.deployment-scope.outputs.deployment_required == 'true'
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -133,6 +158,10 @@ jobs:
           done
           echo 'Timed out waiting for self-hosted k3s GitOps reconciliation.'
           exit 1
+
+      - name: Confirm GitOps was not required
+        if: steps.deployment-scope.outputs.deployment_required == 'false'
+        run: echo 'GitOps deployment gate satisfied because this commit has no deployment-controlled changes.'
 
   public-smoke:
     name: Public endpoint smoke tests
