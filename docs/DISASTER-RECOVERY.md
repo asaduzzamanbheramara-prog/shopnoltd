@@ -54,19 +54,19 @@ The script decrypts the backup locally and streams it to `pg_restore` inside the
 
 ## Windows reboot, resume, and local-server availability
 
-Run `ops/windows/install-shopnoltd-autostart.ps1` once from an **elevated PowerShell 7** prompt on the Windows host. The installer creates/updates the `Shopnoltd-WSL-Autostart` Scheduled Task with three recovery triggers:
+The supported automatic-recovery installer works in the **current Windows user's normal PowerShell 7 security context**. It does not require administrator privileges, does not bypass UAC, does not create a SYSTEM task, and does not change Windows power-management settings.
 
-- Windows boot;
-- Windows user logon;
-- Windows resume from sleep/hibernate.
+Run `ops/windows/install-shopnoltd-autostart.ps1` once from normal PowerShell 7 on the Windows host. The installer creates/updates the `Shopnoltd-WSL-Autostart` Scheduled Task for the current user with a **user-logon trigger** and **Limited** run level.
 
-The triggers are intentionally idempotent: starting an already-running WSL distribution is harmless. Inside WSL, systemd then starts enabled services such as k3s and the GitHub Actions runner.
+A non-administrator Windows account cannot create a true Windows boot-triggered SYSTEM/elevated task. Therefore the supported non-admin recovery point is Windows user logon. After the user logs on, the task starts the configured WSL distribution; WSL systemd then starts enabled services such as k3s and the GitHub Actions runner.
+
+The task action is intentionally lightweight: it starts the WSL distribution with `/bin/true`. It does not store passwords, Kubernetes credentials, GitHub tokens, database secrets, or other credentials.
 
 ### Important sleep behavior
 
-A Windows PC that is actually asleep suspends the WSL virtual machine. Therefore **the local Shopnoltd server cannot remain publicly available while Windows is sleeping**. For a local PC to behave like an always-on server, the installer defaults to disabling **AC sleep and hibernation** while leaving the display sleep/timeout unchanged. The screen can turn off while WSL/k3s remains available.
+A Windows PC that is actually asleep suspends the WSL virtual machine. Therefore **the local Shopnoltd server cannot remain publicly available while Windows is sleeping**. This installer intentionally leaves Windows sleep and hibernation settings unchanged.
 
-If you intentionally want the PC to sleep, install with `-AllowSleep`. The resume trigger will restart WSL when Windows wakes, but service availability during the sleep interval is not possible.
+When Windows wakes, WSL normally resumes with the Windows session. If Windows was restarted or shut down, the user-logon task starts WSL again after the user signs in. There is no supported way for this non-admin installer to keep the local server available while the physical Windows host is asleep or powered off.
 
 For true 24/7 availability while the physical PC is powered off, asleep, or disconnected, Shopnoltd must eventually run on an always-on server or external cluster.
 
@@ -74,6 +74,8 @@ Inside WSL, systemd must be enabled and the following services must be enabled:
 
 ```bash
 sudo systemctl enable k3s
+sudo systemctl is-enabled k3s
+sudo systemctl is-active k3s
 sudo systemctl list-units 'actions.runner.*.service' --all
 ```
 
@@ -82,7 +84,7 @@ The existing `ops/github-runner/bootstrap-k3s-runner.sh` installs the GitHub run
 Normal recovery chain:
 
 ```text
-Windows boot/resume/logon
+Windows user logon
   -> Shopnoltd-WSL-Autostart task
   -> WSL
   -> WSL systemd
@@ -98,7 +100,21 @@ Windows boot/resume/logon
 
 ## Verification checklist
 
-After installation, verify:
+After installation, verify from normal PowerShell:
+
+```powershell
+$Task = Get-ScheduledTask -TaskName 'Shopnoltd-WSL-Autostart'
+$Task | Select-Object TaskName, State,
+  @{Name='User';Expression={$_.Principal.UserId}},
+  @{Name='RunLevel';Expression={$_.Principal.RunLevel}},
+  @{Name='LogonType';Expression={$_.Principal.LogonType}}
+
+wsl.exe -d 'Ubuntu-24.04' --exec /bin/true
+```
+
+The expected scheduled-task configuration is the current Windows user, `Limited` run level, `Interactive` logon type, and a `Ready` task state when idle.
+
+Inside WSL, also verify:
 
 ```bash
 systemctl is-enabled k3s
@@ -109,11 +125,6 @@ kubectl -n argocd get application shopnoltd
 bash ops/backup/check-postgres-storage.sh
 ```
 
-From elevated PowerShell:
-
-```powershell
-Get-ScheduledTask -TaskName 'Shopnoltd-WSL-Autostart' | Select-Object TaskName, State
-powercfg /query SCHEME_CURRENT SUB_SLEEP STANDBYIDLE
-```
+No `powercfg` change is required or performed by the supported non-admin installer.
 
 Then run the normal public smoke/release gates. A successful backup workflow alone does not prove that the public website is healthy.
