@@ -13,7 +13,7 @@ from app.core.security import verify_token
 
 router = APIRouter()
 bearer = HTTPBearer()
-AI = "http://ai-platform.shopno-ai.svc.cluster.local:80"
+AI = "http://ai-platform.shopno-platform.svc.cluster.local:80"
 
 
 async def raw_token(creds: HTTPAuthorizationCredentials = Depends(bearer)) -> str:
@@ -25,29 +25,17 @@ async def raw_token(creds: HTTPAuthorizationCredentials = Depends(bearer)) -> st
 
 
 async def proxy(request: Request, upstream_path: str, token: str):
-    headers = {"Accept": request.headers.get("accept", "application/json")}
+    headers = {"Accept": request.headers.get("accept", "application/json"), "Authorization": f"Bearer {token}"}
     if request.headers.get("content-type"):
         headers["Content-Type"] = request.headers["content-type"]
-    headers["Authorization"] = f"Bearer {token}"
     try:
         async with httpx.AsyncClient(timeout=120) as client:
-            upstream = await client.request(
-                request.method,
-                f"{AI}{upstream_path}",
-                headers=headers,
-                params=dict(request.query_params),
-                content=await request.body(),
-            )
+            upstream = await client.request(request.method, f"{AI}{upstream_path}", headers=headers, params=dict(request.query_params), content=await request.body())
     except (httpx.ConnectError, httpx.ConnectTimeout, httpx.ReadTimeout) as exc:
         raise HTTPException(503, "AI service unavailable") from exc
-    return Response(
-        content=upstream.content,
-        status_code=upstream.status_code,
-        media_type=upstream.headers.get("content-type", "application/json").split(";", 1)[0],
-    )
+    return Response(content=upstream.content, status_code=upstream.status_code, media_type=upstream.headers.get("content-type", "application/json").split(";", 1)[0])
 
 
-# Inference is exposed at /api/v1/ai/inference and /api/v1/ai/inference/models.
 @router.api_route("/ai/inference", methods=["POST"])
 async def inference(request: Request, token: str = Depends(raw_token)):
     return await proxy(request, "/api/v1/inference", token)
@@ -58,19 +46,16 @@ async def inference_models(request: Request, token: str = Depends(raw_token)):
     return await proxy(request, "/api/v1/inference/models", token)
 
 
-# Provider/model administration keeps the AI service's own admin authorization.
 @router.api_route("/ai/providers", methods=["GET", "POST"])
 @router.api_route("/ai/providers/{provider_id}", methods=["GET", "PATCH", "DELETE"])
 async def providers(request: Request, provider_id: str | None = None, token: str = Depends(raw_token)):
-    path = "/api/ai/providers" + (f"/{provider_id}" if provider_id else "")
-    return await proxy(request, path, token)
+    return await proxy(request, "/api/ai/providers" + (f"/{provider_id}" if provider_id else ""), token)
 
 
 @router.api_route("/ai/models", methods=["GET", "POST"])
 @router.api_route("/ai/models/{model_id}", methods=["GET", "PATCH", "DELETE"])
 async def models(request: Request, model_id: str | None = None, token: str = Depends(raw_token)):
-    path = "/api/ai/models" + (f"/{model_id}" if model_id else "")
-    return await proxy(request, path, token)
+    return await proxy(request, "/api/ai/models" + (f"/{model_id}" if model_id else ""), token)
 
 
 @router.api_route("/ai/embeddings/{path:path}", methods=["GET", "POST", "PUT", "PATCH", "DELETE"])
