@@ -37,6 +37,8 @@ def can_manage_blog(user: dict) -> bool:
     return bool(roles.intersection({"admin", "platform_admin", "tenant_owner"}))
 
 
+# Keep blog administration authorization shared by normal and data-control-plane routes.
+
 def can_manage_post(user: dict, post: BlogPost) -> bool:
     if is_staff(user):
         return True
