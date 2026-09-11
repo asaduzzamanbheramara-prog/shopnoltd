@@ -57,6 +57,10 @@ spec:
           volumeMounts:
             - name: tmp
               mountPath: /tmp
+            - name: nginx-cache
+              mountPath: /var/cache/nginx
       volumes:
         - name: tmp
+          emptyDir: {}
+        - name: nginx-cache
           emptyDir: {}
