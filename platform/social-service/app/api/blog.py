@@ -32,8 +32,9 @@ def is_staff(user: dict) -> bool:
 
 
 def can_manage_blog(user: dict) -> bool:
+    """Return whether the caller may access tenant/global blog administration."""
     roles = set(user.get("roles", []))
-    return is_staff(user) or "tenant_owner" in roles
+    return bool(roles.intersection({"admin", "platform_admin", "tenant_owner"}))
 
 
 def can_manage_post(user: dict, post: BlogPost) -> bool:
