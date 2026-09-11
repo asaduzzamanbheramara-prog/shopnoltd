@@ -31,10 +31,17 @@ spec:
     - to:
         - namespaceSelector:
             matchLabels:
-              name: shopno-data
+              name: kube-system
       ports:
         - port: 53
           protocol: UDP
+        - port: 53
+          protocol: TCP
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: shopno-data
+      ports:
         - port: 5432
           protocol: TCP
         - port: 6379
