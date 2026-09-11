@@ -27,10 +27,8 @@ async def proxy(method: str, path: str, access_token: str, **kwargs):
         raise HTTPException(503, "Payment service unavailable") from exc
     detail = response.text
     if response.status_code >= 400:
-        try:
-            detail = response.json()
-        except Exception:
-            pass
+        try: detail = response.json()
+        except Exception: pass
         raise HTTPException(response.status_code, detail)
     return response.json() if response.text else None
 
@@ -38,6 +36,16 @@ async def proxy(method: str, path: str, access_token: str, **kwargs):
 @router.get("/direct-payments/accounts")
 async def direct_payment_accounts(provider: str | None = None, access_token: str = Depends(token)):
     return await proxy("GET", "/api/v1/direct-payments/accounts", access_token, params={"provider": provider} if provider else None)
+
+
+@router.post("/direct-payments/accounts", status_code=201)
+async def direct_payment_account_create(body: dict, access_token: str = Depends(token)):
+    return await proxy("POST", "/api/v1/direct-payments/accounts", access_token, json=body)
+
+
+@router.get("/direct-payments/admin/submissions")
+async def direct_payment_admin_submissions(access_token: str = Depends(token)):
+    return await proxy("GET", "/api/v1/direct-payments/admin/submissions", access_token)
 
 
 @router.post("/direct-payments/intents", status_code=201)
