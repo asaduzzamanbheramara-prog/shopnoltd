@@ -1,9 +1,19 @@
 -- Shopnoltd payment schema reconciliation.
 --
--- Preconditions are intentionally strict: legacy payment tables must be empty.
--- This migration preserves users and unrelated application tables and rebuilds
--- only the isolated payment tables. It also materializes the complete 0002-
--- 0005 Alembic schema before stamping the database at 0005_direct_payments.
+-- This file is executed by an Argo Sync hook, so it must be safe to run again
+-- after the payment schema has already reached 0005. psql conditionals keep a
+-- successful deployment from destructively rebuilding payment tables on every
+-- later Argo sync.
+
+SELECT EXISTS (
+    SELECT 1
+    FROM public.alembic_version
+    WHERE version_num = '0005_direct_payments'
+) AS migration_complete \gset
+
+\if :migration_complete
+\echo 'Shopnoltd payment schema already at 0005_direct_payments; skipping reconciliation.'
+\else
 
 BEGIN;
 
@@ -217,3 +227,5 @@ CREATE UNIQUE INDEX uq_direct_submission_provider_txid
 UPDATE public.alembic_version SET version_num = '0005_direct_payments';
 
 COMMIT;
+
+\endif
