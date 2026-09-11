@@ -31,6 +31,11 @@ def is_staff(user: dict) -> bool:
     return bool(roles.intersection({"admin", "platform_admin"}))
 
 
+def can_manage_blog(user: dict) -> bool:
+    roles = set(user.get("roles", []))
+    return is_staff(user) or "tenant_owner" in roles
+
+
 def can_manage_post(user: dict, post: BlogPost) -> bool:
     if is_staff(user):
         return True
@@ -110,7 +115,7 @@ async def my_blog(user=Depends(current_user), s: AsyncSession = Depends(db)):
 
 @router.get("/admin", response_model=list[BlogPostOut])
 async def admin_blog(user=Depends(current_user), s: AsyncSession = Depends(db)):
-    if not is_staff(user) and "tenant_owner" not in set(user.get("roles", [])):
+    if not can_manage_blog(user):
         raise HTTPException(403, "Blog management privileges required")
     roles = set(user.get("roles", []))
     query = select(BlogPost).order_by(desc(BlogPost.updated_at))
