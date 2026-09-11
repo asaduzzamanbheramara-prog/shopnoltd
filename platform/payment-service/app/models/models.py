@@ -29,9 +29,6 @@ class TxType(str, enum.Enum):
 
 
 class PaymentMethod(str, enum.Enum):
-    # Internal wallet-to-wallet transfer. This is intentionally a method value
-    # rather than a provider so transfer transactions remain representable by
-    # the same transaction schema and API response model.
     transfer = "transfer"
     stripe = "stripe"
     paypal = "paypal"
@@ -64,9 +61,7 @@ class Wallet(Base):
     frozen = Column(Numeric(20, 8), default=0, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    __table_args__ = (
-        Index("ix_wallet_tenant_user_currency", "tenant_id", "user_id", "currency", unique=True),
-    )
+    __table_args__ = (Index("ix_wallet_tenant_user_currency", "tenant_id", "user_id", "currency", unique=True),)
 
 
 class Transaction(Base):
@@ -83,9 +78,6 @@ class Transaction(Base):
     currency = Column(String(8), nullable=False)
     external_id = Column(String(128), index=True, nullable=True)
     reference = Column(String(128), nullable=True)
-    # Client-supplied idempotency key for customer-initiated financial writes.
-    # Uniqueness is scoped by tenant/user/type so the same key cannot create
-    # duplicate deposits while different users may independently reuse a key.
     idempotency_key = Column(String(128), nullable=True)
     meta = Column(JSONB, default=dict)
     approved_by = Column(String(64), nullable=True)
@@ -108,3 +100,54 @@ class WebhookEvent(Base):
     received_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     processed_at = Column(DateTime, nullable=True)
     __table_args__ = (Index("uq_webhook_provider_event", "provider", "event_key", unique=True),)
+
+
+class DirectPaymentAccount(Base):
+    __tablename__ = "direct_payment_accounts"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tenant_id = Column(String(64), nullable=False, index=True)
+    provider = Column(String(16), nullable=False, index=True)
+    account_type = Column(String(16), nullable=False)  # personal, agent, merchant
+    account_number = Column(String(32), nullable=False)
+    display_name = Column(String(128), nullable=True)
+    currency = Column(String(8), nullable=False, default="BDT")
+    status = Column(String(16), nullable=False, default="active")
+    verification_mode = Column(String(32), nullable=False, default="manual")
+    instructions = Column(String(1000), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    __table_args__ = (Index("uq_direct_account_number", "tenant_id", "provider", "account_number", unique=True),)
+
+
+class DirectPaymentIntent(Base):
+    __tablename__ = "direct_payment_intents"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tenant_id = Column(String(64), nullable=False, index=True)
+    user_id = Column(String(64), nullable=False, index=True)
+    order_id = Column(String(128), nullable=True, index=True)
+    account_id = Column(UUID(as_uuid=True), ForeignKey("direct_payment_accounts.id"), nullable=False)
+    provider = Column(String(16), nullable=False)
+    amount = Column(Numeric(20, 8), nullable=False)
+    currency = Column(String(8), nullable=False)
+    expected_reference = Column(String(64), nullable=False, unique=True)
+    status = Column(String(24), nullable=False, default="created", index=True)
+    expires_at = Column(DateTime, nullable=False, index=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+
+class DirectPaymentSubmission(Base):
+    __tablename__ = "direct_payment_submissions"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    intent_id = Column(UUID(as_uuid=True), ForeignKey("direct_payment_intents.id"), nullable=False, index=True)
+    provider = Column(String(16), nullable=False)
+    txid = Column(String(128), nullable=False)
+    sender_number = Column(String(32), nullable=True)
+    amount_claimed = Column(Numeric(20, 8), nullable=False)
+    raw_evidence = Column(JSONB, default=dict)
+    verification_data = Column(JSONB, nullable=True)
+    status = Column(String(24), nullable=False, default="submitted", index=True)
+    transaction_id = Column(UUID(as_uuid=True), ForeignKey("transactions.id"), nullable=True)
+    verified_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    __table_args__ = (Index("uq_direct_submission_provider_txid", "provider", "txid", unique=True),)
