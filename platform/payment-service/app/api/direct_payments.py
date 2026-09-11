@@ -375,7 +375,11 @@ async def verify_submission(
 
     wallet = await s.scalar(
         select(Wallet)
-        .where(Wallet.user_id == intent.user_id, Wallet.currency == intent.currency)
+        .where(
+            Wallet.tenant_id == intent.tenant_id,
+            Wallet.user_id == intent.user_id,
+            Wallet.currency == intent.currency,
+        )
         .with_for_update()
     )
     if not wallet:
