@@ -44,7 +44,6 @@ class DirectPaymentStatus(str, enum.Enum):
 
 class DirectPaymentAccount(Base):
     __tablename__ = "direct_payment_accounts"
-
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     tenant_id = Column(String(64), nullable=False, index=True)
     provider = Column(String(32), nullable=False)
@@ -58,14 +57,11 @@ class DirectPaymentAccount(Base):
     metadata = Column(JSONB, default=dict)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
-    __table_args__ = (
-        Index("ix_direct_account_tenant_provider_currency", "tenant_id", "provider", "currency"),
-    )
+    __table_args__ = (Index("ix_direct_account_tenant_provider_currency", "tenant_id", "provider", "currency"),)
 
 
 class DirectPaymentIntent(Base):
     __tablename__ = "direct_payment_intents"
-
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     tenant_id = Column(String(64), nullable=False, index=True)
     user_id = Column(String(64), nullable=False, index=True)
@@ -83,9 +79,8 @@ class DirectPaymentIntent(Base):
 
 class DirectPaymentSubmission(Base):
     __tablename__ = "direct_payment_submissions"
-
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    intent_id = Column(UUID(as_uuid=True), ForeignKey("direct_payment_intents.id'), nullable=False, index=True)
+    intent_id = Column(UUID(as_uuid=True), ForeignKey("direct_payment_intents.id"), nullable=False, index=True)
     provider = Column(String(32), nullable=False)
     sender_number = Column(String(32), nullable=True)
     transaction_id = Column(String(128), nullable=False)
@@ -95,6 +90,4 @@ class DirectPaymentSubmission(Base):
     status = Column(Enum(DirectPaymentStatus), nullable=False, default=DirectPaymentStatus.submitted, index=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     verified_at = Column(DateTime, nullable=True)
-    __table_args__ = (
-        Index("uq_direct_submission_provider_tx", "provider", "transaction_id", unique=True),
-    )
+    __table_args__ = (Index("uq_direct_submission_provider_tx", "provider", "transaction_id", unique=True),)
