@@ -8,7 +8,7 @@ metadata:
     app.kubernetes.io/component: database
   annotations:
     argocd.argoproj.io/sync-wave: "-20"
-    argocd.argoproj.io/sync-options: Replace=true
+    argocd.argoproj.io/sync-options: Force=true,Replace=true
 spec:
   replicas: 1
   strategy:
