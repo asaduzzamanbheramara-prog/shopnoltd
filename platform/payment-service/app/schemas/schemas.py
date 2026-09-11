@@ -1,7 +1,7 @@
 """Pydantic schemas."""
 
 from app.models.models import PaymentMethod, TxStatus, TxType
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class WalletOut(BaseModel):
@@ -9,8 +9,7 @@ class WalletOut(BaseModel):
     currency: str
     balance: float
     frozen: float
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class DepositIn(BaseModel):
@@ -19,7 +18,7 @@ class DepositIn(BaseModel):
     method: PaymentMethod
     return_url: str | None = None
     idempotency_key: str = Field(min_length=8, max_length=128)
-    metadata: dict = {}
+    metadata: dict = Field(default_factory=dict)
 
 
 class WithdrawalIn(BaseModel):
@@ -27,7 +26,7 @@ class WithdrawalIn(BaseModel):
     amount: float = Field(gt=0)
     method: PaymentMethod
     destination: str
-    metadata: dict = {}
+    metadata: dict = Field(default_factory=dict)
 
 
 class TransferIn(BaseModel):
@@ -53,8 +52,7 @@ class TxOut(BaseModel):
     redirect_url: str | None = None
     qr_code: str | None = None
     address: str | None = None
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class DirectPaymentIntentIn(BaseModel):
@@ -73,9 +71,16 @@ class DirectPaymentSubmissionIn(BaseModel):
 
 
 class DirectPaymentVerificationIn(BaseModel):
-    authorized_evidence: bool = False
-    txid: str | None = None
-    amount: float | None = Field(default=None, gt=0)
-    receiver_number: str
-    provider_transaction_id: str | None = None
-    evidence: dict = {}
+    """Admin/manual verification evidence.
+
+    This is deliberately an attestation surface, not an automatic provider API.
+    Automatic verification must be implemented by a trusted provider adapter or
+    signed machine-to-machine feed before the transaction is credited.
+    """
+
+    manual_review_reason: str = Field(min_length=8, max_length=500)
+    txid: str | None = Field(default=None, min_length=4, max_length=128)
+    amount: float = Field(gt=0)
+    receiver_number: str = Field(min_length=5, max_length=32)
+    provider_transaction_id: str | None = Field(default=None, min_length=4, max_length=128)
+    evidence: dict = Field(default_factory=dict)
