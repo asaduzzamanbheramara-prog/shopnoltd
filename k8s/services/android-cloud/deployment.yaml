@@ -18,6 +18,8 @@ spec:
         app.kubernetes.io/name: android-cloud-controller
     spec:
       serviceAccountName: android-cloud-controller
+      imagePullSecrets:
+        - name: ghcr-pull-secret
       securityContext:
         runAsNonRoot: true
         runAsUser: 10001
