@@ -4,9 +4,10 @@ import time
 from contextlib import asynccontextmanager
 
 import structlog
-from app.api import admin, admin_tables, admin_reports, admin_backups, deposits, exchanges, methods, transactions, transfers, wallets, webhooks, withdrawals
+from app.api import admin, admin_tables, admin_reports, admin_backups, deposits, direct_payments, exchanges, methods, transactions, transfers, wallets, webhooks, withdrawals
 from app.core.config import settings
 from app.core.db import Base, engine
+from app.models import direct_payments as _direct_payment_models
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -55,6 +56,7 @@ async def metrics_middleware(request, call_next):
 
 app.include_router(wallets.router, prefix="/api/v1/wallets", tags=["wallets"])
 app.include_router(deposits.router, prefix="/api/v1/deposits", tags=["deposits"])
+app.include_router(direct_payments.router, prefix="/api/v1/direct-payments", tags=["direct-payments"])
 app.include_router(withdrawals.router, prefix="/api/v1/withdrawals", tags=["withdrawals"])
 app.include_router(transfers.router, prefix="/api/v1/transfers", tags=["transfers"])
 app.include_router(transactions.router, prefix="/api/v1/transactions", tags=["transactions"])
