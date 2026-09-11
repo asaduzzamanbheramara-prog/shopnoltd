@@ -57,6 +57,8 @@ jobs:
           kubectl auth can-i get deployments -n "$CLOUDFLARED_NAMESPACE"
           kubectl auth can-i get deployments -n "$PLATFORM_NAMESPACE"
           kubectl auth can-i get secret/"$CLOUDFLARE_SECRET_NAME" -n "$CLOUDFLARE_SECRET_NAMESPACE"
+          kubectl auth can-i get secret/ghcr-pull-secret -n shopno-tools
+          kubectl auth can-i create secret -n "$PLATFORM_NAMESPACE"
 
       - name: Validate rendered Kubernetes source
         shell: bash
@@ -65,6 +67,22 @@ jobs:
           kubectl kustomize k8s >/tmp/shopnoltd-rendered.yaml
           test -s /tmp/shopnoltd-rendered.yaml
           echo "Rendered $(wc -l </tmp/shopnoltd-rendered.yaml) lines from GitHub revision $GITHUB_SHA"
+
+      - name: Provision Android Cloud GHCR pull secret
+        shell: bash
+        run: |
+          set -euo pipefail
+          if timeout 30s kubectl --request-timeout=30s -n shopno-tools get secret ghcr-pull-secret >/dev/null 2>&1; then
+            echo 'Copying existing GHCR pull credential metadata from shopno-tools to shopno-platform without printing secret data.'
+            timeout 45s kubectl --request-timeout=30s -n shopno-tools get secret ghcr-pull-secret -o json \
+              | jq 'del(.metadata.namespace,.metadata.resourceVersion,.metadata.uid,.metadata.creationTimestamp,.metadata.managedFields,.metadata.ownerReferences)' \
+              | jq '.metadata.namespace="shopno-platform"' \
+              | kubectl --request-timeout=30s apply -f -
+            echo 'Android Cloud GHCR pull secret is present in shopno-platform.'
+          else
+            echo 'ghcr-pull-secret is not available in shopno-tools; Android Cloud private-image pulls cannot be repaired automatically.'
+            exit 1
+          fi
 
       - name: Repair migration prerequisite and terminate stale Argo CD operation
         shell: bash
