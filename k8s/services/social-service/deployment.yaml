@@ -36,7 +36,7 @@ spec:
       containers:
         - name: social-service
           image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/social-service:a754ed4a6773420aaba8fa312f2ffa4a0ba67f9a
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           ports:
             - name: http
               containerPort: 8080
