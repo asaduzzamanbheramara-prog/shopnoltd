@@ -1,0 +1,41 @@
+name: Reconcile GitOps after image promotion
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/reconcile-gitops-after-promotion.yml'
+  workflow_run:
+    workflows: ["Promote built images"]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+
+concurrency:
+  group: reconcile-gitops-after-promotion-main
+  cancel-in-progress: true
+
+jobs:
+  dispatch-gitops:
+    name: Dispatch existing self-hosted GitOps reconciliation
+    if: >-
+      github.event_name == 'push' ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'main')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dispatch self-hosted GitOps workflow
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh workflow run "Self-hosted k3s GitOps deployment" \
+            --repo "$REPOSITORY" \
+            --ref main
+          echo 'Self-hosted GitOps reconciliation dispatched for main.'
