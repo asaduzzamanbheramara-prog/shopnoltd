@@ -8,6 +8,7 @@ resources:
 - configmap.yaml
 - pvc.yaml
 - deployment.yaml
+- migrate-job.yaml
 - service.yaml
 - ingress.yaml
 - networkpolicy.yaml
