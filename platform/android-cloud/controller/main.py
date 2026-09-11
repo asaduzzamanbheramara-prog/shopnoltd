@@ -118,3 +118,53 @@ def delete_resources(session: Session) -> None:
             if exc.status != 404: raise
 
 def cleanup_expired() -> None:
+    now = time.time()
+    for session_id, session in list(sessions.items()):
+        if now - session.last_seen > SESSION_TTL_SECONDS:
+            try: delete_resources(session)
+            finally: sessions.pop(session_id, None)
+
+def response_for(session: Session) -> dict[str, Any]:
+    return {"session_id": session.session_id, "status": "starting", "gateway_url": f"{PUBLIC_GATEWAY_BASE}/{session.session_id}", "expires_at": int(session.created_at + SESSION_TTL_SECONDS), "turn": {"urls": TURN_URLS, "username": TURN_USERNAME, "credential": TURN_CREDENTIAL} if TURN_URLS else None}
+
+@app.get("/healthz")
+async def healthz() -> dict[str, str]: return {"status": "ok", "service": "android-cloud-controller"}
+
+@app.get("/readyz")
+async def readyz() -> JSONResponse:
+    if not JWT_SECRET: return JSONResponse({"status": "not_ready", "reason": "auth_not_configured"}, status_code=503)
+    try: core.list_namespaced_pod(NAMESPACE, limit=1)
+    except Exception as exc: return JSONResponse({"status": "not_ready", "reason": str(exc)}, status_code=503)
+    return JSONResponse({"status": "ready", "capacity": MAX_SESSIONS, "kvm_required": True})
+
+@app.get("/api/v1/android-cloud/capabilities")
+async def capabilities(user_id: str = Depends(current_user)) -> dict[str, Any]:
+    return {"product": "shopnoltd_android_cloud", "user": user_id, "browser_control": True, "web_rtc": True, "apk_install": True, "mock_gps": True, "adb_public": False, "max_sessions": MAX_SESSIONS, "turn_configured": bool(TURN_URLS)}
+
+@app.post("/api/v1/android-cloud/sessions")
+async def create_session(body: CreateSessionIn, user_id: str = Depends(current_user)) -> dict[str, Any]:
+    del body
+    cleanup_expired()
+    existing = next((item for item in sessions.values() if item.user_id == user_id), None)
+    if existing:
+        existing.last_seen = time.time(); return response_for(existing)
+    if len(sessions) >= MAX_SESSIONS: raise HTTPException(status_code=429, detail="android_cloud_capacity_exhausted")
+    session_id = secrets.token_urlsafe(24).replace("-", "").replace("_", "")
+    session = Session(session_id=session_id, user_id=user_id, emulator_name=name_for("aemu", session_id), gateway_name=name_for("agw", session_id), created_at=time.time(), last_seen=time.time())
+    try: create_resources(session)
+    except ApiException as exc: raise HTTPException(status_code=503, detail=f"android_cloud_provision_failed:{exc.reason}") from exc
+    sessions[session_id] = session
+    return response_for(session)
+
+@app.get("/api/v1/android-cloud/sessions/{session_id}")
+async def get_session(session_id: str, user_id: str = Depends(current_user)) -> dict[str, Any]:
+    session = sessions.get(session_id)
+    if not session or session.user_id != user_id: raise HTTPException(status_code=404, detail="session_not_found")
+    session.last_seen = time.time(); return response_for(session)
+
+@app.delete("/api/v1/android-cloud/sessions/{session_id}")
+async def stop_session(session_id: str, user_id: str = Depends(current_user)) -> dict[str, str]:
+    session = sessions.get(session_id)
+    if not session or session.user_id != user_id: raise HTTPException(status_code=404, detail="session_not_found")
+    delete_resources(session); sessions.pop(session_id, None)
+    return {"status": "stopped", "session_id": session_id}
