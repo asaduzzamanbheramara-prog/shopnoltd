@@ -46,6 +46,16 @@ spec:
                 secretKeyRef:
                   name: chatwoot-secret
                   key: secret-key-base
+            - name: POSTGRES_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: chatwoot-secret
+                  key: username
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: chatwoot-secret
+                  key: db-password
             - name: RAILS_ENV
               value: production
             - name: NODE_ENV
