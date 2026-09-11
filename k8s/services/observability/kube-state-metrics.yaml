@@ -99,14 +99,21 @@ spec:
           resources:
             requests: {cpu: 50m, memory: 128Mi}
             limits: {cpu: 500m, memory: 512Mi}
+          # v2.20.0 is exposing metrics on 8080, while the current telemetry
+          # /livez HTTP probe returns 404 in this deployment. TCP probes verify
+          # the actual listening process without relying on a mismatched path.
           livenessProbe:
-            httpGet: {path: /livez, port: telemetry}
+            tcpSocket:
+              port: metrics
             initialDelaySeconds: 10
             periodSeconds: 15
+            timeoutSeconds: 2
           readinessProbe:
-            httpGet: {path: /readyz, port: telemetry}
+            tcpSocket:
+              port: metrics
             initialDelaySeconds: 5
             periodSeconds: 10
+            timeoutSeconds: 2
 ---
 apiVersion: v1
 kind: Service
