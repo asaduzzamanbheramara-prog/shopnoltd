@@ -78,7 +78,7 @@ jobs:
               if "revision" in values:
                   revisions[values["revision"]] = values.get("down_revision")
 
-          required = {"0001", "0002_admin_audit_log", "0003_webhook_events", "0004_transaction_ownership"}
+          required = {"0001", "0002_admin_audit_log", "0003_webhook_events", "0004_transaction_ownership", "0005_direct_payments"}
           missing = required - revisions.keys()
           if missing:
               raise SystemExit(f"payment migration chain missing: {sorted(missing)}")
@@ -90,13 +90,15 @@ jobs:
               raise SystemExit("0003_webhook_events must revise 0002_admin_audit_log")
           if revisions["0004_transaction_ownership"] != "0003_webhook_events":
               raise SystemExit("0004_transaction_ownership must revise 0003_webhook_events")
+          if revisions["0005_direct_payments"] != "0004_transaction_ownership":
+              raise SystemExit("0005_direct_payments must revise 0004_transaction_ownership")
 
           children = {rev: 0 for rev in revisions}
           for down in revisions.values():
               if isinstance(down, str) and down in children:
                   children[down] += 1
           heads = sorted(rev for rev, count in children.items() if count == 0)
-          if heads != ["0004_transaction_ownership"]:
-              raise SystemExit(f"expected one Alembic head at 0004_transaction_ownership, got {heads}")
-          print("payment migration chain OK: 0001 -> 0002_admin_audit_log -> 0003_webhook_events -> 0004_transaction_ownership")
+          if heads != ["0005_direct_payments"]:
+              raise SystemExit(f"expected one Alembic head at 0005_direct_payments, got {heads}")
+          print("payment migration chain OK: 0001 -> 0002_admin_audit_log -> 0003_webhook_events -> 0004_transaction_ownership -> 0005_direct_payments")
           PY
