@@ -17,6 +17,10 @@ RUN pip install --no-cache-dir -r /app/requirements.txt
 COPY platform/social-service/app/ /app/app/
 COPY shared/libraries/python/shopno_core /app/shopno_core
 
+# Fail the image build if the application imports are inconsistent. This prevents
+# a stale/corrupt image from being promoted when admin_data imports blog helpers.
+RUN python -c "from app.api.blog import can_manage_blog; from app.api.admin_data import router; assert callable(can_manage_blog) and router is not None"
+
 USER shopno
 EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
