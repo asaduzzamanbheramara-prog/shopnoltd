@@ -102,10 +102,13 @@ jobs:
 
           shared_changed = 'ALL' in changed or any(p == 'shared' or p.startswith('shared/') for p in changed)
           workflow_changed = any(p == '.github/workflows/build-platform.yml' for p in changed)
+          # A workflow-only change must not broaden a PR build to every service.
+          # Workflow changes are relevant to the CI definition itself, not to
+          # application image scope. Keep ALL as the explicit/manual fallback.
           result = []
           for service, (dockerfile, context) in services.items():
               prefix = dockerfile.rsplit('/Dockerfile', 1)[0]
-              affected = shared_changed or workflow_changed or any(p == prefix or p.startswith(prefix + '/') for p in changed)
+              affected = shared_changed or any(p == prefix or p.startswith(prefix + '/') for p in changed)
               if service == 'billing-engine':
                   affected = affected or any(p == 'billing-engine' or p.startswith('billing-engine/') for p in changed)
               if service == 'vpn-service':
