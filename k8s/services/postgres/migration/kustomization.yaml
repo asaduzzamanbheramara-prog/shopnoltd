@@ -11,6 +11,7 @@ configMapGenerator:
   files:
   - 012-payment-schema-reconciliation.sql
   - 013-provision-comms-databases.sql
+  - 014-provision-chatwoot-database.sql
   options:
     disableNameSuffixHash: true
 
