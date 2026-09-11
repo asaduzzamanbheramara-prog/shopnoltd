@@ -1,0 +1,75 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: chatwoot-rails-migration
+  namespace: shopno-apps
+  annotations:
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/sync-wave: "-9"
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+spec:
+  backoffLimit: 3
+  activeDeadlineSeconds: 900
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: chatwoot-rails-migration
+        app.kubernetes.io/part-of: shopnoltd
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      containers:
+        - name: migration
+          image: chatwoot/chatwoot:v4.17.1
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/sh
+            - -lc
+          args:
+            - exec docker/entrypoints/rails.sh bundle exec rails db:chatwoot_prepare
+          envFrom:
+            - configMapRef:
+                name: chatwoot-config
+            - secretRef:
+                name: chatwoot-secret
+          env:
+            - name: SECRET_KEY_BASE
+              valueFrom:
+                secretKeyRef:
+                  name: chatwoot-secret
+                  key: secret-key-base
+            - name: POSTGRES_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: chatwoot-secret
+                  key: username
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: chatwoot-secret
+                  key: db-password
+            - name: RAILS_ENV
+              value: production
+            - name: NODE_ENV
+              value: production
+            - name: INSTALLATION_ENV
+              value: docker
+            - name: RAILS_LOG_TO_STDOUT
+              value: "true"
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+              ephemeral-storage: 256Mi
+            limits:
+              cpu: 1000m
+              memory: 768Mi
+              ephemeral-storage: 1Gi
