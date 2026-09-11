@@ -35,7 +35,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: social-service
-          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/social-service:a754ed4a6773420aaba8fa312f2ffa4a0ba67f9a
+          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/social-service:fb67bc5117e6d11ba747606111adec8df1b05567
           imagePullPolicy: Always
           ports:
             - name: http
