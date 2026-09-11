@@ -12,5 +12,5 @@ GRANT ALL PRIVILEGES ON DATABASE chatwoot_production TO shopno;
 
 -- Rails connects as the application role, not the PostgreSQL superuser.
 -- The schema grant must be made inside the Chatwoot database, not shopnoltd.
-\\connect chatwoot_production
+\connect chatwoot_production
 GRANT USAGE, CREATE ON SCHEMA public TO shopno;
