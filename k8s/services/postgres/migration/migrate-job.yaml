@@ -34,10 +34,11 @@ spec:
         - |
           set -euo pipefail
           export PGPASSWORD="$POSTGRES_PASSWORD"
+          export POSTGRES_APP_PORT="5432"
 
           until pg_isready \
             -h "${POSTGRES_HOST:-postgres}" \
-            -p "${POSTGRES_PORT:-5432}" \
+            -p "$POSTGRES_APP_PORT" \
             -U "$POSTGRES_USER"; do
             sleep 3
           done
@@ -55,7 +56,7 @@ spec:
             echo "Executing $file"
             psql \
               -h "${POSTGRES_HOST:-postgres}" \
-              -p "${POSTGRES_PORT:-5432}" \
+              -p "$POSTGRES_APP_PORT" \
               -U "$POSTGRES_USER" \
               -d "${POSTGRES_DB:-postgres}" \
               -v ON_ERROR_STOP=1 \
