@@ -14,6 +14,7 @@ data:
   REDIS_URL: "redis://redis.shopno-data.svc.cluster.local:6379"
   POSTGRES_HOST: "postgres.shopno-data.svc.cluster.local"
   POSTGRES_PORT: "5432"
+  POSTGRES_DATABASE: "chatwoot_production"
   MINIO_ENDPOINT: "minio.shopno-data.svc.cluster.local:9000"
   KEYCLOAK_ISSUER: "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
   KEYCLOAK_CLIENT_ID: "chatwoot"
