@@ -1,16 +1,13 @@
 """Direct-number payment intents and evidence submission.
 
-This flow deliberately separates customer-submitted evidence from proof of
-payment. A submitted TxID never credits a wallet by itself. Only an authorized
-provider verification result or an authenticated admin decision can transition
-an intent to verified.
+Customer-submitted TxIDs are evidence only. They never credit a wallet without
+an independently authorized verification result or authenticated admin review.
 """
 
 import uuid
 from datetime import datetime, timedelta
 from decimal import Decimal
 
-from app.core.config import settings
 from app.core.db import SessionLocal
 from app.core.security import verify_token
 from app.models.models import DirectPaymentAccount, DirectPaymentIntent, DirectPaymentSubmission, PaymentMethod, Transaction, TxStatus, TxType, Wallet
@@ -41,42 +38,64 @@ async def require_admin(creds: HTTPAuthorizationCredentials = Depends(bearer)):
 
 def intent_out(i: DirectPaymentIntent, account: DirectPaymentAccount | None = None):
     return {
-        "id": str(i.id),
-        "order_id": i.order_id,
-        "provider": i.provider,
-        "amount": float(i.amount),
-        "currency": i.currency,
-        "status": i.status,
-        "expected_reference": i.expected_reference,
-        "expires_at": i.expires_at.isoformat(),
-        "account": {
-            "id": str(account.id),
-            "provider": account.provider,
-            "account_type": account.account_type,
-            "account_number": account.account_number,
-            "display_name": account.display_name,
-            "currency": account.currency,
-            "instructions": account.instructions,
-        } if account else None,
+        "id": str(i.id), "order_id": i.order_id, "provider": i.provider,
+        "amount": float(i.amount), "currency": i.currency, "status": i.status,
+        "expected_reference": i.expected_reference, "expires_at": i.expires_at.isoformat(),
+        "account": ({"id": str(account.id), "provider": account.provider,
+                     "account_type": account.account_type, "account_number": account.account_number,
+                     "display_name": account.display_name, "currency": account.currency,
+                     "instructions": account.instructions} if account else None),
         "created_at": i.created_at.isoformat(),
     }
 
 
 @router.get("/accounts")
 async def accounts(provider: str | None = None, user=Depends(current_user), s: AsyncSession = Depends(db)):
-    q = select(DirectPaymentAccount).where(
-        DirectPaymentAccount.status == "active",
-        DirectPaymentAccount.tenant_id == user.get("tenant_id", "default"),
-    )
+    q = select(DirectPaymentAccount).where(DirectPaymentAccount.status == "active", DirectPaymentAccount.tenant_id == user.get("tenant_id", "default"))
     if provider:
         q = q.where(DirectPaymentAccount.provider == provider.lower())
     rows = (await s.execute(q)).scalars().all()
-    return {"accounts": [
-        {"id": str(a.id), "provider": a.provider, "account_type": a.account_type,
-         "account_number": a.account_number, "display_name": a.display_name,
-         "currency": a.currency, "instructions": a.instructions}
-        for a in rows
-    ]}
+    return {"accounts": [{"id": str(a.id), "provider": a.provider, "account_type": a.account_type,
+                           "account_number": a.account_number, "display_name": a.display_name,
+                           "currency": a.currency, "instructions": a.instructions} for a in rows]}
+
+
+@router.post("/accounts", status_code=201)
+async def create_account(body: dict, user=Depends(require_admin), s: AsyncSession = Depends(db)):
+    provider = str(body.get("provider", "")).lower()
+    account_type = str(body.get("account_type", "")).lower()
+    number = str(body.get("account_number", "")).strip()
+    currency = str(body.get("currency", "BDT")).upper()
+    if provider not in {"bkash", "nagad", "rocket"} or account_type not in {"personal", "agent", "merchant"}:
+        raise HTTPException(400, "provider must be bKash, Nagad or Rocket and account_type must be personal, agent or merchant")
+    if not number or currency != "BDT":
+        raise HTTPException(400, "account_number and BDT currency are required")
+    tenant_id = user.get("tenant_id", "default")
+    exists = await s.scalar(select(DirectPaymentAccount).where(
+        DirectPaymentAccount.tenant_id == tenant_id,
+        DirectPaymentAccount.provider == provider,
+        DirectPaymentAccount.account_number == number,
+    ))
+    if exists:
+        raise HTTPException(409, "receiving account already exists")
+    account = DirectPaymentAccount(
+        tenant_id=tenant_id, provider=provider, account_type=account_type,
+        account_number=number, display_name=body.get("display_name"), currency=currency,
+        status="active", verification_mode=str(body.get("verification_mode", "manual")),
+        instructions=body.get("instructions"),
+    )
+    s.add(account)
+    await s.commit()
+    return {"id": str(account.id), "status": account.status}
+
+
+@router.get("/admin/submissions")
+async def admin_submissions(user=Depends(require_admin), s: AsyncSession = Depends(db)):
+    rows = (await s.execute(select(DirectPaymentSubmission).order_by(DirectPaymentSubmission.created_at.desc()).limit(200))).scalars().all()
+    return {"submissions": [{"id": str(x.id), "intent_id": str(x.intent_id), "provider": x.provider,
+                              "txid": x.txid, "sender_number": x.sender_number,
+                              "amount_claimed": float(x.amount_claimed), "status": x.status,
+                              "created_at": x.created_at.isoformat()} for x in rows]}
 
 
 @router.post("/intents", status_code=201)
@@ -95,30 +114,22 @@ async def create_intent(body: dict, user=Depends(current_user), s: AsyncSession 
             aid = uuid.UUID(account_id)
         except ValueError as exc:
             raise HTTPException(400, "invalid account_id") from exc
-        account = await s.scalar(select(DirectPaymentAccount).where(
-            DirectPaymentAccount.id == aid,
-            DirectPaymentAccount.tenant_id == user.get("tenant_id", "default"),
-            DirectPaymentAccount.status == "active",
-        ))
+        account = await s.scalar(select(DirectPaymentAccount).where(DirectPaymentAccount.id == aid, DirectPaymentAccount.tenant_id == user.get("tenant_id", "default"), DirectPaymentAccount.status == "active"))
     if not account:
         account = await s.scalar(select(DirectPaymentAccount).where(
-            DirectPaymentAccount.provider == provider,
-            DirectPaymentAccount.currency == currency,
-            DirectPaymentAccount.tenant_id == user.get("tenant_id", "default"),
-            DirectPaymentAccount.status == "active",
+            DirectPaymentAccount.provider == provider, DirectPaymentAccount.currency == currency,
+            DirectPaymentAccount.tenant_id == user.get("tenant_id", "default"), DirectPaymentAccount.status == "active",
         ).order_by(DirectPaymentAccount.created_at.asc()))
     if not account:
         raise HTTPException(503, "no active receiving account is configured")
     if account.provider != provider or account.currency != currency:
         raise HTTPException(400, "account/provider/currency mismatch")
-
     iid = uuid.uuid4()
-    reference = f"SHOPNO-{str(iid).replace('-', '')[:12].upper()}"
     intent = DirectPaymentIntent(
-        id=iid, tenant_id=user.get("tenant_id", "default"), user_id=user["sub"],
-        order_id=body.get("order_id"), account_id=account.id, provider=provider,
-        amount=amount, currency=currency, expected_reference=reference,
-        status="awaiting_payment", expires_at=datetime.utcnow() + timedelta(minutes=30),
+        id=iid, tenant_id=user.get("tenant_id", "default"), user_id=user["sub"], order_id=body.get("order_id"),
+        account_id=account.id, provider=provider, amount=amount, currency=currency,
+        expected_reference=f"SHOPNO-{str(iid).replace('-', '')[:12].upper()}", status="awaiting_payment",
+        expires_at=datetime.utcnow() + timedelta(minutes=30),
     )
     s.add(intent)
     await s.commit()
@@ -131,11 +142,7 @@ async def get_intent(intent_id: str, user=Depends(current_user), s: AsyncSession
         iid = uuid.UUID(intent_id)
     except ValueError as exc:
         raise HTTPException(400, "invalid intent id") from exc
-    intent = await s.scalar(select(DirectPaymentIntent).where(
-        DirectPaymentIntent.id == iid,
-        DirectPaymentIntent.tenant_id == user.get("tenant_id", "default"),
-        DirectPaymentIntent.user_id == user["sub"],
-    ))
+    intent = await s.scalar(select(DirectPaymentIntent).where(DirectPaymentIntent.id == iid, DirectPaymentIntent.tenant_id == user.get("tenant_id", "default"), DirectPaymentIntent.user_id == user["sub"]))
     if not intent:
         raise HTTPException(404, "payment intent not found")
     account = await s.scalar(select(DirectPaymentAccount).where(DirectPaymentAccount.id == intent.account_id))
@@ -148,11 +155,7 @@ async def submit_evidence(intent_id: str, body: dict, user=Depends(current_user)
         iid = uuid.UUID(intent_id)
     except ValueError as exc:
         raise HTTPException(400, "invalid intent id") from exc
-    intent = await s.scalar(select(DirectPaymentIntent).where(
-        DirectPaymentIntent.id == iid,
-        DirectPaymentIntent.tenant_id == user.get("tenant_id", "default"),
-        DirectPaymentIntent.user_id == user["sub"],
-    ))
+    intent = await s.scalar(select(DirectPaymentIntent).where(DirectPaymentIntent.id == iid, DirectPaymentIntent.tenant_id == user.get("tenant_id", "default"), DirectPaymentIntent.user_id == user["sub"]))
     if not intent:
         raise HTTPException(404, "payment intent not found")
     if intent.status not in {"awaiting_payment", "submitted", "verifying"}:
@@ -165,20 +168,18 @@ async def submit_evidence(intent_id: str, body: dict, user=Depends(current_user)
     sender = str(body.get("sender_number", "")).strip()
     if len(txid) < 4 or len(txid) > 128:
         raise HTTPException(422, "txid is required")
-    existing = await s.scalar(select(DirectPaymentSubmission).where(DirectPaymentSubmission.txid == txid))
-    if existing:
+    if await s.scalar(select(DirectPaymentSubmission).where(DirectPaymentSubmission.txid == txid)):
         raise HTTPException(409, "this TxID has already been submitted")
     submission = DirectPaymentSubmission(
-        intent_id=intent.id, provider=intent.provider, txid=txid,
-        sender_number=sender or None, amount_claimed=Decimal(str(body.get("amount", intent.amount))),
-        raw_evidence={"reference": body.get("reference"), "sender_number": sender or None},
-        status="submitted",
+        intent_id=intent.id, provider=intent.provider, txid=txid, sender_number=sender or None,
+        amount_claimed=Decimal(str(body.get("amount", intent.amount))),
+        raw_evidence={"reference": body.get("reference"), "sender_number": sender or None}, status="submitted",
     )
     s.add(submission)
     intent.status = "submitted"
     await s.commit()
     return {"id": str(submission.id), "intent_id": str(intent.id), "status": submission.status,
-            "message": "Evidence received. It will not be treated as proof until independently verified."}
+            "message": "Evidence received; independent verification is required before crediting."}
 
 
 @router.post("/submissions/{submission_id}/verify")
@@ -217,7 +218,8 @@ async def verify_submission(submission_id: str, body: dict, user=Depends(require
         tenant_id=intent.tenant_id, user_id=intent.user_id, wallet_id=wallet.id,
         type=TxType.deposit, method=PaymentMethod(intent.provider), status=TxStatus.completed,
         amount=intent.amount, fee=0, currency=intent.currency, external_id=sub.txid,
-        reference=intent.expected_reference, meta={"direct_payment_intent_id": str(intent.id), "verified_by": user["sub"], "verification_mode": "authorized_evidence"},
+        reference=intent.expected_reference,
+        meta={"direct_payment_intent_id": str(intent.id), "verified_by": user["sub"], "verification_mode": "authorized_evidence"},
         approved_by=user["sub"], completed_at=datetime.utcnow(),
     )
     wallet.balance = Decimal(str(wallet.balance)) + intent.amount
