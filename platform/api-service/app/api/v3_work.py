@@ -537,29 +537,36 @@ async def approve_submission(submission_id: str, creds: HTTPAuthorizationCredent
     data = parse_json(sub.proof, {})
     amount = Decimal(str(data.get("calculated_amount", 0)))
     currency = str(data.get("currency") or w.currency)
-    key = "work-evidence-settle:" + hashlib.sha256(sub.id.encode()).hexdigest()
-    payload = {
-        "to_user_id": sub.worker_id,
-        "currency": currency,
-        "amount": float(amount),
-        "note": f"work:{sub.id}:verified-time",
-        "idempotency_key": key,
-    }
-    try:
-        async with httpx.AsyncClient(timeout=15) as client:
-            r = await client.post(
-                f"{PAYMENTS}/api/v1/transfers",
-                headers={"Authorization": f"Bearer {creds.credentials}"},
-                json=payload,
-            )
-    except (httpx.ConnectError, httpx.ConnectTimeout, httpx.ReadTimeout) as exc:
-        raise HTTPException(503, "Payment service unavailable; submission remains pending") from exc
-    if r.status_code >= 400:
-        raise HTTPException(409, {"message": "verified reward settlement failed; submission remains pending", "payment_error": r.text})
+    if amount > 0:
+        key = "work-evidence-settle:" + hashlib.sha256(sub.id.encode()).hexdigest()
+        payload = {
+            "to_user_id": sub.worker_id,
+            "currency": currency,
+            "amount": float(amount),
+            "note": f"work:{sub.id}:verified-time",
+            "idempotency_key": key,
+        }
+        try:
+            async with httpx.AsyncClient(timeout=15) as client:
+                r = await client.post(
+                    f"{PAYMENTS}/api/v1/transfers",
+                    headers={"Authorization": f"Bearer {creds.credentials}"},
+                    json=payload,
+                )
+        except (httpx.ConnectError, httpx.ConnectTimeout, httpx.ReadTimeout) as exc:
+            raise HTTPException(503, "Payment service unavailable; submission remains pending") from exc
+        if r.status_code >= 400:
+            raise HTTPException(409, {"message": "verified reward settlement failed; submission remains pending", "payment_error": r.text})
+        sub.review_note = f"Verified reward settled: {amount} {currency}"
+    else:
+        # No verified watch time / no configured rate produced a zero reward.
+        # There is nothing to transfer, so calling payment-service would only
+        # fail its amount>0 check and leave the submission stuck pending
+        # forever. Approve it directly as a no-payout review instead.
+        sub.review_note = "Approved with no verified reward (calculated amount was zero)"
     sub.status = "approved"
     sub.reviewer_id = u["sub"]
     sub.reviewed_at = datetime.utcnow()
-    sub.review_note = f"Verified reward settled: {amount} {currency}"
     a = await s.scalar(select(WorkAssignment).where(WorkAssignment.work_id == w.id, WorkAssignment.worker_id == sub.worker_id))
     if a:
         a.status = "completed"
