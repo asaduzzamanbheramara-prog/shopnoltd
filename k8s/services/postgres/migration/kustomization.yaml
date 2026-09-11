@@ -10,6 +10,7 @@ configMapGenerator:
 - name: postgres-platform-migrations
   files:
   - 012-payment-schema-reconciliation.sql
+  - 013-provision-comms-databases.sql
   options:
     disableNameSuffixHash: true
 
