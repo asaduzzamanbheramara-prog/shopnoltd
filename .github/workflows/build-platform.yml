@@ -9,6 +9,13 @@ on:
       - 'services/vpn-service/**'
       - 'shared/**'
       - '.github/workflows/build-platform.yml'
+  pull_request:
+    paths:
+      - 'platform/**'
+      - 'billing-engine/**'
+      - 'services/vpn-service/**'
+      - 'shared/**'
+      - '.github/workflows/build-platform.yml'
   workflow_dispatch:
 
 permissions:
@@ -32,11 +39,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          fetch-depth: 0
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
       - id: detect
         env:
-          BEFORE: ${{ github.event.before }}
-          SHA: ${{ github.sha }}
+          BEFORE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           EVENT_NAME: ${{ github.event_name }}
         shell: bash
         run: |
@@ -142,13 +150,14 @@ jobs:
           file: ${{ matrix.dockerfile }}
           push: true
           tags: |
-            ghcr.io/${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:${{ github.sha }}
-            ghcr.io/${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:latest
+            ghcr.io/${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+            ${{ github.event_name != 'pull_request' && format('ghcr.io/{0}/{1}:latest', env.IMAGE_PREFIX, matrix.service) || '' }}
           cache-from: type=gha,scope=${{ matrix.service }}
           cache-to: type=gha,mode=max,scope=${{ matrix.service }}
 
   promote:
     name: Promote built images to GitOps manifests
+    if: github.event_name == 'push'
     needs: [detect-changes, build]
     runs-on: ubuntu-latest
     steps:
