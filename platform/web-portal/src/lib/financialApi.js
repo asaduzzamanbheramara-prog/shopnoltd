@@ -101,6 +101,55 @@ export function createCheckout({ gateway, amount, currency, reference, customer_
   })
 }
 
+export function getDirectPaymentAccounts() {
+  return authenticatedRequest('/api/v1/direct-payments/accounts')
+}
+
+export function createDirectPaymentIntent({
+  provider,
+  amount,
+  currency = 'BDT',
+  order_id,
+  account_id,
+  expires_minutes = 30,
+}) {
+  return authenticatedRequest('/api/v1/direct-payments/intents', {
+    method: 'POST',
+    body: JSON.stringify({
+      provider,
+      amount: Number(amount),
+      currency: String(currency).toUpperCase(),
+      order_id,
+      account_id,
+      expires_minutes,
+    }),
+  })
+}
+
+export function getDirectPaymentIntent(intentId) {
+  return authenticatedRequest(
+    `/api/v1/direct-payments/intents/${encodeURIComponent(intentId)}`
+  )
+}
+
+export function submitDirectPayment(
+  intentId,
+  { sender_number, transaction_id, submitted_amount, submitted_currency = 'BDT' }
+) {
+  return authenticatedRequest(
+    `/api/v1/direct-payments/intents/${encodeURIComponent(intentId)}/submit`,
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        sender_number,
+        transaction_id,
+        submitted_amount: Number(submitted_amount),
+        submitted_currency: String(submitted_currency).toUpperCase(),
+      }),
+    }
+  )
+}
+
 export function getExchangeRate(from, to) {
   return authenticatedRequest(
     `/api/v1/exchanges/rate?from_currency=${encodeURIComponent(
