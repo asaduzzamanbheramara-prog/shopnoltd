@@ -10,6 +10,9 @@ spec:
   policyTypes: [Ingress, Egress]
   ingress:
     - from:
+        - namespaceSelector:
+            matchLabels:
+              name: ingress-nginx
         - podSelector: {}
       ports:
         - protocol: TCP
