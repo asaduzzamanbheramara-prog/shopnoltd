@@ -22,7 +22,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: meet-service
-          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/meet-service:d7d17e6703ef112f1defd6f9a13e7be5ef7428fa
+          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/meet-service:8eecf8e37b8ea9cfc4caa33baed5b5d3b863bb1d
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
