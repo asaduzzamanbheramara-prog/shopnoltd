@@ -14,4 +14,5 @@ GRANT ALL PRIVILEGES ON DATABASE chatwoot_production TO shopno;
 -- The schema grant must be made inside the Chatwoot database, not shopnoltd.
 \connect chatwoot_production
 CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
 GRANT USAGE, CREATE ON SCHEMA public TO shopno;
