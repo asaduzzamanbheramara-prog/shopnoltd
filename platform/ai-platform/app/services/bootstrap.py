@@ -11,7 +11,7 @@ import os
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.security import encrypt_secret
+from app.core.security import decrypt_secret, encrypt_secret
 from app.db.models import AIModel, AIProvider, ProviderType
 
 
@@ -32,8 +32,8 @@ PROVIDERS = (
         "provider_type": ProviderType.custom,
         "base_url": "https://api.groq.com/openai/v1",
         "model_env": "GROQ_AI_MODEL",
-        "default_model": "llama-3.3-70b-versatile",
-        "display_name": "Groq Llama 3.3 70B",
+        "default_model": "openai/gpt-oss-120b",
+        "display_name": "Groq GPT-OSS 120B",
         "priority": 20,
     },
     {
@@ -52,8 +52,8 @@ PROVIDERS = (
         "provider_type": ProviderType.custom,
         "base_url": "https://api.cerebras.ai/v1",
         "model_env": "CEREBRAS_AI_MODEL",
-        "default_model": "llama-3.3-70b",
-        "display_name": "Cerebras Llama 3.3 70B",
+        "default_model": "gpt-oss-120b",
+        "display_name": "Cerebras GPT-OSS 120B",
         "priority": 40,
     },
 )
@@ -85,7 +85,13 @@ async def bootstrap_providers(db: AsyncSession) -> int:
             provider.provider_type = spec["provider_type"]
             provider.base_url = spec["base_url"]
             provider.is_active = True
-            if not provider.api_key_encrypted:
+            stored_key = None
+            if provider.api_key_encrypted:
+                try:
+                    stored_key = decrypt_secret(provider.api_key_encrypted)
+                except ValueError:
+                    stored_key = None
+            if stored_key != api_key:
                 provider.api_key_encrypted = encrypt_secret(api_key)
 
         model_name = os.getenv(spec["model_env"], spec["default_model"]).strip()
@@ -102,7 +108,7 @@ async def bootstrap_providers(db: AsyncSession) -> int:
                 model_name=model_name,
                 display_name=spec["display_name"],
                 is_active=True,
-                is_default=(configured == 0),
+                is_default=False,
                 priority=spec["priority"],
                 capabilities={"chat": True},
             )
@@ -110,12 +116,22 @@ async def bootstrap_providers(db: AsyncSession) -> int:
         else:
             model.is_active = True
             model.priority = spec["priority"]
-            if configured == 0:
-                model.is_default = True
 
         configured += 1
 
     if configured:
+        await db.flush()
+        active_models = await db.execute(
+            select(AIModel)
+            .join(AIProvider, AIProvider.id == AIModel.provider_id)
+            .where(AIModel.is_active.is_(True), AIProvider.is_active.is_(True))
+            .order_by(AIModel.priority.asc(), AIModel.id.asc())
+        )
+        models = list(active_models.scalars())
+        for candidate in models:
+            candidate.is_default = False
+        if models:
+            models[0].is_default = True
         await db.commit()
 
     return configured
