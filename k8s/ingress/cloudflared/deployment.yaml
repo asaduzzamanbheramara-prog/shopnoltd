@@ -11,6 +11,8 @@ spec:
   # on the same node. Keep one connector here so the tunnel remains deterministic
   # and the readiness/liveness probes cannot collide.
   replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app.kubernetes.io/name: cloudflared
