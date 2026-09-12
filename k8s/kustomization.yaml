@@ -65,6 +65,7 @@ resources:
 - services/mongodb
 - services/session-manager
 - services/mail
+- services/mail-server
 - services/chatwoot
 - ingress/cloudflared
 
