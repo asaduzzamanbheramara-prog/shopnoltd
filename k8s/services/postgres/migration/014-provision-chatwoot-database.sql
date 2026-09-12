@@ -15,4 +15,7 @@ GRANT ALL PRIVILEGES ON DATABASE chatwoot_production TO shopno;
 \connect chatwoot_production
 CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+CREATE EXTENSION IF NOT EXISTS vector;
 GRANT USAGE, CREATE ON SCHEMA public TO shopno;
+GRANT USAGE, CREATE ON SCHEMA public TO chatwoot_prod;
