@@ -35,6 +35,35 @@ spec:
           volumeMounts:
             - name: mail-data
               mountPath: /mail-data
+        - name: provision-admin-mailbox
+          image: ghcr.io/docker-mailserver/docker-mailserver:15.1.0@sha256:c341669e6cbb012c34e8c4a86af27d6415bed485e0a2b66fb18c9ed60a4c4302
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/bash
+            - -ec
+            - |
+              accounts_file=/tmp/docker-mailserver/postfix-accounts.cf
+              if [ -f "${accounts_file}" ] && grep -Fq "${MAILBOX_ADDRESS}|" "${accounts_file}"; then
+                echo "Mailbox ${MAILBOX_ADDRESS} already provisioned"
+                exit 0
+              fi
+              setup email add "${MAILBOX_ADDRESS}" "${MAILBOX_PASSWORD}"
+              echo "Mailbox ${MAILBOX_ADDRESS} provisioned"
+          env:
+            - name: MAILBOX_ADDRESS
+              value: admin@shopnoltd.dpdns.org
+            - name: MAILBOX_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mail-admin-credentials
+                  key: MAILBOX_PASSWORD
+          securityContext:
+            runAsUser: 0
+            runAsGroup: 0
+          volumeMounts:
+            - name: mail-data
+              mountPath: /tmp/docker-mailserver
+              subPath: config
       containers:
         - name: mail-server
           image: ghcr.io/docker-mailserver/docker-mailserver:15.1.0@sha256:c341669e6cbb012c34e8c4a86af27d6415bed485e0a2b66fb18c9ed60a4c4302
