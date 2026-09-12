@@ -37,11 +37,15 @@ spec:
             - configMapRef:
                 name: android-cloud-controller-config
             - secretRef:
-                name: api-service-secret
-                optional: true
-            - secretRef:
                 name: android-cloud-turn-secret
                 optional: true
+          env:
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: api-service-secret
+                  key: jwt-secret
+                  optional: false
           resources:
             requests:
               cpu: 50m
