@@ -12,7 +12,8 @@ from starlette.responses import Response
 from app.core.config import settings
 from app.db import models as ai_db_models  # noqa: F401
 from app.db.base import Base
-from app.db.session import engine
+from app.db.session import AsyncSessionLocal, engine
+from app.services.bootstrap import bootstrap_providers
 
 log = structlog.get_logger()
 
@@ -22,7 +23,9 @@ async def lifespan(app: FastAPI):
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     await redis_client.ping()
-    log.info("ai-platform.started", env=settings.env)
+    async with AsyncSessionLocal() as db:
+        configured = await bootstrap_providers(db)
+    log.info("ai-platform.started", env=settings.env, configured_providers=configured)
     yield
     await engine.dispose()
     await redis_client.aclose()
