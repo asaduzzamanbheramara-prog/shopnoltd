@@ -1,10 +1,11 @@
-"""Nagad Merchant API — ported from billing-engine/app/gateways/nagad_gateway.py
-to payment-service's async BaseProvider interface.
+"""Nagad Merchant API provider.
 
-Nagad signs/encrypts every request with RSA keypairs exchanged with Nagad
-during merchant onboarding (your private key + Nagad's public key).
-Requires the `cryptography` package (already in requirements.txt).
+Customer payments may originate from ordinary Nagad customer accounts. The
+merchant-side credentials belong to Shopnoltd and are used only by this
+backend. Missing production credentials never create a fake/demo transaction.
 """
+
+from __future__ import annotations
 
 import base64
 import datetime
@@ -19,13 +20,19 @@ BASE_URLS = {
     False: "https://api.mynagad.com/api/dfs",
 }
 
+SUCCESS_STATUSES = {"SUCCESS", "COMPLETED", "PAID", "SUCCESSFUL"}
+
 
 class NagadProvider(BaseProvider):
     def __init__(self):
         super().__init__("nagad")
         self.sandbox = settings.nagad_sandbox
         self.base_url = BASE_URLS[self.sandbox]
-        self.enabled = bool(settings.nagad_merchant_id and settings.nagad_merchant_private_key)
+        self.enabled = bool(
+            settings.nagad_merchant_id
+            and settings.nagad_merchant_private_key
+            and settings.nagad_pg_public_key
+        )
 
     def _sign(self, data: str) -> str:
         from cryptography.hazmat.primitives import hashes, serialization
@@ -46,13 +53,13 @@ class NagadProvider(BaseProvider):
         encrypted = public_key.encrypt(data.encode(), padding.PKCS1v15())
         return base64.b64encode(encrypted).decode()
 
+    @staticmethod
+    def _callback_url() -> str:
+        return f"{settings.base_callback_url.rstrip('/')}/api/v1/webhooks/nagad"
+
     async def create_deposit(self, tx, return_url=None, **kwargs):
         if not self.enabled:
-            return {
-                "external_id": f"demo_nagad_{uuid.uuid4().hex[:12]}",
-                "redirect_url": None,
-                "note": "Nagad not configured (missing merchant id/RSA keys) - running in demo mode.",
-            }
+            raise RuntimeError("Nagad is not configured: merchant ID and RSA keys are required")
         if tx.currency.upper() != "BDT":
             raise ValueError("Nagad only supports BDT")
 
@@ -70,17 +77,18 @@ class NagadProvider(BaseProvider):
             "sensitiveData": self._encrypt(sensitive),
             "signature": self._sign(sensitive),
         }
-        async with httpx.AsyncClient() as c:
-            init_resp = await c.post(
+        async with httpx.AsyncClient(timeout=15) as client:
+            init_resp = await client.post(
                 f"{self.base_url}/check-out/initialize/{settings.nagad_merchant_id}/{order_id}",
                 json=init_payload,
                 headers={"X-KM-IP-V4": customer_ip, "X-KM-Client-Type": "PC_WEB"},
-                timeout=15,
             )
         init_resp.raise_for_status()
         init_data = init_resp.json()
         payment_ref_id = init_data.get("paymentReferenceId")
         challenge = init_data.get("challenge")
+        if not payment_ref_id or not challenge:
+            raise RuntimeError("Nagad did not return a payment reference/challenge")
 
         complete_sensitive = (
             f"merchantId={settings.nagad_merchant_id}&orderId={order_id}&currencyCode=050"
@@ -89,39 +97,52 @@ class NagadProvider(BaseProvider):
         complete_payload = {
             "sensitiveData": self._encrypt(complete_sensitive),
             "signature": self._sign(complete_sensitive),
-            "merchantCallbackURL": f"{settings.base_callback_url}/api/v1/webhooks/nagad",
+            "merchantCallbackURL": self._callback_url(),
         }
-        async with httpx.AsyncClient() as c:
-            complete_resp = await c.post(
+        async with httpx.AsyncClient(timeout=15) as client:
+            complete_resp = await client.post(
                 f"{self.base_url}/check-out/complete/{payment_ref_id}",
                 json=complete_payload,
                 headers={"X-KM-IP-V4": customer_ip, "X-KM-Client-Type": "PC_WEB"},
-                timeout=15,
             )
         complete_resp.raise_for_status()
         complete_data = complete_resp.json()
-        return {
-            "external_id": payment_ref_id,
-            "redirect_url": complete_data.get("callBackUrl"),
-        }
+        redirect_url = complete_data.get("callBackUrl") or complete_data.get("callbackUrl")
+        if not redirect_url:
+            raise RuntimeError("Nagad did not return a checkout URL")
+        return {"external_id": str(payment_ref_id), "redirect_url": redirect_url}
 
     async def create_withdrawal(self, tx, destination, **kwargs):
         raise NotImplementedError(
-            "Nagad payouts not supported via this API; use manual withdrawal with admin approval"
+            "Nagad payouts require an approved Nagad disbursement integration; customer accounts do not need to be merchants"
         )
 
     async def verify_webhook(self, request_body: bytes, headers: dict) -> dict:
-        # Nagad redirects to merchantCallbackURL with payment_ref_id & status query params;
-        # the caller must then call get_status() to confirm before trusting this.
         import json
 
-        return json.loads(request_body) if request_body else {}
+        data = json.loads(request_body) if request_body else {}
+        payment_ref_id = (
+            data.get("payment_ref_id")
+            or data.get("paymentReferenceId")
+            or data.get("paymentID")
+        )
+        if not payment_ref_id:
+            raise ValueError("Nagad callback is missing payment reference")
+        return await self.confirm_callback(str(payment_ref_id))
+
+    async def confirm_callback(self, external_id: str) -> dict:
+        status_data = await self.payment_details(external_id)
+        return {**status_data, "paymentReferenceId": str(external_id)}
+
+    async def payment_details(self, external_id: str) -> dict:
+        async with httpx.AsyncClient(timeout=15) as client:
+            response = await client.get(f"{self.base_url}/verify/payment/{external_id}")
+        response.raise_for_status()
+        data = response.json()
+        if not isinstance(data, dict):
+            raise RuntimeError("Nagad verification returned an invalid response")
+        return data
 
     async def get_status(self, external_id: str) -> str:
-        async with httpx.AsyncClient() as c:
-            r = await c.get(
-                f"{self.base_url}/verify/payment/{external_id}",
-                timeout=15,
-            )
-        r.raise_for_status()
-        return r.json().get("status", "unknown")
+        data = await self.payment_details(external_id)
+        return str(data.get("status") or data.get("transactionStatus") or "UNKNOWN").upper()
