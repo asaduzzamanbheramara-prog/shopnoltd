@@ -35,14 +35,10 @@ class BkashProvider(BaseProvider):
     async def _token(self) -> str:
         if not self.enabled:
             raise RuntimeError("bKash is not configured: app key/secret and username/password are required")
-
         async with httpx.AsyncClient(timeout=20) as client:
             response = await client.post(
                 TOKEN_URL,
-                json={
-                    "app_key": settings.bkash_app_key,
-                    "app_secret": settings.bkash_app_secret,
-                },
+                json={"app_key": settings.bkash_app_key, "app_secret": settings.bkash_app_secret},
                 headers={
                     "Content-Type": "application/json",
                     "Accept": "application/json",
@@ -72,7 +68,6 @@ class BkashProvider(BaseProvider):
     async def create_deposit(self, tx, return_url=None, **kwargs):
         if tx.currency.upper() != "BDT":
             raise ValueError("bKash only supports BDT")
-
         token = await self._token()
         payload = {
             "mode": "0011",
@@ -83,7 +78,6 @@ class BkashProvider(BaseProvider):
             "intent": "sale",
             "merchantInvoiceNumber": str(tx.id),
         }
-
         async with httpx.AsyncClient(timeout=20) as client:
             response = await client.post(CREATE_URL, json=payload, headers=self._headers(token))
         response.raise_for_status()
@@ -92,12 +86,7 @@ class BkashProvider(BaseProvider):
         redirect_url = data.get("bkashURL")
         if not payment_id or not redirect_url:
             raise RuntimeError(data.get("statusMessage") or "bKash did not return a payment session")
-
-        return {
-            "external_id": str(payment_id),
-            "redirect_url": redirect_url,
-            "approval_url": redirect_url,
-        }
+        return {"external_id": str(payment_id), "redirect_url": redirect_url, "approval_url": redirect_url}
 
     async def execute_payment(self, payment_id: str) -> dict:
         token = await self._token()
@@ -125,15 +114,31 @@ class BkashProvider(BaseProvider):
         return data
 
     async def confirm_callback(self, payment_id: str) -> dict:
-        """Confirm a checkout without executing an already-completed payment twice."""
-        current = await self.payment_status(payment_id)
-        current_status = str(
-            current.get("transactionStatus") or current.get("status") or ""
-        ).upper()
-        if current_status not in SUCCESS_STATUSES:
-            executed = await self.execute_payment(payment_id)
+        """Confirm checkout against bKash without trusting browser parameters."""
+        try:
             current = await self.payment_status(payment_id)
-            current["execute"] = executed
+        except Exception:
+            current = {}
+        current_status = str(current.get("transactionStatus") or current.get("status") or "").upper()
+        if current_status in SUCCESS_STATUSES:
+            current["paymentID"] = str(payment_id)
+            return current
+
+        try:
+            executed = await self.execute_payment(payment_id)
+        except Exception as execute_error:
+            try:
+                current = await self.payment_status(payment_id)
+            except Exception:
+                raise RuntimeError("bKash payment could not be executed or verified") from execute_error
+            final_status = str(current.get("transactionStatus") or current.get("status") or "").upper()
+            if final_status not in SUCCESS_STATUSES:
+                raise RuntimeError("bKash payment is not completed") from execute_error
+            current["paymentID"] = str(payment_id)
+            return current
+
+        current = await self.payment_status(payment_id)
+        current["execute"] = executed
         current["paymentID"] = str(payment_id)
         return current
 
@@ -144,7 +149,6 @@ class BkashProvider(BaseProvider):
 
     async def verify_webhook(self, body: bytes, headers: dict) -> dict:
         import json
-
         data = json.loads(body) if body else {}
         payment_id = data.get("paymentID") or data.get("paymentId")
         if not payment_id:
