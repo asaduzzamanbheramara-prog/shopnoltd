@@ -21,7 +21,6 @@ resources:
 - services/tenant-router
 - services/auth-service
 - services/oauth-service
-- services/billing-engine
 - services/payment-service
 - services/exchange-service
 - services/domain-service
