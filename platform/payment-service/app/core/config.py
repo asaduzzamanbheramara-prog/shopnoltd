@@ -33,6 +33,8 @@ class Settings(BaseSettings):
     payeer_api_key: str = ""
     bkash_app_key: str = ""
     bkash_app_secret: str = ""
+    bkash_username: str = ""
+    bkash_password: str = ""
     nagad_merchant_id: str = ""
     nagad_merchant_key: str = ""
     nagad_merchant_private_key: str = ""
