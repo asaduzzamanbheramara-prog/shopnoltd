@@ -11,7 +11,7 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: node-exporter
-        app.kubernetes.io/part-of: shopnoltd-observability
+        app.kubernetes.io/part-of=shopnoltd-observability
       annotations:
         prometheus.io/scrape: "true"
         prometheus.io/port: "9100"
@@ -46,7 +46,6 @@ spec:
             - name: rootfs
               mountPath: /host
               readOnly: true
-              mountPropagation: HostToContainer
       volumes:
         - name: rootfs
           hostPath:
