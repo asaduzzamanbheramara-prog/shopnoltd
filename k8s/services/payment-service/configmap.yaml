@@ -18,3 +18,5 @@ data:
   MINIO_ENDPOINT: "minio.shopno-data.svc.cluster.local:9000"
   KEYCLOAK_ISSUER: "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
   KEYCLOAK_CLIENT_ID: "payment-service"
+  DIRECT_PAYMENT_FEED_ENABLED: "false"
+  DIRECT_PAYMENT_FEED_MAX_SKEW_SECONDS: "300"

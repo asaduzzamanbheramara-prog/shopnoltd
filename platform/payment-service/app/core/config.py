@@ -51,6 +51,9 @@ class Settings(BaseSettings):
     base_callback_url: str = "https://payment-service.shopnoltd.dpdns.org"
     rocket_merchant_id: str = ""
     rocket_merchant_key: str = ""
+    direct_payment_feed_enabled: bool = False
+    direct_payment_feed_secret: str = ""
+    direct_payment_feed_max_skew_seconds: int = 300
     admin_approval_required: bool = True
     min_deposit: float = 1.0
     max_deposit: float = 100000.0
