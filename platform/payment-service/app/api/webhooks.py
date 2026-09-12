@@ -10,7 +10,7 @@ from datetime import datetime
 from decimal import Decimal
 
 from app.core.db import SessionLocal
-from app.models.models import PaymentMethod, Transaction, TxStatus, Wallet, WebhookEvent
+from app.models.models import PaymentMethod, Transaction, TxStatus, TxType, Wallet, WebhookEvent
 from app.providers.registry import get_provider
 from fastapi import APIRouter, HTTPException, Request
 from sqlalchemy import or_, select
@@ -97,12 +97,10 @@ async def _apply_event(method: PaymentMethod, event: dict, body: bytes, headers:
                 ]
             )
 
-        tx = (
-            await s.scalar(
-                select(Transaction)
-                .where(Transaction.method == method, or_(*identity_filters))
-                .with_for_update()
-            )
+        tx = await s.scalar(
+            select(Transaction)
+            .where(Transaction.method == method, or_(*identity_filters))
+            .with_for_update()
         )
         if not tx:
             return {"received": True, "warning": "tx not found"}
@@ -161,7 +159,7 @@ async def _apply_event(method: PaymentMethod, event: dict, body: bytes, headers:
         elif status in FAILED_STATUSES:
             tx.status = TxStatus.cancelled if status in {"CANCELED", "CANCELLED"} else TxStatus.failed
             tx.completed_at = datetime.utcnow()
-            if tx.type == tx.type.withdrawal:
+            if tx.type == TxType.withdrawal:
                 wr = await s.execute(select(Wallet).where(Wallet.id == tx.wallet_id).with_for_update())
                 wallet = wr.scalar_one()
                 wallet.frozen = Decimal(str(wallet.frozen)) - Decimal(str(tx.amount))
@@ -193,8 +191,6 @@ async def _verified_mfs_event(method: PaymentMethod, request: Request, query: di
     except Exception as exc:
         raise HTTPException(502, f"{method.value} provider verification failed") from exc
 
-    # Never trust callback status/amount from the browser. For bKash/Nagad the
-    # event above came from a server-to-provider verification call.
     return await _apply_event(method, event, await request.body(), dict(request.headers))
 
 
