@@ -59,12 +59,20 @@ PROVIDERS = (
 )
 
 
+def _provider_api_key(spec: dict[str, str]) -> str:
+    """Read the configured provider key, preserving the legacy Gemini alias."""
+    api_key = os.getenv(spec["env_key"], "").strip()
+    if not api_key and spec["env_key"] == "GOOGLE_AI_API_KEY":
+        api_key = os.getenv("GEMINI_API_KEY", "").strip()
+    return api_key
+
+
 async def bootstrap_providers(db: AsyncSession) -> int:
     """Create/update configured providers and models; skip absent credentials."""
     configured = 0
 
     for spec in PROVIDERS:
-        api_key = os.getenv(spec["env_key"], "").strip()
+        api_key = _provider_api_key(spec)
         if not api_key:
             continue
 
