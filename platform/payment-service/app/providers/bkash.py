@@ -119,15 +119,23 @@ class BkashProvider(BaseProvider):
                 headers=self._headers(token),
             )
         response.raise_for_status()
-        return response.json()
+        data = response.json()
+        if not isinstance(data, dict):
+            raise RuntimeError("bKash status response is invalid")
+        return data
 
     async def confirm_callback(self, payment_id: str) -> dict:
-        """Execute, then independently query the payment before wallet credit."""
-        executed = await self.execute_payment(payment_id)
-        status = await self.payment_status(payment_id)
-        merged = {**status, "execute": executed}
-        merged["paymentID"] = str(payment_id)
-        return merged
+        """Confirm a checkout without executing an already-completed payment twice."""
+        current = await self.payment_status(payment_id)
+        current_status = str(
+            current.get("transactionStatus") or current.get("status") or ""
+        ).upper()
+        if current_status not in SUCCESS_STATUSES:
+            executed = await self.execute_payment(payment_id)
+            current = await self.payment_status(payment_id)
+            current["execute"] = executed
+        current["paymentID"] = str(payment_id)
+        return current
 
     async def create_withdrawal(self, tx, destination, **kwargs):
         raise NotImplementedError(
@@ -135,9 +143,6 @@ class BkashProvider(BaseProvider):
         )
 
     async def verify_webhook(self, body: bytes, headers: dict) -> dict:
-        # bKash's checkout callback is normally a browser redirect. POST webhook
-        # payloads are accepted only when they contain a paymentID; the payment
-        # is still confirmed against bKash before any wallet credit.
         import json
 
         data = json.loads(body) if body else {}
