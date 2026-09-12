@@ -38,7 +38,7 @@ spec:
             - name: http
               containerPort: 9090
           resources:
-            requests: {cpu: 100m, memory: 512Mi}
+            requests: {cpu: 100m, memory: 256Mi}
             limits: {cpu: "2", memory: 2Gi}
           livenessProbe:
             httpGet: {path: /-/healthy, port: http}
