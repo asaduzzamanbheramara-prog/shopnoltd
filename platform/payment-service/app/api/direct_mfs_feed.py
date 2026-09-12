@@ -1,15 +1,4 @@
-"""Signed Android/SMS relay ingestion for direct bKash/Nagad/Rocket payments.
-
-The relay never receives a customer's PIN/OTP. It only forwards a locally
-received transaction notification after the receiving phone has authorized
-the relay request. The server credits a wallet only when the signed event
-matches exactly one active payment intent, the configured receiving account,
-the requested amount/currency, and a previously unused provider TxID.
-
-This is intentionally an adapter/feed boundary: the Android relay remains a
-separate device-side component and must use the same canonical JSON bytes and
-HMAC secret configured for this service.
-"""
+"""Signed Android/SMS relay ingestion for direct bKash/Nagad/Rocket payments."""
 
 import hashlib
 import hmac
@@ -60,7 +49,6 @@ def _verify_signature(body: bytes, timestamp: str, signature: str) -> None:
         raise HTTPException(401, "invalid feed timestamp") from exc
     if abs(int(time.time()) - ts) > settings.direct_payment_feed_max_skew_seconds:
         raise HTTPException(401, "stale feed timestamp")
-
     canonical = _canonical_json(body)
     message = timestamp.encode("utf-8") + b"." + canonical
     expected = hmac.new(secret.encode("utf-8"), message, hashlib.sha256).hexdigest()
@@ -103,13 +91,9 @@ async def _credit_verified_feed(
     source_device: str | None,
 ):
     method = PaymentMethod(provider)
-
     duplicate = await s.scalar(
         select(DirectPaymentSubmission)
-        .where(
-            DirectPaymentSubmission.provider == provider,
-            DirectPaymentSubmission.txid == txid,
-        )
+        .where(DirectPaymentSubmission.provider == provider, DirectPaymentSubmission.txid == txid)
         .with_for_update()
     )
     if duplicate:
@@ -151,9 +135,6 @@ async def _credit_verified_feed(
             .with_for_update()
         )
     ).scalars().all()
-
-    # Exact amount + receiver can legitimately match more than one order.
-    # Never guess in that situation; an administrator/customer can reconcile it.
     if len(intents) == 0:
         raise HTTPException(409, "no unique open payment intent matches this transaction")
     if len(intents) > 1:
@@ -170,40 +151,13 @@ async def _credit_verified_feed(
         .with_for_update()
     )
     if not wallet:
-        wallet = Wallet(
-            tenant_id=intent.tenant_id,
-            user_id=intent.user_id,
-            currency="BDT",
-            balance=0,
-        )
+        wallet = Wallet(tenant_id=intent.tenant_id, user_id=intent.user_id, currency="BDT", balance=0)
         s.add(wallet)
         await s.flush()
 
-    submission = DirectPaymentSubmission(
-        intent_id=intent.id,
-        provider=provider,
-        txid=txid,
-        sender_number=_norm_number(sender_number) if sender_number else None,
-        amount_claimed=amount,
-        raw_evidence={
-            "receiver_number": receiver,
-            "reference": reference,
-            "occurred_at": occurred_at,
-            "balance": balance,
-            "raw_message": raw_message,
-            "source_device": source_device,
-            "verification": "signed_authorized_sms_feed",
-        },
-        verification_data={
-            "mode": "signed_authorized_sms_feed",
-            "receiver_account_id": str(account.id),
-        },
-        status="verified",
-        verified_at=now,
-    )
-    s.add(submission)
-
+    tx_id = uuid.uuid4()
     tx = Transaction(
+        id=tx_id,
         tenant_id=intent.tenant_id,
         user_id=intent.user_id,
         wallet_id=wallet.id,
@@ -227,16 +181,35 @@ async def _credit_verified_feed(
         },
         completed_at=now,
     )
+    submission = DirectPaymentSubmission(
+        intent_id=intent.id,
+        provider=provider,
+        txid=txid,
+        sender_number=_norm_number(sender_number) if sender_number else None,
+        amount_claimed=amount,
+        raw_evidence={
+            "receiver_number": receiver,
+            "reference": reference,
+            "occurred_at": occurred_at,
+            "balance": balance,
+            "raw_message": raw_message,
+            "source_device": source_device,
+            "verification": "signed_authorized_sms_feed",
+        },
+        verification_data={"mode": "signed_authorized_sms_feed", "receiver_account_id": str(account.id)},
+        status="verified",
+        transaction_id=tx_id,
+        verified_at=now,
+    )
     s.add(tx)
+    s.add(submission)
     wallet.balance = Decimal(str(wallet.balance)) + amount
     intent.status = "verified"
-    submission.transaction_id = tx.id
     try:
         await s.flush()
         await s.commit()
     except IntegrityError as exc:
         await s.rollback()
-        # The unique provider/TxID constraint is the final idempotency guard.
         duplicate = await s.scalar(
             select(DirectPaymentSubmission).where(
                 DirectPaymentSubmission.provider == provider,
@@ -254,7 +227,7 @@ async def _credit_verified_feed(
     return {
         "status": "verified",
         "submission_id": str(submission.id),
-        "transaction_id": str(tx.id),
+        "transaction_id": str(tx_id),
         "intent_id": str(intent.id),
         "wallet_currency": wallet.currency,
         "credited_amount": str(amount),
@@ -274,14 +247,12 @@ async def receive_feed(
         raise HTTPException(404, "unsupported direct MFS provider")
     if not x_shopno_relay_timestamp or not x_shopno_relay_signature:
         raise HTTPException(401, "relay signature headers are required")
-
     body = await request.body()
     _verify_signature(body, x_shopno_relay_timestamp, x_shopno_relay_signature)
     try:
         payload = json.loads(body.decode("utf-8"))
     except (UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise HTTPException(400, "invalid JSON feed payload") from exc
-
     if not isinstance(payload, dict):
         raise HTTPException(400, "feed payload must be an object")
     if str(payload.get("provider", provider)).lower() != provider:
@@ -295,10 +266,8 @@ async def receive_feed(
         raise HTTPException(422, "provider transaction ID is required")
     if not receiver:
         raise HTTPException(422, "receiver_number is required")
-
     amount = _decimal(payload.get("amount"), "amount")
-    currency = str(payload.get("currency", "BDT")).upper()
-    if currency != "BDT":
+    if str(payload.get("currency", "BDT")).upper() != "BDT":
         raise HTTPException(422, "direct MFS feed only supports BDT")
 
     async with SessionLocal() as s:
