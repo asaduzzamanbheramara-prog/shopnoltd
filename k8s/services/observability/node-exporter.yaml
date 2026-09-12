@@ -46,7 +46,6 @@ spec:
             - name: rootfs
               mountPath: /host
               readOnly: true
-              mountPropagation: HostToContainer
       volumes:
         - name: rootfs
           hostPath:
