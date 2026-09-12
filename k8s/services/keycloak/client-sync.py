@@ -19,6 +19,8 @@ REQUIRED_REDIRECT_URIS = [
     "https://shopnoltd.dpdns.org/callback",
     "https://devices.shopnoltd.dpdns.org/",
     "https://devices.shopnoltd.dpdns.org/callback",
+    "https://android.shopnoltd.dpdns.org/",
+    "https://android.shopnoltd.dpdns.org/callback",
     "shopnoltdcollect://oauth/callback",
 ]
 
@@ -26,6 +28,7 @@ REQUIRED_WEB_ORIGINS = [
     "http://localhost:5173",
     "https://shopnoltd.dpdns.org",
     "https://devices.shopnoltd.dpdns.org",
+    "https://android.shopnoltd.dpdns.org",
 ]
 
 API_AUDIENCE_MAPPER_NAME = "api-service-audience"
