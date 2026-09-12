@@ -97,7 +97,7 @@ spec:
             capabilities:
               drop: ["ALL"]
           resources:
-            requests: {cpu: 50m, memory: 128Mi}
+            requests: {cpu: 50m, memory: 64Mi}
             limits: {cpu: 500m, memory: 512Mi}
           # v2.20.0 is exposing metrics on 8080, while the current telemetry
           # /livez HTTP probe returns 404 in this deployment. TCP probes verify
