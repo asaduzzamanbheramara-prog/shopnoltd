@@ -229,3 +229,4 @@ OPEN-ITEMS-MASTER-LIST.md
 shopnoltd-consolidation-roadmap.md
 /payoneer.py
 /paypal.py
+secret.env
