@@ -11,17 +11,12 @@ kind: Secret
 metadata:
   name: litellm-provider-keys
   namespace: shopno-ai
+  annotations:
+    # Provider credentials are populated out-of-band; Argo must not prune them.
+    argocd.argoproj.io/sync-options: Prune=false
 type: Opaque
-stringData:
-  OPENAI_API_KEY: ""
-  ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY}"
-  GEMINI_API_KEY: ""
-  MISTRAL_API_KEY: ""
-  GROQ_API_KEY: ""
-  DEEPSEEK_API_KEY: ""
-  XAI_API_KEY: ""
-  COHERE_API_KEY: ""
-  LITELLM_MASTER_KEY: ""
+stringData: {}
+
 ---
 apiVersion: v1
 kind: ConfigMap
