@@ -10,3 +10,12 @@ SELECT 'CREATE DATABASE messaging' WHERE NOT EXISTS (SELECT FROM pg_database WHE
 GRANT ALL PRIVILEGES ON DATABASE live TO shopno;
 GRANT ALL PRIVILEGES ON DATABASE meet TO shopno;
 GRANT ALL PRIVILEGES ON DATABASE messaging TO shopno;
+
+\connect live
+GRANT USAGE, CREATE ON SCHEMA public TO shopno;
+
+\connect meet
+GRANT USAGE, CREATE ON SCHEMA public TO shopno;
+
+\connect messaging
+GRANT USAGE, CREATE ON SCHEMA public TO shopno;
