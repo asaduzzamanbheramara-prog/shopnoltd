@@ -3,7 +3,7 @@ import hmac
 import secrets
 from datetime import datetime, timedelta
 
-import jwt as pyjwt
+from jose import jwt as pyjwt
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
