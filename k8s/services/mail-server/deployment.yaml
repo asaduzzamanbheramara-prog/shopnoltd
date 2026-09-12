@@ -37,7 +37,7 @@ spec:
               mountPath: /mail-data
       containers:
         - name: mail-server
-          image: ghcr.io/docker-mailserver/docker-mailserver:15.1.0@sha256:c341669e6cbb012b1b3e8c4a86af27d6415bed485e0a2b66fb18c9ed60a4c4302
+          image: ghcr.io/docker-mailserver/docker-mailserver:15.1.0@sha256:c341669e6cbb012c34e8c4a86af27d6415bed485e0a2b66fb18c9ed60a4c4302
           imagePullPolicy: IfNotPresent
           hostname: mail
           securityContext:
