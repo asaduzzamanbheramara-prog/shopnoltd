@@ -20,6 +20,7 @@ export const SERVICES = [
   SERVICE('💰', 'Payments & Wallet', 'Payment methods, deposits, transactions and wallet operations.', '/wallet', 'Business'),
   SERVICE('💱', 'Exchange', 'Supported currency and exchange operations with ledger-backed settlement.', '/exchange', 'Business'),
   SERVICE('🤖', 'AI Workspace', 'Authenticated Shopnoltd AI chat with active-model routing.', '/ai', 'AI'),
+  SERVICE('📱', 'Android Cloud', 'Browser-accessible Android Cloud workspace integrated directly into the main Shopnoltd domain.', '/android-cloud', 'Cloud Devices'),
   SERVICE('💻', 'Code Server', 'Browser-based development environment.', 'https://code-server.shopnoltd.dpdns.org', 'Developer'),
   SERVICE('🦊', 'Git', 'Git repositories and collaborative source control.', 'https://gitea.shopnoltd.dpdns.org', 'Developer'),
   SERVICE('🔗', 'API', 'Platform APIs for applications, services, automation and integrations.', 'https://api.shopnoltd.dpdns.org/openapi.json', 'Developer'),
@@ -28,7 +29,7 @@ export const SERVICES = [
   SERVICE('📝', 'Forms & Enketo', 'Form collection and browser-based form workflows.', 'https://enketo.shopnoltd.dpdns.org', 'Productivity'),
   SERVICE('💬', 'Chatwoot', 'Customer inbox, support conversations and communication automation.', 'https://chatwoot.shopnoltd.dpdns.org', 'Communication'),
   SERVICE('📱', 'Remote Access', 'Shopnoltd remote-device workspace for authorized device support and control.', 'https://remote.shopnoltd.dpdns.org', 'Remote Access'),
-  SERVICE('🖥️', 'Device Console', 'Browse registered devices and launch authorized remote sessions.', 'https://devices.shopnoltd.dpdns.org', 'Remote Access'),
+  SERVICE('🖥️', 'Device Console', 'Browse registered devices and launch authorized remote desktop sessions through the dedicated device connection service.', 'https://devices.shopnoltd.dpdns.org', 'Remote Access'),
 ]
 
 // Business applications are real website-builder targets. They intentionally route through

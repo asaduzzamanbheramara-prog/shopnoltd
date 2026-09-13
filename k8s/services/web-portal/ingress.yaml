@@ -28,6 +28,14 @@ spec:
     - host: shopnoltd.dpdns.org
       http:
         paths:
+          - path: /android-cloud
+            pathType: Prefix
+            backend:
+              service:
+                name: android-cloud-web
+                port:
+                  number: 8080
+
           - path: /api
             pathType: Prefix
             backend:
