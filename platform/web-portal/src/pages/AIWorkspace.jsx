@@ -129,8 +129,10 @@ export default function AIWorkspace() {
     const files = Array.from(event.target.files || [])
     event.target.value = ''
     if (!files.length) return
-    try { setAttachments((current) => [...current, ...(await Promise.all(files.map(readAttachment)))].slice(0, 8)) }
-    catch { setError('Unable to read one of the selected files.') }
+    try {
+      const selected = await Promise.all(files.map(readAttachment))
+      setAttachments((current) => [...current, ...selected].slice(0, 8))
+    } catch { setError('Unable to read one of the selected files.') }
   }
 
   function removeAttachment(id) { setAttachments((current) => current.filter((file) => file.id !== id)) }
