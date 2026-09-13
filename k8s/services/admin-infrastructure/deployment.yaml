@@ -45,7 +45,7 @@ spec:
             - name: KEYCLOAK_ISSUER
               value: https://auth.shopnoltd.dpdns.org/realms/shopnoltd
             - name: KEYCLOAK_JWKS_URL
-              value: http://keycloak.shopno-identity.svc.cluster.local:8080/realms/shopnoltd/protocol/openid-connect/certs
+              value: http://keycloak.shopno-identity.svc.cluster.local/realms/shopnoltd/protocol/openid-connect/certs
             - name: KEYCLOAK_AUDIENCES
               value: shopnoltd-web,api-service
             - name: CORS_ORIGINS
