@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 import structlog
 from app.api import admin, admin_tables, admin_reports, admin_backups, deposits, direct_mfs_feed, direct_payments, exchanges, methods, payment_accounts, transactions, transfers, wallets, webhooks, withdrawals
 from app.core.config import settings
-from app.core.db import Base, engine
+from app.core.db import engine
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -22,11 +22,10 @@ LATENCY = Histogram("shopno_payments_http_latency_seconds", "HTTP latency", ["pa
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-        await conn.execute(text("ALTER TABLE transactions ADD COLUMN IF NOT EXISTS user_id VARCHAR(64)"))
-        await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_transactions_user_id ON transactions (user_id)"))
-        await conn.execute(text("UPDATE transactions t SET user_id = w.user_id FROM wallets w WHERE t.wallet_id = w.id AND t.user_id IS NULL"))
+    # Database schema changes are owned by the canonical migration job/Alembic
+    # chain. The application runtime role must not execute DDL or data migrations.
+    async with engine.connect() as conn:
+        await conn.execute(text("SELECT 1"))
     await redis_client.ping()
     log.info("payment-service.started", env=settings.env, version=settings.version)
     yield
