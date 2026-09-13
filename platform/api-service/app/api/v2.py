@@ -96,6 +96,7 @@ def work_dict(w: Work, total_slots: int | None = None, active_slots: int | None 
         "title": w.title,
         "description": w.description,
         "requirements": w.requirements,
+        "reference_image": w.reference_image,
         "reward_amount": str(w.reward_amount),
         "currency": w.currency,
         "max_workers": w.max_workers,
@@ -215,9 +216,16 @@ async def create_work(body: dict, s: AsyncSession = Depends(db), user=Depends(cu
             deadline = datetime.fromisoformat(str(body["deadline"]).replace("Z", "+00:00")).replace(tzinfo=None)
         except ValueError as exc:
             raise HTTPException(422, "deadline must be ISO-8601") from exc
+    reference_image = body.get("reference_image") or None
+    if reference_image is not None:
+        if not isinstance(reference_image, str) or not reference_image.startswith("data:image/"):
+            raise HTTPException(422, "reference_image must be a data:image/... URL")
+        if len(reference_image) > 6_500_000:
+            raise HTTPException(422, "reference_image is too large (max ~6MB)")
     work = Work(
         tenant_id=user.get("tenant_id", "default"), creator_id=user["sub"], title=title,
         description=description, requirements=str(body.get("requirements", "")) or None,
+        reference_image=reference_image,
         reward_amount=reward_decimal, currency=currency, max_workers=max_workers,
         deadline=deadline, status="draft",
     )
