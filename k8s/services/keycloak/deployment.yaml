@@ -21,7 +21,7 @@ spec:
       automountServiceAccountToken: false
       containers:
         - name: keycloak
-          image: quay.io/keycloak/keycloak:26.7.1
+          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/keycloak:latest
           imagePullPolicy: IfNotPresent
           args:
             - start
