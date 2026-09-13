@@ -35,7 +35,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: payment-service
-          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/payment-service@sha256:c9fad875188db05a4941645c96c4bb73a17d64cc840c7b8995313a00dc270b98
+          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/payment-service@sha256:ee727f1e01d66586253f984ed0618dbe6ad282a46e883370efe7f7a55ad53bd9
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
