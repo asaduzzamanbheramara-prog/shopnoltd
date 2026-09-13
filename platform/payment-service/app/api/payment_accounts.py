@@ -8,7 +8,7 @@ from datetime import datetime
 
 from app.api.admin import require_admin
 from app.core.db import SessionLocal
-from app.models.models import PaymentAccount
+from app.models.models import AdminAuditLog, PaymentAccount
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy import select
@@ -90,6 +90,31 @@ def _admin(row):
     return result
 
 
+def _audit_safe(row):
+    return {
+        "id": str(row.id),
+        "tenant_id": row.tenant_id,
+        "provider": row.provider,
+        "account_label": row.account_label,
+        "account_type": row.account_type,
+        "currency": row.currency,
+        "display_name": row.display_name,
+        "masked_account": row.masked_account,
+        "public_identifier": row.public_identifier,
+        "status": row.status,
+        "sort_order": row.sort_order,
+    }
+
+
+async def _audit(s: AsyncSession, user, action: str, row, before=None):
+    s.add(AdminAuditLog(
+        id=uuid.uuid4(), actor=str(user.get("sub", "unknown")), action=action,
+        table_name="payment_accounts", record_id=str(row.id),
+        before=before, after=None if action == "delete" else _audit_safe(row),
+        created_at=datetime.utcnow(),
+    ))
+
+
 @router.get("/public")
 async def public_payment_accounts(s: AsyncSession = Depends(db)):
     result = await s.execute(
@@ -124,6 +149,7 @@ async def create_payment_account(body: PaymentAccountIn, user=Depends(require_ad
         sort_order=body.sort_order, created_at=now, updated_at=now,
     )
     s.add(row)
+    await _audit(s, user, "create", row)
     await s.commit()
     await s.refresh(row)
     return _admin(row)
@@ -141,15 +167,15 @@ async def update_payment_account(account_id: str, body: PaymentAccountPatch, use
     row = (await s.execute(stmt)).scalar_one_or_none()
     if row is None:
         raise HTTPException(404, "payment account not found")
+    before = _audit_safe(row)
     for key, value in body.model_dump(exclude_unset=True).items():
-        if key == "tenant_id":
-            continue
         if key == "provider" and value is not None:
             value = value.lower()
         if key == "currency" and value is not None:
             value = value.upper()
         setattr(row, key, value)
     row.updated_at = datetime.utcnow()
+    await _audit(s, user, "update", row, before=before)
     await s.commit()
     await s.refresh(row)
     return _admin(row)
@@ -167,6 +193,8 @@ async def delete_payment_account(account_id: str, user=Depends(require_admin), s
     row = (await s.execute(stmt)).scalar_one_or_none()
     if row is None:
         raise HTTPException(404, "payment account not found")
+    before = _audit_safe(row)
+    await _audit(s, user, "delete", row, before=before)
     await s.delete(row)
     await s.commit()
     return {"ok": True, "id": account_id}
