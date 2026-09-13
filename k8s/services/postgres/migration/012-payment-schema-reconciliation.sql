@@ -5,14 +5,19 @@
 -- successful deployment from destructively rebuilding payment tables on every
 -- later Argo sync.
 
+-- Structural check instead of an exact alembic_version string match: later
+-- migrations (e.g. 0006_payment_accounts) advance the version past 0005, which
+-- made the old check below re-trigger this destructive rebuild on every sync
+-- and fail on the FK this file itself creates. Checking for the table this
+-- file creates last is correct regardless of how far the version has moved.
 SELECT EXISTS (
-    SELECT 1
-    FROM public.alembic_version
-    WHERE version_num = '0005_direct_payments'
+    SELECT 1 FROM pg_catalog.pg_class c
+    JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+    WHERE n.nspname = 'public' AND c.relname = 'direct_payment_submissions'
 ) AS migration_complete \gset
 
 \if :migration_complete
-\echo 'Shopnoltd payment schema already at 0005_direct_payments; skipping reconciliation.'
+\echo 'Shopnoltd payment schema reconciliation already applied; skipping.'
 \else
 
 BEGIN;
