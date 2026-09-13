@@ -18,8 +18,9 @@ EMULATOR_IMAGE = os.getenv("ANDROID_CLOUD_EMULATOR_IMAGE", "us-docker.pkg.dev/an
 GATEWAY_IMAGE = os.getenv("ANDROID_CLOUD_GATEWAY_IMAGE", "ghcr.io/asaduzzamanbheramara-prog/shopnoltd/android-cloud-gateway:latest")
 PUBLIC_GATEWAY_BASE = os.getenv("ANDROID_CLOUD_GATEWAY_BASE", "https://android-gateway.shopnoltd.dpdns.org/sessions")
 PUBLIC_HOST = os.getenv("ANDROID_CLOUD_PUBLIC_HOST", "android-gateway.shopnoltd.dpdns.org")
-JWT_SECRET = os.getenv("JWT_SECRET", "")
-JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
+KEYCLOAK_ISSUER = os.getenv("KEYCLOAK_ISSUER", "https://auth.shopnoltd.dpdns.org/realms/shopnoltd").rstrip("/")
+KEYCLOAK_CLIENT_ID = os.getenv("KEYCLOAK_CLIENT_ID", "shopnoltd-web")
+KEYCLOAK_JWKS_URL = os.getenv("KEYCLOAK_JWKS_URL", f"{KEYCLOAK_ISSUER}/protocol/openid-connect/certs")
 MAX_SESSIONS = int(os.getenv("ANDROID_CLOUD_MAX_SESSIONS", "1"))
 SESSION_TTL_SECONDS = int(os.getenv("ANDROID_CLOUD_SESSION_TTL_SECONDS", "1800"))
 TURN_URLS = [x.strip() for x in os.getenv("ANDROID_CLOUD_TURN_URLS", "").split(",") if x.strip()]
@@ -33,6 +34,7 @@ except Exception:
 
 core = client.CoreV1Api()
 networking = client.NetworkingV1Api()
+jwks_client = jwt.PyJWKClient(KEYCLOAK_JWKS_URL)
 app = FastAPI(title="Shopnoltd Android Cloud", version="1.0.0")
 
 @dataclass
@@ -50,15 +52,26 @@ class CreateSessionIn(BaseModel):
     ttl_seconds: int = Field(default=SESSION_TTL_SECONDS, ge=300, le=14400)
 
 def current_user(request: Request) -> str:
-    if not JWT_SECRET:
-        raise HTTPException(status_code=503, detail="android_cloud_auth_not_configured")
     value = request.headers.get("authorization", "")
     if not value.lower().startswith("bearer "):
         raise HTTPException(status_code=401, detail="missing_bearer_token")
+    token = value.split(" ", 1)[1].strip()
+    if not token:
+        raise HTTPException(status_code=401, detail="missing_bearer_token")
     try:
-        payload = jwt.decode(value.split(" ", 1)[1].strip(), JWT_SECRET, algorithms=[JWT_ALGORITHM])
-    except jwt.PyJWTError as exc:
+        signing_key = jwks_client.get_signing_key_from_jwt(token).key
+        payload = jwt.decode(
+            token,
+            signing_key,
+            algorithms=["RS256", "RS384", "RS512"],
+            issuer=KEYCLOAK_ISSUER,
+            options={"verify_aud": False},
+        )
+    except (jwt.PyJWTError, ValueError) as exc:
         raise HTTPException(status_code=401, detail="invalid_bearer_token") from exc
+    authorized_party = str(payload.get("azp", "")).strip()
+    if authorized_party and authorized_party != KEYCLOAK_CLIENT_ID:
+        raise HTTPException(status_code=401, detail="invalid_bearer_token")
     subject = str(payload.get("sub", "")).strip()
     if not subject:
         raise HTTPException(status_code=401, detail="token_has_no_subject")
@@ -132,7 +145,6 @@ async def healthz() -> dict[str, str]: return {"status": "ok", "service": "andro
 
 @app.get("/readyz")
 async def readyz() -> JSONResponse:
-    if not JWT_SECRET: return JSONResponse({"status": "not_ready", "reason": "auth_not_configured"}, status_code=503)
     try: core.list_namespaced_pod(NAMESPACE, limit=1)
     except Exception as exc: return JSONResponse({"status": "not_ready", "reason": str(exc)}, status_code=503)
     return JSONResponse({"status": "ready", "capacity": MAX_SESSIONS, "kvm_required": True})
