@@ -12,6 +12,7 @@ configMapGenerator:
   - 012-payment-schema-reconciliation.sql
   - 013-provision-comms-databases.sql
   - 014-provision-chatwoot-database.sql
+  - 015-payment-account-registry.sql
   options:
     disableNameSuffixHash: true
 
