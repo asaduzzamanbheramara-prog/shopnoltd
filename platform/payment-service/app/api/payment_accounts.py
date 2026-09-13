@@ -1,7 +1,8 @@
 """Validated payment-account registry API.
 
-Public responses intentionally exclude private account values. Administrative
-responses are protected by the existing payment-service admin authorization.
+Public responses intentionally exclude private account values and the editable
+public_identifier field. Administrative responses are protected by the existing
+payment-service admin authorization.
 """
 import uuid
 from datetime import datetime
@@ -72,7 +73,6 @@ def _public(row):
         "currency": row.currency,
         "display_name": row.display_name,
         "masked_account": row.masked_account,
-        "public_identifier": row.public_identifier,
         "instructions": row.instructions,
         "qr_url": row.qr_url,
         "payment_url": row.payment_url,
@@ -84,6 +84,7 @@ def _public(row):
 def _admin(row):
     result = _public(row)
     result["tenant_id"] = row.tenant_id
+    result["public_identifier"] = row.public_identifier
     result["private_value"] = row.private_value
     result["created_at"] = row.created_at.isoformat()
     result["updated_at"] = row.updated_at.isoformat()
