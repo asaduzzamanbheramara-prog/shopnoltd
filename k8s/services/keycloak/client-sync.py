@@ -17,6 +17,7 @@ CLIENT_ID = "shopnoltd-web"
 REQUIRED_REDIRECT_URIS = [
     "http://localhost:5173/callback",
     "https://shopnoltd.dpdns.org/callback",
+    "https://shopnoltd.dpdns.org/android-cloud/callback",
     "https://devices.shopnoltd.dpdns.org/",
     "https://devices.shopnoltd.dpdns.org/callback",
     "https://android.shopnoltd.dpdns.org/",

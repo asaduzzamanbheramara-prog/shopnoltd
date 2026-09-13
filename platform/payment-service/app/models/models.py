@@ -5,7 +5,7 @@ import uuid
 from datetime import datetime
 
 from app.core.db import Base
-from sqlalchemy import Column, DateTime, Enum, ForeignKey, Index, Numeric, String
+from sqlalchemy import Column, DateTime, Enum, ForeignKey, Index, Integer, Numeric, String
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 
@@ -49,6 +49,18 @@ class PaymentMethod(str, enum.Enum):
     sslcommerz = "sslcommerz"
     moneybag = "moneybag"
     payoneer = "payoneer"
+
+
+class AdminAuditLog(Base):
+    __tablename__ = "admin_audit_log"
+    id = Column(UUID(as_uuid=True), primary_key=True)
+    actor = Column(String(128), nullable=False, index=True)
+    action = Column(String(16), nullable=False)
+    table_name = Column(String(128), nullable=False, index=True)
+    record_id = Column(String(128), nullable=True)
+    before = Column(JSONB, nullable=True)
+    after = Column(JSONB, nullable=True)
+    created_at = Column(DateTime, nullable=False, index=True)
 
 
 class Wallet(Base):
@@ -107,7 +119,7 @@ class DirectPaymentAccount(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     tenant_id = Column(String(64), nullable=False, index=True)
     provider = Column(String(16), nullable=False, index=True)
-    account_type = Column(String(16), nullable=False)  # personal, agent, merchant
+    account_type = Column(String(16), nullable=False)
     account_number = Column(String(32), nullable=False)
     display_name = Column(String(128), nullable=True)
     currency = Column(String(8), nullable=False, default="BDT")
@@ -117,6 +129,28 @@ class DirectPaymentAccount(Base):
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     __table_args__ = (Index("uq_direct_account_number", "tenant_id", "provider", "account_number", unique=True),)
+
+
+class PaymentAccount(Base):
+    __tablename__ = "payment_accounts"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tenant_id = Column(String(64), nullable=False, index=True)
+    provider = Column(String(32), nullable=False, index=True)
+    account_label = Column(String(128), nullable=False)
+    account_type = Column(String(32), nullable=False, default="manual")
+    currency = Column(String(8), nullable=False, default="BDT")
+    display_name = Column(String(128), nullable=True)
+    masked_account = Column(String(128), nullable=True)
+    public_identifier = Column(String(128), nullable=True)
+    private_value = Column(String(256), nullable=True)
+    instructions = Column(String(1000), nullable=True)
+    qr_url = Column(String(2048), nullable=True)
+    payment_url = Column(String(2048), nullable=True)
+    status = Column(String(16), nullable=False, default="active", index=True)
+    sort_order = Column(Integer, nullable=False, default=0)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    __table_args__ = (Index("ix_payment_accounts_tenant_sort", "tenant_id", "sort_order"),)
 
 
 class DirectPaymentIntent(Base):

@@ -33,7 +33,8 @@ spec:
           type: RuntimeDefault
       containers:
         - name: admin-infrastructure
-          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-admin-infrastructure:8191d57ebbfad897422ee467806044f3f2626fed
+          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-admin-infrastructure:0ef561502248e1569a22f99d9ac1be3c14a15e4b
+
 
 
           imagePullPolicy: Always
