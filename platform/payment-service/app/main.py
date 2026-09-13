@@ -12,6 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from prometheus_client import Counter, Histogram, generate_latest
 from shopno_core.database.redis import redis_client
+from sqlalchemy import text
 from starlette.responses import Response
 
 log = structlog.get_logger()
@@ -24,7 +25,7 @@ async def lifespan(app: FastAPI):
     # Database schema changes are owned by the canonical migration job/Alembic
     # chain. The application runtime role must not execute DDL or data migrations.
     async with engine.connect() as conn:
-        await conn.execute(__import__("sqlalchemy").text("SELECT 1"))
+        await conn.execute(text("SELECT 1"))
     await redis_client.ping()
     log.info("payment-service.started", env=settings.env, version=settings.version)
     yield
@@ -76,7 +77,7 @@ async def healthz():
 @app.get("/readyz", include_in_schema=False)
 async def readyz():
     async with engine.connect() as c:
-        await c.execute(__import__("sqlalchemy").text("SELECT 1"))
+        await c.execute(text("SELECT 1"))
     await redis_client.ping()
     return {"status": "ready"}
 
