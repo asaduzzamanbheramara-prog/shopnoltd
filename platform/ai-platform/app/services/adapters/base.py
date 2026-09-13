@@ -25,7 +25,13 @@ class BaseAdapter(ABC):
         return self.api_key
 
     @abstractmethod
-    async def generate(self, model_name: str, prompt: str, timeout: int) -> InferenceResult: ...
+    async def generate(
+        self,
+        model_name: str,
+        prompt: str,
+        timeout: int,
+        attachments: list[dict] | None = None,
+    ) -> InferenceResult: ...
 
     @abstractmethod
     async def health_check(self, timeout: int = 5) -> bool:
