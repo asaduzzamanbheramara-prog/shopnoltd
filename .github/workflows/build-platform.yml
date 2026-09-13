@@ -36,11 +36,14 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.detect.outputs.matrix }}
+      has_services: ${{ steps.detect.outputs.has_services }}
+
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+
       - id: detect
         env:
           BEFORE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
@@ -49,8 +52,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+
           python3 - <<'PY'
-          import json, os, subprocess
+          import json
+          import os
+          import subprocess
 
           services = {
             'domain-service': ('platform/domain-service/Dockerfile', '.'),
@@ -95,57 +101,124 @@ jobs:
 
           before = os.environ.get('BEFORE', '')
           sha = os.environ['SHA']
-          if os.environ.get('EVENT_NAME') == 'workflow_dispatch' or not before or set(before) == {'0'}:
+          event_name = os.environ['EVENT_NAME']
+
+          if event_name == 'workflow_dispatch':
+              changed = ['ALL']
+          elif not before or set(before) == {'0'}:
               changed = ['ALL']
           else:
-              changed = subprocess.check_output(['git', 'diff', '--name-only', before, sha], text=True).splitlines()
+              changed = subprocess.check_output(
+                  ['git', 'diff', '--name-only', before, sha],
+                  text=True,
+              ).splitlines()
 
-          shared_changed = 'ALL' in changed or any(p == 'shared' or p.startswith('shared/') for p in changed)
-          workflow_changed = any(p == '.github/workflows/build-platform.yml' for p in changed)
-          # A workflow-only change must not broaden a PR build to every service.
-          # Workflow changes are relevant to the CI definition itself, not to
-          # application image scope. Keep ALL as the explicit/manual fallback.
+          shared_changed = (
+              'ALL' in changed
+              or any(
+                  p == 'shared' or p.startswith('shared/')
+                  for p in changed
+              )
+          )
+
           result = []
+
           for service, (dockerfile, context) in services.items():
               prefix = dockerfile.rsplit('/Dockerfile', 1)[0]
-              affected = shared_changed or any(p == prefix or p.startswith(prefix + '/') for p in changed)
-              if service == 'billing-engine':
-                  affected = affected or any(p == 'billing-engine' or p.startswith('billing-engine/') for p in changed)
-              if service == 'vpn-service':
-                  affected = affected or any(p == 'services/vpn-service' or p.startswith('services/vpn-service/') for p in changed)
-              if affected:
-                  result.append({'service': service, 'dockerfile': dockerfile, 'context': context})
 
-          if not result:
-              result = [{'service': s, 'dockerfile': d, 'context': c} for s, (d, c) in services.items()]
-          print('Affected services:', ', '.join(x['service'] for x in result))
-          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
-              f.write('matrix=' + json.dumps({'include': result}, separators=(',', ':')) + '\n')
+              affected = (
+                  'ALL' in changed
+                  or shared_changed
+                  or any(
+                      p == prefix or p.startswith(prefix + '/')
+                      for p in changed
+                  )
+              )
+
+              if service == 'billing-engine':
+                  affected = affected or any(
+                      p == 'billing-engine'
+                      or p.startswith('billing-engine/')
+                      for p in changed
+                  )
+
+              if service == 'vpn-service':
+                  affected = affected or any(
+                      p == 'services/vpn-service'
+                      or p.startswith('services/vpn-service/')
+                      for p in changed
+                  )
+
+              if affected:
+                  result.append({
+                      'service': service,
+                      'dockerfile': dockerfile,
+                      'context': context,
+                  })
+
+          matrix = {'include': result}
+
+          print('Changed paths:')
+          for path in changed:
+              print(f'  {path}')
+
+          if result:
+              print('Affected services:')
+              for item in result:
+                  print(f"  {item['service']}")
+          else:
+              print('Affected services: none')
+
+          with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as f:
+              f.write(
+                  'matrix='
+                  + json.dumps(matrix, separators=(',', ':'))
+                  + '\n'
+              )
+              f.write(
+                  'has_services='
+                  + ('true' if result else 'false')
+                  + '\n'
+              )
           PY
 
   build:
     name: Build ${{ matrix.service }}
     needs: detect-changes
+    if: needs.detect-changes.outputs.has_services == 'true'
     runs-on: ubuntu-latest
+
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.detect-changes.outputs.matrix) }}
+
     steps:
       - uses: actions/checkout@v4
+
       - name: Validate build context
         shell: bash
         run: |
           set -euo pipefail
+
           test -f '${{ matrix.dockerfile }}'
           test -d '${{ matrix.context }}'
-          if [ '${{ matrix.service }}' = 'billing-engine' ]; then test -d billing-engine/app; fi
-          if [ '${{ matrix.service }}' = 'vpn-service' ]; then test -d services/vpn-service; fi
+
+          if [ '${{ matrix.service }}' = 'billing-engine' ]; then
+            test -d billing-engine/app
+          fi
+
+          if [ '${{ matrix.service }}' = 'vpn-service' ]; then
+            test -d services/vpn-service
+          fi
+
       - uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
       - uses: docker/setup-buildx-action@v3
+
       - name: Build and push immutable image
         uses: docker/build-push-action@v6
         with:
@@ -160,15 +233,28 @@ jobs:
 
   promote:
     name: Promote built images to GitOps manifests
-    if: github.event_name == 'push'
+    if: >
+      github.event_name == 'push' &&
+      needs.detect-changes.outputs.has_services == 'true'
     needs: [detect-changes, build]
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
         with:
           ref: main
           fetch-depth: 2
-      - name: Pin affected GitOps images to this source revision
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Resolve published image digests
+        id: resolve
         env:
           SOURCE_SHA: ${{ github.sha }}
           IMAGE_OWNER: ${{ github.repository_owner }}
@@ -176,42 +262,236 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+
           python3 - <<'PY'
-          import json, os, re
+          import json
+          import os
+          import re
+          import subprocess
+
           matrix = json.loads(os.environ['MATRIX'])['include']
-          services = {x['service'] for x in matrix}
           owner = os.environ['IMAGE_OWNER']
           sha = os.environ['SOURCE_SHA']
-          changed = 0
+
+          resolved = {}
+
+          for item in matrix:
+              service = item['service']
+              image = f'ghcr.io/{owner}/shopnoltd/{service}'
+              reference = f'{image}:{sha}'
+
+              print(f'Resolving {reference}')
+
+              result = subprocess.run(
+                  [
+                      'docker',
+                      'buildx',
+                      'imagetools',
+                      'inspect',
+                      reference,
+                  ],
+                  check=True,
+                  capture_output=True,
+                  text=True,
+              )
+
+              digest = None
+
+              for line in result.stdout.splitlines():
+                  match = re.match(
+                      r'^\s*Digest:\s*(sha256:[0-9a-f]{64})\s*$',
+                      line,
+                  )
+                  if match:
+                      digest = match.group(1)
+                      break
+
+              if not digest:
+                  raise SystemExit(
+                      f'ERROR: unable to resolve immutable digest for '
+                      f'{reference}'
+                  )
+
+              resolved[service] = {
+                  'image': image,
+                  'tag': sha,
+                  'digest': digest,
+              }
+
+              print(f'{service}: {digest}')
+
+          with open(
+              os.environ['GITHUB_OUTPUT'],
+              'a',
+              encoding='utf-8',
+          ) as f:
+              f.write(
+                  'resolved='
+                  + json.dumps(resolved, separators=(',', ':'))
+                  + '\n'
+              )
+          PY
+
+      - name: Promote GitOps image references
+        env:
+          RESOLVED: ${{ steps.resolve.outputs.resolved }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          python3 - <<'PY'
+          import json
+          import os
+          import re
+
+          resolved = json.loads(os.environ['RESOLVED'])
+
+          matched = {service: 0 for service in resolved}
+          changed_files = []
+
           for root, _, files in os.walk('k8s'):
               for name in files:
                   if not name.endswith(('.yaml', '.yml')):
                       continue
+
                   path = os.path.join(root, name)
+
                   with open(path, encoding='utf-8') as f:
                       text = f.read()
+
                   original = text
-                  for service in services:
-                      image = f'ghcr.io/{owner}/shopnoltd/{service}'
-                      text = re.sub(re.escape(image) + r':[A-Za-z0-9_.-]+', image + ':' + sha, text)
+
+                  for service, info in resolved.items():
+                      image = info['image']
+                      tag = info['tag']
+                      digest = info['digest']
+
+                      pattern = re.escape(image) + (
+                          r'(?::[A-Za-z0-9_.-]+'
+                          r'|@sha256:[0-9a-f]{64})'
+                      )
+
+                      def replace(match):
+                          matched[service] += 1
+                          existing = match.group(0)
+
+                          if '@sha256:' in existing:
+                              return image + '@' + digest
+
+                          return image + ':' + tag
+
+                      text = re.sub(
+                          pattern,
+                          replace,
+                          text,
+                      )
+
                   if text != original:
                       with open(path, 'w', encoding='utf-8') as f:
                           f.write(text)
-                      changed += 1
-          print(f'Updated {changed} GitOps manifest files for: {sorted(services)}')
-          if changed == 0:
-              print('No matching GitOps image references were found; image remains published but no manifest is changed.')
+
+                      changed_files.append(path)
+
+          print('GitOps promotion results:')
+
+          for service, count in matched.items():
+              print(f'  {service}: {count} matching image reference(s)')
+
+              if count == 0:
+                  raise SystemExit(
+                      f'ERROR: no GitOps image reference found for '
+                      f'{service}. Refusing to publish a build that cannot '
+                      f'be promoted.'
+                  )
+
+          print()
+          print('Changed GitOps files:')
+
+          if changed_files:
+              for path in sorted(changed_files):
+                  print(f'  {path}')
+          else:
+              raise SystemExit(
+                  'ERROR: affected services were resolved, but no GitOps '
+                  'manifest changed. Refusing silent promotion failure.'
+              )
           PY
+
+      - name: Verify promoted manifests
+        env:
+          RESOLVED: ${{ steps.resolve.outputs.resolved }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          python3 - <<'PY'
+          import json
+          import os
+          import re
+
+          resolved = json.loads(os.environ['RESOLVED'])
+
+          for service, info in resolved.items():
+              image = info['image']
+              tag = info['tag']
+              digest = info['digest']
+
+              tag_count = 0
+              digest_count = 0
+
+              pattern = re.compile(
+                  re.escape(image)
+                  + r'(?::([A-Za-z0-9_.-]+)|@sha256:([0-9a-f]{64}))'
+              )
+
+              for root, _, files in os.walk('k8s'):
+                  for name in files:
+                      if not name.endswith(('.yaml', '.yml')):
+                          continue
+
+                      path = os.path.join(root, name)
+
+                      with open(path, encoding='utf-8') as f:
+                          text = f.read()
+
+                      for match in pattern.finditer(text):
+                          if match.group(1) == tag:
+                              tag_count += 1
+                          if match.group(2) == digest.split(':', 1)[1]:
+                              digest_count += 1
+
+              print(
+                  f'{service}: '
+                  f'tag={tag_count}, '
+                  f'digest={digest_count}, '
+                  f'expected_digest={digest}'
+              )
+
+              if tag_count == 0 and digest_count == 0:
+                  raise SystemExit(
+                      f'ERROR: verification failed for {service}; '
+                      f'neither expected tag nor digest is present.'
+                  )
+          PY
+
       - name: Commit manifest promotion
         shell: bash
         run: |
           set -euo pipefail
+
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
           git add k8s
+
           if git diff --cached --quiet; then
-            echo 'No manifest promotion commit required.'
-            exit 0
+            echo 'ERROR: promotion produced no GitOps commit.'
+            exit 1
           fi
-          git commit -m "chore(gitops): promote affected images for ${GITHUB_SHA}"
+
+          git diff --cached --check
+
+          git commit \
+            -m "chore(gitops): promote affected images for ${GITHUB_SHA}"
+
           git push origin HEAD:main
