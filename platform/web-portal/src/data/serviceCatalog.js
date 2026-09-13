@@ -63,7 +63,7 @@ export const CONNECTED_PLATFORMS = [
 
 export const ADMIN_SERVICES = [
   SERVICE('🛡️', 'Platform Admin', 'Unified administration for users, tenants, services, database operations, reports and platform controls.', '/admin', 'Administration'),
-  SERVICE('🤖', 'AI Model Administration', 'Manage AI providers and models, activation, defaults, connectivity tests and credentials from the authorized admin workspace.', '/admin', 'Administration'),
+  SERVICE('🤖', 'AI Model Administration', 'Manage AI providers and models, activation, defaults, connectivity tests and credentials from the authorized admin workspace.', '/ai/models', 'Administration'),
   SERVICE('🗄️', 'Database & Tables', 'Browse and manage authorized database tables and rows with RBAC/audit controls.', '/admin/database', 'Administration'),
   SERVICE('📊', 'Reports & Analytics', 'Generate, review and publish platform reports and operational analytics.', '/reports', 'Visualization'),
   SERVICE('🧊', '3D / HD / 4K Visualization', 'Interactive service topology and visualization workspace for platform operations.', '/admin', 'Visualization'),
