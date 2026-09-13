@@ -14,6 +14,7 @@ class Work(Base):
     title = Column(String(300), nullable=False)
     description = Column(Text, nullable=False)
     requirements = Column(Text, nullable=True)
+    reference_image = Column(Text, nullable=True)
     reward_amount = Column(Numeric(20, 8), nullable=False)
     currency = Column(String(16), nullable=False, default="BDT")
     max_workers = Column(Integer, nullable=False, default=1)
