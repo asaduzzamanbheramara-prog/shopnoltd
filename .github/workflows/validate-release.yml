@@ -69,7 +69,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Check Android Cloud navigation
+      - name: Check Android Cloud main-domain integration
         run: |
-          grep -F 'devices.shopnoltd.dpdns.org' platform/web-portal/src/main.jsx
-          grep -F 'Android Cloud' platform/web-portal/src/main.jsx
+          grep -F "['Android Cloud', '/android-cloud']" platform/web-portal/src/main.jsx
+          grep -F 'base: "/android-cloud/"' platform/android-cloud/web/vite.config.js
+          grep -F 'REDIRECT_URI = `${window.location.origin}/android-cloud/callback`' platform/android-cloud/web/src/main.jsx
+          grep -F 'android-cloud-web' k8s/services/web-portal/ingress.yaml
+          grep -F 'path: /android-cloud' k8s/services/web-portal/ingress.yaml
