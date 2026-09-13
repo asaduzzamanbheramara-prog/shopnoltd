@@ -233,9 +233,7 @@ jobs:
 
   promote:
     name: Promote built images to GitOps manifests
-    if: >
-      github.event_name == 'push' &&
-      needs.detect-changes.outputs.has_services == 'true'
+    if: needs.detect-changes.outputs.has_services == 'true'
     needs: [detect-changes, build]
     runs-on: ubuntu-latest
 
