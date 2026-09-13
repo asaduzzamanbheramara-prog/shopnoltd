@@ -28,7 +28,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: controller
-          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/android-cloud-controller:f1cd36e9f0dd87f0b6badbf7a324a30714c4129d
+          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/android-cloud-controller:93130036b226542fe29cdf4e17af9c9b3a3d3269
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
