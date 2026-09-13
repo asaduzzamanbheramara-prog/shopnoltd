@@ -41,7 +41,7 @@ spec:
         args:
           - |
             cd /srv/src/kpi && \
-            /opt/venv/bin/celery -A kobo worker -l info
+            /opt/venv/bin/celery -A kobo worker -l info --concurrency=2 --prefetch-multiplier=4
         env:
         - name: POD_NAME
           valueFrom:
