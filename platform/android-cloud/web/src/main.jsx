@@ -3,11 +3,11 @@ import { createRoot } from "react-dom/client";
 import { Emulator } from "android-emulator-webrtc";
 import "./style.css";
 
-const API = import.meta.env.VITE_ANDROID_CLOUD_API || "/api";
+const API = import.meta.env.VITE_ANDROID_CLOUD_API || "/android-cloud/api";
 const KEYCLOAK_URL = import.meta.env.VITE_KEYCLOAK_URL || "https://auth.shopnoltd.dpdns.org";
 const KEYCLOAK_REALM = import.meta.env.VITE_KEYCLOAK_REALM || "shopnoltd";
 const KEYCLOAK_CLIENT_ID = import.meta.env.VITE_KEYCLOAK_CLIENT_ID || "shopnoltd-web";
-const REDIRECT_URI = `${window.location.origin}/callback`;
+const REDIRECT_URI = `${window.location.origin}/android-cloud/callback`;
 
 function authHeader() {
   const token = localStorage.getItem("shopno_token") || localStorage.getItem("shopnoltd_access_token");
@@ -130,7 +130,7 @@ function App() {
         sessionStorage.removeItem("android_cloud_pkce_verifier");
         sessionStorage.removeItem("android_cloud_oidc_state");
         sessionStorage.removeItem("android_cloud_post_login_next");
-        window.history.replaceState({}, "", next && next.startsWith("/") && !next.startsWith("//") ? next : "/");
+        window.history.replaceState({}, "", next && next.startsWith("/") && !next.startsWith("//") ? next : "/android-cloud");
       })
       .catch((e) => setError(e?.message || "Shopnoltd authentication failed."))
       .finally(() => setAuthBusy(false));
