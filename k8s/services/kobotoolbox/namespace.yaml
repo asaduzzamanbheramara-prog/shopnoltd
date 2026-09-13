@@ -3,6 +3,7 @@ kind: Namespace
 metadata:
   name: shopno-apps
   labels:
+    name: shopno-apps
     app.kubernetes.io/part-of: shopnoltd
     pod-security.kubernetes.io/enforce: restricted
     pod-security.kubernetes.io/audit: restricted

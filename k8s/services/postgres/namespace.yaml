@@ -3,6 +3,7 @@ kind: Namespace
 metadata:
   name: shopno-data
   labels:
+    name: shopno-data
     app.kubernetes.io/part-of: shopnoltd
     app.kubernetes.io/component: database
     environment: production
