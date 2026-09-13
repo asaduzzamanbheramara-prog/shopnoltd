@@ -21,7 +21,7 @@ spec:
       automountServiceAccountToken: false
       containers:
         - name: keycloak
-          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/keycloak:latest
+          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/keycloak:861efb1ce486eead3321c2b6dfd49df4beeebfb5
           imagePullPolicy: IfNotPresent
           args:
             - start
