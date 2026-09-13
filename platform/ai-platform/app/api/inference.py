@@ -44,7 +44,12 @@ async def infer(
     db: AsyncSession = Depends(get_db),
 ):
     try:
-        result = await run_inference(db=db, prompt=body.prompt, model_name=body.model)
+        result = await run_inference(
+            db=db,
+            prompt=body.prompt,
+            model_name=body.model,
+            attachments=body.attachments,
+        )
         return InferOut(response=result.text, model=body.model or "resolved", tokens=result.tokens_used)
     except ModelNotAvailableError as exc:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc

@@ -7,7 +7,13 @@ ANTHROPIC_VERSION = "2023-06-01"
 
 
 class AnthropicAdapter(BaseAdapter):
-    async def generate(self, model_name: str, prompt: str, timeout: int) -> InferenceResult:
+    async def generate(
+        self,
+        model_name: str,
+        prompt: str,
+        timeout: int,
+        attachments: list[dict] | None = None,
+    ) -> InferenceResult:
         api_key = self.require_api_key("Anthropic")
         base = self.base_url or DEFAULT_BASE_URL
         headers = {
@@ -15,11 +21,32 @@ class AnthropicAdapter(BaseAdapter):
             "anthropic-version": ANTHROPIC_VERSION,
             "content-type": "application/json",
         }
+
+        content = [{"type": "text", "text": prompt}]
+        for attachment in attachments or []:
+            mime_type = str(attachment.get("mime_type") or "")
+            data = attachment.get("data")
+            if not data:
+                continue
+            if not mime_type.startswith("image/"):
+                raise RuntimeError(
+                    f"Anthropic adapter does not accept attachment type '{mime_type}'"
+                )
+            content.append({
+                "type": "image",
+                "source": {
+                    "type": "base64",
+                    "media_type": mime_type,
+                    "data": data,
+                },
+            })
+
         payload = {
             "model": model_name,
             "max_tokens": self.extra_config.get("max_tokens", 1024),
-            "messages": [{"role": "user", "content": prompt}],
+            "messages": [{"role": "user", "content": content}],
         }
+
         async with httpx.AsyncClient(timeout=timeout) as client:
             r = await client.post(f"{base}/messages", headers=headers, json=payload)
             r.raise_for_status()

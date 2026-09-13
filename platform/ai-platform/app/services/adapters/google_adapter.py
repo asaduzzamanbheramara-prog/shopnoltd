@@ -12,11 +12,35 @@ class GoogleAdapter(BaseAdapter):
         super().__init__(api_key, base_url, extra_config)
         self.base_url = (base_url or "https://generativelanguage.googleapis.com/v1beta").rstrip("/")
 
-    async def generate(self, model_name: str, prompt: str, timeout: int) -> InferenceResult:
+    async def generate(
+        self,
+        model_name: str,
+        prompt: str,
+        timeout: int,
+        attachments: list[dict] | None = None,
+    ) -> InferenceResult:
         if not self.api_key:
             raise RuntimeError("Google/Gemini provider has no API key configured")
+
         url = f"{self.base_url}/models/{model_name}:generateContent"
-        payload = {"contents": [{"role": "user", "parts": [{"text": prompt}]}]}
+        parts = [{"text": prompt}]
+
+        for attachment in attachments or []:
+            mime_type = str(attachment.get("mime_type") or "")
+            data = attachment.get("data")
+            if not data:
+                continue
+            if not mime_type.startswith("image/"):
+                raise RuntimeError(f"Gemini adapter does not accept attachment type '{mime_type}'")
+            parts.append({
+                "inline_data": {
+                    "mime_type": mime_type,
+                    "data": data,
+                }
+            })
+
+        payload = {"contents": [{"role": "user", "parts": parts}]}
+
         async with httpx.AsyncClient(timeout=timeout) as client:
             response = await client.post(url, params={"key": self.api_key}, json=payload)
             response.raise_for_status()

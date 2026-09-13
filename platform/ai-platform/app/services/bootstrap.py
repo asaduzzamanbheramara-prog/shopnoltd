@@ -118,12 +118,29 @@ async def bootstrap_providers(db: AsyncSession) -> int:
                 is_active=True,
                 is_default=False,
                 priority=spec["priority"],
-                capabilities={"chat": True},
+                capabilities={
+                    "chat": True,
+                    **(
+                        {"supports_vision": True}
+                        if (
+                            spec["env_key"] == "GOOGLE_AI_API_KEY"
+                            and model_name == "gemini-2.5-flash"
+                        )
+                        else {}
+                    ),
+                },
             )
             db.add(model)
         else:
             model.is_active = True
             model.priority = spec["priority"]
+            if (
+                spec["env_key"] == "GOOGLE_AI_API_KEY"
+                and model_name == "gemini-2.5-flash"
+            ):
+                capabilities = dict(model.capabilities or {})
+                capabilities["supports_vision"] = True
+                model.capabilities = capabilities
 
         configured += 1
 
