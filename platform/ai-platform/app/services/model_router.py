@@ -83,27 +83,76 @@ def _build_adapter(provider: AIProvider) -> BaseAdapter:
     return adapter_cls(api_key=api_key, base_url=provider.base_url, extra_config=provider.extra_config or {})
 
 
-async def run_inference(db: AsyncSession, prompt: str, model_name: str | None = None) -> InferenceResult:
+def _requires_vision(attachments: list[dict] | None) -> bool:
+    return any(
+        str(item.get("mime_type") or "").lower().startswith("image/")
+        and bool(item.get("data"))
+        for item in attachments or []
+    )
+
+
+def _supports_vision(model: AIModel) -> bool:
+    capabilities = model.capabilities or {}
+    return bool(capabilities.get("supports_vision") or capabilities.get("vision"))
+
+
+async def run_inference(
+    db: AsyncSession,
+    prompt: str,
+    model_name: str | None = None,
+    attachments: list[dict] | None = None,
+) -> InferenceResult:
+    attachments = attachments or []
+    needs_vision = _requires_vision(attachments)
+
     model, provider = await _resolve_model(db, model_name)
+
+    if needs_vision and not _supports_vision(model):
+        raise ModelNotAvailableError(
+            f"Model '{model.model_name}' is not marked as vision-capable. "
+            "Enable capabilities.supports_vision for a compatible model."
+        )
+
     adapter = _build_adapter(provider)
+
     try:
-        return await adapter.generate(model.model_name, prompt, timeout=settings.inference_timeout_seconds)
+        return await adapter.generate(
+            model.model_name,
+            prompt,
+            timeout=settings.inference_timeout_seconds,
+            attachments=attachments,
+        )
     except Exception as exc:
         fallback_stmt = (
             select(AIModel)
             .join(AIProvider)
-            .where(AIModel.is_active, AIProvider.is_active, AIModel.id != model.id)
-            .order_by(AIModel.priority.asc())
+            .where(
+                AIModel.is_active,
+                AIProvider.is_active,
+                AIModel.id != model.id,
+            )
         )
+        if needs_vision:
+            fallback_stmt = fallback_stmt.where(AIModel.capabilities["supports_vision"].as_boolean().is_(True))
+
+        fallback_stmt = fallback_stmt.order_by(AIModel.priority.asc())
         result = await db.execute(fallback_stmt)
         fallback_model = result.scalars().first()
+
         if fallback_model is None:
             raise ModelNotAvailableError(
-                f"Inference failed on '{model.model_name}' and no fallback model is available: {exc}"
+                f"Inference failed on '{model.model_name}' and no compatible fallback model is available: {exc}"
             ) from exc
-        provider_result = await db.execute(select(AIProvider).where(AIProvider.id == fallback_model.provider_id))
+
+        provider_result = await db.execute(
+            select(AIProvider).where(AIProvider.id == fallback_model.provider_id)
+        )
         fallback_provider = provider_result.scalar_one()
         fallback_adapter = _build_adapter(fallback_provider)
+
         return await fallback_adapter.generate(
-            fallback_model.model_name, prompt, timeout=settings.inference_timeout_seconds
+            fallback_model.model_name,
+            prompt,
+            timeout=settings.inference_timeout_seconds,
+            attachments=attachments,
         )

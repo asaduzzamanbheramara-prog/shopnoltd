@@ -1,4 +1,11 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+
+
+class InferAttachment(BaseModel):
+    name: str = Field(min_length=1, max_length=255)
+    mime_type: str = Field(min_length=1, max_length=128)
+    data: str | None = None
+    text: str | None = None
 
 
 class InferIn(BaseModel):
@@ -7,6 +14,7 @@ class InferIn(BaseModel):
     agent_id: str | None = None
     max_tokens: int = 512
     temperature: float = 0.7
+    attachments: list[InferAttachment] = Field(default_factory=list)
 
 
 class InferOut(BaseModel):
