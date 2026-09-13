@@ -29,6 +29,9 @@ export const SERVICES = [
   SERVICE('📝', 'Forms & Enketo', 'Form collection and browser-based form workflows.', 'https://enketo.shopnoltd.dpdns.org', 'Productivity'),
   SERVICE('💬', 'Chatwoot', 'Customer inbox, support conversations and communication automation.', 'https://chatwoot.shopnoltd.dpdns.org', 'Communication'),
   SERVICE('📱', 'Remote Access', 'Shopnoltd remote-device workspace for authorized device support and control.', 'https://remote.shopnoltd.dpdns.org', 'Remote Access'),
+  SERVICE('🔒', 'VPN', 'Personal VPN access for secure remote connectivity.', 'https://vpn.shopnoltd.dpdns.org', 'Remote Access'),
+  SERVICE('📧', 'Webmail', 'Browser-based email client for Shopnoltd mail accounts.', 'https://webmail.shopnoltd.dpdns.org', 'Communication'),
+  SERVICE('🛠️', 'Admin Portal', 'Staff administration console for users, plans, payments and tenants.', 'https://admin-portal.shopnoltd.dpdns.org', 'Admin'),
   SERVICE('🖥️', 'Device Console', 'Browse registered devices and launch authorized remote desktop sessions through the dedicated device connection service.', 'https://devices.shopnoltd.dpdns.org', 'Remote Access'),
 ]
 
