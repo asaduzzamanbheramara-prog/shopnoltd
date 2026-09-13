@@ -16,8 +16,16 @@ function createChat(model = '') {
 
 function loadChats() {
   try {
-    const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]')
-    return Array.isArray(parsed) && parsed.length ? parsed : [createChat()]
+    const current = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]')
+    if (Array.isArray(current) && current.length) return current
+
+    const legacy = JSON.parse(localStorage.getItem('shopno_ai_chats_v2') || '[]')
+    if (Array.isArray(legacy) && legacy.length) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(legacy))
+      return legacy
+    }
+
+    return [createChat()]
   } catch {
     return [createChat()]
   }
@@ -117,11 +125,45 @@ export default function AIWorkspace() {
   }
 
   async function readAttachment(file) {
-    const base = { id: crypto.randomUUID(), name: file.name, size: file.size, type: file.type || 'application/octet-stream', text: '' }
-    if (file.size > MAX_TEXT_FILE_BYTES) return { ...base, note: 'File is larger than the browser text-analysis limit.' }
-    if (TEXT_TYPES.test(file.type) || /\.(txt|md|csv|json|ya?ml|xml|js|jsx|ts|tsx|py|go|rs|java|css|html|sql|sh)$/i.test(file.name)) {
+    const type = file.type || 'application/octet-stream'
+    const base = {
+      id: crypto.randomUUID(),
+      name: file.name,
+      size: file.size,
+      type,
+      text: '',
+      data: ''
+    }
+
+    if (TEXT_TYPES.test(type) || /\.(txt|md|csv|json|ya?ml|xml|js|jsx|ts|tsx|py|go|rs|java|css|html|sql|sh)$/i.test(file.name)) {
+      if (file.size > MAX_TEXT_FILE_BYTES) {
+        return { ...base, note: 'File is larger than the browser text-analysis limit.' }
+      }
       return { ...base, text: await file.text() }
     }
+
+    if (type.startsWith('image/')) {
+      const MAX_IMAGE_BYTES = 4 * 1024 * 1024
+      if (file.size > MAX_IMAGE_BYTES) {
+        return { ...base, note: 'Image is larger than the 4 MB multimodal limit.' }
+      }
+
+      const dataUrl = await new Promise((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve(String(reader.result || ''))
+        reader.onerror = () => reject(reader.error || new Error('Unable to read image'))
+        reader.readAsDataURL(file)
+      })
+
+      const comma = dataUrl.indexOf(',')
+      if (comma < 0) throw new Error(`Invalid image data for ${file.name}`)
+
+      return {
+        ...base,
+        data: dataUrl.slice(comma + 1)
+      }
+    }
+
     return base
   }
 
@@ -160,8 +202,20 @@ export default function AIWorkspace() {
   async function send(textOverride = null, retryMessage = null) {
     const text = (textOverride ?? prompt).trim()
     if (!text || loading || !activeChat || !models.length) return
-    const fileContext = attachments.filter((file) => file.text).map((file) => `\n\n--- Attached file: ${file.name} ---\n${file.text}`).join('')
+    const fileContext = attachments
+      .filter((file) => file.text)
+      .map((file) => `\n\n--- Attached file: ${file.name} ---\n${file.text}`)
+      .join('')
+
     const requestPrompt = `${text}${fileContext}`
+
+    const multimodalAttachments = attachments
+      .filter((file) => file.data && file.type.startsWith('image/'))
+      .map((file) => ({
+        name: file.name,
+        mime_type: file.type,
+        data: file.data
+      }))
     const userMessage = retryMessage ? null : { id: crypto.randomUUID(), role: 'user', content: text, fileNames: attachments.map((file) => file.name) }
     const chatId = activeId
     if (!retryMessage) {
@@ -170,7 +224,15 @@ export default function AIWorkspace() {
     }
     setLoading(true); setError(''); abortRef.current = new AbortController()
     try {
-      const data = await request('/inference', { method: 'POST', signal: abortRef.current.signal, body: JSON.stringify({ prompt: requestPrompt, model: activeModel || null }) })
+      const data = await request('/inference', {
+        method: 'POST',
+        signal: abortRef.current.signal,
+        body: JSON.stringify({
+          prompt: requestPrompt,
+          model: activeModel || null,
+          attachments: multimodalAttachments
+        })
+      })
       const content = data?.response || data?.content || 'The AI service returned an empty response.'
       setChats((current) => current.map((chat) => chat.id === chatId ? { ...chat, messages: [...chat.messages, { id: crypto.randomUUID(), role: 'assistant', content }] } : chat))
     } catch (err) {
@@ -199,12 +261,12 @@ export default function AIWorkspace() {
         <div style={{ padding: 12 }}><button onClick={newChat} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9, border: '1px solid #d1d5db', background: '#fff', borderRadius: 8, padding: '10px 12px', cursor: 'pointer', fontWeight: 600 }}><Plus size={17} /> New chat</button></div>
         <div style={{ padding: '6px 10px 10px', fontSize: 11, color: '#6b7280', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em' }}>Recent chats</div>
         <div style={{ overflowY: 'auto', flex: 1, padding: '0 8px' }}>{chats.map((chat) => <div key={chat.id} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}><button onClick={() => { setActiveId(chat.id); setSidebarOpen(false) }} style={{ flex: 1, minWidth: 0, textAlign: 'left', display: 'flex', alignItems: 'center', gap: 9, border: 0, borderRadius: 8, background: chat.id === activeId ? '#e5e7eb' : 'transparent', padding: '9px 10px', cursor: 'pointer', color: '#374151' }}><MessageSquare size={16} /><span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{chat.title}</span></button><button onClick={() => deleteChat(chat.id)} aria-label="Delete chat" title="Delete chat" style={{ border: 0, background: 'transparent', color: '#9ca3af', padding: 5, cursor: 'pointer' }}><Trash2 size={14} /></button></div>)}</div>
-        <div style={{ padding: 12, borderTop: '1px solid #e5e7eb', fontSize: 12, color: '#6b7280' }}>Shopnoltd AI · Local browser chat history</div>
+        <div style={{ padding: 12, borderTop: '1px solid #e5e7eb', fontSize: 12, color: '#6b7280' }}>Shopnoltd AI · Your chats are stored locally in this browser.</div>
       </aside>
       <section className="shopno-ai-main" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
         <header style={{ height: 58, flex: '0 0 58px', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', gap: 10, padding: '0 14px 0 18px', background: 'rgba(255,255,255,.96)' }}>
           <button onClick={() => setSidebarOpen((value) => !value)} aria-label="Toggle chat history" style={{ border: 0, background: 'transparent', cursor: 'pointer', padding: 7 }}><Menu size={20} /></button>
-          <div style={{ fontWeight: 700, marginRight: 'auto', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Shopnoltd AI</div>
+          <div className="shopno-ai-title" style={{ fontWeight: 700, marginRight: 'auto', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Shopnoltd AI</div>
           <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}><Sparkles size={15} style={{ position: 'absolute', left: 10, pointerEvents: 'none' }} /><select value={activeModel} onChange={(e) => selectModel(e.target.value)} disabled={loadingModels || loading || !models.length} aria-label="AI model" style={{ appearance: 'none', padding: '8px 30px', border: '1px solid #d1d5db', borderRadius: 9, background: '#fff', fontWeight: 600, maxWidth: 300 }}>{!models.length && <option value="">No active models</option>}{models.map((item) => <option key={item.model_name} value={item.model_name}>{item.display_name || item.model_name}{item.is_default ? ' · default' : ''}</option>)}</select><ChevronDown size={15} style={{ position: 'absolute', right: 9, pointerEvents: 'none' }} /></div>
           <button onClick={loadModels} disabled={loadingModels || loading} aria-label="Refresh models" title="Refresh models" style={actionStyle}><RefreshCw size={18} /></button>
           <button onClick={() => setSidebarOpen(false)} aria-label="Close history" style={actionStyle}><X size={18} /></button>
@@ -217,9 +279,9 @@ export default function AIWorkspace() {
             <textarea ref={inputRef} value={prompt} onChange={(e) => setPrompt(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(e) } }} rows={1} placeholder="Message Shopnoltd AI…" disabled={loading || loadingModels || !models.length} style={{ width: '100%', minHeight: 52, maxHeight: 180, boxSizing: 'border-box', border: 0, outline: 0, resize: 'none', borderRadius: 16, padding: '15px 150px 15px 48px', font: 'inherit', lineHeight: 1.45 }} />
             <label title="Attach files" aria-label="Attach files" style={{ position: 'absolute', left: 9, bottom: 9, width: 36, height: 36, display: 'grid', placeItems: 'center', color: '#4b5563', cursor: 'pointer' }}><Paperclip size={18} /><input type="file" multiple accept=".pdf,.doc,.docx,.txt,.md,.csv,.xls,.xlsx,.json,.xml,.yaml,.yml,.js,.jsx,.ts,.tsx,.py,.go,.rs,.java,.css,.html,.sql,.sh,image/*" onChange={addFiles} style={{ display: 'none' }} /></label>
             <button type="button" onClick={startMic} disabled={loading} aria-label={listening ? 'Stop microphone' : 'Use microphone'} title={listening ? 'Stop microphone' : 'Voice input'} style={{ position: 'absolute', right: 94, bottom: 9, width: 36, height: 36, border: 0, borderRadius: 10, display: 'grid', placeItems: 'center', background: listening ? '#fee2e2' : 'transparent', color: listening ? '#b91c1c' : '#4b5563', cursor: 'pointer' }}><Mic size={17} /></button>
-            {loading ? <button type="button" onClick={stopGeneration} aria-label="Stop generation" title="Stop generation" style={{ position: 'absolute', right: 52, bottom: 9, width: 36, height: 36, border: 0, borderRadius: 10, display: 'grid', placeItems: 'center', background: '#111827', color: '#fff', cursor: 'pointer' }}><Square size={15} /></button> : <button type="submit" disabled={!prompt.trim() || !models.length} aria-label="Send message" title="Send message" style={{ position: 'absolute', right: 9, bottom: 9, width: 36, height: 36, border: 0, borderRadius: 10, display: 'grid', placeItems: 'center', background: !prompt.trim() || !models.length ? '#d1d5db' : '#111827', color: '#fff', cursor: 'pointer' }}><Send size={17} /></button>}
+            {loading ? <button type="button" onClick={stopGeneration} aria-label="Stop generation" title="Stop generation" style={{ position: 'absolute', right: 52, bottom: 9, width: 36, height: 36, border: 0, borderRadius: 10, display: 'grid', placeItems: 'center', background: '#111827', color: '#fff', cursor: 'pointer' }}><Square size={15} /></button> : <button type="submit" disabled={!prompt.trim() || !models.length} aria-label="Send message" title="Send" style={{ position: 'absolute', right: 9, bottom: 9, width: 36, height: 36, border: 0, borderRadius: 10, display: 'grid', placeItems: 'center', background: !prompt.trim() || !models.length ? '#d1d5db' : '#111827', color: '#fff', cursor: 'pointer' }}><Send size={17} /></button>}
           </form>
-          <div style={{ textAlign: 'center', fontSize: 11, color: '#9ca3af', marginTop: 8 }}>Enter to send · Shift+Enter for a new line · Attachments are text-extracted in the browser when supported</div>
+          <div style={{ textAlign: 'center', fontSize: 11, color: '#9ca3af', marginTop: 8 }}>Enter to send · Shift+Enter for a new line · Text files are extracted in the browser; supported images are sent to vision-capable AI models</div>
         </div>
       </section>
     </div>
