@@ -72,7 +72,7 @@ jobs:
       - name: Check Android Cloud main-domain integration
         run: |
           grep -F "['Android Cloud', '/android-cloud']" platform/web-portal/src/main.jsx
-          grep -F "path=\"/android-cloud\"" platform/web-portal/src/main.jsx || true
           grep -F 'base: "/android-cloud/"' platform/android-cloud/web/vite.config.js
-          grep -F 'https://shopnoltd.dpdns.org/android-cloud/callback' platform/android-cloud/web/src/main.jsx
+          grep -F 'REDIRECT_URI = `${window.location.origin}/android-cloud/callback`' platform/android-cloud/web/src/main.jsx
           grep -F 'android-cloud-web' k8s/services/web-portal/ingress.yaml
+          grep -F 'path: /android-cloud' k8s/services/web-portal/ingress.yaml
