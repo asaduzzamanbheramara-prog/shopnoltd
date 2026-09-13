@@ -26,7 +26,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: web
-          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/android-cloud-web:93130036b226542fe29cdf4e17af9c9b3a3d3269
+          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/android-cloud-web:cde46dd9258232aac7443ad6ea5cea39ee60fc27
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
