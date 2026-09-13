@@ -3,5 +3,6 @@ kind: Namespace
 metadata:
   name: shopno-android
   labels:
+    name: shopno-android
     app.kubernetes.io/part-of: shopnoltd
     shopnoltd.dev/security-tier: isolated
