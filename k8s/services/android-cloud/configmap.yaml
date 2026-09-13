@@ -11,4 +11,6 @@ data:
   ANDROID_CLOUD_PUBLIC_HOST: android-gateway.shopnoltd.dpdns.org
   ANDROID_CLOUD_MAX_SESSIONS: "1"
   ANDROID_CLOUD_SESSION_TTL_SECONDS: "1800"
-  JWT_ALGORITHM: HS256
+  KEYCLOAK_ISSUER: https://auth.shopnoltd.dpdns.org/realms/shopnoltd
+  KEYCLOAK_CLIENT_ID: shopnoltd-web
+  KEYCLOAK_JWKS_URL: https://auth.shopnoltd.dpdns.org/realms/shopnoltd/protocol/openid-connect/certs
