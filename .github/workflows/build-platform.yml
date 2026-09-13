@@ -254,7 +254,7 @@ jobs:
       - name: Resolve published image digests
         id: resolve
         env:
-          SOURCE_SHA: ${{ github.sha }}
+          SOURCE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           IMAGE_OWNER: ${{ github.repository_owner }}
           MATRIX: ${{ needs.detect-changes.outputs.matrix }}
         shell: bash
