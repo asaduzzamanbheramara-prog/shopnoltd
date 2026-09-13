@@ -51,6 +51,18 @@ class PaymentMethod(str, enum.Enum):
     payoneer = "payoneer"
 
 
+class AdminAuditLog(Base):
+    __tablename__ = "admin_audit_log"
+    id = Column(UUID(as_uuid=True), primary_key=True)
+    actor = Column(String(128), nullable=False, index=True)
+    action = Column(String(16), nullable=False)
+    table_name = Column(String(128), nullable=False, index=True)
+    record_id = Column(String(128), nullable=True)
+    before = Column(JSONB, nullable=True)
+    after = Column(JSONB, nullable=True)
+    created_at = Column(DateTime, nullable=False, index=True)
+
+
 class Wallet(Base):
     __tablename__ = "wallets"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
