@@ -6,7 +6,7 @@ on:
     paths:
       - '.github/workflows/reconcile-gitops-after-promotion.yml'
   workflow_run:
-    workflows: ["Promote built images"]
+    workflows: ["Build and promote platform images"]
     types: [completed]
   workflow_dispatch:
 
