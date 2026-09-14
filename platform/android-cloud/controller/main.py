@@ -20,6 +20,7 @@ PUBLIC_GATEWAY_BASE = os.getenv("ANDROID_CLOUD_GATEWAY_BASE", "https://android-g
 PUBLIC_HOST = os.getenv("ANDROID_CLOUD_PUBLIC_HOST", "android-gateway.shopnoltd.dpdns.org")
 KEYCLOAK_ISSUER = os.getenv("KEYCLOAK_ISSUER", "https://auth.shopnoltd.dpdns.org/realms/shopnoltd").rstrip("/")
 KEYCLOAK_CLIENT_ID = os.getenv("KEYCLOAK_CLIENT_ID", "shopnoltd-web")
+KEYCLOAK_AUDIENCE = os.getenv("KEYCLOAK_AUDIENCE", "api-service")
 KEYCLOAK_JWKS_URL = os.getenv("KEYCLOAK_JWKS_URL", f"{KEYCLOAK_ISSUER}/protocol/openid-connect/certs")
 MAX_SESSIONS = int(os.getenv("ANDROID_CLOUD_MAX_SESSIONS", "1"))
 SESSION_TTL_SECONDS = int(os.getenv("ANDROID_CLOUD_SESSION_TTL_SECONDS", "1800"))
@@ -65,7 +66,7 @@ def current_user(request: Request) -> str:
             signing_key,
             algorithms=["RS256", "RS384", "RS512"],
             issuer=KEYCLOAK_ISSUER,
-            options={"verify_aud": False},
+            audience=KEYCLOAK_AUDIENCE,
         )
     except (jwt.PyJWTError, ValueError) as exc:
         raise HTTPException(status_code=401, detail="invalid_bearer_token") from exc
