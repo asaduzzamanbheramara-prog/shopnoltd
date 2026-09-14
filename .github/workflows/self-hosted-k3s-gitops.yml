@@ -14,7 +14,6 @@ on:
 env:
   ARGOCD_NAMESPACE: argocd
   ARGOCD_APP: shopnoltd
-  ARGOCD_CLI_VERSION: v3.5.1
   MIGRATION_NAMESPACE: shopno-data
   MIGRATION_JOB: postgres-platform-migration
   MIGRATION_CONFIGMAP: postgres-platform-migrations
@@ -57,26 +56,6 @@ jobs:
           kubectl auth can-i get secret -n shopno-tools
           kubectl auth can-i create secret -n "$PLATFORM_NAMESPACE"
 
-      - name: Install pinned Argo CD CLI
-        shell: bash
-        run: |
-          set -euo pipefail
-          tmpdir="$(mktemp -d)"
-          trap 'rm -rf "$tmpdir"' EXIT
-          curl --fail --silent --show-error --location \
-            "https://github.com/argoproj/argo-cd/releases/download/${ARGOCD_CLI_VERSION}/argocd-linux-amd64" \
-            -o "$tmpdir/argocd"
-          curl --fail --silent --show-error --location \
-            "https://github.com/argoproj/argo-cd/releases/download/${ARGOCD_CLI_VERSION}/cli_checksums.txt" \
-            -o "$tmpdir/cli_checksums.txt"
-          expected="$(awk '$2 == "argocd-linux-amd64" {print $1}' "$tmpdir/cli_checksums.txt")"
-          test -n "$expected"
-          actual="$(sha256sum "$tmpdir/argocd" | awk '{print $1}')"
-          test "$actual" = "$expected"
-          install -m 0555 "$tmpdir/argocd" "$RUNNER_TEMP/argocd"
-          "$RUNNER_TEMP/argocd" version --client --short
-          echo "ARGOCD_CLI=$RUNNER_TEMP/argocd" >> "$GITHUB_ENV"
-
       - name: Validate rendered Kubernetes source
         shell: bash
         run: |
@@ -113,8 +92,12 @@ jobs:
 
           phase="$(timeout 30s kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o jsonpath='{.status.operationState.phase}' 2>/dev/null || true)"
           if [ "$phase" = "Running" ]; then
-            echo 'Terminating the running Argo CD operation through the supported Argo CD CLI.'
-            timeout 60s "$ARGOCD_CLI" --core app terminate-op "$ARGOCD_APP" --app-namespace "$ARGOCD_NAMESPACE"
+            echo 'Clearing the stale Argo CD Application operation through Kubernetes.'
+            timeout 60s kubectl --request-timeout=30s \
+              -n "$ARGOCD_NAMESPACE" \
+              patch application "$ARGOCD_APP" \
+              --type=merge \
+              -p='{"operation":null}'
           elif [ "$phase" = "Terminating" ]; then
             echo 'Argo CD operation is already terminating; waiting for the controller.'
           else
@@ -200,17 +183,15 @@ jobs:
             argocd.argoproj.io/refresh=hard \
             --overwrite
 
-          # Use the supported Argo CD CLI operation instead of the nonexistent
-          # Application.spec.operation field. No --resource selectors are used,
-          # so this is a full-application sync.
-          timeout 900s "$ARGOCD_CLI" \
-            --core \
-            app sync "$ARGOCD_APP" \
-            --app-namespace "$ARGOCD_NAMESPACE" \
-            --revision "$GIT_REVISION" \
-            --timeout 840
+          echo 'Requesting the full Argo CD sync through the Kubernetes Application resource.'
+          timeout 60s kubectl --request-timeout=30s \
+            -n "$ARGOCD_NAMESPACE" \
+            patch application "$ARGOCD_APP" \
+            --type=merge \
+            -p "$(jq -nc --arg revision "$GIT_REVISION" \
+              '{operation:{sync:{revision:$revision,prune:false}}}')"
 
-          echo 'Argo CD full sync command completed.'
+          echo 'Argo CD full sync request submitted to the controller.'
 
       - name: Wait for Argo CD full sync
         shell: bash
