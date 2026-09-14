@@ -5,12 +5,16 @@ resources:
   - namespace.yaml
   - serviceaccount.yaml
   - rbac.yaml
-  - configmap.yaml
   - deployment.yaml
   - web-deployment.yaml
   - service.yaml
   - ingress.yaml
   - networkpolicy.yaml
+
+configMapGenerator:
+  - name: android-cloud-controller-config
+    envs:
+      - controller.env
 
 labels:
   - includeSelectors: true
