@@ -90,7 +90,7 @@ def make_emulator_pod(session: Session) -> client.V1Pod:
         volume_mounts=[client.V1VolumeMount(name="android-data", mount_path="/data")],
         security_context=client.V1SecurityContext(privileged=True, allow_privilege_escalation=True),
     )
-    return client.V1Pod(metadata=client.V1ObjectMeta(name=session.emulator_name, namespace=NAMESPACE, labels={"app.kubernetes.io/name": "android-emulator", "shopnoltd.dev/session": session.session_id}), spec=client.V1PodSpec(restart_policy="Never", automount_service_account_token=False, containers=[container], volumes=[client.V1Volume(name="android-data", empty_dir=client.V1EmptyDirVolumeSource(medium="Memory", size_limit="6Gi")]))
+    return client.V1Pod(metadata=client.V1ObjectMeta(name=session.emulator_name, namespace=NAMESPACE, labels={"app.kubernetes.io/name": "android-emulator", "shopnoltd.dev/session": session.session_id}), spec=client.V1PodSpec(restart_policy="Never", automount_service_account_token=False, containers=[container], volumes=[client.V1Volume(name="android-data", empty_dir=client.V1EmptyDirVolumeSource(medium="Memory", size_limit="6Gi"))]))
 
 def make_gateway_pod(session: Session) -> client.V1Pod:
     container = client.V1Container(
