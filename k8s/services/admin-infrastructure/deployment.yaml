@@ -48,7 +48,7 @@ spec:
             - name: KEYCLOAK_JWKS_URL
               value: http://keycloak.shopno-identity.svc.cluster.local/realms/shopnoltd/protocol/openid-connect/certs
             - name: KEYCLOAK_AUDIENCES
-              value: shopnoltd-web,api-service
+              value: shopnoltd-web,web-portal,api-service
             - name: CORS_ORIGINS
               value: https://shopnoltd.dpdns.org,https://admin-portal.shopnoltd.dpdns.org
           resources:
