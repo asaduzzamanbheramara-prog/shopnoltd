@@ -19,8 +19,6 @@ bearer = HTTPBearer()
 SOCIAL = "http://social-service.shopno-platform.svc.cluster.local:80"
 PAYMENTS = "http://payment-service.shopno-payments.svc.cluster.local:80"
 
-# ISO-4217 currencies supported by the platform's FX/payment layer. Individual
-# gateways can advertise a narrower set; checkout validates that capability.
 SUPPORTED_CURRENCIES = {
     "USD", "BDT", "EUR", "GBP", "INR", "AUD", "CAD", "SGD", "AED", "SAR",
     "JPY", "CNY", "HKD", "MYR", "THB", "IDR", "PKR", "NPR", "LKR", "QAR",
@@ -57,7 +55,6 @@ async def social_call(method: str, path: str, token: str, **kwargs):
 
 
 async def settle_reward(user, submission_id: str, amount: Decimal, currency: str, token: str):
-    # Stable settlement key makes creator retries safe and prevents double pay.
     key = "work-settle:" + hashlib.sha256(f"{submission_id}:{user['worker_id']}".encode()).hexdigest()
     payload = {
         "to_user_id": user["worker_id"],
@@ -90,24 +87,13 @@ def work_dict(w: Work, total_slots: int | None = None, active_slots: int | None 
     completed_slots = int(completed_slots if completed_slots is not None else 0)
     remaining_slots = max(total_slots - active_slots - completed_slots, 0)
     return {
-        "id": w.id,
-        "tenant_id": w.tenant_id,
-        "creator_id": w.creator_id,
-        "title": w.title,
-        "description": w.description,
-        "requirements": w.requirements,
-        "reference_image": w.reference_image,
-        "reward_amount": str(w.reward_amount),
-        "currency": w.currency,
-        "max_workers": w.max_workers,
-        "total_tasks": total_slots,
-        "active_tasks": active_slots,
-        "completed_tasks": completed_slots,
-        "remaining_tasks": remaining_slots,
-        "total_amount": str(Decimal(str(w.reward_amount)) * total_slots),
+        "id": w.id, "tenant_id": w.tenant_id, "creator_id": w.creator_id, "title": w.title,
+        "description": w.description, "requirements": w.requirements, "reference_image": w.reference_image,
+        "reward_amount": str(w.reward_amount), "currency": w.currency, "max_workers": w.max_workers,
+        "total_tasks": total_slots, "active_tasks": active_slots, "completed_tasks": completed_slots,
+        "remaining_tasks": remaining_slots, "total_amount": str(Decimal(str(w.reward_amount)) * total_slots),
         "remaining_amount": str(Decimal(str(w.reward_amount)) * remaining_slots),
-        "deadline": w.deadline.isoformat() if w.deadline else None,
-        "status": w.status,
+        "deadline": w.deadline.isoformat() if w.deadline else None, "status": w.status,
         "created_at": w.created_at.isoformat(),
     }
 
@@ -187,8 +173,7 @@ async def currencies(user=Depends(current_user)):
 @router.get("/works")
 async def list_works(status: str = Query("open"), limit: int = Query(50, ge=1, le=100), offset: int = Query(0, ge=0), s: AsyncSession = Depends(db), user=Depends(current_user)):
     query = select(Work).where(Work.tenant_id == user.get("tenant_id", "default"))
-    if status != "all":
-        query = query.where(Work.status == status)
+    if status != "all": query = query.where(Work.status == status)
     result = await s.execute(query.order_by(desc(Work.created_at)).limit(limit).offset(offset))
     return [await enriched_work(s, w) for w in result.scalars().all()]
 
@@ -196,39 +181,25 @@ async def list_works(status: str = Query("open"), limit: int = Query(50, ge=1, l
 @router.post("/works", status_code=201)
 async def create_work(body: dict, s: AsyncSession = Depends(db), user=Depends(current_user)):
     title, description, reward = str(body.get("title", "")).strip(), str(body.get("description", "")).strip(), body.get("reward_amount")
-    if not title or not description or reward is None:
-        raise HTTPException(422, "title, description and reward_amount are required")
-    try:
-        reward_decimal = Decimal(str(reward))
-    except Exception as exc:
-        raise HTTPException(422, "reward_amount must be numeric") from exc
-    if reward_decimal <= 0:
-        raise HTTPException(422, "reward_amount must be greater than zero")
+    if not title or not description or reward is None: raise HTTPException(422, "title, description and reward_amount are required")
+    try: reward_decimal = Decimal(str(reward))
+    except Exception as exc: raise HTTPException(422, "reward_amount must be numeric") from exc
+    if reward_decimal <= 0: raise HTTPException(422, "reward_amount must be greater than zero")
     currency = str(body.get("currency", "BDT")).upper()
-    if currency not in SUPPORTED_CURRENCIES:
-        raise HTTPException(422, f"Unsupported currency: {currency}")
+    if currency not in SUPPORTED_CURRENCIES: raise HTTPException(422, f"Unsupported currency: {currency}")
     max_workers = int(body.get("max_workers", 1))
-    if not 1 <= max_workers <= 1000:
-        raise HTTPException(422, "max_workers must be between 1 and 1000")
+    if not 1 <= max_workers <= 1000: raise HTTPException(422, "max_workers must be between 1 and 1000")
     deadline = None
     if body.get("deadline"):
-        try:
-            deadline = datetime.fromisoformat(str(body["deadline"]).replace("Z", "+00:00")).replace(tzinfo=None)
-        except ValueError as exc:
-            raise HTTPException(422, "deadline must be ISO-8601") from exc
+        try: deadline = datetime.fromisoformat(str(body["deadline"]).replace("Z", "+00:00")).replace(tzinfo=None)
+        except ValueError as exc: raise HTTPException(422, "deadline must be ISO-8601") from exc
     reference_image = body.get("reference_image") or None
     if reference_image is not None:
-        if not isinstance(reference_image, str) or not reference_image.startswith("data:image/"):
-            raise HTTPException(422, "reference_image must be a data:image/... URL")
-        if len(reference_image) > 6_500_000:
-            raise HTTPException(422, "reference_image is too large (max ~6MB)")
-    work = Work(
-        tenant_id=user.get("tenant_id", "default"), creator_id=user["sub"], title=title,
-        description=description, requirements=str(body.get("requirements", "")) or None,
-        reference_image=reference_image,
-        reward_amount=reward_decimal, currency=currency, max_workers=max_workers,
-        deadline=deadline, status="draft",
-    )
+        if not isinstance(reference_image, str) or not reference_image.startswith("data:image/"): raise HTTPException(422, "reference_image must be a data:image/... URL")
+        if len(reference_image) > 6_500_000: raise HTTPException(422, "reference_image is too large (max ~6MB)")
+    work = Work(tenant_id=user.get("tenant_id", "default"), creator_id=user["sub"], title=title, description=description,
+                requirements=str(body.get("requirements", "")) or None, reference_image=reference_image,
+                reward_amount=reward_decimal, currency=currency, max_workers=max_workers, deadline=deadline, status="draft")
     s.add(work); await s.commit(); await s.refresh(work)
     return await enriched_work(s, work)
 
@@ -236,25 +207,20 @@ async def create_work(body: dict, s: AsyncSession = Depends(db), user=Depends(cu
 @router.get("/works/{work_id}")
 async def get_work(work_id: str, s: AsyncSession = Depends(db), user=Depends(current_user)):
     work = await s.get(Work, work_id)
-    if not work or work.tenant_id != user.get("tenant_id", "default"):
-        raise HTTPException(404, "work not found")
+    if not work or work.tenant_id != user.get("tenant_id", "default"): raise HTTPException(404, "work not found")
     return await enriched_work(s, work)
 
 
 @router.patch("/works/{work_id}")
 async def update_work(work_id: str, body: dict, s: AsyncSession = Depends(db), user=Depends(current_user)):
     work = await s.get(Work, work_id)
-    if not work or work.tenant_id != user.get("tenant_id", "default"):
-        raise HTTPException(404, "work not found")
-    if work.creator_id != user["sub"]:
-        raise HTTPException(403, "only the creator can edit this work")
-    if work.status not in {"draft", "open"}:
-        raise HTTPException(409, "only draft or open work can be edited")
+    if not work or work.tenant_id != user.get("tenant_id", "default"): raise HTTPException(404, "work not found")
+    if work.creator_id != user["sub"]: raise HTTPException(403, "only the creator can edit this work")
+    if work.status not in {"draft", "open"}: raise HTTPException(409, "only draft or open work can be edited")
     for field in ("title", "description", "requirements"):
         if field in body:
             value = str(body[field]).strip()
-            if field in {"title", "description"} and not value:
-                raise HTTPException(422, f"{field} is required")
+            if field in {"title", "description"} and not value: raise HTTPException(422, f"{field} is required")
             setattr(work, field, value or None)
     if "reward_amount" in body:
         try: work.reward_amount = Decimal(str(body["reward_amount"]))
@@ -268,8 +234,7 @@ async def update_work(work_id: str, body: dict, s: AsyncSession = Depends(db), u
         value = int(body["max_workers"])
         if value < 1 or value > 1000: raise HTTPException(422, "max_workers must be between 1 and 1000")
         work.max_workers = value
-    if "deadline" in body:
-        work.deadline = datetime.fromisoformat(str(body["deadline"]).replace("Z", "+00:00")).replace(tzinfo=None) if body["deadline"] else None
+    if "deadline" in body: work.deadline = datetime.fromisoformat(str(body["deadline"]).replace("Z", "+00:00")).replace(tzinfo=None) if body["deadline"] else None
     await s.commit(); await s.refresh(work)
     return await enriched_work(s, work)
 
