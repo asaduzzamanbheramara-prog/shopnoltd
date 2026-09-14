@@ -28,7 +28,7 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: shopnoltd-web
+                name: web-portal
                 port:
                   number: 80
 
@@ -39,7 +39,7 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: shopnoltd-web
+                name: web-portal
                 port:
                   number: 80
 
@@ -50,7 +50,7 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: shopnoltd-web
+                name: web-portal
                 port:
                   number: 80
 
@@ -61,7 +61,7 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: shopnoltd-web
+                name: web-portal
                 port:
                   number: 80
 
@@ -72,6 +72,6 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: shopnoltd-web
+                name: web-portal
                 port:
                   number: 80
