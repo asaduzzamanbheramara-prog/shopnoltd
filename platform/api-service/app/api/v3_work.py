@@ -7,7 +7,7 @@ from decimal import Decimal
 import httpx
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from sqlalchemy import desc, select
+from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import SessionLocal
@@ -572,3 +572,32 @@ async def approve_submission(submission_id: str, creds: HTTPAuthorizationCredent
         a.status = "completed"
     await s.commit()
     return {"id": sub.id, "status": sub.status, "settled_amount": str(amount), "currency": currency}
+
+
+@router.post("/submissions/{submission_id}/reject")
+async def reject_submission(submission_id: str, body: dict = None, s: AsyncSession = Depends(db), u=Depends(user)):
+    sub = await s.get(WorkSubmission, submission_id)
+    w = await s.get(Work, sub.work_id) if sub else None
+    if not sub or not w:
+        raise HTTPException(404, "submission not found")
+    if w.creator_id != u["sub"]:
+        raise HTTPException(403, "only the creator can reject")
+    if sub.status != "pending":
+        raise HTTPException(409, "submission already reviewed")
+    sub.status = "rejected"
+    sub.reviewer_id = u["sub"]
+    sub.reviewed_at = datetime.utcnow()
+    sub.review_note = str((body or {}).get("note", "")) or "Rejected"
+    # Release the worker's slot so it doesn't stay occupied forever by a
+    # failed attempt, and reopen the task if a slot is now free again —
+    # otherwise a rejected single-worker task could never be picked up by
+    # anyone else, permanently stuck at "full" with no valid completer.
+    a = await s.scalar(select(WorkAssignment).where(WorkAssignment.work_id == w.id, WorkAssignment.worker_id == sub.worker_id))
+    if a:
+        a.status = "rejected"
+    if w.status == "full":
+        active_count = await s.scalar(select(func.count(WorkAssignment.id)).where(WorkAssignment.work_id == w.id, WorkAssignment.status == "active"))
+        if int(active_count or 0) < w.max_workers:
+            w.status = "open"
+    await s.commit()
+    return {"id": sub.id, "status": sub.status, "work_status": w.status}

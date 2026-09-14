@@ -102,7 +102,7 @@ async def verify_user(request: Request) -> dict:
             },
         )
 
-        if claims.get("azp") != "shopnoltd-web":
+        if claims.get("azp") not in ("web-portal", "shopnoltd-web"):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="invalid token client",
