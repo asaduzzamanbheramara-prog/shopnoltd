@@ -186,29 +186,90 @@ jobs:
             fi
           fi
 
-          echo "Requesting exact Argo CD sync for revision $GIT_REVISION"
-          timeout 45s kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" annotate application "$ARGOCD_APP" argocd.argoproj.io/refresh=hard --overwrite
-          timeout 60s kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" patch application "$ARGOCD_APP" --type merge -p "{\"operation\":{\"sync\":{\"revision\":\"$GIT_REVISION\"}}}"
-          echo 'Exact Argo CD sync request accepted.'
+          echo "Requesting full Argo CD sync for revision $GIT_REVISION"
 
-      - name: Wait for Argo CD sync
+          # Record when this workflow requested the operation. The wait step
+          # will reject an older operation that happens to leave the app Synced.
+          sync_request_epoch="$(date -u +%s)"
+          printf '%s\\n' "$sync_request_epoch" > "$RUNNER_TEMP/shopnoltd-argocd-sync-request-epoch"
+
+          timeout 45s kubectl --request-timeout=30s \
+            -n "$ARGOCD_NAMESPACE" \
+            annotate application "$ARGOCD_APP" \
+            argocd.argoproj.io/refresh=hard \
+            --overwrite
+
+          # Replace the entire operation object instead of using a merge patch.
+          # This guarantees that a stale sync.resources selector cannot be
+          # inherited from a previous selective operation.
+          timeout 60s kubectl --request-timeout=30s \
+            -n "$ARGOCD_NAMESPACE" \
+            patch application "$ARGOCD_APP" \
+            --type=json \
+            -p "[{\"op\":\"add\",\"path\":\"/spec/operation\",\"value\":{\"sync\":{\"revision\":\"$GIT_REVISION\"}}}]"
+
+          echo 'Full Argo CD sync request accepted.'
+
+      - name: Wait for Argo CD full sync
         shell: bash
         run: |
           set -euo pipefail
+
+          request_epoch="$(cat "$RUNNER_TEMP/shopnoltd-argocd-sync-request-epoch")"
           deadline=$((SECONDS + 900))
+          operation_seen=0
+
           while [ "$SECONDS" -lt "$deadline" ]; do
-            sync="$(kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o jsonpath='{.status.sync.status}')"
-            health="$(kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o jsonpath='{.status.health.status}')"
-            phase="$(kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o jsonpath='{.status.operationState.phase}')"
-            revision="$(kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o jsonpath='{.status.sync.revision}')"
-            echo "ArgoCD: sync=$sync health=$health phase=$phase revision=$revision"
-            if [ "$sync" = "Synced" ] && [ "$health" = "Healthy" ]; then
-              echo "ArgoCD reconciliation succeeded."
+            app_json="$(kubectl --request-timeout=30s \
+              -n "$ARGOCD_NAMESPACE" \
+              get application "$ARGOCD_APP" -o json)"
+
+            sync="$(jq -r '.status.sync.status // ""' <<<"$app_json")"
+            health="$(jq -r '.status.health.status // ""' <<<"$app_json")"
+            phase="$(jq -r '.status.operationState.phase // ""' <<<"$app_json")"
+            revision="$(jq -r '.status.sync.revision // ""' <<<"$app_json")"
+            operation_revision="$(jq -r '.status.operationState.operation.sync.revision // ""' <<<"$app_json")"
+            operation_started="$(jq -r '.status.operationState.startedAt // ""' <<<"$app_json")"
+            resource_count="$(jq '[.status.operationState.operation.sync.resources // []] | length' <<<"$app_json")"
+
+            echo "ArgoCD: sync=$sync health=$health phase=$phase revision=$revision operation_revision=$operation_revision resources=$resource_count startedAt=$operation_started"
+
+            # A full sync must not contain a selective resource list.
+            if [ "$phase" = "Running" ] || [ "$phase" = "Terminating" ] || [ "$phase" = "Succeeded" ]; then
+              if [ "$operation_revision" = "$GIT_REVISION" ]; then
+                operation_seen=1
+
+                if [ "$resource_count" -ne 0 ]; then
+                  echo "ERROR: Argo CD started a selective sync with $resource_count explicitly selected resources."
+                  echo "Refusing to treat a partial sync as successful."
+                  exit 1
+                fi
+
+                if [ -n "$operation_started" ]; then
+                  operation_started_epoch="$(date -u -d "$operation_started" +%s)"
+                  if [ "$operation_started_epoch" -lt "$request_epoch" ]; then
+                    echo "ERROR: observed Argo CD operation started before this workflow requested the sync."
+                    exit 1
+                  fi
+                fi
+              fi
+            fi
+
+            if [ "$operation_seen" -eq 1 ] \
+              && [ "$phase" = "Succeeded" ] \
+              && [ "$operation_revision" = "$GIT_REVISION" ] \
+              && [ "$revision" = "$GIT_REVISION" ] \
+              && [ "$resource_count" -eq 0 ] \
+              && [ "$sync" = "Synced" ] \
+              && [ "$health" = "Healthy" ]; then
+              echo "ArgoCD full-application reconciliation succeeded for revision $GIT_REVISION."
               exit 0
             fi
+
             sleep 15
           done
-          echo "ArgoCD reconciliation did not reach Synced/Healthy within 15 minutes."
+
+          echo "ERROR: ArgoCD full-application reconciliation did not reach Synced/Healthy for revision $GIT_REVISION within 15 minutes."
           exit 1
 
       - name: Restore Argo CD automated sync policy
