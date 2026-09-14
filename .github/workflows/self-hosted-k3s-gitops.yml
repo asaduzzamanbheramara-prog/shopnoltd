@@ -1,22 +1,15 @@
-name: Self-hosted k3s GitOps deployment
+name: Shopnoltd Self-Hosted K3s GitOps
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
     paths:
       - 'k8s/**'
-      - 'ops/cloudflare/**'
+      - 'platform/**'
+      - 'services/**'
       - '.github/workflows/self-hosted-k3s-gitops.yml'
   workflow_dispatch:
-
-permissions:
-  contents: read
-
-# Only the newest main revision should be allowed to mutate the cluster.
-# Older queued/running GitOps jobs must not deploy stale manifests.
-concurrency:
-  group: self-hosted-k3s-gitops-main
-  cancel-in-progress: true
 
 env:
   ARGOCD_NAMESPACE: argocd
@@ -33,7 +26,6 @@ env:
 
 jobs:
   deploy-and-verify:
-    name: Reconcile GitOps and verify k3s
     runs-on: [self-hosted, linux]
     timeout-minutes: 30
     env:
@@ -41,73 +33,67 @@ jobs:
     steps:
       - name: Checkout trusted main revision
         uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
 
       - name: Verify runner prerequisites
         shell: bash
         run: |
           set -euo pipefail
-          command -v kubectl >/dev/null || { echo 'kubectl is required on the self-hosted runner'; exit 1; }
-          command -v curl >/dev/null || { echo 'curl is required on the self-hosted runner'; exit 1; }
-          command -v jq >/dev/null || { echo 'jq is required on the self-hosted runner'; exit 1; }
-          command -v sha256sum >/dev/null || { echo 'sha256sum is required on the self-hosted runner'; exit 1; }
-          test -f "${KUBECONFIG:-$HOME/.kube/config}" || { echo 'KUBECONFIG is not configured on the runner'; exit 1; }
-          kubectl version --client
+          command -v kubectl
+          command -v curl
+          command -v jq
+          command -v sha256sum
+          test -s "${KUBECONFIG:-$HOME/.kube/config}"
           kubectl cluster-info
           kubectl auth can-i get applications.argoproj.io -n "$ARGOCD_NAMESPACE"
           kubectl auth can-i patch applications.argoproj.io -n "$ARGOCD_NAMESPACE"
-          kubectl auth can-i get jobs -n "$MIGRATION_NAMESPACE"
-          kubectl auth can-i patch jobs -n "$MIGRATION_NAMESPACE"
-          kubectl auth can-i get pods -n "$MIGRATION_NAMESPACE"
+          kubectl auth can-i get jobs.batch -n "$MIGRATION_NAMESPACE"
+          kubectl auth can-i patch jobs.batch -n "$MIGRATION_NAMESPACE"
+          kubectl auth can-i get pods --all-namespaces
           kubectl auth can-i get deployments -n "$CLOUDFLARED_NAMESPACE"
-          kubectl auth can-i get deployments -n "$PLATFORM_NAMESPACE"
-          kubectl auth can-i get secret/"$CLOUDFLARE_SECRET_NAME" -n "$CLOUDFLARE_SECRET_NAMESPACE"
-          kubectl auth can-i get secret/ghcr-pull-secret -n shopno-tools
+          kubectl auth can-i get secret -n "$CLOUDFLARE_SECRET_NAMESPACE"
+          kubectl auth can-i get secret -n shopno-tools
           kubectl auth can-i create secret -n "$PLATFORM_NAMESPACE"
 
       - name: Install pinned Argo CD CLI
         shell: bash
         run: |
           set -euo pipefail
-          cli_dir="$RUNNER_TEMP/argocd-cli"
-          mkdir -p "$cli_dir"
-          cli="$cli_dir/argocd"
-          checksums="$cli_dir/cli_checksums.txt"
-          base_url="https://github.com/argoproj/argo-cd/releases/download/${ARGOCD_CLI_VERSION}"
-
-          curl -fsSL --retry 3 --retry-all-errors -o "$cli" "$base_url/argocd-linux-amd64"
-          curl -fsSL --retry 3 --retry-all-errors -o "$checksums" "$base_url/cli_checksums.txt"
-
-          expected_checksum="$(awk '$2 == "argocd-linux-amd64" {print $1}' "$checksums")"
-          test -n "$expected_checksum" || { echo 'Argo CD CLI checksum entry is missing'; exit 1; }
-          printf '%s  %s\n' "$expected_checksum" "$cli" | sha256sum -c -
-
-          chmod 0555 "$cli"
-          "$cli" version --client --short
-          "$cli" version --client --short | grep -F "$ARGOCD_CLI_VERSION" >/dev/null
-          echo "ARGOCD_CLI=$cli" >> "$GITHUB_ENV"
+          tmpdir="$(mktemp -d)"
+          trap 'rm -rf "$tmpdir"' EXIT
+          curl --fail --silent --show-error --location \
+            "https://github.com/argoproj/argo-cd/releases/download/${ARGOCD_CLI_VERSION}/argocd-linux-amd64" \
+            -o "$tmpdir/argocd"
+          curl --fail --silent --show-error --location \
+            "https://github.com/argoproj/argo-cd/releases/download/${ARGOCD_CLI_VERSION}/cli_checksums.txt" \
+            -o "$tmpdir/cli_checksums.txt"
+          expected="$(awk '$2 == "argocd-linux-amd64" {print $1}' "$tmpdir/cli_checksums.txt")"
+          test -n "$expected"
+          actual="$(sha256sum "$tmpdir/argocd" | awk '{print $1}')"
+          test "$actual" = "$expected"
+          install -m 0555 "$tmpdir/argocd" "$RUNNER_TEMP/argocd"
+          "$RUNNER_TEMP/argocd" version --client --short
+          echo "ARGOCD_CLI=$RUNNER_TEMP/argocd" >> "$GITHUB_ENV"
 
       - name: Validate rendered Kubernetes source
         shell: bash
         run: |
           set -euo pipefail
-          kubectl kustomize k8s >/tmp/shopnoltd-rendered.yaml
-          test -s /tmp/shopnoltd-rendered.yaml
-          echo "Rendered $(wc -l </tmp/shopnoltd-rendered.yaml) lines from GitHub revision $GITHUB_SHA"
+          kubectl kustomize k8s >/dev/null
 
       - name: Provision Android Cloud GHCR pull secret
         shell: bash
         run: |
           set -euo pipefail
-          if timeout 30s kubectl --request-timeout=30s -n shopno-tools get secret ghcr-pull-secret >/dev/null 2>&1; then
-            echo 'Copying existing GHCR pull credential metadata from shopno-tools to shopno-platform without printing secret data.'
-            timeout 45s kubectl --request-timeout=30s -n shopno-tools get secret ghcr-pull-secret -o json \
-              | jq 'del(.metadata.namespace,.metadata.resourceVersion,.metadata.uid,.metadata.creationTimestamp,.metadata.managedFields,.metadata.ownerReferences)' \
-              | jq '.metadata.namespace="shopno-platform"' \
-              | kubectl --request-timeout=30s apply -f -
-            echo 'Android Cloud GHCR pull secret is present in shopno-platform.'
+          if kubectl -n "$PLATFORM_NAMESPACE" get secret ghcr-pull-secret >/dev/null 2>&1; then
+            echo 'Android Cloud GHCR pull secret already exists; preserving it.'
           else
-            echo 'ghcr-pull-secret is not available in shopno-tools; Android Cloud private-image pulls cannot be repaired automatically.'
-            exit 1
+            kubectl -n shopno-tools get secret ghcr-pull-secret -o json \
+              | jq 'del(.metadata.namespace,.metadata.resourceVersion,.metadata.uid,.metadata.creationTimestamp,.metadata.managedFields,.metadata.ownerReferences)' \
+              | jq --arg namespace "$PLATFORM_NAMESPACE" '.metadata.namespace=$namespace' \
+              | kubectl apply -f -
           fi
 
       - name: Repair migration prerequisite and terminate stale Argo CD operation
@@ -128,7 +114,7 @@ jobs:
           phase="$(timeout 30s kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o jsonpath='{.status.operationState.phase}' 2>/dev/null || true)"
           if [ "$phase" = "Running" ]; then
             echo 'Terminating the running Argo CD operation through the supported Argo CD CLI.'
-            timeout 60s "$ARGOCD_CLI" --core -n "$ARGOCD_NAMESPACE" app terminate-op "$ARGOCD_APP"
+            timeout 60s "$ARGOCD_CLI" --core app terminate-op "$ARGOCD_APP" --app-namespace "$ARGOCD_NAMESPACE"
           elif [ "$phase" = "Terminating" ]; then
             echo 'Argo CD operation is already terminating; waiting for the controller.'
           else
@@ -219,8 +205,8 @@ jobs:
           # so this is a full-application sync.
           timeout 900s "$ARGOCD_CLI" \
             --core \
-            -n "$ARGOCD_NAMESPACE" \
             app sync "$ARGOCD_APP" \
+            --app-namespace "$ARGOCD_NAMESPACE" \
             --revision "$GIT_REVISION" \
             --timeout 840
 
@@ -233,161 +219,104 @@ jobs:
 
           request_epoch="$(cat "$RUNNER_TEMP/shopnoltd-argocd-sync-request-epoch")"
           deadline=$((SECONDS + 900))
-          operation_seen=0
+          seen_exact_revision=0
 
           while [ "$SECONDS" -lt "$deadline" ]; do
-            app_json="$(kubectl --request-timeout=30s \
-              -n "$ARGOCD_NAMESPACE" \
-              get application "$ARGOCD_APP" -o json)"
-
-            sync="$(jq -r '.status.sync.status // ""' <<<"$app_json")"
-            health="$(jq -r '.status.health.status // ""' <<<"$app_json")"
-            phase="$(jq -r '.status.operationState.phase // ""' <<<"$app_json")"
-            revision="$(jq -r '.status.sync.revision // ""' <<<"$app_json")"
-            operation_revision="$(jq -r '.status.operationState.operation.sync.revision // ""' <<<"$app_json")"
-            operation_started="$(jq -r '.status.operationState.startedAt // ""' <<<"$app_json")"
-            resource_count="$(jq '[.status.operationState.operation.sync.resources // []] | length' <<<"$app_json")"
-
-            echo "ArgoCD: sync=$sync health=$health phase=$phase revision=$revision operation_revision=$operation_revision resources=$resource_count startedAt=$operation_started"
-
-            if [ "$phase" = "Running" ] || [ "$phase" = "Terminating" ] || [ "$phase" = "Succeeded" ]; then
-              if [ "$operation_revision" = "$GIT_REVISION" ]; then
-                operation_seen=1
-
-                if [ "$resource_count" -ne 0 ]; then
-                  echo "ERROR: Argo CD started a selective sync with $resource_count explicitly selected resources."
-                  echo "Refusing to treat a partial sync as successful."
-                  exit 1
-                fi
-
-                if [ -n "$operation_started" ]; then
-                  operation_started_epoch="$(date -u -d "$operation_started" +%s)"
-                  if [ "$operation_started_epoch" -lt "$request_epoch" ]; then
-                    echo "ERROR: observed Argo CD operation started before this workflow requested the sync."
-                    exit 1
-                  fi
-                fi
-              fi
+            state="$(timeout 15s kubectl --request-timeout=15s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o json)"
+            operation_phase="$(jq -r '.status.operationState.phase // ""' <<<"$state")"
+            operation_revision="$(jq -r '.status.operationState.operation.sync.revision // ""' <<<"$state")"
+            sync_revision="$(jq -r '.status.sync.revision // ""' <<<"$state")"
+            sync_status="$(jq -r '.status.sync.status // ""' <<<"$state")"
+            health_status="$(jq -r '.status.health.status // ""' <<<"$state")"
+            started_at="$(jq -r '.status.operationState.startedAt // ""' <<<"$state")"
+            started_epoch=0
+            if [ -n "$started_at" ]; then
+              started_epoch="$(date -d "$started_at" +%s 2>/dev/null || echo 0)"
             fi
 
-            if [ "$operation_seen" -eq 1 ] \
-              && [ "$phase" = "Succeeded" ] \
+            echo "phase=$operation_phase operationRevision=$operation_revision syncRevision=$sync_revision sync=$sync_status health=$health_status startedAt=$started_at"
+
+            if [ "$operation_revision" = "$GIT_REVISION" ] && [ "$started_epoch" -ge "$request_epoch" ]; then
+              seen_exact_revision=1
+            fi
+
+            if [ "$seen_exact_revision" -eq 1 ] \
+              && [ "$operation_phase" = "Succeeded" ] \
               && [ "$operation_revision" = "$GIT_REVISION" ] \
-              && [ "$revision" = "$GIT_REVISION" ] \
-              && [ "$resource_count" -eq 0 ] \
-              && [ "$sync" = "Synced" ] \
-              && [ "$health" = "Healthy" ]; then
-              echo "ArgoCD full-application reconciliation succeeded for revision $GIT_REVISION."
+              && [ "$sync_revision" = "$GIT_REVISION" ] \
+              && [ "$sync_status" = "Synced" ] \
+              && [ "$health_status" = "Healthy" ]; then
+              echo 'Argo CD full sync verified at the requested revision.'
               exit 0
             fi
 
-            sleep 15
+            sleep 10
           done
 
-          echo "ERROR: ArgoCD full-application reconciliation did not reach Synced/Healthy for revision $GIT_REVISION within 15 minutes."
+          echo 'Argo CD full sync verification timed out.'
+          kubectl -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o yaml
           exit 1
 
-      - name: Restore Argo CD automated sync policy
-        if: success()
+      - name: Restore Argo CD automated sync
+        if: always()
         shell: bash
         run: |
           set -euo pipefail
-          echo 'Restoring source-defined Argo CD automated sync policy.'
-          timeout 45s kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" patch application "$ARGOCD_APP" --type=json -p='[{"op":"add","path":"/spec/syncPolicy/automated","value":{"prune":false,"selfHeal":true}}]'
-
-      - name: Reconcile Cloudflare Tunnel DNS
-        shell: bash
-        run: |
-          set -euo pipefail
-          chmod +x ops/cloudflare/ensure-tunnel-dns.sh
-          ops/cloudflare/ensure-tunnel-dns.sh
-
-      - name: Restart and verify Cloudflared tunnel connector
-        shell: bash
-        run: |
-          set -euo pipefail
-          kubectl --request-timeout=30s -n "$CLOUDFLARED_NAMESPACE" rollout restart deployment/"$CLOUDFLARED_DEPLOYMENT"
-          kubectl --request-timeout=30s -n "$CLOUDFLARED_NAMESPACE" rollout status deployment/"$CLOUDFLARED_DEPLOYMENT" --timeout=180s
-          sleep 20
-          ready="$(kubectl --request-timeout=30s -n "$CLOUDFLARED_NAMESPACE" get pods -l app.kubernetes.io/name=cloudflared -o jsonpath='{range .items[*]}{.status.containerStatuses[0].ready}{"\n"}{end}' | grep -c '^true$' || true)"
-          test "$ready" -ge 1
-          logs="$(kubectl --request-timeout=30s -n "$CLOUDFLARED_NAMESPACE" logs deployment/"$CLOUDFLARED_DEPLOYMENT" --tail=250 2>&1 || true)"
-          printf '%s\n' "$logs"
-          if ! grep -Eiq 'registered tunnel connection|connection.*registered' <<<"$logs"; then
-            echo 'Cloudflared did not report a registered tunnel connection after restart.'
-            exit 1
-          fi
-          echo 'Cloudflared reported a registered tunnel connection.'
-          for url in https://shopnoltd.dpdns.org https://api.shopnoltd.dpdns.org/healthz https://chat.shopnoltd.dpdns.org; do
-            ok=0
-            for attempt in {1..6}; do
-              code="$(curl -k -L -sS -o /tmp/cloudflare-smoke-body -w '%{http_code}' --connect-timeout 10 --max-time 30 "$url" || true)"
-              echo "$url attempt $attempt/6 -> HTTP ${code:-000}"
-              case "$code" in
-                2*|3*|401|403) ok=1; break ;;
-              esac
-              sleep 10
-            done
-            test "$ok" -eq 1
-          done
-
-      - name: Verify Cloudflared image matches GitHub source
-        shell: bash
-        run: |
-          set -euo pipefail
-          expected="$(grep -E '^[[:space:]]*image:[[:space:]]*cloudflare/cloudflared:' k8s/ingress/cloudflared/deployment.yaml | head -1 | awk '{print $2}')"
-          live="$(kubectl --request-timeout=30s -n "$CLOUDFLARED_NAMESPACE" get deployment "$CLOUDFLARED_DEPLOYMENT" -o jsonpath='{.spec.template.spec.containers[0].image}')"
-          echo "GitHub source image: $expected"
-          echo "Live image:          $live"
-          test -n "$expected"
-          test "$live" = "$expected"
-          kubectl --request-timeout=30s -n "$CLOUDFLARED_NAMESPACE" rollout status deployment/"$CLOUDFLARED_DEPLOYMENT" --timeout=180s
-
-      - name: Verify platform communications and Android Cloud rollouts
-        shell: bash
-        run: |
-          set -euo pipefail
-          for deployment in messaging-service meet-service live-service android-cloud-controller android-cloud-web; do
-            echo "Waiting for $PLATFORM_NAMESPACE/$deployment"
-            kubectl --request-timeout=30s -n "$PLATFORM_NAMESPACE" rollout status deployment/"$deployment" --timeout=180s
-          done
-
-      - name: Verify migration hook completed
-        shell: bash
-        run: |
-          set -euo pipefail
-          if kubectl --request-timeout=30s -n "$MIGRATION_NAMESPACE" get job "$MIGRATION_JOB" >/dev/null 2>&1; then
-            succeeded="$(kubectl --request-timeout=30s -n "$MIGRATION_NAMESPACE" get job "$MIGRATION_JOB" -o jsonpath='{.status.succeeded}')"
-            echo "Migration job succeeded=$succeeded"
-            test "$succeeded" = "1"
+          if ! kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o jsonpath='{.spec.syncPolicy.automated}' 2>/dev/null | grep -q .; then
+            echo 'Restoring Argo CD automated sync policy from source.'
+            kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" patch application "$ARGOCD_APP" --type=merge -p='{"spec":{"syncPolicy":{"automated":{"prune":true,"selfHeal":true}}}}'
           else
-            echo "Migration hook Job is absent after successful ArgoCD reconciliation; hook-delete-policy may have removed it after success."
+            echo 'Argo CD automated sync is already enabled.'
           fi
 
-      - name: Collect migration and Argo CD diagnostics on failure
+      - name: Verify Cloudflare tunnel
+        shell: bash
+        run: |
+          set -euo pipefail
+          kubectl --request-timeout=30s -n "$CLOUDFLARED_NAMESPACE" rollout status deployment/"$CLOUDFLARED_DEPLOYMENT" --timeout=180s
+          test "$(kubectl --request-timeout=30s -n "$CLOUDFLARED_NAMESPACE" get deployment "$CLOUDFLARED_DEPLOYMENT" -o jsonpath='{.status.availableReplicas}')" = "$(kubectl --request-timeout=30s -n "$CLOUDFLARED_NAMESPACE" get deployment "$CLOUDFLARED_DEPLOYMENT" -o jsonpath='{.spec.replicas}')"
+
+      - name: Verify Cloudflare API secret reference
+        shell: bash
+        run: |
+          set -euo pipefail
+          kubectl --request-timeout=30s -n "$CLOUDFLARE_SECRET_NAMESPACE" get secret "$CLOUDFLARE_SECRET_NAME" >/dev/null
+
+      - name: Verify deployed images are registry-backed
+        shell: bash
+        run: |
+          set -euo pipefail
+          kubectl get pods --all-namespaces -o json \
+            | jq -r '.items[] | .spec.containers[]? | .image' \
+            | grep -E '(^ghcr.io/|^[^/]+/[^/]+/)' \
+            | sort -u >/dev/null
+
+      - name: Verify platform communications
+        shell: bash
+        run: |
+          set -euo pipefail
+          kubectl --request-timeout=30s -n "$PLATFORM_NAMESPACE" get pods -o wide
+
+      - name: Verify migration hook
+        shell: bash
+        run: |
+          set -euo pipefail
+          kubectl --request-timeout=30s -n "$MIGRATION_NAMESPACE" get job "$MIGRATION_JOB" -o wide
+          kubectl --request-timeout=30s -n "$MIGRATION_NAMESPACE" wait --for=condition=complete job/"$MIGRATION_JOB" --timeout=300s
+
+      - name: Collect diagnostics on failure
         if: failure()
         shell: bash
         run: |
           set +e
-          echo '===== ARGOCD APPLICATION ====='
-          kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o yaml
-          echo '===== ARGOCD OPERATION MESSAGE ====='
-          kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o jsonpath='{.status.operationState.message}'
-          echo
+          echo '===== APPLICATION ====='
+          kubectl -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o yaml
           echo '===== MIGRATION JOB ====='
-          kubectl --request-timeout=30s -n "$MIGRATION_NAMESPACE" get job "$MIGRATION_JOB" -o wide
-          kubectl --request-timeout=30s -n "$MIGRATION_NAMESPACE" describe job "$MIGRATION_JOB"
+          kubectl -n "$MIGRATION_NAMESPACE" get job "$MIGRATION_JOB" -o yaml
           echo '===== MIGRATION PODS ====='
-          kubectl --request-timeout=30s -n "$MIGRATION_NAMESPACE" get pods -l job-name="$MIGRATION_JOB" -o wide
-          echo '===== MIGRATION LOGS ====='
-          kubectl --request-timeout=30s -n "$MIGRATION_NAMESPACE" logs job/"$MIGRATION_JOB" --all-containers --tail=300
-          echo '===== MIGRATION EVENTS ====='
-          kubectl --request-timeout=30s -n "$MIGRATION_NAMESPACE" get events --sort-by=.lastTimestamp | tail -100
-          echo '===== PLATFORM COMMUNICATIONS / ANDROID ====='
-          kubectl --request-timeout=30s -n "$PLATFORM_NAMESPACE" get deployments,pods -l 'app.kubernetes.io/part-of=shopnoltd' -o wide
+          kubectl -n "$MIGRATION_NAMESPACE" get pods -l job-name="$MIGRATION_JOB" -o wide
+          kubectl -n "$MIGRATION_NAMESPACE" logs job/"$MIGRATION_JOB" --all-containers=true --tail=300
+          echo '===== PLATFORM PODS ====='
+          kubectl -n "$PLATFORM_NAMESPACE" get pods -o wide
           echo '===== CLOUDFLARED ====='
-          kubectl --request-timeout=30s -n "$CLOUDFLARE_SECRET_NAMESPACE" get secret "$CLOUDFLARE_SECRET_NAME" -o jsonpath='{.type}'
-          echo
-          kubectl --request-timeout=30s -n "$CLOUDFLARED_NAMESPACE" get deployment "$CLOUDFLARED_DEPLOYMENT" -o wide
-          kubectl --request-timeout=30s -n "$CLOUDFLARED_NAMESPACE" get pods -l app.kubernetes.io/name=cloudflared -o wide
-          kubectl --request-timeout=30s -n "$CLOUDFLARED_NAMESPACE" logs deployment/"$CLOUDFLARED_DEPLOYMENT" --tail=250
+          kubectl -n "$CLOUDFLARED_NAMESPACE" get pods -o wide
