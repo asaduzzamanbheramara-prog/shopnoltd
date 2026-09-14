@@ -20,6 +20,7 @@ PUBLIC_GATEWAY_BASE = os.getenv("ANDROID_CLOUD_GATEWAY_BASE", "https://android-g
 PUBLIC_HOST = os.getenv("ANDROID_CLOUD_PUBLIC_HOST", "android-gateway.shopnoltd.dpdns.org")
 KEYCLOAK_ISSUER = os.getenv("KEYCLOAK_ISSUER", "https://auth.shopnoltd.dpdns.org/realms/shopnoltd").rstrip("/")
 KEYCLOAK_CLIENT_ID = os.getenv("KEYCLOAK_CLIENT_ID", "shopnoltd-web")
+KEYCLOAK_AUDIENCE = os.getenv("KEYCLOAK_AUDIENCE", "api-service")
 KEYCLOAK_JWKS_URL = os.getenv("KEYCLOAK_JWKS_URL", f"{KEYCLOAK_ISSUER}/protocol/openid-connect/certs")
 MAX_SESSIONS = int(os.getenv("ANDROID_CLOUD_MAX_SESSIONS", "1"))
 SESSION_TTL_SECONDS = int(os.getenv("ANDROID_CLOUD_SESSION_TTL_SECONDS", "1800"))
@@ -65,7 +66,7 @@ def current_user(request: Request) -> str:
             signing_key,
             algorithms=["RS256", "RS384", "RS512"],
             issuer=KEYCLOAK_ISSUER,
-            options={"verify_aud": False},
+            audience=KEYCLOAK_AUDIENCE,
         )
     except (jwt.PyJWTError, ValueError) as exc:
         raise HTTPException(status_code=401, detail="invalid_bearer_token") from exc
@@ -89,7 +90,7 @@ def make_emulator_pod(session: Session) -> client.V1Pod:
         volume_mounts=[client.V1VolumeMount(name="android-data", mount_path="/data")],
         security_context=client.V1SecurityContext(privileged=True, allow_privilege_escalation=True),
     )
-    return client.V1Pod(metadata=client.V1ObjectMeta(name=session.emulator_name, namespace=NAMESPACE, labels={"app.kubernetes.io/name": "android-emulator", "shopnoltd.dev/session": session.session_id}), spec=client.V1PodSpec(restart_policy="Never", automount_service_account_token=False, containers=[container], volumes=[client.V1Volume(name="android-data", empty_dir=client.V1EmptyDirVolumeSource(medium="Memory", size_limit="6Gi"))]))
+    return client.V1Pod(metadata=client.V1ObjectMeta(name=session.emulator_name, namespace=NAMESPACE, labels={"app.kubernetes.io/name": "android-emulator", "shopnoltd.dev/session": session.session_id}), spec=client.V1PodSpec(restart_policy="Never", automount_service_account_token=False, containers=[container], volumes=[client.V1Volume(name="android-data", empty_dir=client.V1EmptyDirVolumeSource(medium="Memory", size_limit="6Gi")]))
 
 def make_gateway_pod(session: Session) -> client.V1Pod:
     container = client.V1Container(
