@@ -19,7 +19,6 @@ spec:
       automountServiceAccountToken: false
       imagePullSecrets:
         - name: ghcr-pull-secret
-
       containers:
         - name: remote-device-gateway
           image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-remote-device-gateway:7ba40c65bfd48f7cdff2d2f7f0313c24bbadd888
@@ -32,7 +31,7 @@ spec:
             - name: KEYCLOAK_ISSUER
               value: https://auth.shopnoltd.dpdns.org/realms/shopnoltd
             - name: KEYCLOAK_AUDIENCE
-              value: account
+              value: api-service
             - name: REGISTRY_CONTROL_TOKEN
               valueFrom:
                 secretKeyRef:
