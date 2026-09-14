@@ -13,4 +13,4 @@ data:
   ANDROID_CLOUD_SESSION_TTL_SECONDS: "1800"
   KEYCLOAK_ISSUER: https://auth.shopnoltd.dpdns.org/realms/shopnoltd
   KEYCLOAK_CLIENT_ID: shopnoltd-web
-  KEYCLOAK_JWKS_URL: https://auth.shopnoltd.dpdns.org/realms/shopnoltd/protocol/openid-connect/certs
+  KEYCLOAK_JWKS_URL: http://keycloak.shopno-identity.svc.cluster.local/realms/shopnoltd/protocol/openid-connect/certs
