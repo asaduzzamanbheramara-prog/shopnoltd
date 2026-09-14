@@ -296,18 +296,32 @@ async def close_work(work_id: str, s: AsyncSession = Depends(db), user=Depends(c
 
 @router.post("/works/{work_id}/accept")
 async def accept_work(work_id: str, s: AsyncSession = Depends(db), user=Depends(current_user)):
-    work = await s.get(Work, work_id)
+    # Lock the work row for the duration of the transaction. This serializes
+    # competing claims for the same work and makes max_workers authoritative.
+    work = await s.scalar(select(Work).where(Work.id == work_id).with_for_update())
     if not work or work.tenant_id != user.get("tenant_id", "default"): raise HTTPException(404, "work not found")
     if work.creator_id == user["sub"]: raise HTTPException(400, "creator cannot accept own work")
-    if work.status != "open": raise HTTPException(409, "work is not open")
+    if work.status not in {"open", "full"}:
+        raise HTTPException(409, "work is not available")
     existing = await s.scalar(select(WorkAssignment).where(WorkAssignment.work_id == work_id, WorkAssignment.worker_id == user["sub"]))
-    if existing: return {"accepted": True, "already": True}
+    if existing and existing.status == "completed":
+        return {"accepted": False, "completed": True, "work_id": work_id}
+    if existing and existing.status == "active":
+        return {"accepted": True, "already": True, "work_id": work_id}
     count = await s.scalar(select(func.count(WorkAssignment.id)).where(WorkAssignment.work_id == work_id, WorkAssignment.status == "active"))
     if int(count or 0) >= work.max_workers:
-        work.status = "full"; await s.commit(); raise HTTPException(409, "work has no remaining slots")
-    s.add(WorkAssignment(work_id=work_id, worker_id=user["sub"], status="active"))
+        work.status = "full"
+        await s.commit()
+        raise HTTPException(409, "work has no remaining slots")
+    if existing:
+        existing.status = "active"
+        existing.accepted_at = datetime.utcnow()
+    else:
+        s.add(WorkAssignment(work_id=work_id, worker_id=user["sub"], status="active"))
     if int(count or 0) + 1 >= work.max_workers: work.status = "full"
-    await s.commit(); return {"accepted": True, "work_id": work_id}
+    else: work.status = "open"
+    await s.commit()
+    return {"accepted": True, "work_id": work_id, "reopened": bool(existing)}
 
 
 @router.get("/works/active/me")
