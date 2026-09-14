@@ -21,6 +21,7 @@ concurrency:
 env:
   ARGOCD_NAMESPACE: argocd
   ARGOCD_APP: shopnoltd
+  ARGOCD_CLI_VERSION: v3.5.1
   MIGRATION_NAMESPACE: shopno-data
   MIGRATION_JOB: postgres-platform-migration
   MIGRATION_CONFIGMAP: postgres-platform-migrations
@@ -35,6 +36,8 @@ jobs:
     name: Reconcile GitOps and verify k3s
     runs-on: [self-hosted, linux]
     timeout-minutes: 30
+    env:
+      GIT_REVISION: ${{ github.sha }}
     steps:
       - name: Checkout trusted main revision
         uses: actions/checkout@v4
@@ -46,6 +49,7 @@ jobs:
           command -v kubectl >/dev/null || { echo 'kubectl is required on the self-hosted runner'; exit 1; }
           command -v curl >/dev/null || { echo 'curl is required on the self-hosted runner'; exit 1; }
           command -v jq >/dev/null || { echo 'jq is required on the self-hosted runner'; exit 1; }
+          command -v sha256sum >/dev/null || { echo 'sha256sum is required on the self-hosted runner'; exit 1; }
           test -f "${KUBECONFIG:-$HOME/.kube/config}" || { echo 'KUBECONFIG is not configured on the runner'; exit 1; }
           kubectl version --client
           kubectl cluster-info
@@ -59,6 +63,28 @@ jobs:
           kubectl auth can-i get secret/"$CLOUDFLARE_SECRET_NAME" -n "$CLOUDFLARE_SECRET_NAMESPACE"
           kubectl auth can-i get secret/ghcr-pull-secret -n shopno-tools
           kubectl auth can-i create secret -n "$PLATFORM_NAMESPACE"
+
+      - name: Install pinned Argo CD CLI
+        shell: bash
+        run: |
+          set -euo pipefail
+          cli_dir="$RUNNER_TEMP/argocd-cli"
+          mkdir -p "$cli_dir"
+          cli="$cli_dir/argocd"
+          checksums="$cli_dir/cli_checksums.txt"
+          base_url="https://github.com/argoproj/argo-cd/releases/download/${ARGOCD_CLI_VERSION}"
+
+          curl -fsSL --retry 3 --retry-all-errors -o "$cli" "$base_url/argocd-linux-amd64"
+          curl -fsSL --retry 3 --retry-all-errors -o "$checksums" "$base_url/cli_checksums.txt"
+
+          expected_checksum="$(awk '$2 == "argocd-linux-amd64" {print $1}' "$checksums")"
+          test -n "$expected_checksum" || { echo 'Argo CD CLI checksum entry is missing'; exit 1; }
+          printf '%s  %s\n' "$expected_checksum" "$cli" | sha256sum -c -
+
+          chmod 0555 "$cli"
+          "$cli" version --client --short
+          "$cli" version --client --short | grep -F "$ARGOCD_CLI_VERSION" >/dev/null
+          echo "ARGOCD_CLI=$cli" >> "$GITHUB_ENV"
 
       - name: Validate rendered Kubernetes source
         shell: bash
@@ -86,8 +112,6 @@ jobs:
 
       - name: Repair migration prerequisite and terminate stale Argo CD operation
         shell: bash
-        env:
-          GIT_REVISION: ${{ github.sha }}
         run: |
           set -euo pipefail
           echo '===== ARGO CD PRE-SYNC STATE ====='
@@ -101,23 +125,17 @@ jobs:
             echo 'Argo CD automated sync is already disabled.'
           fi
 
-          operation="$(timeout 30s kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o jsonpath='{.spec.operation}' 2>/dev/null || true)"
-          if [ -n "$operation" ]; then
-            echo 'Clearing explicit Argo CD operation before terminating the stale status operation.'
-            timeout 45s kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" patch application "$ARGOCD_APP" --type=json -p='[{"op":"remove","path":"/spec/operation"}]'
-          else
-            echo 'No explicit Argo CD operation remains in spec.'
-          fi
-
           phase="$(timeout 30s kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o jsonpath='{.status.operationState.phase}' 2>/dev/null || true)"
           if [ "$phase" = "Running" ]; then
-            echo 'Requesting Argo CD operation termination through the Application status field.'
-            timeout 45s kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" patch application "$ARGOCD_APP" --type=merge -p='{"status":{"operationState":{"phase":"Terminating"}}}'
+            echo 'Terminating the running Argo CD operation through the supported Argo CD CLI.'
+            timeout 60s "$ARGOCD_CLI" --core --kubeconfig "${KUBECONFIG:-$HOME/.kube/config}" -n "$ARGOCD_NAMESPACE" app terminate-op "$ARGOCD_APP"
+          elif [ "$phase" = "Terminating" ]; then
+            echo 'Argo CD operation is already terminating; waiting for the controller.'
           else
-            echo "No Running Argo CD operation requires termination (phase=${phase:-none})."
+            echo "No running Argo CD operation requires termination (phase=${phase:-none})."
           fi
 
-          echo 'Waiting for the Argo CD controller to finish terminating the stale operation.'
+          echo 'Waiting for the Argo CD controller to finish terminating any stale operation.'
           operation_stopped=0
           for _ in {1..36}; do
             phase="$(timeout 15s kubectl --request-timeout=15s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o jsonpath='{.status.operationState.phase}' 2>/dev/null || true)"
@@ -187,11 +205,8 @@ jobs:
           fi
 
           echo "Requesting full Argo CD sync for revision $GIT_REVISION"
-
-          # Record when this workflow requested the operation. The wait step
-          # will reject an older operation that happens to leave the app Synced.
           sync_request_epoch="$(date -u +%s)"
-          printf '%s\\n' "$sync_request_epoch" > "$RUNNER_TEMP/shopnoltd-argocd-sync-request-epoch"
+          printf '%s\n' "$sync_request_epoch" > "$RUNNER_TEMP/shopnoltd-argocd-sync-request-epoch"
 
           timeout 45s kubectl --request-timeout=30s \
             -n "$ARGOCD_NAMESPACE" \
@@ -199,16 +214,18 @@ jobs:
             argocd.argoproj.io/refresh=hard \
             --overwrite
 
-          # Replace the entire operation object instead of using a merge patch.
-          # This guarantees that a stale sync.resources selector cannot be
-          # inherited from a previous selective operation.
-          timeout 60s kubectl --request-timeout=30s \
+          # Use the supported Argo CD CLI operation instead of the nonexistent
+          # Application.spec.operation field. No --resource selectors are used,
+          # so this is a full-application sync.
+          timeout 900s "$ARGOCD_CLI" \
+            --core \
+            --kubeconfig "${KUBECONFIG:-$HOME/.kube/config}" \
             -n "$ARGOCD_NAMESPACE" \
-            patch application "$ARGOCD_APP" \
-            --type=json \
-            -p "[{\"op\":\"add\",\"path\":\"/spec/operation\",\"value\":{\"sync\":{\"revision\":\"$GIT_REVISION\"}}}]"
+            app sync "$ARGOCD_APP" \
+            --revision "$GIT_REVISION" \
+            --timeout 840
 
-          echo 'Full Argo CD sync request accepted.'
+          echo 'Argo CD full sync command completed.'
 
       - name: Wait for Argo CD full sync
         shell: bash
@@ -234,7 +251,6 @@ jobs:
 
             echo "ArgoCD: sync=$sync health=$health phase=$phase revision=$revision operation_revision=$operation_revision resources=$resource_count startedAt=$operation_started"
 
-            # A full sync must not contain a selective resource list.
             if [ "$phase" = "Running" ] || [ "$phase" = "Terminating" ] || [ "$phase" = "Succeeded" ]; then
               if [ "$operation_revision" = "$GIT_REVISION" ]; then
                 operation_seen=1
