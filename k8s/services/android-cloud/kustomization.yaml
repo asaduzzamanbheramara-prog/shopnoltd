@@ -13,6 +13,7 @@ resources:
 
 configMapGenerator:
   - name: android-cloud-controller-config
+    namespace: shopno-platform
     envs:
       - controller.env
 
