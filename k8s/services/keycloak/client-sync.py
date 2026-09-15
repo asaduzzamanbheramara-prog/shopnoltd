@@ -12,7 +12,8 @@ KEYCLOAK_URL = os.environ.get("KEYCLOAK_URL", "http://keycloak.shopno-identity.s
 REALM = os.environ.get("KEYCLOAK_REALM", "shopnoltd")
 ADMIN_USER = os.environ.get("KEYCLOAK_ADMIN_USER", "admin")
 ADMIN_PASSWORD = os.environ.get("KEYCLOAK_ADMIN_PASSWORD")
-CLIENT_ID = "shopnoltd-web"
+
+CLIENT_IDS = ["shopnoltd-web", "web-portal"]
 
 REQUIRED_REDIRECT_URIS = [
     "http://localhost:5173/callback",
@@ -31,6 +32,38 @@ REQUIRED_WEB_ORIGINS = [
     "https://devices.shopnoltd.dpdns.org",
     "https://android.shopnoltd.dpdns.org",
 ]
+
+WEB_PORTAL_REDIRECT_URIS = [
+    "https://shopnoltd.dpdns.org/*",
+    "https://shopnoltd.dpdns.org/callback",
+    "https://web-portal.shopnoltd.dpdns.org/*",
+    "https://web-portal.shopnoltd.dpdns.org/callback",
+    "https://billing.shopnoltd.dpdns.org/*",
+    "https://billing.shopnoltd.dpdns.org/callback",
+    "https://payment.shopnoltd.dpdns.org/*",
+    "https://payment.shopnoltd.dpdns.org/callback",
+    "https://exchange.shopnoltd.dpdns.org/*",
+    "https://exchange.shopnoltd.dpdns.org/callback",
+    "https://admin.shopnoltd.dpdns.org/*",
+    "https://admin.shopnoltd.dpdns.org/callback",
+    "https://support.shopnoltd.dpdns.org/*",
+    "https://support.shopnoltd.dpdns.org/callback",
+]
+
+WEB_PORTAL_WEB_ORIGINS = [
+    "https://shopnoltd.dpdns.org",
+    "https://web-portal.shopnoltd.dpdns.org",
+    "https://billing.shopnoltd.dpdns.org",
+    "https://payment.shopnoltd.dpdns.org",
+    "https://exchange.shopnoltd.dpdns.org",
+    "https://admin.shopnoltd.dpdns.org",
+    "https://support.shopnoltd.dpdns.org",
+]
+
+CLIENT_CONFIG = {
+    "shopnoltd-web": {"redirect_uris": REQUIRED_REDIRECT_URIS, "web_origins": REQUIRED_WEB_ORIGINS},
+    "web-portal": {"redirect_uris": WEB_PORTAL_REDIRECT_URIS, "web_origins": WEB_PORTAL_WEB_ORIGINS},
+}
 
 API_AUDIENCE_MAPPER_NAME = "api-service-audience"
 API_AUDIENCE_REPAIR_MAPPER_NAME = "api-service-audience-repaired"
@@ -59,7 +92,12 @@ def request(method, path, token=None, body=None, form=False):
 def get_admin_token():
     if not ADMIN_PASSWORD:
         raise RuntimeError("KEYCLOAK_ADMIN_PASSWORD is not set")
-    code, payload = request("POST", "/realms/master/protocol/openid-connect/token", body={"grant_type": "password", "client_id": "admin-cli", "username": ADMIN_USER, "password": ADMIN_PASSWORD}, form=True)
+    code, payload = request(
+        "POST",
+        "/realms/master/protocol/openid-connect/token",
+        body={"grant_type": "password", "client_id": "admin-cli", "username": ADMIN_USER, "password": ADMIN_PASSWORD},
+        form=True,
+    )
     if code != 200 or not isinstance(payload, dict) or not payload.get("access_token"):
         raise RuntimeError(f"Keycloak admin authentication failed (HTTP {code})")
     return payload["access_token"]
@@ -105,16 +143,19 @@ def sync_ai_audience_mapper(token, client_uuid):
     sync_audience_mapper(token, client_uuid, canonical_name=AI_AUDIENCE_MAPPER_NAME, repair_name=AI_AUDIENCE_REPAIR_MAPPER_NAME, audience="ai-platform")
 
 
-def sync_client(token):
-    query = urllib.parse.urlencode({"clientId": CLIENT_ID})
+def sync_client(token, client_id):
+    config = CLIENT_CONFIG[client_id]
+    required_redirect_uris = config["redirect_uris"]
+    required_web_origins = config["web_origins"]
+    query = urllib.parse.urlencode({"clientId": client_id})
     code, clients = request("GET", f"/admin/realms/{REALM}/clients?{query}", token=token)
     if code != 200 or not isinstance(clients, list):
         raise RuntimeError(f"Unable to query Keycloak client (HTTP {code})")
     if clients:
         client = clients[0]
         client_uuid = client["id"]
-        client["redirectUris"] = sorted(set((client.get("redirectUris") or []) + REQUIRED_REDIRECT_URIS))
-        client["webOrigins"] = sorted(set((client.get("webOrigins") or []) + REQUIRED_WEB_ORIGINS))
+        client["redirectUris"] = sorted(set((client.get("redirectUris") or []) + required_redirect_uris))
+        client["webOrigins"] = sorted(set((client.get("webOrigins") or []) + required_web_origins))
         attributes = client.get("attributes") or {}
         attributes["pkce.code.challenge.method"] = "S256"
         client["attributes"] = attributes
@@ -123,9 +164,9 @@ def sync_client(token):
             raise RuntimeError(f"Unable to update Keycloak client (HTTP {code})")
         sync_api_audience_mapper(token, client_uuid)
         sync_ai_audience_mapper(token, client_uuid)
-        print("[OK] synchronized shopnoltd-web with api-service and ai-platform JWT audiences")
+        print(f"[OK] synchronized {client_id} with api-service and ai-platform JWT audiences")
     else:
-        payload = {"clientId": CLIENT_ID, "publicClient": True, "protocol": "openid-connect", "standardFlowEnabled": True, "directAccessGrantsEnabled": False, "redirectUris": REQUIRED_REDIRECT_URIS, "webOrigins": REQUIRED_WEB_ORIGINS, "attributes": {"pkce.code.challenge.method": "S256"}}
+        payload = {"clientId": client_id, "publicClient": True, "protocol": "openid-connect", "standardFlowEnabled": True, "directAccessGrantsEnabled": False, "redirectUris": required_redirect_uris, "webOrigins": required_web_origins, "attributes": {"pkce.code.challenge.method": "S256"}}
         code, _ = request("POST", f"/admin/realms/{REALM}/clients", token=token, body=payload)
         if code != 201:
             raise RuntimeError(f"Unable to create Keycloak client (HTTP {code})")
@@ -135,8 +176,8 @@ def sync_client(token):
         client_uuid = clients[0]["id"]
         sync_api_audience_mapper(token, client_uuid)
         sync_ai_audience_mapper(token, client_uuid)
-        print("[OK] created shopnoltd-web client")
-        print("[OK] synchronized shopnoltd-web with api-service and ai-platform JWT audiences")
+        print(f"[OK] created {client_id} client")
+        print(f"[OK] synchronized {client_id} with api-service and ai-platform JWT audiences")
 
 
 def main():
@@ -144,7 +185,8 @@ def main():
     for _ in range(30):
         try:
             token = get_admin_token()
-            sync_client(token)
+            for client_id in CLIENT_IDS:
+                sync_client(token, client_id)
             return
         except Exception as exc:
             last_error = exc
