@@ -45,7 +45,7 @@ spec:
               mountPath: /run
       containers:
         - name: code-server
-          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-code-server:latest
+          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-code-server:d550c41a5fe79db9c0a40425454372622cb358cb
           imagePullPolicy: Always
           ports:
             - name: http
