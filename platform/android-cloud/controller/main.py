@@ -79,7 +79,7 @@ def current_user(request: Request) -> str:
     return subject
 
 def name_for(prefix: str, session_id: str) -> str:
-    return f"{prefix}-{session_id[:16]}"
+    return f"{prefix}-{session_id[:16].lower()}"
 
 def make_emulator_pod(session: Session) -> client.V1Pod:
     container = client.V1Container(
