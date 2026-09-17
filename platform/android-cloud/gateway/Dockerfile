@@ -26,7 +26,18 @@ RUN git clone --filter=blob:none --no-checkout "${AEMU_REPO}" . \
     && test -f hardware/google/aemu/protos/services/webrtc/rtc_service_v2.proto \
     && test -f hardware/google/aemu/protos/services/webrtc/ice_config.proto \
     && sed -i 's/emulator_address = f"localhost:{emulator_port}"/emulator_address = os.getenv("EMULATOR_HOST", f"localhost:{emulator_port}")/' gateway/src/videobridge_gateway/gateway_server.py \
-    && pip install --no-cache-dir ./gateway
+    && pip install --no-cache-dir grpcio-tools \
+    && mkdir -p gateway/src/videobridge_gateway/proto \
+    && touch gateway/src/videobridge_gateway/proto/__init__.py \
+    && python -m grpc_tools.protoc \
+       -I hardware/google/aemu/protos/services/emulator-controller \
+       -I hardware/google/aemu/protos/services/webrtc \
+       --python_out=gateway/src/videobridge_gateway/proto \
+       --grpc_python_out=gateway/src/videobridge_gateway/proto \
+       hardware/google/aemu/protos/services/emulator-controller/emulator_controller.proto \
+       hardware/google/aemu/protos/services/webrtc/rtc_service_v2.proto \
+       hardware/google/aemu/protos/services/webrtc/ice_config.proto \
+    && pip install --no-cache-dir -e ./gateway
 
 COPY entrypoint.sh /usr/local/bin/android-cloud-gateway
 RUN chmod 0755 /usr/local/bin/android-cloud-gateway \
