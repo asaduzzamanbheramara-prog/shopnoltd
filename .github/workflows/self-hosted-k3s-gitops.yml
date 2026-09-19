@@ -11,6 +11,10 @@ on:
       - '.github/workflows/self-hosted-k3s-gitops.yml'
   workflow_dispatch:
 
+concurrency:
+  group: k3s-gitops
+  cancel-in-progress: false
+
 env:
   ARGOCD_NAMESPACE: argocd
   ARGOCD_APP: shopnoltd
