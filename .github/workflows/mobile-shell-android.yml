@@ -50,6 +50,10 @@ jobs:
         working-directory: apps/mobile-shell/android
         run: bash ./gradlew --no-daemon --stacktrace assembleWebDebug
 
+      - name: Run Shopnoltd web unit tests
+        working-directory: apps/mobile-shell/android
+        run: bash ./gradlew --no-daemon --stacktrace testWebDebugUnitTest
+
       - name: Verify and package Shopnoltd APK
         shell: bash
         run: |
@@ -69,6 +73,10 @@ jobs:
       - name: Build Shopnoltd Admin debug APK
         working-directory: apps/mobile-shell/android
         run: bash ./gradlew --no-daemon --stacktrace assembleAdminDebug
+
+      - name: Run Shopnoltd Admin unit tests
+        working-directory: apps/mobile-shell/android
+        run: bash ./gradlew --no-daemon --stacktrace testAdminDebugUnitTest
 
       - name: Verify and package Shopnoltd Admin APK
         shell: bash
