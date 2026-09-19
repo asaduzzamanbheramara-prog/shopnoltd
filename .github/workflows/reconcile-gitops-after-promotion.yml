@@ -35,7 +35,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          gh workflow run "Self-hosted k3s GitOps deployment" \
+          gh workflow run self-hosted-k3s-gitops.yml \
             --repo "$REPOSITORY" \
             --ref main
           echo 'Self-hosted GitOps reconciliation dispatched for main.'
