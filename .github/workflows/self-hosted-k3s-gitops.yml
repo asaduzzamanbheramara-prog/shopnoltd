@@ -49,16 +49,52 @@ jobs:
           command -v jq
           command -v sha256sum
           test -s "${KUBECONFIG:-$HOME/.kube/config}"
-          kubectl cluster-info
-          kubectl auth can-i get applications.argoproj.io -n "$ARGOCD_NAMESPACE"
-          kubectl auth can-i patch applications.argoproj.io -n "$ARGOCD_NAMESPACE"
-          kubectl auth can-i get jobs.batch -n "$MIGRATION_NAMESPACE"
-          kubectl auth can-i patch jobs.batch -n "$MIGRATION_NAMESPACE"
-          kubectl auth can-i get pods --all-namespaces
-          kubectl auth can-i get deployments -n "$CLOUDFLARED_NAMESPACE"
-          kubectl auth can-i get secret -n "$CLOUDFLARE_SECRET_NAMESPACE"
-          kubectl auth can-i get secret -n shopno-tools
-          kubectl auth can-i create secret -n "$PLATFORM_NAMESPACE"
+
+          echo 'Checking Kubernetes API connectivity with retries.'
+          cluster_ready=0
+          for attempt in {1..6}; do
+            if kubectl --request-timeout=20s cluster-info >/dev/null 2>&1; then
+              cluster_ready=1
+              break
+            fi
+            echo "Kubernetes API connectivity attempt $attempt/6 failed; retrying in 10 seconds."
+            sleep 10
+          done
+          if [ "$cluster_ready" -ne 1 ]; then
+            echo 'Kubernetes API did not become reachable after retries.'
+            kubectl --request-timeout=20s cluster-info
+            exit 1
+          fi
+
+          rbac_checks=(
+            "get applications.argoproj.io -n $ARGOCD_NAMESPACE"
+            "patch applications.argoproj.io -n $ARGOCD_NAMESPACE"
+            "get jobs.batch -n $MIGRATION_NAMESPACE"
+            "patch jobs.batch -n $MIGRATION_NAMESPACE"
+            "get pods --all-namespaces"
+            "get deployments -n $CLOUDFLARED_NAMESPACE"
+            "get secret -n $CLOUDFLARE_SECRET_NAMESPACE"
+            "get secret -n shopno-tools"
+            "create secret -n $PLATFORM_NAMESPACE"
+          )
+
+          for check in "${rbac_checks[@]}"; do
+            authorized=0
+            for attempt in {1..4}; do
+              result="$(kubectl --request-timeout=20s auth can-i $check 2>/dev/null || true)"
+              if [ "$result" = "yes" ]; then
+                authorized=1
+                break
+              fi
+              echo "RBAC check '$check' attempt $attempt/4 did not return yes; retrying in 5 seconds."
+              sleep 5
+            done
+            if [ "$authorized" -ne 1 ]; then
+              echo "Required RBAC check failed: kubectl auth can-i $check"
+              kubectl --request-timeout=20s auth can-i $check
+              exit 1
+            fi
+          done
 
       - name: Validate rendered Kubernetes source
         shell: bash
@@ -207,7 +243,25 @@ jobs:
           seen_exact_revision=0
 
           while [ "$SECONDS" -lt "$deadline" ]; do
-            state="$(timeout 15s kubectl --request-timeout=15s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o json)"
+            state=""
+            for attempt in {1..3}; do
+              if state="$(timeout 20s kubectl --request-timeout=20s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o json 2>/tmp/shopnoltd-argocd-get-error)"; then
+                break
+              fi
+              echo "Transient Kubernetes API failure while reading Argo CD Application (attempt $attempt/3)."
+              cat /tmp/shopnoltd-argocd-get-error || true
+              state=""
+              if [ "$attempt" -lt 3 ]; then
+                sleep 5
+              fi
+            done
+
+            if [ -z "$state" ]; then
+              echo 'Argo CD Application could not be read; treating this as transient and retrying.'
+              sleep 10
+              continue
+            fi
+
             operation_phase="$(jq -r '.status.operationState.phase // ""' <<<"$state")"
             operation_revision="$(jq -r '.status.operationState.operation.sync.revision // ""' <<<"$state")"
             sync_revision="$(jq -r '.status.sync.revision // ""' <<<"$state")"
