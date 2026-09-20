@@ -85,12 +85,12 @@ def make_emulator_pod(session: Session) -> client.V1Pod:
     container = client.V1Container(
         name="emulator", image=EMULATOR_IMAGE, image_pull_policy="IfNotPresent",
         ports=[client.V1ContainerPort(name="grpc", container_port=8554), client.V1ContainerPort(name="adb", container_port=5555)],
-        env=[client.V1EnvVar(name="EMULATOR_PARAMS", value="-no-window -grpc 8554")],
+        env=[client.V1EnvVar(name="EMULATOR_PARAMS", value="-no-window -no-audio -memory 2048 -grpc 8554")],
         resources=client.V1ResourceRequirements(requests={"cpu": "2", "memory": "3Gi", "ephemeral-storage": "4Gi"}, limits={"cpu": "4", "memory": "4Gi", "ephemeral-storage": "8Gi"}),
         volume_mounts=[client.V1VolumeMount(name="android-data", mount_path="/data")],
         security_context=client.V1SecurityContext(privileged=True, allow_privilege_escalation=True),
     )
-    return client.V1Pod(metadata=client.V1ObjectMeta(name=session.emulator_name, namespace=NAMESPACE, labels={"app.kubernetes.io/name": "android-emulator", "shopnoltd.dev/session": session.session_id}), spec=client.V1PodSpec(restart_policy="Never", automount_service_account_token=False, containers=[container], volumes=[client.V1Volume(name="android-data", empty_dir=client.V1EmptyDirVolumeSource(medium="Memory", size_limit="6Gi"))]))
+    return client.V1Pod(metadata=client.V1ObjectMeta(name=session.emulator_name, namespace=NAMESPACE, labels={"app.kubernetes.io/name": "android-emulator", "shopnoltd.dev/session": session.session_id}), spec=client.V1PodSpec(restart_policy="Never", automount_service_account_token=False, containers=[container], volumes=[client.V1Volume(name="android-data", empty_dir=client.V1EmptyDirVolumeSource(size_limit="6Gi"))]))
 
 def make_gateway_pod(session: Session) -> client.V1Pod:
     container = client.V1Container(
