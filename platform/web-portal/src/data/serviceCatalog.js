@@ -11,6 +11,7 @@ export const SERVICES = [
   SERVICE('🧰', 'ShopnoltdToolbox', 'KoboToolbox-powered data collection, forms and field workflows.', 'https://kobo.shopnoltd.dpdns.org', 'Productivity'),
   SERVICE('💬', 'Messaging & Support', 'Customer conversations, team messaging, direct/group chat and support workflows.', 'https://chat.shopnoltd.dpdns.org', 'Communication'),
   SERVICE('📞', 'Meetings & Calls', 'Authenticated audio/video meetings and call workflows backed by Shopnoltd meeting services.', 'https://meet.shopnoltd.dpdns.org', 'Communication'),
+  SERVICE('📞', 'Shopnoltd Phone', 'Business phone system powered by 3CX for team calling, communication and meetings.', '/phone', 'Communication'),
   SERVICE('🔔', 'Notifications', 'Account, service, workflow and communication notifications.', '/notifications', 'Communication'),
   SERVICE('🔴', 'Live Streaming', 'Authenticated live-stream creation and creator workflows.', 'https://live.shopnoltd.dpdns.org', 'Media'),
   SERVICE('📰', 'Social Feed', 'Posts, reactions, comments, shares, follows and discovery.', '/feed', 'Social'),
