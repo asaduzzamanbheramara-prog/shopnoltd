@@ -607,6 +607,7 @@ export default function AIModels() {
   const [error, setError] = useState('')
   const [providerForm, setProviderForm] = useState(null)
   const [modelForm, setModelForm] = useState(null)
+  const [syncing, setSyncing] = useState(false)
 
   const load = async () => {
     setLoading(true)
@@ -677,6 +678,7 @@ export default function AIModels() {
           </p>
         </div>
 
+        <button onClick={async () => { setSyncing(true); try { await request("/providers/sync-all?activation=recommended", { method: "POST" }); await load() } catch (err) { setError(err?.message || "Unable to sync provider models.") } finally { setSyncing(false) } }} disabled={syncing || loading} style={buttonStyle}><RefreshCw size={15} /> {syncing ? "Syncing…" : "Sync models"}</button>
         <button onClick={load} disabled={loading} style={buttonStyle}>
           <span style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
             <RefreshCw size={15} /> {loading ? 'Refreshing…' : 'Refresh'}
