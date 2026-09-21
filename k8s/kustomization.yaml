@@ -56,6 +56,7 @@ resources:
 - services/gitea
 - services/code-server
 - services/remote-device
+- services/enketo
 - services/kobotoolbox
 - shopno-apps/kobo-worker.yaml
 - shopno-apps/kobo-beat.yaml
