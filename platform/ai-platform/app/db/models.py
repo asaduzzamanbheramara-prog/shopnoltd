@@ -88,3 +88,24 @@ class AIModel(Base):
     )
 
     provider: Mapped["AIProvider"] = relationship(back_populates="models")
+
+
+class AIConnection(Base):
+    __tablename__ = "ai_connections"
+    __table_args__ = (
+        UniqueConstraint("user_id", "kind", "name", name="uq_ai_connection_user_kind_name"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    kind: Mapped[str] = mapped_column(String(40), nullable=False)  # github | local
+    name: Mapped[str] = mapped_column(String(120), nullable=False)
+    base_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    secret_encrypted: Mapped[str | None] = mapped_column(Text, nullable=True)
+    config: Mapped[dict] = mapped_column(JSONB, default=dict)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    last_tested_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_test_status: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    last_test_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

@@ -47,6 +47,26 @@ class OpenAIAdapter(BaseAdapter):
         tokens = data.get("usage", {}).get("total_tokens", 0)
         return InferenceResult(text=text, tokens_used=tokens, raw=data)
 
+
+    async def list_models(self, timeout: int = 10) -> list[dict] | None:
+        api_key = self.require_api_key("OpenAI-compatible")
+        base = self.base_url or DEFAULT_BASE_URL
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            response = await client.get(f"{base}/models", headers={"Authorization": f"Bearer {api_key}"})
+            response.raise_for_status()
+            payload = response.json()
+        return [
+            {
+                "id": item.get("id"),
+                "display_name": item.get("name") or item.get("id"),
+                "context_window": item.get("context_length"),
+                "pricing": item.get("pricing"),
+                "capabilities": item.get("capabilities") or {},
+            }
+            for item in payload.get("data", [])
+            if item.get("id")
+        ]
+
     async def health_check(self, timeout: int = 5) -> bool:
         api_key = self.require_api_key("OpenAI-compatible")
         base = self.base_url or DEFAULT_BASE_URL

@@ -1,5 +1,7 @@
 """Shopnoltd AI Platform."""
 
+import asyncio
+import contextlib
 from contextlib import asynccontextmanager
 
 import structlog
@@ -14,8 +16,23 @@ from app.db import models as ai_db_models  # noqa: F401
 from app.db.base import Base
 from app.db.session import AsyncSessionLocal, engine
 from app.services.bootstrap import bootstrap_providers
+from app.services.model_catalog import sync_all_providers
 
 log = structlog.get_logger()
+
+
+
+async def _model_catalog_loop(interval_hours: float) -> None:
+    interval = max(interval_hours, 0.25) * 3600
+    await asyncio.sleep(10)
+    while True:
+        try:
+            async with AsyncSessionLocal() as db:
+                reports = await sync_all_providers(db, activation="recommended")
+            log.info("ai-platform.model_catalog_sync", reports=reports)
+        except Exception:
+            log.exception("ai-platform.model_catalog_sync_failed")
+        await asyncio.sleep(interval)
 
 
 @asynccontextmanager
@@ -25,8 +42,14 @@ async def lifespan(app: FastAPI):
     await redis_client.ping()
     async with AsyncSessionLocal() as db:
         configured = await bootstrap_providers(db)
+    sync_task = asyncio.create_task(_model_catalog_loop(settings.model_sync_interval_hours))
     log.info("ai-platform.started", env=settings.env, configured_providers=configured)
-    yield
+    try:
+        yield
+    finally:
+        sync_task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await sync_task
     await engine.dispose()
     await redis_client.aclose()
 
@@ -58,6 +81,13 @@ app.include_router(
     __import__("app.api.agents", fromlist=["router"]).router,
     prefix="/api/v1/agents",
     tags=["agents"],
+)
+
+app.include_router(
+    __import__("app.api.connections", fromlist=["router"]).router,
+)
+app.include_router(
+    __import__("app.api.ai_corrections", fromlist=["router"]).router,
 )
 
 app.include_router(
