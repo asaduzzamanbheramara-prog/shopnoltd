@@ -35,6 +35,26 @@ import Discover from './pages/Discover'
 import WebsiteBuilder from './pages/WebsiteBuilder'
 import { isPlatformAdmin } from './lib/jwt'
 
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {})
+  })
+}
+
+function InstallPrompt() {
+  const [prompt, setPrompt] = React.useState(null)
+  React.useEffect(() => {
+    const handler = (event) => {
+      event.preventDefault()
+      setPrompt(event)
+    }
+    window.addEventListener('beforeinstallprompt', handler)
+    return () => window.removeEventListener('beforeinstallprompt', handler)
+  }, [])
+  if (!prompt) return null
+  return <button type="button" onClick={async () => { await prompt.prompt(); setPrompt(null) }} style={{ color: 'white', background: 'rgba(255,255,255,0.14)', border: '1px solid rgba(255,255,255,0.5)', borderRadius: 6, padding: '5px 12px', cursor: 'pointer', whiteSpace: 'nowrap' }}>Install Shopnoltd</button>
+}
+
 const PUBLIC_LINKS = [['Pricing', '/pricing'], ['Create Website', '/create-website'], ['Discover', '/discover'], ['Feed', '/feed'], ['Work', '/work'], ['Blog', '/blog'], ['AI', '/ai'], ['Services', '/services'], ['Phone', '/phone'], ['Domains', '/domain-registration'], ['Downloads', '/downloads'], ['Android Cloud', '/android-cloud']]
 const STANDALONE_APP_PATHS = new Set(['/android-cloud'])
 
@@ -51,6 +71,7 @@ function Nav() {
     <Link to="/" style={{ color: 'white', display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: 20, textDecoration: 'none', whiteSpace: 'nowrap', marginRight: 'auto' }}><img src="/logo.svg" alt="Shopnoltd" style={{ height: 28, width: 28, objectFit: 'contain' }} />Shopnoltd</Link>
     <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'flex-end', gap: '8px 16px', minWidth: 0 }}>
       {PUBLIC_LINKS.map(([label, path]) => renderPublicLink(label, path))}
+      <InstallPrompt />
       {!loggedIn && <><Link to="/login" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px' }}>Login</Link><Link to="/register" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px' }}>Register</Link></>}
       {loggedIn && <><Link to="/dashboard" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px' }}>Dashboard</Link><Link to="/create-work" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px' }}>Create Work</Link><Link to="/create-website" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px' }}>Create Website</Link><Link to="/my-created-work" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px' }}>My Created Work</Link><Link to="/wallet" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px' }}>Wallet</Link><Link to="/transactions" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px' }}>Transactions</Link><Link to="/exchange" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px' }}>Exchange</Link><Link to="/notifications" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px' }}>Notifications</Link><Link to="/account" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px' }}>Account</Link><Link to="/domain-management" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px' }}>My Domains</Link><Link to="/my-active-work" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px' }}>My Active Works</Link><Link to="/my-submission" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px' }}>My Submission</Link><Link to="/work-review" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px' }}>Work Review</Link><Link to="/my-blog" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px' }}>My Blog</Link>
         {isAdmin && <><Link to="/admin" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px', fontWeight: 700 }}>Admin</Link><Link to="/admin/payment-accounts" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px' }}>Payment Accounts</Link><Link to="/admin/database" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px' }}>Database</Link><Link to="/admin/infrastructure" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px' }}>Infrastructure</Link></>}
