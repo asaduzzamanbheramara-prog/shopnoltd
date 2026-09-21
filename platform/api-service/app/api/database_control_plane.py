@@ -5,15 +5,18 @@ capability that an owning service has not declared and enforced itself.
 """
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.core.security import verify_token
 from app.database_control_plane.registry import catalog
 
 router = APIRouter(prefix="/admin/database", tags=["admin-database-control-plane"])
+bearer = HTTPBearer(auto_error=True)
 
 
-async def require_platform_admin(token=Depends(verify_token)):
-    roles = set(token.get("roles", [])) if isinstance(token, dict) else set()
+async def require_platform_admin(credentials: HTTPAuthorizationCredentials = Depends(bearer)):
+    token = await verify_token(credentials.credentials)
+    roles = set(token.get("roles", []))
     if "platform_admin" not in roles:
         raise HTTPException(403, "platform_admin required")
     return token
