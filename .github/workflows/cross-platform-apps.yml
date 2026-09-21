@@ -6,11 +6,17 @@ on:
     paths:
       - 'apps/desktop-shell/**'
       - 'apps/mobile-shell/**'
+      - 'platform/web-portal/**'
+      - 'platform/android-portal/**'
+      - 'k8s/services/web-portal/**'
       - '.github/workflows/cross-platform-apps.yml'
   pull_request:
     paths:
       - 'apps/desktop-shell/**'
       - 'apps/mobile-shell/**'
+      - 'platform/web-portal/**'
+      - 'platform/android-portal/**'
+      - 'k8s/services/web-portal/**'
       - '.github/workflows/cross-platform-apps.yml'
   workflow_dispatch:
 
@@ -19,7 +25,7 @@ permissions:
 
 jobs:
   desktop:
-    name: Desktop (${{ matrix.os }})
+    name: Desktop (${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
@@ -27,12 +33,16 @@ jobs:
           - os: windows-latest
             target: win
             artifact: windows-installer
+            extra_args: ''
           - os: ubuntu-latest
             target: linux
             artifact: linux-installers
+            extra_args: ''
           - os: macos-latest
             target: macos-installer
+            artifact: macos-installer
             builder_target: mac
+            extra_args: '--universal'
     runs-on: ${{ matrix.os }}
     defaults:
       run:
@@ -40,26 +50,99 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
           cache-dependency-path: apps/desktop-shell/package-lock.json
-
       - name: Install dependencies
         run: npm ci
-
       - name: Package Shopnoltd desktop application
-        run: npx electron-builder --config electron-builder.web.json --${{ matrix.builder_target || matrix.target }} --publish never
-
+        run: npx electron-builder --config electron-builder.web.json --${{ matrix.builder_target || matrix.target }} ${{ matrix.extra_args }} --publish never
+      - name: Normalize Windows installer
+        if: matrix.os == 'windows-latest'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release-assets
+          file="$(find release/web-portal -type f -iname '*.exe' -print -quit)"
+          test -n "$file"
+          cp "$file" release-assets/Shopnoltd-Setup.exe
+      - name: Normalize Linux installers
+        if: matrix.os == 'ubuntu-latest'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release-assets
+          appimage="$(find release/web-portal -type f -name '*.AppImage' -print -quit)"
+          deb="$(find release/web-portal -type f -name '*.deb' -print -quit)"
+          test -n "$appimage"
+          test -n "$deb"
+          cp "$appimage" release-assets/Shopnoltd.AppImage
+          cp "$deb" release-assets/Shopnoltd.deb
+      - name: Normalize macOS installer
+        if: matrix.os == 'macos-latest'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release-assets
+          file="$(find release/web-portal -type f -name '*.dmg' -print -quit)"
+          test -n "$file"
+          cp "$file" release-assets/Shopnoltd.dmg
+      - name: Generate installer checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd release-assets
+          sha256sum * > SHA256SUMS.txt
       - name: Upload desktop installer
         uses: actions/upload-artifact@v4
         with:
           name: shopnoltd-${{ matrix.artifact }}
-          path: apps/desktop-shell/release/web-portal/*
+          path: apps/desktop-shell/release-assets/*
           if-no-files-found: error
+
+  publish-desktop-release:
+    name: Publish desktop release
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    needs: desktop
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download Windows installer
+        uses: actions/download-artifact@v4
+        with:
+          name: shopnoltd-windows-installer
+          path: release-assets/windows
+      - name: Download Linux installers
+        uses: actions/download-artifact@v4
+        with:
+          name: shopnoltd-linux-installers
+          path: release-assets/linux
+      - name: Download macOS installer
+        uses: actions/download-artifact@v4
+        with:
+          name: shopnoltd-macos-installer
+          path: release-assets/macos
+      - name: Rebuild combined checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          find release-assets -type f ! -name 'SHA256SUMS.txt' -print0 | sort -z | xargs -0 sha256sum > release-assets/SHA256SUMS.txt
+          ls -lah release-assets release-assets/windows release-assets/linux release-assets/macos
+      - name: Create or update desktop release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: shopnoltd-desktop-latest
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            gh release create "$TAG" --title "Shopnoltd Desktop — Latest" --notes "Latest Shopnoltd desktop installers built from main. Windows NSIS, Linux AppImage/DEB, and macOS universal DMG. macOS signing/notarization status depends on Apple credentials configured in CI." --prerelease
+          fi
+          gh release upload "$TAG" release-assets/windows/* release-assets/linux/* release-assets/macos/* release-assets/SHA256SUMS.txt --clobber
 
   mobile-android:
     name: Mobile (Android phone/tablet)
@@ -70,35 +153,28 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
           cache-dependency-path: apps/mobile-shell/package-lock.json
-
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
-
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
         with:
           packages: platform-tools
-
       - name: Install dependencies
         run: npm ci
-
       - name: Sync Capacitor Android project
         run: npm run sync:web
-
       - name: Build Android debug APK
         working-directory: apps/mobile-shell/android
         run: bash ./gradlew assembleDebug
-
       - name: Locate generated Android APK
         id: android-apk
         shell: bash
@@ -106,8 +182,6 @@ jobs:
           APK_PATH="$(find android/app/build/outputs/apk -type f -name '*.apk' | head -n 1)"
           test -n "$APK_PATH"
           echo "path=$APK_PATH" >> "$GITHUB_OUTPUT"
-          echo "Generated APK: $APK_PATH"
-
       - name: Upload Android APK
         uses: actions/upload-artifact@v4
         with:
@@ -124,24 +198,19 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
           cache-dependency-path: apps/mobile-shell/package-lock.json
-
       - name: Install dependencies
         run: npm ci
-
       - name: Sync Capacitor iOS project
         run: npm run sync:web
-
       - name: Install CocoaPods dependencies
         working-directory: apps/mobile-shell/ios/App
         run: pod install
-
       - name: Validate iOS project
         working-directory: apps/mobile-shell/ios/App
         run: xcodebuild -workspace App.xcworkspace -scheme App -sdk iphonesimulator -configuration Debug CODE_SIGNING_ALLOWED=NO build
