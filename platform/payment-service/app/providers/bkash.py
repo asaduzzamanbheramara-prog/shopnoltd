@@ -6,6 +6,7 @@ from app.providers.base import BaseProvider
 
 TOKEN_URL = "https://tokenized.pay.bka.sh/v1.2.0-beta/tokenized/checkout/token/grant"
 CREATE_URL = "https://tokenized.pay.bka.sh/v1.2.0-beta/tokenized/checkout/payment/create"
+QUERY_URL = "https://tokenized.pay.bka.sh/v1.2.0-beta/tokenized/checkout/payment/query"
 EXEC_URL = "https://tokenized.pay.bka.sh/v1.2.0-beta/tokenized/checkout/payment/execute"
 
 
@@ -56,7 +57,26 @@ class BkashProvider(BaseProvider):
         raise NotImplementedError("bkash payouts need b2c Payout API; use manual withdrawal")
 
     async def verify_webhook(self, body, headers):
-        return json.loads(body)
+        payload = json.loads(body)
+        payment_id = payload.get("paymentID") or payload.get("paymentId")
+        if not payment_id:
+            raise RuntimeError("bKash callback is missing paymentID")
+        status = await self.get_status(payment_id)
+        return {
+            "event_id": f"bkash:{payment_id}:{status}",
+            "external_id": payment_id,
+            "status": status,
+            "amount": payload.get("amount"),
+            "currency": payload.get("currency") or "BDT",
+        }
 
     async def get_status(self, external_id):
-        return "PENDING"
+        tok = await self._token()
+        async with httpx.AsyncClient(timeout=20) as c:
+            r = await c.get(
+                f"{QUERY_URL}/{external_id}",
+                headers={"Authorization": tok, "X-APP-Key": settings.bkash_app_key},
+            )
+        r.raise_for_status()
+        data = r.json()
+        return str(data.get("transactionStatus") or data.get("status") or "PENDING").upper()
