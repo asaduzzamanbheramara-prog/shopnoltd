@@ -84,6 +84,13 @@ app.include_router(
 )
 
 app.include_router(
+    __import__("app.api.connections", fromlist=["router"]).router,
+)
+app.include_router(
+    __import__("app.api.ai_corrections", fromlist=["router"]).router,
+)
+
+app.include_router(
     __import__("app.api.ai_providers", fromlist=["router"]).router,
 )
 
