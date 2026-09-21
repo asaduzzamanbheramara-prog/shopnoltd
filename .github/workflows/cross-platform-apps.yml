@@ -158,7 +158,15 @@ jobs:
           if ! gh release view "$TAG" >/dev/null 2>&1; then
             gh release create "$TAG" --title "Shopnoltd Desktop — Latest" --notes "Latest Shopnoltd desktop installers built from main. Windows NSIS, Linux AppImage/DEB, and macOS universal DMG. macOS signing/notarization status depends on Apple credentials configured in CI." --prerelease
           fi
-          gh release upload "$TAG" release-assets/windows/* release-assets/linux/* release-assets/macos/* release-assets/SHA256SUMS.txt --clobber
+          for asset in \
+            release-assets/windows/* \
+            release-assets/linux/* \
+            release-assets/macos/* \
+            release-assets/SHA256SUMS.txt; do
+            name="$(basename "$asset")"
+            gh release delete-asset "$TAG" "$name" --yes >/dev/null 2>&1 || true
+            gh release upload "$TAG" "$asset"
+          done
 
   mobile-android:
     name: Mobile (Android phone/tablet)
