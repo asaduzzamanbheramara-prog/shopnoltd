@@ -1,4 +1,5 @@
 import hashlib
+import json
 from datetime import datetime
 from decimal import Decimal
 
@@ -34,10 +35,12 @@ TERMINAL_STATUSES = {
 }
 
 
-@router.post("/{provider}")
+@router.api_route("/{provider}", methods=["POST", "GET"])
 async def webhook(provider: str, request: Request):
     body = await request.body()
     headers = dict(request.headers)
+    if request.method == "GET":
+        body = json.dumps(dict(request.query_params)).encode()
     try:
         method = PaymentMethod(provider)
     except ValueError as exc:
@@ -124,6 +127,7 @@ async def webhook(provider: str, request: Request):
             or data.get("status")
             or event.get("transactionStatus")
             or event.get("event_type")
+            or event.get("type")
             or ""
         ).upper()
         if status == "PAYMENT_INTENT.SUCCEEDED":
