@@ -1,5 +1,10 @@
 # Shopnoltd Native App Shells
 
+## Official downloads
+
+The canonical public installer page is `https://shopnoltd.dpdns.org/downloads`. Desktop CI publishes the current Windows `.exe`, Linux `.AppImage`/`.deb`, and macOS universal `.dmg` to the `shopnoltd-desktop-latest` GitHub Release. The release also contains `SHA256SUMS.txt` for integrity verification.
+
+
 Two directories, both "thin shell" apps that load the real, live
 web-portal/admin-portal over HTTPS -- the same architecture Slack/Discord
 desktop apps use. Nothing here bundles a copy of the React app; it always

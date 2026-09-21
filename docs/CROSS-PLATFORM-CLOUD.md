@@ -52,6 +52,22 @@ Mobile:
 
 Apple distribution signing requires Apple-managed credentials. GitHub Actions validates the iOS/iPadOS project without signing; production distribution signing must be configured separately through protected CI secrets.
 
+## Distribution
+
+The public installer entry point is https://shopnoltd.dpdns.org/downloads.
+
+Desktop CI publishes a rolling GitHub Release named shopnoltd-desktop-latest containing:
+
+- Windows: Shopnoltd-Setup.exe
+- Linux: Shopnoltd.AppImage
+- Linux Debian/Ubuntu: Shopnoltd.deb
+- macOS: Shopnoltd.dmg (universal build)
+- SHA256SUMS.txt
+
+The Android application releases remain separate because Shopnoltd and Shopnoltd Admin are produced by the mobile shell while ShopnoltdCollect is maintained in its dedicated Android repository. Android Cloud is a browser workspace and is not an installer.
+
+The iPhone/iPad workflow currently validates an unsigned simulator build. No public iOS distribution download is advertised until signed distribution credentials and a real distribution artifact are configured.
+
 ## Capability truth
 
 "Supported" means the control plane, client architecture, build pipeline, and authorization model exist. A platform is only marked production-ready after runtime enrollment, authentication, connection, and capability-specific end-to-end tests pass. Unsupported OS capabilities must be shown as unavailable instead of simulated.

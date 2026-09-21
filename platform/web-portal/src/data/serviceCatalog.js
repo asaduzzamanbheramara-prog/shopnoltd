@@ -21,6 +21,7 @@ export const SERVICES = [
   SERVICE('💰', 'Payments & Wallet', 'Payment methods, deposits, transactions and wallet operations.', '/wallet', 'Business'),
   SERVICE('💱', 'Exchange', 'Supported currency and exchange operations with ledger-backed settlement.', '/exchange', 'Business'),
   SERVICE('🤖', 'AI Workspace', 'Authenticated Shopnoltd AI chat with active-model routing.', '/ai', 'AI'),
+  SERVICE('⬇️', 'Downloads', 'Official Shopnoltd installers and native applications for Windows, Linux, macOS and Android.', '/downloads', 'Downloads'),
   SERVICE('📱', 'Android Cloud', 'Browser-accessible Android Cloud workspace integrated directly into the main Shopnoltd domain.', '/android-cloud', 'Cloud Devices'),
   SERVICE('💻', 'Code Server', 'Browser-based development environment.', 'https://code-server.shopnoltd.dpdns.org', 'Developer'),
   SERVICE('🦊', 'Git', 'Git repositories and collaborative source control.', 'https://gitea.shopnoltd.dpdns.org', 'Developer'),
