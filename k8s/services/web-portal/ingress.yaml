@@ -5,6 +5,7 @@ metadata:
   namespace: shopno-platform
   annotations:
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "110m"
 spec:
   ingressClassName: nginx
   tls:
@@ -35,6 +36,22 @@ spec:
                 name: android-cloud-web
                 port:
                   number: 8080
+
+          - path: /downloads
+            pathType: Prefix
+            backend:
+              service:
+                name: web-portal
+                port:
+                  number: 80
+
+          - path: /download
+            pathType: Prefix
+            backend:
+              service:
+                name: android-portal
+                port:
+                  number: 80
 
           - path: /api
             pathType: Prefix
