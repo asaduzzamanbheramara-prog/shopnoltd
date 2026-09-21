@@ -573,7 +573,7 @@ async def uninstall_app(body: PackageIn, session_id: str, user_id: str = Depends
     raw = run_adb(
         session,
         f'adb -e uninstall {body.package_name} 2>&1; '
-        "rc=$?; printf '\\n__SHOPNO_RC__%s\\n' "$rc"",
+        'rc=$?; printf "\\n__SHOPNO_RC__%s\\n" "$rc"',
     )
     ok, detail = adb_result(raw)
     if not ok:
