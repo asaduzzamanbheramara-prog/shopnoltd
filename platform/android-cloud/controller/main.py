@@ -408,7 +408,7 @@ def install_apk_file(session: Session, source_file: Path, original_name: str) ->
             raw = run_adb(
                 session,
                 f"adb -e install -r -t {apk_path} 2>&1; "
-                f"rc=$?; rm -f {apk_path}; printf '\\n__SHOPNO_RC__%s\\n' "$rc"",
+                f'rc=$?; rm -f {apk_path}; printf "\\n__SHOPNO_RC__%s\\n" "$rc"',
             )
             ok, detail = adb_result(raw)
             if not ok:
@@ -556,8 +556,8 @@ async def launch_app(body: PackageIn, session_id: str, user_id: str = Depends(cu
         raise HTTPException(status_code=400, detail="invalid_package_name")
     raw = run_adb(
         session,
-        f"adb -e shell monkey -p {body.package_name} -c android.intent.category.LAUNCHER 1 2>&1; "
-        "rc=$?; printf '\\n__SHOPNO_RC__%s\\n' "$rc"",
+        f'adb -e shell monkey -p {body.package_name} -c android.intent.category.LAUNCHER 1 2>&1; '
+        'rc=$?; printf "\\n__SHOPNO_RC__%s\\n" "$rc"',
     )
     ok, detail = adb_result(raw)
     if not ok:
@@ -572,7 +572,7 @@ async def uninstall_app(body: PackageIn, session_id: str, user_id: str = Depends
         raise HTTPException(status_code=400, detail="invalid_package_name")
     raw = run_adb(
         session,
-        f"adb -e uninstall {body.package_name} 2>&1; "
+        f'adb -e uninstall {body.package_name} 2>&1; '
         "rc=$?; printf '\\n__SHOPNO_RC__%s\\n' "$rc"",
     )
     ok, detail = adb_result(raw)
