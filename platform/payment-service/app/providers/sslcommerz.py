@@ -67,11 +67,16 @@ class SSLCommerzProvider(BaseProvider):
         )
 
     async def verify_webhook(self, request_body: bytes, headers: dict) -> dict:
-        # SSLCommerz posts form-encoded IPN data; must additionally call
-        # get_status() (val_id validation) before trusting this.
         import urllib.parse
-
-        return dict(urllib.parse.parse_qsl(request_body.decode())) if request_body else {}
+        event = dict(urllib.parse.parse_qsl(request_body.decode())) if request_body else {}
+        val_id = event.get("val_id")
+        if not val_id:
+            raise RuntimeError("SSLCommerz callback is missing val_id")
+        status = await self.get_status(val_id)
+        event["status"] = status
+        event["external_id"] = event.get("tran_id")
+        event["event_id"] = f"sslcommerz:{val_id}:{status}"
+        return event
 
     async def get_status(self, external_id: str) -> str:
         # NOTE: SSLCommerz validation actually keys off `val_id` (returned in the
