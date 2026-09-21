@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { tryRefresh } from '../lib/tokenRefresh'
 import { ExternalLink, RefreshCw, Server, Boxes, Database, Globe, HardDrive, Activity, GitBranch } from 'lucide-react'
 
 const API_BASE = import.meta.env.VITE_ADMIN_INFRASTRUCTURE_API_URL || 'https://admin-infrastructure.shopnoltd.dpdns.org'
@@ -12,8 +13,16 @@ function headers() {
   }
 }
 
-async function get(path) {
-  const response = await fetch(`${API_BASE}${path}`, { headers: headers() })
+async function get(path, retried = false) {
+  let response = await fetch(`${API_BASE}${path}`, { headers: headers() })
+  if (response.status === 401 && !retried) {
+    const refreshed = await tryRefresh()
+    if (refreshed) {
+      response = await fetch(`${API_BASE}${path}`, {
+        headers: { ...headers(), Authorization: `Bearer ${refreshed}` },
+      })
+    }
+  }
   const text = await response.text()
   let data = null
   try { data = text ? JSON.parse(text) : null } catch { data = text }

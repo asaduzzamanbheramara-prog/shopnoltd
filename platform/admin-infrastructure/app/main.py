@@ -19,7 +19,7 @@ KEYCLOAK_JWKS_URL = os.getenv(
 )
 KEYCLOAK_AUDIENCES = {
     value.strip()
-    for value in os.getenv("KEYCLOAK_AUDIENCES", os.getenv("KEYCLOAK_AUDIENCE", "shopnoltd-web")).split(",")
+    for value in os.getenv("KEYCLOAK_AUDIENCES", os.getenv("KEYCLOAK_AUDIENCE", "shopnoltd-web,api-service,ai-platform")).split(",")
     if value.strip()
 }
 CORS_ORIGINS = [x.strip() for x in os.getenv("CORS_ORIGINS", "https://shopnoltd.dpdns.org,https://admin-portal.shopnoltd.dpdns.org").split(",") if x.strip()]
