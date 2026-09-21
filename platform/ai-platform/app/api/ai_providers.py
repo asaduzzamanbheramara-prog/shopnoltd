@@ -8,6 +8,7 @@ from app.core.security import decrypt_secret, encrypt_secret, mask_secret, requi
 from app.db.models import AIProvider
 from app.db.session import get_db
 from app.schemas.ai_provider import ProviderCreate, ProviderOut, ProviderUpdate
+from app.services.model_catalog import sync_all_providers, sync_provider_models
 from app.services.model_router import ADAPTER_MAP, _build_adapter
 
 router = APIRouter(
@@ -56,6 +57,20 @@ async def create_provider(payload: ProviderCreate, db: AsyncSession = Depends(ge
     return _to_out(provider)
 
 
+@router.post("/sync-all")
+async def sync_all_model_catalogs(
+    activation: str = "recommended",
+    db: AsyncSession = Depends(get_db),
+):
+    """Refresh all active provider catalogs without deleting last-known-good models."""
+    if activation not in {"recommended", "all", "none"}:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            "activation must be one of: recommended, all, none",
+        )
+    return {"results": await sync_all_providers(db, activation=activation)}
+
+
 @router.get("/{provider_id}", response_model=ProviderOut)
 async def get_provider(provider_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     provider = await db.get(AIProvider, provider_id)
@@ -86,6 +101,25 @@ async def update_provider(
     await db.commit()
     await db.refresh(provider)
     return _to_out(provider)
+
+
+@router.post("/{provider_id}/sync-models")
+async def sync_provider_model_catalog(
+    provider_id: uuid.UUID,
+    activation: str = "recommended",
+    db: AsyncSession = Depends(get_db),
+):
+    if activation not in {"recommended", "all", "none"}:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            "activation must be one of: recommended, all, none",
+        )
+    provider = await db.get(AIProvider, provider_id)
+    if not provider:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Provider not found")
+    report = await sync_provider_models(db, provider, activation=activation)
+    await db.commit()
+    return report
 
 
 @router.post("/{provider_id}/activate", response_model=ProviderOut)

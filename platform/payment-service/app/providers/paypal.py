@@ -77,11 +77,40 @@ class PayPalProvider(BaseProvider):
         raise NotImplementedError("PayPal is deposit-only in this integration; use Payoneer for payouts.")
 
     async def verify_webhook(self, body, headers):
-        # Full verification requires calling PayPal's /v1/notifications/verify-webhook-signature
-        # with a configured webhook ID. Returning the raw payload for the route handler to process
-        # until that's wired up — do not treat this as verified/trusted yet.
+        if not settings.paypal_webhook_id:
+            raise RuntimeError("PayPal webhook ID is not configured")
         import json
-        return json.loads(body.decode("utf-8"))
+        payload = {
+            "auth_algo": headers.get("paypal-auth-algo", ""),
+            "cert_url": headers.get("paypal-cert-url", ""),
+            "transmission_id": headers.get("paypal-transmission-id", ""),
+            "transmission_sig": headers.get("paypal-transmission-sig", ""),
+            "transmission_time": headers.get("paypal-transmission-time", ""),
+            "webhook_id": settings.paypal_webhook_id,
+            "webhook_event": json.loads(body.decode("utf-8")),
+        }
+        required = ("auth_algo", "cert_url", "transmission_id", "transmission_sig", "transmission_time")
+        if any(not payload[k] for k in required):
+            raise RuntimeError("PayPal webhook signature headers are incomplete")
+        async with httpx.AsyncClient(timeout=15) as c:
+            resp = await c.post(
+                f"{self.base_url}/v1/notifications/verify-webhook-signature",
+                headers={"Authorization": f"Bearer {await self._get_access_token()}", "Content-Type": "application/json"},
+                json=payload,
+            )
+            resp.raise_for_status()
+            if resp.json().get("verification_status") != "SUCCESS":
+                raise RuntimeError("PayPal webhook signature verification failed")
+        event = payload["webhook_event"]
+        resource = event.get("resource") or {}
+        return {
+            "event_id": event.get("id"),
+            "external_id": resource.get("id") or resource.get("supplementary_data", {}).get("related_ids", {}).get("order_id"),
+            "order_id": resource.get("supplementary_data", {}).get("related_ids", {}).get("order_id"),
+            "status": resource.get("status") or event.get("event_type", "").split(".")[-1],
+            "amount": (resource.get("purchase_units") or [{}])[0].get("amount", {}).get("value"),
+            "currency": (resource.get("purchase_units") or [{}])[0].get("amount", {}).get("currency_code"),
+        }
 
     async def get_status(self, external_id):
         if not self.enabled:

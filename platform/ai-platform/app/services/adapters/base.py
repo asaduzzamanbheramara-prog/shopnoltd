@@ -33,6 +33,10 @@ class BaseAdapter(ABC):
         attachments: list[dict] | None = None,
     ) -> InferenceResult: ...
 
+    async def list_models(self, timeout: int = 10) -> list[dict] | None:
+        """Return normalized remote model metadata when the provider exposes a catalog API."""
+        return None
+
     @abstractmethod
     async def health_check(self, timeout: int = 5) -> bool:
         """Cheap connectivity check — used by the /providers/{id}/test endpoint."""
