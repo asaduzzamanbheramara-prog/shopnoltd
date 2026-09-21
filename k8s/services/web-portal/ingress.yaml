@@ -37,6 +37,22 @@ spec:
                 port:
                   number: 8080
 
+          - path: /downloads
+            pathType: Prefix
+            backend:
+              service:
+                name: web-portal
+                port:
+                  number: 80
+
+          - path: /download
+            pathType: Prefix
+            backend:
+              service:
+                name: android-portal
+                port:
+                  number: 80
+
           - path: /api
             pathType: Prefix
             backend:
