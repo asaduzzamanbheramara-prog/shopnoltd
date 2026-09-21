@@ -27,6 +27,13 @@ spec:
     - host: shopnoltd.dpdns.org
       http:
         paths:
+          - path: /download
+            pathType: Prefix
+            backend:
+              service:
+                name: android-portal
+                port:
+                  number: 80
           - path: /downloads
             pathType: Prefix
             backend:
