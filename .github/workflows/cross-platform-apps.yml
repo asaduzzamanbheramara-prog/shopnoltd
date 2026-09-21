@@ -57,7 +57,21 @@ jobs:
           cache: npm
           cache-dependency-path: apps/desktop-shell/package-lock.json
       - name: Install dependencies
-        run: npm ci
+        shell: bash
+        run: |
+          set -euo pipefail
+          for attempt in 1 2 3; do
+            if npm ci --fetch-retries=5 --fetch-retry-factor=2 --fetch-retry-mintimeout=2000 --fetch-retry-maxtimeout=30000; then
+              exit 0
+            fi
+            if [ "$attempt" -lt 3 ]; then
+              echo "npm ci failed on attempt $attempt; retrying in 10 seconds..."
+              rm -rf node_modules
+              sleep 10
+            fi
+          done
+          echo "npm ci failed after 3 attempts"
+          exit 1
       - name: Package Shopnoltd desktop application
         run: npx electron-builder --config electron-builder.web.json --${{ matrix.builder_target || matrix.target }} ${{ matrix.extra_args }} --publish never
       - name: Normalize Windows installer
@@ -205,7 +219,21 @@ jobs:
           cache: npm
           cache-dependency-path: apps/mobile-shell/package-lock.json
       - name: Install dependencies
-        run: npm ci
+        shell: bash
+        run: |
+          set -euo pipefail
+          for attempt in 1 2 3; do
+            if npm ci --fetch-retries=5 --fetch-retry-factor=2 --fetch-retry-mintimeout=2000 --fetch-retry-maxtimeout=30000; then
+              exit 0
+            fi
+            if [ "$attempt" -lt 3 ]; then
+              echo "npm ci failed on attempt $attempt; retrying in 10 seconds..."
+              rm -rf node_modules
+              sleep 10
+            fi
+          done
+          echo "npm ci failed after 3 attempts"
+          exit 1
       - name: Sync Capacitor iOS project
         run: npm run sync:web
       - name: Install CocoaPods dependencies
