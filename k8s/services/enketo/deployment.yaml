@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: enketo
+  namespace: shopno-apps
+  labels:
+    app.kubernetes.io/name: enketo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: enketo
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: enketo
+        app.kubernetes.io/part-of: shopnoltd
+    spec:
+      containers:
+        - name: enketo
+          image: docker.io/kobotoolbox/enketo-express-extra-widgets:7.6.3
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8005
+          env:
+            - name: ENKETO_URL
+              value: "https://enketo.shopnoltd.dpdns.org"
+            - name: ENKETO_API_URL
+              value: "https://kobo.shopnoltd.dpdns.org"
+            - name: ENKETO_REDIS_HOST
+              value: "redis.shopno-data.svc.cluster.local"
+            - name: ENKETO_REDIS_PORT
+              value: "6379"
+            - name: ENKETO_REDIS_DB
+              value: "5"
+            - name: ENKETO_POSTGRES_HOST
+              value: "postgres.shopno-data.svc.cluster.local"
+            - name: ENKETO_POSTGRES_PORT
+              value: "5432"
+            - name: ENKETO_POSTGRES_USER
+              value: "postgres"
+            - name: ENKETO_POSTGRES_PASSWORD
+              value: "REDACTED_ROTATE_AFTER_RESTORE"
+            - name: ENKETO_POSTGRES_DB
+              value: "enketo"
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "128Mi"
+            limits:
+              cpu: "300m"
+              memory: "512Mi"
