@@ -35,7 +35,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: android-portal
-          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/android-portal:ef0f22bda3aab49535773c357bd3a2589b91a8f5
+          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/android-portal:9eafd70431f2d69508c066514bdec2f8b8962121
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
