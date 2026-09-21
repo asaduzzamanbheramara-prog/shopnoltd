@@ -53,6 +53,7 @@ async def webhook(provider: str, request: Request):
         data = event.get("data") or {}
         if not isinstance(data, dict):
             data = {}
+        stripe_object = data.get("object") if isinstance(data.get("object"), dict) else {}
 
         external = (
             event.get("external_id")
@@ -61,6 +62,7 @@ async def webhook(provider: str, request: Request):
             or data.get("prepayId")
             or data.get("transaction_id")
             or data.get("payment_transaction_id")
+            or stripe_object.get("id")
         )
         order_reference = data.get("order_id") or event.get("order_id")
         if not external and not order_reference:
@@ -121,8 +123,15 @@ async def webhook(provider: str, request: Request):
             event.get("status")
             or data.get("status")
             or event.get("transactionStatus")
+            or event.get("event_type")
             or ""
         ).upper()
+        if status == "PAYMENT_INTENT.SUCCEEDED":
+            status = "SUCCEEDED"
+        elif status == "CHECKOUT.ORDER.APPROVED":
+            status = "APPROVED"
+        if status in {"SUCCEEDED", "CAPTURED", "COMPLETED"}:
+            status = "COMPLETED"
 
         if method == PaymentMethod.moneybag and status in SUCCESS_STATUSES:
             verify_id = str(external or order_reference)
@@ -135,9 +144,12 @@ async def webhook(provider: str, request: Request):
                 await s.commit()
                 return {"received": True, "status": "pending", "verification": verified}
 
-        event_amount = data.get("amount") or data.get("order_amount") or event.get("amount")
+        event_amount = data.get("amount") or data.get("order_amount") or event.get("amount") or stripe_object.get("amount")
         if event_amount is not None:
-            if Decimal(str(event_amount)) != Decimal(str(tx.amount)):
+            provider_amount = Decimal(str(event_amount))
+            if method == PaymentMethod.stripe:
+                provider_amount = provider_amount / Decimal("100")
+            if provider_amount != Decimal(str(tx.amount)):
                 raise HTTPException(400, "webhook amount does not match transaction")
 
         event_currency = data.get("currency") or event.get("currency")
