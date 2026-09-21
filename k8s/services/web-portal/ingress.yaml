@@ -5,6 +5,7 @@ metadata:
   namespace: shopno-platform
   annotations:
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "110m"
 spec:
   ingressClassName: nginx
   tls:
