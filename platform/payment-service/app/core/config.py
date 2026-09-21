@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     stripe_webhook_secret: str = ""
     paypal_client_id: str = ""
     paypal_secret: str = ""
+    paypal_webhook_id: str = ""
     paypal_mode: str = "sandbox"
     payoneer_program_id: str = ""
     payoneer_api_username: str = ""
