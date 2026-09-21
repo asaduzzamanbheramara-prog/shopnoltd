@@ -34,10 +34,3 @@ spec:
                 name: android-portal
                 port:
                   number: 80
-          - path: /downloads
-            pathType: Prefix
-            backend:
-              service:
-                name: android-portal
-                port:
-                  number: 80
