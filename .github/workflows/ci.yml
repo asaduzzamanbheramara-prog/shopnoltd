@@ -10,9 +10,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Setup kustomize
+        shell: bash
         run: |
-          curl -sL https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.4.3/kustomize_v5.4.3_linux_amd64.tar.gz | tar -xz
-          sudo mv kustomize /usr/local/bin/
+          set -euo pipefail
+          url="https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.4.3/kustomize_v5.4.3_linux_amd64.tar.gz"
+          for attempt in 1 2 3; do
+            if curl -fsSL --retry 5 --retry-delay 2 --retry-all-errors "$url" -o /tmp/kustomize.tar.gz && tar -xzf /tmp/kustomize.tar.gz -C /tmp; then
+              sudo install -m 0755 /tmp/kustomize /usr/local/bin/kustomize
+              break
+            fi
+            if [ "$attempt" -eq 3 ]; then
+              echo "Failed to download kustomize after 3 attempts"
+              exit 1
+            fi
+            echo "kustomize download failed on attempt $attempt; retrying in 10 seconds..."
+            rm -f /tmp/kustomize.tar.gz /tmp/kustomize
+            sleep 10
+          done
+          kustomize version
       - name: Validate
         run: ./scripts/validate-all.sh
   lint-yaml:
