@@ -61,6 +61,21 @@ class AnthropicAdapter(BaseAdapter):
         )
         return InferenceResult(text=text, tokens_used=tokens, raw=data)
 
+
+    async def list_models(self, timeout: int = 10) -> list[dict] | None:
+        api_key = self.require_api_key("Anthropic")
+        base = self.base_url or DEFAULT_BASE_URL
+        headers = {"x-api-key": api_key, "anthropic-version": ANTHROPIC_VERSION}
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            response = await client.get(f"{base}/models", headers=headers)
+            response.raise_for_status()
+            payload = response.json()
+        return [
+            {"id": item.get("id"), "display_name": item.get("display_name") or item.get("id")}
+            for item in payload.get("data", [])
+            if item.get("id")
+        ]
+
     async def health_check(self, timeout: int = 5) -> bool:
         # Anthropic has no universally cheap model-list ping; use the configured
         # health-check model for a minimal request. The request is intentionally

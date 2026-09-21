@@ -41,6 +41,8 @@ The authenticated admin endpoints are:
 - `POST /api/ai/providers/{provider_id}/activate` — enable a provider
 - `POST /api/ai/providers/{provider_id}/deactivate` — disable a provider
 - `POST /api/ai/providers/{provider_id}/test` — verify provider connectivity/auth
+- `POST /api/ai/providers/{provider_id}/sync-models?activation=recommended|all|none` — discover and reconcile that provider's remote model catalog
+- `POST /api/ai/providers/sync-all?activation=recommended|all|none` — refresh every active provider
 - `DELETE /api/ai/providers/{provider_id}` — remove a provider and its models
 
 The connectivity test is designed to be safe for operators: missing
@@ -96,3 +98,17 @@ Ollama must likewise be tested against the configured runtime endpoint.
 Keep provider credentials in Kubernetes/secret-management infrastructure and
 keep the Git repository limited to code, non-secret configuration, manifests,
 and documentation.
+
+
+## Live model catalog
+
+Configured providers are periodically queried for their remote model catalogs.
+OpenAI-compatible providers, Anthropic, Gemini, and Ollama expose discovery
+through their native model-list APIs. Discovery updates metadata and preserves
+existing models when a provider is temporarily unavailable; it does not delete
+the last-known-good catalog. New models are inactive unless they are selected
+by the `recommended` policy or the explicit `all` policy.
+
+The background refresh runs from the single AI-platform replica and defaults
+to every six hours. If the deployment is later scaled horizontally, move this
+loop to a singleton worker or scheduled job to avoid duplicate refreshes.

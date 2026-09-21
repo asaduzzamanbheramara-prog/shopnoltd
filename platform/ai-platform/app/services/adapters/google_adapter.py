@@ -54,6 +54,32 @@ class GoogleAdapter(BaseAdapter):
         tokens = int(usage.get("totalTokenCount") or 0)
         return InferenceResult(text=text, tokens_used=tokens, raw=data)
 
+
+    async def list_models(self, timeout: int = 10) -> list[dict] | None:
+        if not self.api_key:
+            raise RuntimeError("Google/Gemini provider has no API key configured")
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            response = await client.get(f"{self.base_url}/models", params={"key": self.api_key})
+            response.raise_for_status()
+            payload = response.json()
+        models = []
+        for item in payload.get("models", []):
+            name = str(item.get("name") or "")
+            if not name:
+                continue
+            methods = item.get("supportedGenerationMethods") or []
+            models.append({
+                "id": name.removeprefix("models/"),
+                "display_name": item.get("displayName") or name,
+                "input_token_limit": item.get("inputTokenLimit"),
+                "output_token_limit": item.get("outputTokenLimit"),
+                "capabilities": {
+                    "chat": "generateContent" in methods,
+                    "supports_vision": "vision" in str(item).lower(),
+                },
+            })
+        return models
+
     async def health_check(self, timeout: int = 5) -> bool:
         if not self.api_key:
             return False
