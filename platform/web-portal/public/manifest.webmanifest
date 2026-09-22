@@ -1,6 +1,8 @@
 {
+  "id": "/",
   "name": "Shopnoltd",
   "short_name": "Shopnoltd",
+  "lang": "en",
   "description": "Shopnoltd — one platform for domains, data collection, communication, business applications, payments, AI and developer tools.",
   "start_url": "/",
   "scope": "/",
@@ -8,12 +10,19 @@
   "orientation": "any",
   "theme_color": "#0ea5e9",
   "background_color": "#ffffff",
+  "categories": ["business", "productivity", "utilities"],
   "icons": [
     {
       "src": "/logo.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.png",
+      "sizes": "32x32",
+      "type": "image/png",
+      "purpose": "any"
     }
   ]
 }
