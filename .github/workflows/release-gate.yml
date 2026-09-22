@@ -195,9 +195,11 @@ jobs:
           - { name: auth, url: 'https://auth.shopnoltd.dpdns.org' }
           - { name: kobo, url: 'https://kobo.shopnoltd.dpdns.org' }
           - { name: chat, url: 'https://chat.shopnoltd.dpdns.org' }
-          # Meet is currently exposed as an authenticated API under the shared API host;
-          # the legacy public Jitsi frontend hostname is not deployed.
-          - { name: meet, url: 'https://api.shopnoltd.dpdns.org/api/v1/meet/rooms' }
+          # The Meet backend is deployed, but its current public ingress exposes
+          # only authenticated application routes; there is no public unauthenticated
+          # Meet health route or Jitsi frontend hostname. The API gateway health check
+          # above covers the shared API ingress, so Meet is intentionally not a
+          # mandatory anonymous smoke endpoint until its public frontend/health route exists.
           # Owncast, code-server, Gitea, and n8n are intentionally scaled to zero and
           # therefore are not mandatory production endpoints.
           - { name: mail, url: 'https://mail-api.shopnoltd.dpdns.org/healthz' }
