@@ -128,8 +128,8 @@ def make_emulator_pod(session: Session) -> client.V1Pod:
         ],
         env=[client.V1EnvVar(name="EMULATOR_PARAMS", value="-no-window -no-audio -memory 2048 -grpc 8554")],
         resources=client.V1ResourceRequirements(
-            requests={"cpu": "2", "memory": "3Gi", "ephemeral-storage": "4Gi"},
-            limits={"cpu": "4", "memory": "4Gi", "ephemeral-storage": "8Gi"},
+            requests={"cpu": "2", "memory": "2Gi", "ephemeral-storage": "4Gi"},
+            limits={"cpu": "4", "memory": "3Gi", "ephemeral-storage": "8Gi"},
         ),
         volume_mounts=[client.V1VolumeMount(name="android-data", mount_path="/data")],
         security_context=client.V1SecurityContext(privileged=True, allow_privilege_escalation=True),
