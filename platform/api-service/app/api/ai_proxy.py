@@ -58,6 +58,24 @@ async def models(request: Request, model_id: str | None = None, token: str = Dep
     return await proxy(request, "/api/ai/models" + (f"/{model_id}" if model_id else ""), token)
 
 
+@router.api_route("/connections", methods=["GET", "POST"])
+@router.api_route("/connections/{connection_id}", methods=["GET", "PATCH", "DELETE"])
+@router.api_route("/connections/{connection_id}/test", methods=["POST"])
+@router.api_route("/connections/{connection_id}/github/repos", methods=["GET"])
+@router.api_route("/connections/{connection_id}/github/file", methods=["GET"])
+@router.api_route("/connections/{connection_id}/github/file", methods=["PUT"])
+async def connections(request: Request, connection_id: str | None = None, token: str = Depends(raw_token)):
+    suffix = f"/{connection_id}" if connection_id else ""
+    path = "/api/v1/connections" + suffix
+    if request.url.path.endswith("/test"):
+        path += "/test"
+    elif request.url.path.endswith("/github/repos"):
+        path += "/github/repos"
+    elif request.url.path.endswith("/github/file"):
+        path += "/github/file"
+    return await proxy(request, path, token)
+
+
 @router.api_route("/ai/embeddings/{path:path}", methods=["GET", "POST", "PUT", "PATCH", "DELETE"])
 async def embeddings(request: Request, path: str, token: str = Depends(raw_token)):
     return await proxy(request, f"/api/v1/embeddings/{path}", token)
