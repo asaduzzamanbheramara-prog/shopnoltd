@@ -76,10 +76,20 @@ async def require_admin(credentials: HTTPAuthorizationCredentials = Depends(bear
             token,
             key,
             algorithms=[key["alg"]],
-            audience=list(KEYCLOAK_AUDIENCES) if KEYCLOAK_AUDIENCES else None,
+            audience=None,
             issuer=KEYCLOAK_ISSUER,
-            options={"verify_aud": bool(KEYCLOAK_AUDIENCES), "verify_iss": True},
+            options={"verify_aud": False, "verify_iss": True},
         )
+
+        token_audiences = claims.get("aud", [])
+        if isinstance(token_audiences, str):
+            token_audiences = [token_audiences]
+
+        if not isinstance(token_audiences, list) or not any(
+            audience in KEYCLOAK_AUDIENCES
+            for audience in token_audiences
+        ):
+            raise JWTError("invalid audience")
     except (JWTError, StopIteration, KeyError, TypeError) as exc:
         raise HTTPException(status_code=401, detail="invalid authentication token") from exc
 
