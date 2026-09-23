@@ -43,11 +43,9 @@ INGRESS_VER="4.11.3"
 k apply -f "https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v${INGRESS_VER}/deploy/static/provider/kind/deploy.yaml"
 
 echo
-echo "=== 4 · metrics-server (so HPA works again) ==="
-k apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
-# kind needs the --kubelet-insecure-tls flag
-k patch -n kube-system deploy metrics-server --type=json -p='[
-  {"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--kubelet-insecure-tls"}]'
+echo "=== 4 · metrics-server ==="
+echo "  Metrics Server is managed by ArgoCD from k8s/metrics-server."
+echo "  No bootstrap install is performed here."
 
 echo
 echo "=== 5 · cert-manager (so you can reissue certs) ==="
