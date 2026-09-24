@@ -14,16 +14,22 @@ router = APIRouter(prefix="/admin/database", tags=["admin-database-control-plane
 bearer = HTTPBearer(auto_error=True)
 
 
-async def require_platform_admin(credentials: HTTPAuthorizationCredentials = Depends(bearer)):
+async def require_admin(credentials: HTTPAuthorizationCredentials = Depends(bearer)):
+    """Allow the same administrator roles that can open the admin UI.
+
+    platform_admin remains supported for elevated deployments, while the
+    ordinary admin role is allowed to discover the guarded capability catalog.
+    Discovery does not grant SQL access or bypass owning-service authorization.
+    """
     token = await verify_token(credentials.credentials)
     roles = set(token.get("roles", []))
-    if "platform_admin" not in roles:
-        raise HTTPException(403, "platform_admin required")
+    if not roles.intersection({"admin", "platform_admin"}):
+        raise HTTPException(403, "admin privileges required")
     return token
 
 
 @router.get("/catalog")
-async def database_catalog(_: dict = Depends(require_platform_admin)):
+async def database_catalog(_: dict = Depends(require_admin)):
     return {
         "version": 1,
         "policy": "capability-driven",
