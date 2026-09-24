@@ -5,6 +5,10 @@ metadata:
   namespace: shopno-platform
   annotations:
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    # AI vision/file requests may carry base64 image data.
+    nginx.ingress.kubernetes.io/proxy-body-size: "25m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "180"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "180"
 
 spec:
   ingressClassName: nginx
