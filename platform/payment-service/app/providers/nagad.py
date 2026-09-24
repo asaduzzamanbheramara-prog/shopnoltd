@@ -25,7 +25,11 @@ class NagadProvider(BaseProvider):
         super().__init__("nagad")
         self.sandbox = settings.nagad_sandbox
         self.base_url = BASE_URLS[self.sandbox]
-        self.enabled = bool(settings.nagad_merchant_id and settings.nagad_merchant_private_key)
+        self.enabled = bool(
+            settings.nagad_merchant_id
+            and settings.nagad_merchant_private_key
+            and settings.nagad_pg_public_key
+        )
 
     def _sign(self, data: str) -> str:
         from cryptography.hazmat.primitives import hashes, serialization
@@ -49,9 +53,10 @@ class NagadProvider(BaseProvider):
     async def create_deposit(self, tx, return_url=None, **kwargs):
         if not self.enabled:
             return {
-                "external_id": f"demo_nagad_{uuid.uuid4().hex[:12]}",
+                "external_id": None,
+                "status": "unavailable",
                 "redirect_url": None,
-                "note": "Nagad not configured (missing merchant id/RSA keys) - running in demo mode.",
+                "note": "Nagad credentials are not configured; payment creation is unavailable.",
             }
         if tx.currency.upper() != "BDT":
             raise ValueError("Nagad only supports BDT")
