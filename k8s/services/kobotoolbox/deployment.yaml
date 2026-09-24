@@ -47,6 +47,14 @@ spec:
             - secretRef:
                 name: kobotoolbox-smtp
           env:
+            # MongoDB authentication is provided by the dedicated Kobo Mongo secret.
+            # This explicitly overrides the legacy unauthenticated MONGO_DB_URL
+            # inherited from kobotoolbox-secret.
+            - name: MONGO_DB_URL
+              valueFrom:
+                secretKeyRef:
+                  name: kobotoolbox-mongo-auth
+                  key: MONGO_DB_URL
             - name: POD_NAME
               valueFrom: { fieldRef: { fieldPath: metadata.name } }
             - name: POD_NAMESPACE
