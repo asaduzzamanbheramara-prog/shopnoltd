@@ -97,3 +97,13 @@ spec:
       ports:
         - port: 8080
           protocol: TCP
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: shopno-platform
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: domain-service
+      ports:
+        - port: 8080
+          protocol: TCP
