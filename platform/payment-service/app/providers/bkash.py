@@ -13,6 +13,12 @@ EXEC_URL = "https://tokenized.pay.bka.sh/v1.2.0-beta/tokenized/checkout/payment/
 class BkashProvider(BaseProvider):
     def __init__(self):
         super().__init__("bkash")
+        self.enabled = bool(
+            settings.bkash_app_key
+            and settings.bkash_app_secret
+            and settings.bkash_username
+            and settings.bkash_password
+        )
         self._tok = None
 
     async def _token(self):
