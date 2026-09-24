@@ -352,8 +352,11 @@ function CheckoutView() {
       .then((data) => {
         const live = (data?.gateways || []).filter((g) => g.live)
         setGateways(live)
-        if (live.length && !live.some((g) => g.name === gateway)) {
-          setGateway(live[0].name)
+        if (live.length) {
+          const preferred = currency === 'BDT'
+            ? live.find((g) => g.name === 'moneybag') || live[0]
+            : live.find((g) => g.name === gateway) || live[0]
+          setGateway(preferred.name)
         }
       })
       .catch((err) => setError(err.message))
