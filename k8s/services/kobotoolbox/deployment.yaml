@@ -20,6 +20,7 @@ spec:
         prometheus.io/scrape: "true"
         prometheus.io/port: "8000"
         prometheus.io/path: "/metrics"
+        config.shopnoltd.dpdns.org/kobotoolbox-config-revision: "26c09750369e3a808757b9467489b1e0f33c71b0"
     spec:
       serviceAccountName: kobotoolbox
       automountServiceAccountToken: false
