@@ -20,7 +20,7 @@ spec:
         prometheus.io/scrape: "true"
         prometheus.io/port: "8000"
         prometheus.io/path: "/metrics"
-        config.shopnoltd.dpdns.org/kobotoolbox-config-revision: "26c09750369e3a808757b9467489b1e0f33c71b0"
+        config.shopnoltd.dpdns.org/kobotoolbox-config-revision: "kobo-enketo-api-key-20260924"
     spec:
       serviceAccountName: kobotoolbox
       automountServiceAccountToken: false
@@ -63,6 +63,11 @@ spec:
               value: "true"
             - name: PUBLIC_REQUEST_SCHEME
               value: https
+            - name: ENKETO_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: kobotoolbox-secret
+                  key: api-key
           resources:
             requests:
               cpu: 100m
