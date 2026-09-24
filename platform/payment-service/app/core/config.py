@@ -52,6 +52,7 @@ class Settings(BaseSettings):
     moneybag_webhook_tolerance_seconds: int = 300
     moneybag_webhook_url: str = "https://payment-service.shopnoltd.dpdns.org/api/v1/webhooks/moneybag"
     base_callback_url: str = "https://payment-service.shopnoltd.dpdns.org"
+    customer_return_url_base: str = "https://shopnoltd.dpdns.org"
     rocket_merchant_id: str = ""
     rocket_merchant_key: str = ""
     direct_payment_feed_enabled: bool = False
