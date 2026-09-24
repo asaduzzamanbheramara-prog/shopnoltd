@@ -21,7 +21,7 @@ BASE_URLS = {
 class MoneybagProvider(BaseProvider):
     def __init__(self):
         super().__init__("moneybag")
-        self.enabled = bool(settings.moneybag_api_key)
+        self.enabled = bool(settings.moneybag_api_key and settings.moneybag_webhook_secret)
         self.base_url = BASE_URLS.get(settings.moneybag_mode, BASE_URLS["sandbox"])
 
     async def create_deposit(self, tx, return_url=None, **kwargs):
@@ -34,15 +34,20 @@ class MoneybagProvider(BaseProvider):
                 "note": "Moneybag credentials are not configured; payment creation is unavailable.",
             }
 
+        if tx.currency.upper() != "BDT":
+            raise ValueError("Moneybag currently supports BDT checkout only")
+        if float(tx.amount) < 10 or float(tx.amount) > 1_000_000:
+            raise ValueError("Moneybag checkout amount must be between 10 and 1000000 BDT")
+
         reference = kwargs.get("reference") or str(tx.id)
         payload = {
             "order_id": reference,
             "order_amount": f"{tx.amount:.2f}",
             "currency": tx.currency.upper(),
             "order_description": kwargs.get("description", f"Shopnoltd deposit {reference}"),
-            "success_url": return_url or f"{settings.base_callback_url}/checkout/success?ref={reference}",
-            "cancel_url": kwargs.get("cancel_url", f"{settings.base_callback_url}/checkout/cancel?ref={reference}"),
-            "fail_url": kwargs.get("fail_url", f"{settings.base_callback_url}/checkout/failure?ref={reference}"),
+            "success_url": return_url or f"{settings.customer_return_url_base}/checkout/complete?ref={reference}",
+            "cancel_url": kwargs.get("cancel_url", f"{settings.customer_return_url_base}/checkout/complete?ref={reference}&status=cancelled"),
+            "fail_url": kwargs.get("fail_url", f"{settings.customer_return_url_base}/checkout/complete?ref={reference}&status=failed"),
             "ipn_url": kwargs.get("ipn_url", settings.moneybag_webhook_url),
             "customer": {
                 "name": kwargs.get("customer_name", "Shopnoltd Customer"),
@@ -52,6 +57,8 @@ class MoneybagProvider(BaseProvider):
             },
         }
         payload["customer"] = {k: v for k, v in payload["customer"].items() if v is not None}
+        if not payload["customer"].get("email") or not payload["customer"].get("phone"):
+            raise ValueError("Moneybag checkout requires the authenticated customer's email and phone number")
         async with httpx.AsyncClient(timeout=20) as client:
             response = await client.post(
                 f"{self.base_url}/api/v2/payments/checkout",
