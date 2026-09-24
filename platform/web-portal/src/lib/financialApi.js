@@ -59,14 +59,19 @@ export function getPaymentGateways() {
   return authenticatedRequest('/api/v1/billing/gateways')
 }
 
-export function createCheckout({ gateway, amount, currency, reference, customer_phone, idempotency_key }) {
+export function createCheckout({ gateway, amount, currency, reference, customer_phone, customer_email, customer_name, idempotency_key }) {
   const key = idempotency_key || (reference ? `checkout:${String(reference).slice(0, 112)}` : crypto.randomUUID())
   return authenticatedRequest('/api/v1/deposits', {
     method: 'POST',
     body: JSON.stringify({
       method: gateway, amount: Number(amount), currency: String(currency).toUpperCase(), idempotency_key: key,
       return_url: `${window.location.origin}/checkout/complete?ref=${encodeURIComponent(reference || '')}`,
-      metadata: customer_phone ? { phone: customer_phone, reference } : { reference },
+      metadata: {
+        reference,
+        customer_phone: customer_phone || undefined,
+        customer_email: customer_email || undefined,
+        customer_name: customer_name || undefined,
+      },
     }),
   })
 }
