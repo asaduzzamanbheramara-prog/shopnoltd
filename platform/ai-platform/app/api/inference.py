@@ -6,7 +6,7 @@ from app.core.security import current_user
 from app.db.models import AIModel, AIProvider
 from app.db.session import get_db
 from app.schemas.schemas import InferIn, InferOut
-from app.services.model_router import ModelNotAvailableError, run_inference
+from app.services.model_router import ModelNotAvailableError, ProviderInferenceError, run_inference
 
 router = APIRouter()
 
@@ -44,13 +44,21 @@ async def infer(
     db: AsyncSession = Depends(get_db),
 ):
     try:
-        result = await run_inference(
+        result, resolved_model = await run_inference(
             db=db,
             prompt=body.prompt,
             model_name=body.model,
+            model_id=body.model_id,
             attachments=body.attachments,
         )
-        return InferOut(response=result.text, model=body.model or "resolved", tokens=result.tokens_used)
+        return InferOut(
+            response=result.text,
+            model=resolved_model.model_name,
+            tokens=result.tokens_used,
+        )
+    except ProviderInferenceError as exc:
+        code = exc.status_code if 400 <= exc.status_code < 500 else status.HTTP_502_BAD_GATEWAY
+        raise HTTPException(status_code=code, detail=str(exc)) from exc
     except ModelNotAvailableError as exc:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
     except Exception as exc:
