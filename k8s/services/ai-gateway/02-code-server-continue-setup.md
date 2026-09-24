@@ -40,9 +40,9 @@ config = {
             "apiKey": "${LITELLM_MASTER_KEY}"
         },
         {
-            "title": "Gemini Flash (via LiteLLM)",
+            "title": "Gemini 2.5 Flash (via LiteLLM)",
             "provider": "openai",
-            "model": "gemini-flash",
+            "model": "gemini-2.5-flash",
             "apiBase": "https://openai.shopnoltd.dpdns.org/v1",
             "apiKey": "${LITELLM_MASTER_KEY}"
         }
