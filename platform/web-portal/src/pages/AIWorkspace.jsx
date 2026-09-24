@@ -171,11 +171,27 @@ export default function AIWorkspace() {
   async function addFiles(event) {
     const files = Array.from(event.target.files || [])
     event.target.value = ''
+    await appendFiles(files)
+  }
+
+  async function appendFiles(files) {
     if (!files.length) return
     try {
       const selected = await Promise.all(files.map(readAttachment))
       setAttachments((current) => [...current, ...selected].slice(0, 8))
     } catch { setError('Unable to read one of the selected files.') }
+  }
+
+  async function handlePaste(event) {
+    const imageFiles = Array.from(event.clipboardData?.items || [])
+      .filter((item) => item.kind === 'file' && item.type.startsWith('image/'))
+      .map((item) => item.getAsFile())
+      .filter(Boolean)
+
+    if (!imageFiles.length) return
+
+    event.preventDefault()
+    await appendFiles(imageFiles)
   }
 
   function removeAttachment(id) { setAttachments((current) => current.filter((file) => file.id !== id)) }
@@ -231,6 +247,7 @@ export default function AIWorkspace() {
         body: JSON.stringify({
           prompt: requestPrompt,
           model: activeModel || null,
+          model_id: selectedModel?.id || null,
           attachments: multimodalAttachments
         })
       })
@@ -277,7 +294,7 @@ export default function AIWorkspace() {
         <div className="shopno-ai-composer" style={{ padding: '12px max(18px, calc((100% - 820px) / 2)) 18px', background: '#fff' }}>
           {attachments.length > 0 && <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginBottom: 8 }}>{attachments.map((file) => <div key={file.id} style={{ display: 'flex', alignItems: 'center', gap: 7, border: '1px solid #d1d5db', borderRadius: 10, padding: '6px 8px', fontSize: 12, background: '#f9fafb' }}><FileText size={14} /><span title={file.note || file.name}>{file.name}</span><button onClick={() => removeAttachment(file.id)} aria-label={`Remove ${file.name}`} style={{ border: 0, background: 'transparent', cursor: 'pointer' }}>×</button></div>)}</div>}
           <form onSubmit={submit} style={{ position: 'relative', border: '1px solid #d1d5db', borderRadius: 16, boxShadow: '0 2px 8px rgba(0,0,0,.06)', background: '#fff' }}>
-            <textarea ref={inputRef} value={prompt} onChange={(e) => setPrompt(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(e) } }} rows={1} placeholder="Message Shopnoltd AI…" disabled={loading || loadingModels || !models.length} style={{ width: '100%', minHeight: 52, maxHeight: 180, boxSizing: 'border-box', border: 0, outline: 0, resize: 'none', borderRadius: 16, padding: '15px 150px 15px 48px', font: 'inherit', lineHeight: 1.45 }} />
+            <textarea ref={inputRef} value={prompt} onChange={(e) => setPrompt(e.target.value)} onPaste={handlePaste} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(e) } }} rows={1} placeholder="Message Shopnoltd AI…" disabled={loading || loadingModels || !models.length} style={{ width: '100%', minHeight: 52, maxHeight: 180, boxSizing: 'border-box', border: 0, outline: 0, resize: 'none', borderRadius: 16, padding: '15px 150px 15px 48px', font: 'inherit', lineHeight: 1.45 }} />
             <label title="Attach files" aria-label="Attach files" style={{ position: 'absolute', left: 9, bottom: 9, width: 36, height: 36, display: 'grid', placeItems: 'center', color: '#4b5563', cursor: 'pointer' }}><Paperclip size={18} /><input type="file" multiple accept=".pdf,.doc,.docx,.txt,.md,.csv,.xls,.xlsx,.json,.xml,.yaml,.yml,.js,.jsx,.ts,.tsx,.py,.go,.rs,.java,.css,.html,.sql,.sh,image/*" onChange={addFiles} style={{ display: 'none' }} /></label>
             <button type="button" onClick={startMic} disabled={loading} aria-label={listening ? 'Stop microphone' : 'Use microphone'} title={listening ? 'Stop microphone' : 'Voice input'} style={{ position: 'absolute', right: 94, bottom: 9, width: 36, height: 36, border: 0, borderRadius: 10, display: 'grid', placeItems: 'center', background: listening ? '#fee2e2' : 'transparent', color: listening ? '#b91c1c' : '#4b5563', cursor: 'pointer' }}><Mic size={17} /></button>
             {loading ? <button type="button" onClick={stopGeneration} aria-label="Stop generation" title="Stop generation" style={{ position: 'absolute', right: 52, bottom: 9, width: 36, height: 36, border: 0, borderRadius: 10, display: 'grid', placeItems: 'center', background: '#111827', color: '#fff', cursor: 'pointer' }}><Square size={15} /></button> : <button type="submit" disabled={!prompt.trim() || !models.length} aria-label="Send message" title="Send message" style={{ position: 'absolute', right: 9, bottom: 9, width: 36, height: 36, border: 0, borderRadius: 10, display: 'grid', placeItems: 'center', background: !prompt.trim() || !models.length ? '#d1d5db' : '#111827', color: '#fff', cursor: 'pointer' }}><Send size={17} /></button>}
