@@ -205,6 +205,14 @@ async def check(user=Depends(current_user), s: AsyncSession = Depends(db)):
     return {"ok": not errors, "rows_checked": len(rows), "errors": errors}
 
 
+@router.get("/rows")
+async def list_rows(user=Depends(current_user), s: AsyncSession = Depends(db)):
+    """Return the service-owned BlogPost rows through the admin data facade."""
+    if not can_manage_blog(user):
+        raise HTTPException(403, "Blog management privileges required")
+    return await _read_rows(user, s)
+
+
 @router.post("/rows")
 async def create_row(payload: dict, user=Depends(current_user), s: AsyncSession = Depends(db)):
     if not can_manage_blog(user):
