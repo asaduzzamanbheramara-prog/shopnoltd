@@ -16,11 +16,19 @@ class BkashProvider(BaseProvider):
         self._tok = None
 
     async def _token(self):
+        if not (
+            settings.bkash_app_key
+            and settings.bkash_app_secret
+            and settings.bkash_username
+            and settings.bkash_password
+        ):
+            raise RuntimeError("bKash credentials are not configured")
+
         async with httpx.AsyncClient() as c:
             r = await c.post(
                 TOKEN_URL,
                 json={"app_key": settings.bkash_app_key, "app_secret": settings.bkash_app_secret},
-                headers={"username": settings.bkash_app_key, "password": settings.bkash_app_secret},
+                headers={"username": settings.bkash_username, "password": settings.bkash_password},
                 timeout=20,
             )
         r.raise_for_status()
