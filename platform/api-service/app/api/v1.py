@@ -14,7 +14,6 @@ SOCIAL = "http://social-service.shopno-platform.svc.cluster.local:80"
 MESSAGING = "http://messaging-service.shopno-platform.svc.cluster.local:80"
 MEET = "http://meet-service.shopno-platform.svc.cluster.local:80"
 LIVE = "http://live-service.shopno-platform.svc.cluster.local:80"
-BILLING = "http://billing-engine.shopno-payments.svc.cluster.local:80"
 EXCHANGE = "http://exchange-service.shopno-payments.svc.cluster.local:80"
 PAYMENT = "http://payment-service.shopno-payments.svc.cluster.local:80"
 
@@ -296,17 +295,27 @@ async def notifications(creds: HTTPAuthorizationCredentials = Depends(bearer)): 
 @router.post("/billing/checkout")
 async def billing_checkout(body: dict, creds: HTTPAuthorizationCredentials = Depends(bearer)):
     current_user = await user(creds)
-    email = current_user.get("email")
-    if not email:
-        raise HTTPException(status_code=400, detail="Authenticated user does not have an email address")
     amount, currency = body.get("amount"), body.get("currency")
     gateway = body.get("gateway", "stripe")
     if amount is None or not currency:
         raise HTTPException(status_code=422, detail="amount and currency are required")
-    payload = {"gateway": gateway, "amount": amount, "currency": currency.upper(), "customer_email": email,
-               "reference": body.get("reference"), "customer_name": current_user.get("name") or current_user.get("preferred_username"),
-               "customer_phone": body.get("customer_phone")}
-    return await call("POST", f"{BILLING}/checkout", creds.credentials, json=payload)
+
+    reference = body.get("reference") or f"shopnoltd-checkout-{current_user.get('sub')}"
+    idempotency_key = body.get("idempotency_key") or f"legacy-checkout:{reference}"
+    payload = {
+        "method": gateway,
+        "amount": amount,
+        "currency": str(currency).upper(),
+        "idempotency_key": idempotency_key,
+        "return_url": body.get("return_url") or "https://shopnoltd.dpdns.org/checkout/complete",
+        "metadata": {
+            "reference": reference,
+            "customer_phone": body.get("customer_phone"),
+            "customer_name": current_user.get("name") or current_user.get("preferred_username"),
+            "customer_email": current_user.get("email"),
+        },
+    }
+    return await call("POST", f"{PAYMENT}/api/v1/deposits", creds.credentials, json=payload)
 
 
 @router.get("/rate/{frm}/{to}")
