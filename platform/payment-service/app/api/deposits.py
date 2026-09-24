@@ -121,10 +121,19 @@ async def create_deposit(body: DepositIn, user=Depends(current_user), s: AsyncSe
         raise HTTPException(409, "deposit idempotency conflict")
 
     try:
+        metadata = body.metadata or {}
         out = await provider.create_deposit(
             tx,
             return_url=body.return_url,
             idempotency_key=body.idempotency_key,
+            customer_name=metadata.get("customer_name") or user.get("name") or user.get("preferred_username") or "Shopnoltd Customer",
+            customer_email=metadata.get("customer_email") or user.get("email"),
+            customer_phone=metadata.get("customer_phone") or metadata.get("phone") or user.get("phone"),
+            customer_country=metadata.get("customer_country") or "Bangladesh",
+            customer_address=metadata.get("customer_address"),
+            customer_city=metadata.get("customer_city"),
+            customer_postcode=metadata.get("customer_postcode"),
+            description=metadata.get("description"),
         )
     except NotImplementedError as exc:
         tx.status = TxStatus.failed
