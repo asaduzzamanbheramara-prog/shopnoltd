@@ -130,7 +130,7 @@ jobs:
           phase="$(timeout 30s kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o jsonpath='{.status.operationState.phase}' 2>/dev/null || true)"
           if [ "$phase" = "Running" ]; then
             echo 'Clearing the stale Argo CD Application operation through Kubernetes.'
-            timeout 60s kubectl --request-timeout=30s               -n "$ARGOCD_NAMESPACE"               patch application "$ARGOCD_APP"               --type=merge               -p='{"spec":{"operation":null}}'
+            timeout 60s kubectl --request-timeout=30s               -n "$ARGOCD_NAMESPACE"               patch application "$ARGOCD_APP"               --type=merge               -p='{"operation":null}'
           elif [ "$phase" = "Terminating" ]; then
             echo 'Argo CD operation is already terminating; waiting for the controller.'
           else
@@ -240,7 +240,7 @@ jobs:
           timeout 45s kubectl --request-timeout=30s             -n "$ARGOCD_NAMESPACE"             annotate application "$ARGOCD_APP"             argocd.argoproj.io/refresh=hard             --overwrite
 
           echo 'Requesting the full Argo CD sync through the Kubernetes Application resource.'
-          timeout 60s kubectl --request-timeout=30s             -n "$ARGOCD_NAMESPACE"             patch application "$ARGOCD_APP"             --type=merge             -p "$(jq -nc --arg revision "$GIT_REVISION"               '{spec:{operation:{sync:{revision:$revision,prune:false}}}}')"
+          timeout 60s kubectl --request-timeout=30s             -n "$ARGOCD_NAMESPACE"             patch application "$ARGOCD_APP"             --type=merge             -p "$(jq -nc --arg revision "$GIT_REVISION"               '{operation:{sync:{revision:$revision,prune:false}}}')"
 
           echo 'Argo CD full sync request submitted to the controller.'
 
