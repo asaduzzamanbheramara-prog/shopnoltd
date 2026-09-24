@@ -31,6 +31,7 @@ spec:
         - port: 8080
           protocol: TCP
   egress:
+    # Ollama in the apps namespace.
     - to:
         - namespaceSelector:
             matchLabels:
@@ -38,7 +39,8 @@ spec:
       ports:
         - port: 11434
           protocol: TCP
-    # AI platform -> internal Gateway/API
+
+    # AI platform -> internal Gateway/API.
     - to:
         - namespaceSelector:
             matchLabels:
@@ -55,6 +57,17 @@ spec:
       ports:
         - port: 8080
           protocol: TCP
+
+    # Provider APIs (Google, OpenAI-compatible providers, Anthropic, etc.).
+    # The AI model catalog and inference adapters call external HTTPS APIs.
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - port: 443
+          protocol: TCP
+
+    # Cluster DNS and internal dependencies.
     - to:
         - namespaceSelector:
             matchLabels:
@@ -71,8 +84,6 @@ spec:
       ports:
         - port: 53
           protocol: UDP
-        - port: 443
-          protocol: TCP
         - port: 8080
           protocol: TCP
         - port: 5432
