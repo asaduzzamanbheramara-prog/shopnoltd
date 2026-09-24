@@ -36,9 +36,9 @@ Google Pay is not treated as a fake independent processor. It is exposed through
 
 Moneybag is currently integrated against the sandbox hosted-checkout and verification APIs. The public webhook relay is:
 
-`https://api.shopnoltd.dpdns.org/api/v1/webhook/moneybag/ipn`
+`https://payment-service.shopnoltd.dpdns.org/api/v1/webhooks/moneybag`
 
-The external Moneybag dashboard must use this secure relay (or another explicitly implemented secure relay). Merchant secrets are Kubernetes runtime secrets only and must never be committed.
+The external Moneybag dashboard must use this exact payment-service webhook URL. Merchant secrets are Kubernetes runtime secrets only and must never be committed.
 
 ## Release gate
 
