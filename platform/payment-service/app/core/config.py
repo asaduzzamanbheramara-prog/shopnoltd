@@ -46,6 +46,7 @@ class Settings(BaseSettings):
     sslcommerz_store_id: str = ""
     sslcommerz_store_password: str = ""
     sslcommerz_sandbox: bool = True
+    sslcommerz_ipn_url: str = "https://payment-service.shopnoltd.dpdns.org/api/v1/webhooks/sslcommerz"
     moneybag_api_key: str = ""
     moneybag_webhook_secret: str = ""
     moneybag_mode: str = "sandbox"
