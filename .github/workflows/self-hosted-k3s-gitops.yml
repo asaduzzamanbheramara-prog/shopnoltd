@@ -109,10 +109,7 @@ jobs:
           if kubectl -n "$PLATFORM_NAMESPACE" get secret ghcr-pull-secret >/dev/null 2>&1; then
             echo 'Android Cloud GHCR pull secret already exists; preserving it.'
           else
-            kubectl -n shopno-tools get secret ghcr-pull-secret -o json \
-              | jq 'del(.metadata.namespace,.metadata.resourceVersion,.metadata.uid,.metadata.creationTimestamp,.metadata.managedFields,.metadata.ownerReferences)' \
-              | jq --arg namespace "$PLATFORM_NAMESPACE" '.metadata.namespace=$namespace' \
-              | kubectl apply -f -
+            kubectl -n shopno-tools get secret ghcr-pull-secret -o json               | jq 'del(.metadata.namespace,.metadata.resourceVersion,.metadata.uid,.metadata.creationTimestamp,.metadata.managedFields,.metadata.ownerReferences)'               | jq --arg namespace "$PLATFORM_NAMESPACE" '.metadata.namespace=$namespace'               | kubectl apply -f -
           fi
 
       - name: Repair migration prerequisite and terminate stale Argo CD operation
@@ -133,11 +130,7 @@ jobs:
           phase="$(timeout 30s kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o jsonpath='{.status.operationState.phase}' 2>/dev/null || true)"
           if [ "$phase" = "Running" ]; then
             echo 'Clearing the stale Argo CD Application operation through Kubernetes.'
-            timeout 60s kubectl --request-timeout=30s \
-              -n "$ARGOCD_NAMESPACE" \
-              patch application "$ARGOCD_APP" \
-              --type=merge \
-              -p='{"operation":null}'
+            timeout 60s kubectl --request-timeout=30s               -n "$ARGOCD_NAMESPACE"               patch application "$ARGOCD_APP"               --type=merge               -p='{"spec":{"operation":null}}'
           elif [ "$phase" = "Terminating" ]; then
             echo 'Argo CD operation is already terminating; waiting for the controller.'
           else
@@ -244,19 +237,10 @@ jobs:
           sync_request_epoch="$(date -u +%s)"
           printf '%s\n' "$sync_request_epoch" > "$RUNNER_TEMP/shopnoltd-argocd-sync-request-epoch"
 
-          timeout 45s kubectl --request-timeout=30s \
-            -n "$ARGOCD_NAMESPACE" \
-            annotate application "$ARGOCD_APP" \
-            argocd.argoproj.io/refresh=hard \
-            --overwrite
+          timeout 45s kubectl --request-timeout=30s             -n "$ARGOCD_NAMESPACE"             annotate application "$ARGOCD_APP"             argocd.argoproj.io/refresh=hard             --overwrite
 
           echo 'Requesting the full Argo CD sync through the Kubernetes Application resource.'
-          timeout 60s kubectl --request-timeout=30s \
-            -n "$ARGOCD_NAMESPACE" \
-            patch application "$ARGOCD_APP" \
-            --type=merge \
-            -p "$(jq -nc --arg revision "$GIT_REVISION" \
-              '{operation:{sync:{revision:$revision,prune:false}}}')"
+          timeout 60s kubectl --request-timeout=30s             -n "$ARGOCD_NAMESPACE"             patch application "$ARGOCD_APP"             --type=merge             -p "$(jq -nc --arg revision "$GIT_REVISION"               '{spec:{operation:{sync:{revision:$revision,prune:false}}}}')"
 
           echo 'Argo CD full sync request submitted to the controller.'
 
@@ -306,12 +290,7 @@ jobs:
               seen_exact_revision=1
             fi
 
-            if [ "$seen_exact_revision" -eq 1 ] \
-              && [ "$operation_phase" = "Succeeded" ] \
-              && [ "$operation_revision" = "$GIT_REVISION" ] \
-              && [ "$sync_revision" = "$GIT_REVISION" ] \
-              && [ "$sync_status" = "Synced" ] \
-              && [ "$health_status" = "Healthy" ]; then
+            if [ "$seen_exact_revision" -eq 1 ]               && [ "$operation_phase" = "Succeeded" ]               && [ "$operation_revision" = "$GIT_REVISION" ]               && [ "$sync_revision" = "$GIT_REVISION" ]               && [ "$sync_status" = "Synced" ]               && [ "$health_status" = "Healthy" ]; then
               echo 'Argo CD full sync verified at the requested revision.'
               exit 0
             fi
@@ -352,10 +331,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          kubectl get pods --all-namespaces -o json \
-            | jq -r '.items[] | .spec.containers[]? | .image' \
-            | grep -E '(^ghcr.io/|^[^/]+/[^/]+/)' \
-            | sort -u >/dev/null
+          kubectl get pods --all-namespaces -o json             | jq -r '.items[] | .spec.containers[]? | .image'             | grep -E '(^ghcr.io/|^[^/]+/[^/]+/)'             | sort -u >/dev/null
 
       - name: Verify platform communications
         shell: bash
