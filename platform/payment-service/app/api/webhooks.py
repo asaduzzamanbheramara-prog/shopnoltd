@@ -19,6 +19,8 @@ SUCCESS_STATUSES = {
     "PAID",
     "CAPTURED",
     "TRADE_SUCCESS",
+    "VALID",
+    "VALIDATED",
 }
 
 FAILED_STATUSES = {
