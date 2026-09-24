@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from pydantic import BaseModel, Field
 
 
@@ -11,6 +13,7 @@ class InferAttachment(BaseModel):
 class InferIn(BaseModel):
     prompt: str
     model: str | None = None
+    model_id: UUID | None = None
     agent_id: str | None = None
     max_tokens: int = 512
     temperature: float = 0.7
