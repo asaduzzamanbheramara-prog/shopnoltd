@@ -103,7 +103,7 @@ async def admin_blog_check(request: Request, token: str = Depends(current_token)
     return await proxy(request, SOCIAL, "/api/v1/admin/blog-data/check", token)
 
 
-@router.api_route("/admin/blog-data/rows", methods=["POST"])
+@router.api_route("/admin/blog-data/rows", methods=["GET", "POST"])
 async def admin_blog_create(request: Request, token: str = Depends(current_token)):
     return await proxy(request, SOCIAL, "/api/v1/admin/blog-data/rows", token)
 
