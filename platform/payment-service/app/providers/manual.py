@@ -6,6 +6,11 @@ from app.providers.base import BaseProvider
 class ManualProvider(BaseProvider):
     def __init__(self, name: str = "manual"):
         super().__init__(name)
+        # Manual deposits are an intentional checkout capability: they create
+        # an approval workflow rather than pretending to be an automated
+        # gateway. Receiving-account configuration is handled separately for
+        # direct MFS payments.
+        self.enabled = True
 
     async def create_deposit(self, tx, **kwargs):
         return {
