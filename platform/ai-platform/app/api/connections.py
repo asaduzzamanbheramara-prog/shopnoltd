@@ -68,6 +68,13 @@ async def create_connection(body: ConnectionCreate, user=Depends(current_user), 
         parsed = urlparse(body.base_url)
         if parsed.scheme not in {"http", "https"} or not parsed.netloc:
             raise HTTPException(400, "Base URL must be an http(s) URL")
+        if parsed.hostname in {"localhost", "127.0.0.1", "::1"}:
+            raise HTTPException(
+                400,
+                "Localhost points to the Shopnoltd AI pod, not your computer. "
+                "Use a network-reachable local AI URL (for example your LAN host "
+                "address or a secure tunnel URL).",
+            )
     c = AIConnection(
         user_id=str(user.get("sub")), kind=body.kind, name=body.name.strip(),
         base_url=body.base_url.rstrip("/") if body.base_url else None,
