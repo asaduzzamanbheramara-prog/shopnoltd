@@ -1,4 +1,5 @@
 import { tryRefresh } from './tokenRefresh'
+import { decodeToken } from './jwt'
 
 // Keep browser financial traffic on the unified API origin. The API service
 // proxies to payment-service internally, so payment/exchange hosts are never
@@ -8,35 +9,112 @@ const FINANCIAL_API_URL =
   import.meta.env.VITE_API_BASE_URL ||
   'https://api.shopnoltd.dpdns.org'
 
+const TOKEN_EXPIRY_BUFFER_SECONDS = 60
+
 function token() {
   return localStorage.getItem('shopno_token')
 }
 
+function tokenNeedsRefresh(jwt) {
+  if (!jwt) return true
+
+  const payload = decodeToken(jwt)
+  if (!payload || typeof payload.exp !== 'number') {
+    // Do not reject opaque/non-JWT tokens here. Let the API validate them.
+    return false
+  }
+
+  const now = Math.floor(Date.now() / 1000)
+  return payload.exp <= now + TOKEN_EXPIRY_BUFFER_SECONDS
+}
+
+async function getFreshToken() {
+  let jwt = token()
+
+  if (!jwt) {
+    throw new Error('Authentication required. Please log in.')
+  }
+
+  if (tokenNeedsRefresh(jwt)) {
+    const refreshed = await tryRefresh()
+    if (refreshed) jwt = refreshed
+  }
+
+  return jwt
+}
+
 export async function authenticatedRequest(path, options = {}) {
-  const jwt = token()
-  if (!jwt) throw new Error('Authentication required. Please log in.')
-  const headers = {
+  const { _retried, ...requestOptions } = options
+  let jwt = await getFreshToken()
+
+  let headers = {
     Accept: 'application/json',
     Authorization: `Bearer ${jwt}`,
-    ...(options.body ? { 'Content-Type': 'application/json' } : {}),
-    ...(options.headers || {}),
+    ...(requestOptions.body ? { 'Content-Type': 'application/json' } : {}),
+    ...(requestOptions.headers || {}),
   }
-  const response = await fetch(`${FINANCIAL_API_URL}${path}`, { ...options, headers })
-  const text = await response.text()
+
+  let response = await fetch(`${FINANCIAL_API_URL}${path}`, {
+    ...requestOptions,
+    headers,
+  })
+
+  let text = await response.text()
   let data = null
+
   if (text) {
     try { data = JSON.parse(text) } catch { data = text }
   }
-  if (response.status === 401 && !options._retried) {
+
+  // A token can expire between the pre-flight check and the actual request.
+  // Refresh once and retry once. Never recurse indefinitely.
+  if (response.status === 401 && !_retried) {
     const refreshed = await tryRefresh()
-    if (refreshed) return authenticatedRequest(path, { ...options, _retried: true })
+
+    if (refreshed) {
+      jwt = refreshed
+      headers = {
+        Accept: 'application/json',
+        Authorization: `Bearer ${jwt}`,
+        ...(requestOptions.body ? { 'Content-Type': 'application/json' } : {}),
+        ...(requestOptions.headers || {}),
+      }
+
+      response = await fetch(`${FINANCIAL_API_URL}${path}`, {
+        ...requestOptions,
+        headers,
+      })
+
+      text = await response.text()
+      data = null
+
+      if (text) {
+        try { data = JSON.parse(text) } catch { data = text }
+      }
+    } else {
+      localStorage.removeItem('shopno_token')
+      localStorage.removeItem('shopno_refresh_token')
+      throw new Error('Your session has expired. Please log in again.')
+    }
+  }
+
+  if (response.status === 401) {
     localStorage.removeItem('shopno_token')
+    localStorage.removeItem('shopno_refresh_token')
     throw new Error('Your session has expired. Please log in again.')
   }
+
   if (!response.ok) {
-    const detail = typeof data === 'object' && data !== null ? data.detail || data.message || JSON.stringify(data) : data
-    throw new Error(`Financial API request failed (${response.status})${detail ? `: ${detail}` : ''}`)
+    const detail =
+      typeof data === 'object' && data !== null
+        ? data.detail || data.message || JSON.stringify(data)
+        : data
+
+    throw new Error(
+      `Financial API request failed (${response.status})${detail ? `: ${detail}` : ''}`
+    )
   }
+
   return data
 }
 
