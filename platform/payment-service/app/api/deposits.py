@@ -1,4 +1,5 @@
 import uuid
+from urllib.parse import urlparse
 
 from app.core.config import settings
 from app.core.db import SessionLocal
@@ -53,6 +54,15 @@ async def create_deposit(body: DepositIn, user=Depends(current_user), s: AsyncSe
 
     if body.amount < settings.min_deposit or body.amount > settings.max_deposit:
         raise HTTPException(400, "amount out of range")
+    if body.return_url:
+        parsed_return = urlparse(body.return_url)
+        allowed_origin = urlparse(settings.customer_return_url_base)
+        if (
+            parsed_return.scheme != "https"
+            or parsed_return.hostname != allowed_origin.hostname
+            or parsed_return.port is not None
+        ):
+            raise HTTPException(400, "return_url must use the Shopnoltd customer website")
     try:
         provider = get_provider(body.method)
     except ValueError as exc:
