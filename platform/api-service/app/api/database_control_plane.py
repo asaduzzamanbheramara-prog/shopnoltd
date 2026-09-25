@@ -34,5 +34,6 @@ async def database_catalog(_: dict = Depends(require_admin)):
         "version": 1,
         "policy": "capability-driven",
         "sql_endpoint": False,
-        "databases": catalog(),\n        "production_inventory": list(PRODUCTION_DATABASE_INVENTORY),
+        "databases": catalog(),
+        "production_inventory": list(PRODUCTION_DATABASE_INVENTORY),
     }
