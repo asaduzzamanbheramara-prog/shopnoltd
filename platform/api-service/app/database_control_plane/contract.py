@@ -10,6 +10,11 @@ from dataclasses import dataclass, field
 from enum import Enum
 
 
+class DatastoreKind(str, Enum):
+    POSTGRESQL = "postgresql"
+    MONGODB = "mongodb"
+
+
 class DdlCapabilities(str, Enum):
     NONE = "none"
     INSPECT = "inspect"
@@ -46,6 +51,7 @@ class DatabaseTableCapability:
 class DatabaseCapability:
     service: str
     database: str
+    kind: DatastoreKind = DatastoreKind.POSTGRESQL
     tables: tuple[DatabaseTableCapability, ...] = field(default_factory=tuple)
     schemas: tuple[str, ...] = field(default_factory=tuple)
     backup: bool = False

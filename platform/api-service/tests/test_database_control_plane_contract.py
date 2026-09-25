@@ -3,6 +3,7 @@ import pytest
 from app.database_control_plane.contract import (
     DatabaseCapability,
     DatabaseTableCapability,
+    DatastoreKind,
     DdlCapabilities,
 )
 

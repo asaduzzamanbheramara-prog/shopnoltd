@@ -13,6 +13,7 @@ resources:
 - networkpolicy.yaml
 - poddisruptionbudget.yaml
 - servicemonitor.yaml
+- database-control-plane-secret-access.yaml
 
 labels:
 - includeSelectors: true

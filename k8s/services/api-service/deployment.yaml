@@ -25,7 +25,7 @@ spec:
         prometheus.io/path: "/metrics"
     spec:
       serviceAccountName: api-service
-      automountServiceAccountToken: false
+      automountServiceAccountToken: true
       securityContext:
         runAsNonRoot: true
         runAsUser: 10001

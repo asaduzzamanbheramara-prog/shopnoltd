@@ -10,7 +10,12 @@ from __future__ import annotations
 from dataclasses import asdict
 from typing import Any
 
-from app.database_control_plane.contract import DatabaseCapability, DatabaseTableCapability, DdlCapabilities
+from app.database_control_plane.contract import (
+    DatabaseCapability,
+    DatabaseTableCapability,
+    DatastoreKind,
+    DdlCapabilities,
+)
 
 
 def _table(name: str, *, writable: bool = False, bulk: bool = False, importable: bool = False,
@@ -90,6 +95,16 @@ DATABASE_CAPABILITIES: tuple[DatabaseCapability, ...] = (
         tenant_scope="service",
     ),
     DatabaseCapability(
+        service="kobotoolbox",
+        database="kpi",
+        kind=DatastoreKind.MONGODB,
+        tables=(
+            _table("instances", protected="Kobo submission records are application-owned and must remain behind Kobo validation/audit flows"),
+        ),
+        tenant_scope="service",
+        protected_reason="Kobo MongoDB data is application-owned; generic writes are disabled",
+    ),
+    DatabaseCapability(
         service="ai-platform",
         database="shopnoltd",
         tables=(
@@ -110,6 +125,7 @@ def catalog() -> list[dict[str, Any]]:
         {
             "service": capability.service,
             "database": capability.database,
+            "kind": capability.kind.value,
             "schemas": list(capability.schemas),
             "backup": capability.backup,
             "restore": capability.restore,
