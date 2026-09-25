@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.core.security import verify_token
-from app.database_control_plane.registry import catalog
+from app.database_control_plane.registry import catalog, PRODUCTION_DATABASE_INVENTORY
 
 router = APIRouter(prefix="/admin/database", tags=["admin-database-control-plane"])
 bearer = HTTPBearer(auto_error=True)
@@ -34,5 +34,5 @@ async def database_catalog(_: dict = Depends(require_admin)):
         "version": 1,
         "policy": "capability-driven",
         "sql_endpoint": False,
-        "databases": catalog(),
+        "databases": catalog(),\n        "production_inventory": list(PRODUCTION_DATABASE_INVENTORY),
     }
