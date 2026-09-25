@@ -11,8 +11,8 @@ const STORAGE_KEY = 'shopno_ai_chats_v3'
 const TEXT_TYPES = /^(text\/|application\/(json|javascript|xml|csv|yaml)|text\/markdown)/i
 const MAX_TEXT_FILE_BYTES = 512 * 1024
 
-function createChat(model = '') {
-  return { id: crypto.randomUUID(), title: 'New chat', model, messages: [] }
+function createChat(model = '', modelId = null) {
+  return { id: crypto.randomUUID(), title: 'New chat', model, modelId, messages: [] }
 }
 
 function loadChats() {
@@ -68,6 +68,7 @@ export default function AIWorkspace() {
   const [chats, setChats] = useState(loadChats)
   const [activeId, setActiveId] = useState(() => chats[0]?.id)
   const [model, setModel] = useState('')
+  const [modelId, setModelId] = useState(null)
   const [prompt, setPrompt] = useState('')
   const [attachments, setAttachments] = useState([])
   const [loading, setLoading] = useState(false)
@@ -82,7 +83,8 @@ export default function AIWorkspace() {
 
   const activeChat = chats.find((chat) => chat.id === activeId) || chats[0]
   const activeMessages = activeChat?.messages || []
-  const activeModel = model || activeChat?.model || ''
+  const activeModel = activeChat?.model || model || ''
+  const activeModelId = activeChat?.modelId || modelId || null
 
   useEffect(() => { localStorage.setItem(STORAGE_KEY, JSON.stringify(chats)) }, [chats])
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [activeMessages.length, loading])
@@ -96,8 +98,34 @@ export default function AIWorkspace() {
       const preferred = list.find((item) => item.is_default) || list[0]
       if (preferred) {
         const chosen = activeChat?.model || preferred.model_name
+        const chosenModel = list.find((item) => item.model_name === chosen) || preferred
+        const chosenModelId = activeChat?.modelId || chosenModel?.id || null
+
         setModel(chosen)
-        setChats((current) => current.map((chat) => chat.id === activeId && !chat.model ? { ...chat, model: preferred.model_name } : chat))
+        setModelId(chosenModelId)
+
+        setChats((current) => current.map((chat) => {
+          const chatModel = chat.model || chosen
+          const chatModelEntry = list.find((item) => item.model_name === chatModel)
+          const chatModelId = chat.modelId || chatModelEntry?.id || null
+
+          if (chat.id === activeId) {
+            return {
+              ...chat,
+              model: chatModel,
+              modelId: chatModelId,
+            }
+          }
+
+          if (!chat.modelId && chat.model && chatModelEntry) {
+            return {
+              ...chat,
+              modelId: chatModelEntry.id,
+            }
+          }
+
+          return chat
+        }))
       }
     } catch (err) { setModels([]); setError(err.message || 'Unable to load AI models.') }
     finally { setLoadingModels(false) }
@@ -105,24 +133,27 @@ export default function AIWorkspace() {
 
   useEffect(() => { loadModels() }, [])
   const selectedModel = useMemo(() => models.find((item) => item.model_name === activeModel), [models, activeModel])
+  const resolvedModelId = activeModelId || selectedModel?.id || null
 
   function newChat() {
-    const chat = createChat(activeModel)
+    const chat = createChat(activeModel, resolvedModelId)
     setChats((current) => [chat, ...current]); setActiveId(chat.id); setPrompt(''); setAttachments([]); setError(''); setSidebarOpen(false)
   }
 
   function deleteChat(id) {
     setChats((current) => {
       const remaining = current.filter((chat) => chat.id !== id)
-      const next = remaining.length ? remaining : [createChat(activeModel)]
+      const next = remaining.length ? remaining : [createChat(activeModel, resolvedModelId)]
       if (id === activeId) setActiveId(next[0].id)
       return next
     })
   }
 
   function selectModel(value) {
+    const selected = models.find((item) => item.model_name === value)
     setModel(value)
-    setChats((current) => current.map((chat) => chat.id === activeId ? { ...chat, model: value } : chat))
+    setModelId(selected?.id || null)
+    setChats((current) => current.map((chat) => chat.id === activeId ? { ...chat, model: value, modelId: selected?.id || null } : chat))
   }
 
   async function readAttachment(file) {
@@ -236,7 +267,7 @@ export default function AIWorkspace() {
     const userMessage = retryMessage ? null : { id: crypto.randomUUID(), role: 'user', content: text, fileNames: attachments.map((file) => file.name) }
     const chatId = activeId
     if (!retryMessage) {
-      setChats((current) => current.map((chat) => chat.id === chatId ? { ...chat, title: chat.messages.length ? chat.title : text.slice(0, 48), model: activeModel, messages: [...chat.messages, userMessage] } : chat))
+      setChats((current) => current.map((chat) => chat.id === chatId ? { ...chat, title: chat.messages.length ? chat.title : text.slice(0, 48), model: activeModel, modelId: resolvedModelId, messages: [...chat.messages, userMessage] } : chat))
       setPrompt(''); setAttachments([])
     }
     setLoading(true); setError(''); abortRef.current = new AbortController()
@@ -247,7 +278,7 @@ export default function AIWorkspace() {
         body: JSON.stringify({
           prompt: requestPrompt,
           model: activeModel || null,
-          model_id: selectedModel?.id || null,
+          model_id: resolvedModelId,
           attachments: multimodalAttachments
         })
       })
