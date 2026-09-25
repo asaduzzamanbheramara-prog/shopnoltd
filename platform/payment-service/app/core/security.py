@@ -1,6 +1,8 @@
 """JWT verification via Keycloak JWKS."""
 
 import httpx
+from fastapi import HTTPException
+
 from app.core.config import settings
 from shopno_core.security.jwt import JWTError, jwt
 
@@ -42,5 +44,9 @@ async def verify_token(token: str) -> dict:
                 last_error = exc
 
         raise ValueError(f"invalid token audience: {last_error}")
-    except (JWTError, StopIteration) as e:
-        raise ValueError(f"invalid token: {e}") from e
+    except (JWTError, StopIteration, ValueError) as e:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid token",
+            headers={"WWW-Authenticate": "Bearer"},
+        ) from e
