@@ -34,7 +34,7 @@ def _table(name: str, *, writable: bool = False, bulk: bool = False, importable:
 DATABASE_CAPABILITIES: tuple[DatabaseCapability, ...] = (
     DatabaseCapability(
         service="payment-service",
-        database="payment",
+        database="shopnoltd",
         schemas=("public",),
         tables=(
             _table("wallets", protected="wallet balances/frozen funds are changed only by validated wallet APIs", tenant_scoped=True),
@@ -69,7 +69,7 @@ DATABASE_CAPABILITIES: tuple[DatabaseCapability, ...] = (
     ),
     DatabaseCapability(
         service="exchange-service",
-        database="exchange",
+        database="payments",
         tables=(
             _table("rates", protected="rates are owned by the rate updater"),
             _table("conversions", protected="conversion history is audit/financial state"),
@@ -91,12 +91,11 @@ DATABASE_CAPABILITIES: tuple[DatabaseCapability, ...] = (
     ),
     DatabaseCapability(
         service="ai-platform",
-        database="ai",
+        database="shopnoltd",
         tables=(
             _table("ai_providers", writable=True, bulk=True, importable=True, tenant_scoped=True),
             _table("ai_models", writable=True, bulk=True, importable=True, tenant_scoped=True),
             _table("ai_connections", writable=True, bulk=True, importable=False, destructive=True, tenant_scoped=True),
-            _table("provider_credentials", protected="provider secrets must never be generic-readable/exportable"),
         ),
         backup=True,
         restore=True,
