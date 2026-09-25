@@ -320,7 +320,3 @@ async def billing_checkout(body: dict, creds: HTTPAuthorizationCredentials = Dep
 
 @router.get("/rate/{frm}/{to}")
 async def rate(frm: str, to: str, creds: HTTPAuthorizationCredentials = Depends(bearer)): return await payment_exchange_rate(frm, to, creds)
-
-
-@router.post("/exchange/convert")
-async def exchange_convert(body: dict, creds: HTTPAuthorizationCredentials = Depends(bearer)): return await payment_exchange_convert(body, creds)
