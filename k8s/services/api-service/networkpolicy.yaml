@@ -90,6 +90,16 @@ spec:
     - to:
         - namespaceSelector:
             matchLabels:
+              name: shopno-identity
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: oauth-service
+      ports:
+        - port: 8080
+          protocol: TCP
+    - to:
+        - namespaceSelector:
+            matchLabels:
               name: shopno-platform
           podSelector:
             matchLabels:
