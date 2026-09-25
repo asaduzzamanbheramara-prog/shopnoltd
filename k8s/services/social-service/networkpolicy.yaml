@@ -18,9 +18,8 @@ spec:
         - namespaceSelector:
             matchLabels:
               name: shopno-ingress
-        - namespaceSelector:
-            matchLabels:
-              name: shopno-platform
+        # Same-namespace platform callers are allowed to the social HTTP port.
+        - podSelector: {}
         - namespaceSelector:
             matchLabels:
               name: shopno-monitoring

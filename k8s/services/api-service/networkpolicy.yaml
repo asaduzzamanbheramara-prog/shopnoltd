@@ -122,3 +122,10 @@ spec:
       ports:
         - port: 8080
           protocol: TCP
+    # Same-namespace platform service calls use port 8080.
+    # Keep this port-scoped so API pods cannot reach arbitrary ports.
+    - to:
+        - podSelector: {}
+      ports:
+        - port: 8080
+          protocol: TCP

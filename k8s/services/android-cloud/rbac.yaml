@@ -20,9 +20,8 @@ metadata:
   name: android-cloud-controller
   namespace: shopno-android
 subjects:
-  - kind: ServiceAccount
-    name: android-cloud-controller
-    namespace: shopno-platform
+  - kind: User
+    name: system:serviceaccount:shopno-platform:android-cloud-controller
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
