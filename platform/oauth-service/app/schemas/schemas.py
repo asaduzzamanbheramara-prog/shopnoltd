@@ -10,6 +10,7 @@ class UserIn(BaseModel):
 
 class UserOut(BaseModel):
     id: str
+    sub: str
     email: str
     name: str
     tenant_id: str | None
