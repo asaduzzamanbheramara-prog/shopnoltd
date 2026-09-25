@@ -9,6 +9,7 @@ available only when the caller did not explicitly select a model.
 """
 
 import httpx
+from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -44,7 +45,7 @@ class ProviderInferenceError(ModelNotAvailableError):
 async def _resolve_model(
     db: AsyncSession,
     model_name: str | None,
-    model_id,
+    model_id: UUID | None = None,
 ) -> tuple[AIModel, AIProvider]:
     if model_id is not None:
         stmt = (
@@ -82,10 +83,14 @@ async def _resolve_model(
     model = result.scalars().first()
 
     if model is None and model_id is not None:
-        raise ModelNotAvailableError(f"AI model '{model_id}' is not active or does not exist.")
+        raise ModelNotAvailableError(
+            f"AI model '{model_id}' is not active or does not exist."
+        )
 
     if model is None and model_name is not None:
-        raise ModelNotAvailableError(f"AI model '{model_name}' is not active or does not exist.")
+        raise ModelNotAvailableError(
+            f"AI model '{model_name}' is not active or does not exist."
+        )
 
     if model is None:
         stmt = (
@@ -108,6 +113,7 @@ async def _resolve_model(
     )
     provider = provider_result.scalar_one()
     return model, provider
+
 
 
 def _build_adapter(provider: AIProvider) -> BaseAdapter:
@@ -195,7 +201,7 @@ async def run_inference(
     db: AsyncSession,
     prompt: str,
     model_name: str | None = None,
-    model_id=None,
+    model_id: UUID | None = None,
     attachments: list[dict] | None = None,
 ) -> tuple[InferenceResult, AIModel]:
     attachments = attachments or []
