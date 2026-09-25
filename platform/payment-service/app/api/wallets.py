@@ -45,7 +45,11 @@ async def list_wallets(user=Depends(current_user), s: AsyncSession = Depends(db)
 async def get_wallet(currency: str, user=Depends(current_user), s: AsyncSession = Depends(db)):
     currency = currency.upper()
     res = await s.execute(
-        select(Wallet).where(Wallet.user_id == user["sub"], Wallet.currency == currency)
+        select(Wallet).where(
+            Wallet.user_id == user["sub"],
+            Wallet.tenant_id == user.get("tenant_id", "default"),
+            Wallet.currency == currency,
+        )
     )
     w = res.scalar_one_or_none()
     if not w:
@@ -64,7 +68,11 @@ async def get_wallet(currency: str, user=Depends(current_user), s: AsyncSession 
             # user_id+currency) — fetch the row that won instead of erroring.
             await s.rollback()
             res = await s.execute(
-                select(Wallet).where(Wallet.user_id == user["sub"], Wallet.currency == currency)
+                select(Wallet).where(
+                    Wallet.user_id == user["sub"],
+                    Wallet.tenant_id == user.get("tenant_id", "default"),
+                    Wallet.currency == currency,
+                )
             )
             w = res.scalar_one()
         else:
