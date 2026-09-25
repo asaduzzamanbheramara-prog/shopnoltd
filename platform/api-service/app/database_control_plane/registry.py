@@ -31,7 +31,33 @@ def _table(name: str, *, writable: bool = False, bulk: bool = False, importable:
     )
 
 
-\n\n# Production stores discovered during the September 2026 live inventory.\n# These are inventory records, not grants. A store remains unavailable for\n# generic browser CRUD until its owning adapter publishes validated operations.\nPRODUCTION_DATABASE_INVENTORY: tuple[dict[str, str], ...] = (\n    {"service": "chatwoot", "database": "chatwoot", "mode": "application", "status": "adapter-required"},\n    {"service": "chatwoot", "database": "chatwoot_production", "mode": "application", "status": "adapter-required"},\n    {"service": "guacamole", "database": "guacamole", "mode": "application", "status": "adapter-required"},\n    {"service": "keycloak", "database": "keycloak", "mode": "identity-protected", "status": "protected"},\n    {"service": "kobotoolbox", "database": "kobocat", "mode": "application", "status": "adapter-required"},\n    {"service": "kpi", "database": "kpi", "mode": "analytics", "status": "adapter-required"},\n    {"service": "litellm", "database": "litellm", "mode": "AI-infrastructure", "status": "adapter-required"},\n    {"service": "owncast", "database": "live", "mode": "application", "status": "adapter-required"},\n    {"service": "mail", "database": "mail", "mode": "application", "status": "adapter-required"},\n    {"service": "jitsi", "database": "meet", "mode": "application", "status": "adapter-required"},\n    {"service": "messaging", "database": "messaging", "mode": "application", "status": "adapter-required"},\n    {"service": "metabase", "database": "metabase", "mode": "application", "status": "adapter-required"},\n    {"service": "n8n", "database": "n8n", "mode": "automation", "status": "adapter-required"},\n    {"service": "postgresql", "database": "postgres", "mode": "system", "status": "protected"},\n    {"service": "payment-service", "database": "payments", "mode": "financial", "status": "service-controlled"},\n    {"service": "session-manager", "database": "session_manager", "mode": "security", "status": "protected"},\n    {"service": "shopnoltd", "database": "shopnoltd", "mode": "platform", "status": "adapter-required"},\n    {"service": "social", "database": "social", "mode": "content", "status": "adapter-required"},\n)\n\nDATABASE_CAPABILITIES: tuple[DatabaseCapability, ...] = (
+
+
+# Production stores discovered during the September 2026 live inventory.
+# These are inventory records, not grants. A store remains unavailable for
+# generic browser CRUD until its owning adapter publishes validated operations.
+PRODUCTION_DATABASE_INVENTORY: tuple[dict[str, str], ...] = (
+    {"service": "chatwoot", "database": "chatwoot", "mode": "application", "status": "adapter-required"},
+    {"service": "chatwoot", "database": "chatwoot_production", "mode": "application", "status": "adapter-required"},
+    {"service": "guacamole", "database": "guacamole", "mode": "application", "status": "adapter-required"},
+    {"service": "keycloak", "database": "keycloak", "mode": "identity-protected", "status": "protected"},
+    {"service": "kobotoolbox", "database": "kobocat", "mode": "application", "status": "adapter-required"},
+    {"service": "kpi", "database": "kpi", "mode": "analytics", "status": "adapter-required"},
+    {"service": "litellm", "database": "litellm", "mode": "AI-infrastructure", "status": "adapter-required"},
+    {"service": "owncast", "database": "live", "mode": "application", "status": "adapter-required"},
+    {"service": "mail", "database": "mail", "mode": "application", "status": "adapter-required"},
+    {"service": "jitsi", "database": "meet", "mode": "application", "status": "adapter-required"},
+    {"service": "messaging", "database": "messaging", "mode": "application", "status": "adapter-required"},
+    {"service": "metabase", "database": "metabase", "mode": "application", "status": "adapter-required"},
+    {"service": "n8n", "database": "n8n", "mode": "automation", "status": "adapter-required"},
+    {"service": "postgresql", "database": "postgres", "mode": "system", "status": "protected"},
+    {"service": "payment-service", "database": "payments", "mode": "financial", "status": "service-controlled"},
+    {"service": "session-manager", "database": "session_manager", "mode": "security", "status": "protected"},
+    {"service": "shopnoltd", "database": "shopnoltd", "mode": "platform", "status": "adapter-required"},
+    {"service": "social", "database": "social", "mode": "content", "status": "adapter-required"},
+)
+
+DATABASE_CAPABILITIES: tuple[DatabaseCapability, ...] = (
     DatabaseCapability(
         service="payment-service",
         database="payment",
