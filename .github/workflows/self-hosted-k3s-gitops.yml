@@ -134,7 +134,7 @@ jobs:
             argocd_bin="$RUNNER_TEMP/argocd"
             if kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" exec deploy/argocd-server -- sh -c 'command -v argocd >/dev/null 2>&1'; then
               echo 'Using the Argo CD CLI already present in the argocd-server image.'
-              timeout 90s kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" exec deploy/argocd-server -- sh -c 'HOME=/tmp argocd app terminate-op "$ARGOCD_APP" --core -n "$ARGOCD_NAMESPACE"'
+              timeout 90s kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" exec deploy/argocd-server -- env HOME=/tmp argocd app terminate-op "$ARGOCD_APP" --core -n "$ARGOCD_NAMESPACE"
             else
               echo 'Argo CD CLI is not present in the server image; downloading the matching CLI from argocd-server.'
               server_ip="$(timeout 30s kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" get service argocd-server -o jsonpath='{.spec.clusterIP}')"
