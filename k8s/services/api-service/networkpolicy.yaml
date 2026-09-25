@@ -44,6 +44,9 @@ spec:
         - namespaceSelector:
             matchLabels:
               name: kube-system
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: default
       ports:
         - port: 53
           protocol: UDP
@@ -56,6 +59,8 @@ spec:
         - port: 6379
           protocol: TCP
         - port: 9000
+          protocol: TCP
+        - port: 27017
           protocol: TCP
     - to:
         - namespaceSelector:
