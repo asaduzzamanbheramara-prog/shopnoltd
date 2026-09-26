@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: vpn-service
-          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/vpn-service:654dc9fcefacb7fd5b09c8d2407d272128a7f124
+          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/vpn-service:a942aa617c4df260bf4dd0595267a8cbe602c2d5
           imagePullPolicy: Always
           securityContext:
             capabilities:
