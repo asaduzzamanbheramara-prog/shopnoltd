@@ -42,7 +42,7 @@ async def verify_token(token: str) -> dict:
             issuer=settings.keycloak_issuer,
             options={"verify_aud": True, "verify_iss": True},
         )
-    except (JWTError, StopIteration, KeyError, ValueError) as e:
+    except Exception as e:
         claims = locals().get("unverified_claims") or {}
         logger.warning(
             "JWT validation failed category=%s kid=%s aud=%s iss=%s azp=%s exp=%s error=%s",
