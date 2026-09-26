@@ -26,6 +26,7 @@ async def _jwks(force_refresh: bool = False):
 async def verify_token(token: str) -> dict:
     try:
         h = jwt.get_unverified_header(token)
+        unverified_claims = jwt.get_unverified_claims(token)
         keys = await _jwks()
         key = next((k for k in keys["keys"] if k["kid"] == h["kid"]), None)
         if key is None:
@@ -42,7 +43,17 @@ async def verify_token(token: str) -> dict:
             options={"verify_aud": True, "verify_iss": True},
         )
     except (JWTError, StopIteration, KeyError, ValueError) as e:
-        logger.warning("JWT validation failed: %s", e)
+        claims = locals().get("unverified_claims") or {}
+        logger.warning(
+            "JWT validation failed category=%s kid=%s aud=%s iss=%s azp=%s exp=%s error=%s",
+            type(e).__name__,
+            (locals().get("h") or {}).get("kid"),
+            claims.get("aud"),
+            claims.get("iss"),
+            claims.get("azp"),
+            claims.get("exp"),
+            e,
+        )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired access token",
