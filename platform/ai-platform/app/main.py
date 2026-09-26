@@ -9,6 +9,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from prometheus_client import generate_latest
 from shopno_core.database.redis import redis_client
+from shopno_core.database.dependencies import wait_for_dependencies
 from starlette.responses import Response
 
 from app.core.config import settings
@@ -37,9 +38,10 @@ async def _model_catalog_loop(interval_hours: float) -> None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    await redis_client.ping()
+    async def _check_database():
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+    await wait_for_dependencies("ai-platform", _check_database, redis_client)
     async with AsyncSessionLocal() as db:
         configured = await bootstrap_providers(db)
     sync_task = asyncio.create_task(_model_catalog_loop(settings.model_sync_interval_hours))

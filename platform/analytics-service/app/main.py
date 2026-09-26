@@ -7,6 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from prometheus_client import generate_latest
 from shopno_core.database.redis import redis_client
+from shopno_core.database.dependencies import wait_for_dependencies
 from starlette.responses import Response
 
 from app.core.config import settings
@@ -17,9 +18,10 @@ log = structlog.get_logger()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    await redis_client.ping()
+    async def _check_database():
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+    await wait_for_dependencies("analytics-service", _check_database, redis_client)
     log.info("analytics-service.started", env=settings.env)
     yield
     await engine.dispose()
