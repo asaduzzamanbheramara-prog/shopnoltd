@@ -8,6 +8,8 @@ from starlette.responses import Response
 
 from app.api import convert, history, providers, rates
 from app.api import admin_control
+from shopno_core.database.dependencies import wait_for_dependencies
+
 from app.core.config import settings
 from app.core.db import Base, engine
 from app.core.rate_updater import RateUpdater
@@ -19,9 +21,10 @@ updater = RateUpdater()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    await redis_client.ping()
+    async def _check_database():
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+    await wait_for_dependencies("exchange-service", _check_database, redis_client)
     await updater.start()
     log.info("exchange-service.started", env=settings.env)
     yield

@@ -12,6 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from prometheus_client import Counter, Histogram, generate_latest
 from shopno_core.database.redis import redis_client
+from shopno_core.database.dependencies import wait_for_dependencies
 from sqlalchemy import text
 from starlette.responses import Response
 
@@ -24,9 +25,10 @@ LATENCY = Histogram("shopno_payments_http_latency_seconds", "HTTP latency", ["pa
 async def lifespan(app: FastAPI):
     # Database schema changes are owned by the canonical migration job/Alembic
     # chain. The application runtime role must not execute DDL or data migrations.
-    async with engine.connect() as conn:
-        await conn.execute(text("SELECT 1"))
-    await redis_client.ping()
+    async def _check_database():
+        async with engine.connect() as conn:
+            await conn.execute(text("SELECT 1"))
+    await wait_for_dependencies("payment-service", _check_database, redis_client)
     log.info("payment-service.started", env=settings.env, version=settings.version)
     yield
     await engine.dispose()
