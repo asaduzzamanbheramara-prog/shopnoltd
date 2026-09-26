@@ -31,6 +31,13 @@ spec:
     - to:
         - namespaceSelector:
             matchLabels:
+              name: shopno-identity
+      ports:
+        - port: 8080
+          protocol: TCP
+    - to:
+        - namespaceSelector:
+            matchLabels:
               name: shopno-data
         - namespaceSelector:
             matchLabels:
