@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     cors_origins: str = "https://*.shopnoltd.dpdns.org"
     keycloak_issuer: str = "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
     keycloak_jwks_url: str | None = None
-    keycloak_audience: str = "social-service"
+    keycloak_audience: str = "api-service"
     storage_service_url: str = "http://storage-service.shopno-platform.svc.cluster.local:8080"
 
     @property

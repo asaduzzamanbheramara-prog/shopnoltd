@@ -8,7 +8,8 @@ class Settings(BaseSettings):
     redis_url: str = "redis://redis.shopno-data.svc.cluster.local:6379/3"
     cors_origins: str = "https://*.shopnoltd.dpdns.org"
     keycloak_issuer: str = "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
-    keycloak_audience: str = "notification-service"
+    keycloak_jwks_url: str | None = None
+    keycloak_audience: str = "api-service"
     smtp_host: str = "mailcow.shopno-apps.svc.cluster.local"
     smtp_port: int = 587
     smtp_user: str = "noreply@shopnoltd.dpdns.org"
