@@ -37,6 +37,7 @@ app.include_router(__import__("app.api.direct_payment_proxy", fromlist=["router"
 app.include_router(__import__("app.api.payment_account_proxy", fromlist=["router"]).router, prefix="/api/v1", tags=["payment-accounts"])
 app.include_router(__import__("app.api.admin_proxy", fromlist=["router"]).router, prefix="/api/v1", tags=["admin-data-facade"])
 app.include_router(__import__("app.api.database_control_plane", fromlist=["router"]).router, prefix="/api/v1", tags=["admin-database-control-plane"])
+app.include_router(__import__("app.api.database_control", fromlist=["router"]).router, prefix="/api/v1", tags=["admin-database"])
 app.include_router(__import__("app.api.domain_proxy", fromlist=["router"]).router, prefix="/api/v1", tags=["domain-facade"])
 app.include_router(__import__("app.api.freedomain_proxy", fromlist=["router"]).router, prefix="/api/v1", tags=["free-domain-facade"])
 app.include_router(__import__("app.api.ai_proxy", fromlist=["router"]).router, prefix="/api/v1", tags=["ai-facade"])

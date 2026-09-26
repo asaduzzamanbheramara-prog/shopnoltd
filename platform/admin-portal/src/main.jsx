@@ -10,6 +10,7 @@ import Plans from './pages/Plans'
 import Streams from './pages/Streams'
 import AppReleases from './pages/AppReleases'
 import ThreeDDashboard from './pages/ThreeDDashboard'
+import DatabaseManagement from './pages/DatabaseManagement'
 const qc = new QueryClient()
 function Layout({ children }) {
   return (
@@ -25,6 +26,7 @@ function Layout({ children }) {
           <li><Link to="/streams" style={{ color: 'white' }}>Live Streams</Link></li>
           <li><Link to="/releases" style={{ color: 'white' }}>App Releases</Link></li>
           <li><Link to="/3d" style={{ color: 'white' }}>3D Insights</Link></li>
+          <li><Link to="/database" style={{ color: 'white' }}>Database Management</Link></li>
         </ul>
       </nav>
       <main style={{ flex: 1, padding: 32, background: '#f1f5f9' }}>{children}</main>
@@ -45,6 +47,7 @@ function App() {
             <Route path="/streams" element={<Streams />} />
             <Route path="/releases" element={<AppReleases />} />
             <Route path="/3d" element={<ThreeDDashboard />} />
+            <Route path="/database" element={<DatabaseManagement />} />
           </Routes>
         </Layout>
       </BrowserRouter>
