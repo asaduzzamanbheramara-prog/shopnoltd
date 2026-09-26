@@ -55,8 +55,8 @@ spec:
               value: "enketo"
           resources:
             requests:
-              cpu: "50m"
-              memory: "128Mi"
+              cpu: "100m"
+              memory: "256Mi"
             limits:
-              cpu: "300m"
-              memory: "512Mi"
+              cpu: "1000m"
+              memory: "1Gi"
