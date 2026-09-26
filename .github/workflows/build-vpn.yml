@@ -29,8 +29,14 @@ jobs:
           c = TestClient(app)
           r = c.get('/healthz')
           assert r.status_code == 200 and r.json()['status'] == 'ok'
+          locations = c.get('/api/v1/vpn/locations')
+          assert locations.status_code == 200
+          assert any(x['id'] == 'bd-dhaka' and x['available'] for x in locations.json())
+          plans = c.get('/api/v1/vpn/plans')
+          assert plans.status_code == 200 and any(x['id'] == 'vpn-free' for x in plans.json())
           assert c.get('/api/v1/vpn/peers').status_code == 401
-          print('VPN API health/auth guard test passed')
+          assert c.get('/api/v1/vpn/admin/gateways').status_code == 401
+          print('VPN provider metadata/health/auth guard tests passed')
           PY
   docker:
     runs-on: ubuntu-latest
