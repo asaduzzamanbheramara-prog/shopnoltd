@@ -11,7 +11,8 @@ async def _jwks():
     if _jwks_cache:
         return _jwks_cache
     async with httpx.AsyncClient() as c:
-        r = await c.get(f"{settings.keycloak_issuer}/protocol/openid-connect/certs")
+        jwks_url = settings.keycloak_jwks_url or f"{settings.keycloak_issuer}/protocol/openid-connect/certs"
+        r = await c.get(jwks_url)
         r.raise_for_status()
         _jwks_cache = r.json()
     return _jwks_cache
