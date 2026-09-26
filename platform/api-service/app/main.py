@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from prometheus_client import generate_latest
 from shopno_core.database.redis import redis_client
 from shopno_core.database.dependencies import wait_for_dependencies
+from sqlalchemy import text
 from starlette.responses import Response
 
 from app.core.config import settings
@@ -23,6 +24,10 @@ async def lifespan(app: FastAPI):
     async def _check_database():
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
+            # Idempotent compatibility migration for the reference image added to works.
+            # Keep this DDL static; it is safe to run on every startup and upgrades
+            # existing databases where create_all cannot add a missing column.
+            await conn.execute(text("ALTER TABLE works ADD COLUMN IF NOT EXISTS reference_image TEXT"))
     await wait_for_dependencies("api-service", _check_database, redis_client)
     log.info("api-service.started", env=settings.env)
     yield
