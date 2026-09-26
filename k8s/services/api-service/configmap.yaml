@@ -17,4 +17,5 @@ data:
   POSTGRES_PORT: "5432"
   MINIO_ENDPOINT: "minio.shopno-data.svc.cluster.local:9000"
   KEYCLOAK_ISSUER: "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
+  KEYCLOAK_JWKS_URL: "http://keycloak.shopno-identity.svc.cluster.local/realms/shopnoltd/protocol/openid-connect/certs"
   KEYCLOAK_CLIENT_ID: "api-service"
