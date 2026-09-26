@@ -12,7 +12,8 @@ class Settings(BaseSettings):
     powerdns_api: str = "http://powerdns.shopno-apps.svc.cluster.local:8081/api/v1"
     powerdns_key: str = "CHANGE_ME_POWERDNS_KEY"
     keycloak_issuer: str = "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
-    keycloak_audience: str = "domain-service"
+    keycloak_jwks_url: str | None = None
+    keycloak_audience: str = "api-service"
 
     # Server-to-server billing authorization. Keep this in a Kubernetes Secret.
     billing_engine_url: str = "http://billing-engine.shopno-payments.svc.cluster.local:5000"
