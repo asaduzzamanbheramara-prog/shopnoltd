@@ -28,7 +28,7 @@ export const SERVICES = [
   SERVICE('📝', 'Forms & Enketo', 'Form collection and browser-based form workflows.', 'https://enketo.shopnoltd.dpdns.org', 'Productivity'),
   SERVICE('💬', 'Chatwoot', 'Customer inbox, support conversations and communication automation.', 'https://chatwoot.shopnoltd.dpdns.org', 'Communication'),
   SERVICE('📱', 'Remote Access', 'Shopnoltd remote-device workspace for authorized device support and control.', 'https://remote.shopnoltd.dpdns.org', 'Remote Access'),
-  SERVICE('🔒', 'Shopnoltd VPN', 'WireGuard VPN control plane for secure remote connectivity and managed VPN peers.', 'https://vpn.shopnoltd.dpdns.org/docs', 'Remote Access'),
+  SERVICE('🔒', 'Shopnoltd VPN', 'Secure WireGuard VPN for your Shopnoltd account. Provision a device, download its configuration, and connect with the official WireGuard client.', '/vpn', 'Remote Access'),
   SERVICE('📧', 'Webmail', 'Browser-based email client for Shopnoltd mail accounts.', 'https://webmail.shopnoltd.dpdns.org', 'Communication'),
   SERVICE('🛠️', 'Admin Portal', 'Staff administration console for users, plans, payments and tenants.', 'https://admin-portal.shopnoltd.dpdns.org', 'Admin'),
   SERVICE('🖥️', 'Device Console', 'Browse registered devices and launch authorized remote desktop sessions through the dedicated device connection service.', 'https://devices.shopnoltd.dpdns.org', 'Remote Access'),

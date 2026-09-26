@@ -38,6 +38,12 @@ spec:
               value: vpn.shopnoltd.dpdns.org:51820
             - name: WG_NETWORK
               value: 10.77.0.0/24
+            - name: OIDC_ISSUER
+              value: https://auth.shopnoltd.dpdns.org/realms/shopnoltd
+            - name: OIDC_AUDIENCE
+              value: shopnoltd-web
+            - name: CORS_ALLOWED_ORIGINS
+              value: https://shopnoltd.dpdns.org
             - name: WG_SERVER_ADDRESS
               value: 10.77.0.1/24
             - name: VPN_DATA_DIR
