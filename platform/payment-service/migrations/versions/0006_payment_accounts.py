@@ -29,6 +29,7 @@ def upgrade():
         sa.Column("instructions", sa.String(1000), nullable=True),
         sa.Column("qr_url", sa.String(2048), nullable=True),
         sa.Column("payment_url", sa.String(2048), nullable=True),
+        sa.Column("details", postgresql.JSONB, nullable=False, server_default=sa.text("'{}'::jsonb")),
         sa.Column("status", sa.String(16), nullable=False, server_default="active"),
         sa.Column("sort_order", sa.Integer(), nullable=False, server_default="0"),
         sa.Column("created_at", sa.DateTime(), nullable=False),

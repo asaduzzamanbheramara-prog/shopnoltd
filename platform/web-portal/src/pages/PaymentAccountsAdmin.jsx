@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { authenticatedRequest } from '../lib/financialApi'
 
 const PROVIDERS = ['binance', 'bkash', 'bank', 'manual', 'nagad', 'payeer', 'payoneer', 'paypal']
-const EMPTY = { provider: 'manual', account_label: '', account_type: 'manual', currency: 'BDT', display_name: '', masked_account: '', public_identifier: '', private_value: '', instructions: '', qr_url: '', payment_url: '', status: 'active', sort_order: 0 }
+const EMPTY = { provider: 'manual', account_label: '', account_type: 'manual', currency: 'BDT', display_name: '', masked_account: '', public_identifier: '', private_value: '', instructions: '', qr_url: '', payment_url: '', details: {}, status: 'active', sort_order: 0 }
+const DETAIL_FIELDS = [['name','Name'],['email_id','Email Id'],['mobile_number','Mobile Number'],['account_number','Account Number'],['account_name','Account Name'],['branch_name','Branch Name'],['card_number','Card Number'],['routing_number','Routing Number'],['swift_code','SWIFT Code']]
+const DETAIL_LABELS = Object.fromEntries(DETAIL_FIELDS)
 
 function Field({ label, children }) {
   return <label style={{ display: 'grid', gap: 5, fontSize: 12, color: '#475569' }}><span>{label}</span>{children}</label>
@@ -15,6 +17,8 @@ export default function PaymentAccountsAdmin() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
+  const [scannerOpen, setScannerOpen] = useState(false)
+  const videoRef = useRef(null)
 
   async function load() {
     setLoading(true); setError('')
@@ -27,7 +31,61 @@ export default function PaymentAccountsAdmin() {
 
   function change(key, value) { setForm((current) => ({ ...current, [key]: value })) }
   function edit(account) { setEditing(account.id); setForm({ ...EMPTY, ...account, private_value: account.private_value || '' }); setMessage('') }
-  function reset() { setEditing(null); setForm(EMPTY); setMessage('') }
+  function reset() { setEditing(null); setForm({ ...EMPTY, details: {} }); setMessage('') }
+  function detailChange(key, value) { setForm((current) => ({ ...current, details: { ...(current.details || {}), [key]: value } })) }
+  async function copyValue(value) { if (!value) return; try { await navigator.clipboard.writeText(value); setMessage('Copied to clipboard.') } catch { setError('Clipboard access is unavailable in this browser.') } }
+  async function startScanner() {
+    setError('')
+    setMessage('')
+    setScannerOpen(true)
+  }
+
+  useEffect(() => {
+    if (!scannerOpen) return undefined
+    let stream
+    let cancelled = false
+    async function scan() {
+      try {
+        if (!('BarcodeDetector' in window)) throw new Error('QR scanning is not supported by this browser. Use Chrome on a device with camera access.')
+        if (!navigator.mediaDevices?.getUserMedia) throw new Error('Camera access is unavailable in this browser.')
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false })
+        if (cancelled || !videoRef.current) return
+        videoRef.current.srcObject = stream
+        await videoRef.current.play()
+        const detector = new window.BarcodeDetector({ formats: ['qr_code'] })
+        while (!cancelled && scannerOpen) {
+          const codes = await detector.detect(videoRef.current)
+          if (codes.length && codes[0].rawValue) {
+            const value = codes[0].rawValue
+            await copyValue(value)
+            setMessage('QR code scanned and copied to clipboard.')
+            setScannerOpen(false)
+            break
+          }
+          await new Promise((resolve) => setTimeout(resolve, 250))
+        }
+      } catch (err) {
+        if (!cancelled) setError(err.message || 'Unable to start QR scanner.')
+      }
+    }
+    scan()
+    return () => {
+      cancelled = true
+      if (stream) stream.getTracks().forEach((track) => track.stop())
+      if (videoRef.current) videoRef.current.srcObject = null
+    }
+  }, [scannerOpen])
+
+  async function shareAccount(account) {
+    const details = Object.entries(account.details || {}).filter(([, value]) => value).map(([key, value]) => (DETAIL_LABELS[key] || key) + ': ' + value)
+    const text = [account.account_label, account.provider, ...details].join('\n')
+    try {
+      if (navigator.share) await navigator.share({ title: 'Shopnoltd ' + account.account_label, text, url: account.qr_url || account.payment_url || undefined })
+      else { await navigator.clipboard.writeText(text); setMessage('Sharing is unavailable; account details copied to clipboard.') }
+    } catch (err) {
+      if (err?.name !== 'AbortError') setError('Sharing was cancelled or unavailable.')
+    }
+  }
 
   async function save(event) {
     event.preventDefault(); setLoading(true); setError(''); setMessage('')
@@ -66,11 +124,11 @@ export default function PaymentAccountsAdmin() {
         <Field label="Private value (admin only)"><input type="password" value={form.private_value} onChange={(e) => change('private_value', e.target.value)} style={{ padding: 9 }} autoComplete="off" /></Field>
         <Field label="Instructions"><textarea value={form.instructions} onChange={(e) => change('instructions', e.target.value)} style={{ padding: 9, minHeight: 80 }} /></Field>
         <Field label="QR URL"><input value={form.qr_url} onChange={(e) => change('qr_url', e.target.value)} style={{ padding: 9 }} placeholder="https://..." /></Field>
-        <Field label="Payment URL"><input value={form.payment_url} onChange={(e) => change('payment_url', e.target.value)} style={{ padding: 9 }} placeholder="https://..." /></Field>
+        <Field label="Payment URL"><input value={form.payment_url} onChange={(e) => change('payment_url', e.target.value)} style={{ padding: 9 }} placeholder="https://..." /></Field><div style={{ borderTop: '1px solid #e2e8f0', paddingTop: 12, display: 'grid', gap: 10 }}><strong style={{ fontSize: 14 }}>Account details</strong>{DETAIL_FIELDS.map(([key, label]) => <Field key={key} label={label}><input value={(form.details || {})[key] || ''} onChange={(e) => detailChange(key, e.target.value)} style={{ padding: 9 }} /></Field>)}</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}><Field label="Status"><select value={form.status} onChange={(e) => change('status', e.target.value)} style={{ padding: 9 }}><option value="active">active</option><option value="inactive">inactive</option></select></Field><Field label="Sort order"><input type="number" min="0" value={form.sort_order} onChange={(e) => change('sort_order', e.target.value)} style={{ padding: 9 }} /></Field></div>
         <div style={{ display: 'flex', gap: 8 }}><button disabled={loading} type="submit" style={{ padding: '9px 13px', border: 0, borderRadius: 8, background: '#0284c7', color: '#fff', fontWeight: 700 }}>{editing ? 'Save changes' : 'Create account'}</button>{editing && <button type="button" onClick={reset} style={{ padding: '9px 13px', border: '1px solid #cbd5e1', borderRadius: 8, background: '#fff' }}>Cancel</button>}</div>
       </form>
-      <section style={{ display: 'grid', gap: 12 }}><div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}><h2 style={{ margin: 0, fontSize: 18 }}>Configured accounts</h2><button type="button" onClick={load} disabled={loading} style={{ padding: '8px 11px' }}>Refresh</button></div>{accounts.map((account) => <article key={account.id} style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14, padding: 16 }}><div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}><div><strong>{account.account_label}</strong><div style={{ color: '#64748b', fontSize: 13, marginTop: 4 }}>{account.provider} · {account.currency} · {account.status}</div></div><span style={{ fontFamily: 'ui-monospace,monospace' }}>{account.masked_account || 'No masked value'}</span></div>{account.private_value && <div style={{ marginTop: 10, fontSize: 12, color: '#64748b' }}>Private value configured · hidden by default</div>}<div style={{ display: 'flex', gap: 8, marginTop: 12 }}><button type="button" onClick={() => edit(account)} style={{ padding: '7px 10px' }}>Edit</button><button type="button" onClick={() => remove(account)} style={{ padding: '7px 10px', border: '1px solid #fecaca', color: '#b91c1c', background: '#fff' }}>Delete</button></div></article>)}{!accounts.length && !loading && <div style={{ padding: 18, border: '1px dashed #cbd5e1', borderRadius: 12, color: '#64748b' }}>No configured accounts yet.</div>}</section>
+      <section style={{ display: 'grid', gap: 12 }}><div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}><h2 style={{ margin: 0, fontSize: 18 }}>Configured accounts</h2><div style={{ display: 'flex', gap: 8 }}><button type="button" onClick={startScanner} disabled={loading} style={{ padding: '8px 11px' }}>Scan QR</button><button type="button" onClick={load} disabled={loading} style={{ padding: '8px 11px' }}>Refresh</button></div></div>{accounts.map((account) => <article key={account.id} style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14, padding: 18 }}><div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'start' }}><div><strong style={{ fontSize: 20 }}>{account.account_label}</strong><div style={{ color: '#64748b', fontSize: 13, marginTop: 4 }}>{account.provider} · {account.currency} · {account.status}</div></div><span style={{ fontFamily: 'ui-monospace,monospace' }}>{account.masked_account || 'No masked value'}</span></div><div style={{ marginTop: 14, display: 'grid', gap: 10 }}>{Object.entries(account.details || {}).filter(([, value]) => value).map(([key, value]) => <div key={key} style={{ display: 'grid', gridTemplateColumns: 'minmax(130px, 180px) 1fr auto', gap: 10, alignItems: 'center' }}><strong>{DETAIL_LABELS[key] || key}</strong><span style={{ overflowWrap: 'anywhere' }}>{value}</span><button type="button" onClick={() => copyValue(value)} style={{ padding: '5px 9px' }}>Copy</button></div>)}</div>{account.qr_url && <div style={{ marginTop: 16, padding: 14, border: '1px solid #e2e8f0', borderRadius: 12, display: 'grid', gap: 10, justifyItems: 'start' }}><strong>QR Code</strong><img src={account.qr_url} alt={account.account_label + ' QR code'} loading="lazy" style={{ width: 180, height: 180, objectFit: 'contain', border: '1px solid #e2e8f0', borderRadius: 8 }} /><div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}><button type="button" onClick={() => copyValue(account.qr_url)} style={{ padding: '7px 10px' }}>Copy QR link</button><button type="button" onClick={() => shareAccount(account)} style={{ padding: '7px 10px' }}>Share</button><a href={account.qr_url} target="_blank" rel="noreferrer" style={{ padding: '7px 10px', border: '1px solid #cbd5e1', borderRadius: 6, textDecoration: 'none' }}>Open QR</a></div></div>}{account.private_value && <div style={{ marginTop: 10, fontSize: 12, color: '#64748b' }}>Private value configured · hidden by default</div>}<div style={{ display: 'flex', gap: 8, marginTop: 14 }}><button type="button" onClick={() => edit(account)} style={{ padding: '7px 10px' }}>Edit</button><button type="button" onClick={() => remove(account)} style={{ padding: '7px 10px', border: '1px solid #fecaca', color: '#b91c1c', background: '#fff' }}>Delete</button></div></article>)}{!accounts.length && !loading && <div style={{ padding: 18, border: '1px dashed #cbd5e1', borderRadius: 12, color: '#64748b' }}>No configured accounts yet.</div>}</section>
     </section>
   </main>
 }
