@@ -265,6 +265,19 @@ jobs:
           kubectl --request-timeout=30s replace -f k8s/services/keycloak/networkpolicy.yaml
           kubectl --request-timeout=30s -n shopno-identity get networkpolicy keycloak -o yaml
 
+      - name: Inspect NetworkPolicy selector labels
+        continue-on-error: true
+        shell: bash
+        run: |
+          set +e
+          echo '--- namespace labels ---'
+          kubectl get namespace shopno-payments shopno-identity -o jsonpath='{range .items[*]}{.metadata.name}{" labels="}{.metadata.labels}{"\n"}{end}'
+          echo '--- payment pod labels ---'
+          payment_pod="$(kubectl -n shopno-payments get pod -l app.kubernetes.io/name=payment-service -o jsonpath='{.items[0].metadata.name}')"
+          kubectl -n shopno-payments get pod "$payment_pod" -o jsonpath='{.metadata.labels}{"\n"}'
+          echo '--- keycloak endpoints ---'
+          kubectl -n shopno-identity get endpoints keycloak -o yaml
+
       - name: Inspect Keycloak HTTP listener
         continue-on-error: true
         shell: bash
