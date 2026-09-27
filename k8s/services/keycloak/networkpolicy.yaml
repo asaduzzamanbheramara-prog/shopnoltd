@@ -30,6 +30,18 @@ spec:
         - port: 9000
           protocol: TCP
 
+    # Payment service JWT verification: HTTP JWKS only.
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: shopno-payments
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: payment-service
+      ports:
+        - port: 8080
+          protocol: TCP
+
     # Keycloak client-sync hook: HTTP API only; never expose management port 9000
     - from:
         - namespaceSelector:
