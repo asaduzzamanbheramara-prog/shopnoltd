@@ -11,7 +11,7 @@ DATA_DIR=Path(os.getenv('VPN_DATA_DIR','/data')); DATA_DIR.mkdir(parents=True,ex
 DB=DATA_DIR/'vpn.db'; SERVER_KEY=DATA_DIR/'server_private.key'; IFACE=os.getenv('WG_INTERFACE','wg0')
 NETWORK=ipaddress.ip_network(os.getenv('WG_NETWORK','10.77.0.0/24')); SERVER_ADDR=os.getenv('WG_SERVER_ADDRESS','10.77.0.1/24')
 ENDPOINT=os.getenv('WG_SERVER_ENDPOINT','vpn.shopnoltd.dpdns.org:51820'); DNS=os.getenv('WG_DNS','1.1.1.1'); ADMIN_TOKEN=os.getenv('VPN_ADMIN_TOKEN','')
-OIDC_ISSUER=os.getenv('OIDC_ISSUER','https://auth.shopnoltd.dpdns.org/realms/shopnoltd'); OIDC_AUDIENCE=os.getenv('OIDC_AUDIENCE','shopnoltd-web'); JWKS_URL=f'{OIDC_ISSUER}/protocol/openid-connect/certs'
+OIDC_ISSUER=os.getenv('OIDC_ISSUER','https://auth.shopnoltd.dpdns.org/realms/shopnoltd'); OIDC_AUDIENCE=os.getenv('OIDC_AUDIENCE','shopnoltd-web'); JWKS_URL=os.getenv('OIDC_JWKS_URL') or f'{OIDC_ISSUER}/protocol/openid-connect/certs'
 ALLOWED_ORIGINS=[x.strip() for x in os.getenv('CORS_ALLOWED_ORIGINS','https://shopnoltd.dpdns.org').split(',') if x.strip()]
 DEFAULT_LOCATION=os.getenv('VPN_LOCATION_ID','bd-dhaka'); DEFAULT_COUNTRY=os.getenv('VPN_LOCATION_COUNTRY','Bangladesh'); DEFAULT_CITY=os.getenv('VPN_LOCATION_CITY','Dhaka')
 jwk_client=PyJWKClient(JWKS_URL)
@@ -146,7 +146,7 @@ def peer_config(address,private,server_pub,keepalive,endpoint=ENDPOINT):
     return f'[Interface]\nPrivateKey = {private}\nAddress = {address}/32\nDNS = {DNS}\n\n[Peer]\nPublicKey = {server_pub}\nAllowedIPs = 0.0.0.0/0\nEndpoint = {endpoint}\nPersistentKeepalive = {keepalive}\n'
 
 def select_gateway(c,location_id):
-    row=c.execute('select * from gateways where location_id=? and enabled=1 and healthy=1 order by (active_peers*1.0/capacity),active_peers limit 1',(location_id,)).fetchone()
+    row=c.execute('select * from gateways where location_id=? and enabled=1 and healthy=1 order by (active_peers*1.0/capacity),active_peers limit 1').fetchone()
     if not row: raise HTTPException(409,'No healthy VPN gateway is available in this location yet')
     if row['active_peers'] >= row['capacity']: raise HTTPException(409,'Selected VPN location is at capacity')
     return row
