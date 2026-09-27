@@ -24,6 +24,8 @@ CREATE TABLE IF NOT EXISTS public.payment_accounts (
     updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW()
 );
 
+ALTER TABLE public.payment_accounts ADD COLUMN IF NOT EXISTS details JSONB NOT NULL DEFAULT '{}'::jsonb;
+
 CREATE INDEX IF NOT EXISTS ix_payment_accounts_tenant
     ON public.payment_accounts (tenant_id);
 CREATE INDEX IF NOT EXISTS ix_payment_accounts_provider
