@@ -24,9 +24,35 @@ const INTERIOR_PROFILE = {
   ],
 }
 
+function qrUrl(url) {
+  return 'https://api.qrserver.com/v1/create-qr-code/?size=320x320&margin=12&data=' + encodeURIComponent(url)
+}
+
+async function shareProfile(url, title) {
+  const shareData = { title, text: 'View this Shopnoltd profile', url }
+  try {
+    if (navigator.share) {
+      await navigator.share(shareData)
+      return
+    }
+    await navigator.clipboard.writeText(url)
+    window.alert('Profile link copied to clipboard.')
+  } catch (error) {
+    if (error?.name !== 'AbortError') {
+      try {
+        await navigator.clipboard.writeText(url)
+        window.alert('Profile link copied to clipboard.')
+      } catch {
+        window.prompt('Copy this profile link:', url)
+      }
+    }
+  }
+}
+
 export default function PublicProfiles() {
   const { type } = useParams()
   const profile = type === 'interior-business' ? INTERIOR_PROFILE : DATA_PROFILE
+  const profileUrl = window.location.href
   useEffect(() => { document.title = profile.title + ' — Shopnoltd Profile' }, [profile])
   return <main style={{ maxWidth: 1080, margin: '0 auto', padding: 'clamp(24px,6vw,56px) 18px 80px', fontFamily: 'system-ui,sans-serif' }}>
     <section style={{ padding: 'clamp(28px,6vw,52px)', borderRadius: 24, background: 'linear-gradient(135deg,#0f172a,#0369a1)', color: 'white' }}>
@@ -36,9 +62,14 @@ export default function PublicProfiles() {
       <p style={{ maxWidth: 820, lineHeight: 1.75, fontSize: 17, opacity: .92 }}>{profile.description}</p>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 22 }}>
         <a href={profile.pdf} download style={{ background: 'white', color: '#0369a1', padding: '12px 18px', borderRadius: 10, fontWeight: 800, textDecoration: 'none' }}>Download PDF / CV</a>
+        <button type="button" onClick={() => shareProfile(profileUrl, profile.title)} style={{ border: '1px solid rgba(255,255,255,.55)', background: 'transparent', color: 'white', padding: '12px 18px', borderRadius: 10, fontWeight: 700, cursor: 'pointer' }}>↗ Share profile</button>
         <Link to="/profiles" style={{ border: '1px solid rgba(255,255,255,.55)', color: 'white', padding: '12px 18px', borderRadius: 10, fontWeight: 700, textDecoration: 'none' }}>All profiles</Link>
         {type === 'interior-business' && <a href="https://shopnoltd.wixsite.com/shopno/home-decoration" target="_blank" rel="noopener noreferrer" style={{ border: '1px solid rgba(255,255,255,.55)', color: 'white', padding: '12px 18px', borderRadius: 10, fontWeight: 700, textDecoration: 'none' }}>Original interior portfolio</a>}
       </div>
+    </section>
+    <section style={{ marginTop: 24, display: 'grid', gridTemplateColumns: 'minmax(220px,320px) 1fr', gap: 22, alignItems: 'center', padding: 22, borderRadius: 16, background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+      <div style={{ textAlign: 'center' }}><img src={qrUrl(profileUrl)} alt="QR code for this Shopnoltd profile" width="240" height="240" loading="eager" style={{ maxWidth: '100%', height: 'auto', borderRadius: 12, background: 'white' }} /></div>
+      <div><h2 style={{ marginTop: 0 }}>Scan or share this profile</h2><p style={{ color: '#475569', lineHeight: 1.7 }}>Scan the QR code with a phone camera to open this exact profile, or use Share profile to send the link through your phone, messaging app, email or another supported app.</p><button type="button" onClick={() => shareProfile(profileUrl, profile.title)} style={{ padding: '11px 16px', borderRadius: 9, border: '1px solid #0284c7', background: 'white', color: '#0369a1', fontWeight: 800, cursor: 'pointer' }}>↗ Share link</button></div>
     </section>
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 18, marginTop: 24 }}>
       {profile.sections.map(([heading, items]) => <section key={heading} style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: 16, padding: 22, boxShadow: '0 3px 12px rgba(15,23,42,.05)' }}><h2 style={{ marginTop: 0 }}>{heading}</h2><ul style={{ paddingLeft: 20, marginBottom: 0, lineHeight: 1.75 }}>{items.map(item => <li key={item}>{item}</li>)}</ul></section>)}
