@@ -278,6 +278,13 @@ jobs:
           echo '--- Management health ---'
           kubectl --request-timeout=30s -n shopno-identity exec "$keycloak_pod" -- sh -c 'wget -qO- http://127.0.0.1:9000/health/ready 2>/dev/null || true'
 
+      - name: Refresh payment-service network namespace
+        shell: bash
+        run: |
+          set -euo pipefail
+          kubectl --request-timeout=30s -n shopno-payments rollout restart deployment/payment-service
+          kubectl --request-timeout=30s -n shopno-payments rollout status deployment/payment-service --timeout=120s
+
       - name: Inspect payment proxy environment
         continue-on-error: true
         shell: bash
