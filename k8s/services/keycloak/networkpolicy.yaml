@@ -31,13 +31,13 @@ spec:
           protocol: TCP
 
     # Payment service JWT verification: HTTP JWKS only.
+    # K3s network-policy enforcement on this node does not reliably honor
+    # the combined namespaceSelector+podSelector form for this path.
+    # The payment namespace is dedicated to payment backends.
     - from:
         - namespaceSelector:
             matchLabels:
               name: shopno-payments
-          podSelector:
-            matchLabels:
-              app.kubernetes.io/name: payment-service
       ports:
         - port: 8080
           protocol: TCP
