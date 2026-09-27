@@ -282,8 +282,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          kubectl --request-timeout=30s apply -f k8s/services/payment-service/configmap.yaml
           kubectl --request-timeout=30s -n shopno-payments rollout restart deployment/payment-service
           kubectl --request-timeout=30s -n shopno-payments rollout status deployment/payment-service --timeout=120s
+          payment_pod="$(kubectl --request-timeout=30s -n shopno-payments get pod -l app.kubernetes.io/name=payment-service -o jsonpath='{.items[0].metadata.name}')"
+          kubectl --request-timeout=30s -n shopno-payments exec "$payment_pod" -- python -c "import os,urllib.request; u=os.environ['KEYCLOAK_JWKS_URL']; r=urllib.request.urlopen(u,timeout=10); print('PUBLIC_JWKS_URL='+u); print('PUBLIC_JWKS_HTTP_STATUS='+str(r.status)); print('PUBLIC_JWKS_BYTES='+str(len(r.read())))"
 
       - name: Inspect payment proxy environment
         continue-on-error: true
