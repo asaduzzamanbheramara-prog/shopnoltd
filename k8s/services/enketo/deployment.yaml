@@ -31,7 +31,7 @@ spec:
             - name: ENKETO_API_URL
               value: "https://kobo.shopnoltd.dpdns.org"
             - name: ENKETO_LINKED_FORM_AND_DATA_SERVER_SERVER_URL
-              value: "https://kobotoolbox.shopnoltd.dpdns.org"
+              value: "https://kobo.shopnoltd.dpdns.org"
             - name: ENKETO_LINKED_FORM_AND_DATA_SERVER_API_KEY
               valueFrom:
                 secretKeyRef:
