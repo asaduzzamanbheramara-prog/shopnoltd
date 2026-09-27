@@ -292,6 +292,16 @@ jobs:
           echo '--- Management health ---'
           kubectl --request-timeout=30s -n shopno-identity exec "$keycloak_pod" -- sh -c 'wget -qO- http://127.0.0.1:9000/health/ready 2>/dev/null || true'
 
+      - name: Test namespace-only Keycloak ingress selector
+        continue-on-error: true
+        shell: bash
+        run: |
+          set +e
+          kubectl --request-timeout=30s -n shopno-identity patch networkpolicy keycloak --type=json -p='[{"op":"remove","path":"/spec/ingress/1/from/0/podSelector"}]'
+          payment_pod="$(kubectl --request-timeout=30s -n shopno-payments get pod -l app.kubernetes.io/name=payment-service -o jsonpath='{.items[0].metadata.name}')"
+          kubectl --request-timeout=30s -n shopno-payments exec "$payment_pod" -- python -c "import urllib.request; u='http://keycloak.shopno-identity.svc.cluster.local/realms/shopnoltd/protocol/openid-connect/certs'; r=urllib.request.urlopen(u,timeout=8); print('NAMESPACE_ONLY_JWKS_STATUS='+str(r.status)); print('NAMESPACE_ONLY_JWKS_BYTES='+str(len(r.read())))"
+          kubectl --request-timeout=30s -n shopno-identity replace -f k8s/services/keycloak/networkpolicy.yaml
+
       - name: Refresh payment-service network namespace
         continue-on-error: true
         shell: bash
