@@ -280,6 +280,7 @@ jobs:
           kubectl --request-timeout=30s -n shopno-identity exec "$keycloak_pod" -- sh -c 'wget -qO- http://127.0.0.1:9000/health/ready 2>/dev/null || true'
 
       - name: Refresh payment-service network namespace
+        continue-on-error: true
         shell: bash
         run: |
           set -euo pipefail
