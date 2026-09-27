@@ -257,6 +257,23 @@ jobs:
 
           echo 'Argo CD full sync request submitted to the controller.'
 
+      - name: Diagnose payment-service Keycloak JWKS connectivity
+        continue-on-error: true
+        shell: bash
+        run: |
+          set +e
+          echo '===== PAYMENT SERVICE RUNTIME CONNECTIVITY DIAGNOSTIC ====='
+          payment_pod="$(kubectl --request-timeout=30s -n shopno-payments get pod -l app.kubernetes.io/name=payment-service -o jsonpath='{.items[0].metadata.name}')"
+          keycloak_pod="$(kubectl --request-timeout=30s -n shopno-identity get pod -l app.kubernetes.io/name=keycloak -o jsonpath='{.items[0].metadata.name}')"
+          echo "payment_pod=$payment_pod"
+          echo "keycloak_pod=$keycloak_pod"
+          kubectl --request-timeout=30s -n shopno-identity get service keycloak -o wide
+          kubectl --request-timeout=30s -n shopno-payments get networkpolicy payment-service -o yaml
+          echo '--- JWKS request ---'
+          kubectl --request-timeout=30s -n shopno-payments exec "$payment_pod" -- python -c "import urllib.request; u='http://keycloak.shopno-identity.svc.cluster.local/realms/shopnoltd/protocol/openid-connect/certs'; r=urllib.request.urlopen(u,timeout=8); print('JWKS_HTTP_STATUS='+str(r.status)); print('JWKS_BYTES='+str(len(r.read())))"
+          echo '--- Payment readiness ---'
+          kubectl --request-timeout=30s -n shopno-payments exec "$payment_pod" -- python -c "import urllib.request; r=urllib.request.urlopen('http://127.0.0.1:8080/readyz',timeout=5); print('PAYMENT_READYZ='+str(r.status))"
+
       - name: Wait for Argo CD full sync
         shell: bash
         run: |
