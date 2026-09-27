@@ -11,16 +11,26 @@ jobs:
       - name: Diagnose live payment-service to Keycloak JWKS path
         shell: bash
         run: |
-          set -u
+          set +e
           echo '===== PAYMENT SERVICE RUNTIME CONNECTIVITY DIAGNOSTIC ====='
           payment_pod="$(kubectl --request-timeout=30s -n shopno-payments get pod -l app.kubernetes.io/name=payment-service -o jsonpath='{.items[0].metadata.name}')"
           keycloak_pod="$(kubectl --request-timeout=30s -n shopno-identity get pod -l app.kubernetes.io/name=keycloak -o jsonpath='{.items[0].metadata.name}')"
           echo "payment_pod=$payment_pod"
           echo "keycloak_pod=$keycloak_pod"
-          echo '--- Keycloak service ---'
+          echo '--- Keycloak pod status ---'
+          kubectl --request-timeout=30s -n shopno-identity get pod "$keycloak_pod" -o wide
+          kubectl --request-timeout=30s -n shopno-identity get pod "$keycloak_pod" -o jsonpath='{range .status.containerStatuses[*]}container={.name} ready={.ready} restartCount={.restartCount} state={.state} lastState={.lastState}{"\n"}{end}'
+          echo '--- Keycloak service/endpoints ---'
           kubectl --request-timeout=30s -n shopno-identity get service keycloak -o wide
-          echo '--- Keycloak endpoints ---'
           kubectl --request-timeout=30s -n shopno-identity get endpoints keycloak -o wide
+          echo '--- Keycloak container ports ---'
+          kubectl --request-timeout=30s -n shopno-identity get pod "$keycloak_pod" -o jsonpath='{range .spec.containers[*]}container={.name} ports={.ports}{"\n"}{end}'
+          echo '--- Keycloak recent logs ---'
+          kubectl --request-timeout=30s -n shopno-identity logs "$keycloak_pod" --tail=120 --timestamps
+          echo '--- Keycloak listening sockets ---'
+          kubectl --request-timeout=30s -n shopno-identity exec "$keycloak_pod" -- sh -c 'command -v ss >/dev/null 2>&1 && ss -lnt || cat /proc/net/tcp'
+          echo '--- Keycloak localhost HTTP test ---'
+          kubectl --request-timeout=30s -n shopno-identity exec "$keycloak_pod" -- sh -c 'if command -v curl >/dev/null 2>&1; then curl -sS -o /dev/null -w "KEYCLOAK_LOCAL_8080_STATUS=%{http_code}\n" --max-time 5 http://127.0.0.1:8080/realms/shopnoltd/protocol/openid-connect/certs; else echo "KEYCLOAK_CURL=missing"; fi'
           echo '--- Payment NetworkPolicy ---'
           kubectl --request-timeout=30s -n shopno-payments get networkpolicy payment-service -o yaml
           echo '--- JWKS request from payment-service pod ---'
