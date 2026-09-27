@@ -28,5 +28,4 @@ jobs:
           echo '--- Payment service readiness ---'
           kubectl --request-timeout=30s -n shopno-payments exec "$payment_pod" -- python -c "import urllib.request; r=urllib.request.urlopen('http://127.0.0.1:8080/readyz',timeout=5); print('PAYMENT_READYZ='+str(r.status))"
           echo '--- Invalid-token admin endpoint contract ---'
-          kubectl --request-timeout=30s -n shopno-payments exec "$payment_pod" -- python -c "import urllib.request,urllib.error; req=urllib.request.Request('http://127.0.0.1:8080/api/v1/payment-accounts/admin',headers={'Authorization':'Bearer invalid'}); \
-try:\n r=urllib.request.urlopen(req,timeout=5); print('ADMIN_INVALID_TOKEN_STATUS='+str(r.status))\nexcept urllib.error.HTTPError as e: print('ADMIN_INVALID_TOKEN_STATUS='+str(e.code)); print('ADMIN_INVALID_TOKEN_BODY='+e.read().decode(errors='replace')[:500])"
+          kubectl --request-timeout=30s -n shopno-payments exec "$payment_pod" -- python -c "import http.client; c=http.client.HTTPConnection('127.0.0.1',8080,timeout=5); c.request('GET','/api/v1/payment-accounts/admin',headers={'Authorization':'Bearer invalid'}); r=c.getresponse(); print('ADMIN_INVALID_TOKEN_STATUS='+str(r.status)); print('ADMIN_INVALID_TOKEN_BODY='+r.read(500).decode(errors='replace'))"
