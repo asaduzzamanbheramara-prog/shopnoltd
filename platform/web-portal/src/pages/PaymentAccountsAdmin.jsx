@@ -78,11 +78,11 @@ export default function PaymentAccountsAdmin() {
 
   async function shareAccount(account) {
     const details = Object.entries(account.details || {}).filter(([, value]) => value).map(([key, value]) => (DETAIL_LABELS[key] || key) + ': ' + value)
-    const text = [account.account_label, account.provider, ...details].join('\\n')
+    const text = [account.account_label, account.provider, ...details].join('\n')
     const url = account.qr_url || account.payment_url || undefined
     try {
       if (!navigator.share) {
-        await navigator.clipboard.writeText(text + (url ? '\\n' + url : ''))
+        await navigator.clipboard.writeText(text + (url ? '\n' + url : ''))
         setMessage('Sharing is unavailable; account details and QR link copied to clipboard.')
         return
       }
