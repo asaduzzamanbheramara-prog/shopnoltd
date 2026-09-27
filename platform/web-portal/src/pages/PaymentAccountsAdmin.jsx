@@ -16,7 +16,9 @@ export default function PaymentAccountsAdmin() {
   const [editing, setEditing] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [message, setMessage] = useState('')\n  const [scannerOpen, setScannerOpen] = useState(false)\n  const videoRef = useRef(null)
+  const [message, setMessage] = useState('')
+  const [scannerOpen, setScannerOpen] = useState(false)
+  const videoRef = useRef(null)
 
   async function load() {
     setLoading(true); setError('')
