@@ -146,6 +146,7 @@ class PaymentAccount(Base):
     instructions = Column(String(1000), nullable=True)
     qr_url = Column(String(2048), nullable=True)
     payment_url = Column(String(2048), nullable=True)
+    details = Column(JSONB, nullable=False, default=dict)
     status = Column(String(16), nullable=False, default="active", index=True)
     sort_order = Column(Integer, nullable=False, default=0)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
