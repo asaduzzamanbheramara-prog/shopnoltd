@@ -105,10 +105,16 @@ export async function authenticatedRequest(path, options = {}) {
   }
 
   if (!response.ok) {
-    const detail =
+    const rawDetail =
       typeof data === 'object' && data !== null
-        ? data.detail || data.message || JSON.stringify(data)
+        ? data.detail ?? data.message ?? data
         : data
+    const detail =
+      typeof rawDetail === 'string'
+        ? rawDetail
+        : rawDetail == null
+          ? ''
+          : JSON.stringify(rawDetail)
 
     throw new Error(
       `Financial API request failed (${response.status})${detail ? `: ${detail}` : ''}`
