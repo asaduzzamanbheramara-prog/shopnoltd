@@ -27,7 +27,7 @@ const INTERIOR_PROFILE = {
 export default function PublicProfiles() {
   const { type } = useParams()
   const profile = type === 'interior-business' ? INTERIOR_PROFILE : DATA_PROFILE
-  useEffect(() => { document.title = \`\${profile.title} — Shopnoltd Profile\` }, [profile])
+  useEffect(() => { document.title = profile.title + ' — Shopnoltd Profile' }, [profile])
   return <main style={{ maxWidth: 1080, margin: '0 auto', padding: 'clamp(24px,6vw,56px) 18px 80px', fontFamily: 'system-ui,sans-serif' }}>
     <section style={{ padding: 'clamp(28px,6vw,52px)', borderRadius: 24, background: 'linear-gradient(135deg,#0f172a,#0369a1)', color: 'white' }}>
       <div style={{ fontSize: 42 }}>{type === 'interior-business' ? '🏠' : '📊'}</div>
