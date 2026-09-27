@@ -11,7 +11,7 @@ DATA_DIR=Path(os.getenv('VPN_DATA_DIR','/data')); DATA_DIR.mkdir(parents=True,ex
 DB=DATA_DIR/'vpn.db'; SERVER_KEY=DATA_DIR/'server_private.key'; IFACE=os.getenv('WG_INTERFACE','wg0')
 NETWORK=ipaddress.ip_network(os.getenv('WG_NETWORK','10.77.0.0/24')); SERVER_ADDR=os.getenv('WG_SERVER_ADDRESS','10.77.0.1/24')
 ENDPOINT=os.getenv('WG_SERVER_ENDPOINT','vpn.shopnoltd.dpdns.org:51820'); DNS=os.getenv('WG_DNS','1.1.1.1'); ADMIN_TOKEN=os.getenv('VPN_ADMIN_TOKEN','')
-OIDC_ISSUER=os.getenv('OIDC_ISSUER','https://auth.shopnoltd.dpdns.org/realms/shopnoltd'); OIDC_AUDIENCE=os.getenv('OIDC_AUDIENCE','shopnoltd-web'); JWKS_URL=f'{OIDC_ISSUER}/protocol/openid-connect/certs'
+OIDC_ISSUER=os.getenv('OIDC_ISSUER','https://auth.shopnoltd.dpdns.org/realms/shopnoltd'); OIDC_AUDIENCE=os.getenv('OIDC_AUDIENCE','shopnoltd-web'); JWKS_URL=os.getenv('OIDC_JWKS_URL') or f'{OIDC_ISSUER}/protocol/openid-connect/certs'
 ALLOWED_ORIGINS=[x.strip() for x in os.getenv('CORS_ALLOWED_ORIGINS','https://shopnoltd.dpdns.org').split(',') if x.strip()]
 DEFAULT_LOCATION=os.getenv('VPN_LOCATION_ID','bd-dhaka'); DEFAULT_COUNTRY=os.getenv('VPN_LOCATION_COUNTRY','Bangladesh'); DEFAULT_CITY=os.getenv('VPN_LOCATION_CITY','Dhaka')
 jwk_client=PyJWKClient(JWKS_URL)

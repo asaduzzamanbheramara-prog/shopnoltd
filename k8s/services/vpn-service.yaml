@@ -42,6 +42,8 @@ spec:
               value: https://auth.shopnoltd.dpdns.org/realms/shopnoltd
             - name: OIDC_AUDIENCE
               value: api-service
+            - name: OIDC_JWKS_URL
+              value: http://keycloak.shopno-identity.svc.cluster.local/realms/shopnoltd/protocol/openid-connect/certs
             - name: CORS_ALLOWED_ORIGINS
               value: https://shopnoltd.dpdns.org
             - name: WG_SERVER_ADDRESS
