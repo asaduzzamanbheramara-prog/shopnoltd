@@ -1,0 +1,35 @@
+name: Payment JWKS Runtime Diagnostic
+
+on:
+  workflow_dispatch:
+
+jobs:
+  diagnose:
+    runs-on: [self-hosted, linux]
+    steps:
+      - name: Checkout main source
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Diagnose payment to Keycloak
+        shell: bash
+        run: |
+          set +e
+          payment_pod="$(kubectl -n shopno-payments get pod -l app.kubernetes.io/name=payment-service -o jsonpath='{.items[0].metadata.name}')"
+          keycloak_pod="$(kubectl -n shopno-identity get pod -l app.kubernetes.io/name=keycloak -o jsonpath='{.items[0].metadata.name}')"
+          echo "payment_pod=$payment_pod"
+          echo "keycloak_pod=$keycloak_pod"
+          echo '--- payment labels ---'
+          kubectl -n shopno-payments get pod "$payment_pod" -o jsonpath='{.metadata.labels}{"\n"}'
+          echo '--- Keycloak NetworkPolicy ---'
+          kubectl -n shopno-identity get networkpolicy keycloak -o yaml
+          echo '--- Payment NetworkPolicy ---'
+          kubectl -n shopno-payments get networkpolicy payment-service -o yaml
+          echo '--- current JWKS env ---'
+          kubectl -n shopno-payments exec "$payment_pod" -- python -c "import os; print('KEYCLOAK_JWKS_URL='+os.environ.get('KEYCLOAK_JWKS_URL',''))"
+          echo '--- internal JWKS ---'
+          kubectl -n shopno-payments exec "$payment_pod" -- python -c "import urllib.request; u='http://keycloak.shopno-identity.svc.cluster.local/realms/shopnoltd/protocol/openid-connect/certs'; r=urllib.request.urlopen(u,timeout=8); print('INTERNAL_STATUS='+str(r.status)); print('INTERNAL_BYTES='+str(len(r.read())))"
+          echo '--- public JWKS ---'
+          kubectl -n shopno-payments exec "$payment_pod" -- python -c "import urllib.request; u='https://auth.shopnoltd.dpdns.org/realms/shopnoltd/protocol/openid-connect/certs'; r=urllib.request.urlopen(u,timeout=8); print('PUBLIC_STATUS='+str(r.status)); print('PUBLIC_BYTES='+str(len(r.read())))"
