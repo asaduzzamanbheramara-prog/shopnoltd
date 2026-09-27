@@ -35,6 +35,7 @@ class PaymentAccountIn(BaseModel):
     instructions: str | None = Field(default=None, max_length=1000)
     qr_url: str | None = Field(default=None, max_length=2048)
     payment_url: str | None = Field(default=None, max_length=2048)
+    details: dict[str, str] = Field(default_factory=dict)
     status: str = Field(default="active", pattern=r"^(active|inactive)$")
     sort_order: int = Field(default=0, ge=0, le=100000)
     tenant_id: str | None = Field(default=None, max_length=64)
@@ -52,6 +53,7 @@ class PaymentAccountPatch(BaseModel):
     instructions: str | None = Field(default=None, max_length=1000)
     qr_url: str | None = Field(default=None, max_length=2048)
     payment_url: str | None = Field(default=None, max_length=2048)
+    details: dict[str, str] | None = None
     status: str | None = Field(default=None, pattern=r"^(active|inactive)$")
     sort_order: int | None = Field(default=None, ge=0, le=100000)
 
@@ -86,6 +88,7 @@ def _admin(row):
     result["tenant_id"] = row.tenant_id
     result["public_identifier"] = row.public_identifier
     result["private_value"] = row.private_value
+    result["details"] = row.details or {}
     result["created_at"] = row.created_at.isoformat()
     result["updated_at"] = row.updated_at.isoformat()
     return result
@@ -146,7 +149,7 @@ async def create_payment_account(body: PaymentAccountIn, user=Depends(require_ad
         currency=body.currency.upper(), display_name=body.display_name,
         masked_account=body.masked_account, public_identifier=body.public_identifier,
         private_value=body.private_value, instructions=body.instructions,
-        qr_url=body.qr_url, payment_url=body.payment_url, status=body.status,
+        qr_url=body.qr_url, payment_url=body.payment_url, details=body.details or {}, status=body.status,
         sort_order=body.sort_order, created_at=now, updated_at=now,
     )
     s.add(row)
