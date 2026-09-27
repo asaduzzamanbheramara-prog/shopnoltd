@@ -146,7 +146,7 @@ def peer_config(address,private,server_pub,keepalive,endpoint=ENDPOINT):
     return f'[Interface]\nPrivateKey = {private}\nAddress = {address}/32\nDNS = {DNS}\n\n[Peer]\nPublicKey = {server_pub}\nAllowedIPs = 0.0.0.0/0\nEndpoint = {endpoint}\nPersistentKeepalive = {keepalive}\n'
 
 def select_gateway(c,location_id):
-    row=c.execute('select * from gateways where location_id=? and enabled=1 and healthy=1 order by (active_peers*1.0/capacity),active_peers limit 1').fetchone()
+    row=c.execute('select * from gateways where location_id=? and enabled=1 and healthy=1 order by (active_peers*1.0/capacity),active_peers limit 1',(location_id,)).fetchone()
     if not row: raise HTTPException(409,'No healthy VPN gateway is available in this location yet')
     if row['active_peers'] >= row['capacity']: raise HTTPException(409,'Selected VPN location is at capacity')
     return row
