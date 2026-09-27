@@ -288,6 +288,15 @@ jobs:
           payment_pod="$(kubectl --request-timeout=30s -n shopno-payments get pod -l app.kubernetes.io/name=payment-service -o jsonpath='{.items[0].metadata.name}')"
           kubectl --request-timeout=30s -n shopno-payments exec "$payment_pod" -- python -c "import os,urllib.request; u=os.environ['KEYCLOAK_JWKS_URL']; r=urllib.request.urlopen(u,timeout=10); print('PUBLIC_JWKS_URL='+u); print('PUBLIC_JWKS_HTTP_STATUS='+str(r.status)); print('PUBLIC_JWKS_BYTES='+str(len(r.read())))"
 
+      - name: Test internal Keycloak JWKS after policy and pod refresh
+        continue-on-error: true
+        shell: bash
+        run: |
+          set +e
+          payment_pod="$(kubectl --request-timeout=30s -n shopno-payments get pod -l app.kubernetes.io/name=payment-service -o jsonpath='{.items[0].metadata.name}')"
+          echo "payment_pod=$payment_pod"
+          kubectl --request-timeout=30s -n shopno-payments exec "$payment_pod" -- python -c "import urllib.request; u='http://keycloak.shopno-identity.svc.cluster.local/realms/shopnoltd/protocol/openid-connect/certs'; r=urllib.request.urlopen(u,timeout=8); print('INTERNAL_JWKS_HTTP_STATUS='+str(r.status)); print('INTERNAL_JWKS_BYTES='+str(len(r.read())))"
+
       - name: Inspect payment proxy environment
         continue-on-error: true
         shell: bash
