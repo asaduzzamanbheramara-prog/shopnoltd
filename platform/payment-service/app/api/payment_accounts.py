@@ -35,7 +35,6 @@ class PaymentAccountIn(BaseModel):
     instructions: str | None = Field(default=None, max_length=1000)
     qr_url: str | None = Field(default=None, max_length=2048)
     payment_url: str | None = Field(default=None, max_length=2048)
-    details: dict[str, str] | None = None
     details: dict[str, str] = Field(default_factory=dict)
     status: str = Field(default="active", pattern=r"^(active|inactive)$")
     sort_order: int = Field(default=0, ge=0, le=100000)
@@ -54,6 +53,7 @@ class PaymentAccountPatch(BaseModel):
     instructions: str | None = Field(default=None, max_length=1000)
     qr_url: str | None = Field(default=None, max_length=2048)
     payment_url: str | None = Field(default=None, max_length=2048)
+    details: dict[str, str] | None = None
     status: str | None = Field(default=None, pattern=r"^(active|inactive)$")
     sort_order: int | None = Field(default=None, ge=0, le=100000)
 
