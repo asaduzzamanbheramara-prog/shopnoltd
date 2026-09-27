@@ -33,7 +33,8 @@ export default function PaymentAccountsAdmin() {
   function edit(account) { setEditing(account.id); setForm({ ...EMPTY, ...account, private_value: account.private_value || '' }); setMessage('') }
   function reset() { setEditing(null); setForm({ ...EMPTY, details: {} }); setMessage('') }
   function detailChange(key, value) { setForm((current) => ({ ...current, details: { ...(current.details || {}), [key]: value } })) }
-  async function copyValue(value) { if (!value) return; try { await navigator.clipboard.writeText(value); setMessage('Copied to clipboard.') } catch { setError('Clipboard access is unavailable in this browser.') } }\n  async function startScanner() {
+  async function copyValue(value) { if (!value) return; try { await navigator.clipboard.writeText(value); setMessage('Copied to clipboard.') } catch { setError('Clipboard access is unavailable in this browser.') } }
+  async function startScanner() {
     setError('')
     setMessage('')
     setScannerOpen(true)
@@ -75,7 +76,16 @@ export default function PaymentAccountsAdmin() {
     }
   }, [scannerOpen])
 
-  async function shareAccount(account) {\n    const details = Object.entries(account.details || {}).filter(([, value]) => value).map(([key, value]) => (DETAIL_LABELS[key] || key) + ': ' + value)\n    const text = [account.account_label, account.provider, ...details].join('\\n')\n    try {\n      if (navigator.share) await navigator.share({ title: 'Shopnoltd ' + account.account_label, text, url: account.qr_url || account.payment_url || undefined })\n      else { await navigator.clipboard.writeText(text); setMessage('Sharing is unavailable; account details copied to clipboard.') }\n    } catch (err) {\n      if (err?.name !== 'AbortError') setError('Sharing was cancelled or unavailable.')\n    }\n  }
+  async function shareAccount(account) {
+    const details = Object.entries(account.details || {}).filter(([, value]) => value).map(([key, value]) => (DETAIL_LABELS[key] || key) + ': ' + value)
+    const text = [account.account_label, account.provider, ...details].join('\n')
+    try {
+      if (navigator.share) await navigator.share({ title: 'Shopnoltd ' + account.account_label, text, url: account.qr_url || account.payment_url || undefined })
+      else { await navigator.clipboard.writeText(text); setMessage('Sharing is unavailable; account details copied to clipboard.') }
+    } catch (err) {
+      if (err?.name !== 'AbortError') setError('Sharing was cancelled or unavailable.')
+    }
+  }
 
   async function save(event) {
     event.preventDefault(); setLoading(true); setError(''); setMessage('')
