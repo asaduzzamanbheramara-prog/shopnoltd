@@ -278,6 +278,16 @@ jobs:
           echo '--- Management health ---'
           kubectl --request-timeout=30s -n shopno-identity exec "$keycloak_pod" -- sh -c 'wget -qO- http://127.0.0.1:9000/health/ready 2>/dev/null || true'
 
+      - name: Inspect payment proxy environment
+        continue-on-error: true
+        shell: bash
+        run: |
+          set +e
+          payment_pod="$(kubectl --request-timeout=30s -n shopno-payments get pod -l app.kubernetes.io/name=payment-service -o jsonpath='{.items[0].metadata.name}')"
+          echo "payment_pod=$payment_pod"
+          kubectl --request-timeout=30s -n shopno-payments exec "$payment_pod" -- sh -c 'env | grep -iE "^(http|https|no)_proxy=" | sed "s#=.*#=<redacted>#I" || true'
+          kubectl --request-timeout=30s -n shopno-payments exec "$payment_pod" -- python -c "import urllib.request; print('PYTHON_PROXIES='+repr(urllib.request.getproxies()))"
+
       - name: Diagnose payment-service Keycloak JWKS connectivity
         continue-on-error: true
         shell: bash
