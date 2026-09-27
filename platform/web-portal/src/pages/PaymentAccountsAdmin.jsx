@@ -78,10 +78,35 @@ export default function PaymentAccountsAdmin() {
 
   async function shareAccount(account) {
     const details = Object.entries(account.details || {}).filter(([, value]) => value).map(([key, value]) => (DETAIL_LABELS[key] || key) + ': ' + value)
-    const text = [account.account_label, account.provider, ...details].join('\n')
+    const text = [account.account_label, account.provider, ...details].join('\\n')
+    const url = account.qr_url || account.payment_url || undefined
     try {
-      if (navigator.share) await navigator.share({ title: 'Shopnoltd ' + account.account_label, text, url: account.qr_url || account.payment_url || undefined })
-      else { await navigator.clipboard.writeText(text); setMessage('Sharing is unavailable; account details copied to clipboard.') }
+      if (!navigator.share) {
+        await navigator.clipboard.writeText(text + (url ? '\\n' + url : ''))
+        setMessage('Sharing is unavailable; account details and QR link copied to clipboard.')
+        return
+      }
+
+      // Prefer sharing the actual QR image when the browser supports file sharing.
+      // If the image cannot be fetched/shared, fall back to URL/text sharing.
+      if (account.qr_url && navigator.canShare && typeof File !== 'undefined') {
+        try {
+          const response = await fetch(account.qr_url, { mode: 'cors' })
+          if (response.ok) {
+            const blob = await response.blob()
+            const extension = (blob.type && blob.type.split('/')[1]) || 'png'
+            const file = new File([blob], 'shopnoltd-' + (account.account_label || 'payment-qr') + '.' + extension, { type: blob.type || 'image/png' })
+            if (navigator.canShare({ files: [file] })) {
+              await navigator.share({ title: 'Shopnoltd ' + account.account_label, text, files: [file], url })
+              return
+            }
+          }
+        } catch {
+          // Fall through to URL/text sharing below.
+        }
+      }
+
+      await navigator.share({ title: 'Shopnoltd ' + account.account_label, text, url })
     } catch (err) {
       if (err?.name !== 'AbortError') setError('Sharing was cancelled or unavailable.')
     }
