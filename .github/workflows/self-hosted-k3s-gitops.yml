@@ -268,6 +268,12 @@ jobs:
           echo "payment_pod=$payment_pod"
           echo "keycloak_pod=$keycloak_pod"
           kubectl --request-timeout=30s -n shopno-identity get service keycloak -o wide
+          echo '--- Keycloak service YAML ---'
+          kubectl --request-timeout=30s -n shopno-identity get service keycloak -o yaml
+          echo '--- Keycloak endpoints ---'
+          kubectl --request-timeout=30s -n shopno-identity get endpoints keycloak -o yaml
+          echo '--- Keycloak pod ports ---'
+          kubectl --request-timeout=30s -n shopno-identity get pod "$keycloak_pod" -o jsonpath='{.spec.containers[*].ports}{"\n"}'
           kubectl --request-timeout=30s -n shopno-payments get networkpolicy payment-service -o yaml
           echo '--- JWKS request ---'
           kubectl --request-timeout=30s -n shopno-payments exec "$payment_pod" -- python -c "import urllib.request; u='http://keycloak.shopno-identity.svc.cluster.local/realms/shopnoltd/protocol/openid-connect/certs'; r=urllib.request.urlopen(u,timeout=8); print('JWKS_HTTP_STATUS='+str(r.status)); print('JWKS_BYTES='+str(len(r.read())))"
