@@ -1,0 +1,128 @@
+{
+  "id": "7b2a0a2f-5d1f-4e9f-8e0a-9f4a8f1c0d21",
+  "name": "Shopnoltd - Omnichannel Action Queue",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "shopnoltd/omnichannel/action",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook",
+      "name": "Webhook (CRM Action)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -420,
+        0
+      ],
+      "webhookId": "shopnoltd-omnichannel-action"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body ?? $json;\nconst platforms = ['whatsapp','facebook','instagram','linkedin','x','telegram','tiktok','youtube','gmail','outlook','3cx'];\nif (!platforms.includes(String(body.platform || '').toLowerCase())) {\n  return [{json:{success:false,status:'unsupported',error:'unsupported_platform',platform:body.platform ?? null}}];\n}\nif (!body.action) {\n  return [{json:{success:false,status:'rejected',error:'action_required',platform:body.platform}}];\n}\nreturn [{json:{\n  platform:String(body.platform).toLowerCase(),\n  action:String(body.action),\n  connection_id:body.connection_id ?? null,\n  client_id:body.client_id ?? null,\n  target_type:body.target_type ?? null,\n  target_id:body.target_id ?? null,\n  idempotency_key:body.idempotency_key ?? ('n8n-' + $execution.id),\n  payload:body.payload ?? {}\n}}];"
+      },
+      "id": "normalize",
+      "name": "Normalize Action",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -180,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.shopnoltd.dpdns.org/api/v1/omnichannel/actions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SHOPNOLTD_INTERNAL_AUTOMATION_TOKEN}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { platform:$json.platform, action:$json.action, connection_id:$json.connection_id, client_id:$json.client_id, target_type:$json.target_type, target_id:$json.target_id, idempotency_key:$json.idempotency_key, payload:$json.payload } }}",
+        "options": {}
+      },
+      "id": "queue",
+      "name": "Queue in Shopnoltd",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        80,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{$json}}",
+        "options": {
+          "responseCode": 202
+        }
+      },
+      "id": "respond",
+      "name": "Respond 202",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        360,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook (CRM Action)": {
+      "main": [
+        [
+          {
+            "node": "Normalize Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Action": {
+      "main": [
+        [
+          {
+            "node": "Queue in Shopnoltd",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Queue in Shopnoltd": {
+      "main": [
+        [
+          {
+            "node": "Respond 202",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": []
+}
