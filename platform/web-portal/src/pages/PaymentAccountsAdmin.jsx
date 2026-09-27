@@ -107,7 +107,15 @@ export default function PaymentAccountsAdmin() {
     finally { setLoading(false) }
   }
 
-  return <main style={{ maxWidth: 1180, margin: '0 auto', padding: '32px 20px 70px', fontFamily: 'system-ui,sans-serif' }}>
+  return <>
+    {scannerOpen && <div role="dialog" aria-modal="true" aria-label="Scan QR code" style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(15,23,42,.72)', display: 'grid', placeItems: 'center', padding: 20 }}>
+      <div style={{ width: 'min(520px, 100%)', background: '#fff', borderRadius: 16, padding: 18, boxShadow: '0 20px 60px rgba(0,0,0,.3)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 12 }}><strong style={{ fontSize: 18 }}>Scan QR code</strong><button type="button" onClick={() => setScannerOpen(false)} style={{ padding: '7px 10px' }}>Close</button></div>
+        <video ref={videoRef} autoPlay muted playsInline style={{ width: '100%', aspectRatio: '1 / 1', objectFit: 'cover', background: '#0f172a', borderRadius: 12 }} />
+        <p style={{ margin: '12px 0 0', color: '#64748b', fontSize: 13 }}>Point the camera at a QR code. The decoded value will be copied to your clipboard.</p>
+      </div>
+    </div>}
+    <main style={{ maxWidth: 1180, margin: '0 auto', padding: '32px 20px 70px', fontFamily: 'system-ui,sans-serif' }}>
     <div style={{ marginBottom: 24 }}><h1 style={{ marginBottom: 8 }}>Admin Payment Accounts</h1><p style={{ color: '#64748b', margin: 0 }}>Manage the safe public payment-account registry. Private values are returned only by the authenticated admin API and must never contain CVV, PIN, passwords, private keys or other authentication secrets.</p></div>
     {error && <div style={{ padding: 12, marginBottom: 16, background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 10, color: '#9a3412' }}>{error}</div>}
     {message && <div style={{ padding: 12, marginBottom: 16, background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: 10, color: '#047857' }}>{message}</div>}
