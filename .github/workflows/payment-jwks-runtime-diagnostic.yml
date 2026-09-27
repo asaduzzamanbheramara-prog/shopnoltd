@@ -8,11 +8,19 @@ jobs:
     runs-on: [self-hosted, linux]
     timeout-minutes: 10
     steps:
-      - name: Diagnose live payment-service to Keycloak JWKS path
+      - name: Checkout GitHub main source
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+      - name: Reconcile source-owned Keycloak NetworkPolicy and verify JWKS
         shell: bash
         run: |
           set +e
-          echo '===== PAYMENT SERVICE RUNTIME CONNECTIVITY DIAGNOSTIC ====='
+          echo '===== SOURCE-OWNED KEYCLOAK POLICY RECONCILIATION ====='
+          grep -A8 -B2 'name: shopno-payments' k8s/services/keycloak/networkpolicy.yaml
+          kubectl --request-timeout=30s apply -f k8s/services/keycloak/networkpolicy.yaml
+          kubectl --request-timeout=30s -n shopno-identity get networkpolicy keycloak -o yaml | grep -A8 -B2 'name: shopno-payments'
           payment_pod="$(kubectl --request-timeout=30s -n shopno-payments get pod -l app.kubernetes.io/name=payment-service -o jsonpath='{.items[0].metadata.name}')"
           keycloak_pod="$(kubectl --request-timeout=30s -n shopno-identity get pod -l app.kubernetes.io/name=keycloak -o jsonpath='{.items[0].metadata.name}')"
           keycloak_ip="$(kubectl --request-timeout=30s -n shopno-identity get pod "$keycloak_pod" -o jsonpath='{.status.podIP}')"
@@ -21,31 +29,9 @@ jobs:
           echo "keycloak_pod=$keycloak_pod"
           echo "keycloak_ip=$keycloak_ip"
           echo "keycloak_service_ip=$keycloak_svc_ip"
-          echo '--- Keycloak pod status ---'
-          kubectl --request-timeout=30s -n shopno-identity get pod "$keycloak_pod" -o wide
-          kubectl --request-timeout=30s -n shopno-identity get pod "$keycloak_pod" -o jsonpath='{range .status.containerStatuses[*]}container={.name} ready={.ready} restartCount={.restartCount} state={.state} lastState={.lastState}{"\n"}{end}'
-          echo '--- Keycloak service/endpoints ---'
-          kubectl --request-timeout=30s -n shopno-identity get service keycloak -o wide
-          kubectl --request-timeout=30s -n shopno-identity get endpoints keycloak -o wide
-          echo '--- Keycloak NetworkPolicy ---'
-          kubectl --request-timeout=30s -n shopno-identity get networkpolicy -o yaml
-          echo '--- Keycloak container ports ---'
-          kubectl --request-timeout=30s -n shopno-identity get pod "$keycloak_pod" -o jsonpath='{range .spec.containers[*]}container={.name} ports={.ports}{"\n"}{end}'
-          echo '--- Keycloak recent logs ---'
-          kubectl --request-timeout=30s -n shopno-identity logs "$keycloak_pod" --tail=80 --timestamps
-          echo '--- Keycloak listening sockets ---'
-          kubectl --request-timeout=30s -n shopno-identity exec "$keycloak_pod" -- sh -c 'command -v ss >/dev/null 2>&1 && ss -lnt || cat /proc/net/tcp'
-          echo '--- Payment NetworkPolicy ---'
-          kubectl --request-timeout=30s -n shopno-payments get networkpolicy payment-service -o yaml
-          echo '--- Direct pod-IP and Service-IP TCP tests from payment-service ---'
-          kubectl --request-timeout=30s -n shopno-payments exec "$payment_pod" -- python -c "import socket; targets=[('$keycloak_ip',8080),('$keycloak_svc_ip',80)]; [print('TCP_'+h+'_'+str(p)+'='+('OPEN' if (lambda s:(s.settimeout(5),s.connect((h,p)),s.close(),True)[-1])(socket.socket()) else 'OPEN')) for h,p in targets]"
-          echo '--- Direct pod-IP HTTP test from payment-service ---'
+          sleep 3
           kubectl --request-timeout=30s -n shopno-payments exec "$payment_pod" -- python -c "import urllib.request; u='http://$keycloak_ip:8080/realms/shopnoltd/protocol/openid-connect/certs'; r=urllib.request.urlopen(u,timeout=8); print('DIRECT_POD_JWKS_STATUS='+str(r.status)); print('DIRECT_POD_JWKS_BYTES='+str(len(r.read())))"
-          echo '--- Service-IP HTTP test from payment-service ---'
           kubectl --request-timeout=30s -n shopno-payments exec "$payment_pod" -- python -c "import urllib.request; u='http://$keycloak_svc_ip:80/realms/shopnoltd/protocol/openid-connect/certs'; r=urllib.request.urlopen(u,timeout=8); print('SERVICE_IP_JWKS_STATUS='+str(r.status)); print('SERVICE_IP_JWKS_BYTES='+str(len(r.read())))"
-          echo '--- DNS-name HTTP test from payment-service ---'
           kubectl --request-timeout=30s -n shopno-payments exec "$payment_pod" -- python -c "import urllib.request; u='http://keycloak.shopno-identity.svc.cluster.local/realms/shopnoltd/protocol/openid-connect/certs'; r=urllib.request.urlopen(u,timeout=8); print('JWKS_HTTP_STATUS='+str(r.status)); print('JWKS_BYTES='+str(len(r.read())))"
-          echo '--- Payment service readiness ---'
           kubectl --request-timeout=30s -n shopno-payments exec "$payment_pod" -- python -c "import urllib.request; r=urllib.request.urlopen('http://127.0.0.1:8080/readyz',timeout=5); print('PAYMENT_READYZ='+str(r.status))"
-          echo '--- Invalid-token admin endpoint contract ---'
           kubectl --request-timeout=30s -n shopno-payments exec "$payment_pod" -- python -c "import http.client; c=http.client.HTTPConnection('127.0.0.1',8080,timeout=5); c.request('GET','/api/v1/payment-accounts/admin',headers={'Authorization':'Bearer invalid'}); r=c.getresponse(); print('ADMIN_INVALID_TOKEN_STATUS='+str(r.status)); print('ADMIN_INVALID_TOKEN_BODY='+r.read(500).decode(errors='replace'))"
