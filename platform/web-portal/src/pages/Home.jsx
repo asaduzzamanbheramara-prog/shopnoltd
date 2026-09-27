@@ -82,6 +82,13 @@ export default function Home() {
     <PreviewSection title="Downloads" description="Install the official Shopnoltd applications on Windows, Linux, macOS or Android." items={SERVICES.filter(service => service.category === 'Downloads')} limit={3} href="/downloads" />
     <PreviewSection title="Business applications" description="Create HR, POS, POS Billing System or ERP applications through the existing website and domain workflow." items={BUSINESS_SERVICES} limit={4} href="/services" />
     <PreviewSection title="Connected platforms" description="Connect supported external platforms through authorized integrations. External availability depends on the provider/API connection." items={CONNECTED_PLATFORMS} limit={6} />
+    <section style={{ marginTop: 52 }}>
+      <div style={{ marginBottom: 18 }}><h2 style={{ marginBottom: 6 }}>Profiles & Interior</h2><p style={{ color: '#64748b', margin: 0, lineHeight: 1.6 }}>Share professional background, business capability and the Shopno Interior Design & Decoration portfolio from two dedicated public profile links.</p></div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(260px,1fr))', gap: 16 }}>
+        <article style={{ padding: 22, background: 'white', border: '1px solid #e2e8f0', borderRadius: 16, boxShadow: '0 3px 12px rgba(15,23,42,.06)' }}><div style={{ fontSize: 34 }}>📊</div><h3>Data Management & Research</h3><p style={{ color: '#64748b', lineHeight: 1.55 }}>Statistics, databases, data management, survey systems, ETL, analysis and research experience.</p><Link to="/profile/data-management" style={{ color: '#0369a1', fontWeight: 800 }}>View profile & CV →</Link></article>
+        <article style={{ padding: 22, background: 'white', border: '1px solid #e2e8f0', borderRadius: 16, boxShadow: '0 3px 12px rgba(15,23,42,.06)' }}><div style={{ fontSize: 34 }}>🏠</div><h3>Business & Interior Design</h3><p style={{ color: '#64748b', lineHeight: 1.55 }}>Shopno Interior Design & Decoration services for residential, corporate, retail and commercial spaces.</p><Link to="/profile/interior-business" style={{ color: '#0369a1', fontWeight: 800 }}>View profile & portfolio →</Link></article>
+      </div>
+    </section>
     <PaymentAccounts />
     {isAdmin && <PreviewSection title="Administration" description="Privileged controls for authorized platform administrators." items={ADMIN_SERVICES} limit={6} admin />}
   </main>

@@ -8,6 +8,7 @@ const SERVICE = (icon, name, description, url, category = 'Platform') => ({
 
 export const SERVICES = [
   SERVICE('🌐', 'Domain Registration', "Register a real domain through Shopnoltd's registrar service.", '/domain-registration', 'Platform'),
+  SERVICE('🏠', 'Interior Design & Decoration', 'Residential, corporate, retail and commercial interior design, renovation and decoration services from the Shopno interior business.', '/profile/interior-business', 'Business'),
   SERVICE('🧰', 'ShopnoltdToolbox', 'KoboToolbox-powered data collection, forms and field workflows.', 'https://kobo.shopnoltd.dpdns.org', 'Productivity'),
   SERVICE('💬', 'Messaging & Support', 'Customer conversations, team messaging, direct/group chat and support workflows.', 'https://chat.shopnoltd.dpdns.org', 'Communication'),
   SERVICE('📞', 'Shopnoltd Phone', 'Business phone system powered by 3CX for team calling, communication and meetings.', '/phone', 'Communication'),

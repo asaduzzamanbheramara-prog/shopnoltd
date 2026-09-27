@@ -36,6 +36,8 @@ import WorkHub, { WorkDetail } from './pages/WorkHub'
 import AccountHub from './pages/AccountHub'
 import Discover from './pages/Discover'
 import WebsiteBuilder from './pages/WebsiteBuilder'
+import Profiles from './pages/Profiles'
+import PublicProfiles from './pages/PublicProfiles'
 import { isPlatformAdmin } from './lib/jwt'
 
 if ('serviceWorker' in navigator) {
@@ -58,7 +60,7 @@ function InstallPrompt() {
   return <button type="button" onClick={async () => { await prompt.prompt(); setPrompt(null) }} style={{ color: 'white', background: 'rgba(255,255,255,0.14)', border: '1px solid rgba(255,255,255,0.5)', borderRadius: 6, padding: '5px 12px', cursor: 'pointer', whiteSpace: 'nowrap' }}>Install Shopnoltd</button>
 }
 
-const PUBLIC_LINKS = [['Pricing', '/pricing'], ['VPN', '/vpn'], ['Create Website', '/create-website'], ['Discover', '/discover'], ['Feed', '/feed'], ['Work', '/work'], ['Blog', '/blog'], ['AI', '/ai'], ['Services', '/services'], ['Phone', '/phone'], ['Domains', '/domain-registration'], ['Downloads', '/downloads'], ['Android Cloud', '/android-cloud']]
+const PUBLIC_LINKS = [['Pricing', '/pricing'], ['Profiles', '/profiles'], ['Interior', '/profile/interior-business'], ['VPN', '/vpn'], ['Create Website', '/create-website'], ['Discover', '/discover'], ['Feed', '/feed'], ['Work', '/work'], ['Blog', '/blog'], ['AI', '/ai'], ['Services', '/services'], ['Phone', '/phone'], ['Domains', '/domain-registration'], ['Downloads', '/downloads'], ['Android Cloud', '/android-cloud']]
 const STANDALONE_APP_PATHS = new Set(['/android-cloud'])
 
 function Nav() {
@@ -91,6 +93,7 @@ function App() {
     <Route path="/" element={<Home />} /><Route path="/pricing" element={<Pricing />} /><Route path="/create-website" element={<ProtectedRoute><WebsiteBuilder /></ProtectedRoute>} /><Route path="/discover" element={<ProtectedRoute><Discover /></ProtectedRoute>} /><Route path="/feed" element={<ProtectedRoute><SocialFeed /></ProtectedRoute>} /><Route path="/post/:id" element={<ProtectedRoute><PostDetail /></ProtectedRoute>} />
     <Route path="/work" element={<ProtectedRoute><WorkHub /></ProtectedRoute>} /><Route path="/work/:id" element={<ProtectedRoute><WorkDetail /></ProtectedRoute>} /><Route path="/create-work" element={<ProtectedRoute><WorkHub /></ProtectedRoute>} /><Route path="/my-created-work" element={<ProtectedRoute><WorkHub /></ProtectedRoute>} /><Route path="/my-active-work" element={<ProtectedRoute><WorkHub /></ProtectedRoute>} /><Route path="/my-submission" element={<ProtectedRoute><WorkHub /></ProtectedRoute>} /><Route path="/work-review" element={<ProtectedRoute><WorkHub /></ProtectedRoute>} />
     <Route path="/account" element={<ProtectedRoute><AccountHub /></ProtectedRoute>} /><Route path="/notifications" element={<ProtectedRoute><AccountHub /></ProtectedRoute>} />
+    <Route path="/profiles" element={<Profiles />} /><Route path="/profile/:type" element={<PublicProfiles />} />
     <Route path="/blog" element={<Blog />} /><Route path="/blog/:slug" element={<BlogPost />} /><Route path="/plugins" element={<Plugins />} /><Route path="/services" element={<Services />} /><Route path="/vpn" element={<ProtectedRoute><VPN /></ProtectedRoute>} /><Route path="/downloads" element={<Downloads />} /><Route path="/phone" element={<Phone />} /><Route path="/domain-registration" element={<DomainRegistration />} />
     <Route path="/login" element={<Login />} /><Route path="/register" element={<Register />} /><Route path="/callback" element={<Callback />} /><Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} /><Route path="/ai" element={<ProtectedRoute><AIWorkspace /></ProtectedRoute>} /><Route path="/ai/connections" element={<ProtectedRoute><AIConnections /></ProtectedRoute>} /><Route path="/my-blog" element={<ProtectedRoute><MyBlog /></ProtectedRoute>} /><Route path="/domain-management" element={<ProtectedRoute><DomainManagement /></ProtectedRoute>} />
     <Route path="/billing" element={<ProtectedRoute><FinancialCenter view="billing" /></ProtectedRoute>} /><Route path="/subscriptions" element={<ProtectedRoute><FinancialCenter view="subscriptions" /></ProtectedRoute>} /><Route path="/invoices" element={<ProtectedRoute><FinancialCenter view="invoices" /></ProtectedRoute>} /><Route path="/checkout" element={<ProtectedRoute><CheckoutCurrencySafe /></ProtectedRoute>} /><Route path="/checkout/complete" element={<ProtectedRoute><CheckoutComplete /></ProtectedRoute>} /><Route path="/payments" element={<ProtectedRoute><FinancialCenter view="payments" /></ProtectedRoute>} /><Route path="/transactions" element={<ProtectedRoute><FinancialCenter view="transactions" /></ProtectedRoute>} /><Route path="/wallet" element={<ProtectedRoute><FinancialCenter view="wallet" /></ProtectedRoute>} /><Route path="/wallet/ledger" element={<ProtectedRoute><FinancialCenter view="ledger" /></ProtectedRoute>} /><Route path="/exchange" element={<ProtectedRoute><FinancialCenter view="exchange" /></ProtectedRoute>} /><Route path="/reports" element={<ProtectedRoute><FinancialCenter view="reports" /></ProtectedRoute>} />
