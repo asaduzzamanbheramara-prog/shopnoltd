@@ -32,7 +32,7 @@ def workbook_rows(path):
         relroot=ET.fromstring(z.read('xl/_rels/workbook.xml.rels'))
         relmap={r.attrib['Id']:r.attrib['Target'] for r in relroot}
         for sh in wb.find(NS+'sheets'):
-            name=sh.attrib['name']; target=relmap[sh.attrib['{'+REL+'}id']]
+            name=sh.attrib['name']; target=relmap[sh.attrib[REL+'id']]
             if not target.startswith('xl/'): target='xl/'+target.lstrip('/')
             root=ET.fromstring(z.read(target))
             rows=[]
