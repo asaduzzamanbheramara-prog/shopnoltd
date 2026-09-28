@@ -47,6 +47,11 @@ spec:
             - secretRef:
                 name: api-service-secret
           env:
+            - name: SHOPNOLTD_INTERNAL_AUTOMATION_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: shopnoltd-automation-secret
+                  key: token
             - name: POD_NAME
               valueFrom: { fieldRef: { fieldPath: metadata.name } }
             - name: POD_NAMESPACE

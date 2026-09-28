@@ -48,6 +48,11 @@ spec:
             - secretRef:
                 name: n8n-secret
           env:
+            - name: SHOPNOLTD_INTERNAL_AUTOMATION_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: shopnoltd-automation-secret
+                  key: token
             - name: DB_TYPE
               value: "postgresdb"
             - name: DB_POSTGRESDB_HOST
