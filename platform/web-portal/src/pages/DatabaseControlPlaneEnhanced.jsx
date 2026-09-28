@@ -17,7 +17,7 @@ const SERVICES = [
   ['mail / meeting / storage', 'Application metadata', 'application'],
   ['audit-service', 'Append-only audit store', 'readonly'],
 ]
-const MODES = [['add', 'Add'], ['update', 'Update'], ['upsert', 'Upsert'], ['merge', 'Merge'], ['delete', 'Delete'], ['replace_rows', 'Replace rows']]
+const MODES = [['add', 'Add'], ['update', 'Update'], ['upsert', 'Upsert'], ['merge', 'Merge'], ['replace', 'Replace matching'], ['delete', 'Delete'], ['replace_rows', 'Replace rows']]
 
 function headers(extra = {}) { const t = localStorage.getItem('shopno_token'); return { Accept: 'application/json', ...(t ? { Authorization: `Bearer ${t}` } : {}), ...extra } }
 async function api(path, options = {}) { const r = await fetch(`${API}${path}`, { ...options, headers: headers(options.headers || {}) }); const text = await r.text(); let data = null; try { data = text ? JSON.parse(text) : null } catch { data = text }; if (!r.ok) throw new Error(data?.detail || data?.message || text || `HTTP ${r.status}`); return data }
