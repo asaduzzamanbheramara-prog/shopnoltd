@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Download } from 'lucide-react'
 
 const STORAGE_API = import.meta.env.VITE_STORAGE_API_URL || 'https://storage-service.shopnoltd.dpdns.org'
 const API_PATH = '/api/v1/profile-videos'
@@ -37,15 +38,17 @@ export default function ProfileVideoGallery({ profileSlug, variant = 'gallery', 
 
   return (
     <section className={`pvg ${variant === 'hero' ? 'pvg-hero' : ''} ${className}`} aria-label="Profile videos">
-      <style>{`.pvg { width: 100%; box-sizing: border-box; } .pvg-heading { margin-bottom: 20px; } .pvg-kicker { font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: .08em; margin: 0 0 6px; opacity: .72; } .pvg-heading h2 { font-family: 'Source Serif 4', Georgia, serif; font-size: 28px; margin: 0; } .pvg-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 22px; } .pvg-card { overflow: hidden; border-radius: 7px; background: rgba(255,255,255,.96); color: #18202a; border: 1px solid rgba(0,0,0,.1); } .pvg-video { display: block; width: 100%; aspect-ratio: 16/9; border: 0; background: #0e1319; object-fit: contain; } .pvg-copy { padding: 14px 16px 17px; } .pvg-copy h3 { margin: 0 0 6px; font-size: 17px; } .pvg-copy p { margin: 0; line-height: 1.55; font-size: 14px; color: #5b6472; } .pvg-hero .pvg-grid { display: block; } .pvg-hero .pvg-card { background: rgba(26,19,16,.95); color: #efe8db; border-color: rgba(239,232,219,.15); } .pvg-hero .pvg-copy { padding: 12px 14px 14px; } .pvg-hero .pvg-copy p { color: rgba(239,232,219,.75); } @media (max-width: 640px) { .pvg-grid { grid-template-columns: 1fr; } }`}</style>
+      <style>{`.pvg { width: 100%; box-sizing: border-box; } .pvg-heading { margin-bottom: 20px; } .pvg-kicker { font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: .08em; margin: 0 0 6px; opacity: .72; } .pvg-heading h2 { font-family: 'Source Serif 4', Georgia, serif; font-size: 28px; margin: 0; } .pvg-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 22px; } .pvg-card { overflow: hidden; border-radius: 7px; background: rgba(255,255,255,.96); color: #18202a; border: 1px solid rgba(0,0,0,.1); } .pvg-video { display: block; width: 100%; aspect-ratio: 16/9; border: 0; background: #0e1319; object-fit: contain; } .pvg-copy { padding: 14px 16px 17px; } .pvg-copy h3 { margin: 0 0 6px; font-size: 17px; } .pvg-copy p { margin: 0; line-height: 1.55; font-size: 14px; color: #5b6472; } .pvg-download { display:inline-flex; align-items:center; gap:6px; flex:none; padding:7px 10px; border-radius:8px; background:#0f172a; color:#fff; text-decoration:none; font-size:13px; font-weight:700; } .pvg-hero .pvg-grid { display: block; } .pvg-hero .pvg-card { background: rgba(26,19,16,.95); color: #efe8db; border-color: rgba(239,232,219,.15); } .pvg-hero .pvg-copy { padding: 12px 14px 14px; } .pvg-hero .pvg-copy p { color: rgba(239,232,219,.75); } @media (max-width: 640px) { .pvg-grid { grid-template-columns: 1fr; } }`}</style>
       {variant !== 'hero' && <div className="pvg-heading"><p className="pvg-kicker">VIDEO GALLERY</p><h2>Selected work &amp; walkthroughs</h2></div>}
       <div className="pvg-grid">
         {videos.map(video => (
           <article className="pvg-card" key={video.id}>
             <Embed video={video} />
             <div className="pvg-copy">
-              <h3>{video.title}</h3>
-              {video.description && <p>{video.description}</p>}
+              <div style={{display:'flex',justifyContent:'space-between',gap:12,alignItems:'flex-start'}}>
+                <div><h3>{video.title}</h3>{video.description && <p>{video.description}</p>}</div>
+                {video.source_type === 'upload' && <a className="pvg-download" href={mediaUrl(video.download_url || video.stream_url?.replace('/stream/','/download/'))} download><Download size={15} /> Download</a>}
+              </div>
             </div>
           </article>
         ))}
