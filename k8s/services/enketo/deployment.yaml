@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
         - name: enketo
-          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/enketo:main
+          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/enketo:8dbf04a89c757dda12d045bf8ad869b36e2acf16
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
