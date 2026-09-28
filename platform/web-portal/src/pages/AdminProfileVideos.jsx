@@ -67,8 +67,14 @@ export default function AdminProfileVideos() {
       setFile(null); setForm({ title: '', description: '' }); setProgress(100); setMessage('Video uploaded successfully. It is published according to the storage-service default; verify the Published status below.'); await load()
     } catch (e) {
       setError(`Upload failed: ${e.message}`)
-      if (uploadId) { try { await api(`/uploads/${encodeURIComponent(uploadId)}`, { method: 'DELETE' }) } catch {}
-    } finally { setBusy(false) }
+      if (uploadId) {
+        try {
+          await api(`/uploads/${encodeURIComponent(uploadId)}`, { method: 'DELETE' })
+        } catch (_) {}
+      }
+    } finally {
+      setBusy(false)
+    }
   }
 
   async function addEmbed() {
