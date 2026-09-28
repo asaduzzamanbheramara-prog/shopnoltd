@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'platform/**'
+      - 'enketo/**'
       - 'billing-engine/**'
       - 'services/vpn-service/**'
       - 'shared/**'
@@ -12,6 +13,7 @@ on:
   pull_request:
     paths:
       - 'platform/**'
+      - 'enketo/**'
       - 'billing-engine/**'
       - 'services/vpn-service/**'
       - 'shared/**'
@@ -97,6 +99,7 @@ jobs:
             'session-manager': ('platform/session-manager/Dockerfile', '.'),
             'vpn-service': ('services/vpn-service/Dockerfile', 'services/vpn-service'),
             'billing-engine': ('billing-engine/Dockerfile', 'billing-engine'),
+            'enketo': ('enketo/Dockerfile', 'enketo'),
           }
 
           before = os.environ.get('BEFORE', '')
