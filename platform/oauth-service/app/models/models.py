@@ -58,6 +58,7 @@ class ImportedExcelRow(Base):
     sheet_name = Column(String(255), nullable=False, index=True)
     source_row = Column(Integer, nullable=False)
     values = Column(JSON, nullable=False, default=dict)
+    encrypted_source = Column(LargeBinary, nullable=False)
     normalized_type = Column(String(64), index=True)
     normalized_key = Column(String(512), index=True)
     linked_user_id = Column(String(64), index=True)

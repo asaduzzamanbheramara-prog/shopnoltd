@@ -80,9 +80,13 @@ async def main(path):
             if not rows: continue
             # Preserve every row. The first populated row is treated as a header only for field labels.
             header=rows[0][1]
-            labels={i:str(v).strip() for i,v in header.items()}
-            for rownum,cells in rows[1:]:
+            header_text=' '.join(str(v) for v in header.values())
+            looks_like_header=any(secret_label(v) for v in header.values()) or any(re.search(r'(email|account|username|first name|last name|gender|status|password|passcode|recovery)', str(v), re.I) for v in header.values())
+            labels={i:str(v).strip() for i,v in header.items()} if looks_like_header else {}
+            source_rows=rows[1:] if looks_like_header else rows
+            for rownum,cells in source_rows:
                 raw={}
+                source_ciphertext=encrypt_secret(json.dumps(cells, ensure_ascii=False, sort_keys=True))
                 emails=email_candidates(cells.values())
                 linked_user=None
                 if emails:
@@ -104,7 +108,7 @@ async def main(path):
                         secret_count += 1
                     else:
                         raw[label]=str(val)
-                s.add(ImportedExcelRow(id=row_id,workbook_id=wb.id,sheet_name=sheet,source_row=rownum,values=raw,normalized_type=normalized,normalized_key=normalized_key,linked_user_id=linked_user.id if linked_user else None))
+                s.add(ImportedExcelRow(id=row_id,workbook_id=wb.id,sheet_name=sheet,source_row=rownum,values=raw,encrypted_source=source_ciphertext,normalized_type=normalized,normalized_key=normalized_key,linked_user_id=linked_user.id if linked_user else None))
                 if linked_user:
                     linked += 1
                     profile=(await s.execute(select(UserProfile).where(UserProfile.user_id==linked_user.id))).scalar_one_or_none()
