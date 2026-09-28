@@ -96,7 +96,7 @@ function TypedField({ field, value, onChange, onComplete }) {
     },
     onBlur: () => { if (numeric && String(value ?? '') !== '') onComplete() },
     style: styles.input,
-    inputMode: numeric ? (/(INT|INTEGER)/.test(sql) ? 'numeric' : 'decimal') : undefined,
+    inputMode: numeric ? (/\b(INT|INTEGER)\b/.test(sql) ? 'numeric' : 'decimal') : undefined,
     maxLength: field.max_length || undefined,
   }
   if (boolean) return <label>{name}<span style={styles.muted}>Boolean</span><input type="checkbox" checked={value === true || value === 'true' || value === 1 || value === '1'} onChange={e => onChange(e.target.checked)} /></label>
