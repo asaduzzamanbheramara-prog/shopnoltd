@@ -20,9 +20,7 @@ images:
   newTag: 470a010229144b4a1df84bb80a7957995843a90a
 
 labels:
-- includeSelectors: true
-  pairs:
-    app.kubernetes.io/name: code-server
 - includeSelectors: false
   pairs:
+    app.kubernetes.io/name: code-server
     app.kubernetes.io/part-of: shopnoltd
