@@ -13,7 +13,7 @@ data:
   ENV: "production"
   KEYCLOAK_CLIENT_ID: "kobotoolbox"
   KEYCLOAK_ISSUER: "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
-  KOBOCAT_URL: "https://kobotoolbox.shopnoltd.dpdns.org"
+  KOBOCAT_URL: "https://kobo.shopnoltd.dpdns.org"
   KOBOFORM_URL: "https://kobo.shopnoltd.dpdns.org"
   ENKETO_URL: "https://enketo.shopnoltd.dpdns.org"
   ENKETO_INTERNAL_URL: "http://enketo.shopno-apps.svc.cluster.local:8005"
