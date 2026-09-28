@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useEffect } from 'react'
 import { qrUrl, shareProfile } from './profileShare'
+import ProfileVideoGallery from './ProfileVideoGallery'
 
 const RECORD_SURVEYS = [
   { n: '500,000', label: 'Retail Outlet Census 2015 — Unilever' },
@@ -145,12 +146,7 @@ export default function DataManagementProfile() {
         </div>
       </div>
 
-      <div className="dm-video">
-        {/* Replace this block with a real <video> or embed once a survey walkthrough is recorded and hosted
-            (e.g. uploaded to your own storage-service or Owncast). Keeping it as a clear placeholder rather
-            than a broken embed. */}
-        <div className="dm-video-frame">Survey methodology walkthrough — video not yet uploaded</div>
-      </div>
+      <ProfileVideoGallery profileSlug="data-management" className="dm-video" />
 
       <div className="dm-contact">
         Md. Asaduzzaman · +880 1911866493 · asaduzzaman.bheramara@gmail.com · Dhaka, Bangladesh
