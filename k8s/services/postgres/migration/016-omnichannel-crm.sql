@@ -187,6 +187,11 @@ CREATE TABLE IF NOT EXISTS platform_capabilities (
   PRIMARY KEY (platform, action)
 );
 
+GRANT USAGE ON SCHEMA public TO shopno;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO shopno;
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public
+  GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO shopno;
+
 INSERT INTO platform_capabilities(platform, action, availability, requires_oauth, notes) VALUES
 ('whatsapp','send_message','supported',TRUE,'WhatsApp Business/Cloud API and approved messaging rules apply'),
 ('whatsapp','receive_message','supported',TRUE,'Webhook subscription required'),
