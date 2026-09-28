@@ -18,6 +18,7 @@ class InferIn(BaseModel):
     max_tokens: int = 512
     temperature: float = 0.7
     attachments: list[InferAttachment] = Field(default_factory=list)
+    history: list[dict] = Field(default_factory=list, description="Prior chat messages for conversational continuity.")
 
 
 class InferOut(BaseModel):
