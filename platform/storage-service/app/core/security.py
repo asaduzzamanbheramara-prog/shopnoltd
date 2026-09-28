@@ -4,6 +4,7 @@ from shopno_core.security.jwt import JWTError, jwt
 from app.core.config import settings
 
 _jwks_cache = None
+ACCEPTED_AUDIENCES = ("storage-service", "api-service")
 
 
 async def _jwks():
@@ -22,19 +23,26 @@ async def verify_token(token: str) -> dict:
         h = jwt.get_unverified_header(token)
         keys = await _jwks()
         key = next(k for k in keys["keys"] if k["kid"] == h["kid"])
-        return jwt.decode(
-            token,
-            key,
-            algorithms=[key["alg"]],
-            audience=settings.keycloak_audience,
-            options={"verify_aud": True},
-        )
+        last_error = None
+        for audience in ACCEPTED_AUDIENCES:
+            try:
+                return jwt.decode(
+                    token,
+                    key,
+                    algorithms=[key["alg"]],
+                    audience=audience,
+                    options={"verify_aud": True},
+                )
+            except JWTError as exc:
+                last_error = exc
+        raise ValueError(f"invalid token audience: {last_error}")
     except (JWTError, StopIteration) as e:
         raise ValueError(f"invalid token: {e}") from e
 
 
 async def verify_token_admin(token: str) -> dict:
     u = await verify_token(token)
-    if "admin" not in u.get("roles", []):
+    roles = set(u.get("roles", [])) | set(u.get("realm_access", {}).get("roles", []))
+    if not roles.intersection({"admin", "platform_admin"}):
         raise PermissionError("admin only")
     return u
