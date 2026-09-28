@@ -1,6 +1,7 @@
 import { Navigate, useLocation } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { tryRefresh } from '../lib/tokenRefresh'
+import { platformApi } from '../lib/platformApi'
 
 function tokenExpired(token) {
   try {
@@ -26,6 +27,9 @@ export default function ProtectedRoute({ children }) {
       }
 
       if (!tokenExpired(token)) {
+        if (sessionStorage.getItem('shopno_profile_provisioned') !== '1') {
+          try { await platformApi.me(); sessionStorage.setItem('shopno_profile_provisioned', '1') } catch (error) { console.warn('Shopnoltd profile provisioning check failed:', error) }
+        }
         if (active) setStatus('authenticated')
         return
       }
@@ -33,6 +37,7 @@ export default function ProtectedRoute({ children }) {
       const refreshed = await tryRefresh()
       if (active) {
         if (refreshed) {
+          try { await platformApi.me(); sessionStorage.setItem('shopno_profile_provisioned', '1') } catch (error) { console.warn('Shopnoltd profile provisioning check failed:', error) }
           setStatus('authenticated')
         } else {
           localStorage.removeItem('shopno_token')
