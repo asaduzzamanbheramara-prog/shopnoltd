@@ -2,24 +2,16 @@ import Widget from 'enketo-core/src/js/widget';
 
 const APPEARANCE_PREFIX = 'shopnoltd-auto-';
 const ALLOWED_KEYS = new Set([
-    'Backspace',
-    'Delete',
-    'ArrowLeft',
-    'ArrowRight',
-    'ArrowUp',
-    'ArrowDown',
-    'Home',
-    'End',
-    'Tab',
-    'Enter',
-    'Escape',
+    'Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown',
+    'Home', 'End', 'Tab', 'Enter', 'Escape',
 ]);
 
 function beep() {
     try {
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         if (!AudioContext) return;
-        const context = window.__shopnoltdBeepContext || (window.__shopnoltdBeepContext = new AudioContext());
+        const context = window.__shopnoltdBeepContext ||
+            (window.__shopnoltdBeepContext = new AudioContext());
         if (context.state === 'suspended') context.resume().catch(() => {});
         const oscillator = context.createOscillator();
         const gain = context.createGain();
@@ -33,7 +25,7 @@ function beep() {
         oscillator.start();
         oscillator.stop(context.currentTime + 0.08);
     } catch {
-        // Audio is an enhancement; never block data entry when the browser denies audio.
+        // Audio is optional and must never block entry.
     }
 }
 
@@ -46,17 +38,29 @@ function visible(element) {
     const question = element.closest('.question');
     if (!question || question.classList.contains('disabled')) return false;
     const style = window.getComputedStyle(question);
-    return style.display !== 'none' && style.visibility !== 'hidden' && question.getClientRects().length > 0;
+    return style.display !== 'none' &&
+        style.visibility !== 'hidden' &&
+        question.getClientRects().length > 0;
 }
 
-function findInputByName(form, name) {
-    return [...form.querySelectorAll('input:not(.ignore), textarea:not(.ignore), select:not(.ignore)')]
-        .find((candidate) => shortName(candidate) === name && visible(candidate));
+function formFor(input) {
+    return input?.closest('form.or') || document.querySelector('form.or');
 }
 
-function nextQuestionInput(question) {
-    const questions = [...question.closest('form.or').querySelectorAll('.question')];
+function findLiveInput(form, name) {
+    if (!form || !name) return null;
+    return [...form.querySelectorAll(
+        'input:not(.ignore):not([type="hidden"]), textarea:not(.ignore), select:not(.ignore)'
+    )].find(candidate => shortName(candidate) === name && visible(candidate)) || null;
+}
+
+function nextQuestionInput(input) {
+    const form = formFor(input);
+    const question = input?.closest('.question');
+    if (!form || !question) return null;
+    const questions = [...form.querySelectorAll('.question')];
     const index = questions.indexOf(question);
+
     for (const candidateQuestion of questions.slice(index + 1)) {
         const candidate = candidateQuestion.querySelector(
             'input:not(.ignore):not([type="hidden"]), textarea:not(.ignore), select:not(.ignore)'
@@ -64,6 +68,30 @@ function nextQuestionInput(question) {
         if (visible(candidate)) return candidate;
     }
     return null;
+}
+
+function focusLive(input, attempts = 0) {
+    if (!input || attempts > 8) return;
+    const name = shortName(input);
+    const form = formFor(input);
+    const live = findLiveInput(form, name) || input;
+
+    window.setTimeout(() => {
+        const target = findLiveInput(form, name) || live;
+        if (!target || !visible(target)) return;
+        try {
+            target.focus({ preventScroll: false });
+            if (typeof target.select === 'function') target.select();
+        } catch {
+            try { target.focus(); } catch { /* ignore focus failures */ }
+        }
+
+        // Android/IME and Enketo can replace the input on the same turn.
+        // Re-assert focus only when another element has taken it.
+        if (document.activeElement !== target) {
+            window.setTimeout(() => focusLive(target, attempts + 1), 25);
+        }
+    }, attempts === 0 ? 0 : 25);
 }
 
 export default class ShopnoltdAutoAdvance extends Widget {
@@ -77,13 +105,18 @@ export default class ShopnoltdAutoAdvance extends Widget {
         );
         if (!this.input) return;
 
-        const appearance = this.props.appearances.find((value) => value.startsWith(APPEARANCE_PREFIX));
-        this.requiredLength = Number(appearance?.substring(APPEARANCE_PREFIX.length)) || 1;
+        const appearance = this.props.appearances.find(value =>
+            value.startsWith(APPEARANCE_PREFIX)
+        );
+        this.requiredLength = Number(
+            appearance?.substring(APPEARANCE_PREFIX.length)
+        ) || 1;
         this.input.maxLength = this.requiredLength;
         this.input.setAttribute('inputmode', 'numeric');
         this.input.setAttribute('autocomplete', 'off');
+        this.advanceGeneration = 0;
 
-        this.onKeyDown = (event) => {
+        this.onKeyDown = event => {
             if (
                 event.ctrlKey ||
                 event.metaKey ||
@@ -93,37 +126,56 @@ export default class ShopnoltdAutoAdvance extends Widget {
             if (!/^[0-9]$/.test(event.key)) event.preventDefault();
         };
 
-        this.onInput = () => {
-            const digits = this.input.value.replace(/[^0-9]/g, '').slice(0, this.requiredLength);
-            if (this.input.value !== digits) this.input.value = digits;
+        this.onInput = event => {
+            const source = event.currentTarget || this.input;
+            if (!source) return;
+
+            const digits = source.value.replace(/[^0-9]/g, '').slice(0, this.requiredLength);
+            if (source.value !== digits) source.value = digits;
             if (digits.length !== this.requiredLength) return;
 
-            beep();
-            const name = shortName(this.input);
-            let targetName = null;
+            // Android can emit multiple input events for one IME commit.
+            // De-duplicate completion for the same value until the user edits it.
+            if (source.dataset.shopnoltdCompletedValue === digits) return;
+            source.dataset.shopnoltdCompletedValue = digits;
 
+            beep();
+
+            const name = shortName(source);
+            let targetName = null;
             const q4a = /^(setb_)?q4a_(\d+)$/.exec(name);
             const q4b = /^(setb_)?q4b_(\d+)$/.exec(name);
+
             if (q4a && digits === '0') {
                 targetName = `${q4a[1] || ''}q4b_${q4a[2]}`;
             } else if (q4b && digits === '0') {
                 targetName = `${q4b[1] || ''}q5`;
             }
 
+            const form = formFor(source);
             const target = targetName
-                ? findInputByName(this.element.closest('form.or'), targetName)
-                : nextQuestionInput(this.question);
+                ? findLiveInput(form, targetName)
+                : nextQuestionInput(source);
 
-            if (target) {
-                window.setTimeout(() => {
-                    target.focus();
-                    if (typeof target.select === 'function') target.select();
-                }, 0);
+            if (target) focusLive(target);
+        };
+
+        this.onBeforeInput = event => {
+            const data = event.data;
+            if (data && /[^0-9]/.test(data) && !event.isComposing) {
+                event.preventDefault();
             }
         };
 
+        this.onCompositionEnd = () => {
+            // Android IMEs may commit text only after compositionend.
+            this.onInput({ currentTarget: this.input });
+        };
+
         this.input.addEventListener('keydown', this.onKeyDown);
+        this.input.addEventListener('beforeinput', this.onBeforeInput);
         this.input.addEventListener('input', this.onInput);
+        this.input.addEventListener('compositionend', this.onCompositionEnd);
     }
 
     disable() {
@@ -135,12 +187,16 @@ export default class ShopnoltdAutoAdvance extends Widget {
     }
 
     update() {
-        if (this.input) this.input.maxLength = this.requiredLength;
+        if (!this.input) return;
+        this.input.maxLength = this.requiredLength;
+        this.input.setAttribute('inputmode', 'numeric');
     }
 
     cleanup() {
         if (!this.input) return;
         this.input.removeEventListener('keydown', this.onKeyDown);
+        this.input.removeEventListener('beforeinput', this.onBeforeInput);
         this.input.removeEventListener('input', this.onInput);
+        this.input.removeEventListener('compositionend', this.onCompositionEnd);
     }
 }
