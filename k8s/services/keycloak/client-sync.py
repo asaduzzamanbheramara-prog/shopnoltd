@@ -183,8 +183,9 @@ def sync_client(token, client_id):
         client_uuid = clients[0]["id"]
         sync_api_audience_mapper(token, client_uuid)
         sync_ai_audience_mapper(token, client_uuid)
+        sync_storage_audience_mapper(token, client_uuid)
         print(f"[OK] created {client_id} client")
-        print(f"[OK] synchronized {client_id} with api-service and ai-platform JWT audiences")
+        print(f"[OK] synchronized {client_id} with api-service, ai-platform and storage-service JWT audiences")
 
 
 def main():
