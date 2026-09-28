@@ -1,0 +1,6 @@
+{
+    "chat.byokUtilityModelDefault": "mainAgent",
+    "chat.utilityModel": "anthropic/claude-fable-5-1",
+    "chat.utilitySmallModel": "anthropic/claude-fable-5",
+    "ollama-autocoder.endpoint": "http://ollama.shopno-apps.svc.cluster.local:11434/api/generate"
+}
