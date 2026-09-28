@@ -53,7 +53,7 @@ class PaymentMethod(str, enum.Enum):
 
 class AdminAuditLog(Base):
     __tablename__ = "admin_audit_log"
-    id = Column(UUID(as_uuid=True), primary_key=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     actor = Column(String(128), nullable=False, index=True)
     action = Column(String(16), nullable=False)
     table_name = Column(String(128), nullable=False, index=True)
