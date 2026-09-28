@@ -81,9 +81,14 @@ async def admin_table_export(request: Request, name: str, token: str = Depends(c
     return await proxy(request, PAYMENT, f"/api/v1/admin/tables/{name}/export", token)
 
 
-@router.api_route("/admin/data-reports/{name}/pdf", methods=["GET"])
+@router.api_route("/admin/tables/{name}/report", methods=["GET"])
 async def admin_table_report(request: Request, name: str, token: str = Depends(current_token)):
-    return await proxy(request, PAYMENT, f"/api/v1/admin/data-reports/{name}/pdf", token)
+    return await proxy(request, PAYMENT, f"/api/v1/admin/tables/{name}/report", token)
+
+# Backward-compatible alias for older portal builds.
+@router.api_route("/admin/data-reports/{name}/pdf", methods=["GET"])
+async def admin_table_report_legacy(request: Request, name: str, token: str = Depends(current_token)):
+    return await proxy(request, PAYMENT, f"/api/v1/admin/tables/{name}/report", token)
 
 
 # Blog data facade. All browser traffic stays on api.shopnoltd.dpdns.org while
