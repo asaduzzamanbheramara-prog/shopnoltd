@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { KEYCLOAK_CLIENT_ID, KEYCLOAK_REALM, KEYCLOAK_URL, REDIRECT_URI } from '../config'
+import { platformApi } from '../lib/platformApi'
 
 export default function Callback() {
   const [error, setError] = useState(null)
@@ -50,9 +51,10 @@ export default function Callback() {
         if (!response.ok || !data.access_token) throw new Error(data.error_description || data.error || 'Authentication failed.')
         return data
       })
-      .then((data) => {
+       .then(async (data) => {
         localStorage.setItem('shopno_token', data.access_token)
         if (data.refresh_token) localStorage.setItem('shopno_refresh_token', data.refresh_token)
+        try { await platformApi.me(); sessionStorage.setItem('shopno_profile_provisioned', '1') } catch (error) { console.warn('Shopnoltd profile provisioning check failed after login:', error) }
 
         const pendingDomain = sessionStorage.getItem('pending_domain')
         const next = sessionStorage.getItem('post_login_next')

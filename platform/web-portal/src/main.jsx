@@ -67,7 +67,7 @@ const STANDALONE_APP_PATHS = new Set(['/android-cloud'])
 
 function Nav() {
   const navigate = useNavigate(); const location = useLocation(); const token = localStorage.getItem('shopno_token'); const loggedIn = !!token; const isAdmin = loggedIn && isPlatformAdmin()
-  function handleLogout() { localStorage.removeItem('shopno_token'); localStorage.removeItem('shopno_refresh_token'); navigate('/') }
+  function handleLogout() { localStorage.removeItem('shopno_token'); localStorage.removeItem('shopno_refresh_token'); sessionStorage.removeItem('shopno_profile_provisioned'); navigate('/') }
   function renderPublicLink(label, path) {
     const style = { color: 'white', textDecoration: 'none', padding: '6px 2px', whiteSpace: 'nowrap', fontWeight: location.pathname === path ? 700 : 400 }
     return STANDALONE_APP_PATHS.has(path)
