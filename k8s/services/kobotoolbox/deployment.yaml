@@ -64,7 +64,7 @@ spec:
             - name: KOBOFORM_URL
               value: https://kobo.shopnoltd.dpdns.org
             - name: KOBOCAT_URL
-              value: https://kobotoolbox.shopnoltd.dpdns.org
+              value: https://kobo.shopnoltd.dpdns.org
             - name: SECURE_PROXY_SSL_HEADER
               value: HTTP_X_FORWARDED_PROTO,https
             - name: USE_X_FORWARDED_HOST

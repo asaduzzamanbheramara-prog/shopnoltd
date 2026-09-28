@@ -56,7 +56,7 @@ spec:
         - name: KOBOFORM_URL
           value: "https://kobo.shopnoltd.dpdns.org"
         - name: KOBOCAT_URL
-          value: "https://kobotoolbox.shopnoltd.dpdns.org"
+          value: "https://kobo.shopnoltd.dpdns.org"
         envFrom:
         - configMapRef:
             name: kobotoolbox-config
