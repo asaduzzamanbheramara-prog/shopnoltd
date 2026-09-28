@@ -133,6 +133,43 @@ async def public_list(profile_slug: str, s: AsyncSession = Depends(db)):
     return [{"id": v.id, "title": v.title, "description": v.description, "source_type": v.source_type, "embed_provider": v.embed_provider, "embed_ref": v.embed_ref, "stream_url": f"/api/v1/profile-videos/stream/{v.id}" if v.source_type == "upload" else None, "content_type": v.content_type, "size": v.size} for v in res.scalars().all()]
 
 
+@router.get("/download/{video_id}")
+async def download(video_id: str, request: Request, s: AsyncSession = Depends(db)):
+    v = await s.get(ProfileVideo, video_id)
+    if not v or not v.published or v.source_type != "upload" or not v.object_key:
+        raise HTTPException(404, "Video not found")
+    try:
+        stat = client.stat_object(BUCKET, v.object_key)
+        size = stat.size
+    except Exception as exc:
+        raise HTTPException(404, "Video not found") from exc
+    start, end, partial = _range(request.headers.get("range"), size)
+    length = end - start + 1
+    obj = client.get_object(BUCKET, v.object_key, offset=start, length=length)
+
+    async def body():
+        try:
+            while True:
+                chunk = obj.read(1024 * 1024)
+                if not chunk:
+                    break
+                yield chunk
+        finally:
+            obj.close()
+            obj.release_conn()
+
+    filename = re.sub(r"[^A-Za-z0-9._-]+", "-", v.filename or f"{v.id}.mp4").strip("-") or f"{v.id}.mp4"
+    headers = {
+        "Accept-Ranges": "bytes",
+        "Content-Length": str(length),
+        "Content-Disposition": f'attachment; filename="{filename}"',
+        "Cache-Control": "private, max-age=0, must-revalidate",
+    }
+    if partial:
+        headers["Content-Range"] = f"bytes {start}-{end}/{size}"
+    return StreamingResponse(body(), status_code=206 if partial else 200, media_type=v.content_type or "application/octet-stream", headers=headers)
+
+
 @router.get("/stream/{video_id}")
 async def stream(video_id: str, request: Request, s: AsyncSession = Depends(db)):
     v = await s.get(ProfileVideo, video_id)
