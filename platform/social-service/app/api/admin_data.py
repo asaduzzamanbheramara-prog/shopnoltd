@@ -167,7 +167,36 @@ async def _read_rows(user, s):
 async def schema(user=Depends(current_user)):
     if not can_manage_blog(user):
         raise HTTPException(403, "Blog management privileges required")
-    return {"entity": "blog_posts", "operations": ["check", "add", "add_below", "update", "replace", "upsert", "merge", "delete", "publish", "unpublish", "replace_rows", "export", "import"], "schema_replacement": False, "match_keys": ["id", "slug"], "fields": [c.name for c in BlogPost.__table__.columns], "tenant_scoped": True, "transactional": True}
+    fields = []
+    for column in BlogPost.__table__.columns:
+        sql_type = str(column.type)
+        kind = column.type.__class__.__name__.lower()
+        item = {
+            "name": column.name,
+            "type": kind,
+            "sql_type": sql_type,
+            "nullable": bool(column.nullable),
+            "required": not bool(column.nullable or column.default or column.server_default),
+            "primary_key": bool(column.primary_key),
+            "unique": bool(column.unique),
+        }
+        if getattr(column.type, "length", None):
+            item["max_length"] = column.type.length
+        if column.name == "status":
+            item["choices"] = ["draft", "published"]
+        if column.name in {"id", "tenant_id", "author_id", "published_at", "created_at", "updated_at"}:
+            item["system_managed"] = True
+        fields.append(item)
+    return {
+        "entity": "blog_posts",
+        "operations": ["check", "add", "add_below", "update", "replace", "upsert", "merge", "delete", "publish", "unpublish", "replace_rows", "export", "import"],
+        "schema_replacement": False,
+        "match_keys": ["id", "slug"],
+        "fields": fields,
+        "table_operations": {"inspect": True, "create": False, "replace_schema": False, "drop": False, "merge": True},
+        "tenant_scoped": True,
+        "transactional": True,
+    }
 
 
 @router.get("/analysis")
