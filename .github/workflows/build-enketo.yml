@@ -1,8 +1,5 @@
-name: build shopnoltd-enketo
+name: build shopnoltd-enketo (manual legacy)
 on:
-  push:
-    branches: [main]
-    paths: ['enketo/**', '.github/workflows/build-enketo.yml']
   workflow_dispatch:
 
 jobs:
