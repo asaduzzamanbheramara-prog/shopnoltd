@@ -130,6 +130,36 @@ def _build_adapter(provider: AIProvider) -> BaseAdapter:
     )
 
 
+def _with_history(prompt: str, history: list[dict] | None) -> str:
+    """Keep the provider API simple while giving it the active chat context."""
+    if not history:
+        return prompt
+    lines = []
+    total = 0
+    # Bound the transcript so a long browser chat cannot consume the model context indefinitely.
+    for item in reversed(history[-24:]):
+        role = str(item.get("role") or "").lower()
+        content = str(item.get("content") or "").strip()
+        if role not in {"user", "assistant"} or not content:
+            continue
+        label = "User" if role == "user" else "Assistant"
+        chunk = f"{label}: {content}"
+        if total + len(chunk) > 18000:
+            break
+        lines.append(chunk)
+        total += len(chunk)
+    lines.reverse()
+    if not lines:
+        return prompt
+    return (
+        "Conversation history from this chat. Continue the conversation naturally; "
+        "do not treat the history as a new question.\\n\\n"
+        + "\\n\\n".join(lines)
+        + "\\n\\nCurrent user message:\\n"
+        + prompt
+    )
+
+
 def _requires_vision(attachments: list[dict] | None) -> bool:
     return any(
         str(item.get("mime_type") or "").lower().startswith("image/")
@@ -203,8 +233,10 @@ async def run_inference(
     model_name: str | None = None,
     model_id: UUID | None = None,
     attachments: list[dict] | None = None,
+    history: list[dict] | None = None,
 ) -> tuple[InferenceResult, AIModel]:
     attachments = attachments or []
+    prompt = _with_history(prompt, history)
     needs_vision = _requires_vision(attachments)
     explicit_selection = model_id is not None or bool(model_name)
 
