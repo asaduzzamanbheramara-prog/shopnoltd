@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { BarChart3, Database, Download, FileUp, Lock, RefreshCw, Save, ShieldCheck, Trash2, Upload, X } from 'lucide-react'
 
 const PAGE_SIZE = 50
@@ -67,7 +67,7 @@ export default function DatabaseControlPlaneEnhanced() {
         {payment && <div style={styles.toolbar}><button onClick={inspectPayment} disabled={busy} style={styles.action}><RefreshCw size={14}/> Inspect live DB</button>{table && <><button onClick={() => exportData('json')} style={styles.small}>JSON</button><button onClick={() => exportData('csv')} style={styles.small}>CSV</button><button onClick={() => exportData('xlsx')} style={styles.small}>XLSX</button><button onClick={report} style={styles.small}>PDF report</button></>}</div>}
       {currentCatalog && <div style={styles.scroll}><table style={styles.table}><thead><tr><th>Table</th><th>Read</th><th>Generic write</th><th>Import</th><th>DDL</th><th>Protection</th></tr></thead><tbody>{currentCatalog.tables.map(t => <tr key={t.name}><td>{t.name}</td><td>{t.readable ? 'Yes' : 'No'}</td><td>{t.writable ? 'Yes' : 'No'}</td><td>{t.importable ? 'Yes' : 'No'}</td><td>{t.ddl}</td><td>{t.protected_reason || 'Safe controlled table'}</td></tr>)}</tbody></table></div>}
       {blog && schema && <div style={styles.operationPanel}><strong>Table / data operations</strong><div style={styles.operationGrid}>{[['add','Add rows'],['update','Update rows'],['upsert','Upsert'],['merge','Merge rows'],['replace','Replace matching'],['delete','Remove rows'],['replace_rows','Replace all rows']].map(([v,l]) => <button key={v} onClick={() => setMode(v)} style={{...styles.small,...(mode===v?styles.selected:{})}}>{l}</button>)}</div><div style={styles.muted}>Schema operations are capability-controlled. For the service-owned BlogPost table, inspect and row-level merge are supported; create, drop, and schema replacement remain disabled rather than exposing unsafe generic SQL.</div></div>}</section>
-      {blog && editor && <section style={styles.panel}><div style={styles.between}><div><h3 style={{margin:0}}>{editor.id ? 'Edit blog row' : 'Add blog row'}</h3><div style={styles.muted}>Inputs are generated from the live schema: numeric fields accept numeric values only; text/address fields remain full text; choices are constrained.</div></div><button onClick={() => setEditor(null)} style={styles.small}><X size={13}/>Cancel</button></div><div style={styles.formGrid}>{(schema?.fields || []).filter(f => !f.system_managed && f.name !== 'id').map(f => <TypedField key={f.name} field={f} value={editor[f.name] ?? ''} onChange={value => setEditor({...editor,[f.name]:value})} onComplete={beep}/>)}</div><button onClick={() => { beep(); saveBlog() }} disabled={busy} style={styles.action}><Save size={14}/> Save transaction</button></section>}
+      {blog && editor && <BlogEditorForm schema={schema} editor={editor} setEditor={setEditor} saveBlog={saveBlog} busy={busy} cancel={() => setEditor(null)} />}
       {blog && preview && <section style={styles.panel}><div style={styles.between}><h3 style={{margin:0}}>Validated import preview</h3><button onClick={commitImport} disabled={busy||!file} style={styles.action}>Commit import</button></div><pre style={styles.pre}>{JSON.stringify(preview,null,2)}</pre></section>}
       {payment && tables.length>0 && <section style={styles.panel}><h3 style={{marginTop:0}}>Live entity inventory</h3><div style={styles.scroll}><table style={styles.table}><thead><tr><th>Entity</th><th>Write</th><th>Columns</th><th>Sensitive</th></tr></thead><tbody>{tables.map(x=><tr key={x.name} onClick={()=>inspectPaymentTable(x.name)}><td>{x.name}</td><td>{x.writable?'Controlled':'No'}</td><td>{x.columns?.length??'—'}</td><td>{x.financially_sensitive?'Protected':'Policy'}</td></tr>)}</tbody></table></div>{table&&<div style={styles.row}><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search current entity…" style={styles.input}/><button onClick={()=>inspectPaymentTable()} style={styles.action}>Search</button></div>}</section>}
       {analysis && <section style={styles.panel}><div style={styles.between}><div><h3 style={{margin:0}}>Analysis & reporting</h3><div style={styles.muted}>Resolution-independent SVG scales cleanly for HD/4K displays.</div></div>{table&&<button onClick={report} style={styles.small}>Generate PDF report</button>}</div><div style={styles.chart3d}>{numericValues.map((v,i)=><div key={i} style={{...styles.bar3d,height:`${Math.max(8,(v/maxMetric)*150)}px`}} title={String(v)}><span>{v}</span></div>)}</div><pre style={styles.pre}>{JSON.stringify(analysis,null,2)}</pre></section>}
@@ -75,7 +75,17 @@ export default function DatabaseControlPlaneEnhanced() {
       {rows.length>0 && !blog && <section style={styles.panel}><h3 style={{marginTop:0}}>Entity preview</h3><div style={styles.scroll}><table style={styles.table}><thead><tr>{Object.keys(rows[0]).slice(0,10).map(k=><th key={k}>{k}</th>)}</tr></thead><tbody>{rows.slice(0,20).map((r,i)=><tr key={r.id??i}>{Object.keys(rows[0]).slice(0,10).map(k=><td key={k}>{String(r[k]??'')}</td>)}</tr>)}</tbody></table></div></section>}
     </section></div></div></main>
 }
-function TypedField({ field, value, onChange, onComplete }) {
+function BlogEditorForm({ schema, editor, setEditor, saveBlog, busy, cancel }) {
+  const refs = useRef([])
+  const fields = (schema?.fields || []).filter(f => !f.system_managed && f.name !== 'id')
+  const complete = index => {
+    beep()
+    const next = refs.current[index + 1]
+    if (next && !next.disabled) requestAnimationFrame(() => next.focus())
+  }
+  return <section style={styles.panel}><div style={styles.between}><div><h3 style={{margin:0}}>{editor.id ? 'Edit blog row' : 'Add blog row'}</h3><div style={styles.muted}>Inputs are generated from the live schema: numeric fields accept numeric values only; text/address fields remain full text; choices are constrained. Numeric fields auto-advance only when a required length is defined and reached.</div></div><button onClick={cancel} style={styles.small}><X size={13}/>Cancel</button></div><div style={styles.formGrid}>{fields.map((f, index) => <TypedField key={f.name} field={f} value={editor[f.name] ?? ''} onChange={value => setEditor({...editor,[f.name]:value})} inputRef={el => { refs.current[index] = el }} onComplete={() => complete(index)} />)}</div><button onClick={() => { beep(); saveBlog() }} disabled={busy} style={styles.action}><Save size={14}/> Save transaction</button></section>
+}
+function TypedField({ field, value, onChange, onComplete, inputRef }) {
   const name = field.name || 'field'
   const sql = String(field.sql_type || field.type || '').toUpperCase()
   const numeric = /INT|NUMERIC|DECIMAL|FLOAT|DOUBLE|REAL/.test(sql)
@@ -83,23 +93,25 @@ function TypedField({ field, value, onChange, onComplete }) {
   const dateLike = /DATE|TIME/.test(sql)
   const multiline = /TEXT/.test(sql) || /content|excerpt|description|address|notes?|comment|message|details?/i.test(name)
   const choices = Array.isArray(field.choices) ? field.choices : []
+  const requiredLength = Number(field.required_length || field.input_length || 0) || 0
   const common = {
+    ref: inputRef,
     value: value ?? '',
     onChange: e => {
       let next = e.target.value
       if (numeric) {
         const decimal = /DECIMAL|NUMERIC|FLOAT|DOUBLE|REAL/.test(sql)
         next = next.replace(decimal ? /[^0-9.-]/g : /[^0-9-]/g, '')
-        if (e.target.value !== next) onComplete()
       }
       onChange(next)
+      if (numeric && requiredLength > 0 && next.length >= requiredLength && next.length !== String(value ?? '').length) onComplete()
     },
-    onBlur: () => { if (numeric && String(value ?? '') !== '') onComplete() },
+    onBlur: () => {},
     style: styles.input,
     inputMode: numeric ? (/\b(INT|INTEGER)\b/.test(sql) ? 'numeric' : 'decimal') : undefined,
     maxLength: field.max_length || undefined,
   }
-  if (boolean) return <label>{name}<span style={styles.muted}>Boolean</span><input type="checkbox" checked={value === true || value === 'true' || value === 1 || value === '1'} onChange={e => onChange(e.target.checked)} /></label>
+  if (boolean) return <label>{name}<span style={styles.muted}>Boolean</span><input ref={inputRef} type="checkbox" checked={value === true || value === 'true' || value === 1 || value === '1'} onChange={e => onChange(e.target.checked)} /></label>
   if (choices.length) return <label>{name}<select {...common}>{choices.map(choice => <option key={choice} value={choice}>{choice}</option>)}</select></label>
   if (dateLike) return <label>{name}<input {...common} type={sql.includes('TIME') && !sql.includes('DATE') ? 'time' : 'datetime-local'} /></label>
   if (multiline) return <label style={{gridColumn:'1/-1'}}>{name}<textarea {...common} rows={name === 'content' ? 10 : 5} placeholder={/address/i.test(name) ? 'Enter the complete address…' : ''} /></label>
