@@ -46,6 +46,11 @@ app.include_router(
     prefix="/api/v1/objects",
     tags=["objects"],
 )
+app.include_router(
+    __import__("app.api.profile_videos", fromlist=["router"]).router,
+    prefix="/api/v1/profile-videos",
+    tags=["profile-videos"],
+)
 
 
 @app.get("/healthz", include_in_schema=False)
