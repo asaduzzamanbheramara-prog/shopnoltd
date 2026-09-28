@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
         - name: enketo
-          image: docker.io/kobotoolbox/enketo-express-extra-widgets:7.6.3
+          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/enketo:main
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
