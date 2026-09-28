@@ -13,6 +13,7 @@ configMapGenerator:
   - 013-provision-comms-databases.sql
   - 014-provision-chatwoot-database.sql
   - 015-payment-account-registry.sql
+  - 016-omnichannel-crm.sql
   options:
     disableNameSuffixHash: true
 
