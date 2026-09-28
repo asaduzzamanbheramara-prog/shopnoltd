@@ -50,6 +50,7 @@ async def infer(
             model_name=body.model,
             model_id=body.model_id,
             attachments=body.attachments,
+            history=body.history,
         )
         return InferOut(
             response=result.text,
