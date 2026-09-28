@@ -126,6 +126,18 @@ export default class ShopnoltdAutoAdvance extends Widget {
         this.input.addEventListener('input', this.onInput);
     }
 
+    disable() {
+        if (this.input) this.input.disabled = true;
+    }
+
+    enable() {
+        if (this.input) this.input.disabled = false;
+    }
+
+    update() {
+        if (this.input) this.input.maxLength = this.requiredLength;
+    }
+
     cleanup() {
         if (!this.input) return;
         this.input.removeEventListener('keydown', this.onKeyDown);
