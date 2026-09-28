@@ -158,6 +158,50 @@ export async function prepareImage(file) {
   }
 }
 
+export const MAX_VIDEO_INPUT_BYTES = 100 * 1024 * 1024
+
+/** Sample a video into a few JPEG frames so vision models can inspect its visual content.
+ * Audio and motion are not sent; the model receives representative frames only.
+ */
+export async function prepareVideo(file) {
+  const url = URL.createObjectURL(file)
+  const video = document.createElement('video')
+  video.preload = 'metadata'
+  video.muted = true
+  video.playsInline = true
+  video.src = url
+  try {
+    await new Promise((resolve, reject) => {
+      video.onloadedmetadata = resolve
+      video.onerror = () => reject(new Error(`Unable to read ${file.name}`))
+    })
+    if (!Number.isFinite(video.duration) || video.duration <= 0) throw new Error('The video has no readable duration.')
+    const frames = []
+    const positions = [0.08, 0.35, 0.62, 0.9]
+    for (const ratio of positions) {
+      const time = Math.min(Math.max(video.duration * ratio, 0), Math.max(video.duration - 0.05, 0))
+      await new Promise((resolve, reject) => {
+        video.onseeked = resolve
+        video.onerror = () => reject(new Error(`Unable to read a frame from ${file.name}`))
+        video.currentTime = time
+      })
+      const longest = Math.max(video.videoWidth, video.videoHeight)
+      const scale = Math.min(1, MAX_IMAGE_SIDE / Math.max(1, longest))
+      const canvas = document.createElement('canvas')
+      canvas.width = Math.max(1, Math.round(video.videoWidth * scale))
+      canvas.height = Math.max(1, Math.round(video.videoHeight * scale))
+      canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height)
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.78)
+      frames.push({ type: 'image/jpeg', data: dataUrl.slice(dataUrl.indexOf(',') + 1), name: `${file.name} · frame ${frames.length + 1}` })
+    }
+    return frames
+  } finally {
+    URL.revokeObjectURL(url)
+    video.removeAttribute('src')
+    video.load()
+  }
+}
+
 /** Turn a low-level failure into something a person can act on. */
 export function friendlyError(err) {
   const message = String(err?.message || '')
