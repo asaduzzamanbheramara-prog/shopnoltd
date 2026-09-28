@@ -2,7 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { Link } from 'react-router-dom'
 import { ArrowDown, Bot, Check, ChevronDown, Copy, Download, Eye, FileText, Maximize2, Menu, MessageSquare, Mic, Minimize2, Paperclip, Plus, RefreshCw, Send, Sparkles, Square, Trash2, Volume2, X } from 'lucide-react'
 import { authenticatedRequest } from '../lib/financialApi'
-import { MAX_IMAGE_INPUT_BYTES, copyToClipboard, downloadBlob, friendlyError, prepareImage, resolveLanguage, splitBlocks, svgDataUrl, svgToPngBlob } from './aiChatHelpers'
+import { MAX_IMAGE_INPUT_BYTES, MAX_VIDEO_INPUT_BYTES, copyToClipboard, downloadBlob, friendlyError, prepareImage, prepareVideo, resolveLanguage, splitBlocks, svgDataUrl, svgToPngBlob } from './aiChatHelpers'
 
 async function request(path, options = {}) {
   return authenticatedRequest(`/api/v1/ai${path}`, options)
@@ -143,10 +143,12 @@ export default function AIWorkspace() {
   const abortRef = useRef(null)
   const recognitionRef = useRef(null)
   const lastRequestRef = useRef(null)
+  const lastMultimodalRef = useRef([])
 
   const activeChat = chats.find((chat) => chat.id === activeId) || chats[0]
   const activeMessages = activeChat?.messages || []
   const activeModel = activeChat?.model || model || ''
+  useEffect(() => { lastMultimodalRef.current = [] }, [activeId])
   const activeModelId = activeChat?.modelId || modelId || null
 
   useEffect(() => { localStorage.setItem(STORAGE_KEY, JSON.stringify(chats)) }, [chats])
@@ -295,9 +297,16 @@ export default function AIWorkspace() {
       if (file.size > MAX_IMAGE_INPUT_BYTES) {
         return { ...base, note: 'Image is larger than 20 MB.' }
       }
-      // Pictures are shrunk in the browser first, so the request stays small and quick.
       const prepared = await prepareImage(file)
       return { ...base, type: prepared.type, data: prepared.data }
+    }
+
+    if (type.startsWith('video/')) {
+      if (file.size > MAX_VIDEO_INPUT_BYTES) {
+        return { ...base, note: 'Video is larger than 100 MB.' }
+      }
+      const frames = await prepareVideo(file)
+      return { ...base, frames, note: 'Video is sampled into four frames for visual analysis; audio is not sent.' }
     }
 
     return base
@@ -378,13 +387,19 @@ export default function AIWorkspace() {
 
     const requestPrompt = `${text}${fileContext}`
 
-    const multimodalAttachments = attachments
-      .filter((file) => file.data && file.type.startsWith('image/'))
-      .map((file) => ({
-        name: file.name,
-        mime_type: file.type,
-        data: file.data
-      }))
+    const selectedMultimodal = attachments.flatMap((file) => {
+      if (Array.isArray(file.frames)) return file.frames.map((frame) => ({ name: frame.name, mime_type: frame.type, data: frame.data }))
+      if (file.data && file.type.startsWith('image/')) return [{ name: file.name, mime_type: file.type, data: file.data }]
+      return []
+    })
+    if (selectedMultimodal.length) lastMultimodalRef.current = selectedMultimodal
+    const multimodalAttachments = selectedMultimodal.length ? selectedMultimodal : lastMultimodalRef.current
+    const retryIndex = retryMessage ? activeMessages.findIndex((item) => item.id === retryMessage.id) : -1
+    const historyMessages = retryIndex >= 0 ? activeMessages.slice(0, retryIndex) : activeMessages
+    const history = historyMessages
+      .filter((message) => message.role === 'user' || message.role === 'assistant')
+      .slice(-24)
+      .map((message) => ({ role: message.role, content: message.content || '' }))
     const userMessage = retryMessage ? null : { id: crypto.randomUUID(), role: 'user', content: text, fileNames: attachments.map((file) => file.name) }
     const chatId = activeId
     stickRef.current = true
@@ -396,6 +411,7 @@ export default function AIWorkspace() {
       prompt: requestPrompt,
       model: activeModel || null,
       model_id: resolvedModelId,
+      history,
       attachments: multimodalAttachments
     })
   }
@@ -459,11 +475,11 @@ export default function AIWorkspace() {
           {attachments.length > 0 && <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginBottom: 8 }}>{attachments.map((file) => <div key={file.id} style={{ display: 'flex', alignItems: 'center', gap: 7, border: '1px solid #d1d5db', borderRadius: 10, padding: '6px 8px', fontSize: 12, background: '#f9fafb' }}><FileText size={14} /><span title={file.note || file.name}>{file.name}</span>{file.note && <span style={{ color: '#b45309' }}>· {file.note}</span>}<button onClick={() => removeAttachment(file.id)} aria-label={`Remove ${file.name}`} style={{ border: 0, background: 'transparent', cursor: 'pointer' }}>×</button></div>)}</div>}
           <form onSubmit={submit} style={{ position: 'relative', border: '1px solid #d1d5db', borderRadius: 16, boxShadow: '0 2px 8px rgba(0,0,0,.06)', background: '#fff' }}>
             <textarea ref={inputRef} value={prompt} onChange={(e) => setPrompt(e.target.value)} onPaste={handlePaste} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(e) } }} rows={1} placeholder="Message Shopnoltd AI…" disabled={loading || loadingModels || !models.length} style={{ display: 'block', width: '100%', minHeight: 52, maxHeight: 180, boxSizing: 'border-box', border: 0, outline: 0, resize: 'none', borderRadius: 16, padding: '15px 150px 15px 48px', font: 'inherit', lineHeight: 1.45 }} />
-            <label title="Attach files" aria-label="Attach files" style={{ position: 'absolute', left: 9, bottom: 9, width: 36, height: 36, display: 'grid', placeItems: 'center', color: '#4b5563', cursor: 'pointer' }}><Paperclip size={18} /><input type="file" multiple accept=".pdf,.doc,.docx,.txt,.md,.csv,.xls,.xlsx,.json,.xml,.yaml,.yml,.js,.jsx,.ts,.tsx,.py,.go,.rs,.java,.css,.html,.sql,.sh,image/*" onChange={addFiles} style={{ display: 'none' }} /></label>
+            <label title="Attach files" aria-label="Attach files" style={{ position: 'absolute', left: 9, bottom: 9, width: 36, height: 36, display: 'grid', placeItems: 'center', color: '#4b5563', cursor: 'pointer' }}><Paperclip size={18} /><input type="file" multiple accept=".pdf,.doc,.docx,.txt,.md,.csv,.xls,.xlsx,.json,.xml,.yaml,.yml,.js,.jsx,.ts,.tsx,.py,.go,.rs,.java,.css,.html,.sql,.sh,image/*,video/mp4,video/webm,.mp4,.webm" onChange={addFiles} style={{ display: 'none' }} /></label>
             <button type="button" onClick={startMic} disabled={loading} aria-label={listening ? 'Stop microphone' : 'Use microphone'} title={listening ? 'Stop microphone' : 'Voice input'} style={{ position: 'absolute', right: 94, bottom: 9, width: 36, height: 36, border: 0, borderRadius: 10, display: 'grid', placeItems: 'center', background: listening ? '#fee2e2' : 'transparent', color: listening ? '#b91c1c' : '#4b5563', cursor: 'pointer' }}><Mic size={17} /></button>
             {loading ? <button type="button" onClick={stopGeneration} aria-label="Stop generation" title="Stop generation" style={{ position: 'absolute', right: 52, bottom: 9, width: 36, height: 36, border: 0, borderRadius: 10, display: 'grid', placeItems: 'center', background: '#111827', color: '#fff', cursor: 'pointer' }}><Square size={15} /></button> : <button type="submit" disabled={!prompt.trim() || !models.length} aria-label="Send message" title="Send message" style={{ position: 'absolute', right: 9, bottom: 9, width: 36, height: 36, border: 0, borderRadius: 10, display: 'grid', placeItems: 'center', background: !prompt.trim() || !models.length ? '#d1d5db' : '#111827', color: '#fff', cursor: 'pointer' }}><Send size={17} /></button>}
           </form>
-          <div style={{ textAlign: 'center', fontSize: 11, color: '#9ca3af', marginTop: 8 }}>Enter to send · Shift+Enter for a new line · Text files are extracted in the browser; images are shrunk and sent to vision-capable AI models</div>
+          <div style={{ textAlign: 'center', fontSize: 11, color: '#9ca3af', marginTop: 8 }}>Enter to send · Shift+Enter for a new line · Text files are extracted in the browser; images are sent to vision-capable AI models; videos are sampled into frames for visual analysis</div>
         </div>
       </section>
     </div>
