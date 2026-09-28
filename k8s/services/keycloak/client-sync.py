@@ -69,6 +69,8 @@ API_AUDIENCE_MAPPER_NAME = "api-service-audience"
 API_AUDIENCE_REPAIR_MAPPER_NAME = "api-service-audience-repaired"
 AI_AUDIENCE_MAPPER_NAME = "ai-platform-audience"
 AI_AUDIENCE_REPAIR_MAPPER_NAME = "ai-platform-audience-repaired"
+STORAGE_AUDIENCE_MAPPER_NAME = "storage-service-audience"
+STORAGE_AUDIENCE_REPAIR_MAPPER_NAME = "storage-service-audience-repaired"
 
 
 def request(method, path, token=None, body=None, form=False):
@@ -143,6 +145,10 @@ def sync_ai_audience_mapper(token, client_uuid):
     sync_audience_mapper(token, client_uuid, canonical_name=AI_AUDIENCE_MAPPER_NAME, repair_name=AI_AUDIENCE_REPAIR_MAPPER_NAME, audience="ai-platform")
 
 
+def sync_storage_audience_mapper(token, client_uuid):
+    sync_audience_mapper(token, client_uuid, canonical_name=STORAGE_AUDIENCE_MAPPER_NAME, repair_name=STORAGE_AUDIENCE_REPAIR_MAPPER_NAME, audience="storage-service")
+
+
 def sync_client(token, client_id):
     config = CLIENT_CONFIG[client_id]
     required_redirect_uris = config["redirect_uris"]
@@ -164,7 +170,8 @@ def sync_client(token, client_id):
             raise RuntimeError(f"Unable to update Keycloak client (HTTP {code})")
         sync_api_audience_mapper(token, client_uuid)
         sync_ai_audience_mapper(token, client_uuid)
-        print(f"[OK] synchronized {client_id} with api-service and ai-platform JWT audiences")
+        sync_storage_audience_mapper(token, client_uuid)
+        print(f"[OK] synchronized {client_id} with api-service, ai-platform and storage-service JWT audiences")
     else:
         payload = {"clientId": client_id, "publicClient": True, "protocol": "openid-connect", "standardFlowEnabled": True, "directAccessGrantsEnabled": False, "redirectUris": required_redirect_uris, "webOrigins": required_web_origins, "attributes": {"pkce.code.challenge.method": "S256"}}
         code, _ = request("POST", f"/admin/realms/{REALM}/clients", token=token, body=payload)
@@ -176,8 +183,9 @@ def sync_client(token, client_id):
         client_uuid = clients[0]["id"]
         sync_api_audience_mapper(token, client_uuid)
         sync_ai_audience_mapper(token, client_uuid)
+        sync_storage_audience_mapper(token, client_uuid)
         print(f"[OK] created {client_id} client")
-        print(f"[OK] synchronized {client_id} with api-service and ai-platform JWT audiences")
+        print(f"[OK] synchronized {client_id} with api-service, ai-platform and storage-service JWT audiences")
 
 
 def main():
