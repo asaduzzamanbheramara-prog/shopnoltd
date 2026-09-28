@@ -60,7 +60,7 @@ class AdminAuditLog(Base):
     record_id = Column(String(128), nullable=True)
     before = Column(JSONB, nullable=True)
     after = Column(JSONB, nullable=True)
-    created_at = Column(DateTime, nullable=False, index=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
 
 
 class Wallet(Base):
