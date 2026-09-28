@@ -148,6 +148,7 @@ export default function AIWorkspace() {
   const activeChat = chats.find((chat) => chat.id === activeId) || chats[0]
   const activeMessages = activeChat?.messages || []
   const activeModel = activeChat?.model || model || ''
+  useEffect(() => { lastMultimodalRef.current = [] }, [activeId])
   const activeModelId = activeChat?.modelId || modelId || null
 
   useEffect(() => { localStorage.setItem(STORAGE_KEY, JSON.stringify(chats)) }, [chats])
