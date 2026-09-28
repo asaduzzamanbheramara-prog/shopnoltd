@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useEffect } from 'react'
 import { qrUrl, shareProfile } from './profileShare'
+import ProfileVideoGallery from './ProfileVideoGallery'
 
 const CATALOG = [
   { size: 'lg', title: 'Corporate & Commercial', items: ['Corporate office interior', 'Bank decoration & renovation', 'Super shop & showroom interior', 'Restaurant & retail interior'] },
@@ -79,10 +80,7 @@ export default function InteriorBusinessProfile() {
               <button type="button" className="ib-btn ib-btn-ghost ib-btn-button" onClick={() => shareProfile(profileUrl, 'Shopno Interior Design & Decoration')}>Share profile</button>
             </div>
           </div>
-          <div>
-            {/* Replace with a real project walkthrough / showreel once recorded and hosted. */}
-            <div className="ib-video-frame">Project showreel — video not yet uploaded</div>
-          </div>
+          <div><ProfileVideoGallery profileSlug="interior-business" variant="hero" /></div>
         </div>
       </section>
 
