@@ -130,7 +130,7 @@ def _video_key(profile_slug: str, video_id: str, suffix: str) -> str:
 async def public_list(profile_slug: str, s: AsyncSession = Depends(db)):
     _profile(profile_slug)
     res = await s.execute(select(ProfileVideo).where(ProfileVideo.profile_slug == profile_slug, ProfileVideo.published.is_(True)).order_by(ProfileVideo.sort_order, ProfileVideo.created_at))
-    return [{"id": v.id, "title": v.title, "description": v.description, "source_type": v.source_type, "embed_provider": v.embed_provider, "embed_ref": v.embed_ref, "stream_url": f"/api/v1/profile-videos/stream/{v.id}" if v.source_type == "upload" else None, "content_type": v.content_type, "size": v.size} for v in res.scalars().all()]
+    return [{"id": v.id, "title": v.title, "description": v.description, "source_type": v.source_type, "embed_provider": v.embed_provider, "embed_ref": v.embed_ref, "stream_url": f"/api/v1/profile-videos/stream/{v.id}" if v.source_type == "upload" else None, "download_url": f"/api/v1/profile-videos/download/{v.id}" if v.source_type == "upload" else None, "content_type": v.content_type, "size": v.size} for v in res.scalars().all()]
 
 
 @router.get("/download/{video_id}")
