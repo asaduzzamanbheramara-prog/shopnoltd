@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.core.db import SessionLocal
 from app.core.security import verify_token, verify_token_admin
-from app.models.models import UserMirror
+from app.models.models import UserMirror, UserProfile
 from app.schemas.schemas import UserIn, UserOut
 
 router = APIRouter()
@@ -114,6 +114,16 @@ async def ensure_user_mirror(payload: dict, s: AsyncSession) -> UserMirror:
             raise HTTPException(409, "email is already linked to another account")
         raise HTTPException(409, "unable to provision account safely")
 
+    profile = (await s.execute(select(UserProfile).where(UserProfile.user_id == u.id))).scalar_one_or_none()
+    if not profile:
+        profile = UserProfile(
+            user_id=u.id,
+            display_name=u.name or email.split("@")[0],
+            first_name=(payload.get("given_name") or "").strip() or None,
+            last_name=(payload.get("family_name") or "").strip() or None,
+            source="registration",
+        )
+        s.add(profile)
     await s.commit()
     await s.refresh(u)
     return u
@@ -147,6 +157,8 @@ async def create(body: UserIn, user=Depends(admin), s: AsyncSession = Depends(db
     kc_id = r2.json()[0]["id"]
     u = UserMirror(keycloak_id=kc_id, email=body.email, name=body.name, tenant_id=body.tenant_id)
     s.add(u)
+    await s.flush()
+    s.add(UserProfile(user_id=u.id, display_name=body.name or body.email.split("@")[0], source="admin_created"))
     await s.commit()
     await s.refresh(u)
     return _user_out(u)
