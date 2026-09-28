@@ -105,6 +105,21 @@ DATABASE_CAPABILITIES: tuple[DatabaseCapability, ...] = (
         protected_reason="Kobo MongoDB data is application-owned; generic writes are disabled",
     ),
     DatabaseCapability(
+        service="oauth-service",
+        database="oauth",
+        tables=(
+            _table("users", protected="identity mirror is service-owned"),
+            _table("user_profiles", protected="profiles are service-owned; use profile APIs"),
+            _table("imported_workbooks", protected="import manifests are importer-owned"),
+            _table("imported_excel_rows", protected="source records are importer-owned"),
+            _table("secret_vault_entries", protected="encrypted secrets are vault-owned; generic reads/writes are disabled"),
+        ),
+        backup=True,
+        restore=True,
+        tenant_scope="service",
+        protected_reason="identity, profile and encrypted imported-account data remain service-owned",
+    ),
+    DatabaseCapability(
         service="ai-platform",
         database="shopnoltd",
         tables=(
