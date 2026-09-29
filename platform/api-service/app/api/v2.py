@@ -90,7 +90,7 @@ def work_dict(w: Work, total_slots: int | None = None, active_slots: int | None 
     remaining_slots = max(total_slots - active_slots - completed_slots, 0)
     return {
         "id": w.id, "tenant_id": w.tenant_id, "creator_id": w.creator_id, "title": w.title,
-        "description": w.description, "requirements": w.requirements, "reference_image": w.reference_image, "task_type": w.task_type, "platform": w.platform,
+        "description": w.description, "requirements": w.requirements, "reference_image": w.reference_image, "before_post_screenshot": getattr(w, "before_post_screenshot", None), "task_type": w.task_type, "platform": w.platform,
         "reward_amount": str(w.reward_amount), "currency": w.currency, "max_workers": w.max_workers,
         "total_tasks": total_slots, "active_tasks": active_slots, "completed_tasks": completed_slots,
         "remaining_tasks": remaining_slots, "total_amount": str(Decimal(str(w.reward_amount)) * total_slots),
