@@ -473,8 +473,10 @@ async def evidence(session_id: str, body: dict, s: AsyncSession = Depends(db), u
         raise HTTPException(413, "evidence image is too large")
     if kind == "before" and x.stage not in {"before", "working"}:
         raise HTTPException(409, "Before Work evidence can only be captured before or during work")
-    if kind in {"start", "complete", "end"} and x.stage != "working":
-        raise HTTPException(409, "Start Work evidence requires an active work session")
+    if kind == "start" and x.stage not in {"before", "working"}:
+        raise HTTPException(409, "Start Work evidence must be captured before or at work start")
+    if kind in {"complete", "end"} and x.stage != "working":
+        raise HTTPException(409, "Completion evidence requires an active work session")
     if kind in {"submit", "after_submission"} and x.stage not in {"finished", "submitted"}:
         raise HTTPException(409, "submission evidence requires completed work")
     if kind == "after_complete" and x.stage not in {"finished", "submitted"}:
