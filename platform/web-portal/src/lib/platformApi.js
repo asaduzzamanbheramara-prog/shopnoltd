@@ -69,6 +69,12 @@ function storageKeyFromBlogUrl(url) {
 
 export const platformApi = {
   me: () => request('/api/v1/users/me'),
+  omnichannelCapabilities: () => request('/api/v1/omnichannel/capabilities'),
+  omnichannelConnections: () => request('/api/v1/omnichannel/connections'),
+  addOmnichannelConnection: (body) => request('/api/v1/omnichannel/connections', { method: 'POST', body: JSON.stringify(body) }),
+  getOmnichannelConnection: (id) => request(`/api/v1/omnichannel/connections/${encodeURIComponent(id)}`),
+  updateOmnichannelConnection: (id, body) => request(`/api/v1/omnichannel/connections/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  deleteOmnichannelConnection: (id) => request(`/api/v1/omnichannel/connections/${encodeURIComponent(id)}`, { method: 'DELETE' }),
   currencies: () => request('/api/v2/currencies'),
   feed: () => request('/api/v2/social/feed'), globalFeed: () => request('/api/v2/social/global'),
   createPost: (content, visibility = 'public') => request('/api/v2/social/posts', { method: 'POST', body: JSON.stringify({ content, visibility, media: [] }) }),
