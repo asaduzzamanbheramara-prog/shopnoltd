@@ -14,6 +14,7 @@ from app.core.db import SessionLocal
 from app.core.security import verify_token
 from app.models.work import Work, WorkAssignment, WorkSubmission
 from app.models.work_rating import WorkRating
+from app.core.currencies import SUPPORTED_CURRENCIES
 
 router = APIRouter()
 bearer = HTTPBearer()
@@ -24,13 +25,6 @@ TASK_TYPES = {
     "simple", "job", "follow", "like", "comment", "share", "view", "visit",
     "review", "social", "data", "upload", "custom", "watch",
 }
-
-SUPPORTED_CURRENCIES = {
-    "USD", "BDT", "EUR", "GBP", "INR", "AUD", "CAD", "SGD", "AED", "SAR",
-    "JPY", "CNY", "HKD", "MYR", "THB", "IDR", "PKR", "NPR", "LKR", "QAR",
-    "KWD", "OMR", "NZD", "CHF", "SEK", "NOK", "DKK", "ZAR", "TRY", "BRL",
-}
-
 
 async def current_user(creds: HTTPAuthorizationCredentials = Depends(bearer)):
     try:
