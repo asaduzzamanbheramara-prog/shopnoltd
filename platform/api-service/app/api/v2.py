@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import SessionLocal
 from app.core.security import verify_token
-from app.models.work import Work, WorkAssignment, WorkSubmission
+from app.models.work import Work, WorkAssignment, WorkSubmission\nfrom app.models.work_rating import WorkRating
 
 router = APIRouter()
 bearer = HTTPBearer()
@@ -169,6 +169,46 @@ async def social_followers(creds: HTTPAuthorizationCredentials = Depends(bearer)
 async def currencies(user=Depends(current_user)):
     return {"currencies": sorted(SUPPORTED_CURRENCIES)}
 
+
+async def rating_summary(s: AsyncSession, work_id: str):
+    rows = (await s.execute(select(WorkRating).where(WorkRating.work_id == work_id).order_by(desc(WorkRating.created_at)))).scalars().all()
+    return {"count": len(rows), "average": round(sum(r.score for r in rows) / len(rows), 2) if rows else 0, "ratings": [{"id": r.id, "rater_id": r.rater_id, "rated_id": r.rated_id, "score": r.score, "review": r.review, "created_at": r.created_at.isoformat()} for r in rows]}
+
+@router.get("/works/{work_id}/ratings")
+async def work_ratings(work_id: str, s: AsyncSession = Depends(db), user=Depends(current_user)):
+    work = await s.get(Work, work_id)
+    if not work or work.tenant_id != user.get("tenant_id", "default"): raise HTTPException(404, "work not found")
+    return await rating_summary(s, work_id)
+
+@router.post("/works/{work_id}/ratings", status_code=201)
+async def rate_work(work_id: str, body: dict, s: AsyncSession = Depends(db), user=Depends(current_user)):
+    work = await s.get(Work, work_id)
+    if not work or work.tenant_id != user.get("tenant_id", "default"): raise HTTPException(404, "work not found")
+    score = int(body.get("score", 0))
+    if score < 1 or score > 5: raise HTTPException(422, "score must be between 1 and 5")
+    submission_id = str(body.get("submission_id", "")).strip()
+    if not submission_id: raise HTTPException(422, "submission_id is required")
+    review = str(body.get("review", "")).strip() or None
+    sub = await s.get(WorkSubmission, submission_id)
+    if not sub or sub.work_id != work_id or sub.status != "approved": raise HTTPException(409, "rating is available only after an approved completed submission")
+    assignment = await s.scalar(select(WorkAssignment).where(WorkAssignment.work_id == work_id, WorkAssignment.worker_id == sub.worker_id))
+    if not assignment or assignment.status != "completed": raise HTTPException(409, "completed work assignment is required before rating")
+    if user["sub"] == work.creator_id: rated_id = sub.worker_id
+    elif user["sub"] == sub.worker_id: rated_id = work.creator_id
+    else: raise HTTPException(403, "only the work creator or completed worker can rate this work")
+    existing = await s.scalar(select(WorkRating).where(WorkRating.submission_id == submission_id, WorkRating.rater_id == user["sub"]))
+    if existing:
+        existing.score, existing.review = score, review
+        await s.commit()
+        return {"updated": True, **(await rating_summary(s, work_id))}
+    s.add(WorkRating(work_id=work_id, submission_id=submission_id, rater_id=user["sub"], rated_id=rated_id, score=score, review=review))
+    await s.commit()
+    return {"created": True, **(await rating_summary(s, work_id))}
+
+@router.get("/profiles/{user_id}/ratings")
+async def profile_ratings(user_id: str, s: AsyncSession = Depends(db), user=Depends(current_user)):
+    rows = (await s.execute(select(WorkRating).where(WorkRating.rated_id == user_id).order_by(desc(WorkRating.created_at)))).scalars().all()
+    return {"user_id": user_id, "count": len(rows), "average": round(sum(r.score for r in rows) / len(rows), 2) if rows else 0, "ratings": [{"score": r.score, "review": r.review, "work_id": r.work_id, "created_at": r.created_at.isoformat()} for r in rows]}
 
 @router.get("/works")
 async def list_works(status: str = Query("open"), limit: int = Query(50, ge=1, le=100), offset: int = Query(0, ge=0), s: AsyncSession = Depends(db), user=Depends(current_user)):
