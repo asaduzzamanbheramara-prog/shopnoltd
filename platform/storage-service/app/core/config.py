@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     minio_access_key: str = "shopno"
     minio_secret_key: str = "CHANGE_ME"
     minio_secure: bool = False
+    keycloak_issuer: str = "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
+    keycloak_jwks_url: str | None = None
     keycloak_audience: str = "storage-service"
 
     @property
@@ -25,7 +27,7 @@ class Settings(BaseSettings):
         # so a literal "*" embedded in a domain string (e.g. "https://*.shopnoltd.dpdns.org")
         # never actually matches any real browser Origin header. This regex matches
         # the bare root domain and any subdomain instead.
-        return r"^https://([a-z0-9-]+\.)*shopnoltd\.dpdns\.org$"
+        return r"^https://([a-z0-9-]+.)*shopnoltd.dpdns.org$"
 
 
 settings = Settings()
