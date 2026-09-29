@@ -12,7 +12,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import SessionLocal
 from app.core.security import verify_token
-from app.models.work import Work, WorkAssignment, WorkSubmission\nfrom app.models.work_rating import WorkRating
+from app.models.work import Work, WorkAssignment, WorkSubmission
+from app.models.work_rating import WorkRating
 
 router = APIRouter()
 bearer = HTTPBearer()
