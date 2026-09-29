@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.db import SessionLocal
 from app.core.security import verify_token
 from app.models.work import Work, WorkAssignment, WorkSubmission
-from app.models.work_evidence import WorkTaskConfig, WorkSession, WorkEvidence, WorkEvent
+from app.models.work_evidence import WorkTaskConfig, WorkSession, WorkEvidence, WorkEvent, GlobalTaskRate
 
 router = APIRouter(prefix="/work")
 bearer = HTTPBearer()
@@ -70,6 +70,15 @@ TASK_TYPES = {
 
 MICRO_TASK_TYPES = {"simple", "follow", "like", "comment", "share", "view", "visit", "review", "social", "data", "upload", "custom"}
 
+def is_admin(u):
+    roles = set(u.get("roles") or [])
+    realm_roles = set(((u.get("realm_access") or {}).get("roles") or []))
+    return bool(roles.intersection({"admin", "shopnoltd-admin", "administrator"}) or realm_roles.intersection({"admin", "shopnoltd-admin", "administrator"}) or u.get("is_admin") is True)
+
+def rate_dict(r):
+    return {"task_type": r.task_type, "rate": str(r.rate), "currency": r.currency, "enabled": bool(r.enabled)}
+
+
 def config_dict(c):
     return {
         "id": c.id,
@@ -125,6 +134,44 @@ async def last_playback(s, session_id):
     )
     return result.scalar_one_or_none()
 
+
+
+@router.get("/rates")
+async def get_task_rates(s: AsyncSession = Depends(db), u=Depends(user)):
+    rows = (await s.execute(select(GlobalTaskRate).order_by(GlobalTaskRate.task_type))).scalars().all()
+    configured = {r.task_type: rate_dict(r) for r in rows}
+    return {"rates": [configured.get(t, {"task_type": t, "rate": "0", "currency": "BDT", "enabled": False}) for t in sorted(TASK_TYPES)]}
+
+@router.get("/admin/rates")
+async def admin_get_task_rates(s: AsyncSession = Depends(db), u=Depends(user)):
+    if not is_admin(u):
+        raise HTTPException(403, "admin role required")
+    return await get_task_rates(s, u)
+
+@router.put("/admin/rates/{task_type}")
+async def admin_set_task_rate(task_type: str, body: dict, s: AsyncSession = Depends(db), u=Depends(user)):
+    if not is_admin(u):
+        raise HTTPException(403, "admin role required")
+    task_type = task_type.strip().lower()
+    if task_type not in TASK_TYPES:
+        raise HTTPException(422, f"Unsupported task_type: {task_type}")
+    try:
+        rate = Decimal(str(body.get("rate", 0)))
+    except Exception as exc:
+        raise HTTPException(422, "rate must be numeric") from exc
+    if rate < 0:
+        raise HTTPException(422, "rate cannot be negative")
+    currency = str(body.get("currency", "BDT")).upper()
+    if currency not in {"USD","BDT","EUR","GBP","INR","AUD","CAD","SGD","AED","SAR","JPY","CNY","HKD","MYR","THB","IDR","PKR","NPR","LKR","QAR","KWD","OMR","NZD","CHF","SEK","NOK","DKK","ZAR","TRY","BRL"}:
+        raise HTTPException(422, "unsupported currency")
+    r = await s.get(GlobalTaskRate, task_type)
+    if not r:
+        r = GlobalTaskRate(task_type=task_type)
+        s.add(r)
+    r.rate, r.currency, r.enabled = rate, currency, 1 if bool(body.get("enabled", True)) and rate > 0 else 0
+    await s.commit()
+    await s.refresh(r)
+    return rate_dict(r)
 
 @router.get("/{work_id}/config")
 async def get_config(work_id: str, s: AsyncSession = Depends(db), u=Depends(user)):
