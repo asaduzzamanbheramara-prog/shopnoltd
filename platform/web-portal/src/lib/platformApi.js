@@ -69,6 +69,7 @@ function storageKeyFromBlogUrl(url) {
 
 export const platformApi = {
   me: () => request('/api/v1/users/me'),
+  omnichannelProviders: () => request('/api/v1/omnichannel/providers'),
   omnichannelCapabilities: () => request('/api/v1/omnichannel/capabilities'),
   omnichannelConnections: () => request('/api/v1/omnichannel/connections'),
   addOmnichannelConnection: (body) => request('/api/v1/omnichannel/connections', { method: 'POST', body: JSON.stringify(body) }),
