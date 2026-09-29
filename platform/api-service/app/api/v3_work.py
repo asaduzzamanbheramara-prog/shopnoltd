@@ -63,6 +63,13 @@ def session_dict(x):
     }
 
 
+TASK_TYPES = {
+    "simple", "job", "follow", "like", "comment", "share", "view", "visit",
+    "review", "social", "data", "upload", "custom", "watch",
+}
+
+MICRO_TASK_TYPES = {"simple", "follow", "like", "comment", "share", "view", "visit", "review", "social", "data", "upload", "custom"}
+
 def config_dict(c):
     return {
         "id": c.id,
@@ -145,6 +152,11 @@ async def put_config(work_id: str, body: dict, s: AsyncSession = Depends(db), u=
         raise HTTPException(404, "work not found")
     if w.creator_id != u["sub"]:
         raise HTTPException(403, "only the creator can configure work")
+    if "task_type" in body:
+        task_type = str(body["task_type"]).strip().lower()
+        if task_type not in TASK_TYPES:
+            raise HTTPException(422, f"Unsupported task_type: {task_type}")
+        w.task_type = task_type
     c = await s.scalar(select(WorkTaskConfig).where(WorkTaskConfig.work_id == work_id))
     if not c:
         c = WorkTaskConfig(work_id=work_id)
@@ -157,8 +169,20 @@ async def put_config(work_id: str, body: dict, s: AsyncSession = Depends(db), u=
     if c.watch_rate_per_minute < 0:
         raise HTTPException(422, "watch rate cannot be negative")
     c.rate_currency = str(body.get("rate_currency") or w.currency).upper()
+    if c.rate_currency not in {"USD","BDT","EUR","GBP","INR","AUD","CAD","SGD","AED","SAR","JPY","CNY","HKD","MYR","THB","IDR","PKR","NPR","LKR","QAR","KWD","OMR","NZD","CHF","SEK","NOK","DKK","ZAR","TRY","BRL"}:
+        raise HTTPException(422, "unsupported rate currency")
     c.rate_rules = json.dumps(body.get("rate_rules") or [])
-    c.social_rates = json.dumps(body.get("social_rates") or {})
+    social_rates = body.get("social_rates") or {}
+    if not isinstance(social_rates, dict):
+        raise HTTPException(422, "social_rates must be an object")
+    for key, value in social_rates.items():
+        if str(key).lower() not in {"follow","like","comment","share","view","visit","review","social","custom"}:
+            raise HTTPException(422, f"unsupported social rate type: {key}")
+        try:
+            if Decimal(str(value)) < 0: raise ValueError
+        except Exception as exc:
+            raise HTTPException(422, f"invalid social rate for {key}") from exc
+    c.social_rates = json.dumps({str(k).lower(): str(v) for k,v in social_rates.items()})
     await s.commit()
     await s.refresh(c)
     return config_dict(c)
@@ -452,10 +476,14 @@ async def finish_session(session_id: str, s: AsyncSession = Depends(db), u=Depen
     if x.stage != "working":
         raise HTTPException(409, "session is not working")
     kinds = await evidence_kinds(s, x.id, u["sub"])
-    if "start" not in kinds:
-        raise HTTPException(409, "required Start Work evidence must be captured")
-    if "end" not in kinds:
-        raise HTTPException(409, "required End Work evidence must be captured before finishing")
+    w = await s.get(Work, x.work_id)
+    if w and w.task_type == "watch":
+        if "start" not in kinds:
+            raise HTTPException(409, "required Start Work evidence must be captured")
+        if "end" not in kinds:
+            raise HTTPException(409, "required End Work evidence must be captured before finishing")
+    elif not kinds and not await s.scalar(select(func.count(WorkEvent.id)).where(WorkEvent.session_id == x.id)):
+        raise HTTPException(409, "complete the task and provide evidence or a task event before finishing")
     now = datetime.utcnow()
     if x.last_heartbeat_at:
         x.work_seconds += min(max(int((now - x.last_heartbeat_at).total_seconds()), 0), 30)
@@ -495,12 +523,24 @@ async def submit_session(session_id: str, s: AsyncSession = Depends(db), u=Depen
         raise HTTPException(409, "finish the work before submitting")
     c = await s.scalar(select(WorkTaskConfig).where(WorkTaskConfig.work_id == x.work_id))
     required_watch = int(c.required_watch_seconds) if c else 0
+    kinds = await evidence_kinds(s, x.id, u["sub"])
     if x.eligible_watch_seconds < required_watch:
         raise HTTPException(409, f"required verified watch time not reached: {required_watch} seconds")
-    kinds = await evidence_kinds(s, x.id, u["sub"])
-    if "before" not in kinds or "start" not in kinds or "end" not in kinds:
-        raise HTTPException(409, "required Before, Start, and End evidence must be present")
-    pending = await s.scalar(select(WorkSubmission).where(
+    if w := await s.get(Work, x.work_id):
+        if w.task_type == "watch":
+            if "before" not in kinds or "start" not in kinds or "end" not in kinds:
+                raise HTTPException(409, "required Before, Start, and End evidence must be present")
+        elif not kinds and not await s.scalar(select(func.count(WorkEvent.id)).where(WorkEvent.session_id == x.id)):
+            raise HTTPException(409, "complete the task and provide evidence or a task event before submitting")
+        if w.task_type in MICRO_TASK_TYPES:
+            rate = Decimal(str(w.reward_amount))
+            if c:
+                configured = parse_json(c.social_rates, {})
+                if w.task_type in configured:
+                    rate = Decimal(str(configured[w.task_type]))
+            x.calculated_amount = rate
+            x.currency = c.rate_currency if c else w.currency
+    pending = await s.scalar(select(WorkSubmission).where
         WorkSubmission.work_id == x.work_id,
         WorkSubmission.worker_id == u["sub"],
         WorkSubmission.status == "pending",
