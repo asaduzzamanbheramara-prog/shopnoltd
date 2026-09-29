@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowLeft, CheckCircle2, ChevronDown, ChevronUp, Download, Film, Loader2, Plus, Trash2, Upload, XCircle } from 'lucide-react'
+import { tryRefresh } from '../lib/tokenRefresh'
 
 const API_BASE = import.meta.env.VITE_STORAGE_API_URL || 'https://storage-service.shopnoltd.dpdns.org'
 const PROFILES = [
@@ -8,8 +9,8 @@ const PROFILES = [
   { slug: 'interior-business', label: 'Business & Interior Design' },
 ]
 
-function headers(json = false) {
-  const token = localStorage.getItem('shopno_token')
+function headers(json = false, tokenOverride = null) {
+  const token = tokenOverride || localStorage.getItem('shopno_token')
   const h = {}
   if (token) h.Authorization = `Bearer ${token}`
   if (json) h['Content-Type'] = 'application/json'
@@ -17,7 +18,25 @@ function headers(json = false) {
 }
 
 async function api(path, options = {}) {
-  const response = await fetch(`${API_BASE}/api/v1/profile-videos${path}`, { ...options, headers: { ...headers(!!options.body), ...(options.headers || {}) } })
+  const request = (token) =>
+    fetch(`${API_BASE}/api/v1/profile-videos${path}`, {
+      ...options,
+      headers: { ...headers(!!options.body, token), ...(options.headers || {}) },
+    })
+
+  let response = await request(localStorage.getItem('shopno_token'))
+
+  if (response.status === 401) {
+    const refreshed = await tryRefresh()
+    if (refreshed) {
+      response = await request(refreshed)
+    } else {
+      localStorage.removeItem('shopno_token')
+      localStorage.removeItem('shopno_refresh_token')
+      throw new Error('Your session has expired. Please log in again.')
+    }
+  }
+
   const text = await response.text()
   let data = null
   try { data = text ? JSON.parse(text) : null } catch { data = text }
@@ -59,7 +78,7 @@ export default function AdminProfileVideos() {
       const chunkSize = Number(start.chunk_size || 8 * 1024 * 1024)
       for (let part = 1; part <= totalParts; part++) {
         const chunk = file.slice((part - 1) * chunkSize, Math.min(part * chunkSize, file.size))
-        const response = await fetch(`${API_BASE}/api/v1/profile-videos/uploads/${encodeURIComponent(uploadId)}/parts/${part}`, { method: 'PUT', headers: { ...headers(), 'Content-Type': file.type || 'application/octet-stream' }, body: chunk })
+        const response = await fetch(`${API_BASE}/api/v1/profile-videos/uploads/${encodeURIComponent(uploadId)}/parts/${part}`, { method: 'PUT', headers: { ...headers(false), 'Content-Type': file.type || 'application/octet-stream' }, body: chunk })
         if (!response.ok) { const t = await response.text(); throw new Error(t || `Part ${part} failed (HTTP ${response.status})`) }
         setProgress(Math.round(part / totalParts * 100))
       }
