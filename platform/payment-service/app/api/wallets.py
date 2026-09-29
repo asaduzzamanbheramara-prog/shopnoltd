@@ -37,7 +37,12 @@ async def current_user(creds: HTTPAuthorizationCredentials = Depends(bearer)):
 
 @router.get("", response_model=list[WalletOut])
 async def list_wallets(user=Depends(current_user), s: AsyncSession = Depends(db)):
-    res = await s.execute(select(Wallet).where(Wallet.user_id == user["sub"]))
+    res = await s.execute(
+        select(Wallet).where(
+            Wallet.user_id == user["sub"],
+            Wallet.tenant_id == user.get("tenant_id", "default"),
+        )
+    )
     return res.scalars().all()
 
 
@@ -89,7 +94,11 @@ async def get_wallet_ledger(
 ):
     currency = currency.upper()
     wres = await s.execute(
-        select(Wallet).where(Wallet.user_id == user["sub"], Wallet.currency == currency)
+        select(Wallet).where(
+            Wallet.user_id == user["sub"],
+            Wallet.tenant_id == user.get("tenant_id", "default"),
+            Wallet.currency == currency,
+        )
     )
     w = wres.scalar_one_or_none()
     if not w:
