@@ -29,6 +29,7 @@ async def lifespan(app: FastAPI):
             # Keep this DDL static; it is safe to run on every startup and upgrades
             # existing databases where create_all cannot add a missing column.
             await conn.execute(text("ALTER TABLE works ADD COLUMN IF NOT EXISTS reference_image TEXT"))
+            await conn.execute(text("ALTER TABLE works ADD COLUMN IF NOT EXISTS before_post_screenshot TEXT"))
             await conn.execute(text("ALTER TABLE works ADD COLUMN IF NOT EXISTS task_type VARCHAR(32) NOT NULL DEFAULT 'simple'"))
             await conn.execute(text("ALTER TABLE works ADD COLUMN IF NOT EXISTS platform VARCHAR(64) NOT NULL DEFAULT 'shopnoltd'"))
             await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_works_task_type ON works (task_type)"))
