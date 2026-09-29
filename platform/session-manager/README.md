@@ -19,7 +19,7 @@ python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 playwright install chromium --with-deps
 
-export DATABASE_URL=postgresql://postgres:5XuByzqhn6nJyq7iR7xva58iKHLSUSj@localhost:5432/session_manager
+export DATABASE_URL=postgresql://<user>:<password>@localhost:5432/session_manager
 export SESSION_MANAGER_ENCRYPTION_KEY=$(python3 -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())")
 
 python3 -c "from app.models.db import init_db; init_db()"
@@ -43,7 +43,7 @@ Open http://localhost:8000
    kubectl label namespace shopno-tools name=shopno-tools --overwrite
 
    kubectl -n shopno-tools create secret generic session-manager-secrets \
-     --from-literal=DATABASE_URL="postgresql://postgres:5XuByzqhn6nJyq7iR7xva58iKHLSUSj@<postgres-host>:5432/session_manager" \
+     --from-literal=DATABASE_URL="postgresql://<user>:<password>@<postgres-host>:5432/session_manager" \
      --from-literal=ENCRYPTION_KEY="$(python3 -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())')"
    ```
 5. Apply manifests:
