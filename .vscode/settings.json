@@ -1,7 +1,7 @@
 {
     "chat.byokUtilityModelDefault": "mainAgent",
-    "chat.utilityModel": "anthropic/claude-fable-5-1",
-    "chat.utilitySmallModel": "anthropic/claude-fable-5",
+    "chat.utilityModel": "ollama/qwen2.5:3b",
+    "chat.utilitySmallModel": "ollama/qwen2.5:3b",
     "ollama-autocoder.endpoint": "http://ollama.shopno-apps.svc.cluster.local:11434/api/generate",
     "ollama-autocoder.model": "qwen2.5:3b",
     "ollama-autocoder.max tokens predicted": 512,
