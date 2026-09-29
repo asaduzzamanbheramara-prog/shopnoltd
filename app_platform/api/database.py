@@ -4,9 +4,7 @@ from contextlib import contextmanager
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
-DATABASE_URL = os.getenv(
-    "DATABASE_URL", "postgresql://shopnoltd:Shopnoltd2026DB@postgres-prod:5432/shopnoltd"
-)
+DATABASE_URL = os.environ["DATABASE_URL"]
 
 
 @contextmanager
