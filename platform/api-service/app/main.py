@@ -14,7 +14,8 @@ from starlette.responses import Response
 from app.core.config import settings
 from app.core.db import Base, engine
 from app.models.work import Work, WorkAssignment, WorkSubmission  # noqa: F401
-from app.models.work_evidence import WorkTaskConfig, WorkSession, WorkEvidence, WorkEvent  # noqa: F401
+from app.models.work_evidence import WorkTaskConfig, WorkSession, WorkEvidence, WorkEvent
+from app.models.work_rating import WorkRating  # noqa: F401
 
 log = structlog.get_logger()
 
