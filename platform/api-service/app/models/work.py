@@ -13,6 +13,7 @@ class Work(Base):
     creator_id = Column(String(128), nullable=False, index=True)
     title = Column(String(300), nullable=False)
     task_type = Column(String(32), nullable=False, default="simple", index=True)
+    platform = Column(String(64), nullable=False, default="shopnoltd", index=True)
     description = Column(Text, nullable=False)
     requirements = Column(Text, nullable=True)
     reference_image = Column(Text, nullable=True)

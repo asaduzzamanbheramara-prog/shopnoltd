@@ -65,6 +65,7 @@ class WorkEvent(Base):
 
 class GlobalTaskRate(Base):
     __tablename__ = "global_task_rates"
+    platform = Column(String(64), primary_key=True, default="shopnoltd")
     task_type = Column(String(32), primary_key=True)
     currency = Column(String(16), primary_key=True)
     rate = Column(Numeric(20, 8), nullable=False, default=0)
