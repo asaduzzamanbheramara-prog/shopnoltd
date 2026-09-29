@@ -191,6 +191,25 @@ async def omnichannel_add_connection(body: dict, creds: HTTPAuthorizationCredent
     token = await omnichannel_token(creds)
     return await call("POST", f"{SOCIAL}/api/v1/omnichannel/connections", token, json=body)
 
+@router.get("/omnichannel/connections/{connection_id}")
+async def omnichannel_connection(connection_id: str, creds: HTTPAuthorizationCredentials = Depends(bearer)):
+    token = await omnichannel_token(creds)
+    return await call("GET", f"{SOCIAL}/api/v1/omnichannel/connections/{connection_id}", token)
+
+
+@router.patch("/omnichannel/connections/{connection_id}")
+async def omnichannel_update_connection(connection_id: str, body: dict, creds: HTTPAuthorizationCredentials = Depends(bearer)):
+    token = await omnichannel_token(creds)
+    return await call("PATCH", f"{SOCIAL}/api/v1/omnichannel/connections/{connection_id}", token, json=body)
+
+
+@router.delete("/omnichannel/connections/{connection_id}", status_code=204)
+async def omnichannel_delete_connection(connection_id: str, creds: HTTPAuthorizationCredentials = Depends(bearer)):
+    token = await omnichannel_token(creds)
+    await call("DELETE", f"{SOCIAL}/api/v1/omnichannel/connections/{connection_id}", token)
+    return Response(status_code=204)
+
+
 
 @router.get("/omnichannel/clients/{client_id}/identities")
 async def omnichannel_client_identities(client_id: str, creds: HTTPAuthorizationCredentials = Depends(bearer)):

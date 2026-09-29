@@ -40,6 +40,18 @@ class ConnectionIn(BaseModel):
     token_expires_at: str | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)
 
+class ConnectionPatch(BaseModel):
+    account_type: str | None = None
+    username: str | None = None
+    display_name: str | None = None
+    status: str | None = None
+    scopes: list[str] | None = None
+    access_token_ref: str | None = None
+    refresh_token_ref: str | None = None
+    token_expires_at: str | None = None
+    metadata: dict[str, Any] | None = None
+
+
 class ActionIn(BaseModel):
     platform: str
     action: str
@@ -67,6 +79,92 @@ async def list_connections(user=Depends(current_user), s: AsyncSession = Depends
         "FROM social_connections WHERE tenant_id=:tenant ORDER BY platform, display_name"
     ), {"tenant": tenant_id})).mappings().all()
     return [dict(r) for r in rows]
+
+@router.get("/connections/{connection_id}")
+async def get_connection(connection_id: str, user=Depends(current_user), s: AsyncSession = Depends(db)):
+    tenant_id = user.get("tenant_id", "default")
+    row = (await s.execute(text(
+        """SELECT id, platform, account_type, platform_account_id, username, display_name,
+                  status, scopes, token_expires_at, metadata, connected_at, last_sync_at,
+                  created_at, updated_at
+           FROM social_connections
+           WHERE tenant_id=:tenant AND id=:id"""
+    ), {"tenant": tenant_id, "id": connection_id})).mappings().one_or_none()
+    if row is None:
+        raise HTTPException(404, "connection not found")
+    capabilities = (await s.execute(text(
+        "SELECT action, availability, requires_oauth, notes "
+        "FROM platform_capabilities WHERE platform=:platform ORDER BY action"
+    ), {"platform": row["platform"]})).mappings().all()
+    return {**dict(row), "capabilities": [dict(item) for item in capabilities]}
+
+
+@router.patch("/connections/{connection_id}")
+async def update_connection(connection_id: str, body: ConnectionPatch, user=Depends(current_user), s: AsyncSession = Depends(db)):
+    tenant_id = user.get("tenant_id", "default")
+    values = body.model_dump(exclude_unset=True)
+    if not values:
+        raise HTTPException(422, "at least one field is required")
+
+    allowed = {
+        "account_type": "account_type",
+        "username": "username",
+        "display_name": "display_name",
+        "status": "status",
+        "scopes": "scopes",
+        "access_token_ref": "access_token_ref",
+        "refresh_token_ref": "refresh_token_ref",
+        "token_expires_at": "token_expires_at",
+        "metadata": "metadata",
+    }
+    unknown = set(values) - set(allowed)
+    if unknown:
+        raise HTTPException(422, "unsupported connection field")
+
+    assignments = []
+    params = {"tenant": tenant_id, "id": connection_id}
+    for key, column in allowed.items():
+        if key not in values:
+            continue
+        assignments.append(f"{column}=:{key}")
+        value = values[key]
+        if key == "scopes":
+            params[key] = __import__("json").dumps(value or [])
+            assignments[-1] = f"{column}=:{key}::jsonb"
+        elif key == "metadata":
+            params[key] = __import__("json").dumps(value or {})
+            assignments[-1] = f"{column}=:{key}::jsonb"
+        elif key == "token_expires_at":
+            params[key] = value or ""
+            assignments[-1] = f"{column}=NULLIF(:{key}, '')::timestamptz"
+        else:
+            params[key] = value
+
+    row = (await s.execute(text(
+        f"""UPDATE social_connections
+            SET {", ".join(assignments)}, updated_at=NOW()
+            WHERE tenant_id=:tenant AND id=:id
+            RETURNING id, platform, account_type, platform_account_id, username, display_name,
+                      status, scopes, token_expires_at, metadata, connected_at, last_sync_at,
+                      created_at, updated_at"""
+    ), params)).mappings().one_or_none()
+    if row is None:
+        raise HTTPException(404, "connection not found")
+    await s.commit()
+    return dict(row)
+
+
+@router.delete("/connections/{connection_id}", status_code=204)
+async def delete_connection(connection_id: str, user=Depends(current_user), s: AsyncSession = Depends(db)):
+    tenant_id = user.get("tenant_id", "default")
+    result = await s.execute(text(
+        "DELETE FROM social_connections WHERE tenant_id=:tenant AND id=:id RETURNING id"
+    ), {"tenant": tenant_id, "id": connection_id})
+    if result.scalar_one_or_none() is None:
+        raise HTTPException(404, "connection not found")
+    await s.commit()
+    return None
+
 
 @router.post("/connections", status_code=201)
 async def add_connection(body: ConnectionIn, user=Depends(current_user), s: AsyncSession = Depends(db)):
@@ -138,6 +236,16 @@ async def queue_action(body: ActionIn, user=Depends(current_user), s: AsyncSessi
     ), {"platform": platform, "action": body.action})).scalar_one_or_none()
     if capability is None:
         raise HTTPException(400, f"unsupported action for platform: {platform}/{body.action}")
+
+    if body.connection_id:
+        connection = (await s.execute(text(
+            "SELECT platform FROM social_connections WHERE tenant_id=:tenant AND id=:id"
+        ), {"tenant": tenant_id, "id": body.connection_id})).scalar_one_or_none()
+        if connection is None:
+            raise HTTPException(404, "connection not found")
+        if connection != platform:
+            raise HTTPException(409, "connection platform does not match action platform")
+
     action_id = str(uuid4())
     row = (await s.execute(text(
         """INSERT INTO platform_actions
