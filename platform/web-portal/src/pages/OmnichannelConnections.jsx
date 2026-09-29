@@ -63,6 +63,7 @@ function fromConnection(item) {
 export default function OmnichannelConnections() {
   const [items, setItems] = useState([])
   const [capabilities, setCapabilities] = useState([])
+  const [providers, setProviders] = useState([])
   const [form, setForm] = useState(EMPTY)
   const [editing, setEditing] = useState(null)
   const [busy, setBusy] = useState(false)
@@ -72,12 +73,14 @@ export default function OmnichannelConnections() {
   async function load() {
     setError('')
     try {
-      const [connections, caps] = await Promise.all([
+      const [connections, caps, providerStatus] = await Promise.all([
         platformApi.omnichannelConnections(),
         platformApi.omnichannelCapabilities(),
+        platformApi.omnichannelProviders(),
       ])
       setItems(Array.isArray(connections) ? connections : [])
       setCapabilities(Array.isArray(caps) ? caps : [])
+      setProviders(Array.isArray(providerStatus) ? providerStatus : [])
     } catch (e) {
       setError(e.message)
     }
@@ -201,6 +204,33 @@ export default function OmnichannelConnections() {
         This registry stores account metadata and credential references. It does not manufacture OAuth authorization or provider tokens; each provider still requires its own approved authorization.
       </div>
     </form>
+
+
+    <section style={{ ...styles.card, marginBottom: 20 }}>
+      <h2 style={{ margin: '0 0 12px', fontSize: 18 }}>Direct provider connection readiness</h2>
+      <p style={{ margin: '0 0 12px', color: '#6b7280', lineHeight: 1.5 }}>
+        Shopnoltd now checks which provider integrations are configured by the server. OAuth client secrets are never exposed to the browser.
+        A provider marked <strong>Not configured</strong> requires its developer application credentials to be installed in the cluster secret manager before a direct authorization button can safely be enabled.
+      </p>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(230px,1fr))', gap: 10 }}>
+        {providers.map(provider => (
+          <div key={provider.provider} style={{ border: '1px solid #e5e7eb', borderRadius: 10, padding: 11 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+              <strong>{provider.provider}</strong>
+              <span style={{ fontSize: 12, fontWeight: 700, color: provider.configured ? '#166534' : '#92400e' }}>
+                {provider.configured ? 'Configured' : 'Not configured'}
+              </span>
+            </div>
+            <div style={{ color: '#6b7280', fontSize: 12, marginTop: 5 }}>
+              {provider.platforms.join(', ')} · {provider.mode || 'oauth2'}
+            </div>
+            <div style={{ color: '#6b7280', fontSize: 11, marginTop: 5 }}>
+              {provider.authorization_supported ? 'Authorization flow can be enabled after callback/token storage wiring.' : 'Uses provider-specific business/API authorization.'}
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
 
     <section style={{ ...styles.card, marginBottom: 20 }}>
       <h2 style={{ margin: '0 0 12px', fontSize: 18 }}>Platform capability matrix</h2>

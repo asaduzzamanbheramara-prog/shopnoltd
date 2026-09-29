@@ -174,6 +174,12 @@ async def payment_exchange_convert(body: dict, creds: HTTPAuthorizationCredentia
     return await call("POST", f"{PAYMENT}/api/v1/exchanges/convert", creds.credentials, json=payload)
 
 
+@router.get("/omnichannel/providers")
+async def omnichannel_providers(creds: HTTPAuthorizationCredentials = Depends(bearer)):
+    token = await omnichannel_token(creds)
+    return await call("GET", f"{SOCIAL}/api/v1/omnichannel/providers", token)
+
+
 @router.get("/omnichannel/capabilities")
 async def omnichannel_capabilities(creds: HTTPAuthorizationCredentials = Depends(bearer)):
     token = await omnichannel_token(creds)

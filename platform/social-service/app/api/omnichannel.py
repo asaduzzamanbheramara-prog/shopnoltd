@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import SessionLocal
 from app.core.security import verify_token
+from app.core.config import settings
 
 router = APIRouter()
 bearer = HTTPBearer()
@@ -18,6 +19,22 @@ bearer = HTTPBearer()
 PLATFORMS = {
     "whatsapp", "facebook", "instagram", "linkedin", "x", "telegram",
     "tiktok", "youtube", "gmail", "outlook", "3cx",
+}
+
+# This is deliberately a readiness registry, not a promise that every provider
+# supports the same OAuth/discovery semantics. Provider credentials are supplied
+# only through Kubernetes/runtime secrets.
+PROVIDER_CONFIG = {
+    "google": {"platforms": ["gmail", "youtube"], "client_id": settings.google_client_id, "client_secret": settings.google_client_secret, "auth_url": "https://accounts.google.com/o/oauth2/v2/auth", "token_url": "https://oauth2.googleapis.com/token", "scopes": ["openid", "email", "profile"]},
+    "microsoft": {"platforms": ["outlook"], "client_id": settings.microsoft_client_id, "client_secret": settings.microsoft_client_secret, "auth_url": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize", "token_url": "https://login.microsoftonline.com/common/oauth2/v2.0/token", "scopes": ["openid", "profile", "email", "offline_access", "https://graph.microsoft.com/User.Read"]},
+    "linkedin": {"platforms": ["linkedin"], "client_id": settings.linkedin_client_id, "client_secret": settings.linkedin_client_secret, "auth_url": "https://www.linkedin.com/oauth/v2/authorization", "token_url": "https://www.linkedin.com/oauth/v2/accessToken", "scopes": ["openid", "profile", "email"]},
+    "x": {"platforms": ["x"], "client_id": settings.x_client_id, "client_secret": settings.x_client_secret, "auth_url": "https://twitter.com/i/oauth2/authorize", "token_url": "https://api.x.com/2/oauth2/token", "scopes": ["tweet.read", "users.read", "offline.access"]},
+    "facebook": {"platforms": ["facebook", "instagram"], "client_id": settings.facebook_client_id, "client_secret": settings.facebook_client_secret, "auth_url": "https://www.facebook.com/v24.0/dialog/oauth", "token_url": "https://graph.facebook.com/v24.0/oauth/access_token", "scopes": []},
+    "instagram": {"platforms": ["instagram"], "client_id": settings.instagram_client_id, "client_secret": settings.instagram_client_secret, "auth_url": "https://www.facebook.com/v24.0/dialog/oauth", "token_url": "https://graph.facebook.com/v24.0/oauth/access_token", "scopes": []},
+    "tiktok": {"platforms": ["tiktok"], "client_id": settings.tiktok_client_key, "client_secret": settings.tiktok_client_secret, "auth_url": "https://www.tiktok.com/v2/auth/authorize/", "token_url": "https://open.tiktokapis.com/v2/oauth/token/", "scopes": ["user.info.basic"]},
+    "telegram": {"platforms": ["telegram"], "client_id": None, "client_secret": None, "auth_url": None, "token_url": None, "scopes": [], "mode": "bot"},
+    "whatsapp": {"platforms": ["whatsapp"], "client_id": settings.whatsapp_client_id, "client_secret": settings.whatsapp_client_secret, "auth_url": None, "token_url": None, "scopes": [], "mode": "business_cloud"},
+    "3cx": {"platforms": ["3cx"], "client_id": settings.threecx_client_id, "client_secret": settings.threecx_client_secret, "auth_url": None, "token_url": None, "scopes": [], "mode": "provider_api"},
 }
 
 async def db():
@@ -61,6 +78,23 @@ class ActionIn(BaseModel):
     target_id: str | None = None
     idempotency_key: str | None = None
     payload: dict[str, Any] = Field(default_factory=dict)
+
+
+@router.get("/providers")
+async def provider_status(user=Depends(current_user)):
+    """Return safe provider readiness metadata; never return client secrets."""
+    result = []
+    for provider, cfg in PROVIDER_CONFIG.items():
+        result.append({
+            "provider": provider,
+            "platforms": cfg["platforms"],
+            "configured": bool(cfg.get("client_id") and cfg.get("client_secret")),
+            "mode": cfg.get("mode", "oauth2"),
+            "authorization_supported": bool(cfg.get("auth_url") and cfg.get("token_url")),
+            "scopes": cfg.get("scopes", []),
+            "redirect_uri": settings.provider_oauth_redirect_uri if cfg.get("auth_url") else None,
+        })
+    return result
 
 @router.get("/capabilities")
 async def capabilities(user=Depends(current_user), s: AsyncSession = Depends(db)):
