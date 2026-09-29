@@ -228,7 +228,10 @@ async def create_work(body: dict, s: AsyncSession = Depends(db), user=Depends(cu
     try: reward_decimal = Decimal(str(reward))
     except Exception as exc: raise HTTPException(422, "reward_amount must be numeric") from exc
     if reward_decimal <= 0: raise HTTPException(422, "reward_amount must be greater than zero")
-    currency = str(body.get("currency", "BDT")).upper()
+    raw_currency = body.get("currency")
+    if raw_currency is None or not str(raw_currency).strip():
+        raise HTTPException(422, "currency is required; choose the earning currency explicitly")
+    currency = str(raw_currency).strip().upper()
     if currency not in SUPPORTED_CURRENCIES: raise HTTPException(422, f"Unsupported currency: {currency}")
     max_workers = int(body.get("max_workers", 1))
     if not 1 <= max_workers <= 1000: raise HTTPException(422, "max_workers must be between 1 and 1000")
