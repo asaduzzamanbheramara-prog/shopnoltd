@@ -5,6 +5,7 @@ import hashlib
 import hmac
 import json
 import secrets
+from uuid import uuid4
 import time
 from datetime import datetime, timedelta, timezone
 from urllib.parse import urlencode
@@ -16,7 +17,8 @@ from fastapi.responses import RedirectResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import text
 
-from app.api.omnichannel import PROVIDER_CONFIG, db
+from app.api.omnichannel import PROVIDER_CONFIG
+from app.core.db import SessionLocal
 from app.core.config import settings
 from app.core.security import verify_token
 
@@ -210,7 +212,7 @@ async def callback(code: str | None = None, state: str | None = None, error: str
         encrypted_refresh = f.encrypt(tokens["refresh_token"].encode()).decode()
 
     async with SessionLocal() as s:
-        connection_id = str(secrets.token_hex(16))
+        connection_id = str(uuid4())
         scopes = _scopes(provider, platform)
         row = (await s.execute(text(
             """INSERT INTO social_connections
@@ -256,7 +258,7 @@ async def callback(code: str | None = None, state: str | None = None, error: str
                              token_expires_at=EXCLUDED.token_expires_at, metadata=EXCLUDED.metadata,
                              status='connected', updated_at=NOW()"""
         ), {
-            "id": str(secrets.token_hex(16)),
+            "id": str(uuid4()),
             "tenant": payload["tenant_id"],
             "user": payload["sub"],
             "provider": provider,
