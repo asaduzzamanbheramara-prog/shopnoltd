@@ -244,12 +244,16 @@ async def create_work(body: dict, s: AsyncSession = Depends(db), user=Depends(cu
     if body.get("deadline"):
         try: deadline = datetime.fromisoformat(str(body["deadline"]).replace("Z", "+00:00")).replace(tzinfo=None)
         except ValueError as exc: raise HTTPException(422, "deadline must be ISO-8601") from exc
+    before_post_screenshot = body.get("before_post_screenshot") or None
+    if before_post_screenshot is not None:
+        if not isinstance(before_post_screenshot, str) or not before_post_screenshot.startswith("data:image/"): raise HTTPException(422, "before_post_screenshot must be a data:image/... URL")
+        if len(before_post_screenshot) > 6_500_000: raise HTTPException(422, "before_post_screenshot is too large (max ~6MB)")
     reference_image = body.get("reference_image") or None
     if reference_image is not None:
         if not isinstance(reference_image, str) or not reference_image.startswith("data:image/"): raise HTTPException(422, "reference_image must be a data:image/... URL")
         if len(reference_image) > 6_500_000: raise HTTPException(422, "reference_image is too large (max ~6MB)")
     work = Work(tenant_id=user.get("tenant_id", "default"), creator_id=user["sub"], title=title, description=description,
-                requirements=str(body.get("requirements", "")) or None, reference_image=reference_image, task_type=task_type, platform=platform,
+                requirements=str(body.get("requirements", "")) or None, reference_image=reference_image, before_post_screenshot=before_post_screenshot, task_type=task_type, platform=platform,
                 reward_amount=reward_decimal, currency=currency, max_workers=max_workers, deadline=deadline, status="draft")
     s.add(work); await s.commit(); await s.refresh(work)
     return await enriched_work(s, work)
