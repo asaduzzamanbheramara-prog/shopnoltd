@@ -46,6 +46,7 @@ app.include_router(__import__("app.api.follows", fromlist=["router"]).router, pr
 app.include_router(__import__("app.api.post_views", fromlist=["router"]).router, prefix="/api/v1/views", tags=["views"])
 app.include_router(__import__("app.api.reactions", fromlist=["router"]).router, prefix="/api/v1/reactions", tags=["reactions"])
 app.include_router(__import__("app.api.omnichannel", fromlist=["router"]).router, prefix="/api/v1/omnichannel", tags=["omnichannel"])
+app.include_router(__import__("app.api.omnichannel_oauth", fromlist=["router"]).router, prefix="/api/v1/omnichannel/oauth", tags=["omnichannel-oauth"])
 
 
 @app.get("/healthz", include_in_schema=False)
