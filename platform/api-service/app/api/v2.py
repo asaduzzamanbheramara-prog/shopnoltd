@@ -26,6 +26,8 @@ TASK_TYPES = {
     "review", "social", "data", "upload", "custom", "watch",
 }
 
+WORK_PLATFORMS = {"shopnoltd", "facebook", "instagram", "youtube", "tiktok", "telegram", "whatsapp", "website", "data", "custom"}
+
 async def current_user(creds: HTTPAuthorizationCredentials = Depends(bearer)):
     try:
         return await verify_token(creds.credentials)
@@ -88,7 +90,7 @@ def work_dict(w: Work, total_slots: int | None = None, active_slots: int | None 
     remaining_slots = max(total_slots - active_slots - completed_slots, 0)
     return {
         "id": w.id, "tenant_id": w.tenant_id, "creator_id": w.creator_id, "title": w.title,
-        "description": w.description, "requirements": w.requirements, "reference_image": w.reference_image, "task_type": w.task_type,
+        "description": w.description, "requirements": w.requirements, "reference_image": w.reference_image, "task_type": w.task_type, "platform": w.platform,
         "reward_amount": str(w.reward_amount), "currency": w.currency, "max_workers": w.max_workers,
         "total_tasks": total_slots, "active_tasks": active_slots, "completed_tasks": completed_slots,
         "remaining_tasks": remaining_slots, "total_amount": str(Decimal(str(w.reward_amount)) * total_slots),
@@ -224,6 +226,9 @@ async def create_work(body: dict, s: AsyncSession = Depends(db), user=Depends(cu
     task_type = str(body.get("task_type", "simple")).strip().lower()
     if task_type not in TASK_TYPES:
         raise HTTPException(422, f"Unsupported task_type: {task_type}")
+    platform = str(body.get("platform", "shopnoltd")).strip().lower()
+    if platform not in WORK_PLATFORMS:
+        raise HTTPException(422, f"Unsupported platform: {platform}")
     if not title or not description or reward is None: raise HTTPException(422, "title, description and reward_amount are required")
     try: reward_decimal = Decimal(str(reward))
     except Exception as exc: raise HTTPException(422, "reward_amount must be numeric") from exc
@@ -244,7 +249,7 @@ async def create_work(body: dict, s: AsyncSession = Depends(db), user=Depends(cu
         if not isinstance(reference_image, str) or not reference_image.startswith("data:image/"): raise HTTPException(422, "reference_image must be a data:image/... URL")
         if len(reference_image) > 6_500_000: raise HTTPException(422, "reference_image is too large (max ~6MB)")
     work = Work(tenant_id=user.get("tenant_id", "default"), creator_id=user["sub"], title=title, description=description,
-                requirements=str(body.get("requirements", "")) or None, reference_image=reference_image, task_type=task_type,
+                requirements=str(body.get("requirements", "")) or None, reference_image=reference_image, task_type=task_type, platform=platform,
                 reward_amount=reward_decimal, currency=currency, max_workers=max_workers, deadline=deadline, status="draft")
     s.add(work); await s.commit(); await s.refresh(work)
     return await enriched_work(s, work)
@@ -267,6 +272,10 @@ async def update_work(work_id: str, body: dict, s: AsyncSession = Depends(db), u
         task_type = str(body["task_type"]).strip().lower()
         if task_type not in TASK_TYPES: raise HTTPException(422, f"Unsupported task_type: {task_type}")
         work.task_type = task_type
+    if "platform" in body:
+        platform = str(body["platform"]).strip().lower()
+        if platform not in WORK_PLATFORMS: raise HTTPException(422, f"Unsupported platform: {platform}")
+        work.platform = platform
     for field in ("title", "description", "requirements"):
         if field in body:
             value = str(body[field]).strip()
