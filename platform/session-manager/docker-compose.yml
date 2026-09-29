@@ -5,7 +5,7 @@ services:
     image: postgres:15
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: localdevpassword
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}"
       POSTGRES_DB: session_manager
     ports:
       - "5433:5432"
@@ -25,8 +25,8 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql://postgres:localdevpassword@postgres:5432/session_manager
-      SESSION_MANAGER_ENCRYPTION_KEY: "dev-only-key-Zc9v8sBpXQ2Y7wq4nT1uF3jK6rL0mH5e="
+      DATABASE_URL: "${DATABASE_URL:?Set DATABASE_URL}"
+      SESSION_MANAGER_ENCRYPTION_KEY: "${SESSION_MANAGER_ENCRYPTION_KEY:?Set SESSION_MANAGER_ENCRYPTION_KEY}"
       PROFILE_STORAGE_ROOT: /data
     ports:
       - "8000:8000"
