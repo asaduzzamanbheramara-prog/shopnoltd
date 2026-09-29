@@ -147,6 +147,16 @@ async def get_task_rates(s: AsyncSession = Depends(db), u=Depends(user)):
         rates[r.platform].setdefault(r.task_type, []).append(rate_dict(r))
     return {"supported_currencies": sorted(SUPPORTED_CURRENCIES), "platforms": sorted(WORK_PLATFORMS), "rates": rates}
 
+@router.get("/balance-summary")
+async def work_balance_summary(s: AsyncSession = Depends(db), u=Depends(user)):
+    rows = (await s.execute(select(WorkSubmission).where(WorkSubmission.worker_id == u["sub"], WorkSubmission.status == "pending"))).scalars().all()
+    due = {}
+    for sub in rows:
+        data = parse_json(sub.proof, {})
+        cur = str(data.get("currency") or "USD").upper()
+        due[cur] = due.get(cur, Decimal("0")) + Decimal(str(data.get("calculated_amount") or 0))
+    return {"due_by_currency": {k: str(v.quantize(Decimal("0.00000001"))) for k,v in due.items()}, "pending_submission_count": len(rows)}
+
 @router.get("/admin/rates")
 async def admin_get_task_rates(s: AsyncSession = Depends(db), u=Depends(user)):
     if not is_admin(u):
@@ -452,7 +462,7 @@ async def evidence(session_id: str, body: dict, s: AsyncSession = Depends(db), u
     if not x or x.worker_id != u["sub"]:
         raise HTTPException(404, "session not found")
     kind = str(body.get("kind") or "").lower()
-    allowed = {"before", "start", "checkpoint", "end", "social", "other"}
+    allowed = {"before", "start", "checkpoint", "complete", "end", "submit", "after_submission", "after_complete", "wrong", "failed", "social", "other"}
     if kind not in allowed:
         raise HTTPException(422, "unsupported evidence type")
     data = str(body.get("data_url") or "")
@@ -463,8 +473,14 @@ async def evidence(session_id: str, body: dict, s: AsyncSession = Depends(db), u
         raise HTTPException(413, "evidence image is too large")
     if kind == "before" and x.stage not in {"before", "working"}:
         raise HTTPException(409, "Before Work evidence can only be captured before or during work")
-    if kind == "start" and x.stage != "working":
-        raise HTTPException(409, "Start Work evidence requires an active work session")
+    if kind == "start" and x.stage not in {"before", "working"}:
+        raise HTTPException(409, "Start Work evidence must be captured before or at work start")
+    if kind in {"complete", "end"} and x.stage != "working":
+        raise HTTPException(409, "Completion evidence requires an active work session")
+    if kind in {"submit", "after_submission"} and x.stage not in {"finished", "submitted"}:
+        raise HTTPException(409, "submission evidence requires completed work")
+    if kind == "after_complete" and x.stage not in {"finished", "submitted"}:
+        raise HTTPException(409, "after-complete evidence requires finished work")
     if kind == "end" and x.stage != "working":
         raise HTTPException(409, "End Work evidence requires an active work session")
     e = WorkEvidence(

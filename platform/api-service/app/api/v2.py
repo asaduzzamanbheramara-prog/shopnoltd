@@ -90,7 +90,7 @@ def work_dict(w: Work, total_slots: int | None = None, active_slots: int | None 
     remaining_slots = max(total_slots - active_slots - completed_slots, 0)
     return {
         "id": w.id, "tenant_id": w.tenant_id, "creator_id": w.creator_id, "title": w.title,
-        "description": w.description, "requirements": w.requirements, "reference_image": w.reference_image, "task_type": w.task_type, "platform": w.platform,
+        "description": w.description, "requirements": w.requirements, "reference_image": w.reference_image, "before_post_screenshot": getattr(w, "before_post_screenshot", None), "task_type": w.task_type, "platform": w.platform,
         "reward_amount": str(w.reward_amount), "currency": w.currency, "max_workers": w.max_workers,
         "total_tasks": total_slots, "active_tasks": active_slots, "completed_tasks": completed_slots,
         "remaining_tasks": remaining_slots, "total_amount": str(Decimal(str(w.reward_amount)) * total_slots),
@@ -244,12 +244,16 @@ async def create_work(body: dict, s: AsyncSession = Depends(db), user=Depends(cu
     if body.get("deadline"):
         try: deadline = datetime.fromisoformat(str(body["deadline"]).replace("Z", "+00:00")).replace(tzinfo=None)
         except ValueError as exc: raise HTTPException(422, "deadline must be ISO-8601") from exc
+    before_post_screenshot = body.get("before_post_screenshot") or None
+    if before_post_screenshot is not None:
+        if not isinstance(before_post_screenshot, str) or not before_post_screenshot.startswith("data:image/"): raise HTTPException(422, "before_post_screenshot must be a data:image/... URL")
+        if len(before_post_screenshot) > 6_500_000: raise HTTPException(422, "before_post_screenshot is too large (max ~6MB)")
     reference_image = body.get("reference_image") or None
     if reference_image is not None:
         if not isinstance(reference_image, str) or not reference_image.startswith("data:image/"): raise HTTPException(422, "reference_image must be a data:image/... URL")
         if len(reference_image) > 6_500_000: raise HTTPException(422, "reference_image is too large (max ~6MB)")
     work = Work(tenant_id=user.get("tenant_id", "default"), creator_id=user["sub"], title=title, description=description,
-                requirements=str(body.get("requirements", "")) or None, reference_image=reference_image, task_type=task_type, platform=platform,
+                requirements=str(body.get("requirements", "")) or None, reference_image=reference_image, before_post_screenshot=before_post_screenshot, task_type=task_type, platform=platform,
                 reward_amount=reward_decimal, currency=currency, max_workers=max_workers, deadline=deadline, status="draft")
     s.add(work); await s.commit(); await s.refresh(work)
     return await enriched_work(s, work)
