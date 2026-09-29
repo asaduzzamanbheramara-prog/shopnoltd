@@ -18,6 +18,7 @@ MEET = "http://meet-service.shopno-platform.svc.cluster.local:80"
 LIVE = "http://live-service.shopno-platform.svc.cluster.local:80"
 EXCHANGE = "http://exchange-service.shopno-payments.svc.cluster.local:80"
 PAYMENT = "http://payment-service.shopno-payments.svc.cluster.local:80"
+OAUTH = "http://oauth-service.shopno-identity.svc.cluster.local:80"
 
 
 async def omnichannel_token(creds: HTTPAuthorizationCredentials = Depends(bearer)) -> str:
@@ -72,11 +73,13 @@ async def public_call(method: str, url: str, **kw):
 
 
 @router.get("/me")
-async def me(creds: HTTPAuthorizationCredentials = Depends(bearer)): return await user(creds)
+async def me(creds: HTTPAuthorizationCredentials = Depends(bearer)):
+    return await call("GET", f"{OAUTH}/api/v1/users/me", creds.credentials)
 
 
 @router.get("/users/me")
-async def users_me(creds: HTTPAuthorizationCredentials = Depends(bearer)): return await user(creds)
+async def users_me(creds: HTTPAuthorizationCredentials = Depends(bearer)):
+    return await call("GET", f"{OAUTH}/api/v1/users/me", creds.credentials)
 
 
 @router.get("/wallets")
