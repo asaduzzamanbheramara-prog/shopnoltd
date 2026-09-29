@@ -64,6 +64,7 @@ export default function OmnichannelConnections() {
   const [items, setItems] = useState([])
   const [capabilities, setCapabilities] = useState([])
   const [providers, setProviders] = useState([])
+  const [oauthProfiles, setOauthProfiles] = useState([])
   const [form, setForm] = useState(EMPTY)
   const [editing, setEditing] = useState(null)
   const [busy, setBusy] = useState(false)
@@ -73,14 +74,16 @@ export default function OmnichannelConnections() {
   async function load() {
     setError('')
     try {
-      const [connections, caps, providerStatus] = await Promise.all([
+      const [connections, caps, providerStatus, oauthProfilesResult] = await Promise.all([
         platformApi.omnichannelConnections(),
         platformApi.omnichannelCapabilities(),
         platformApi.omnichannelProviders(),
+        platformApi.omnichannelOAuthStatus(),
       ])
       setItems(Array.isArray(connections) ? connections : [])
       setCapabilities(Array.isArray(caps) ? caps : [])
       setProviders(Array.isArray(providerStatus) ? providerStatus : [])
+      setOauthProfiles(Array.isArray(oauthProfilesResult) ? oauthProfilesResult : [])
     } catch (e) {
       setError(e.message)
     }
@@ -201,7 +204,7 @@ export default function OmnichannelConnections() {
         </button>
       </div>
       <div style={{ color: '#6b7280', fontSize: 12 }}>
-        This registry stores account metadata and credential references. It does not manufacture OAuth authorization or provider tokens; each provider still requires its own approved authorization.
+        Use provider authorization above for supported OAuth platforms. Manual registration remains available for provider-specific integrations such as WhatsApp, Telegram and 3CX.
       </div>
     </form>
 
@@ -225,7 +228,7 @@ export default function OmnichannelConnections() {
               {provider.platforms.join(', ')} · {provider.mode || 'oauth2'}
             </div>
             <div style={{ color: '#6b7280', fontSize: 11, marginTop: 5 }}>
-              {provider.authorization_supported ? 'Authorization flow can be enabled after callback/token storage wiring.' : 'Uses provider-specific business/API authorization.'}
+              {provider.authorization_supported ? 'Direct authorization is available when the server credentials are configured.' : 'Uses provider-specific business/API authorization.'}
             </div>
           </div>
         ))}
@@ -233,6 +236,34 @@ export default function OmnichannelConnections() {
     </section>
 
     <section style={{ ...styles.card, marginBottom: 20 }}>
+      <h2 style={{ margin: '0 0 12px', fontSize: 18 }}>Authorize provider accounts</h2>
+      <p style={{ margin: '0 0 12px', color: '#6b7280', lineHeight: 1.5 }}>
+        Use the provider authorization button to connect an account. Shopnoltd stores encrypted provider tokens server-side and exposes only the connection/profile reference to automation.
+      </p>
+      {providers.map(provider => (
+        <div key={provider.provider} style={{ borderTop: '1px solid #e5e7eb', padding: '12px 0' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}>
+            <strong>{provider.provider}</strong>
+            <span style={{ fontSize: 12, color: '#6b7280' }}>
+              {oauthProfiles.filter(x => x.provider === provider.provider).length} connected profile(s)
+            </span>
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 9 }}>
+            {provider.platforms.map(platform => (
+              provider.configured && provider.authorization_supported
+                ? <button key={platform} type="button" onClick={() => { window.location.href = platformApi.omnichannelOAuthStart(provider.provider, platform) }} style={styles.button}>
+                    <Link2 size={14} /> Connect {platform}
+                  </button>
+                : <span key={platform} style={{ ...styles.button, color: '#92400e', cursor: 'default' }}>
+                    {provider.mode === 'oauth2' ? 'Configure ' : 'Manual/API '} {platform}
+                  </span>
+            ))}
+          </div>
+        </div>
+      ))}
+    </section>
+
+        <section style={{ ...styles.card, marginBottom: 20 }}>
       <h2 style={{ margin: '0 0 12px', fontSize: 18 }}>Platform capability matrix</h2>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: 10 }}>
         {PLATFORMS.map(platform => {

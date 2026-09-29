@@ -14,6 +14,7 @@ configMapGenerator:
   - 014-provision-chatwoot-database.sql
   - 015-payment-account-registry.sql
   - 016-omnichannel-crm.sql
+  - 017-omnichannel-provider-oauth.sql
   options:
     disableNameSuffixHash: true
 

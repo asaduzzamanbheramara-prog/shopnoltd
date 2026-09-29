@@ -177,6 +177,56 @@ async def payment_exchange_convert(body: dict, creds: HTTPAuthorizationCredentia
     return await call("POST", f"{PAYMENT}/api/v1/exchanges/convert", creds.credentials, json=payload)
 
 
+@router.get("/omnichannel/oauth/start/{provider}/{platform}")
+async def omnichannel_oauth_start(provider: str, platform: str, creds: HTTPAuthorizationCredentials = Depends(bearer)):
+    token = await omnichannel_token(creds)
+    try:
+        async with httpx.AsyncClient(timeout=20, follow_redirects=False) as client:
+            r = await client.get(
+                f"{SOCIAL}/api/v1/omnichannel/oauth/start/{provider}/{platform}",
+                headers={"Authorization": f"Bearer {token}"},
+            )
+    except (httpx.ConnectError, httpx.ConnectTimeout, httpx.ReadTimeout) as e:
+        raise HTTPException(status_code=503, detail="Downstream service unavailable") from e
+    if r.status_code >= 400:
+        detail = r.text
+        try:
+            detail = r.json()
+        except Exception:
+            pass
+        raise HTTPException(status_code=r.status_code, detail=detail)
+    location = r.headers.get("location")
+    if not location:
+        raise HTTPException(status_code=502, detail="OAuth provider did not return an authorization URL")
+    return Response(status_code=307, headers={"Location": location})
+
+
+@router.get("/omnichannel/oauth/callback")
+async def omnichannel_oauth_callback(code: str | None = None, state: str | None = None, error: str | None = None):
+    params = {"code": code, "state": state, "error": error}
+    params = {k: v for k, v in params.items() if v is not None}
+    try:
+        async with httpx.AsyncClient(timeout=30, follow_redirects=False) as client:
+            r = await client.get(f"{SOCIAL}/api/v1/omnichannel/oauth/callback", params=params)
+    except (httpx.ConnectError, httpx.ConnectTimeout, httpx.ReadTimeout) as e:
+        raise HTTPException(status_code=503, detail="OAuth callback service unavailable") from e
+    if r.status_code >= 400:
+        detail = r.text
+        try:
+            detail = r.json()
+        except Exception:
+            pass
+        raise HTTPException(status_code=r.status_code, detail=detail)
+    location = r.headers.get("location", "/connections?oauth=error&reason=callback")
+    return Response(status_code=303, headers={"Location": location})
+
+
+@router.get("/omnichannel/oauth/status")
+async def omnichannel_oauth_status(creds: HTTPAuthorizationCredentials = Depends(bearer)):
+    token = await omnichannel_token(creds)
+    return await call("GET", f"{SOCIAL}/api/v1/omnichannel/oauth/status", token)
+
+
 @router.get("/omnichannel/providers")
 async def omnichannel_providers(creds: HTTPAuthorizationCredentials = Depends(bearer)):
     token = await omnichannel_token(creds)
