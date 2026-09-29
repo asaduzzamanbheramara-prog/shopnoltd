@@ -151,7 +151,7 @@ async def start(provider: str, platform: str, creds: HTTPAuthorizationCredential
     cfg = PROVIDER_CONFIG.get(provider)
     if not cfg or platform not in cfg["platforms"]:
         raise HTTPException(404, "unsupported provider/platform")
-    if not cfg.get("authorization_supported"):
+    if not (cfg.get("auth_url") and cfg.get("token_url")):
         raise HTTPException(409, "this platform requires provider-specific onboarding")
     if not cfg.get("client_id") or not cfg.get("client_secret"):
         raise HTTPException(409, "provider credentials are not configured")
