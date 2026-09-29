@@ -36,13 +36,25 @@ async function request(path, options = {}) {
 // may still point at the public storage endpoint so published images remain
 // cacheable without requiring a bearer token on every <img> request.
 async function storageRequest(path, options = {}) {
-  const token = localStorage.getItem('shopno_token')
-  const headers = { ...(options.headers || {}) }
-  if (token) headers.Authorization = `Bearer ${token}`
-  const response = await fetch(`/api/v1/storage${path}`, { ...options, headers })
+  let token = localStorage.getItem('shopno_token')
+  let response
+
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const headers = { ...(options.headers || {}) }
+    if (token) headers.Authorization = `Bearer ${token}`
+    response = await fetch(`/api/v1/storage${path}`, { ...options, headers })
+    if (response.status !== 401 || attempt === 1) break
+    const refreshed = await tryRefresh()
+    if (!refreshed) break
+    token = refreshed
+  }
+
   const text = await response.text(); let data = null
   try { data = text ? JSON.parse(text) : null } catch { data = text }
-  if (!response.ok) { const detail = data?.detail || data?.message || text || `Storage request failed (${response.status})`; throw new Error(typeof detail === 'string' ? detail : JSON.stringify(detail)) }
+  if (!response.ok) {
+    const detail = data?.detail || data?.message || text || `Storage request failed (${response.status})`
+    throw new Error(typeof detail === 'string' ? detail : JSON.stringify(detail))
+  }
   return data
 }
 
