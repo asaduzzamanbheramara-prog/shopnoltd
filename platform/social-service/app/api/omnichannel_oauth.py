@@ -41,30 +41,26 @@ def _fernet() -> Fernet:
     return Fernet(_key())
 
 
-def _sign_state(payload: dict) -> str:
+def _state_fernet() -> Fernet:
     secret = settings.provider_oauth_state_secret
     if not secret:
         raise HTTPException(503, "provider OAuth state signing is not configured")
-    body = base64.urlsafe_b64encode(json.dumps(payload, separators=(",", ":")).encode()).decode().rstrip("=")
-    sig = hmac.new(secret.encode(), body.encode(), hashlib.sha256).hexdigest()
-    return f"{body}.{sig}"
+    key = base64.urlsafe_b64encode(hashlib.sha256(secret.encode()).digest())
+    return Fernet(key)
+
+
+def _sign_state(payload: dict) -> str:
+    body = json.dumps(payload, separators=(",", ":")).encode()
+    return _state_fernet().encrypt(body).decode()
 
 
 def _verify_state(value: str) -> dict:
-    secret = settings.provider_oauth_state_secret
-    if not secret:
-        raise HTTPException(503, "provider OAuth state signing is not configured")
     try:
-        body, sig = value.split(".", 1)
-        expected = hmac.new(secret.encode(), body.encode(), hashlib.sha256).hexdigest()
-        if not hmac.compare_digest(sig, expected):
-            raise ValueError("bad signature")
-        decoded = base64.urlsafe_b64decode(body + "=" * (-len(body) % 4))
-        payload = json.loads(decoded)
+        payload = json.loads(_state_fernet().decrypt(value.encode()))
         if int(payload.get("exp", 0)) < int(time.time()):
             raise ValueError("expired")
         return payload
-    except Exception as exc:
+    except (InvalidToken, ValueError, TypeError, json.JSONDecodeError) as exc:
         raise HTTPException(400, "invalid or expired OAuth state") from exc
 
 
