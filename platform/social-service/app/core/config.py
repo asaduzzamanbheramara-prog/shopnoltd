@@ -13,6 +13,30 @@ class Settings(BaseSettings):
     keycloak_jwks_url: str | None = None
     keycloak_audience: str = "api-service"
     storage_service_url: str = "http://storage-service.shopno-platform.svc.cluster.local:8080"
+    # Provider OAuth configuration is injected from the runtime secret manager.
+    # Never commit client secrets or user access/refresh tokens to Git.
+    provider_oauth_encryption_key: str | None = None
+    provider_oauth_state_secret: str | None = None
+    provider_oauth_redirect_uri: str = "https://shopnoltd.dpdns.org/connections/oauth/callback"
+    google_client_id: str | None = None
+    google_client_secret: str | None = None
+    microsoft_client_id: str | None = None
+    microsoft_client_secret: str | None = None
+    linkedin_client_id: str | None = None
+    linkedin_client_secret: str | None = None
+    x_client_id: str | None = None
+    x_client_secret: str | None = None
+    facebook_client_id: str | None = None
+    facebook_client_secret: str | None = None
+    instagram_client_id: str | None = None
+    instagram_client_secret: str | None = None
+    tiktok_client_key: str | None = None
+    tiktok_client_secret: str | None = None
+    telegram_bot_token: str | None = None
+    whatsapp_client_id: str | None = None
+    whatsapp_client_secret: str | None = None
+    threecx_client_id: str | None = None
+    threecx_client_secret: str | None = None
 
     @property
     def cors_origins_list(self) -> list[str]:
