@@ -20,6 +20,11 @@ bearer = HTTPBearer()
 SOCIAL = "http://social-service.shopno-platform.svc.cluster.local:80"
 PAYMENTS = "http://payment-service.shopno-payments.svc.cluster.local:80"
 
+TASK_TYPES = {
+    "simple", "job", "follow", "like", "comment", "share", "view", "visit",
+    "review", "social", "data", "upload", "custom", "watch",
+}
+
 SUPPORTED_CURRENCIES = {
     "USD", "BDT", "EUR", "GBP", "INR", "AUD", "CAD", "SGD", "AED", "SAR",
     "JPY", "CNY", "HKD", "MYR", "THB", "IDR", "PKR", "NPR", "LKR", "QAR",
@@ -89,7 +94,7 @@ def work_dict(w: Work, total_slots: int | None = None, active_slots: int | None 
     remaining_slots = max(total_slots - active_slots - completed_slots, 0)
     return {
         "id": w.id, "tenant_id": w.tenant_id, "creator_id": w.creator_id, "title": w.title,
-        "description": w.description, "requirements": w.requirements, "reference_image": w.reference_image,
+        "description": w.description, "requirements": w.requirements, "reference_image": w.reference_image, "task_type": w.task_type,
         "reward_amount": str(w.reward_amount), "currency": w.currency, "max_workers": w.max_workers,
         "total_tasks": total_slots, "active_tasks": active_slots, "completed_tasks": completed_slots,
         "remaining_tasks": remaining_slots, "total_amount": str(Decimal(str(w.reward_amount)) * total_slots),
@@ -222,6 +227,9 @@ async def list_works(status: str = Query("open"), limit: int = Query(50, ge=1, l
 @router.post("/works", status_code=201)
 async def create_work(body: dict, s: AsyncSession = Depends(db), user=Depends(current_user)):
     title, description, reward = str(body.get("title", "")).strip(), str(body.get("description", "")).strip(), body.get("reward_amount")
+    task_type = str(body.get("task_type", "simple")).strip().lower()
+    if task_type not in TASK_TYPES:
+        raise HTTPException(422, f"Unsupported task_type: {task_type}")
     if not title or not description or reward is None: raise HTTPException(422, "title, description and reward_amount are required")
     try: reward_decimal = Decimal(str(reward))
     except Exception as exc: raise HTTPException(422, "reward_amount must be numeric") from exc
@@ -239,7 +247,7 @@ async def create_work(body: dict, s: AsyncSession = Depends(db), user=Depends(cu
         if not isinstance(reference_image, str) or not reference_image.startswith("data:image/"): raise HTTPException(422, "reference_image must be a data:image/... URL")
         if len(reference_image) > 6_500_000: raise HTTPException(422, "reference_image is too large (max ~6MB)")
     work = Work(tenant_id=user.get("tenant_id", "default"), creator_id=user["sub"], title=title, description=description,
-                requirements=str(body.get("requirements", "")) or None, reference_image=reference_image,
+                requirements=str(body.get("requirements", "")) or None, reference_image=reference_image, task_type=task_type,
                 reward_amount=reward_decimal, currency=currency, max_workers=max_workers, deadline=deadline, status="draft")
     s.add(work); await s.commit(); await s.refresh(work)
     return await enriched_work(s, work)
@@ -258,6 +266,10 @@ async def update_work(work_id: str, body: dict, s: AsyncSession = Depends(db), u
     if not work or work.tenant_id != user.get("tenant_id", "default"): raise HTTPException(404, "work not found")
     if work.creator_id != user["sub"]: raise HTTPException(403, "only the creator can edit this work")
     if work.status not in {"draft", "open"}: raise HTTPException(409, "only draft or open work can be edited")
+    if "task_type" in body:
+        task_type = str(body["task_type"]).strip().lower()
+        if task_type not in TASK_TYPES: raise HTTPException(422, f"Unsupported task_type: {task_type}")
+        work.task_type = task_type
     for field in ("title", "description", "requirements"):
         if field in body:
             value = str(body[field]).strip()
