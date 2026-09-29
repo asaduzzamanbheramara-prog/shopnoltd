@@ -77,6 +77,17 @@ async def ensure_user_mirror(payload: dict, s: AsyncSession) -> UserMirror:
         )
     ).scalar_one_or_none()
     if existing:
+        profile = (await s.execute(select(UserProfile).where(UserProfile.user_id == existing.id))).scalar_one_or_none()
+        if not profile:
+            profile = UserProfile(
+                user_id=existing.id,
+                display_name=existing.name or email.split("@")[0],
+                first_name=(payload.get("given_name") or "").strip() or None,
+                last_name=(payload.get("family_name") or "").strip() or None,
+                source="registration",
+            )
+            s.add(profile)
+            await s.commit()
         return existing
 
     email_owner = (
@@ -168,6 +179,93 @@ async def create(body: UserIn, user=Depends(admin), s: AsyncSession = Depends(db
 async def list_(user=Depends(admin), s: AsyncSession = Depends(db)):
     res = await s.execute(select(UserMirror).limit(500))
     return [_user_out(u) for u in res.scalars().all()]
+
+
+@router.post("/sync-keycloak", response_model=dict)
+async def sync_keycloak(user=Depends(admin), s: AsyncSession = Depends(db)):
+    """Reconcile every enabled Keycloak user into the application user/profile tables."""
+    tok = await kc_token()
+    synced = 0
+    created_users = 0
+    created_profiles = 0
+    first = 0
+
+    async with httpx.AsyncClient(timeout=30) as c:
+        while True:
+            r = await c.get(
+                f"{ADMIN_URL}/users",
+                params={"first": first, "max": 200, "briefRepresentation": "false"},
+                headers={"Authorization": f"Bearer {tok}"},
+            )
+            r.raise_for_status()
+            batch = r.json()
+            if not batch:
+                break
+
+            for payload in batch:
+                if not payload.get("enabled", True):
+                    continue
+                keycloak_id = payload.get("id")
+                email = (payload.get("email") or "").strip()
+                if not keycloak_id or not email:
+                    continue
+
+                existing = (
+                    await s.execute(select(UserMirror).where(UserMirror.keycloak_id == keycloak_id))
+                ).scalar_one_or_none()
+
+                if not existing:
+                    email_owner = (
+                        await s.execute(select(UserMirror).where(UserMirror.email == email))
+                    ).scalar_one_or_none()
+                    if email_owner and email_owner.keycloak_id != keycloak_id:
+                        continue
+                    existing = UserMirror(
+                        keycloak_id=keycloak_id,
+                        email=email,
+                        name=_user_name(payload),
+                        tenant_id=(payload.get("attributes") or {}).get("tenant_id", [None])[0],
+                        roles=[],
+                        active=True,
+                    )
+                    s.add(existing)
+                    await s.flush()
+                    created_users += 1
+                else:
+                    existing.email = email
+                    existing.name = _user_name(payload) or existing.name
+                    existing.active = True
+                    attrs = payload.get("attributes") or {}
+                    tenant_values = attrs.get("tenant_id") or []
+                    if tenant_values:
+                        existing.tenant_id = tenant_values[0]
+
+                profile = (
+                    await s.execute(select(UserProfile).where(UserProfile.user_id == existing.id))
+                ).scalar_one_or_none()
+                if not profile:
+                    profile = UserProfile(
+                        user_id=existing.id,
+                        display_name=existing.name or email.split("@")[0],
+                        first_name=(payload.get("firstName") or payload.get("givenName") or "").strip() or None,
+                        last_name=(payload.get("lastName") or payload.get("familyName") or "").strip() or None,
+                        source="keycloak_sync",
+                    )
+                    s.add(profile)
+                    created_profiles += 1
+                synced += 1
+
+            await s.commit()
+            if len(batch) < 200:
+                break
+            first += len(batch)
+
+    return {
+        "status": "completed",
+        "keycloak_users_synced": synced,
+        "users_created": created_users,
+        "profiles_created": created_profiles,
+    }
 
 
 @router.get("/me")
