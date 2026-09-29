@@ -540,7 +540,7 @@ async def submit_session(session_id: str, s: AsyncSession = Depends(db), u=Depen
                     rate = Decimal(str(configured[w.task_type]))
             x.calculated_amount = rate
             x.currency = c.rate_currency if c else w.currency
-    pending = await s.scalar(select(WorkSubmission).where
+    pending = await s.scalar(select(WorkSubmission).where(
         WorkSubmission.work_id == x.work_id,
         WorkSubmission.worker_id == u["sub"],
         WorkSubmission.status == "pending",
