@@ -12,8 +12,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import SessionLocal
 from app.core.security import verify_token
+from app.core.currencies import SUPPORTED_CURRENCIES
 from app.models.work import Work, WorkAssignment, WorkSubmission
-from app.models.work_evidence import WorkTaskConfig, WorkSession, WorkEvidence, WorkEvent
+from app.models.work_evidence import WorkTaskConfig, WorkSession, WorkEvidence, WorkEvent, GlobalTaskRate
 
 router = APIRouter(prefix="/work")
 bearer = HTTPBearer()
@@ -61,6 +62,22 @@ def session_dict(x):
         "calculated_amount": str(x.calculated_amount),
         "currency": x.currency,
     }
+
+
+TASK_TYPES = {
+    "simple", "job", "follow", "like", "comment", "share", "view", "visit",
+    "review", "social", "data", "upload", "custom", "watch",
+}
+
+MICRO_TASK_TYPES = {"simple", "follow", "like", "comment", "share", "view", "visit", "review", "social", "data", "upload", "custom"}
+
+def is_admin(u):
+    roles = set(u.get("roles") or [])
+    realm_roles = set(((u.get("realm_access") or {}).get("roles") or []))
+    return bool(roles.intersection({"admin", "shopnoltd-admin", "administrator"}) or realm_roles.intersection({"admin", "shopnoltd-admin", "administrator"}) or u.get("is_admin") is True)
+
+def rate_dict(r):
+    return {"task_type": r.task_type, "rate": str(r.rate), "currency": r.currency, "enabled": bool(r.enabled)}
 
 
 def config_dict(c):
@@ -119,6 +136,67 @@ async def last_playback(s, session_id):
     return result.scalar_one_or_none()
 
 
+
+@router.get("/rates")
+async def get_task_rates(s: AsyncSession = Depends(db), u=Depends(user)):
+    rows = (await s.execute(select(GlobalTaskRate).order_by(GlobalTaskRate.task_type, GlobalTaskRate.currency))).scalars().all()
+    rates = {t: [] for t in sorted(TASK_TYPES)}
+    for r in rows:
+        rates.setdefault(r.task_type, []).append(rate_dict(r))
+    return {"supported_currencies": sorted(SUPPORTED_CURRENCIES), "rates": rates}
+
+@router.get("/admin/rates")
+async def admin_get_task_rates(s: AsyncSession = Depends(db), u=Depends(user)):
+    if not is_admin(u):
+        raise HTTPException(403, "admin role required")
+    return await get_task_rates(s, u)
+
+@router.put("/admin/rates/{task_type}/{currency}")
+async def admin_set_task_rate(task_type: str, currency: str, body: dict, s: AsyncSession = Depends(db), u=Depends(user)):
+    if not is_admin(u):
+        raise HTTPException(403, "admin role required")
+    task_type = task_type.strip().lower()
+    currency = currency.strip().upper()
+    if task_type not in TASK_TYPES:
+        raise HTTPException(422, f"Unsupported task_type: {task_type}")
+    if currency not in SUPPORTED_CURRENCIES:
+        raise HTTPException(422, f"Unsupported currency: {currency}")
+    try:
+        rate = Decimal(str(body.get("rate", 0)))
+    except Exception as exc:
+        raise HTTPException(422, "rate must be numeric") from exc
+    if rate < 0:
+        raise HTTPException(422, "rate cannot be negative")
+    r = await s.scalar(select(GlobalTaskRate).where(
+        GlobalTaskRate.task_type == task_type,
+        GlobalTaskRate.currency == currency,
+    ))
+    if not r:
+        r = GlobalTaskRate(task_type=task_type, currency=currency)
+        s.add(r)
+    r.rate = rate
+    r.enabled = 1 if bool(body.get("enabled", True)) and rate > 0 else 0
+    r.updated_at = datetime.utcnow()
+    await s.commit()
+    await s.refresh(r)
+    return rate_dict(r)
+
+@router.delete("/admin/rates/{task_type}/{currency}")
+async def admin_delete_task_rate(task_type: str, currency: str, s: AsyncSession = Depends(db), u=Depends(user)):
+    if not is_admin(u):
+        raise HTTPException(403, "admin role required")
+    currency = currency.strip().upper()
+    if task_type.strip().lower() not in TASK_TYPES or currency not in SUPPORTED_CURRENCIES:
+        raise HTTPException(422, "unsupported task type or currency")
+    r = await s.scalar(select(GlobalTaskRate).where(
+        GlobalTaskRate.task_type == task_type.strip().lower(),
+        GlobalTaskRate.currency == currency,
+    ))
+    if r:
+        await s.delete(r)
+        await s.commit()
+    return {"deleted": True, "task_type": task_type.strip().lower(), "currency": currency}
+
 @router.get("/{work_id}/config")
 async def get_config(work_id: str, s: AsyncSession = Depends(db), u=Depends(user)):
     w = await s.get(Work, work_id)
@@ -145,6 +223,11 @@ async def put_config(work_id: str, body: dict, s: AsyncSession = Depends(db), u=
         raise HTTPException(404, "work not found")
     if w.creator_id != u["sub"]:
         raise HTTPException(403, "only the creator can configure work")
+    if "task_type" in body:
+        task_type = str(body["task_type"]).strip().lower()
+        if task_type not in TASK_TYPES:
+            raise HTTPException(422, f"Unsupported task_type: {task_type}")
+        w.task_type = task_type
     c = await s.scalar(select(WorkTaskConfig).where(WorkTaskConfig.work_id == work_id))
     if not c:
         c = WorkTaskConfig(work_id=work_id)
@@ -157,8 +240,20 @@ async def put_config(work_id: str, body: dict, s: AsyncSession = Depends(db), u=
     if c.watch_rate_per_minute < 0:
         raise HTTPException(422, "watch rate cannot be negative")
     c.rate_currency = str(body.get("rate_currency") or w.currency).upper()
+    if c.rate_currency not in SUPPORTED_CURRENCIES:
+        raise HTTPException(422, "unsupported rate currency")
     c.rate_rules = json.dumps(body.get("rate_rules") or [])
-    c.social_rates = json.dumps(body.get("social_rates") or {})
+    social_rates = body.get("social_rates") or {}
+    if not isinstance(social_rates, dict):
+        raise HTTPException(422, "social_rates must be an object")
+    for key, value in social_rates.items():
+        if str(key).lower() not in {"follow","like","comment","share","view","visit","review","social","custom"}:
+            raise HTTPException(422, f"unsupported social rate type: {key}")
+        try:
+            if Decimal(str(value)) < 0: raise ValueError
+        except Exception as exc:
+            raise HTTPException(422, f"invalid social rate for {key}") from exc
+    c.social_rates = json.dumps({str(k).lower(): str(v) for k,v in social_rates.items()})
     await s.commit()
     await s.refresh(c)
     return config_dict(c)
@@ -452,10 +547,14 @@ async def finish_session(session_id: str, s: AsyncSession = Depends(db), u=Depen
     if x.stage != "working":
         raise HTTPException(409, "session is not working")
     kinds = await evidence_kinds(s, x.id, u["sub"])
-    if "start" not in kinds:
-        raise HTTPException(409, "required Start Work evidence must be captured")
-    if "end" not in kinds:
-        raise HTTPException(409, "required End Work evidence must be captured before finishing")
+    w = await s.get(Work, x.work_id)
+    if w and w.task_type == "watch":
+        if "start" not in kinds:
+            raise HTTPException(409, "required Start Work evidence must be captured")
+        if "end" not in kinds:
+            raise HTTPException(409, "required End Work evidence must be captured before finishing")
+    elif not kinds and not await s.scalar(select(func.count(WorkEvent.id)).where(WorkEvent.session_id == x.id)):
+        raise HTTPException(409, "complete the task and provide evidence or a task event before finishing")
     now = datetime.utcnow()
     if x.last_heartbeat_at:
         x.work_seconds += min(max(int((now - x.last_heartbeat_at).total_seconds()), 0), 30)
@@ -495,11 +594,34 @@ async def submit_session(session_id: str, s: AsyncSession = Depends(db), u=Depen
         raise HTTPException(409, "finish the work before submitting")
     c = await s.scalar(select(WorkTaskConfig).where(WorkTaskConfig.work_id == x.work_id))
     required_watch = int(c.required_watch_seconds) if c else 0
+    kinds = await evidence_kinds(s, x.id, u["sub"])
     if x.eligible_watch_seconds < required_watch:
         raise HTTPException(409, f"required verified watch time not reached: {required_watch} seconds")
-    kinds = await evidence_kinds(s, x.id, u["sub"])
-    if "before" not in kinds or "start" not in kinds or "end" not in kinds:
-        raise HTTPException(409, "required Before, Start, and End evidence must be present")
+    if w := await s.get(Work, x.work_id):
+        if w.task_type == "watch":
+            if "before" not in kinds or "start" not in kinds or "end" not in kinds:
+                raise HTTPException(409, "required Before, Start, and End evidence must be present")
+        elif not kinds and not await s.scalar(select(func.count(WorkEvent.id)).where(WorkEvent.session_id == x.id)):
+            raise HTTPException(409, "complete the task and provide evidence or a task event before submitting")
+        if w.task_type in MICRO_TASK_TYPES:
+            rate = Decimal(str(w.reward_amount))
+            earning_currency = w.currency
+            if c:
+                configured = parse_json(c.social_rates, {})
+                if w.task_type in configured:
+                    rate = Decimal(str(configured[w.task_type]))
+                    earning_currency = c.rate_currency
+            if not c or w.task_type not in parse_json(c.social_rates, {}):
+                global_rate = await s.scalar(select(GlobalTaskRate).where(
+                    GlobalTaskRate.task_type == w.task_type,
+                    GlobalTaskRate.currency == w.currency,
+                    GlobalTaskRate.enabled == 1,
+                ))
+                if global_rate:
+                    rate = Decimal(str(global_rate.rate))
+                    earning_currency = global_rate.currency
+            x.calculated_amount = rate
+            x.currency = earning_currency
     pending = await s.scalar(select(WorkSubmission).where(
         WorkSubmission.work_id == x.work_id,
         WorkSubmission.worker_id == u["sub"],

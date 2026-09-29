@@ -61,3 +61,12 @@ class WorkEvent(Base):
     duration_seconds = Column(Integer, nullable=False, default=0)
     rate_basis = Column(Text, nullable=True)
     payload_json = Column(Text, nullable=True)
+
+
+class GlobalTaskRate(Base):
+    __tablename__ = "global_task_rates"
+    task_type = Column(String(32), primary_key=True)
+    currency = Column(String(16), primary_key=True)
+    rate = Column(Numeric(20, 8), nullable=False, default=0)
+    enabled = Column(Integer, nullable=False, default=0)
+    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)

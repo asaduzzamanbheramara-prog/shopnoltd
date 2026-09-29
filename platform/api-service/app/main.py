@@ -14,7 +14,7 @@ from starlette.responses import Response
 from app.core.config import settings
 from app.core.db import Base, engine
 from app.models.work import Work, WorkAssignment, WorkSubmission  # noqa: F401
-from app.models.work_evidence import WorkTaskConfig, WorkSession, WorkEvidence, WorkEvent
+from app.models.work_evidence import WorkTaskConfig, WorkSession, WorkEvidence, WorkEvent, GlobalTaskRate
 from app.models.work_rating import WorkRating  # noqa: F401
 
 log = structlog.get_logger()
@@ -29,6 +29,13 @@ async def lifespan(app: FastAPI):
             # Keep this DDL static; it is safe to run on every startup and upgrades
             # existing databases where create_all cannot add a missing column.
             await conn.execute(text("ALTER TABLE works ADD COLUMN IF NOT EXISTS reference_image TEXT"))
+            await conn.execute(text("ALTER TABLE works ADD COLUMN IF NOT EXISTS task_type VARCHAR(32) NOT NULL DEFAULT 'simple'"))
+            await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_works_task_type ON works (task_type)"))
+            # Global task rates are keyed by task type + currency. This compatibility
+            # migration upgrades databases created by the earlier single-currency model.
+            await conn.execute(text("ALTER TABLE global_task_rates ADD COLUMN IF NOT EXISTS currency VARCHAR(16) NOT NULL DEFAULT 'USD'"))
+            await conn.execute(text("ALTER TABLE global_task_rates DROP CONSTRAINT IF EXISTS global_task_rates_pkey"))
+            await conn.execute(text("ALTER TABLE global_task_rates ADD PRIMARY KEY (task_type, currency)"))
     await wait_for_dependencies("api-service", _check_database, redis_client)
     log.info("api-service.started", env=settings.env)
     yield
