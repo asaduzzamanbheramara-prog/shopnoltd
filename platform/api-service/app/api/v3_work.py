@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import SessionLocal
 from app.core.security import verify_token
+from app.core.currencies import SUPPORTED_CURRENCIES
 from app.models.work import Work, WorkAssignment, WorkSubmission
 from app.models.work_evidence import WorkTaskConfig, WorkSession, WorkEvidence, WorkEvent, GlobalTaskRate
 
@@ -138,9 +139,11 @@ async def last_playback(s, session_id):
 
 @router.get("/rates")
 async def get_task_rates(s: AsyncSession = Depends(db), u=Depends(user)):
-    rows = (await s.execute(select(GlobalTaskRate).order_by(GlobalTaskRate.task_type))).scalars().all()
-    configured = {r.task_type: rate_dict(r) for r in rows}
-    return {"rates": [configured.get(t, {"task_type": t, "rate": "0", "currency": "BDT", "enabled": False}) for t in sorted(TASK_TYPES)]}
+    rows = (await s.execute(select(GlobalTaskRate).order_by(GlobalTaskRate.task_type, GlobalTaskRate.currency))).scalars().all()
+    rates = {t: [] for t in sorted(TASK_TYPES)}
+    for r in rows:
+        rates.setdefault(r.task_type, []).append(rate_dict(r))
+    return {"supported_currencies": sorted(SUPPORTED_CURRENCIES), "rates": rates}
 
 @router.get("/admin/rates")
 async def admin_get_task_rates(s: AsyncSession = Depends(db), u=Depends(user)):
@@ -148,30 +151,51 @@ async def admin_get_task_rates(s: AsyncSession = Depends(db), u=Depends(user)):
         raise HTTPException(403, "admin role required")
     return await get_task_rates(s, u)
 
-@router.put("/admin/rates/{task_type}")
-async def admin_set_task_rate(task_type: str, body: dict, s: AsyncSession = Depends(db), u=Depends(user)):
+@router.put("/admin/rates/{task_type}/{currency}")
+async def admin_set_task_rate(task_type: str, currency: str, body: dict, s: AsyncSession = Depends(db), u=Depends(user)):
     if not is_admin(u):
         raise HTTPException(403, "admin role required")
     task_type = task_type.strip().lower()
+    currency = currency.strip().upper()
     if task_type not in TASK_TYPES:
         raise HTTPException(422, f"Unsupported task_type: {task_type}")
+    if currency not in SUPPORTED_CURRENCIES:
+        raise HTTPException(422, f"Unsupported currency: {currency}")
     try:
         rate = Decimal(str(body.get("rate", 0)))
     except Exception as exc:
         raise HTTPException(422, "rate must be numeric") from exc
     if rate < 0:
         raise HTTPException(422, "rate cannot be negative")
-    currency = str(body.get("currency", "BDT")).upper()
-    if currency not in {"USD","BDT","EUR","GBP","INR","AUD","CAD","SGD","AED","SAR","JPY","CNY","HKD","MYR","THB","IDR","PKR","NPR","LKR","QAR","KWD","OMR","NZD","CHF","SEK","NOK","DKK","ZAR","TRY","BRL"}:
-        raise HTTPException(422, "unsupported currency")
-    r = await s.get(GlobalTaskRate, task_type)
+    r = await s.scalar(select(GlobalTaskRate).where(
+        GlobalTaskRate.task_type == task_type,
+        GlobalTaskRate.currency == currency,
+    ))
     if not r:
-        r = GlobalTaskRate(task_type=task_type)
+        r = GlobalTaskRate(task_type=task_type, currency=currency)
         s.add(r)
-    r.rate, r.currency, r.enabled = rate, currency, 1 if bool(body.get("enabled", True)) and rate > 0 else 0
+    r.rate = rate
+    r.enabled = 1 if bool(body.get("enabled", True)) and rate > 0 else 0
+    r.updated_at = datetime.utcnow()
     await s.commit()
     await s.refresh(r)
     return rate_dict(r)
+
+@router.delete("/admin/rates/{task_type}/{currency}")
+async def admin_delete_task_rate(task_type: str, currency: str, s: AsyncSession = Depends(db), u=Depends(user)):
+    if not is_admin(u):
+        raise HTTPException(403, "admin role required")
+    currency = currency.strip().upper()
+    if task_type.strip().lower() not in TASK_TYPES or currency not in SUPPORTED_CURRENCIES:
+        raise HTTPException(422, "unsupported task type or currency")
+    r = await s.scalar(select(GlobalTaskRate).where(
+        GlobalTaskRate.task_type == task_type.strip().lower(),
+        GlobalTaskRate.currency == currency,
+    ))
+    if r:
+        await s.delete(r)
+        await s.commit()
+    return {"deleted": True, "task_type": task_type.strip().lower(), "currency": currency}
 
 @router.get("/{work_id}/config")
 async def get_config(work_id: str, s: AsyncSession = Depends(db), u=Depends(user)):
@@ -216,7 +240,7 @@ async def put_config(work_id: str, body: dict, s: AsyncSession = Depends(db), u=
     if c.watch_rate_per_minute < 0:
         raise HTTPException(422, "watch rate cannot be negative")
     c.rate_currency = str(body.get("rate_currency") or w.currency).upper()
-    if c.rate_currency not in {"USD","BDT","EUR","GBP","INR","AUD","CAD","SGD","AED","SAR","JPY","CNY","HKD","MYR","THB","IDR","PKR","NPR","LKR","QAR","KWD","OMR","NZD","CHF","SEK","NOK","DKK","ZAR","TRY","BRL"}:
+    if c.rate_currency not in SUPPORTED_CURRENCIES:
         raise HTTPException(422, "unsupported rate currency")
     c.rate_rules = json.dumps(body.get("rate_rules") or [])
     social_rates = body.get("social_rates") or {}
@@ -581,12 +605,23 @@ async def submit_session(session_id: str, s: AsyncSession = Depends(db), u=Depen
             raise HTTPException(409, "complete the task and provide evidence or a task event before submitting")
         if w.task_type in MICRO_TASK_TYPES:
             rate = Decimal(str(w.reward_amount))
+            earning_currency = w.currency
             if c:
                 configured = parse_json(c.social_rates, {})
                 if w.task_type in configured:
                     rate = Decimal(str(configured[w.task_type]))
+                    earning_currency = c.rate_currency
+            if not c or w.task_type not in parse_json(c.social_rates, {}):
+                global_rate = await s.scalar(select(GlobalTaskRate).where(
+                    GlobalTaskRate.task_type == w.task_type,
+                    GlobalTaskRate.currency == w.currency,
+                    GlobalTaskRate.enabled == 1,
+                ))
+                if global_rate:
+                    rate = Decimal(str(global_rate.rate))
+                    earning_currency = global_rate.currency
             x.calculated_amount = rate
-            x.currency = c.rate_currency if c else w.currency
+            x.currency = earning_currency
     pending = await s.scalar(select(WorkSubmission).where(
         WorkSubmission.work_id == x.work_id,
         WorkSubmission.worker_id == u["sub"],
