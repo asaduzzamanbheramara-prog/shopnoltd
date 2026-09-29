@@ -41,6 +41,7 @@ export default function Dashboard() {
   const [freeDomains, setFreeDomains] = useState([])
   const [notifications, setNotifications] = useState([])
   const [works, setWorks] = useState([])
+  const [platformConnections, setPlatformConnections] = useState([])
   const [refreshing, setRefreshing] = useState(false)
 
   async function loadDashboard() {
@@ -60,6 +61,7 @@ export default function Dashboard() {
         getTransactions(),
         platformApi.notifications(),
         platformApi.activeWorks(),
+        platformApi.omnichannelConnections(),
         fetch(`${import.meta.env.VITE_DOMAIN_SERVICE_URL || 'https://domain.shopnoltd.dpdns.org/api/v1'}/domains`, { headers: { Accept: 'application/json', Authorization: `Bearer ${token}` } }).then(async (response) => {
           const data = await response.json().catch(() => null)
           if (!response.ok) throw new Error(data?.detail || data?.message || `HTTP ${response.status}`)
@@ -72,13 +74,14 @@ export default function Dashboard() {
         }),
       ])
 
-      const [profile, walletResult, transactions, notificationResult, activeWorks, domainResult, freeDomainResult] = results
+      const [profile, walletResult, transactions, notificationResult, activeWorks, connectionResult, domainResult, freeDomainResult] = results
       if (profile.status === 'fulfilled') setMe(profile.value)
       else throw profile.reason
       if (walletResult.status === 'fulfilled') setWallet(walletResult.value)
       if (transactions.status === 'fulfilled') setTransactionCount(Array.isArray(transactions.value) ? transactions.value.length : 0)
       if (notificationResult.status === 'fulfilled') setNotifications(Array.isArray(notificationResult.value) ? notificationResult.value : (notificationResult.value?.items || []))
       if (activeWorks.status === 'fulfilled') setWorks(Array.isArray(activeWorks.value) ? activeWorks.value : (activeWorks.value?.items || []))
+      if (connectionResult.status === 'fulfilled') setPlatformConnections(Array.isArray(connectionResult.value) ? connectionResult.value : (connectionResult.value?.items || []))
       if (domainResult.status === 'fulfilled') setDomains(Array.isArray(domainResult.value) ? domainResult.value : [])
       if (freeDomainResult.status === 'fulfilled') setFreeDomains(Array.isArray(freeDomainResult.value) ? freeDomainResult.value : [])
     } catch (err) {
@@ -101,6 +104,7 @@ export default function Dashboard() {
   const isAdmin = isPlatformAdmin()
   const activeDomains = domains.filter((domain) => String(domain.status || '').toLowerCase() === 'active').length
   const unreadNotifications = notifications.filter((notification) => !notification.read && !notification.read_at).length
+  const connectedPlatforms = new Set(platformConnections.map((connection) => connection.platform)).size
 
   return (
     <div style={{ maxWidth: 1180, margin: '0 auto', padding: 'clamp(28px, 6vw, 48px) clamp(14px, 4vw, 24px) 80px', fontFamily: 'system-ui, sans-serif' }}>
@@ -115,6 +119,20 @@ export default function Dashboard() {
       {error && <div role="alert" style={{ marginTop: 16, padding: 12, borderRadius: 8, background: '#fff7ed', border: '1px solid #fed7aa', color: '#9a3412' }}>{error} Some optional dashboard panels may be unavailable; retry after the affected service is healthy.</div>}
 
       {isAdmin && <Link to="/admin" style={{ display: 'inline-block', marginTop: 12, marginBottom: 8, padding: '10px 16px', borderRadius: 8, background: '#0ea5e9', color: 'white', fontWeight: 600, textDecoration: 'none' }}>Open Admin Dashboard →</Link>}
+
+      <section style={{ marginTop: 24 }}>
+        <Link to="/connections" style={{ display: 'block', padding: 20, borderRadius: 12, background: '#f8fafc', border: '1px solid #cbd5e1', textDecoration: 'none', color: 'inherit' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+            <div>
+              <h2 style={{ margin: 0 }}>🔗 Platform Connections</h2>
+              <p style={{ margin: '7px 0 0', color: '#64748b' }}>
+                {platformConnections.length ? (platformConnections.length + ' connected profile' + (platformConnections.length === 1 ? '' : 's') + ' across ' + connectedPlatforms + ' platform' + (connectedPlatforms === 1 ? '' : 's') + '.') : 'Connect Google, Facebook, Instagram, YouTube, WhatsApp and other supported platforms.'}
+              </p>
+            </div>
+            <span style={{ padding: '10px 16px', borderRadius: 8, background: '#0f172a', color: 'white', fontWeight: 700 }}>{platformConnections.length ? 'Manage Connections →' : 'Connect Platforms →'}</span>
+          </div>
+        </Link>
+      </section>
 
       <section style={{ marginTop: 28 }}>
         <h2>Account overview</h2>
