@@ -26,7 +26,7 @@ spec:
 
       - name: oauth-service
 
-        image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-oauth:45aef5bad1cdaf60c0d3a6b8551b02d24de1eace
+        image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-oauth:ab112af79b28a02e7f25de1336c0f273252d8dfd
 
         imagePullPolicy: Always
 
