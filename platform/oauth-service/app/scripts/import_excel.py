@@ -90,7 +90,30 @@ async def main(path):
                 emails=email_candidates(cells.values())
                 linked_user=None
                 if emails:
+                    # One application identity per distinct email. Existing Keycloak users are linked;
+                    # new XLS identities become imported users with a non-login synthetic identity key.
                     linked_user=(await s.execute(select(UserMirror).where(UserMirror.email==emails[0]))).scalar_one_or_none()
+                    if not linked_user:
+                        linked_user=UserMirror(
+                            keycloak_id=f"import:{__import__('uuid').uuid4()}",
+                            identity_source="excel_import",
+                            source_workbook_id=wb.id,
+                            source_sheet=sheet,
+                            source_row=rownum,
+                            email=emails[0],
+                            name=emails[0].split("@")[0],
+                            roles=[],
+                            active=True,
+                        )
+                        s.add(linked_user)
+                        await s.flush()
+                        s.add(UserProfile(
+                            user_id=linked_user.id,
+                            display_name=linked_user.name,
+                            recovery_email=emails[0],
+                            source="excel_import",
+                            profile_metadata={"workbook_id": wb.id, "sheet": sheet, "source_row": rownum},
+                        ))
                 row_id=str(__import__('uuid').uuid4())
                 normalized='account' if any(x in sheet.lower() for x in ('gmail','instagram','yahoo','account')) else 'source_record'
                 normalized_key=emails[0] if emails else None

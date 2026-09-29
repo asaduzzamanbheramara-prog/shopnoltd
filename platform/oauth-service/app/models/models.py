@@ -10,6 +10,11 @@ class UserMirror(Base):
     __tablename__ = "users"
     id = Column(String(64), primary_key=True, default=lambda: str(uuid.uuid4()))
     keycloak_id = Column(String(64), unique=True, nullable=False, index=True)
+    # Real Keycloak identities use their Keycloak UUID; imported identities use a synthetic import:<uuid> value.
+    identity_source = Column(String(32), nullable=False, default="keycloak", index=True)
+    source_workbook_id = Column(String(64), index=True)
+    source_sheet = Column(String(255))
+    source_row = Column(Integer)
     email = Column(String(256), unique=True, nullable=False)
     name = Column(String(256))
     tenant_id = Column(String(64), index=True)
