@@ -204,7 +204,7 @@ export default function OmnichannelConnections() {
         </button>
       </div>
       <div style={{ color: '#6b7280', fontSize: 12 }}>
-        This registry stores account metadata and credential references. It does not manufacture OAuth authorization or provider tokens; each provider still requires its own approved authorization.
+        Use provider authorization above for supported OAuth platforms. Manual registration remains available for provider-specific integrations such as WhatsApp, Telegram and 3CX.
       </div>
     </form>
 
@@ -228,7 +228,7 @@ export default function OmnichannelConnections() {
               {provider.platforms.join(', ')} · {provider.mode || 'oauth2'}
             </div>
             <div style={{ color: '#6b7280', fontSize: 11, marginTop: 5 }}>
-              {provider.authorization_supported ? 'Authorization flow can be enabled after callback/token storage wiring.' : 'Uses provider-specific business/API authorization.'}
+              {provider.authorization_supported ? 'Direct authorization is available when the server credentials are configured.' : 'Uses provider-specific business/API authorization.'}
             </div>
           </div>
         ))}
