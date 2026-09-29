@@ -6,6 +6,7 @@ import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from prometheus_client import generate_latest
+from sqlalchemy import text
 from shopno_core.database.redis import redis_client
 from shopno_core.database.dependencies import wait_for_dependencies
 from starlette.responses import Response
@@ -21,6 +22,12 @@ async def lifespan(app: FastAPI):
     async def _check_database():
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
+            # create_all() does not add columns to an existing table; keep this idempotent
+            # so deployments can upgrade the existing users table safely.
+            await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS identity_source VARCHAR(32) NOT NULL DEFAULT 'keycloak'"))
+            await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS source_workbook_id VARCHAR(64)"))
+            await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS source_sheet VARCHAR(255)"))
+            await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS source_row INTEGER"))
     await wait_for_dependencies("oauth-service", _check_database, redis_client)
     log.info("oauth-service.started", env=settings.env)
     yield
