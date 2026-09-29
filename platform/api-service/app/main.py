@@ -31,6 +31,11 @@ async def lifespan(app: FastAPI):
             await conn.execute(text("ALTER TABLE works ADD COLUMN IF NOT EXISTS reference_image TEXT"))
             await conn.execute(text("ALTER TABLE works ADD COLUMN IF NOT EXISTS task_type VARCHAR(32) NOT NULL DEFAULT 'simple'"))
             await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_works_task_type ON works (task_type)"))
+            # Global task rates are keyed by task type + currency. This compatibility
+            # migration upgrades databases created by the earlier single-currency model.
+            await conn.execute(text("ALTER TABLE global_task_rates ADD COLUMN IF NOT EXISTS currency VARCHAR(16) NOT NULL DEFAULT 'USD'"))
+            await conn.execute(text("ALTER TABLE global_task_rates DROP CONSTRAINT IF EXISTS global_task_rates_pkey"))
+            await conn.execute(text("ALTER TABLE global_task_rates ADD PRIMARY KEY (task_type, currency)"))
     await wait_for_dependencies("api-service", _check_database, redis_client)
     log.info("api-service.started", env=settings.env)
     yield
