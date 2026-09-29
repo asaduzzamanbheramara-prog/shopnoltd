@@ -162,6 +162,7 @@ def sync_client(token, client_id):
         client_uuid = client["id"]
         client["redirectUris"] = sorted(set((client.get("redirectUris") or []) + required_redirect_uris))
         client["webOrigins"] = sorted(set((client.get("webOrigins") or []) + required_web_origins))
+        # Explicitly reconcile existing clients created by older manifests.\n        client["directAccessGrantsEnabled"] = True
         attributes = client.get("attributes") or {}
         attributes["pkce.code.challenge.method"] = "S256"
         client["attributes"] = attributes
