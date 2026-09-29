@@ -70,6 +70,7 @@ TASK_TYPES = {
 }
 
 MICRO_TASK_TYPES = {"simple", "follow", "like", "comment", "share", "view", "visit", "review", "social", "data", "upload", "custom"}
+WORK_PLATFORMS = {"shopnoltd", "facebook", "instagram", "youtube", "tiktok", "telegram", "whatsapp", "website", "data", "custom"}
 
 def is_admin(u):
     roles = set(u.get("roles") or [])
@@ -77,7 +78,7 @@ def is_admin(u):
     return bool(roles.intersection({"admin", "shopnoltd-admin", "administrator"}) or realm_roles.intersection({"admin", "shopnoltd-admin", "administrator"}) or u.get("is_admin") is True)
 
 def rate_dict(r):
-    return {"task_type": r.task_type, "rate": str(r.rate), "currency": r.currency, "enabled": bool(r.enabled)}
+    return {"platform": r.platform, "task_type": r.task_type, "rate": str(r.rate), "currency": r.currency, "enabled": bool(r.enabled)}
 
 
 def config_dict(c):
@@ -139,11 +140,12 @@ async def last_playback(s, session_id):
 
 @router.get("/rates")
 async def get_task_rates(s: AsyncSession = Depends(db), u=Depends(user)):
-    rows = (await s.execute(select(GlobalTaskRate).order_by(GlobalTaskRate.task_type, GlobalTaskRate.currency))).scalars().all()
-    rates = {t: [] for t in sorted(TASK_TYPES)}
+    rows = (await s.execute(select(GlobalTaskRate).order_by(GlobalTaskRate.platform, GlobalTaskRate.task_type, GlobalTaskRate.currency))).scalars().all()
+    rates = {}
     for r in rows:
-        rates.setdefault(r.task_type, []).append(rate_dict(r))
-    return {"supported_currencies": sorted(SUPPORTED_CURRENCIES), "rates": rates}
+        rates.setdefault(r.platform, {t: [] for t in sorted(TASK_TYPES)})
+        rates[r.platform].setdefault(r.task_type, []).append(rate_dict(r))
+    return {"supported_currencies": sorted(SUPPORTED_CURRENCIES), "platforms": sorted(WORK_PLATFORMS), "rates": rates}
 
 @router.get("/admin/rates")
 async def admin_get_task_rates(s: AsyncSession = Depends(db), u=Depends(user)):
@@ -155,8 +157,11 @@ async def admin_get_task_rates(s: AsyncSession = Depends(db), u=Depends(user)):
 async def admin_set_task_rate(task_type: str, currency: str, body: dict, s: AsyncSession = Depends(db), u=Depends(user)):
     if not is_admin(u):
         raise HTTPException(403, "admin role required")
+    platform = str(body.get("platform", "shopnoltd")).strip().lower()
     task_type = task_type.strip().lower()
     currency = currency.strip().upper()
+    if platform not in WORK_PLATFORMS:
+        raise HTTPException(422, f"Unsupported platform: {platform}")
     if task_type not in TASK_TYPES:
         raise HTTPException(422, f"Unsupported task_type: {task_type}")
     if currency not in SUPPORTED_CURRENCIES:
@@ -168,11 +173,12 @@ async def admin_set_task_rate(task_type: str, currency: str, body: dict, s: Asyn
     if rate < 0:
         raise HTTPException(422, "rate cannot be negative")
     r = await s.scalar(select(GlobalTaskRate).where(
+        GlobalTaskRate.platform == platform,
         GlobalTaskRate.task_type == task_type,
         GlobalTaskRate.currency == currency,
     ))
     if not r:
-        r = GlobalTaskRate(task_type=task_type, currency=currency)
+        r = GlobalTaskRate(platform=platform, task_type=task_type, currency=currency)
         s.add(r)
     r.rate = rate
     r.enabled = 1 if bool(body.get("enabled", True)) and rate > 0 else 0
@@ -181,21 +187,41 @@ async def admin_set_task_rate(task_type: str, currency: str, body: dict, s: Asyn
     await s.refresh(r)
     return rate_dict(r)
 
+@router.put("/admin/rates/{platform}/{task_type}/{currency}")
+async def admin_set_platform_task_rate(platform: str, task_type: str, currency: str, body: dict, s: AsyncSession = Depends(db), u=Depends(user)):
+    body = dict(body or {})
+    body["platform"] = platform
+    return await admin_set_task_rate(task_type, currency, body, s, u)
+
 @router.delete("/admin/rates/{task_type}/{currency}")
 async def admin_delete_task_rate(task_type: str, currency: str, s: AsyncSession = Depends(db), u=Depends(user)):
     if not is_admin(u):
         raise HTTPException(403, "admin role required")
+    platform = str(task_type and "shopnoltd").strip().lower()
     currency = currency.strip().upper()
     if task_type.strip().lower() not in TASK_TYPES or currency not in SUPPORTED_CURRENCIES:
         raise HTTPException(422, "unsupported task type or currency")
     r = await s.scalar(select(GlobalTaskRate).where(
+        GlobalTaskRate.platform == platform,
         GlobalTaskRate.task_type == task_type.strip().lower(),
         GlobalTaskRate.currency == currency,
     ))
     if r:
         await s.delete(r)
         await s.commit()
-    return {"deleted": True, "task_type": task_type.strip().lower(), "currency": currency}
+    return {"deleted": True, "platform": platform, "task_type": task_type.strip().lower(), "currency": currency}
+
+@router.delete("/admin/rates/{platform}/{task_type}/{currency}")
+async def admin_delete_platform_task_rate(platform: str, task_type: str, currency: str, s: AsyncSession = Depends(db), u=Depends(user)):
+    if not is_admin(u):
+        raise HTTPException(403, "admin role required")
+    platform = platform.strip().lower(); task_type = task_type.strip().lower(); currency = currency.strip().upper()
+    if platform not in WORK_PLATFORMS or task_type not in TASK_TYPES or currency not in SUPPORTED_CURRENCIES:
+        raise HTTPException(422, "unsupported platform, task type or currency")
+    r = await s.scalar(select(GlobalTaskRate).where(GlobalTaskRate.platform == platform, GlobalTaskRate.task_type == task_type, GlobalTaskRate.currency == currency))
+    if r:
+        await s.delete(r); await s.commit()
+    return {"deleted": True, "platform": platform, "task_type": task_type, "currency": currency}
 
 @router.get("/{work_id}/config")
 async def get_config(work_id: str, s: AsyncSession = Depends(db), u=Depends(user)):
@@ -613,6 +639,7 @@ async def submit_session(session_id: str, s: AsyncSession = Depends(db), u=Depen
                     earning_currency = c.rate_currency
             if not c or w.task_type not in parse_json(c.social_rates, {}):
                 global_rate = await s.scalar(select(GlobalTaskRate).where(
+                    GlobalTaskRate.platform == w.platform,
                     GlobalTaskRate.task_type == w.task_type,
                     GlobalTaskRate.currency == w.currency,
                     GlobalTaskRate.enabled == 1,
