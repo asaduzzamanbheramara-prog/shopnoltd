@@ -131,6 +131,27 @@ export async function svgToPngBlob(svgText) {
   })
 }
 
+/** Render SVG text to a 1024px JPEG with a white background for broadly compatible downloads. */
+export async function svgToJpegBlob(svgText) {
+  const png = await svgToPngBlob(svgText)
+  const url = URL.createObjectURL(png)
+  try {
+    const img = await loadImage(url, 'This SVG could not be drawn.')
+    const canvas = document.createElement('canvas')
+    canvas.width = img.naturalWidth || img.width
+    canvas.height = img.naturalHeight || img.height
+    const ctx = canvas.getContext('2d')
+    ctx.fillStyle = '#ffffff'
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+    return new Promise((resolve, reject) => {
+      canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('JPG export failed.'))), 'image/jpeg', 0.92)
+    })
+  } finally {
+    URL.revokeObjectURL(url)
+  }
+}
+
 export const MAX_IMAGE_INPUT_BYTES = 20 * 1024 * 1024
 const MAX_IMAGE_SIDE = 1568
 
