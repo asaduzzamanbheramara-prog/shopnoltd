@@ -1,7 +1,7 @@
 import httpx
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -72,12 +72,12 @@ async def ensure_user_mirror(payload: dict, s: AsyncSession) -> UserMirror:
         raise HTTPException(400, "authenticated token is missing email")
 
     existing = (
-        await s.execute(
-            select(UserMirror).where(UserMirror.keycloak_id == keycloak_id)
-        )
+        await s.execute(select(UserMirror).where(UserMirror.keycloak_id == keycloak_id))
     ).scalar_one_or_none()
     if existing:
-        profile = (await s.execute(select(UserProfile).where(UserProfile.user_id == existing.id))).scalar_one_or_none()
+        profile = (
+            await s.execute(select(UserProfile).where(UserProfile.user_id == existing.id))
+        ).scalar_one_or_none()
         if not profile:
             profile = UserProfile(
                 user_id=existing.id,
@@ -103,6 +103,7 @@ async def ensure_user_mirror(payload: dict, s: AsyncSession) -> UserMirror:
         tenant_id=payload.get("tenant_id"),
         roles=payload.get("roles") or [],
         active=True,
+        identity_source="keycloak",
     )
     s.add(u)
 
@@ -111,13 +112,10 @@ async def ensure_user_mirror(payload: dict, s: AsyncSession) -> UserMirror:
     except IntegrityError:
         await s.rollback()
         existing = (
-            await s.execute(
-                select(UserMirror).where(UserMirror.keycloak_id == keycloak_id)
-            )
+            await s.execute(select(UserMirror).where(UserMirror.keycloak_id == keycloak_id))
         ).scalar_one_or_none()
         if existing:
             return existing
-
         email_owner = (
             await s.execute(select(UserMirror).where(UserMirror.email == email))
         ).scalar_one_or_none()
@@ -125,7 +123,9 @@ async def ensure_user_mirror(payload: dict, s: AsyncSession) -> UserMirror:
             raise HTTPException(409, "email is already linked to another account")
         raise HTTPException(409, "unable to provision account safely")
 
-    profile = (await s.execute(select(UserProfile).where(UserProfile.user_id == u.id))).scalar_one_or_none()
+    profile = (
+        await s.execute(select(UserProfile).where(UserProfile.user_id == u.id))
+    ).scalar_one_or_none()
     if not profile:
         profile = UserProfile(
             user_id=u.id,
@@ -166,7 +166,13 @@ async def create(body: UserIn, user=Depends(admin), s: AsyncSession = Depends(db
             f"{ADMIN_URL}/users?email={body.email}", headers={"Authorization": f"Bearer {tok}"}
         )
     kc_id = r2.json()[0]["id"]
-    u = UserMirror(keycloak_id=kc_id, email=body.email, name=body.name, tenant_id=body.tenant_id)
+    u = UserMirror(
+        keycloak_id=kc_id,
+        email=body.email,
+        name=body.name,
+        tenant_id=body.tenant_id,
+        identity_source="keycloak",
+    )
     s.add(u)
     await s.flush()
     s.add(UserProfile(user_id=u.id, display_name=body.name or body.email.split("@")[0], source="admin_created"))
@@ -176,18 +182,110 @@ async def create(body: UserIn, user=Depends(admin), s: AsyncSession = Depends(db
 
 
 @router.get("", response_model=list[UserOut])
-async def list_(user=Depends(admin), s: AsyncSession = Depends(db)):
-    res = await s.execute(select(UserMirror).limit(500))
+async def list_(
+    user=Depends(admin),
+    s: AsyncSession = Depends(db),
+    limit: int = Query(100, ge=1, le=500),
+    offset: int = Query(0, ge=0),
+):
+    res = await s.execute(
+        select(UserMirror).order_by(UserMirror.created_at, UserMirror.id).offset(offset).limit(limit)
+    )
     return [_user_out(u) for u in res.scalars().all()]
+
+
+@router.get("/reconciliation", response_model=dict)
+async def reconciliation_report(user=Depends(admin), s: AsyncSession = Depends(db)):
+    """Read-only report for current vs previous-website identity provenance."""
+    total = int((await s.execute(select(func.count()).select_from(UserMirror))).scalar_one())
+    legacy = int(
+        (
+            await s.execute(
+                select(func.count()).select_from(UserMirror).where(UserMirror.identity_source == "legacy_sql")
+            )
+        ).scalar_one()
+    )
+    current = total - legacy
+    active = int(
+        (await s.execute(select(func.count()).select_from(UserMirror).where(UserMirror.active.is_(True)))).scalar_one()
+    )
+    profiles = int((await s.execute(select(func.count()).select_from(UserProfile))).scalar_one())
+    linked_profiles = int(
+        (
+            await s.execute(
+                select(func.count()).select_from(UserProfile).join(UserMirror, UserProfile.user_id == UserMirror.id)
+            )
+        ).scalar_one()
+    )
+    orphan_profiles = profiles - linked_profiles
+    legacy_profiles = int(
+        (
+            await s.execute(
+                select(func.count())
+                .select_from(UserProfile)
+                .join(UserMirror, UserProfile.user_id == UserMirror.id)
+                .where(UserMirror.identity_source == "legacy_sql")
+            )
+        ).scalar_one()
+    )
+    current_profiles = linked_profiles - legacy_profiles
+    duplicate_emails = int(
+        (
+            await s.execute(
+                select(func.count())
+                .select_from(
+                    select(UserMirror.email).group_by(UserMirror.email).having(func.count() > 1).subquery()
+                )
+            )
+        ).scalar_one()
+    )
+    duplicate_keycloak_ids = int(
+        (
+            await s.execute(
+                select(func.count())
+                .select_from(
+                    select(UserMirror.keycloak_id).group_by(UserMirror.keycloak_id).having(func.count() > 1).subquery()
+                )
+            )
+        ).scalar_one()
+    )
+    return {
+        "status": "ok",
+        "source_policy": {
+            "current_canonical": "users records not marked legacy_sql",
+            "previous_website": "users records marked legacy_sql",
+            "reimport_policy": "idempotent_by_unique_email_and_keycloak_id",
+            "destructive_actions": "none",
+        },
+        "users": {
+            "total_canonical_records": total,
+            "current": current,
+            "previous_website_legacy": legacy,
+            "active": active,
+        },
+        "profiles": {
+            "total_rows": profiles,
+            "linked_to_users": linked_profiles,
+            "current_canonical": current_profiles,
+            "previous_website_legacy": legacy_profiles,
+            "orphan_rows": orphan_profiles,
+        },
+        "integrity": {
+            "duplicate_emails": duplicate_emails,
+            "duplicate_keycloak_ids": duplicate_keycloak_ids,
+            "safe_for_reconciliation": duplicate_emails == 0 and duplicate_keycloak_ids == 0,
+        },
+    }
 
 
 @router.post("/sync-keycloak", response_model=dict)
 async def sync_keycloak(user=Depends(admin), s: AsyncSession = Depends(db)):
-    """Reconcile every enabled Keycloak user into the application user/profile tables."""
+    """Reconcile enabled Keycloak identities without recreating legacy users."""
     tok = await kc_token()
     synced = 0
     created_users = 0
     created_profiles = 0
+    skipped_conflicts = 0
     first = 0
 
     async with httpx.AsyncClient(timeout=30) as c:
@@ -219,6 +317,7 @@ async def sync_keycloak(user=Depends(admin), s: AsyncSession = Depends(db)):
                         await s.execute(select(UserMirror).where(UserMirror.email == email))
                     ).scalar_one_or_none()
                     if email_owner and email_owner.keycloak_id != keycloak_id:
+                        skipped_conflicts += 1
                         continue
                     existing = UserMirror(
                         keycloak_id=keycloak_id,
@@ -227,18 +326,21 @@ async def sync_keycloak(user=Depends(admin), s: AsyncSession = Depends(db)):
                         tenant_id=(payload.get("attributes") or {}).get("tenant_id", [None])[0],
                         roles=[],
                         active=True,
+                        identity_source="keycloak",
                     )
                     s.add(existing)
                     await s.flush()
                     created_users += 1
                 else:
-                    existing.email = email
-                    existing.name = _user_name(payload) or existing.name
                     existing.active = True
-                    attrs = payload.get("attributes") or {}
-                    tenant_values = attrs.get("tenant_id") or []
-                    if tenant_values:
-                        existing.tenant_id = tenant_values[0]
+                    # Legacy records remain sourced from the previous website.
+                    if existing.identity_source != "legacy_sql":
+                        existing.email = email
+                        existing.name = _user_name(payload) or existing.name
+                        attrs = payload.get("attributes") or {}
+                        tenant_values = attrs.get("tenant_id") or []
+                        if tenant_values:
+                            existing.tenant_id = tenant_values[0]
 
                 profile = (
                     await s.execute(select(UserProfile).where(UserProfile.user_id == existing.id))
@@ -249,7 +351,7 @@ async def sync_keycloak(user=Depends(admin), s: AsyncSession = Depends(db)):
                         display_name=existing.name or email.split("@")[0],
                         first_name=(payload.get("firstName") or payload.get("givenName") or "").strip() or None,
                         last_name=(payload.get("lastName") or payload.get("familyName") or "").strip() or None,
-                        source="keycloak_sync",
+                        source="legacy_sql" if existing.identity_source == "legacy_sql" else "keycloak_sync",
                     )
                     s.add(profile)
                     created_profiles += 1
@@ -265,6 +367,8 @@ async def sync_keycloak(user=Depends(admin), s: AsyncSession = Depends(db)):
         "keycloak_users_synced": synced,
         "users_created": created_users,
         "profiles_created": created_profiles,
+        "conflicts_skipped": skipped_conflicts,
+        "legacy_records_recreated": 0,
     }
 
 
