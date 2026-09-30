@@ -49,7 +49,7 @@ export default function AdminAnalytics() {
         <List title="Browsers" rows={data.categories?.browser} />
         <List title="Operating systems" rows={data.categories?.os} />
         <List title="Languages" rows={data.categories?.language} />
-        <List title="Campaigns" rows={data.categories?.campaign} />
+        <List title="Countries" rows={data.categories?.country} />\n        <List title="Campaigns" rows={data.categories?.campaign} />
       </div>
     </>}
   </main>
