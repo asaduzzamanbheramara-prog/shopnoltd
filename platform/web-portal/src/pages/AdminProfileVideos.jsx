@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowLeft, CheckCircle2, ChevronDown, ChevronUp, Download, Film, Loader2, Plus, Trash2, Upload, XCircle } from 'lucide-react'
+import { tryRefresh } from '../lib/tokenRefresh'
 
 const API_BASE = import.meta.env.VITE_STORAGE_API_URL || 'https://storage-service.shopnoltd.dpdns.org'
 const PROFILES = [
@@ -17,7 +18,28 @@ function headers(json = false) {
 }
 
 async function api(path, options = {}) {
-  const response = await fetch(`${API_BASE}/api/v1/profile-videos${path}`, { ...options, headers: { ...headers(!!options.body), ...(options.headers || {}) } })
+  const request = (token) => fetch(`${API_BASE}/api/v1/profile-videos${path}`, {
+    ...options,
+    headers: {
+      ...headers(!!options.body),
+      ...(options.headers || {}),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  })
+
+  let response = await request(localStorage.getItem('shopno_token'))
+
+  if (response.status === 401) {
+    const refreshed = await tryRefresh()
+    if (refreshed) {
+      response = await request(refreshed)
+    } else {
+      localStorage.removeItem('shopno_token')
+      localStorage.removeItem('shopno_refresh_token')
+      throw new Error('Your session has expired. Please log in again.')
+    }
+  }
+
   const text = await response.text()
   let data = null
   try { data = text ? JSON.parse(text) : null } catch { data = text }
