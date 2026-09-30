@@ -136,7 +136,7 @@ async def run(path, apply):
                 if gov and not k.encrypted_government_id:
                     k.government_id_type = "nid" if any(x in r for x in ("nid","nid_number","national_id")) else "government_id"
                     k.government_id_last4 = gov[-4:]; k.encrypted_government_id = encrypt_secret(gov)
-                k.metadata = {a:b for a,b in ids.items() if a not in {"nid","nid_number","national_id","passport","passport_number","government_id","government_id_number"}}
+                k.kyc_metadata = {a:b for a,b in ids.items() if a not in {"nid","nid_number","national_id","passport","passport_number","government_id","government_id_number"}}
                 report["kyc"] += 1
         await s.commit()
     print(json.dumps(report, indent=2))
