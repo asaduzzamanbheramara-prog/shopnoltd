@@ -60,6 +60,8 @@ export default function Callback() {
         if (pendingReferral) {
           try { await platformApi.claimReferral(pendingReferral) } catch (error) { console.warn('Referral attribution could not be claimed:', error) }
         }
+        // If no direct referral was supplied, the API preserves legacy/direct attribution or binds Admin Office as the fallback.
+        try { await platformApi.referralMe() } catch (error) { console.warn('Referral attribution initialization skipped:', error) }
 
         const pendingDomain = sessionStorage.getItem('pending_domain')
         const next = sessionStorage.getItem('post_login_next')
