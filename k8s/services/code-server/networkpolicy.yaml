@@ -56,7 +56,14 @@ spec:
         - port: 9000
           protocol: TCP
 
-    # AI platform
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: shopno-ai
+      ports:
+        - port: 4000
+          protocol: TCP
+
     - to:
         - namespaceSelector:
             matchLabels:
@@ -68,7 +75,6 @@ spec:
         - port: 8080
           protocol: TCP
 
-    # Local Ollama
     - to:
         - namespaceSelector:
             matchLabels:
