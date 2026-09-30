@@ -35,7 +35,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: api-service
-          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/api-service:4bbd24c231d40e5f294dd4eed17bd020df39d7a2
+          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/api-service:e0e561c2e37cb788fdb895479b8d38ee78bf5881
           imagePullPolicy: Always
           ports:
             - name: http
