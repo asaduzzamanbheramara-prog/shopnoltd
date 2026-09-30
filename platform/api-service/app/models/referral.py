@@ -30,7 +30,7 @@ class ReferralPolicy(Base):
     percent = Column(Numeric(12, 6), nullable=False, default=5)
     fixed_amount = Column(Numeric(20, 8), nullable=False, default=0)
     max_amount = Column(Numeric(20, 8), nullable=True)
-    currency = Column(String(16), nullable=False, default="BDT")
+    currency = Column(String(16), nullable=False, default="MATCH_TASK")
     enabled = Column(Integer, nullable=False, default=1)
     updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 
