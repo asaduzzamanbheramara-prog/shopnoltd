@@ -18,6 +18,7 @@ class Referral(Base):
     referrer_id = Column(String(128), nullable=False, index=True)
     referred_id = Column(String(128), nullable=False, unique=True, index=True)
     referral_code = Column(String(32), nullable=False, index=True)
+    source = Column(String(24), nullable=False, default="direct")
     claimed_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     active = Column(Integer, nullable=False, default=1)
     __table_args__ = (Index("ix_referral_pair", "referrer_id", "referred_id", unique=True),)
@@ -33,6 +34,7 @@ class ReferralPolicy(Base):
     currency = Column(String(16), nullable=False, default="MATCH_TASK")
     enabled = Column(Integer, nullable=False, default=1)
     all_users_can_refer = Column(Integer, nullable=False, default=1)
+    fallback_referrer_id = Column(String(128), nullable=False, default="admin_office")
     updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
