@@ -56,11 +56,17 @@ export default function Callback() {
         if (data.refresh_token) localStorage.setItem('shopno_refresh_token', data.refresh_token)
         try { await platformApi.me(); sessionStorage.setItem('shopno_profile_provisioned', '1') } catch (error) { console.warn('Shopnoltd profile provisioning check failed after login:', error) }
 
+        const pendingReferral = sessionStorage.getItem('pending_referral_code')
+        if (pendingReferral) {
+          try { await platformApi.claimReferral(pendingReferral) } catch (error) { console.warn('Referral attribution could not be claimed:', error) }
+        }
+
         const pendingDomain = sessionStorage.getItem('pending_domain')
         const next = sessionStorage.getItem('post_login_next')
         sessionStorage.removeItem('pkce_verifier')
         sessionStorage.removeItem('oidc_state')
         sessionStorage.removeItem('pending_domain')
+        sessionStorage.removeItem('pending_referral_code')
         sessionStorage.removeItem('post_login_next')
 
         if (pendingDomain) {
