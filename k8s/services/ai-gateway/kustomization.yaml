@@ -3,3 +3,8 @@ kind: Kustomization
 
 resources:
   - 01-litellm-proxy.yaml
+
+configMapGenerator:
+  - name: litellm-config
+    files:
+      - config.yaml=litellm-config.conf
