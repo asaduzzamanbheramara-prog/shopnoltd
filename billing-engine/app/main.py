@@ -76,12 +76,14 @@ def log_action(db: Session, action: str, user_id: str | None, details: dict):
 
 def get_or_create_user(db: Session, email: str) -> User:
     user = db.query(User).filter(User.email == email).first()
-    if user:
-        return user
-    user = User(email=email, keycloak_id=None, active=True)
-    db.add(user)
-    db.commit()
-    db.refresh(user)
+    if not user:
+        user = User(email=email, keycloak_id=None, active=True)
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+    # New/migrated identities always begin with a zero BDT wallet.
+    # Existing non-zero wallets are never silently reset.
+    get_or_create_wallet(db, user.id, "BDT")
     return user
 
 def get_or_create_wallet(db: Session, user_id: str, currency: str) -> Wallet:
