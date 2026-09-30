@@ -1,11 +1,13 @@
 """Pydantic schemas."""
 
+from uuid import UUID
+
 from app.models.models import PaymentMethod, TxStatus, TxType
 from pydantic import BaseModel, ConfigDict, Field
 
 
 class WalletOut(BaseModel):
-    id: str
+    id: UUID
     currency: str
     balance: float
     frozen: float
