@@ -16,6 +16,10 @@ class Settings(BaseSettings):
     keycloak_audience: str = "oauth-service"
 
     @property
+    def keycloak_issuer(self) -> str:
+        return f"{self.keycloak_url}/realms/{self.keycloak_realm}"
+
+    @property
     def cors_origins_list(self):
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
 
