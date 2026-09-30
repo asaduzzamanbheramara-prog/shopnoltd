@@ -236,3 +236,11 @@ spec:
       ports:
         - protocol: TCP
           port: 11434
+
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: shopno-data
+      ports:
+        - protocol: TCP
+          port: 5432
