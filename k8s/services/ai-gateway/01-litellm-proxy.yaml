@@ -12,7 +12,6 @@ metadata:
   name: litellm-provider-keys
   namespace: shopno-ai
   annotations:
-    # Provider credentials are populated out-of-band; Argo must not prune them.
     argocd.argoproj.io/sync-options: Prune=false
 type: Opaque
 stringData: {}
@@ -100,7 +99,7 @@ spec:
     spec:
       containers:
         - name: litellm
-          image: ghcr.io/berriai/litellm-database@sha256:070df884f52600352a4aedda059180be141f3645c61c59b89b0ee35c17a4ea84
+          image: ghcr.io/berriai/litellm@sha256:0f4dce575a6c33d737886fe0796a6b3022358b45c2068a5e1312293e28b35f0f
           args:
             - "--config"
             - "/app/config.yaml"
@@ -108,6 +107,9 @@ spec:
             - "4000"
           ports:
             - containerPort: 4000
+          env:
+            - name: DISABLE_SCHEMA_UPDATE
+              value: "true"
           envFrom:
             - secretRef:
                 name: litellm-provider-keys
@@ -129,7 +131,6 @@ spec:
             periodSeconds: 10
             timeoutSeconds: 3
             failureThreshold: 36
-
           readinessProbe:
             httpGet:
               path: /health/liveliness
@@ -137,7 +138,6 @@ spec:
             periodSeconds: 10
             timeoutSeconds: 3
             failureThreshold: 6
-
           livenessProbe:
             httpGet:
               path: /health/liveliness
@@ -145,7 +145,6 @@ spec:
             periodSeconds: 30
             timeoutSeconds: 3
             failureThreshold: 5
-
       volumes:
         - name: config
           configMap:
@@ -204,12 +203,10 @@ spec:
   policyTypes:
     - Ingress
     - Egress
-
   ingress:
     - ports:
         - protocol: TCP
           port: 4000
-
   egress:
     - to:
         - ipBlock:
@@ -217,15 +214,12 @@ spec:
       ports:
         - protocol: TCP
           port: 443
-
     - ports:
         - protocol: UDP
           port: 53
-
     - ports:
         - protocol: TCP
           port: 53
-
     - to:
         - namespaceSelector:
             matchLabels:
