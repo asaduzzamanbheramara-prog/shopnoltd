@@ -29,7 +29,7 @@ async def track_public(body: EventIn, s: AsyncSession = Depends(db)):
         raise HTTPException(400, "Only page_view is accepted by the public collector")
     allowed = {
         "visitor_id", "page_path", "page_title", "landing_page", "referrer",
-        "utm_source", "utm_medium", "utm_campaign", "language", "timezone",
+        "utm_source", "utm_medium", "utm_campaign", "country", "language", "timezone",
         "device_category", "browser", "os", "screen_category", "logged_in",
     }
     properties = {}
