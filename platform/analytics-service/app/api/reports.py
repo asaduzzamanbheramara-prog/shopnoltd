@@ -24,12 +24,16 @@ async def current_user(creds: HTTPAuthorizationCredentials = Depends(bearer)):
 
 @router.get("/visitors")
 async def visitors(days: int = 30, limit: int = 20, user=Depends(current_user), s: AsyncSession = Depends(db)):
+    roles = set(user.get("roles", []))
+    if not roles.intersection({"admin", "platform_admin", "tenant_owner"}):
+        from fastapi import HTTPException
+        raise HTTPException(403, "Analytics administration privileges required")
     days = max(1, min(days, 365))
     limit = max(1, min(limit, 100))
     since = datetime.utcnow() - timedelta(days=days)
     rows = (await s.execute(
         select(Event.properties).where(
-            Event.tenant_id == user.get("tenant_id", "default"),
+            Event.tenant_id == "default",
             Event.name == "page_view",
             Event.created_at >= since,
         )
