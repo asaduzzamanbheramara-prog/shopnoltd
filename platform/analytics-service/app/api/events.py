@@ -23,6 +23,34 @@ async def current_user(creds: HTTPAuthorizationCredentials = Depends(bearer)):
     return await verify_token(creds.credentials)
 
 
+@router.post("/public", status_code=202)
+async def track_public(body: EventIn, s: AsyncSession = Depends(db)):
+    if body.name != "page_view":
+        raise HTTPException(400, "Only page_view is accepted by the public collector")
+    allowed = {
+        "visitor_id", "page_path", "page_title", "landing_page", "referrer",
+        "utm_source", "utm_medium", "utm_campaign", "language", "timezone",
+        "device_category", "browser", "os", "screen_category", "logged_in",
+    }
+    properties = {}
+    for key in allowed:
+        value = body.properties.get(key)
+        if value is not None:
+            properties[key] = value if isinstance(value, bool) else str(value)[:512]
+    if not properties.get("visitor_id"):
+        raise HTTPException(400, "visitor_id is required")
+    e = Event(
+        tenant_id="default",
+        user_id=None,
+        name="page_view",
+        properties=json.dumps(properties),
+        source="web-public",
+    )
+    s.add(e)
+    await s.commit()
+    return {"accepted": True}
+
+
 @router.post("", status_code=201)
 async def track(body: EventIn, user=Depends(current_user), s: AsyncSession = Depends(db)):
     e = Event(
