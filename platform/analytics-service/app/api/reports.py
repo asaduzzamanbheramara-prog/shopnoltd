@@ -75,6 +75,7 @@ async def visitors(days: int = 30, limit: int = 20, user=Depends(current_user), 
             "landing_page": group("landing_page"),
             "page": group("page_path"),
             "campaign": group("utm_campaign"),
+            "country": group("country"),
         },
     }
 
