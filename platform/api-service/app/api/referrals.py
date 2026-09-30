@@ -95,7 +95,7 @@ async def admin_policy(u=Depends(current_user), s: AsyncSession = Depends(db)):
     if not p:
         p = ReferralPolicy(tenant_id=tenant, currency="MATCH_TASK")
         s.add(p); await s.commit(); await s.refresh(p)
-    return {"tenant_id": p.tenant_id, "mode": p.mode, "percent": str(p.percent), "fixed_amount": str(p.fixed_amount), "max_amount": str(p.max_amount) if p.max_amount is not None else None, "currency": p.currency, "enabled": bool(p.enabled), "all_users_can_refer": bool(p.all_users_can_refer)}
+    return {"tenant_id": p.tenant_id, "mode": p.mode, "percent": str(p.percent), "fixed_amount": str(p.fixed_amount), "max_amount": str(p.max_amount) if p.max_amount is not None else None, "currency": p.currency, "enabled": bool(p.enabled), "all_users_can_refer": bool(p.all_users_can_refer), "fallback_referrer_id": p.fallback_referrer_id}
 
 @router.put("/admin/policy")
 async def set_admin_policy(body: dict, u=Depends(current_user), s: AsyncSession = Depends(db)):
