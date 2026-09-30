@@ -17,6 +17,13 @@ async function startSocialSignup(provider) {
 
   const incomingDomain =
     new URLSearchParams(window.location.search).get('domain')
+  const incomingReferral =
+    new URLSearchParams(window.location.search).get('ref')
+
+  if (incomingReferral) {
+    const value = incomingReferral.trim().toUpperCase()
+    if (value) sessionStorage.setItem('pending_referral_code', value)
+  }
 
   if (incomingDomain) {
     const value = incomingDomain
@@ -46,6 +53,8 @@ async function startSocialSignup(provider) {
 }
 
 async function startLocalSignup() {
+  const incomingReferral = new URLSearchParams(window.location.search).get('ref')
+  if (incomingReferral?.trim()) sessionStorage.setItem('pending_referral_code', incomingReferral.trim().toUpperCase())
   const verifier = randomString(64)
   const challenge = await codeChallengeFor(verifier)
   const state = randomString(32)
