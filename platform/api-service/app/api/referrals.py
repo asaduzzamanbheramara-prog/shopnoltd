@@ -43,6 +43,10 @@ async def ensure_code(s, user_id):
 @router.get("/me")
 async def me(u=Depends(current_user), s: AsyncSession = Depends(db)):
     user_id = u["sub"]
+    tenant = u.get("tenant_id") or u.get("tenant") or "default"
+    policy = await s.scalar(select(ReferralPolicy).where(ReferralPolicy.tenant_id == tenant))
+    if policy and not policy.enabled:
+        raise HTTPException(403, "referral program is disabled by administrator")
     code = await ensure_code(s, user_id)
     invited = int((await s.scalar(select(func.count(Referral.id)).where(Referral.referrer_id == user_id, Referral.active == 1))) or 0)
     rewards = (await s.execute(select(ReferralReward).where(ReferralReward.referrer_id == user_id).order_by(desc(ReferralReward.created_at)).limit(200))).scalars().all()
@@ -58,6 +62,10 @@ async def me(u=Depends(current_user), s: AsyncSession = Depends(db)):
 @router.post("/claim")
 async def claim(body: dict, u=Depends(current_user), s: AsyncSession = Depends(db)):
     user_id = u["sub"]
+    tenant = u.get("tenant_id") or u.get("tenant") or "default"
+    policy = await s.scalar(select(ReferralPolicy).where(ReferralPolicy.tenant_id == tenant))
+    if policy and not policy.enabled:
+        raise HTTPException(403, "referral program is disabled by administrator")
     code = str(body.get("referral_code") or body.get("code") or "").strip().upper()
     if not code: raise HTTPException(422, "referral_code is required")
     existing = await s.scalar(select(Referral).where(Referral.referred_id == user_id))
@@ -77,7 +85,7 @@ async def admin_policy(u=Depends(current_user), s: AsyncSession = Depends(db)):
     if not p:
         p = ReferralPolicy(tenant_id=tenant, currency="MATCH_TASK")
         s.add(p); await s.commit(); await s.refresh(p)
-    return {"tenant_id": p.tenant_id, "mode": p.mode, "percent": str(p.percent), "fixed_amount": str(p.fixed_amount), "max_amount": str(p.max_amount) if p.max_amount is not None else None, "currency": p.currency, "enabled": bool(p.enabled)}
+    return {"tenant_id": p.tenant_id, "mode": p.mode, "percent": str(p.percent), "fixed_amount": str(p.fixed_amount), "max_amount": str(p.max_amount) if p.max_amount is not None else None, "currency": p.currency, "enabled": bool(p.enabled), "all_users_can_refer": bool(p.all_users_can_refer)}
 
 @router.put("/admin/policy")
 async def set_admin_policy(body: dict, u=Depends(current_user), s: AsyncSession = Depends(db)):
@@ -93,8 +101,9 @@ async def set_admin_policy(body: dict, u=Depends(current_user), s: AsyncSession 
     p = await s.scalar(select(ReferralPolicy).where(ReferralPolicy.tenant_id == tenant))
     if not p: p = ReferralPolicy(tenant_id=tenant); s.add(p)
     p.mode, p.percent, p.fixed_amount, p.max_amount, p.currency, p.enabled = mode, percent, fixed, maximum, currency, 1 if body.get("enabled", True) else 0
+    p.all_users_can_refer = 1 if body.get("all_users_can_refer", True) else 0
     await s.commit(); await s.refresh(p)
-    return {"updated": True, "mode": p.mode, "percent": str(p.percent), "fixed_amount": str(p.fixed_amount), "max_amount": str(p.max_amount) if p.max_amount is not None else None, "currency": p.currency, "enabled": bool(p.enabled)}
+    return {"updated": True, "mode": p.mode, "percent": str(p.percent), "fixed_amount": str(p.fixed_amount), "max_amount": str(p.max_amount) if p.max_amount is not None else None, "currency": p.currency, "enabled": bool(p.enabled), "all_users_can_refer": bool(p.all_users_can_refer)}
 
 @router.get("/admin/rewards")
 async def admin_rewards(u=Depends(current_user), s: AsyncSession = Depends(db)):
