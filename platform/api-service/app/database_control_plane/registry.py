@@ -110,6 +110,7 @@ DATABASE_CAPABILITIES: tuple[DatabaseCapability, ...] = (
         tables=(
             _table("users", protected="identity mirror is service-owned"),
             _table("user_profiles", protected="profiles are service-owned; use profile APIs"),
+            _table("kyc_identities", protected="government identity data is restricted to KYC/payment/compliance APIs"),
             _table("imported_workbooks", protected="import manifests are importer-owned"),
             _table("imported_excel_rows", protected="source records are importer-owned"),
             _table("secret_vault_entries", protected="encrypted secrets are vault-owned; generic reads/writes are disabled"),
