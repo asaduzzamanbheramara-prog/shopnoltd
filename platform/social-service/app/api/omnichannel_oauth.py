@@ -220,6 +220,8 @@ async def callback(code: str | None = None, state: str | None = None, error: str
                ON CONFLICT (tenant_id, platform, platform_account_id)
                DO UPDATE SET username=EXCLUDED.username, display_name=EXCLUDED.display_name,
                              status='connected', scopes=EXCLUDED.scopes,
+                             access_token_ref=EXCLUDED.access_token_ref,
+                             refresh_token_ref=EXCLUDED.refresh_token_ref,
                              token_expires_at=EXCLUDED.token_expires_at,
                              metadata=EXCLUDED.metadata, updated_at=NOW()
                RETURNING id"""
