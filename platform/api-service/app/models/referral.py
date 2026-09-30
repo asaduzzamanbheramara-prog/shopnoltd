@@ -4,6 +4,17 @@ from sqlalchemy import Column, DateTime, ForeignKey, Index, Integer, Numeric, St
 from app.core.db import Base
 
 
+class ReferralSystemIdentity(Base):
+    """Stable business aliases for platform-owned referral recipients."""
+    __tablename__ = "referral_system_identities"
+    alias = Column(String(64), primary_key=True)
+    user_id = Column(String(128), nullable=False, unique=True, index=True)
+    tenant_id = Column(String(64), nullable=False, default="default", index=True)
+    active = Column(Integer, nullable=False, default=1)
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
 class ReferralCode(Base):
     __tablename__ = "referral_codes"
     id = Column(String(64), primary_key=True, default=lambda: str(uuid.uuid4()))
