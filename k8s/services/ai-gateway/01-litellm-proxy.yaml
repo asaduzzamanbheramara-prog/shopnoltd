@@ -76,6 +76,26 @@ data:
           model: cohere/command-r-plus
           api_key: os.environ/COHERE_API_KEY
 
+      - model_name: image-gpt
+        litellm_params:
+          model: openai/gpt-image-2
+          api_key: os.environ/OPENAI_API_KEY
+
+      - model_name: image-gemini
+        litellm_params:
+          model: gemini/gemini-3.1-flash-image
+          api_key: os.environ/GEMINI_API_KEY
+
+      - model_name: video-veo
+        litellm_params:
+          model: gemini/veo-3.1-fast-generate-preview
+          api_key: os.environ/GEMINI_API_KEY
+
+      - model_name: video-sora
+        litellm_params:
+          model: openai/sora-2
+          api_key: os.environ/OPENAI_API_KEY
+
     general_settings:
       master_key: os.environ/LITELLM_MASTER_KEY
       database_url: os.environ/DATABASE_URL
