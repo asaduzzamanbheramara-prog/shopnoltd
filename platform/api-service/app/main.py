@@ -16,7 +16,7 @@ from app.core.db import Base, engine
 from app.models.work import Work, WorkAssignment, WorkSubmission  # noqa: F401
 from app.models.work_evidence import WorkTaskConfig, WorkSession, WorkEvidence, WorkEvent, GlobalTaskRate
 from app.models.work_rating import WorkRating  # noqa: F401
-from app.models.referral import ReferralCode, Referral, ReferralPolicy, ReferralReward  # noqa: F401
+from app.models.referral import ReferralCode, Referral, ReferralPolicy, ReferralReward, ReferralSystemIdentity  # noqa: F401
 
 log = structlog.get_logger()
 
@@ -39,6 +39,25 @@ async def lifespan(app: FastAPI):
             await conn.execute(text("ALTER TABLE referrals ADD COLUMN IF NOT EXISTS source VARCHAR(24) NOT NULL DEFAULT 'direct'"))
             await conn.execute(text("ALTER TABLE referral_policies ADD COLUMN IF NOT EXISTS fallback_referrer_id VARCHAR(128) NOT NULL DEFAULT 'admin_office'"))
             await conn.execute(text("UPDATE referral_policies SET fallback_referrer_id = 'admin_office' WHERE fallback_referrer_id IS NULL OR fallback_referrer_id = ''"))
+            await conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS referral_system_identities (
+                    alias VARCHAR(64) PRIMARY KEY,
+                    user_id VARCHAR(128) NOT NULL UNIQUE,
+                    tenant_id VARCHAR(64) NOT NULL DEFAULT 'default',
+                    active INTEGER NOT NULL DEFAULT 1,
+                    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                )
+            """))
+            await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_referral_system_identities_user_id ON referral_system_identities (user_id)"))
+            await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_referral_system_identities_tenant_id ON referral_system_identities (tenant_id)"))
+            await conn.execute(text("""
+                INSERT INTO referral_system_identities (alias, user_id, tenant_id, active)
+                SELECT 'admin_office', id, 'default', 1
+                FROM users WHERE lower(email) = 'admin@shopnoltd.kesug.com'
+                ORDER BY id LIMIT 1
+                ON CONFLICT (alias) DO UPDATE SET user_id=EXCLUDED.user_id, tenant_id=EXCLUDED.tenant_id, active=1, updated_at=CURRENT_TIMESTAMP
+            """))
             # Global task rates are keyed by task type + currency. This compatibility
             # migration upgrades databases created by the earlier single-currency model.
             await conn.execute(text("ALTER TABLE global_task_rates ADD COLUMN IF NOT EXISTS platform VARCHAR(64) NOT NULL DEFAULT 'shopnoltd'"))

@@ -6,9 +6,36 @@ from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.referral import Referral, ReferralCode, ReferralPolicy, ReferralReward
+from app.models.referral import (
+    Referral,
+    ReferralCode,
+    ReferralPolicy,
+    ReferralReward,
+    ReferralSystemIdentity,
+)
+
+ADMIN_OFFICE_ALIAS = "admin_office"
 
 PAYMENTS = "http://payment-service.shopno-payments.svc.cluster.local:80"
+
+
+async def resolve_referrer_recipient(s: AsyncSession, referrer_id: str, tenant_id: str) -> str:
+    """Resolve platform aliases to a real Shopnoltd user before payment settlement."""
+    alias = (referrer_id or "").strip()
+    if not alias:
+        raise HTTPException(409, "referral recipient is not configured")
+    identity = await s.scalar(select(ReferralSystemIdentity).where(
+        ReferralSystemIdentity.alias == alias,
+        ReferralSystemIdentity.tenant_id == tenant_id,
+        ReferralSystemIdentity.active == 1,
+    ))
+    if identity:
+        if identity.user_id == alias:
+            raise HTTPException(409, "referral recipient alias resolves to itself")
+        return identity.user_id
+    if alias != ADMIN_OFFICE_ALIAS:
+        return alias
+    raise HTTPException(409, "admin_office referral recipient is not configured to a real Shopnoltd user")
 
 
 async def get_policy(s: AsyncSession, tenant_id: str, currency: str | None = None):
@@ -23,7 +50,7 @@ async def get_policy(s: AsyncSession, tenant_id: str, currency: str | None = Non
         currency=currency or "MATCH_TASK",
         enabled=1,
         all_users_can_refer=1,
-        fallback_referrer_id="admin_office",
+        fallback_referrer_id=ADMIN_OFFICE_ALIAS,
     )
     s.add(policy)
     await s.flush()
@@ -43,6 +70,8 @@ async def ensure_fallback_referral(s: AsyncSession, referred_id: str, tenant_id:
     fallback = (policy.fallback_referrer_id or "admin_office").strip()
     if not fallback or fallback == referred_id:
         return None
+
+    await resolve_referrer_recipient(s, fallback, tenant_id)
 
     code = "ADMIN-" + hashlib.sha256(
         f"shopnoltd-admin-fallback:{fallback}".encode()
@@ -128,9 +157,10 @@ async def settle_referral_reward(
         s.add(reward)
         await s.flush()
 
+    recipient_id = await resolve_referrer_recipient(s, referral.referrer_id, tenant_id)
     key = "referral-settle:" + hashlib.sha256(submission_id.encode()).hexdigest()
     payload = {
-        "to_user_id": referral.referrer_id,
+        "to_user_id": recipient_id,
         "currency": reward_currency,
         "amount": float(amount),
         "note": f"referral:{submission_id}",
