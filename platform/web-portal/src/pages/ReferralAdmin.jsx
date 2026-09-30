@@ -16,7 +16,7 @@ export default function ReferralAdmin(){
    <label style={{display:'block',marginTop:12}}>Fixed amount<input type="number" min="0" step="any" value={p.fixed_amount} onChange={e=>setP({...p,fixed_amount:e.target.value})}/></label>
    <label style={{display:'block',marginTop:12}}>Maximum reward per task (optional)<input type="number" min="0" step="any" value={p.max_amount||''} onChange={e=>setP({...p,max_amount:e.target.value||null})}/></label>
    <label style={{display:'block',marginTop:12}}>Currency<input value={p.currency} onChange={e=>setP({...p,currency:e.target.value.toUpperCase()})}/></label>
-   <label style={{display:'block',marginTop:12}}><input type="checkbox" checked={p.enabled} onChange={e=>setP({...p,enabled:e.target.checked})}/> Enable recurring referral rewards</label>
+   <label style={{display:'block',marginTop:12}}><input type="checkbox" checked={p.enabled} onChange={e=>setP({...p,enabled:e.target.checked})}/> Enable referral program and recurring rewards</label><label style={{display:'block',marginTop:12}}><input type="checkbox" checked={p.all_users_can_refer} onChange={e=>setP({...p,all_users_can_refer:e.target.checked})}/> Allow all users to be referrers</label><p style={{fontSize:13,color:"#64748b"}}>When enabled, every eligible Shopnoltd user automatically receives a referral code/link and can refer other users. When disabled, only explicitly enabled referrers retain access.</p>
    <button disabled={saving} onClick={save} style={{marginTop:16}}>{saving?'Saving…':'Save policy'}</button>
   </section>
   <section style={{padding:20,border:'1px solid #e2e8f0',borderRadius:16}}>
