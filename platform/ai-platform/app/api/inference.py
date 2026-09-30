@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import current_user
 from app.db.models import AIModel, AIProvider
-from app.db.session import get_db
+from app.db.session import AsyncSessionLocal, get_db
 from app.schemas.schemas import InferIn, InferOut
 from app.services.model_router import ModelNotAvailableError, ProviderInferenceError, run_inference
 
@@ -41,8 +41,9 @@ async def list_active_models(
     ]
 
 
-async def _stream_result(body: InferIn, db: AsyncSession):
-    task = asyncio.create_task(
+async def _stream_result(body: InferIn):
+    async with AsyncSessionLocal() as db:
+        task = asyncio.create_task(
         run_inference(
             db=db,
             prompt=body.prompt,
@@ -52,8 +53,8 @@ async def _stream_result(body: InferIn, db: AsyncSession):
             history=body.history,
         )
     )
-    try:
-        yield ": keep-alive\\n\\n"
+        try:
+            yield ": keep-alive\\n\\n"
         while not task.done():
             await asyncio.sleep(15)
             if not task.done():
@@ -72,20 +73,19 @@ async def _stream_result(body: InferIn, db: AsyncSession):
             yield f"event: error\\ndata: {json.dumps({'status': 503, 'detail': str(exc)})}\\n\\n"
         except Exception as exc:
             yield f"event: error\\ndata: {json.dumps({'status': 502, 'detail': f'AI inference failed: {exc}'})}\\n\\n"
-    except asyncio.CancelledError:
-        task.cancel()
-        await asyncio.gather(task, return_exceptions=True)
-        raise
+        except asyncio.CancelledError:
+            task.cancel()
+            await asyncio.gather(task, return_exceptions=True)
+            raise
 
 
 @router.post("/stream")
 async def infer_stream(
     body: InferIn,
     _user=Depends(current_user),
-    db: AsyncSession = Depends(get_db),
 ):
     return StreamingResponse(
-        _stream_result(body, db),
+        _stream_result(body),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache, no-transform", "X-Accel-Buffering": "no"},
     )
