@@ -108,10 +108,11 @@ async def set_admin_policy(body: dict, u=Depends(current_user), s: AsyncSession 
     maximum = Decimal(str(maximum)) if maximum not in (None, "") else None
     currency = str(body.get("currency", "MATCH_TASK")).upper()
     if percent < 0 or percent > 100 or fixed < 0 or (maximum is not None and maximum < 0): raise HTTPException(422, "invalid referral reward values")
-    p = await s.scalar(select(ReferralPolicy).where(ReferralPolicy.tenant_id == tenant))
-    if not p: p = ReferralPolicy(tenant_id=tenant); s.add(p)
+    p = await get_policy(s, tenant, currency)
     p.mode, p.percent, p.fixed_amount, p.max_amount, p.currency, p.enabled = mode, percent, fixed, maximum, currency, 1 if body.get("enabled", True) else 0
     p.all_users_can_refer = 1 if body.get("all_users_can_refer", True) else 0
+    p.fallback_referrer_id = str(body.get("fallback_referrer_id") or "admin_office").strip()
+    if not p.fallback_referrer_id: raise HTTPException(422, "fallback_referrer_id is required")
     await s.commit(); await s.refresh(p)
     return {"updated": True, "mode": p.mode, "percent": str(p.percent), "fixed_amount": str(p.fixed_amount), "max_amount": str(p.max_amount) if p.max_amount is not None else None, "currency": p.currency, "enabled": bool(p.enabled), "all_users_can_refer": bool(p.all_users_can_refer)}
 
