@@ -6,8 +6,8 @@ on:
       - main
       - automation/ci-cd-release-gate-20260909
     paths:
-      - "oauth-service/**"
-      - "oauth-service/k8s/deployment.yaml"
+      - "platform/oauth-service/**"
+      - "k8s/services/oauth-service/**"
       - ".github/workflows/build-oauth-service.yml"
   workflow_dispatch:
 
@@ -20,8 +20,8 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  IMAGE: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-oauth
-  DEPLOYMENT: oauth-service/k8s/deployment.yaml
+  IMAGE: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/oauth-service
+  DEPLOYMENT: k8s/services/oauth-service/deployment.yaml
 
 jobs:
   build:
@@ -43,8 +43,8 @@ jobs:
       - name: Build and Push OAuth Image
         uses: docker/build-push-action@v6
         with:
-          context: ./oauth-service
-          file: ./oauth-service/Dockerfile
+          context: .
+          file: ./platform/oauth-service/Dockerfile
           push: true
           platforms: linux/amd64
           tags: |
