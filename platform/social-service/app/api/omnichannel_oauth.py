@@ -7,7 +7,7 @@ import secrets
 from uuid import uuid4
 import time
 from datetime import datetime, timedelta, timezone
-from urllib.parse import urlencode
+from urllib.parse import urlencode, quote_plus
 
 import httpx
 from cryptography.fernet import Fernet, InvalidToken
@@ -177,7 +177,7 @@ async def start(provider: str, platform: str, creds: HTTPAuthorizationCredential
 @router.get("/callback")
 async def callback(code: str | None = None, state: str | None = None, error: str | None = None):
     if error:
-        return RedirectResponse(f"/connections?oauth=error&reason={error}", status_code=303)
+        return RedirectResponse(f"{settings.provider_oauth_success_redirect_uri}?oauth=error&reason={quote_plus(error)}", status_code=303)
     if not code or not state:
         raise HTTPException(400, "OAuth code and state are required")
     payload = _verify_state(state)
@@ -270,7 +270,7 @@ async def callback(code: str | None = None, state: str | None = None, error: str
         await s.commit()
 
     return RedirectResponse(
-        f"/connections?oauth=success&provider={provider}&connection_id={connection_id}",
+        f"{settings.provider_oauth_success_redirect_uri}?oauth=success&provider={provider}&connection_id={connection_id}",
         status_code=303,
     )
 
