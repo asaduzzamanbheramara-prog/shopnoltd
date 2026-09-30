@@ -13,6 +13,12 @@ resources:
 - networkpolicy.yaml
 - poddisruptionbudget.yaml
 - servicemonitor.yaml
+- workflow-import-job.yaml
+
+configMapGenerator:
+- name: n8n-omnichannel-workflow
+  files:
+  - workflows/shopnoltd-omnichannel-action-queue.json
 
 labels:
 - includeSelectors: true
