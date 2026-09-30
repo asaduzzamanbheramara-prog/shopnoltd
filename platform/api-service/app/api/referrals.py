@@ -73,8 +73,8 @@ async def me(u=Depends(current_user), s: AsyncSession = Depends(db)):
 async def claim(body: dict, u=Depends(current_user), s: AsyncSession = Depends(db)):
     user_id = u["sub"]
     tenant = u.get("tenant_id") or u.get("tenant") or "default"
-    policy = await s.scalar(select(ReferralPolicy).where(ReferralPolicy.tenant_id == tenant))
-    if policy and not policy.enabled:
+    policy = await get_policy(s, tenant)
+    if not policy.enabled:
         raise HTTPException(403, "referral program is disabled by administrator")
     code = str(body.get("referral_code") or body.get("code") or "").strip().upper()
     if not code: raise HTTPException(422, "referral_code is required")
@@ -114,7 +114,7 @@ async def set_admin_policy(body: dict, u=Depends(current_user), s: AsyncSession 
     p.fallback_referrer_id = str(body.get("fallback_referrer_id") or "admin_office").strip()
     if not p.fallback_referrer_id: raise HTTPException(422, "fallback_referrer_id is required")
     await s.commit(); await s.refresh(p)
-    return {"updated": True, "mode": p.mode, "percent": str(p.percent), "fixed_amount": str(p.fixed_amount), "max_amount": str(p.max_amount) if p.max_amount is not None else None, "currency": p.currency, "enabled": bool(p.enabled), "all_users_can_refer": bool(p.all_users_can_refer)}
+    return {"updated": True, "mode": p.mode, "percent": str(p.percent), "fixed_amount": str(p.fixed_amount), "max_amount": str(p.max_amount) if p.max_amount is not None else None, "currency": p.currency, "enabled": bool(p.enabled), "all_users_can_refer": bool(p.all_users_can_refer), "fallback_referrer_id": p.fallback_referrer_id}
 
 @router.get("/admin/rewards")
 async def admin_rewards(u=Depends(current_user), s: AsyncSession = Depends(db)):
