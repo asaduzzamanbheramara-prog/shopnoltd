@@ -1,4 +1,8 @@
+import asyncio
+import json
+
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -35,6 +39,56 @@ async def list_active_models(
         }
         for model, provider in result.all()
     ]
+
+
+async def _stream_result(body: InferIn, db: AsyncSession):
+    task = asyncio.create_task(
+        run_inference(
+            db=db,
+            prompt=body.prompt,
+            model_name=body.model,
+            model_id=body.model_id,
+            attachments=body.attachments,
+            history=body.history,
+        )
+    )
+    try:
+        yield ": keep-alive\\n\\n"
+        while not task.done():
+            await asyncio.sleep(15)
+            if not task.done():
+                yield ": keep-alive\\n\\n"
+        try:
+            result, resolved_model = await task
+            payload = InferOut(
+                response=result.text,
+                model=resolved_model.model_name,
+                tokens=result.tokens_used,
+            ).model_dump(mode="json")
+            yield f"event: result\\ndata: {json.dumps(payload)}\\n\\n"
+        except ProviderInferenceError as exc:
+            yield f"event: error\\ndata: {json.dumps({'status': exc.status_code, 'detail': str(exc)})}\\n\\n"
+        except ModelNotAvailableError as exc:
+            yield f"event: error\\ndata: {json.dumps({'status': 503, 'detail': str(exc)})}\\n\\n"
+        except Exception as exc:
+            yield f"event: error\\ndata: {json.dumps({'status': 502, 'detail': f'AI inference failed: {exc}'})}\\n\\n"
+    except asyncio.CancelledError:
+        task.cancel()
+        await asyncio.gather(task, return_exceptions=True)
+        raise
+
+
+@router.post("/stream")
+async def infer_stream(
+    body: InferIn,
+    _user=Depends(current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    return StreamingResponse(
+        _stream_result(body, db),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache, no-transform", "X-Accel-Buffering": "no"},
+    )
 
 
 @router.post("", response_model=InferOut)
