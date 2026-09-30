@@ -29,7 +29,7 @@ class Settings(BaseSettings):
         # so a literal "*" embedded in a domain string (e.g. "https://*.shopnoltd.dpdns.org")
         # never actually matches any real browser Origin header. This regex matches
         # the bare root domain and any subdomain instead.
-        return r"^https://([a-z0-9-]+\.)*shopnoltd\.dpdns\.org$"
+        return r"^https://([a-z0-9-]+.)*shopnoltd.dpdns.org$"
 
 
 settings = Settings()
