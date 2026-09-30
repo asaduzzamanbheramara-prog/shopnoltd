@@ -19,3 +19,7 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 CREATE EXTENSION IF NOT EXISTS vector;
 GRANT USAGE, CREATE ON SCHEMA public TO shopno;
 GRANT USAGE, CREATE ON SCHEMA public TO chatwoot_prod;
+
+-- The next migration files belong to the platform database. Reconnect so
+-- 015+ cannot accidentally execute against chatwoot_production.
+\connect shopnoltd
