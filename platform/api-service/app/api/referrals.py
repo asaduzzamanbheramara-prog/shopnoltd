@@ -75,7 +75,7 @@ async def admin_policy(u=Depends(current_user), s: AsyncSession = Depends(db)):
     tenant = u.get("tenant_id") or u.get("tenant") or "default"
     p = await s.scalar(select(ReferralPolicy).where(ReferralPolicy.tenant_id == tenant))
     if not p:
-        p = ReferralPolicy(tenant_id=tenant, currency="BDT")
+        p = ReferralPolicy(tenant_id=tenant, currency="MATCH_TASK")
         s.add(p); await s.commit(); await s.refresh(p)
     return {"tenant_id": p.tenant_id, "mode": p.mode, "percent": str(p.percent), "fixed_amount": str(p.fixed_amount), "max_amount": str(p.max_amount) if p.max_amount is not None else None, "currency": p.currency, "enabled": bool(p.enabled)}
 
@@ -88,7 +88,7 @@ async def set_admin_policy(body: dict, u=Depends(current_user), s: AsyncSession 
     percent, fixed = Decimal(str(body.get("percent", 5))), Decimal(str(body.get("fixed_amount", 0)))
     maximum = body.get("max_amount")
     maximum = Decimal(str(maximum)) if maximum not in (None, "") else None
-    currency = str(body.get("currency", "BDT")).upper()
+    currency = str(body.get("currency", "MATCH_TASK")).upper()
     if percent < 0 or percent > 100 or fixed < 0 or (maximum is not None and maximum < 0): raise HTTPException(422, "invalid referral reward values")
     p = await s.scalar(select(ReferralPolicy).where(ReferralPolicy.tenant_id == tenant))
     if not p: p = ReferralPolicy(tenant_id=tenant); s.add(p)
