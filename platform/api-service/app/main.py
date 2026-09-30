@@ -35,6 +35,10 @@ async def lifespan(app: FastAPI):
             await conn.execute(text("ALTER TABLE works ADD COLUMN IF NOT EXISTS platform VARCHAR(64) NOT NULL DEFAULT 'shopnoltd'"))
             await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_works_task_type ON works (task_type)"))
             await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_works_platform ON works (platform)"))
+            # Referral compatibility columns preserve existing direct/legacy mappings.
+            await conn.execute(text("ALTER TABLE referrals ADD COLUMN IF NOT EXISTS source VARCHAR(24) NOT NULL DEFAULT 'direct'"))
+            await conn.execute(text("ALTER TABLE referral_policies ADD COLUMN IF NOT EXISTS fallback_referrer_id VARCHAR(128) NOT NULL DEFAULT 'admin_office'"))
+            await conn.execute(text("UPDATE referral_policies SET fallback_referrer_id = 'admin_office' WHERE fallback_referrer_id IS NULL OR fallback_referrer_id = ''"))
             # Global task rates are keyed by task type + currency. This compatibility
             # migration upgrades databases created by the earlier single-currency model.
             await conn.execute(text("ALTER TABLE global_task_rates ADD COLUMN IF NOT EXISTS platform VARCHAR(64) NOT NULL DEFAULT 'shopnoltd'"))
