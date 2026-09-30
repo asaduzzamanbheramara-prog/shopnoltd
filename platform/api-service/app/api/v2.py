@@ -14,6 +14,7 @@ from app.core.db import SessionLocal
 from app.core.security import verify_token
 from app.models.work import Work, WorkAssignment, WorkSubmission
 from app.models.work_rating import WorkRating
+from app.services.referrals import settle_referral_reward
 from app.core.currencies import SUPPORTED_CURRENCIES
 
 router = APIRouter()
@@ -400,7 +401,20 @@ async def review_submission(submission_id: str, body: dict, creds: HTTPAuthoriza
     if not work or work.creator_id != user["sub"]: raise HTTPException(403, "only the creator can review this submission")
     if submission.status != "pending": raise HTTPException(409, "submission has already been reviewed")
     if decision == "approved":
-        await settle_reward({"worker_id": submission.worker_id}, submission.id, Decimal(str(work.reward_amount)), work.currency, creds.credentials)
+        amount = Decimal(str(work.reward_amount))
+        await settle_reward({"worker_id": submission.worker_id}, submission.id, amount, work.currency, creds.credentials)
+        # The referrer is paid only after the worker settlement succeeds. The
+        # referral transfer has its own idempotency key, so retries cannot double-pay.
+        await settle_referral_reward(
+            s,
+            referred_id=submission.worker_id,
+            work_id=work.id,
+            submission_id=submission.id,
+            base_amount=amount,
+            currency=work.currency,
+            tenant_id=work.tenant_id,
+            token=creds.credentials,
+        )
     submission.status = decision; submission.reviewer_id = user["sub"]
     submission.review_note = str(body.get("note", "")) or None; submission.reviewed_at = datetime.utcnow()
     assignment = await s.scalar(select(WorkAssignment).where(WorkAssignment.work_id == work.id, WorkAssignment.worker_id == submission.worker_id))
