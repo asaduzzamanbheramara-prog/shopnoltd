@@ -150,5 +150,3 @@ export default function AdminProfileVideos() {
     </section>
   </div>
 }
-
-[executed on device: Shopnoltd-PC-1 (c248a63b-1ef3-46fc-b643-c46184b4e85f)]
