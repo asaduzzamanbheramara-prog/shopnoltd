@@ -14,6 +14,7 @@ export function affiliateLink({ href, program, trackingUrl }) {
   if (!href || !program || !AFFILIATE_PROGRAMS[program]?.enabled) return href || '#'
   // The network must supply the complete approved tracking URL. Never invent query parameters.
   return trackingUrl || href
+}
 
 export function affiliateRel() {
   return 'sponsored noopener'
