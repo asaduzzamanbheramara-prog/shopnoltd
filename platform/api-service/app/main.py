@@ -54,6 +54,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Shopnoltd Unified API Service", version="0.4.2", lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origin_regex=settings.cors_origin_regex, allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+app.include_router(__import__("app.api.analytics_proxy", fromlist=["router"]).router, prefix="/api/v1", tags=["analytics"])
 app.include_router(__import__("app.api.v1", fromlist=["router"]).router, prefix="/api/v1", tags=["v1"])
 app.include_router(__import__("app.api.direct_payment_proxy", fromlist=["router"]).router, prefix="/api/v1", tags=["direct-payments"])
 app.include_router(__import__("app.api.payment_account_proxy", fromlist=["router"]).router, prefix="/api/v1", tags=["payment-accounts"])
