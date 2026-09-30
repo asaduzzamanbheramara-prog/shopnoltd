@@ -28,6 +28,18 @@ async def lifespan(app: FastAPI):
             await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS source_workbook_id VARCHAR(64)"))
             await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS source_sheet VARCHAR(255)"))
             await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS source_row INTEGER"))
+            await conn.execute(text("ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS banner_url VARCHAR(1024)"))
+            await conn.execute(text("""CREATE TABLE IF NOT EXISTS kyc_identities (
+                id VARCHAR(64) PRIMARY KEY,
+                user_id VARCHAR(64) UNIQUE NOT NULL,
+                legal_name VARCHAR(256), date_of_birth VARCHAR(32), nationality VARCHAR(64),
+                government_id_type VARCHAR(64), government_id_last4 VARCHAR(8),
+                encrypted_government_id BYTEA, encrypted_document BYTEA,
+                verification_status VARCHAR(32) NOT NULL DEFAULT 'pending',
+                verified_at TIMESTAMP, verification_source VARCHAR(128),
+                issuing_authority VARCHAR(256), expires_at TIMESTAMP, consent_at TIMESTAMP,
+                metadata JSON, created_at TIMESTAMP, updated_at TIMESTAMP
+            )"""))
     await wait_for_dependencies("oauth-service", _check_database, redis_client)
     log.info("oauth-service.started", env=settings.env)
     yield
