@@ -46,6 +46,9 @@ spec:
         - namespaceSelector:
             matchLabels:
               name: shopno-mail
+        - namespaceSelector:
+            matchLabels:
+              name: shopno-ai
       ports:
         - port: 5432
           protocol: TCP
