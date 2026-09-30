@@ -47,7 +47,13 @@ async def me(u=Depends(current_user), s: AsyncSession = Depends(db)):
     policy = await s.scalar(select(ReferralPolicy).where(ReferralPolicy.tenant_id == tenant))
     if policy and not policy.enabled:
         raise HTTPException(403, "referral program is disabled by administrator")
-    code = await ensure_code(s, user_id)
+    if policy and not policy.all_users_can_refer:
+        existing_code = await s.scalar(select(ReferralCode).where(ReferralCode.referrer_id == user_id))
+        if not existing_code:
+            raise HTTPException(403, "referral access is not enabled for this user")
+        code = existing_code.code
+    else:
+        code = await ensure_code(s, user_id)
     invited = int((await s.scalar(select(func.count(Referral.id)).where(Referral.referrer_id == user_id, Referral.active == 1))) or 0)
     rewards = (await s.execute(select(ReferralReward).where(ReferralReward.referrer_id == user_id).order_by(desc(ReferralReward.created_at)).limit(200))).scalars().all()
     return {
