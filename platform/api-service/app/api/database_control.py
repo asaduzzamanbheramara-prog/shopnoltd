@@ -8,7 +8,8 @@ import json
 import re
 
 import asyncpg
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Body
+from typing import Any
 from fastapi.responses import Response
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
@@ -68,6 +69,110 @@ async def table_rows(
             "columns": [dict(c) for c in columns],
             "rows": [dict(r) for r in rows], "limit": limit, "offset": offset,
         }
+    finally:
+        await conn.close()
+
+
+
+@router.get("/tables/{database}/{schema}/{table}/count")
+async def table_count(database: str, schema: str, table: str, _: dict = Depends(require_admin)):
+    capability = resolve_table_capability(database, table)
+    if not capability["readable"]:
+        raise HTTPException(403, "table is not readable")
+    conn = await _connect_database(database)
+    try:
+        exists = await conn.fetchval(
+            "select 1 from information_schema.tables where table_schema=$1 and table_name=$2",
+            schema, table
+        )
+        if not exists:
+            raise HTTPException(404, "table not found")
+        count = await conn.fetchval("SELECT count(*) FROM " + _ident(schema) + "." + _ident(table))
+        return {"database": database, "schema": schema, "table": table, "total": count, "capability": capability}
+    finally:
+        await conn.close()
+
+
+@router.post("/tables/{database}/{schema}/{table}/rows", status_code=201)
+async def insert_row(database: str, schema: str, table: str, values: dict[str, Any] = Body(...), _: dict = Depends(require_admin)):
+    capability = resolve_table_capability(database, table)
+    if not capability["writable"]:
+        raise HTTPException(403, capability.get("protected_reason") or "insert disabled")
+    if not values:
+        raise HTTPException(400, "values cannot be empty")
+    conn = await _connect_database(database)
+    try:
+        columns = await conn.fetch(
+            "select column_name, is_generated from information_schema.columns where table_schema=$1 and table_name=$2",
+            schema, table
+        )
+        allowed = {r["column_name"] for r in columns if r["is_generated"] == "NEVER"}
+        unknown = sorted(set(values) - allowed)
+        if unknown:
+            raise HTTPException(400, {"detail": "unknown columns", "columns": unknown})
+        names = list(values)
+        sql = "INSERT INTO " + _ident(schema) + "." + _ident(table) + " (" + ", ".join(_ident(n) for n in names) + ") VALUES (" + ", ".join("$" + str(i + 1) for i in range(len(names))) + ") RETURNING *"
+        row = await conn.fetchrow(sql, *[values[n] for n in names])
+        return {"row": dict(row), "capability": capability}
+    finally:
+        await conn.close()
+
+
+@router.patch("/tables/{database}/{schema}/{table}/rows")
+async def update_row(database: str, schema: str, table: str, payload: dict[str, Any] = Body(...), _: dict = Depends(require_admin)):
+    capability = resolve_table_capability(database, table)
+    if not capability["writable"]:
+        raise HTTPException(403, capability.get("protected_reason") or "update disabled")
+    key, values = payload.get("key"), payload.get("values")
+    if not isinstance(key, dict) or not key or not isinstance(values, dict) or not values:
+        raise HTTPException(400, "body must contain non-empty key and values objects")
+    conn = await _connect_database(database)
+    try:
+        columns = await conn.fetch("select column_name from information_schema.columns where table_schema=$1 and table_name=$2", schema, table)
+        allowed = {r["column_name"] for r in columns}
+        if set(key) - allowed or set(values) - allowed:
+            raise HTTPException(400, "unknown column supplied")
+        pk = await conn.fetch(
+            "select kcu.column_name from information_schema.table_constraints tc join information_schema.key_column_usage kcu on kcu.constraint_name=tc.constraint_name and kcu.constraint_schema=tc.constraint_schema and kcu.table_schema=tc.table_schema and kcu.table_name=tc.table_name where tc.table_schema=$1 and tc.table_name=$2 and tc.constraint_type='PRIMARY KEY' order by kcu.ordinal_position",
+            schema, table
+        )
+        primary_key = [r["column_name"] for r in pk]
+        if not primary_key or set(key) != set(primary_key):
+            raise HTTPException(409, {"detail": "complete primary key is required", "primary_key": primary_key})
+        names, key_names = list(values), list(key)
+        assignments = [_ident(n) + " = $" + str(i + 1) for i, n in enumerate(names)]
+        where = " AND ".join(_ident(n) + " = $" + str(len(names) + i + 1) for i, n in enumerate(key_names))
+        sql = "UPDATE " + _ident(schema) + "." + _ident(table) + " SET " + ", ".join(assignments) + " WHERE " + where + " RETURNING *"
+        row = await conn.fetchrow(sql, *[values[n] for n in names], *[key[n] for n in key_names])
+        if row is None:
+            raise HTTPException(404, "row not found")
+        return {"row": dict(row), "capability": capability}
+    finally:
+        await conn.close()
+
+
+@router.delete("/tables/{database}/{schema}/{table}/rows")
+async def delete_row(database: str, schema: str, table: str, payload: dict[str, Any] = Body(...), _: dict = Depends(require_admin)):
+    capability = resolve_table_capability(database, table)
+    if not capability["destructive"]:
+        raise HTTPException(403, capability.get("protected_reason") or "delete disabled")
+    key = payload.get("key")
+    if not isinstance(key, dict) or not key:
+        raise HTTPException(400, "body must contain a key object")
+    conn = await _connect_database(database)
+    try:
+        pk = await conn.fetch(
+            "select kcu.column_name from information_schema.table_constraints tc join information_schema.key_column_usage kcu on kcu.constraint_name=tc.constraint_name and kcu.constraint_schema=tc.constraint_schema and kcu.table_schema=tc.table_schema and kcu.table_name=tc.table_name where tc.table_schema=$1 and tc.table_name=$2 and tc.constraint_type='PRIMARY KEY' order by kcu.ordinal_position",
+            schema, table
+        )
+        primary_key = [r["column_name"] for r in pk]
+        if not primary_key or set(key) != set(primary_key):
+            raise HTTPException(409, {"detail": "complete primary key is required", "primary_key": primary_key})
+        where = " AND ".join(_ident(n) + " = $" + str(i + 1) for i, n in enumerate(primary_key))
+        row = await conn.fetchrow("DELETE FROM " + _ident(schema) + "." + _ident(table) + " WHERE " + where + " RETURNING *", *[key[n] for n in primary_key])
+        if row is None:
+            raise HTTPException(404, "row not found")
+        return {"deleted": dict(row), "capability": capability}
     finally:
         await conn.close()
 
