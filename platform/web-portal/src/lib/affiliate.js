@@ -10,13 +10,10 @@ export const AFFILIATE_PROGRAMS = Object.freeze({
   partnerstack: { name: 'PartnerStack', enabled: false, network: 'partnerstack' },
 })
 
-export function affiliateLink({ href, program, subId = 'shopnoltd' }) {
+export function affiliateLink({ href, program, trackingUrl }) {
   if (!href || !program || !AFFILIATE_PROGRAMS[program]?.enabled) return href || '#'
-  // Approved program link formats must be supplied by the network; never guess tracking parameters.
-  const url = new URL(href, window.location.origin)
-  url.searchParams.set('shopnoltd_subid', subId)
-  return url.toString()
-}
+  // The network must supply the complete approved tracking URL. Never invent query parameters.
+  return trackingUrl || href
 
 export function affiliateRel() {
   return 'sponsored noopener'
