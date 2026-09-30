@@ -62,7 +62,7 @@ class KYCIdentity(Base):
     issuing_authority = Column(String(256))
     expires_at = Column(DateTime)
     consent_at = Column(DateTime)
-    metadata = Column(JSON, default=dict)
+    kyc_metadata = Column("metadata", JSON, default=dict)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
