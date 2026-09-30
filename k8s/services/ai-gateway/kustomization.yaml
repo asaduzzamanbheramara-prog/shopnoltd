@@ -7,4 +7,4 @@ resources:
 configMapGenerator:
   - name: litellm-config
     files:
-      - config.yaml=litellm-config.yaml
+      - config.yaml=litellm-config.conf
