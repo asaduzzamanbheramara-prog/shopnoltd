@@ -54,11 +54,11 @@ async def _stream_result(body: InferIn):
             )
         )
         try:
-            yield ": keep-alive\\n\\n"
+            yield ": keep-alive\n\n"
             while not task.done():
                 await asyncio.sleep(15)
                 if not task.done():
-                    yield ": keep-alive\\n\\n"
+                    yield ": keep-alive\n\n"
             try:
                 result, resolved_model = await task
                 payload = InferOut(
@@ -66,13 +66,13 @@ async def _stream_result(body: InferIn):
                     model=resolved_model.model_name,
                     tokens=result.tokens_used,
                 ).model_dump(mode="json")
-                yield f"event: result\\ndata: {json.dumps(payload)}\\n\\n"
+                yield f"event: result\ndata: {json.dumps(payload)}\n\n"
             except ProviderInferenceError as exc:
-                yield f"event: error\\ndata: {json.dumps({'status': exc.status_code, 'detail': str(exc)})}\\n\\n"
+                yield f"event: error\ndata: {json.dumps({'status': exc.status_code, 'detail': str(exc)})}\n\n"
             except ModelNotAvailableError as exc:
-                yield f"event: error\\ndata: {json.dumps({'status': 503, 'detail': str(exc)})}\\n\\n"
+                yield f"event: error\ndata: {json.dumps({'status': 503, 'detail': str(exc)})}\n\n"
             except Exception as exc:
-                yield f"event: error\\ndata: {json.dumps({'status': 502, 'detail': f'AI inference failed: {exc}'})}\\n\\n"
+                yield f"event: error\ndata: {json.dumps({'status': 502, 'detail': f'AI inference failed: {exc}'})}\n\n"
         except asyncio.CancelledError:
             task.cancel()
             await asyncio.gather(task, return_exceptions=True)
