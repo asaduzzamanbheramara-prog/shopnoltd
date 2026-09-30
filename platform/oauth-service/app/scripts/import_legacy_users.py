@@ -11,7 +11,7 @@ from app.models.models import KYCIdentity, UserMirror, UserProfile
 
 SECRET = re.compile(r"(password|passwd|passcode|secret|token|api.?key|private.?key|otp|2fa)", re.I)
 KYC = re.compile(r"(nid|national.?id|passport|government.?id|driving.?licen|date.?of.?birth|birth.?date)", re.I)
-EMAIL = re.compile(r"^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$", re.I)
+EMAIL = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$", re.I)
 AVATAR = {"profile_pic", "profile_picture", "profile_photo", "avatar", "avatar_url"}
 BANNER = {"banner", "banner_url", "cover", "cover_photo", "cover_image"}
 SKIP = {"password", "password_hash", "passwd", "token", "api_key", "secret"}
@@ -64,7 +64,7 @@ def row_groups(values):
 def parse_dump(path):
     text = Path(path).read_text(errors="replace")
     rows = []
-    pattern = re.compile(r"INSERT\\s+INTO\\s+users\\s*\\((.*?)\\)\\s*VALUES\\s*(.*?);", re.I | re.S)
+    pattern = re.compile(r"INSERT\s+INTO\s+users\s*\((.*?)\)\s*VALUES\s*(.*?);", re.I | re.S)
     for m in pattern.finditer(text):
         cols = [x.strip().strip('"') for x in m.group(1).split(",")]
         cols = [x.lower() for x in cols]
