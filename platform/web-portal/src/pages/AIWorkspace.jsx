@@ -1,11 +1,15 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowDown, Bot, Check, ChevronDown, Copy, Download, Eye, FileText, Maximize2, Menu, MessageSquare, Mic, Minimize2, Paperclip, Plus, RefreshCw, Send, Sparkles, Square, Trash2, Volume2, X } from 'lucide-react'
-import { authenticatedRequest } from '../lib/financialApi'
-import { MAX_IMAGE_INPUT_BYTES, MAX_VIDEO_INPUT_BYTES, copyToClipboard, downloadBlob, friendlyError, prepareImage, prepareVideo, resolveLanguage, splitBlocks, svgDataUrl, svgToPngBlob } from './aiChatHelpers'
+import { authenticatedRequest, authenticatedStreamRequest } from '../lib/financialApi'
+import { MAX_IMAGE_INPUT_BYTES, MAX_VIDEO_INPUT_BYTES, copyToClipboard, downloadBlob, friendlyError, prepareImage, prepareVideo, resolveLanguage, splitBlocks, svgDataUrl, svgToJpegBlob, svgToPngBlob } from './aiChatHelpers'
 
 async function request(path, options = {}) {
   return authenticatedRequest(`/api/v1/ai${path}`, options)
+}
+
+async function requestStream(path, options = {}) {
+  return authenticatedStreamRequest(`/api/v1/ai${path}`, options)
 }
 
 const STORAGE_KEY = 'shopno_ai_chats_v3'
@@ -63,6 +67,10 @@ function CodeBlock({ lang, code, onError }) {
     try { downloadBlob(await svgToPngBlob(code), 'logo.png') } catch (err) { onError(err.message || 'PNG export failed.') }
   }
 
+  async function downloadJpg() {
+    try { downloadBlob(await svgToJpegBlob(code), 'logo.jpg') } catch (err) { onError(err.message || 'JPG export failed.') }
+  }
+
   return (
     <div style={{ margin: '12px 0', borderRadius: 10, overflow: 'hidden', border: '1px solid #1f2937', background: '#111827' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '4px 6px 4px 12px', background: '#1f2937', color: '#9ca3af', fontSize: 12 }}>
@@ -72,6 +80,7 @@ function CodeBlock({ lang, code, onError }) {
           <button type="button" onClick={copy} style={codeButtonStyle} aria-label="Copy code">{copied ? <Check size={13} /> : <Copy size={13} />} {copied ? 'Copied' : 'Copy'}</button>
           <button type="button" onClick={download} style={codeButtonStyle} aria-label={`Download as .${info.ext}`}><Download size={13} /> .{info.ext}</button>
           {isSvg && <button type="button" onClick={downloadPng} style={codeButtonStyle} aria-label="Download as PNG"><Download size={13} /> .png</button>}
+          {isSvg && <button type="button" onClick={downloadJpg} style={codeButtonStyle} aria-label="Download as JPG"><Download size={13} /> .jpg</button>}
         </span>
       </div>
       {isSvg && preview && (
@@ -365,12 +374,33 @@ export default function AIWorkspace() {
     lastRequestRef.current = { chatId, payload }
     abortRef.current = new AbortController()
     try {
-      const data = await request('/inference', {
+      const response = await requestStream('/inference/stream', {
         method: 'POST',
         signal: abortRef.current.signal,
         body: JSON.stringify(payload)
       })
-      const content = data?.response || data?.content || 'The AI service returned an empty response.'
+      if (!response.body) throw new Error('AI streaming is unavailable in this browser.')
+
+      const reader = response.body.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ''
+      let result = null
+      while (true) {
+        const { value, done } = await reader.read()
+        if (done) break
+        buffer += decoder.decode(value, { stream: true })
+        const events = buffer.split(/\n\n/)
+        buffer = events.pop() || ''
+        for (const event of events) {
+          const dataLine = event.split(/\n/).find((line) => line.startsWith('data:'))
+          if (!dataLine) continue
+          const data = JSON.parse(dataLine.slice(5).trim())
+          if (event.includes('event: error')) throw new Error(data?.detail || 'AI inference failed.')
+          if (event.includes('event: result')) result = data
+        }
+      }
+      if (!result) throw new Error('The AI service closed the stream without a response.')
+      const content = result?.response || result?.content || 'The AI service returned an empty response.'
       setChats((current) => current.map((chat) => chat.id === chatId ? { ...chat, messages: [...chat.messages, { id: crypto.randomUUID(), role: 'assistant', content }] } : chat))
     } catch (err) {
       if (err?.name !== 'AbortError') { setError(friendlyError(err)); setCanRetry(true) }

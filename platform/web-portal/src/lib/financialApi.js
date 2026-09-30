@@ -124,6 +124,56 @@ export async function authenticatedRequest(path, options = {}) {
   return data
 }
 
+
+export async function authenticatedStreamRequest(path, options = {}) {
+  const { _retried, ...requestOptions } = options
+  let jwt = await getFreshToken()
+
+  const makeHeaders = (token) => ({
+    Accept: 'text/event-stream',
+    Authorization: `Bearer ${token}`,
+    ...(requestOptions.body ? { 'Content-Type': 'application/json' } : {}),
+    ...(requestOptions.headers || {}),
+  })
+
+  let response = await fetch(`${FINANCIAL_API_URL}${path}`, {
+    ...requestOptions,
+    headers: makeHeaders(jwt),
+  })
+
+  if (response.status === 401 && !_retried) {
+    const refreshed = await tryRefresh()
+    if (refreshed) {
+      jwt = refreshed
+      response = await fetch(`${FINANCIAL_API_URL}${path}`, {
+        ...requestOptions,
+        headers: makeHeaders(jwt),
+      })
+    } else {
+      localStorage.removeItem('shopno_token')
+      localStorage.removeItem('shopno_refresh_token')
+      throw new Error('Your session has expired. Please log in again.')
+    }
+  }
+
+  if (response.status === 401) {
+    localStorage.removeItem('shopno_token')
+    localStorage.removeItem('shopno_refresh_token')
+    throw new Error('Your session has expired. Please log in again.')
+  }
+
+  if (!response.ok) {
+    let detail = ''
+    try {
+      const payload = await response.clone().json()
+      detail = payload?.detail || payload?.message || ''
+    } catch {}
+    throw new Error(`AI stream request failed (${response.status})${detail ? `: ${detail}` : ''}`)
+  }
+
+  return response
+}
+
 export function getWallet(currency = 'BDT') {
   return authenticatedRequest(`/api/v1/wallets/${encodeURIComponent(currency.toUpperCase())}`)
 }
