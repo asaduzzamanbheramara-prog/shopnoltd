@@ -33,6 +33,9 @@ async def collect(request: Request):
         body = await request.json()
     except Exception as exc:
         raise HTTPException(400, "Invalid analytics payload") from exc
+    cf_country = request.headers.get("cf-ipcountry")
+    if cf_country and isinstance(body.get("properties"), dict):
+        body["properties"].setdefault("country", cf_country.upper())
     return await _forward("POST", "/api/v1/events/public", json_body=body)
 
 
