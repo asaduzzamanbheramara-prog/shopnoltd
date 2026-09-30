@@ -69,6 +69,11 @@ function storageKeyFromBlogUrl(url) {
 
 export const platformApi = {
   me: () => request('/api/v1/users/me'),
+  referralMe: () => request('/api/v1/referrals/me'),
+  claimReferral: (referral_code) => request('/api/v1/referrals/claim', { method: 'POST', body: JSON.stringify({ referral_code }) }),
+  referralPolicy: () => request('/api/v1/referrals/admin/policy'),
+  setReferralPolicy: (body) => request('/api/v1/referrals/admin/policy', { method: 'PUT', body: JSON.stringify(body) }),
+  referralRewards: () => request('/api/v1/referrals/admin/rewards'),
   omnichannelProviders: () => request('/api/v1/omnichannel/providers'),
   omnichannelOAuthStatus: () => request('/api/v1/omnichannel/oauth/status'),
   omnichannelOAuthStart: (provider, platform) => `/api/v1/omnichannel/oauth/start/${encodeURIComponent(provider)}/${encodeURIComponent(platform)}`,
