@@ -3,6 +3,9 @@ kind: Kustomization
 
 namespace: shopno-ai
 
+generatorOptions:
+  disableNameSuffixHash: true
+
 resources:
   - 01-litellm-proxy.yaml
 
