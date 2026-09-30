@@ -29,7 +29,7 @@ async def settle_referral_reward(s: AsyncSession, referred_id: str, work_id: str
     amount = amount.quantize(Decimal("0.00000001"))
     if amount <= 0:
         return None
-    reward_currency = str(policy.currency or currency).upper()
+    reward_currency = str(policy.currency or "MATCH_TASK").upper()
     if reward_currency != currency:
         raise HTTPException(409, "referral reward currency must match the completed task currency")
     if existing:
