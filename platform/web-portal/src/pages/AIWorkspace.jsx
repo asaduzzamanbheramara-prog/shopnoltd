@@ -2,7 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { Link } from 'react-router-dom'
 import { ArrowDown, Bot, Check, ChevronDown, Copy, Download, Eye, FileText, Maximize2, Menu, MessageSquare, Mic, Minimize2, Paperclip, Plus, RefreshCw, Send, Sparkles, Square, Trash2, Volume2, X } from 'lucide-react'
 import { authenticatedRequest } from '../lib/financialApi'
-import { MAX_IMAGE_INPUT_BYTES, MAX_VIDEO_INPUT_BYTES, copyToClipboard, downloadBlob, friendlyError, prepareImage, prepareVideo, resolveLanguage, splitBlocks, svgDataUrl, svgToPngBlob } from './aiChatHelpers'
+import { MAX_IMAGE_INPUT_BYTES, MAX_VIDEO_INPUT_BYTES, copyToClipboard, downloadBlob, friendlyError, prepareImage, prepareVideo, resolveLanguage, splitBlocks, svgDataUrl, svgToJpegBlob, svgToPngBlob } from './aiChatHelpers'
 
 async function request(path, options = {}) {
   return authenticatedRequest(`/api/v1/ai${path}`, options)
@@ -63,6 +63,10 @@ function CodeBlock({ lang, code, onError }) {
     try { downloadBlob(await svgToPngBlob(code), 'logo.png') } catch (err) { onError(err.message || 'PNG export failed.') }
   }
 
+  async function downloadJpg() {
+    try { downloadBlob(await svgToJpegBlob(code), 'logo.jpg') } catch (err) { onError(err.message || 'JPG export failed.') }
+  }
+
   return (
     <div style={{ margin: '12px 0', borderRadius: 10, overflow: 'hidden', border: '1px solid #1f2937', background: '#111827' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '4px 6px 4px 12px', background: '#1f2937', color: '#9ca3af', fontSize: 12 }}>
@@ -72,6 +76,7 @@ function CodeBlock({ lang, code, onError }) {
           <button type="button" onClick={copy} style={codeButtonStyle} aria-label="Copy code">{copied ? <Check size={13} /> : <Copy size={13} />} {copied ? 'Copied' : 'Copy'}</button>
           <button type="button" onClick={download} style={codeButtonStyle} aria-label={`Download as .${info.ext}`}><Download size={13} /> .{info.ext}</button>
           {isSvg && <button type="button" onClick={downloadPng} style={codeButtonStyle} aria-label="Download as PNG"><Download size={13} /> .png</button>}
+          {isSvg && <button type="button" onClick={downloadJpg} style={codeButtonStyle} aria-label="Download as JPG"><Download size={13} /> .jpg</button>}
         </span>
       </div>
       {isSvg && preview && (
