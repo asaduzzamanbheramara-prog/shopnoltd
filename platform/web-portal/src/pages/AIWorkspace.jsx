@@ -385,19 +385,26 @@ export default function AIWorkspace() {
       const decoder = new TextDecoder()
       let buffer = ''
       let result = null
-      while (true) {
-        const { value, done } = await reader.read()
-        if (done) break
-        buffer += decoder.decode(value, { stream: true })
-        const events = buffer.split(/\n\n/)
-        buffer = events.pop() || ''
-        for (const event of events) {
-          const dataLine = event.split(/\n/).find((line) => line.startsWith('data:'))
-          if (!dataLine) continue
-          const data = JSON.parse(dataLine.slice(5).trim())
-          if (event.includes('event: error')) throw new Error(data?.detail || 'AI inference failed.')
-          if (event.includes('event: result')) result = data
+      try {
+        while (true) {
+          const { value, done } = await reader.read()
+          if (done) break
+          buffer += decoder.decode(value, { stream: true })
+          const events = buffer.split(/\n\n/)
+          buffer = events.pop() || ''
+          for (const event of events) {
+            const dataLine = event.split(/\n/).find((line) => line.startsWith('data:'))
+            if (!dataLine) continue
+            const data = JSON.parse(dataLine.slice(5).trim())
+            if (event.includes('event: error')) throw new Error(data?.detail || 'AI inference failed.')
+            if (event.includes('event: result')) result = data
+          }
         }
+      } catch (err) {
+        // Some proxies can close an SSE connection immediately after delivering the
+        // final result. A completed result is still valid and must not be replaced
+        // by the generic network/timeout message.
+        if (!result) throw err
       }
       if (!result) throw new Error('The AI service closed the stream without a response.')
       const content = result?.response || result?.content || 'The AI service returned an empty response.'
