@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client'
 import { BrowserRouter, Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom'
 import Home from './pages/Home'
 import Pricing from './pages/Pricing'
+import Privacy from './pages/Privacy'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Callback from './pages/Callback'
@@ -115,7 +116,7 @@ function AnalyticsTracker() {
 
 function App() {
   return <BrowserRouter><AnalyticsTracker /><Nav /><SubdomainRedirect /><Routes>
-    <Route path="/" element={<Home />} /><Route path="/pricing" element={<Pricing />} /><Route path="/create-website" element={<ProtectedRoute><WebsiteBuilder /></ProtectedRoute>} /><Route path="/discover" element={<ProtectedRoute><Discover /></ProtectedRoute>} /><Route path="/feed" element={<ProtectedRoute><SocialFeed /></ProtectedRoute>} /><Route path="/post/:id" element={<ProtectedRoute><PostDetail /></ProtectedRoute>} />
+    <Route path="/" element={<Home />} /><Route path="/pricing" element={<Pricing />} /><Route path="/privacy" element={<Privacy />} /><Route path="/create-website" element={<ProtectedRoute><WebsiteBuilder /></ProtectedRoute>} /><Route path="/discover" element={<ProtectedRoute><Discover /></ProtectedRoute>} /><Route path="/feed" element={<ProtectedRoute><SocialFeed /></ProtectedRoute>} /><Route path="/post/:id" element={<ProtectedRoute><PostDetail /></ProtectedRoute>} />
     <Route path="/work" element={<ProtectedRoute><WorkHub /></ProtectedRoute>} /><Route path="/referrals" element={<ProtectedRoute><ReferralHub /></ProtectedRoute>} /><Route path="/work/:id" element={<ProtectedRoute><WorkDetail /></ProtectedRoute>} /><Route path="/create-work" element={<ProtectedRoute><WorkHub /></ProtectedRoute>} /><Route path="/my-created-work" element={<ProtectedRoute><WorkHub /></ProtectedRoute>} /><Route path="/my-active-work" element={<ProtectedRoute><WorkHub /></ProtectedRoute>} /><Route path="/my-submission" element={<ProtectedRoute><WorkHub /></ProtectedRoute>} /><Route path="/work-review" element={<ProtectedRoute><WorkHub /></ProtectedRoute>} />
     <Route path="/account" element={<ProtectedRoute><AccountHub /></ProtectedRoute>} /><Route path="/notifications" element={<ProtectedRoute><AccountHub /></ProtectedRoute>} />
     <Route path="/profiles" element={<Profiles />} /><Route path="/profile/data-management" element={<DataManagementProfile />} /><Route path="/profile/interior-business" element={<InteriorBusinessProfile />} />
