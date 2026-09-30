@@ -37,9 +37,32 @@ class UserProfile(Base):
     phone = Column(String(64))
     recovery_email = Column(String(256))
     avatar_url = Column(String(1024))
+    banner_url = Column(String(1024))
     bio = Column(Text)
     source = Column(String(64), nullable=False, default="registration")
     profile_metadata = Column("metadata", JSON, default=dict)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class KYCIdentity(Base):
+    __tablename__ = "kyc_identities"
+    id = Column(String(64), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String(64), unique=True, nullable=False, index=True)
+    legal_name = Column(String(256))
+    date_of_birth = Column(String(32))
+    nationality = Column(String(64))
+    government_id_type = Column(String(64))
+    government_id_last4 = Column(String(8))
+    encrypted_government_id = Column(LargeBinary)
+    encrypted_document = Column(LargeBinary)
+    verification_status = Column(String(32), nullable=False, default="pending")
+    verified_at = Column(DateTime)
+    verification_source = Column(String(128))
+    issuing_authority = Column(String(256))
+    expires_at = Column(DateTime)
+    consent_at = Column(DateTime)
+    metadata = Column(JSON, default=dict)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
