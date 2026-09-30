@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.db import SessionLocal
 from app.core.security import verify_token
 from app.models.referral import ReferralCode, Referral, ReferralPolicy, ReferralReward
+from app.services.referrals import ensure_fallback_referral, get_policy
 
 router = APIRouter(prefix="/referrals")
 bearer = HTTPBearer()
@@ -44,10 +45,12 @@ async def ensure_code(s, user_id):
 async def me(u=Depends(current_user), s: AsyncSession = Depends(db)):
     user_id = u["sub"]
     tenant = u.get("tenant_id") or u.get("tenant") or "default"
-    policy = await s.scalar(select(ReferralPolicy).where(ReferralPolicy.tenant_id == tenant))
-    if policy and not policy.enabled:
+    policy = await get_policy(s, tenant)
+    if not policy.enabled:
         raise HTTPException(403, "referral program is disabled by administrator")
-    if policy and not policy.all_users_can_refer:
+    referral = await ensure_fallback_referral(s, user_id, tenant)
+    await s.commit()
+    if not policy.all_users_can_refer:
         existing_code = await s.scalar(select(ReferralCode).where(ReferralCode.referrer_id == user_id))
         if not existing_code:
             raise HTTPException(403, "referral access is not enabled for this user")
@@ -62,6 +65,7 @@ async def me(u=Depends(current_user), s: AsyncSession = Depends(db)):
         "referred_users": invited,
         "pending_amount": str(sum((Decimal(str(x.reward_amount)) for x in rewards if x.status == "pending"), Decimal("0"))),
         "confirmed_amount": str(sum((Decimal(str(x.reward_amount)) for x in rewards if x.status == "settled"), Decimal("0"))),
+        "attribution": {"referrer_id": referral.referrer_id if referral else None, "source": referral.source if referral else None},
         "rewards": [{"id": x.id, "work_id": x.work_id, "submission_id": x.submission_id, "amount": str(x.reward_amount), "currency": x.currency, "status": x.status, "created_at": x.created_at.isoformat()} for x in rewards],
     }
 
@@ -79,7 +83,7 @@ async def claim(body: dict, u=Depends(current_user), s: AsyncSession = Depends(d
     owner = await s.scalar(select(ReferralCode).where(ReferralCode.code == code))
     if not owner: raise HTTPException(404, "referral code not found")
     if owner.referrer_id == user_id: raise HTTPException(400, "self-referral is not allowed")
-    s.add(Referral(referrer_id=owner.referrer_id, referred_id=user_id, referral_code=code))
+    s.add(Referral(referrer_id=owner.referrer_id, referred_id=user_id, referral_code=code, source="direct"))
     await s.commit()
     return {"claimed": True, "referrer_id": owner.referrer_id}
 
