@@ -32,6 +32,7 @@ class ReferralPolicy(Base):
     max_amount = Column(Numeric(20, 8), nullable=True)
     currency = Column(String(16), nullable=False, default="MATCH_TASK")
     enabled = Column(Integer, nullable=False, default=1)
+    all_users_can_refer = Column(Integer, nullable=False, default=1)
     updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
