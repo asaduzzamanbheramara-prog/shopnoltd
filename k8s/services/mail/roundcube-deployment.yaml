@@ -72,28 +72,9 @@ spec:
               cpu: 500m
               memory: 512Mi
           volumeMounts:
-            - name: roundcube-main-config
-              mountPath: /var/www/html/config/config.inc.php
-              subPath: config.inc.php
-              readOnly: true
-            - name: cloudflare-origin-rsa-ca
-              mountPath: /etc/roundcube/ca
-              readOnly: true
             - name: roundcube-data
               mountPath: /var/roundcube/db
       volumes:
-        - name: roundcube-main-config
-          configMap:
-            name: roundcube-main-config
-            items:
-              - key: config.inc.php
-                path: config.inc.php
-        - name: cloudflare-origin-rsa-ca
-          configMap:
-            name: cloudflare-origin-rsa-ca
-            items:
-              - key: cloudflare-origin-rsa-root.pem
-                path: cloudflare-origin-rsa-root.pem
         - name: roundcube-data
           persistentVolumeClaim:
             claimName: roundcube-data
