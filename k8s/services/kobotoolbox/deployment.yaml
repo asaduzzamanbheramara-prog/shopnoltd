@@ -147,7 +147,7 @@ spec:
             readOnlyRootFilesystem: false
             capabilities:
               drop: ["ALL"]
-              add: ["CHOWN", "SETUID", "SETGID"]
+              add: ["CHOWN", "SETUID", "SETGID", "DAC_OVERRIDE"]
       volumes:
         - name: data
           persistentVolumeClaim:
