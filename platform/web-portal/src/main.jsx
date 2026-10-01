@@ -4,6 +4,9 @@ import { BrowserRouter, Routes, Route, Link, useNavigate, useLocation } from 're
 import Home from './pages/Home'
 import Pricing from './pages/Pricing'
 import Privacy from './pages/Privacy'
+import About from './pages/About'
+import Contact from './pages/Contact'
+import Terms from './pages/Terms'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Callback from './pages/Callback'
@@ -71,7 +74,7 @@ function InstallPrompt() {
   return <button type="button" onClick={async () => { await prompt.prompt(); setPrompt(null) }} style={{ color: 'white', background: 'rgba(255,255,255,0.14)', border: '1px solid rgba(255,255,255,0.5)', borderRadius: 6, padding: '5px 12px', cursor: 'pointer', whiteSpace: 'nowrap' }}>Install Shopnoltd</button>
 }
 
-const PUBLIC_LINKS = [['Pricing', '/pricing'], ['Profiles', '/profiles'], ['Interior', '/profile/interior-business'], ['VPN', '/vpn'], ['Create Website', '/create-website'], ['Discover', '/discover'], ['Feed', '/feed'], ['Work', '/work'], ['Blog', '/blog'], ['AI', '/ai'], ['Services', '/services'], ['Phone', '/phone'], ['Domains', '/domain-registration'], ['Downloads', '/downloads'], ['Affiliate & Tools', '/affiliate'], ['Android Cloud', '/android-cloud']]
+const PUBLIC_LINKS = [['About', '/about'], ['Services', '/services'], ['Pricing', '/pricing'], ['Profiles', '/profiles'], ['Interior', '/profile/interior-business'], ['VPN', '/vpn'], ['Create Website', '/create-website'], ['Discover', '/discover'], ['Feed', '/feed'], ['Work', '/work'], ['Blog', '/blog'], ['AI', '/ai'], ['Services', '/services'], ['Phone', '/phone'], ['Domains', '/domain-registration'], ['Downloads', '/downloads'], ['Affiliate & Tools', '/affiliate'], ['Android Cloud', '/android-cloud'], ['Contact', '/contact']]
 const STANDALONE_APP_PATHS = new Set(['/android-cloud'])
 
 function Nav() {
@@ -112,6 +115,9 @@ function OAuthProviderCallback() {
 const ADSENSE_CLIENT = 'ca-pub-4532970890139771'
 
 const PUBLIC_AD_ROUTES = [
+  /^\/about$/,
+  /^\/contact$/,
+  /^\/terms$/,
   /^\/$/,
   /^\/pricing$/,
   /^\/profiles$/,
@@ -155,7 +161,7 @@ function AnalyticsTracker() {
 
 function App() {
   return <BrowserRouter><AnalyticsTracker /><AdSenseLoader /><Nav /><SubdomainRedirect /><Routes>
-    <Route path="/" element={<Home />} /><Route path="/pricing" element={<Pricing />} /><Route path="/privacy" element={<Privacy />} /><Route path="/create-website" element={<ProtectedRoute><WebsiteBuilder /></ProtectedRoute>} /><Route path="/discover" element={<ProtectedRoute><Discover /></ProtectedRoute>} /><Route path="/feed" element={<ProtectedRoute><SocialFeed /></ProtectedRoute>} /><Route path="/post/:id" element={<ProtectedRoute><PostDetail /></ProtectedRoute>} />
+    <Route path="/" element={<Home />} /><Route path="/pricing" element={<Pricing />} /><Route path="/privacy" element={<Privacy />} /><Route path="/about" element={<About />} /><Route path="/contact" element={<Contact />} /><Route path="/terms" element={<Terms />} /><Route path="/create-website" element={<ProtectedRoute><WebsiteBuilder /></ProtectedRoute>} /><Route path="/discover" element={<ProtectedRoute><Discover /></ProtectedRoute>} /><Route path="/feed" element={<ProtectedRoute><SocialFeed /></ProtectedRoute>} /><Route path="/post/:id" element={<ProtectedRoute><PostDetail /></ProtectedRoute>} />
     <Route path="/work" element={<ProtectedRoute><WorkHub /></ProtectedRoute>} /><Route path="/referrals" element={<ProtectedRoute><ReferralHub /></ProtectedRoute>} /><Route path="/work/:id" element={<ProtectedRoute><WorkDetail /></ProtectedRoute>} /><Route path="/create-work" element={<ProtectedRoute><WorkHub /></ProtectedRoute>} /><Route path="/my-created-work" element={<ProtectedRoute><WorkHub /></ProtectedRoute>} /><Route path="/my-active-work" element={<ProtectedRoute><WorkHub /></ProtectedRoute>} /><Route path="/my-submission" element={<ProtectedRoute><WorkHub /></ProtectedRoute>} /><Route path="/work-review" element={<ProtectedRoute><WorkHub /></ProtectedRoute>} />
     <Route path="/account" element={<ProtectedRoute><AccountHub /></ProtectedRoute>} /><Route path="/notifications" element={<ProtectedRoute><AccountHub /></ProtectedRoute>} />
     <Route path="/profiles" element={<Profiles />} /><Route path="/profile/data-management" element={<DataManagementProfile />} /><Route path="/profile/interior-business" element={<InteriorBusinessProfile />} />
