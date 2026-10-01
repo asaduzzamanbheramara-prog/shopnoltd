@@ -19,7 +19,7 @@ SKIP = {"password", "password_hash", "passwd", "token", "api_key", "secret"}
 def sql_value(s):
     s = s.strip()
     if s.upper() == "NULL": return None
-    if len(s) >= 2 and s[0] == s[-1] and s[0] in "'\\"":
+    if len(s) >= 2 and s[0] == s[-1] and s[0] in "'\"":
         q = s[0]
         return s[1:-1].replace(q + q, q).replace("\\\\'", "'").replace("\\\\\\\\", "\\\\")
     return s
@@ -32,7 +32,7 @@ def fields(s):
             if esc: esc = False
             elif ch == "\\\\": esc = True
             elif ch == q: q = None
-        elif ch in "'\\"":
+        elif ch in "'\"":
             q = ch; buf.append(ch)
         elif ch == "(":
             depth += 1; buf.append(ch)
@@ -52,7 +52,7 @@ def row_groups(values):
             elif ch == "\\\\": esc = True
             elif ch == q: q = None
             continue
-        if ch in "'\\"": q = ch
+        if ch in "'\"": q = ch
         elif ch == "(":
             if depth == 0: start = i + 1
             depth += 1
