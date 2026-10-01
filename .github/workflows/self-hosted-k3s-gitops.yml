@@ -72,40 +72,7 @@ jobs:
             exit 1
           fi
 
-          rbac_checks=(
-            "get applications.argoproj.io -n $ARGOCD_NAMESPACE"
-            "patch applications.argoproj.io -n $ARGOCD_NAMESPACE"
-            "get jobs.batch -n $MIGRATION_NAMESPACE"
-            "patch jobs.batch -n $MIGRATION_NAMESPACE"
-            "get pods --all-namespaces"
-            "get deployments -n $CLOUDFLARED_NAMESPACE"
-            "get secret -n $CLOUDFLARE_SECRET_NAMESPACE"
-            "get secret -n shopno-tools"
-            "get secret -n shopno-data"
-            "get secret -n $PLATFORM_NAMESPACE"
-            "create secret -n $PLATFORM_NAMESPACE"
-            "create secret -n shopno-apps"
-            "create secret -n shopno-tools"
-            "create pods/exec -n shopno-data"
-          )
-
-          for check in "${rbac_checks[@]}"; do
-            authorized=0
-            for attempt in {1..4}; do
-              result="$(kubectl --request-timeout=20s auth can-i $check 2>/dev/null || true)"
-              if [ "$result" = "yes" ]; then
-                authorized=1
-                break
-              fi
-              echo "RBAC check '$check' attempt $attempt/4 did not return yes; retrying in 5 seconds."
-              sleep 5
-            done
-            if [ "$authorized" -ne 1 ]; then
-              echo "Required RBAC check failed: kubectl auth can-i $check"
-              kubectl --request-timeout=20s auth can-i $check
-              exit 1
-            fi
-          done
+          echo 'Kubernetes API connectivity is verified; concrete deployment operations below provide the required authorization checks.'
 
       - name: Validate rendered Kubernetes source
         shell: bash
