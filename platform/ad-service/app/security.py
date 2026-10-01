@@ -52,8 +52,19 @@ async def current_user(
         ) from exc
 
 
+def _claim_roles(user: dict[str, Any]) -> set[str]:
+    roles = set(user.get("roles", []))
+    roles.update(user.get("realm_access", {}).get("roles", []))
+    roles.update(
+        user.get("resource_access", {})
+        .get(settings.keycloak_audience, {})
+        .get("roles", [])
+    )
+    return roles
+
+
 def is_admin(user: dict[str, Any]) -> bool:
-    return bool(set(user.get("roles", [])) & {"admin", "platform_admin"})
+    return bool(_claim_roles(user) & {"admin", "platform_admin"})
 
 
 async def require_admin(user: dict[str, Any] = Depends(current_user)) -> dict[str, Any]:
