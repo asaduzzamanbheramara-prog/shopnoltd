@@ -283,6 +283,13 @@ jobs:
           echo 'Enforcing Kobo database ownership and schema privileges.'
           kubectl -n shopno-data exec deployment/postgres -- psql -U postgres -d postgres -v ON_ERROR_STOP=1 -c "ALTER DATABASE kobocat OWNER TO kobotoolbox;"
           kubectl -n shopno-data exec deployment/postgres -- psql -U postgres -d kobocat -v ON_ERROR_STOP=1 -c "ALTER SCHEMA public OWNER TO kobotoolbox; GRANT USAGE,CREATE ON SCHEMA public TO kobotoolbox;"
+          echo 'Restarting Kobo workloads so all containers consume the reconciled database credentials.'
+          for deployment in kobotoolbox kobotoolbox-beat kobotoolbox-worker; do
+            kubectl -n shopno-apps rollout restart deployment/"$deployment"
+          done
+          kubectl -n shopno-apps rollout status deployment/kobotoolbox-worker --timeout=180s
+          kubectl -n shopno-apps rollout status deployment/kobotoolbox-beat --timeout=180s
+          kubectl -n shopno-apps rollout status deployment/kobotoolbox --timeout=180s
           echo 'Applying Kobo django_celery_beat migrations before Argo rollout.'
           kubectl exec -n shopno-apps deployment/kobotoolbox-worker -- env KPI_DATABASE_URL="$kpi_database_url" KC_DATABASE_URL="$kobocat_database_url" DATABASE_URL="$kobocat_database_url" python /srv/src/kpi/manage.py migrate django_celery_beat --noinput
 
@@ -305,7 +312,7 @@ jobs:
             name="${ref#*/}"
             phase="$(kubectl -n "$namespace" get pvc "$name" -o jsonpath='{.status.phase}' 2>/dev/null || true)"
             if [ "$phase" = "Pending" ]; then
-              echo "Deleting unbound PVC $namespace/$name so the new immediate-binding class can be created."
+              echo "Deleting unbound PVC $namespace/$name so the native WaitForFirstConsumer class can be recreated safely."
               kubectl -n "$namespace" delete pvc "$name" --wait=true --timeout=30s
             elif [ -n "$phase" ]; then
               echo "Keeping $namespace/$name because its current phase is $phase."
