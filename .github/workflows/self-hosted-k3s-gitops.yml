@@ -159,7 +159,7 @@ END
 $$;
 
 SELECT 'CREATE DATABASE kpi OWNER kobotoolbox'
-WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'kpi')\\gexec
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'kpi')\gexec
 SELECT 'CREATE DATABASE kobocat OWNER kobotoolbox'
 WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'kobocat')\\gexec
 SQL
