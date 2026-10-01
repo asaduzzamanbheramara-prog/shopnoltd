@@ -358,7 +358,8 @@ jobs:
             fi
 
             operation_phase="$(jq -r '.status.operationState.phase // ""' <<<"$state")"
-            operation_revision="$(jq -r '.status.operationState.operation.sync.revision // ""' <<<"$state")"
+            operation_revision="$(jq -r '.operation.sync.revision // ""' <<<"$state")"
+            status_operation_revision="$(jq -r '.status.operationState.operation.sync.revision // ""' <<<"$state")"
             sync_revision="$(jq -r '.status.sync.revision // ""' <<<"$state")"
             sync_status="$(jq -r '.status.sync.status // ""' <<<"$state")"
             health_status="$(jq -r '.status.health.status // ""' <<<"$state")"
@@ -368,13 +369,16 @@ jobs:
               started_epoch="$(date -d "$started_at" +%s 2>/dev/null || echo 0)"
             fi
 
-            echo "phase=$operation_phase operationRevision=$operation_revision syncRevision=$sync_revision sync=$sync_status health=$health_status startedAt=$started_at"
+            echo "phase=$operation_phase operationRevision=$operation_revision statusOperationRevision=$status_operation_revision syncRevision=$sync_revision sync=$sync_status health=$health_status startedAt=$started_at"
 
-            if [ "$operation_revision" = "$GIT_REVISION" ] && [ "$started_epoch" -ge "$request_epoch" ]; then
+            # Use the live Application operation field for revision identity. Argo CD
+            # can retain an older status.operationState operation revision while a
+            # newer live operation is already running.
+            if [ "$operation_revision" = "$GIT_REVISION" ]; then
               seen_exact_revision=1
             fi
 
-            if [ "$seen_exact_revision" -eq 1 ]               && [ "$operation_phase" = "Succeeded" ]               && [ "$operation_revision" = "$GIT_REVISION" ]               && [ "$sync_revision" = "$GIT_REVISION" ]               && [ "$sync_status" = "Synced" ]               && [ "$health_status" = "Healthy" ]; then
+            if [ "$seen_exact_revision" -eq 1 ]               && [ "$operation_phase" = "Succeeded" ]               && [ "$sync_revision" = "$GIT_REVISION" ]               && [ "$sync_status" = "Synced" ]               && [ "$health_status" = "Healthy" ]; then
               echo 'Argo CD full sync verified at the requested revision.'
               exit 0
             fi
