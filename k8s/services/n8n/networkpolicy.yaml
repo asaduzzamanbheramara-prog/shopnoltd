@@ -14,7 +14,7 @@ spec:
     - from:
         - podSelector:
             matchLabels:
-              app.kubernetes.io/name: n8n-workflow-import
+              app.kubernetes.io/component: workflow-import
         - namespaceSelector:
             matchLabels:
               name: ingress-nginx
