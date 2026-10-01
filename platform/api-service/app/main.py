@@ -55,7 +55,7 @@ async def lifespan(app: FastAPI):
             # a legacy public.users table. Only seed the legacy mapping when that
             # table actually exists; its absence must not prevent API startup.
             await conn.execute(text("""
-                DO $
+                DO $$
                 BEGIN
                     IF to_regclass('public.users') IS NOT NULL THEN
                         INSERT INTO referral_system_identities (alias, user_id, tenant_id, active)
@@ -64,7 +64,7 @@ async def lifespan(app: FastAPI):
                         ORDER BY id LIMIT 1
                         ON CONFLICT (alias) DO UPDATE SET user_id=EXCLUDED.user_id, tenant_id=EXCLUDED.tenant_id, active=1, updated_at=CURRENT_TIMESTAMP;
                     END IF;
-                END $;
+                END $$;
             """))
             # Global task rates are keyed by task type + currency. This compatibility
             # migration upgrades databases created by the earlier single-currency model.
