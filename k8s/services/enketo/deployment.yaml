@@ -37,12 +37,18 @@ spec:
                 secretKeyRef:
                   name: kobotoolbox-secret
                   key: api-key
-            - name: ENKETO_REDIS_HOST
+            - name: ENKETO_REDIS_MAIN_HOST
               value: "redis.shopno-data.svc.cluster.local"
-            - name: ENKETO_REDIS_PORT
+            - name: ENKETO_REDIS_MAIN_PORT
               value: "6379"
-            - name: ENKETO_REDIS_DB
-              value: "5"
+            - name: ENKETO_REDIS_MAIN_PASSWORD
+              value: "null"
+            - name: ENKETO_REDIS_CACHE_HOST
+              value: "redis.shopno-data.svc.cluster.local"
+            - name: ENKETO_REDIS_CACHE_PORT
+              value: "6379"
+            - name: ENKETO_REDIS_CACHE_PASSWORD
+              value: "null"
             - name: ENKETO_POSTGRES_HOST
               value: "postgres.shopno-data.svc.cluster.local"
             - name: ENKETO_POSTGRES_PORT
