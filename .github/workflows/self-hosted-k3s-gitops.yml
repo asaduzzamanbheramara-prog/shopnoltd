@@ -108,6 +108,20 @@ jobs:
               kubectl apply -f -
           fi
 
+      - name: Provision mail admin mailbox credential
+        shell: bash
+        run: |
+          set -euo pipefail
+          if kubectl -n shopno-mail get secret mail-admin-credentials >/dev/null 2>&1; then
+            echo 'Mail admin mailbox credential already exists; preserving it.'
+          else
+            echo 'Provisioning missing mail admin mailbox credential.'
+            mailbox_password="$(openssl rand -hex 24)"
+            kubectl -n shopno-mail create secret generic mail-admin-credentials \
+              --from-literal=MAILBOX_PASSWORD="$mailbox_password" \
+              --dry-run=client -o yaml | kubectl -n shopno-mail apply -f -
+          fi
+
       - name: Repair migration prerequisite and terminate stale Argo CD operation
         shell: bash
         run: |

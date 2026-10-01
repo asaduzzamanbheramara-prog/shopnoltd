@@ -78,6 +78,16 @@ spec:
                 secretKeyRef:
                   name: kobotoolbox-secret
                   key: api-key
+            - name: KPI_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: kobotoolbox-database
+                  key: KPI_DATABASE_URL
+            - name: KC_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: kobotoolbox-database
+                  key: KC_DATABASE_URL
           resources:
             requests:
               cpu: 100m
@@ -118,6 +128,8 @@ spec:
               subPath: kobocat-media
             - name: tmp
               mountPath: /tmp
+            - name: runtime-tmp
+              mountPath: /srv/tmp
             - name: logs
               mountPath: /srv/logs
             - name: uwsgi-ini-override
@@ -134,6 +146,8 @@ spec:
           persistentVolumeClaim:
             claimName: kobotoolbox-data
         - name: tmp
+          emptyDir: {}
+        - name: runtime-tmp
           emptyDir: {}
         - name: logs
           emptyDir: {}
