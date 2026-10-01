@@ -108,24 +108,6 @@ jobs:
               kubectl apply -f -
           fi
 
-      - name: Ensure Kobo and session-manager runtime database secrets
-        shell: bash
-        run: |
-          set -euo pipefail
-          postgres_password="$(kubectl -n shopno-data get secret postgres-secret -o jsonpath='{.data.POSTGRES_PASSWORD}' | base64 -d)"
-          postgres_user="$(kubectl -n shopno-data get secret postgres-secret -o jsonpath='{.data.POSTGRES_USER}' | base64 -d)"
-          postgres_db="$(kubectl -n shopno-data get secret postgres-secret -o jsonpath='{.data.POSTGRES_DB}' | base64 -d)"
-          kobo_password="$(kubectl -n shopno-apps get secret kobotoolbox-secret -o jsonpath='{.data.KOBOCAT_PASSWORD}' 2>/dev/null | base64 -d || true)"
-          if [ -z "$kobo_password" ]; then
-            kobo_password="$(openssl rand -hex 32)"
-          fi
-          kubectl -n shopno-data exec deployment/postgres -- env PGPASSWORD="$postgres_password" KOBO_PASSWORD="$kobo_password" PGUSER="$postgres_user" PGDB="$postgres_db" /bin/bash -lc 'set -euo pipefail; if psql -d "$PGDB" -Atqc "SELECT 1 FROM pg_roles WHERE rolname = '\''kobotoolbox'\''" | grep -q 1; then psql -v ON_ERROR_STOP=1 -d "$PGDB" -c "ALTER ROLE kobotoolbox LOGIN PASSWORD '\''$KOBO_PASSWORD'\''"; else psql -v ON_ERROR_STOP=1 -d "$PGDB" -c "CREATE ROLE kobotoolbox LOGIN PASSWORD '\''$KOBO_PASSWORD'\''"; fi; if ! psql -d "$PGDB" -Atqc "SELECT 1 FROM pg_database WHERE datname = '\''kpi'\''" | grep -q 1; then psql -v ON_ERROR_STOP=1 -d "$PGDB" -c "CREATE DATABASE kpi OWNER kobotoolbox"; fi; if ! psql -d "$PGDB" -Atqc "SELECT 1 FROM pg_database WHERE datname = '\''kobocat'\''" | grep -q 1; then psql -v ON_ERROR_STOP=1 -d "$PGDB" -c "CREATE DATABASE kobocat OWNER kobotoolbox"; fi'
-          kubectl -n shopno-apps create secret generic kobotoolbox-database --from-literal=POSTGRES_HOST=postgres.shopno-data.svc.cluster.local --from-literal=POSTGRES_PORT=5432 --from-literal=POSTGRES_DB=kobocat --from-literal=POSTGRES_USER=kobotoolbox --from-literal=POSTGRES_PASSWORD="$kobo_password" --from-literal=DATABASE_URL="postgresql://kobotoolbox:$kobo_password@postgres.shopno-data.svc.cluster.local:5432/kobocat" --dry-run=client -o yaml | kubectl -n shopno-apps apply -f -
-          encryption_key="$(kubectl -n shopno-tools get secret session-manager-secrets -o jsonpath='{.data.ENCRYPTION_KEY}' | base64 -d)"
-          database_url="postgresql://${postgres_user}:${postgres_password}@postgres.shopno-data.svc.cluster.local:5432/session_manager"
-          kubectl -n shopno-data exec deployment/postgres -- env PGPASSWORD="$postgres_password" PGUSER="$postgres_user" PGDB="$postgres_db" /bin/bash -lc 'if ! psql -d "$PGDB" -Atqc "SELECT 1 FROM pg_database WHERE datname = '\''session_manager'\''" | grep -q 1; then psql -v ON_ERROR_STOP=1 -d "$PGDB" -c "CREATE DATABASE session_manager OWNER \"$PGUSER\""; fi'
-          kubectl -n shopno-tools create secret generic session-manager-secrets --from-literal=DATABASE_URL="$database_url" --from-literal=ENCRYPTION_KEY="$encryption_key" --dry-run=client -o yaml | kubectl -n shopno-tools apply -f -
-
       - name: Repair migration prerequisite and terminate stale Argo CD operation
         shell: bash
         run: |
@@ -274,6 +256,24 @@ jobs:
           timeout 60s kubectl --request-timeout=30s             -n "$ARGOCD_NAMESPACE"             patch application "$ARGOCD_APP"             --type=merge             -p "$(jq -nc --arg revision "$GIT_REVISION"               '{operation:{sync:{revision:$revision,prune:false}}}')"
 
           echo 'Argo CD full sync request submitted to the controller.'
+
+      - name: Ensure Kobo and session-manager runtime database secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          postgres_password="$(kubectl -n shopno-data get secret postgres-secret -o jsonpath='{.data.POSTGRES_PASSWORD}' | base64 -d)"
+          postgres_user="$(kubectl -n shopno-data get secret postgres-secret -o jsonpath='{.data.POSTGRES_USER}' | base64 -d)"
+          postgres_db="$(kubectl -n shopno-data get secret postgres-secret -o jsonpath='{.data.POSTGRES_DB}' | base64 -d)"
+          kobo_password="$(kubectl -n shopno-apps get secret kobotoolbox-secret -o jsonpath='{.data.KOBOCAT_PASSWORD}' 2>/dev/null | base64 -d || true)"
+          if [ -z "$kobo_password" ]; then
+            kobo_password="$(openssl rand -hex 32)"
+          fi
+          kubectl -n shopno-data exec deployment/postgres -- env PGPASSWORD="$postgres_password" KOBO_PASSWORD="$kobo_password" PGUSER="$postgres_user" PGDB="$postgres_db" /bin/bash -lc 'set -euo pipefail; if psql -d "$PGDB" -Atqc "SELECT 1 FROM pg_roles WHERE rolname = '\''kobotoolbox'\''" | grep -q 1; then psql -v ON_ERROR_STOP=1 -d "$PGDB" -c "ALTER ROLE kobotoolbox LOGIN PASSWORD '\''$KOBO_PASSWORD'\''"; else psql -v ON_ERROR_STOP=1 -d "$PGDB" -c "CREATE ROLE kobotoolbox LOGIN PASSWORD '\''$KOBO_PASSWORD'\''"; fi; if ! psql -d "$PGDB" -Atqc "SELECT 1 FROM pg_database WHERE datname = '\''kpi'\''" | grep -q 1; then psql -v ON_ERROR_STOP=1 -d "$PGDB" -c "CREATE DATABASE kpi OWNER kobotoolbox"; fi; if ! psql -d "$PGDB" -Atqc "SELECT 1 FROM pg_database WHERE datname = '\''kobocat'\''" | grep -q 1; then psql -v ON_ERROR_STOP=1 -d "$PGDB" -c "CREATE DATABASE kobocat OWNER kobotoolbox"; fi'
+          kubectl -n shopno-apps create secret generic kobotoolbox-database --from-literal=POSTGRES_HOST=postgres.shopno-data.svc.cluster.local --from-literal=POSTGRES_PORT=5432 --from-literal=POSTGRES_DB=kobocat --from-literal=POSTGRES_USER=kobotoolbox --from-literal=POSTGRES_PASSWORD="$kobo_password" --from-literal=DATABASE_URL="postgresql://kobotoolbox:$kobo_password@postgres.shopno-data.svc.cluster.local:5432/kobocat" --dry-run=client -o yaml | kubectl -n shopno-apps apply -f -
+          encryption_key="$(kubectl -n shopno-tools get secret session-manager-secrets -o jsonpath='{.data.ENCRYPTION_KEY}' | base64 -d)"
+          database_url="postgresql://${postgres_user}:${postgres_password}@postgres.shopno-data.svc.cluster.local:5432/session_manager"
+          kubectl -n shopno-data exec deployment/postgres -- env PGPASSWORD="$postgres_password" PGUSER="$postgres_user" PGDB="$postgres_db" /bin/bash -lc 'if ! psql -d "$PGDB" -Atqc "SELECT 1 FROM pg_database WHERE datname = '\''session_manager'\''" | grep -q 1; then psql -v ON_ERROR_STOP=1 -d "$PGDB" -c "CREATE DATABASE session_manager OWNER \"$PGUSER\""; fi'
+          kubectl -n shopno-tools create secret generic session-manager-secrets --from-literal=DATABASE_URL="$database_url" --from-literal=ENCRYPTION_KEY="$encryption_key" --dry-run=client -o yaml | kubectl -n shopno-tools apply -f -
 
       - name: Wait for Argo CD full sync
         shell: bash
