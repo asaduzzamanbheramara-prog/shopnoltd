@@ -8,7 +8,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: standard
+  storageClassName: shopnoltd-local-immediate
   resources:
     requests:
       storage: 10Gi
