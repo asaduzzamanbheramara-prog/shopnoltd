@@ -154,11 +154,16 @@ jobs:
           echo 'Waiting for the Argo CD controller to clear the stale operation.'
           operation_stopped=0
           for _ in {1..24}; do
-            phase="$(timeout 15s kubectl --request-timeout=15s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o jsonpath='{.status.operationState.phase}' 2>/dev/null || true)"
-            message="$(timeout 15s kubectl --request-timeout=15s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o jsonpath='{.status.operationState.message}' 2>/dev/null || true)"
-            echo "ArgoCD phase=$phase message=$message"
+            app_state="$(timeout 15s kubectl --request-timeout=15s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o json 2>/dev/null || true)"
+            phase="$(jq -r '.status.operationState.phase // ""' <<<"$app_state")"
+            message="$(jq -r '.status.operationState.message // ""' <<<"$app_state")"
+            operation_revision="$(jq -r '.operation.sync.revision // ""' <<<"$app_state")"
+            echo "ArgoCD phase=$phase operationRevision=$operation_revision message=$message"
 
-            if [ -z "$phase" ] || { [ "$phase" != "Running" ] && [ "$phase" != "Terminating" ]; }; then
+            # Argo CD may retain a stale status.operationState=Running after the live
+            # Application operation field has already been cleared. The live operation
+            # field is authoritative for whether a new sync can be submitted.
+            if [ -z "$operation_revision" ] || [ -z "$phase" ] || { [ "$phase" != "Running" ] && [ "$phase" != "Terminating" ]; }; then
               operation_stopped=1
               break
             fi
