@@ -1,0 +1,112 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: bind-disabled-monitoring-pvcs
+  namespace: shopno-monitoring
+  annotations:
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+spec:
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: bind-disabled-monitoring-pvcs
+        app.kubernetes.io/part-of: shopnoltd
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: binder
+          image: rancher/mirrored-library-busybox:1.37.0
+          command: ["/bin/sh", "-c"]
+          args:
+            - echo "Disabled monitoring PVCs are bound."; sleep 1
+          volumeMounts:
+            - name: grafana
+              mountPath: /mnt/grafana
+            - name: loki
+              mountPath: /mnt/loki
+            - name: prometheus
+              mountPath: /mnt/prometheus
+      volumes:
+        - name: grafana
+          persistentVolumeClaim:
+            claimName: grafana-data
+        - name: loki
+          persistentVolumeClaim:
+            claimName: loki-data
+        - name: prometheus
+          persistentVolumeClaim:
+            claimName: prometheus-data
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: bind-disabled-platform-pvcs
+  namespace: shopno-platform
+  annotations:
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+spec:
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: bind-disabled-platform-pvcs
+        app.kubernetes.io/part-of: shopnoltd
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: binder
+          image: rancher/mirrored-library-busybox:1.37.0
+          command: ["/bin/sh", "-c"]
+          args:
+            - echo "Disabled platform PVCs are bound."; sleep 1
+          volumeMounts:
+            - name: interior
+              mountPath: /mnt/interior
+            - name: license
+              mountPath: /mnt/license
+            - name: training
+              mountPath: /mnt/training
+      volumes:
+        - name: interior
+          persistentVolumeClaim:
+            claimName: interior-service-data
+        - name: license
+          persistentVolumeClaim:
+            claimName: license-service-data
+        - name: training
+          persistentVolumeClaim:
+            claimName: training-service-data
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: bind-disabled-owncast-pvc
+  namespace: shopno-apps
+  annotations:
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+spec:
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: bind-disabled-owncast-pvc
+        app.kubernetes.io/part-of: shopnoltd
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: binder
+          image: rancher/mirrored-library-busybox:1.37.0
+          command: ["/bin/sh", "-c"]
+          args:
+            - echo "Disabled Owncast PVC is bound."; sleep 1
+          volumeMounts:
+            - name: owncast
+              mountPath: /mnt/owncast
+      volumes:
+        - name: owncast
+          persistentVolumeClaim:
+            claimName: owncast-data
