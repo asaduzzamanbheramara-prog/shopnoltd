@@ -3,6 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+import dns.asyncresolver
 
 from .db import get_db
 from .models import AdZone, Advertiser, Campaign, Creative, Publisher, PublisherSite
@@ -86,6 +87,36 @@ async def create_site(body: SiteCreate, user=Depends(current_user), db=Depends(g
     await db.commit()
     await db.refresh(row)
     return {"id": str(row.id), "domain": row.domain, "verification_status": row.verification_status, "verification_token": row.verification_token}
+
+
+@router.post("/publishers/sites/{site_id}/verify")
+async def verify_site(site_id: UUID, user=Depends(current_user), db=Depends(get_db)):
+    publisher = await owned_publisher(db, user)
+    site = await db.scalar(select(PublisherSite).where(PublisherSite.id == site_id, PublisherSite.publisher_id == publisher.id))
+    if not site:
+        raise HTTPException(404, "Site not found")
+    if publisher.status != "approved":
+        raise HTTPException(403, "Publisher account must be approved before verifying inventory")
+    record_name = f"_shopnoltd-verify.{site.domain}".rstrip(".")
+    resolver = dns.asyncresolver.Resolver()
+    resolver.timeout = 3.0
+    resolver.lifetime = 5.0
+    try:
+        answers = await resolver.resolve(record_name, "TXT")
+    except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer, dns.resolver.NoNameservers, dns.exception.Timeout):
+        site.verification_status = "failed"
+        await db.commit()
+        raise HTTPException(422, f"DNS TXT verification record not found at {record_name}") from None
+    token = site.verification_token
+    values = {"".join(part.decode("utf-8") if isinstance(part, bytes) else part for part in r.strings) for r in answers}
+    if token not in values:
+        site.verification_status = "failed"
+        await db.commit()
+        raise HTTPException(422, "DNS TXT verification token does not match")
+    site.verification_method = "dns"
+    site.verification_status = "verified"
+    await db.commit()
+    return {"id": str(site.id), "domain": site.domain, "verification_status": site.verification_status, "record_name": record_name}
 
 
 @router.post("/publishers/sites/{site_id}/zones", status_code=201)
