@@ -147,16 +147,16 @@ jobs:
               env PGPASSWORD="$postgres_password" KOBO_PASSWORD="$kobo_password" \
               PGUSER="$postgres_user" PGDB="$postgres_db" \
               /bin/bash -lc 'set -euo pipefail
-if psql -d "$PGDB" -Atqc "SELECT 1 FROM pg_roles WHERE rolname = '''kobotoolbox'''" | grep -q 1; then
-  psql -v ON_ERROR_STOP=1 -d "$PGDB" -c "ALTER ROLE kobotoolbox LOGIN PASSWORD '''$KOBO_PASSWORD'''"
-else
-  psql -v ON_ERROR_STOP=1 -d "$PGDB" -c "CREATE ROLE kobotoolbox LOGIN PASSWORD '''$KOBO_PASSWORD'''"
-fi
-if ! psql -d "$PGDB" -Atqc "SELECT 1 FROM pg_database WHERE datname = '''kpi'''" | grep -q 1; then
-  psql -v ON_ERROR_STOP=1 -d "$PGDB" -c "CREATE DATABASE kpi OWNER kobotoolbox"
-fi
-if ! psql -d "$PGDB" -Atqc "SELECT 1 FROM pg_database WHERE datname = '''kobocat'''" | grep -q 1; then
-  psql -v ON_ERROR_STOP=1 -d "$PGDB" -c "CREATE DATABASE kobocat OWNER kobotoolbox"
+              if psql -d "$PGDB" -Atqc "SELECT 1 FROM pg_roles WHERE rolname = '''kobotoolbox'''" | grep -q 1; then
+                psql -v ON_ERROR_STOP=1 -d "$PGDB" -c "ALTER ROLE kobotoolbox LOGIN PASSWORD '''$KOBO_PASSWORD'''"
+              else
+                psql -v ON_ERROR_STOP=1 -d "$PGDB" -c "CREATE ROLE kobotoolbox LOGIN PASSWORD '''$KOBO_PASSWORD'''"
+              fi
+              if ! psql -d "$PGDB" -Atqc "SELECT 1 FROM pg_database WHERE datname = '''kpi'''" | grep -q 1; then
+                psql -v ON_ERROR_STOP=1 -d "$PGDB" -c "CREATE DATABASE kpi OWNER kobotoolbox"
+              fi
+              if ! psql -d "$PGDB" -Atqc "SELECT 1 FROM pg_database WHERE datname = '''kobocat'''" | grep -q 1; then
+                psql -v ON_ERROR_STOP=1 -d "$PGDB" -c "CREATE DATABASE kobocat OWNER kobotoolbox"
 fi'
 
           fi
