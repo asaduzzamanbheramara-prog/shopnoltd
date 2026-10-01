@@ -123,11 +123,7 @@ spec:
             - name: POSTFIX_INET_PROTOCOLS
               value: ipv4
             - name: SSL_TYPE
-              value: manual
-            - name: SSL_CERT_PATH
-              value: /secrets/ssl/tls.crt
-            - name: SSL_KEY_PATH
-              value: /secrets/ssl/tls.key
+              value: self-signed
             - name: ENABLE_UPDATE_CHECK
               value: "0"
           resources:
@@ -164,13 +160,7 @@ spec:
             - name: mail-data
               mountPath: /tmp/docker-mailserver
               subPath: config
-            - name: mail-tls
-              mountPath: /secrets/ssl
-              readOnly: true
       volumes:
         - name: mail-data
           persistentVolumeClaim:
             claimName: mail-data
-        - name: mail-tls
-          secret:
-            secretName: shopno-wildcard-tls
