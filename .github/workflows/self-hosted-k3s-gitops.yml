@@ -75,6 +75,7 @@ jobs:
             "get deployments -n $CLOUDFLARED_NAMESPACE"
             "get secret -n $CLOUDFLARE_SECRET_NAMESPACE"
             "get secret -n shopno-tools"
+            "get secret -n shopno-data"
             "create secret -n $PLATFORM_NAMESPACE"
           )
 
@@ -110,6 +111,19 @@ jobs:
             echo 'Android Cloud GHCR pull secret already exists; preserving it.'
           else
             kubectl -n shopno-tools get secret ghcr-pull-secret -o json               | jq 'del(.metadata.namespace,.metadata.resourceVersion,.metadata.uid,.metadata.creationTimestamp,.metadata.managedFields,.metadata.ownerReferences)'               | jq --arg namespace "$PLATFORM_NAMESPACE" '.metadata.namespace=$namespace'               | kubectl apply -f -
+          fi
+
+      - name: Provision domain service PostgreSQL secret
+        shell: bash
+        run: |
+          set -euo pipefail
+          if kubectl -n "$PLATFORM_NAMESPACE" get secret domain-postgres-secret >/dev/null 2>&1; then
+            echo 'Domain PostgreSQL secret already exists; preserving it.'
+          else
+            kubectl -n shopno-data get secret postgres-secret -o json |
+              jq 'del(.metadata.namespace,.metadata.resourceVersion,.metadata.uid,.metadata.creationTimestamp,.metadata.managedFields,.metadata.ownerReferences)' |
+              jq --arg namespace "$PLATFORM_NAMESPACE" --arg name domain-postgres-secret '.metadata.namespace=$namespace | .metadata.name=$name' |
+              kubectl apply -f -
           fi
 
       - name: Repair migration prerequisite and terminate stale Argo CD operation
