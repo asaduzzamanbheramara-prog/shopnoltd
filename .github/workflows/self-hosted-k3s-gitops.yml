@@ -76,7 +76,10 @@ jobs:
             "get secret -n $CLOUDFLARE_SECRET_NAMESPACE"
             "get secret -n shopno-tools"
             "get secret -n shopno-data"
+            "get secret -n $PLATFORM_NAMESPACE"
             "create secret -n $PLATFORM_NAMESPACE"
+            "create secret -n shopno-apps"
+            "create pods/exec -n shopno-data"
           )
 
           for check in "${rbac_checks[@]}"; do
@@ -124,6 +127,47 @@ jobs:
               jq 'del(.metadata.namespace,.metadata.resourceVersion,.metadata.uid,.metadata.creationTimestamp,.metadata.managedFields,.metadata.ownerReferences)' |
               jq --arg namespace "$PLATFORM_NAMESPACE" --arg name domain-postgres-secret '.metadata.namespace=$namespace | .metadata.name=$name' |
               kubectl apply -f -
+          fi
+
+      - name: Provision Kobo PostgreSQL database and runtime secret
+        shell: bash
+        run: |
+          set -euo pipefail
+          if kubectl -n shopno-apps get secret kobotoolbox-database >/dev/null 2>&1; then
+            echo 'Kobo PostgreSQL runtime secret already exists; preserving it.'
+          else
+            echo 'Provisioning Kobo PostgreSQL role/databases and runtime secret.'
+            kobo_password="$(openssl rand -hex 32)"
+            postgres_password="$(kubectl -n shopno-data get secret postgres-secret -o jsonpath='{.data.POSTGRES_PASSWORD}' | base64 -d)"
+            postgres_user="$(kubectl -n shopno-data get secret postgres-secret -o jsonpath='{.data.POSTGRES_USER}' | base64 -d)"
+            postgres_db="$(kubectl -n shopno-data get secret postgres-secret -o jsonpath='{.data.POSTGRES_DB}' | base64 -d)"
+
+            kubectl -n shopno-data exec -i deployment/postgres -- \
+              env PGPASSWORD="$postgres_password" KOBO_PASSWORD="$kobo_password" \
+              PGUSER="$postgres_user" PGDB="$postgres_db" \
+              /bin/bash -s <<'REMOTE_KOBO_DB'
+set -euo pipefail
+cat >/tmp/kobo-bootstrap.sql <<SQL
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'kobotoolbox') THEN
+    CREATE ROLE kobotoolbox LOGIN PASSWORD '$KOBO_PASSWORD';
+  ELSE
+    ALTER ROLE kobotoolbox LOGIN PASSWORD '$KOBO_PASSWORD';
+  END IF;
+END
+$$;
+
+SELECT 'CREATE DATABASE kpi OWNER kobotoolbox'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'kpi')\gexec
+SELECT 'CREATE DATABASE kobocat OWNER kobotoolbox'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'kobocat')\\gexec
+SQL
+psql -v ON_ERROR_STOP=1 -d "$PGDB" -f /tmp/kobo-bootstrap.sql
+rm -f /tmp/kobo-bootstrap.sql
+REMOTE_KOBO_DB
+
+            kubectl -n shopno-apps create secret generic kobotoolbox-database               --from-literal=DATABASE_URL="postgresql://kobotoolbox:$kobo_password@postgres.shopno-data.svc.cluster.local:5432/kpi"               --from-literal=KPI_DATABASE_URL="postgresql://kobotoolbox:$kobo_password@postgres.shopno-data.svc.cluster.local:5432/kpi"               --from-literal=KC_DATABASE_URL="postgresql://kobotoolbox:$kobo_password@postgres.shopno-data.svc.cluster.local:5432/kobocat"
           fi
 
       - name: Repair migration prerequisite and terminate stale Argo CD operation

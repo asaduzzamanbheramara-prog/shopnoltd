@@ -45,6 +45,8 @@ spec:
             - secretRef:
                 name: kobotoolbox-secret
             - secretRef:
+                name: kobotoolbox-database
+            - secretRef:
                 name: kobotoolbox-smtp
           env:
             # MongoDB authentication is provided by the dedicated Kobo Mongo secret.

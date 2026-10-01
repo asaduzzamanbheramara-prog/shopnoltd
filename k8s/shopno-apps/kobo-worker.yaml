@@ -62,6 +62,8 @@ spec:
             name: kobotoolbox-config
         - secretRef:
             name: kobotoolbox-secret
+            - secretRef:
+                name: kobotoolbox-database
         - secretRef:
             name: kobotoolbox-smtp
         resources:

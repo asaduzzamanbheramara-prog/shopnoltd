@@ -64,6 +64,8 @@ spec:
             name: kobotoolbox-config
         - secretRef:
             name: kobotoolbox-secret
+            - secretRef:
+                name: kobotoolbox-database
         resources:
           limits:
             cpu: 500m
