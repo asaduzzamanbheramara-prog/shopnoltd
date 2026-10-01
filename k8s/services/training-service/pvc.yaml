@@ -2,6 +2,8 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: training-service-data
+  annotations:
+    argocd.argoproj.io/ignore-healthcheck: "true"
   namespace: shopno-platform
 spec:
   accessModes:
