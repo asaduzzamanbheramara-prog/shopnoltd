@@ -9,7 +9,7 @@ data:
 
     const file = "/opt/meshcentral/meshcentral-data/config.json";
 
-    const config = JSON.parse(fs.readFileSync(file, "utf8"));
+    const config = fs.existsSync(file)\n  ? JSON.parse(fs.readFileSync(file, "utf8"))\n  : { settings: {}, domains: {} };
 
     if (!config.settings) {
       config.settings = {};
