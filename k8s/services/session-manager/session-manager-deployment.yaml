@@ -19,20 +19,11 @@ spec:
     spec:
       containers:
         - env:
-            - name: POSTGRES_USER
-              valueFrom:
-                secretKeyRef:
-                  name: postgres-secret
-                  key: POSTGRES_USER
-            - name: POSTGRES_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: postgres-secret
-                  key: POSTGRES_PASSWORD
-            - name: POSTGRES_DB
-              value: session_manager
             - name: DATABASE_URL
-              value: "postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@postgres.shopno-data.svc.cluster.local:5432/$(POSTGRES_DB)"
+              valueFrom:
+                secretKeyRef:
+                  name: session-manager-secrets
+                  key: DATABASE_URL
             - name: SESSION_MANAGER_ENCRYPTION_KEY
               valueFrom:
                 secretKeyRef:
