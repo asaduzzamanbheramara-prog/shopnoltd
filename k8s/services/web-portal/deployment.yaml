@@ -84,6 +84,8 @@ spec:
               mountPath: /var/lib/web-portal
             - name: tmp
               mountPath: /tmp
+            - name: run
+              mountPath: /run
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
@@ -94,6 +96,8 @@ spec:
           persistentVolumeClaim:
             claimName: web-portal-data
         - name: tmp
+          emptyDir: {}
+        - name: run
           emptyDir: {}
       topologySpreadConstraints:
         - maxSkew: 1
