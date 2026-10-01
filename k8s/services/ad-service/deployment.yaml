@@ -26,7 +26,10 @@ spec:
         imagePullPolicy: IfNotPresent
         env:
         - name: DATABASE_URL
-          value: postgresql+asyncpg://shopno:shopno@postgres.shopno-data.svc.cluster.local:5432/ads
+          valueFrom:
+            secretKeyRef:
+              name: ad-service-secret
+              key: database-url
         ports:
         - name: http
           containerPort: 8080
