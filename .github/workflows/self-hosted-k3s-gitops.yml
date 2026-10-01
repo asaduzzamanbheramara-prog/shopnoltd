@@ -28,7 +28,7 @@ env:
   CLOUDFLARED_NAMESPACE: shopno-ingress
   CLOUDFLARED_DEPLOYMENT: cloudflared
   CLOUDFLARE_SECRET_NAMESPACE: shopno-ingress
-  CLOUDFLARE_SECRET_NAME: cloudflare-api-token
+  CLOUDFLARE_SECRET_NAME: cloudflared-creds
   PLATFORM_NAMESPACE: shopno-platform
 
 jobs:

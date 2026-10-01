@@ -9,6 +9,7 @@ resources:
 - pvc.yaml
 - deployment.yaml
 - service.yaml
+- health-service.yaml
 - ingress.yaml
 - networkpolicy.yaml
 - poddisruptionbudget.yaml

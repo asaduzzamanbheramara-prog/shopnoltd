@@ -14,8 +14,10 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: n8n-workflow-import
+        app.kubernetes.io/component: workflow-import
     spec:
       restartPolicy: Never
+      enableServiceLinks: false
       automountServiceAccountToken: false
       securityContext:
         runAsNonRoot: true
@@ -34,6 +36,8 @@ spec:
             - secretRef:
                 name: n8n-secret
           env:
+            - name: N8N_USER_FOLDER
+              value: "/tmp/n8n"
             - name: DB_TYPE
               value: "postgresdb"
             - name: DB_POSTGRESDB_HOST
@@ -59,7 +63,7 @@ spec:
             - /bin/sh
             - -ec
             - |
-              node -e 'const http=require("http");let n=0;const t=setInterval(()=>{http.get("http://n8n/healthz",r=>{if(r.statusCode===200){clearInterval(t);process.exit(0)};r.resume()}).on("error",()=>{});if(++n>=60){clearInterval(t);process.exit(1)}},2000)'
+              node -e 'const http=require("http");let n=0;const t=setInterval(()=>{http.get("http://n8n-health:5678/healthz",r=>{if(r.statusCode===200){clearInterval(t);process.exit(0)};r.resume()}).on("error",()=>{});if(++n>=60){clearInterval(t);process.exit(1)}},2000)'
               n8n import:workflow --input=/workflows/shopnoltd-omnichannel-action-queue.json --activeState=false
               n8n unpublish:workflow --id=7b2a0a2f-5d1f-4e9f-8e0a-9f4a8f1c0d21
           volumeMounts:
@@ -67,6 +71,8 @@ spec:
               mountPath: /workflows
             - name: tmp
               mountPath: /tmp
+            - name: n8n-user
+              mountPath: /tmp/n8n
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
@@ -77,4 +83,6 @@ spec:
           configMap:
             name: n8n-omnichannel-workflow
         - name: tmp
+          emptyDir: {}
+        - name: n8n-user
           emptyDir: {}
