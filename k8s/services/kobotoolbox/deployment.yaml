@@ -20,7 +20,7 @@ spec:
         prometheus.io/scrape: "true"
         prometheus.io/port: "8000"
         prometheus.io/path: "/metrics"
-        config.shopnoltd.dpdns.org/kobotoolbox-config-revision: "kobo-enketo-api-key-20260924"
+        config.shopnoltd.dpdns.org/kobotoolbox-config-revision: "kobo-static-rsync-fowner-20261002"
     spec:
       serviceAccountName: kobotoolbox
       automountServiceAccountToken: false
