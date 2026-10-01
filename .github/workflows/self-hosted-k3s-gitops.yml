@@ -283,6 +283,34 @@ jobs:
           echo 'Applying Kobo django_celery_beat migrations before Argo rollout.'
           kubectl exec -n shopno-apps deployment/kobotoolbox-worker -- env KPI_DATABASE_URL="$kpi_database_url" KC_DATABASE_URL="$kobocat_database_url" DATABASE_URL="$kobocat_database_url" python /srv/src/kpi/manage.py migrate django_celery_beat --noinput
 
+      - name: Recreate only unbound disabled-service PVCs after storage migration
+        shell: bash
+        run: |
+          set -euo pipefail
+          pvc_specs=(
+            "shopno-monitoring/grafana-data"
+            "shopno-monitoring/loki-data"
+            "shopno-monitoring/prometheus-data"
+            "shopno-apps/owncast-data"
+            "shopno-platform/interior-service-data"
+            "shopno-platform/license-service-data"
+            "shopno-platform/training-service-data"
+          )
+
+          for ref in "${pvc_specs[@]}"; do
+            namespace="${ref%%/*}"
+            name="${ref#*/}"
+            phase="$(kubectl -n "$namespace" get pvc "$name" -o jsonpath='{.status.phase}' 2>/dev/null || true)"
+            if [ "$phase" = "Pending" ]; then
+              echo "Deleting unbound PVC $namespace/$name so the new immediate-binding class can be created."
+              kubectl -n "$namespace" delete pvc "$name" --wait=true --timeout=30s
+            elif [ -n "$phase" ]; then
+              echo "Keeping $namespace/$name because its current phase is $phase."
+            else
+              echo "$namespace/$name does not currently exist; Argo CD will create it from source."
+            fi
+          done
+
       - name: Wait for Argo CD full sync
         shell: bash
         run: |
