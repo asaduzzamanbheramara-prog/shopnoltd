@@ -4,6 +4,8 @@ Unknown live tables are read-only by default. No arbitrary SQL is accepted.
 """
 from __future__ import annotations
 
+import csv
+import io
 import json
 import re
 
@@ -191,6 +193,50 @@ async def export_table(
         rows = await conn.fetch(f"SELECT * FROM {_ident(schema)}.{_ident(table)} LIMIT $1", limit)
         payload = json.dumps([dict(row) for row in rows], default=str, ensure_ascii=False)
         return Response(payload, media_type="application/json", headers={"Content-Disposition": f'attachment; filename="{database}-{table}.json"'})
+    finally:
+        await conn.close()
+
+
+
+@router.post("/tables/{database}/{schema}/{table}/import")
+async def import_rows(
+    database: str,
+    schema: str,
+    table: str,
+    payload: dict[str, Any] = Body(...),
+    _: dict = Depends(require_admin),
+):
+    """Transactional JSON import for explicitly importable writable tables."""
+    capability = resolve_table_capability(database, table)
+    if not capability["importable"] or not capability["writable"]:
+        raise HTTPException(403, capability.get("protected_reason") or "import disabled")
+    rows = payload.get("rows") if isinstance(payload, dict) else None
+    if not isinstance(rows, list) or not rows or len(rows) > 5000 or not all(isinstance(row, dict) and row for row in rows):
+        raise HTTPException(400, "rows must be a non-empty array of objects with at most 5000 rows")
+    conn = await _connect_database(database)
+    try:
+        columns = await conn.fetch(
+            "select column_name, is_generated from information_schema.columns where table_schema=$1 and table_name=$2",
+            schema, table,
+        )
+        allowed = {row["column_name"] for row in columns if row["is_generated"] == "NEVER"}
+        if any(set(row) - allowed for row in rows):
+            raise HTTPException(400, "import contains unknown or generated columns")
+        async with conn.transaction():
+            inserted = []
+            for row in rows:
+                names = list(row)
+                sql = (
+                    "INSERT INTO " + _ident(schema) + "." + _ident(table)
+                    + " (" + ", ".join(_ident(name) for name in names) + ") VALUES ("
+                    + ", ".join("$" + str(index + 1) for index in range(len(names))) + ") RETURNING *"
+                )
+                inserted.append(dict(await conn.fetchrow(sql, *[row[name] for name in names])))
+        return {"inserted": len(inserted), "rows": inserted[:20], "truncated": max(0, len(inserted) - 20), "capability": capability}
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(400, "import failed; transaction rolled back") from exc
     finally:
         await conn.close()
 
