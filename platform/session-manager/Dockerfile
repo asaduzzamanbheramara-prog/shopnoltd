@@ -17,6 +17,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # so every COPY below is relative to the repo root, not this folder.
 COPY platform/session-manager/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt \
+    && python -c "import asyncpg" \
     && playwright install chromium
 
 # Bring in the shared branding assets so the UI can reference them
