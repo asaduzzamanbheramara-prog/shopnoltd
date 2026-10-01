@@ -43,6 +43,20 @@ spec:
             cd /srv/src/kpi && \
             /opt/venv/bin/celery -A kobo worker -l info --concurrency=2 --prefetch-multiplier=4
         env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: PUBLIC_DOMAIN_NAME
+          value: "shopnoltd.dpdns.org"
+        - name: KOBOFORM_URL
+          value: "https://kobo.shopnoltd.dpdns.org"
+        - name: KOBOCAT_URL
+          value: "https://kobo.shopnoltd.dpdns.org"
         - name: POSTGRES_USER
           valueFrom:
             secretKeyRef:
