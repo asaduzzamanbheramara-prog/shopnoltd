@@ -24,6 +24,9 @@ spec:
       - name: ad-service
         image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/ad-service:pending
         imagePullPolicy: IfNotPresent
+        env:
+        - name: DATABASE_URL
+          value: postgresql+asyncpg://shopno:shopno@postgres.shopno-data.svc.cluster.local:5432/ads
         ports:
         - name: http
           containerPort: 8080
