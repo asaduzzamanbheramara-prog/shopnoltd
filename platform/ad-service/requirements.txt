@@ -6,3 +6,4 @@ asyncpg==0.30.0
 alembic==1.14.1
 httpx==0.28.1
 PyJWT[crypto]==2.10.1
+dnspython==2.7.0
