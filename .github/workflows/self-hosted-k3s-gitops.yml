@@ -127,18 +127,8 @@ jobs:
           if [ "$phase" = "Running" ]; then
             echo 'Requesting proper Argo CD operation termination through the supported CLI in Kubernetes-core mode.'
 
-            argocd_bin="$RUNNER_TEMP/argocd"
-            echo 'Using the runner-side Argo CD CLI so termination uses the runner Kubernetes RBAC, not argocd-server port-forward RBAC.'
-            argocd_image="$(timeout 30s kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" get deployment argocd-server -o jsonpath='{.spec.template.spec.containers[0].image}')"
-            argocd_version="${argocd_image##*:}"
-            if [[ "$argocd_version" != v* ]]; then
-              echo "Unable to derive Argo CD version from image: $argocd_image"
-              exit 1
-            fi
-            timeout 90s curl --fail --silent --show-error --location --connect-timeout 10 --max-time 60 "https://github.com/argoproj/argo-cd/releases/download/${argocd_version}/argocd-linux-amd64" -o "$argocd_bin"
-            chmod 0755 "$argocd_bin"
-            "$argocd_bin" version --client
-            timeout 90s "$argocd_bin" app terminate-op "$ARGOCD_APP" --core -N "$ARGOCD_NAMESPACE"
+            echo 'Clearing the pending Argo CD operation directly through the Kubernetes Application resource.'
+            timeout 45s kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" patch application "$ARGOCD_APP" --type=merge -p='{"operation":null}'
           elif [ "$phase" = "Terminating" ]; then
             echo 'Argo CD operation is already terminating; waiting for the controller.'
           else
