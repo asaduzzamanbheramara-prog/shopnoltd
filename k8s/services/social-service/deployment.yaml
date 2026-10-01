@@ -46,7 +46,6 @@ spec:
                 name: social-service-config
             - secretRef:
                 name: social-service-secret
-                optional: true
           env:
             - name: SHOPNOLTD_INTERNAL_AUTOMATION_TOKEN
               valueFrom:
