@@ -29,7 +29,7 @@ spec:
                 secretKeyRef:
                   key: ENCRYPTION_KEY
                   name: session-manager-secrets
-          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/session-manager:63fade6cd3d90a289690308e6d9e54c9234f4322
+          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/session-manager:7710c740f1216c99388adc5641c1808a47793b0c
           imagePullPolicy: Always
           livenessProbe:
             failureThreshold: 3
