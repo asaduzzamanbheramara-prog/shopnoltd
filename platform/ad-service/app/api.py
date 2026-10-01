@@ -131,7 +131,7 @@ async def list_campaigns(user=Depends(current_user), db=Depends(get_db)):
 @router.post("/creatives", status_code=201)
 async def create_creative(body: CreativeCreate, user=Depends(current_user), db=Depends(get_db)):
     advertiser = await owned_advertiser(db, user)
-    campaign = await db.scalar(select(Campaign).where(Campaign.id == UUID(body.campaign_id), Campaign.advertiser_id == advertiser.id))
+    campaign = await db.scalar(select(Campaign).where(Campaign.id == body.campaign_id, Campaign.advertiser_id == advertiser.id))
     if not campaign:
         raise HTTPException(404, "Campaign not found")
     row = Creative(campaign_id=campaign.id, **{**body.model_dump(exclude={"campaign_id"}), "asset_url": str(body.asset_url), "click_url": str(body.click_url)})
