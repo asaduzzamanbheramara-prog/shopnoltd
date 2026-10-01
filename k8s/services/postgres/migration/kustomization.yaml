@@ -15,6 +15,7 @@ configMapGenerator:
   - 015-payment-account-registry.sql
   - 016-omnichannel-crm.sql
   - 017-omnichannel-provider-oauth.sql
+  - 016-ad-network.sql
   options:
     disableNameSuffixHash: true
 
