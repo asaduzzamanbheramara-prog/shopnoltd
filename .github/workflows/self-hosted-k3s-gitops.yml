@@ -141,44 +141,6 @@ jobs:
               kubectl apply -f -
           fi
 
-      - name: Provision Kobo PostgreSQL database and runtime secret
-        shell: bash
-        run: |
-          set -euo pipefail
-          if kubectl -n shopno-apps get secret kobotoolbox-database >/dev/null 2>&1; then
-            echo 'Kobo PostgreSQL runtime secret already exists; preserving it.'
-          else
-            echo 'Provisioning Kobo PostgreSQL role/databases and runtime secret.'
-            kobo_password="$(openssl rand -hex 32)"
-            postgres_password="$(kubectl -n shopno-data get secret postgres-secret -o jsonpath='{.data.POSTGRES_PASSWORD}' | base64 -d)"
-            postgres_user="$(kubectl -n shopno-data get secret postgres-secret -o jsonpath='{.data.POSTGRES_USER}' | base64 -d)"
-            postgres_db="$(kubectl -n shopno-data get secret postgres-secret -o jsonpath='{.data.POSTGRES_DB}' | base64 -d)"
-
-            kubectl -n shopno-data exec deployment/postgres -- env PGPASSWORD="$postgres_password" KOBO_PASSWORD="$kobo_password" PGUSER="$postgres_user" PGDB="$postgres_db" /bin/bash -lc 'set -euo pipefail; if psql -d "$PGDB" -Atqc "SELECT 1 FROM pg_roles WHERE rolname = '''kobotoolbox'''" | grep -q 1; then psql -v ON_ERROR_STOP=1 -d "$PGDB" -c "ALTER ROLE kobotoolbox LOGIN PASSWORD '''$KOBO_PASSWORD'''"; else psql -v ON_ERROR_STOP=1 -d "$PGDB" -c "CREATE ROLE kobotoolbox LOGIN PASSWORD '''$KOBO_PASSWORD'''"; fi; if ! psql -d "$PGDB" -Atqc "SELECT 1 FROM pg_database WHERE datname = '''kpi'''" | grep -q 1; then psql -v ON_ERROR_STOP=1 -d "$PGDB" -c "CREATE DATABASE kpi OWNER kobotoolbox"; fi; if ! psql -d "$PGDB" -Atqc "SELECT 1 FROM pg_database WHERE datname = '''kobocat'''" | grep -q 1; then psql -v ON_ERROR_STOP=1 -d "$PGDB" -c "CREATE DATABASE kobocat OWNER kobotoolbox"; fi'
-
-          fi
-
-      - name: Provision session-manager PostgreSQL database and runtime URL
-        shell: bash
-        run: |
-          set -euo pipefail
-          postgres_password="$(kubectl -n shopno-data get secret postgres-secret -o jsonpath='{.data.POSTGRES_PASSWORD}' | base64 -d)"
-          postgres_user="$(kubectl -n shopno-data get secret postgres-secret -o jsonpath='{.data.POSTGRES_USER}' | base64 -d)"
-          postgres_db="$(kubectl -n shopno-data get secret postgres-secret -o jsonpath='{.data.POSTGRES_DB}' | base64 -d)"
-
-          kubectl -n shopno-data exec deployment/postgres -- \
-            env PGPASSWORD="$postgres_password" PGUSER="$postgres_user" PGDB="$postgres_db" \
-            /bin/bash -lc 'if ! psql -d "$PGDB" -Atqc "SELECT 1 FROM pg_database WHERE datname = '''session_manager'''" | grep -q 1; then psql -v ON_ERROR_STOP=1 -d "$PGDB" -c "CREATE DATABASE session_manager OWNER \"$PGUSER\""; fi'
-
-          encryption_key="$(kubectl -n shopno-tools get secret session-manager-secrets -o jsonpath='{.data.ENCRYPTION_KEY}' | base64 -d)"
-          database_url="postgresql://${postgres_user}:${postgres_password}@postgres.shopno-data.svc.cluster.local:5432/session_manager"
-
-          kubectl -n shopno-tools create secret generic session-manager-secrets \
-            --from-literal=DATABASE_URL="$database_url" \
-            --from-literal=ENCRYPTION_KEY="$encryption_key" \
-            --dry-run=client -o yaml |
-            kubectl -n shopno-tools apply -f -
-
       - name: Ensure Kobo and session-manager runtime database secrets
         shell: bash
         run: |
