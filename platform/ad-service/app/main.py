@@ -1,37 +1,52 @@
-from fastapi import FastAPI
-from pydantic import BaseModel, Field
+from fastapi import Depends, FastAPI
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
 
-app = FastAPI(title="Shopnoltd Ad Service", version="0.1.0")
+from .db import get_db
 
-class ServeRequest(BaseModel):
-    site_id: str = Field(min_length=8, max_length=128)
-    zone_id: str = Field(min_length=8, max_length=128)
-    width: int | None = Field(default=None, ge=1, le=4096)
-    height: int | None = Field(default=None, ge=1, le=4096)
-    country: str | None = Field(default=None, min_length=2, max_length=2)
-    language: str | None = Field(default=None, max_length=16)
-    device: str | None = Field(default=None, max_length=32)
+app = FastAPI(title="Shopnoltd Ad Service", version="0.2.0")
 
 @app.get("/healthz", include_in_schema=False)
 async def healthz():
-    return {"status":"ok","service":"ad-service"}
+    return {"status": "ok", "service": "ad-service"}
 
 @app.get("/readyz", include_in_schema=False)
-async def readyz():
-    return {"status":"ready","service":"ad-service"}
+async def readyz(db: AsyncSession = Depends(get_db)):
+    await db.execute(text("SELECT 1"))
+    return {"status": "ready", "service": "ad-service", "database": "ok"}
 
 @app.get("/v1/network")
 async def network_info():
     return {
-        "service":"shopnoltd-ad-network",
-        "mode":"publisher-authorized",
-        "status":"foundation",
-        "supported_pricing":["CPM","CPC","CPA","FLAT"],
-        "inventory_requires_site_verification":True
+        "service": "shopnoltd-ad-network",
+        "mode": "publisher-authorized",
+        "status": "database-foundation",
+        "supported_pricing": ["CPM", "CPC", "CPA", "FLAT"],
+        "inventory_requires_site_verification": True,
+        "paid_serving_enabled": False,
     }
 
+@app.get("/v1/db-check")
+async def db_check(db: AsyncSession = Depends(get_db)):
+    result = await db.execute(text("SELECT current_database() AS database"))
+    return {"database": result.scalar_one(), "status": "ok"}
+
 @app.post("/v1/serve")
-async def serve(req: ServeRequest):
-    # Deliberately no fallback creative: until inventory, campaign, budget,
-    # consent and eligibility records exist, the safe response is no-fill.
-    return {"fill":False,"reason":"NO_ELIGIBLE_CAMPAIGN","site_id":req.site_id,"zone_id":req.zone_id}
+async def serve(site_id: str, zone_id: str, db: AsyncSession = Depends(get_db)):
+    # Fail closed. Even verified inventory receives no paid creative until
+    # authenticated CRUD, funding/ledger integration, consent and fraud
+    # controls are implemented and tested.
+    eligible = await db.scalar(text("""
+      SELECT 1
+      FROM ad_zones z
+      JOIN publisher_sites s ON s.id=z.site_id
+      JOIN publishers p ON p.id=s.publisher_id
+      WHERE z.id=:zone_id AND s.id=:site_id
+        AND z.status='active'
+        AND s.verification_status='verified'
+        AND p.status='approved'
+      LIMIT 1
+    """), {"site_id": site_id, "zone_id": zone_id})
+    if not eligible:
+        return {"fill": False, "reason": "INVENTORY_NOT_ELIGIBLE"}
+    return {"fill": False, "reason": "PAID_SERVING_NOT_ENABLED"}
