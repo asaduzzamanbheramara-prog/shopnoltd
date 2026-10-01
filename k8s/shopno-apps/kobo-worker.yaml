@@ -57,25 +57,13 @@ spec:
           value: "https://kobo.shopnoltd.dpdns.org"
         - name: KOBOCAT_URL
           value: "https://kobo.shopnoltd.dpdns.org"
-        - name: POSTGRES_USER
-          valueFrom:
-            secretKeyRef:
-              name: postgres-secret
-              key: POSTGRES_USER
-        - name: POSTGRES_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: postgres-secret
-              key: POSTGRES_PASSWORD
-        - name: POSTGRES_DB
-          value: kobocat
-        - name: DATABASE_URL
-          value: "postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@postgres.shopno-data.svc.cluster.local:5432/$(POSTGRES_DB)"
         envFrom:
         - configMapRef:
             name: kobotoolbox-config
         - secretRef:
             name: kobotoolbox-secret
+        - secretRef:
+            name: kobotoolbox-database
         - secretRef:
             name: kobotoolbox-smtp
         resources:
