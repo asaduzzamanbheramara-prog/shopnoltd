@@ -11,6 +11,10 @@ on:
       - '.github/workflows/self-hosted-k3s-gitops.yml'
   workflow_dispatch:
 
+permissions:
+  contents: read
+  packages: read
+
 concurrency:
   group: k3s-gitops
   cancel-in-progress: false
@@ -33,6 +37,8 @@ jobs:
     timeout-minutes: 30
     env:
       GIT_REVISION: ${{ github.sha }}
+      GHCR_USERNAME: ${{ github.actor }}
+      GHCR_TOKEN: ${{ github.token }}
     steps:
       - name: Checkout trusted main revision
         uses: actions/checkout@v4
@@ -114,7 +120,12 @@ jobs:
           if kubectl -n "$PLATFORM_NAMESPACE" get secret ghcr-pull-secret >/dev/null 2>&1; then
             echo 'Android Cloud GHCR pull secret already exists; preserving it.'
           else
-            kubectl -n shopno-tools get secret ghcr-pull-secret -o json               | jq 'del(.metadata.namespace,.metadata.resourceVersion,.metadata.uid,.metadata.creationTimestamp,.metadata.managedFields,.metadata.ownerReferences)'               | jq --arg namespace "$PLATFORM_NAMESPACE" '.metadata.namespace=$namespace'               | kubectl apply -f -
+            echo 'Provisioning Android Cloud GHCR pull secret from GitHub Actions token.'
+            kubectl -n "$PLATFORM_NAMESPACE" create secret docker-registry ghcr-pull-secret \
+              --docker-server=ghcr.io \
+              --docker-username="$GHCR_USERNAME" \
+              --docker-password="$GHCR_TOKEN" \
+              --dry-run=client -o yaml | kubectl apply -f -
           fi
 
       - name: Provision domain service PostgreSQL secret
