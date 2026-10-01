@@ -6,6 +6,7 @@ namespace: shopno-apps
 resources:
 - serviceaccount.yaml
 - configmap.yaml
+- init-scripts-configmap.yaml
 - pvc.yaml
 - deployment.yaml
 - service.yaml
