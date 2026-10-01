@@ -52,8 +52,7 @@ spec:
                 mkdir -p "${tmp_dir}"
                 openssl req -x509 -newkey rsa:2048 -nodes -days 3650 -subj "/CN=Shopnoltd Mail CA" -keyout "${tmp_dir}/ca-key.pem" -out "${ssl_dir}/demoCA/cacert.pem"
                 openssl req -new -newkey rsa:2048 -nodes -subj "/CN=${fqdn}" -keyout "${ssl_dir}/${fqdn}-key.pem" -out "${tmp_dir}/server.csr"
-                printf 'subjectAltName=DNS:%s
-' "${fqdn}" > "${tmp_dir}/ext.cnf"
+                printf 'subjectAltName=DNS:%s\\n' "${fqdn}" > "${tmp_dir}/ext.cnf"
                 openssl x509 -req -in "${tmp_dir}/server.csr" -CA "${ssl_dir}/demoCA/cacert.pem" -CAkey "${tmp_dir}/ca-key.pem" -CAcreateserial -out "${ssl_dir}/${fqdn}-cert.pem" -days 3650 -sha256 -extfile "${tmp_dir}/ext.cnf"
                 rm -rf "${tmp_dir}"
               fi
