@@ -79,6 +79,7 @@ jobs:
             "get secret -n $PLATFORM_NAMESPACE"
             "create secret -n $PLATFORM_NAMESPACE"
             "create secret -n shopno-apps"
+            "create secret -n shopno-tools"
             "create pods/exec -n shopno-data"
           )
 
@@ -142,33 +143,30 @@ jobs:
             postgres_user="$(kubectl -n shopno-data get secret postgres-secret -o jsonpath='{.data.POSTGRES_USER}' | base64 -d)"
             postgres_db="$(kubectl -n shopno-data get secret postgres-secret -o jsonpath='{.data.POSTGRES_DB}' | base64 -d)"
 
-            kubectl -n shopno-data exec -i deployment/postgres -- \
-              env PGPASSWORD="$postgres_password" KOBO_PASSWORD="$kobo_password" \
-              PGUSER="$postgres_user" PGDB="$postgres_db" \
-              /bin/bash -s <<'REMOTE_KOBO_DB'
-set -euo pipefail
-cat >/tmp/kobo-bootstrap.sql <<SQL
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'kobotoolbox') THEN
-    CREATE ROLE kobotoolbox LOGIN PASSWORD '$KOBO_PASSWORD';
-  ELSE
-    ALTER ROLE kobotoolbox LOGIN PASSWORD '$KOBO_PASSWORD';
-  END IF;
-END
-$$;
+            kubectl -n shopno-data exec deployment/postgres -- env PGPASSWORD="$postgres_password" KOBO_PASSWORD="$kobo_password" PGUSER="$postgres_user" PGDB="$postgres_db" /bin/bash -lc 'set -euo pipefail; if psql -d "$PGDB" -Atqc "SELECT 1 FROM pg_roles WHERE rolname = '''kobotoolbox'''" | grep -q 1; then psql -v ON_ERROR_STOP=1 -d "$PGDB" -c "ALTER ROLE kobotoolbox LOGIN PASSWORD '''$KOBO_PASSWORD'''"; else psql -v ON_ERROR_STOP=1 -d "$PGDB" -c "CREATE ROLE kobotoolbox LOGIN PASSWORD '''$KOBO_PASSWORD'''"; fi; if ! psql -d "$PGDB" -Atqc "SELECT 1 FROM pg_database WHERE datname = '''kpi'''" | grep -q 1; then psql -v ON_ERROR_STOP=1 -d "$PGDB" -c "CREATE DATABASE kpi OWNER kobotoolbox"; fi; if ! psql -d "$PGDB" -Atqc "SELECT 1 FROM pg_database WHERE datname = '''kobocat'''" | grep -q 1; then psql -v ON_ERROR_STOP=1 -d "$PGDB" -c "CREATE DATABASE kobocat OWNER kobotoolbox"; fi'
 
-SELECT 'CREATE DATABASE kpi OWNER kobotoolbox'
-WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'kpi')\gexec
-SELECT 'CREATE DATABASE kobocat OWNER kobotoolbox'
-WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'kobocat')\\gexec
-SQL
-psql -v ON_ERROR_STOP=1 -d "$PGDB" -f /tmp/kobo-bootstrap.sql
-rm -f /tmp/kobo-bootstrap.sql
-REMOTE_KOBO_DB
-
-            kubectl -n shopno-apps create secret generic kobotoolbox-database               --from-literal=DATABASE_URL="postgresql://kobotoolbox:$kobo_password@postgres.shopno-data.svc.cluster.local:5432/kpi"               --from-literal=KPI_DATABASE_URL="postgresql://kobotoolbox:$kobo_password@postgres.shopno-data.svc.cluster.local:5432/kpi"               --from-literal=KC_DATABASE_URL="postgresql://kobotoolbox:$kobo_password@postgres.shopno-data.svc.cluster.local:5432/kobocat"
           fi
+
+      - name: Provision session-manager PostgreSQL database and runtime URL
+        shell: bash
+        run: |
+          set -euo pipefail
+          postgres_password="$(kubectl -n shopno-data get secret postgres-secret -o jsonpath='{.data.POSTGRES_PASSWORD}' | base64 -d)"
+          postgres_user="$(kubectl -n shopno-data get secret postgres-secret -o jsonpath='{.data.POSTGRES_USER}' | base64 -d)"
+          postgres_db="$(kubectl -n shopno-data get secret postgres-secret -o jsonpath='{.data.POSTGRES_DB}' | base64 -d)"
+
+          kubectl -n shopno-data exec deployment/postgres -- \
+            env PGPASSWORD="$postgres_password" PGUSER="$postgres_user" PGDB="$postgres_db" \
+            /bin/bash -lc 'if ! psql -d "$PGDB" -Atqc "SELECT 1 FROM pg_database WHERE datname = '''session_manager'''" | grep -q 1; then psql -v ON_ERROR_STOP=1 -d "$PGDB" -c "CREATE DATABASE session_manager OWNER \"$PGUSER\""; fi'
+
+          encryption_key="$(kubectl -n shopno-tools get secret session-manager-secrets -o jsonpath='{.data.ENCRYPTION_KEY}' | base64 -d)"
+          database_url="postgresql://${postgres_user}:${postgres_password}@postgres.shopno-data.svc.cluster.local:5432/session_manager"
+
+          kubectl -n shopno-tools create secret generic session-manager-secrets \
+            --from-literal=DATABASE_URL="$database_url" \
+            --from-literal=ENCRYPTION_KEY="$encryption_key" \
+            --dry-run=client -o yaml |
+            kubectl -n shopno-tools apply -f -
 
       - name: Repair migration prerequisite and terminate stale Argo CD operation
         shell: bash
