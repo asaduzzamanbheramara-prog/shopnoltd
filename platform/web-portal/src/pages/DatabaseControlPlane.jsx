@@ -15,6 +15,7 @@ const IMPORT_MODES = [
 ]
 
 const SERVICES = [
+  { service: 'ad-service', database: 'PostgreSQL (ads)', mode: 'service API + guarded admin adapter', genericWrites: false, capabilities: ['view', 'search', 'filter', 'analysis', 'reports', 'backup/restore'], protected: 'advertiser/publisher ownership, campaign budgets, delivery ledger, fraud and payout state' },
   { service: 'payment-service', database: 'PostgreSQL', mode: 'service API + guarded admin adapter', genericWrites: false, capabilities: ['view', 'search', 'filter', 'analysis', 'CSV/JSON/XLSX export', 'PDF reports', 'audit', 'backup/restore'], protected: 'wallets, transactions, webhooks, audit/security data' },
   { service: 'billing-engine', database: 'PostgreSQL', mode: 'service API + guarded admin adapter', genericWrites: false, capabilities: ['view', 'search', 'analysis', 'reports', 'audit', 'backup/restore'], protected: 'wallet/ledger and billing events' },
   { service: 'exchange-service', database: 'PostgreSQL', mode: 'service API + admin adapter', genericWrites: false, capabilities: ['view', 'search', 'analysis', 'reports', 'audit', 'backup/restore'], protected: 'rate/provider history' },
