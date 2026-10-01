@@ -57,6 +57,10 @@ spec:
                 secretKeyRef:
                   name: kobotoolbox-mongo-auth
                   key: MONGO_DB_URL
+            - name: KOBO_MONGO_HOST
+              value: mongo.shopno-data.svc.cluster.local
+            - name: KOBO_MONGO_PORT
+              value: "27017"
             - name: POD_NAME
               valueFrom: { fieldRef: { fieldPath: metadata.name } }
             - name: POD_NAMESPACE
@@ -135,6 +139,9 @@ spec:
             - name: uwsgi-ini-override
               mountPath: /srv/src/kpi/docker/uwsgi.ini
               subPath: kpi-uwsgi.ini
+            - name: init-scripts
+              mountPath: /srv/init
+              readOnly: true
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: false
@@ -154,6 +161,10 @@ spec:
         - name: uwsgi-ini-override
           configMap:
             name: kobotoolbox-config
+        - name: init-scripts
+          configMap:
+            name: kobotoolbox-init-scripts
+            defaultMode: 493
       topologySpreadConstraints:
         - maxSkew: 1
           topologyKey: topology.kubernetes.io/zone
