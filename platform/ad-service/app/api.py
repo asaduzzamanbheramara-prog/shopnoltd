@@ -1,5 +1,7 @@
+from decimal import Decimal
 from uuid import UUID
 
+import httpx
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
@@ -7,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 import dns.asyncresolver
 
 from .db import get_db
-from .models import AdZone, Advertiser, Campaign, Creative, Publisher, PublisherSite
+from .models import AdZone, Advertiser, Campaign, CampaignFunding, Creative, Publisher, PublisherSite
 from .schemas import CampaignCreate, CreativeCreate, OwnerCreate, SiteCreate, ZoneCreate
 from .security import current_user, require_admin
 
@@ -159,6 +161,91 @@ async def create_campaign(body: CampaignCreate, user=Depends(current_user), db=D
     await db.commit()
     await db.refresh(row)
     return {"id": str(row.id), "status": row.status, "budget_minor": row.budget_minor, "currency": row.currency}
+
+
+@router.post("/campaigns/{campaign_id}/fund")
+async def fund_campaign(campaign_id: UUID, user=Depends(current_user), db=Depends(get_db)):
+    """Charge the advertiser wallet once for the campaign budget.
+
+    Funding is a durable saga: the intent is committed before the external
+    debit, and payment-service idempotency makes retries safe after crashes or
+    network timeouts.
+    """
+    advertiser = await owned_advertiser(db, user)
+    campaign = await db.scalar(
+        select(Campaign).where(Campaign.id == campaign_id, Campaign.advertiser_id == advertiser.id).with_for_update()
+    )
+    if not campaign:
+        raise HTTPException(404, "Campaign not found")
+    if campaign.status != "approved":
+        raise HTTPException(409, "Campaign must be approved before funding")
+
+    funding = await db.scalar(select(CampaignFunding).where(CampaignFunding.campaign_id == campaign.id))
+    if funding is None:
+        funding = CampaignFunding(
+            campaign_id=campaign.id,
+            advertiser_user_id=subject(user),
+            amount_minor=campaign.budget_minor,
+            currency=campaign.currency,
+            idempotency_key=f"ad-campaign-fund:{campaign.id}",
+            status="pending",
+        )
+        db.add(funding)
+        try:
+            await db.commit()
+        except IntegrityError:
+            await db.rollback()
+            funding = await db.scalar(select(CampaignFunding).where(CampaignFunding.campaign_id == campaign.id))
+            if funding is None:
+                raise HTTPException(409, "Funding intent conflict")
+    elif funding.advertiser_user_id != subject(user):
+        raise HTTPException(403, "Campaign funding ownership mismatch")
+
+    if funding.status == "charged":
+        return {"campaign_id": str(campaign.id), "status": "funded", "amount_minor": funding.amount_minor, "currency": funding.currency, "payment_id": str(funding.payment_id)}
+
+    if funding.status == "failed":
+        raise HTTPException(409, funding.error_detail or "Campaign funding previously failed")
+
+    amount_major = (Decimal(funding.amount_minor) / Decimal("100")).quantize(Decimal("0.00000001"))
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            response = await client.post(
+                f"{settings.payment_service_url.rstrip('/')}/api/v1/internal/ad-network/wallet-operation",
+                headers={"X-Internal-Api-Key": settings.internal_api_key},
+                json={
+                    "tenant_id": "default",
+                    "user_id": subject(user),
+                    "currency": funding.currency,
+                    "amount": str(amount_major),
+                    "operation": "debit",
+                    "idempotency_key": funding.idempotency_key,
+                    "reference": f"ad-campaign:{campaign.id}",
+                },
+            )
+        response.raise_for_status()
+        payment = response.json()
+    except httpx.HTTPStatusError as exc:
+        detail = exc.response.text[:500]
+        funding.status = "failed"
+        funding.error_detail = f"payment-service rejected funding: {detail}"
+        await db.commit()
+        raise HTTPException(502, "Campaign funding was rejected by payment service") from None
+    except (httpx.HTTPError, ValueError) as exc:
+        # Leave pending so the exact same idempotency key can safely be retried.
+        raise HTTPException(503, "Payment service unavailable; funding remains retryable") from exc
+
+    funding.payment_id = UUID(payment["transaction_id"])
+    funding.status = "charged"
+    funding.error_detail = None
+    await db.commit()
+    return {
+        "campaign_id": str(campaign.id),
+        "status": "funded",
+        "amount_minor": funding.amount_minor,
+        "currency": funding.currency,
+        "payment_id": str(funding.payment_id),
+    }
 
 
 @router.get("/campaigns")
