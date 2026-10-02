@@ -218,6 +218,56 @@ async def approve_advertiser(advertiser_id: UUID, user=Depends(require_admin), d
     return {"id": str(row.id), "status": row.status}
 
 
+@router.get("/admin/campaigns")
+async def admin_campaigns(user=Depends(require_admin), db=Depends(get_db)):
+    rows = (await db.scalars(select(Campaign).order_by(Campaign.created_at.desc()))).all()
+    return [{
+        "id": str(x.id), "advertiser_id": str(x.advertiser_id), "name": x.name,
+        "status": x.status, "budget_minor": x.budget_minor,
+        "spent_minor": x.spent_minor, "currency": x.currency,
+        "starts_at": x.starts_at.isoformat(), "ends_at": x.ends_at.isoformat(),
+    } for x in rows]
+
+
+@router.post("/admin/campaigns/{campaign_id}/approve")
+async def approve_campaign(campaign_id: UUID, user=Depends(require_admin), db=Depends(get_db)):
+    row = await db.get(Campaign, campaign_id)
+    if not row:
+        raise HTTPException(404, "Campaign not found")
+    if row.status not in {"draft", "pending"}:
+        raise HTTPException(409, f"Campaign cannot be approved from status '{row.status}'")
+    if row.budget_minor <= 0:
+        raise HTTPException(422, "Campaign budget must be greater than zero before approval")
+    row.status = "approved"
+    await db.commit()
+    return {"id": str(row.id), "status": row.status}
+
+
+@router.get("/admin/creatives")
+async def admin_creatives(user=Depends(require_admin), db=Depends(get_db)):
+    rows = (await db.scalars(select(Creative).order_by(Creative.created_at.desc()))).all()
+    return [{
+        "id": str(x.id), "campaign_id": str(x.campaign_id), "name": x.name,
+        "status": x.status, "mime_type": x.mime_type,
+        "width": x.width, "height": x.height,
+    } for x in rows]
+
+
+@router.post("/admin/creatives/{creative_id}/approve")
+async def approve_creative(creative_id: UUID, user=Depends(require_admin), db=Depends(get_db)):
+    row = await db.get(Creative, creative_id)
+    if not row:
+        raise HTTPException(404, "Creative not found")
+    campaign = await db.get(Campaign, row.campaign_id)
+    if not campaign or campaign.status not in {"approved", "active"}:
+        raise HTTPException(409, "Campaign must be approved before creative approval")
+    if row.status != "pending":
+        raise HTTPException(409, f"Creative cannot be approved from status '{row.status}'")
+    row.status = "approved"
+    await db.commit()
+    return {"id": str(row.id), "status": row.status}
+
+
 @router.get("/admin/publishers")
 async def admin_publishers(user=Depends(require_admin), db=Depends(get_db)):
     rows = (await db.scalars(select(Publisher).order_by(Publisher.created_at.desc()))).all()
