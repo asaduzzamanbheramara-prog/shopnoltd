@@ -57,8 +57,8 @@ spec:
             - name: MEDIA_SERVICE_TOKEN
               valueFrom:
                 secretKeyRef:
-                  name: ai-platform-secret
-                  key: MEDIA_SERVICE_TOKEN
+                  name: media-service-secret
+                  key: MEDIA_SERVICE_TOKENS
             - name: POD_NAME
               valueFrom: { fieldRef: { fieldPath: metadata.name } }
             - name: POD_NAMESPACE
