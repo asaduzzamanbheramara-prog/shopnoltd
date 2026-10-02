@@ -33,7 +33,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: media-service
-          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/media-service:bootstrap
+          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/media-service:aa6d72bdc3e91d9a03545113e6c85ab3265368e5
           imagePullPolicy: Always
           ports:
             - name: http
