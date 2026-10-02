@@ -24,7 +24,7 @@ class Settings(BaseSettings):
 
     @property
     def cors_origin_regex(self) -> str:
-        return r"^https://([a-z0-9-]+\\.)*shopnoltd\\.dpdns\\.org$"
+        return r"^https://([a-z0-9-]+\.)*shopnoltd\.dpdns\.org$"
 
 
 settings = Settings()
