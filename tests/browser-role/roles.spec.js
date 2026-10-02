@@ -24,19 +24,22 @@ async function login(page, username, password) {
   await page.locator('#password').fill(password)
   await page.getByRole('button', { name: /Sign In|Log In/i }).click()
 
-  // A successful OIDC login must return to the application callback,
-  // not merely remain on the Shopnoltd login page.
-  await page.waitForURL(url => {
-    const pathname = new URL(url).pathname
-    return pathname === '/callback' || pathname === '/' || pathname === '/dashboard'
-  }, { timeout: 30000 })
+  // Callback must complete all the way to the protected dashboard.
+  // Merely reaching /callback is not sufficient because Keycloak can
+  // redirect there with an OAuth error and the app can subsequently return
+  // to /login. Requiring the token makes the role test fail at authentication
+  // instead of producing a misleading authorization failure.
+  await page.waitForURL(url => new URL(url).pathname === '/dashboard', { timeout: 30000 })
+  await expect.poll(
+    async () => page.evaluate(() => Boolean(localStorage.getItem('shopno_token'))),
+    { timeout: 10000 },
+  ).toBe(true)
   await expect(page).not.toHaveURL(/\/login(?:\?|$)/)
 }
 
 test('admin account is authenticated and can open admin control plane', async ({ page }) => {
   await login(page, adminUser, adminPassword)
   await page.goto(`${baseURL}/admin`, { waitUntil: 'networkidle' })
-  await expect(page).not.toHaveURL(/\/login(?:\?|$)/)
   await expect(page).toHaveURL(/\/admin(?:\?|$)/)
 })
 
