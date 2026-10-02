@@ -66,6 +66,8 @@ spec:
               node -e 'const http=require("http");let n=0;const t=setInterval(()=>{http.get("http://n8n-health:5678/healthz",r=>{if(r.statusCode===200){clearInterval(t);process.exit(0)};r.resume()}).on("error",()=>{});if(++n>=60){clearInterval(t);process.exit(1)}},2000)'
               n8n import:workflow --input=/workflows/shopnoltd-omnichannel-action-queue.json --activeState=false
               n8n unpublish:workflow --id=7b2a0a2f-5d1f-4e9f-8e0a-9f4a8f1c0d21
+              n8n import:workflow --input=/workflows/shopnoltd-platform-account-registry.json --activeState=false
+              n8n unpublish:workflow --id=b4c8c0a7-5e32-47e0-a2b9-4d7c4a1f92d3
           volumeMounts:
             - name: workflow
               mountPath: /workflows

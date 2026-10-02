@@ -20,6 +20,7 @@ configMapGenerator:
 - name: n8n-omnichannel-workflow
   files:
   - workflows/shopnoltd-omnichannel-action-queue.json
+  - workflows/shopnoltd-platform-account-registry.json
 
 labels:
 - includeSelectors: true
