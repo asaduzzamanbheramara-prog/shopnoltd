@@ -10,30 +10,11 @@ one integration point instead of duplicating OAuth flows.
 
 ## One-time setup
 
-1. Fill in your real values in `scripts/seed/social-login-secrets.local.yaml`
-   (gitignored -- already created with the values you shared; rotate them in
-   each provider's console once this is confirmed working, since they were
-   pasted into a chat log and should be treated as compromised).
+1. Provision the runtime Kubernetes Secret `shopno-identity/keycloak-social-providers` using the interactive provisioning procedure documented in `docs/SECRETS.md`. Never commit the real values or put them in a ConfigMap, PR, issue, or shell script.
 
-2. Make sure Keycloak is actually deployed and reachable
-   (`docs/SECRETS.md` first -- the `keycloak-secret` Secret has to exist and
-   be filled in, or Keycloak itself won't start).
+2. The Keycloak GitOps sync hook reconciles Google, Facebook, and GitHub from that Secret. If the Secret is absent or a provider is incomplete, the sync hook leaves social providers unchanged and does not break the Keycloak deployment.
 
-3. Run the setup script from a machine that can reach your Keycloak URL:
-
-   ```bash
-   export KEYCLOAK_URL=https://auth.shopnoltd.dpdns.org
-   export KEYCLOAK_REALM=shopnoltd
-   export KEYCLOAK_ADMIN_USER=admin
-   export KEYCLOAK_ADMIN_PASSWORD='the real bootstrap password from your secret.yaml'
-   pip install pyyaml --break-system-packages
-   python3 scripts/setup_social_login.py scripts/seed/social-login-secrets.local.yaml
-   ```
-
-   This is idempotent -- re-run it any time you rotate a credential.
-
-4. In each provider's developer console, set the redirect/callback URI the
-   script prints at the end, e.g.:
+3. In each provider's developer console, set the redirect/callback URI:
    - Google Cloud Console -> Credentials -> OAuth client -> Authorized redirect URIs
    - Facebook for Developers -> Facebook Login -> Settings -> Valid OAuth Redirect URIs
    - GitHub -> Settings -> Developer settings -> OAuth Apps -> Authorization callback URL
@@ -43,6 +24,11 @@ one integration point instead of duplicating OAuth flows.
 
 5. Confirm on the web portal login page -- Google/Facebook/GitHub buttons
    should now appear on the Keycloak login screen used by every service.
+
+
+## GitOps behavior
+
+The Keycloak client-sync hook is the durable source-controlled integration. It reads provider credentials only from the runtime Secret and never writes credentials into Git. Provider aliases are fixed as `google`, `facebook`, and `github`, matching the callback paths below. The synchronization is idempotent and updates an existing provider rather than creating duplicates.
 
 ## Common failure modes
 
