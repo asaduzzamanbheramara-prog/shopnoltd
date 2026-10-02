@@ -52,7 +52,7 @@ spec:
             - name: KEYCLOAK_ADMIN_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: keycloak-secret
+                  name: freedomain-service-secret
                   key: KC_BOOTSTRAP_ADMIN_PASSWORD
             - name: BACKFILL_INCLUDE_DISABLED
               value: "true"
