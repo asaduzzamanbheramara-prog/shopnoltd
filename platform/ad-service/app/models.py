@@ -132,6 +132,21 @@ class FraudEvent(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
+class CampaignFunding(Base):
+    __tablename__ = "campaign_fundings"
+    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True)
+    campaign_id: Mapped[UUID] = mapped_column(ForeignKey("campaigns.id"), unique=True)
+    advertiser_user_id: Mapped[str] = mapped_column(String(255), index=True)
+    amount_minor: Mapped[int] = mapped_column(BigInteger)
+    currency: Mapped[str] = mapped_column(String(3))
+    payment_id: Mapped[UUID | None] = mapped_column(PGUUID(as_uuid=True))
+    idempotency_key: Mapped[str] = mapped_column(String(128), unique=True)
+    status: Mapped[str] = mapped_column(String(16), default="pending")
+    error_detail: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
 class PublisherPayout(Base):
     __tablename__ = "publisher_payouts"
     id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True)
