@@ -228,10 +228,14 @@ async def fund_campaign(campaign_id: UUID, user=Depends(current_user), db=Depend
         payment = response.json()
     except httpx.HTTPStatusError as exc:
         detail = exc.response.text[:500]
-        funding.status = "failed"
-        funding.error_detail = f"payment-service rejected funding: {detail}"
-        await db.commit()
-        raise HTTPException(502, "Campaign funding was rejected by payment service") from None
+        if 400 <= exc.response.status_code < 500 and exc.response.status_code != 409:
+            funding.status = "failed"
+            funding.error_detail = f"payment-service rejected funding: {detail}"
+            await db.commit()
+            raise HTTPException(502, "Campaign funding request was rejected") from None
+        # Insufficient funds (409) and transient 5xx responses remain pending.
+        # Retrying with the same idempotency key is safe.
+        raise HTTPException(503, "Campaign funding remains retryable") from None
     except (httpx.HTTPError, ValueError) as exc:
         # Leave pending so the exact same idempotency key can safely be retried.
         raise HTTPException(503, "Payment service unavailable; funding remains retryable") from exc
