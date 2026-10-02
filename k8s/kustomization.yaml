@@ -48,6 +48,7 @@ resources:
 - services/android-portal
 - services/android-cloud
 - services/ai-platform
+- services/media-service
 - ollama.yaml
 - services/ai-gateway
 - services/postgres

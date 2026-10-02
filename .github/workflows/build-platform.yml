@@ -84,6 +84,7 @@ jobs:
             'license-service': ('platform/license-service/Dockerfile', '.'),
             'mobile-api': ('platform/mobile-api/Dockerfile', '.'),
             'ai-platform': ('platform/ai-platform/Dockerfile', '.'),
+            'media-service': ('platform/media-service/Dockerfile', '.'),
             'admin-portal': ('platform/admin-portal/Dockerfile', '.'),
             'web-portal': ('platform/web-portal/Dockerfile', '.'),
             'android-portal': ('platform/android-portal/Dockerfile', '.'),
