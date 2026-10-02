@@ -73,6 +73,28 @@ STORAGE_AUDIENCE_MAPPER_NAME = "storage-service-audience"
 STORAGE_AUDIENCE_REPAIR_MAPPER_NAME = "storage-service-audience-repaired"
 
 
+SOCIAL_PROVIDERS = {
+    "google": {
+        "providerId": "google",
+        "clientIdEnv": "GOOGLE_CLIENT_ID",
+        "clientSecretEnv": "GOOGLE_CLIENT_SECRET",
+        "scope": "openid profile email",
+    },
+    "facebook": {
+        "providerId": "facebook",
+        "clientIdEnv": "FACEBOOK_APP_ID",
+        "clientSecretEnv": "FACEBOOK_APP_SECRET",
+        "scope": "email public_profile",
+    },
+    "github": {
+        "providerId": "github",
+        "clientIdEnv": "GITHUB_CLIENT_ID",
+        "clientSecretEnv": "GITHUB_CLIENT_SECRET",
+        "scope": "user:email read:user",
+    },
+}
+
+
 def request(method, path, token=None, body=None, form=False):
     data = None
     if body is not None:
@@ -189,6 +211,51 @@ def sync_client(token, client_id):
         print(f"[OK] synchronized {client_id} with api-service, ai-platform and storage-service JWT audiences")
 
 
+
+
+def sync_social_provider(token, alias, provider):
+    client_id = os.environ.get(provider["clientIdEnv"], "").strip()
+    client_secret = os.environ.get(provider["clientSecretEnv"], "").strip()
+    if not client_id or not client_secret:
+        return False
+    payload = {
+        "alias": alias,
+        "providerId": provider["providerId"],
+        "enabled": True,
+        "trustEmail": True,
+        "storeToken": False,
+        "firstBrokerLoginFlowAlias": "first broker login",
+        "config": {
+            "clientId": client_id,
+            "clientSecret": client_secret,
+            "defaultScope": provider["scope"],
+        },
+    }
+    code, _ = request("GET", f"/admin/realms/{REALM}/identity-provider/instances/{alias}", token=token)
+    if code == 200:
+        code, _ = request("PUT", f"/admin/realms/{REALM}/identity-provider/instances/{alias}", token=token, body=payload)
+        if code not in (200, 204):
+            raise RuntimeError(f"Unable to update {alias} identity provider (HTTP {code})")
+        print(f"[OK] synchronized {alias} identity provider")
+    else:
+        code, _ = request("POST", f"/admin/realms/{REALM}/identity-provider/instances", token=token, body=payload)
+        if code != 201:
+            raise RuntimeError(f"Unable to create {alias} identity provider (HTTP {code})")
+        print(f"[OK] created {alias} identity provider")
+    return True
+
+
+def sync_social_providers(token):
+    configured = []
+    for alias, provider in SOCIAL_PROVIDERS.items():
+        if sync_social_provider(token, alias, provider):
+            configured.append(alias)
+    if configured:
+        print(f"[OK] social identity providers synchronized: {', '.join(configured)}")
+    else:
+        print("[INFO] no social provider credentials configured; leaving Keycloak social providers unchanged")
+
+
 def main():
     last_error = None
     for _ in range(30):
@@ -196,6 +263,7 @@ def main():
             token = get_admin_token()
             for client_id in CLIENT_IDS:
                 sync_client(token, client_id)
+            sync_social_providers(token)
             return
         except Exception as exc:
             last_error = exc
