@@ -22,7 +22,6 @@ from app.services.model_catalog import sync_all_providers
 log = structlog.get_logger()
 
 
-
 async def _model_catalog_loop(interval_hours: float) -> None:
     interval = max(interval_hours, 0.25) * 3600
     await asyncio.sleep(10)
@@ -84,7 +83,9 @@ app.include_router(
     prefix="/api/v1/agents",
     tags=["agents"],
 )
-
+app.include_router(
+    __import__("app.api.media", fromlist=["router"]).router,
+)
 app.include_router(
     __import__("app.api.connections", fromlist=["router"]).router,
 )

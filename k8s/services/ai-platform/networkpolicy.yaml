@@ -58,6 +58,18 @@ spec:
         - port: 8080
           protocol: TCP
 
+    # AI platform -> internal media service.
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: shopno-platform
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: media-service
+      ports:
+        - port: 80
+          protocol: TCP
+
     # Provider APIs (Google, OpenAI-compatible providers, Anthropic, etc.).
     # The AI model catalog and inference adapters call external HTTPS APIs.
     - to:

@@ -22,6 +22,9 @@ class Settings(BaseSettings):
     model_sync_interval_hours: float = 6.0
     ai_key_encryption_key: str | None = None
     storage_service_url: str = "http://storage-service.shopno-platform.svc.cluster.local:8080"
+    media_service_url: str = "http://media-service.shopno-platform.svc.cluster.local"
+    media_service_token: str | None = None
+    media_service_timeout_seconds: int = 120
     keycloak_issuer: str = "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
     keycloak_audience: str = "ai-platform"
 
