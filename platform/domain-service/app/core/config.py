@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     keycloak_audience: str = "api-service"
 
     # Server-to-server billing authorization. Keep this in a Kubernetes Secret.
-    billing_engine_url: str = "http://billing-engine.shopno-payments.svc.cluster.local:5000"
+    # Internal free-domain provisioning authorization. Keep only in Kubernetes Secrets.\n    freedomain_internal_key: str = ""\n\n    billing_engine_url: str = "http://billing-engine.shopno-payments.svc.cluster.local:5000"
     billing_internal_key: str = ""
     billing_currency: str = "USD"
 
