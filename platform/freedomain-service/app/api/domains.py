@@ -128,7 +128,7 @@ async def _create_dns_record(subdomain: str, target: str, record_type: str):
                 "content": target,
                 "ttl": 300,
             },
-            headers={"Authorization": f"Bearer {settings.domain_service_token}"},
+            headers={"Authorization": f"Bearer {settings.freedomain_internal_key}"},
         )
         response.raise_for_status()
 
