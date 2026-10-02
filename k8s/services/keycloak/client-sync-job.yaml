@@ -35,6 +35,44 @@ spec:
                 secretKeyRef:
                   name: keycloak-secret
                   key: KC_BOOTSTRAP_ADMIN_PASSWORD
+          # Social provider credentials are optional until the provider consoles
+          # have been provisioned. When present, the sync job reconciles them.
+            - name: GOOGLE_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-social-providers
+                  key: GOOGLE_CLIENT_ID
+                  optional: true
+            - name: GOOGLE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-social-providers
+                  key: GOOGLE_CLIENT_SECRET
+                  optional: true
+            - name: FACEBOOK_APP_ID
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-social-providers
+                  key: FACEBOOK_APP_ID
+                  optional: true
+            - name: FACEBOOK_APP_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-social-providers
+                  key: FACEBOOK_APP_SECRET
+                  optional: true
+            - name: GITHUB_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-social-providers
+                  key: GITHUB_CLIENT_ID
+                  optional: true
+            - name: GITHUB_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-social-providers
+                  key: GITHUB_CLIENT_SECRET
+                  optional: true
           volumeMounts:
             - name: script
               mountPath: /opt/sync
