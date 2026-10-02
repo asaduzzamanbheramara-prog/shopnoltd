@@ -90,5 +90,5 @@ spec:
           emptyDir:
             sizeLimit: 2Gi
         - name: tmp
-          emptyDire:
+          emptyDir:
             sizeLimit: 512Mi
