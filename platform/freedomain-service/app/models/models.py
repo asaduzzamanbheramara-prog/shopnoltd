@@ -13,7 +13,7 @@ class FreeDomain(Base):
     subdomain = Column(String(128), unique=True, nullable=False)
     target = Column(String(256), nullable=False)  # CNAME or A record target
     record_type = Column(String(8), default="CNAME")
-    active = Column(Integer, default=1)
+    active = Column(Integer, default=1, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     last_check = Column(DateTime)
     last_status = Column(String(16))

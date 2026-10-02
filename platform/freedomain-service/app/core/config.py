@@ -10,7 +10,10 @@ class Settings(BaseSettings):
     redis_url: str = "redis://redis.shopno-data.svc.cluster.local:6379/0"
     cors_origins: str = "https://shopnoltd.dpdns.org"
     domain_service_url: str = "http://domain-service.shopno-platform.svc.cluster.local:8080"
+    freedomain_internal_key: str = ""
     parent_zone: str = "shopnoltd.dpdns.org"
+    default_target: str = "shopnoltd.dpdns.org"
+    default_record_type: str = "CNAME"
     keycloak_jwks_url: str | None = None
     keycloak_audience: str = "api-service"
     keycloak_issuer: str = "http://keycloak.shopno-identity.svc.cluster.local/realms/shopnoltd"
@@ -21,9 +24,6 @@ class Settings(BaseSettings):
 
     @property
     def cors_origin_regex(self) -> str:
-        # Previously only matched the bare root domain exactly, missing every
-        # subdomain (including this service's own freedomain./domain. hosts).
-        # This regex matches the root domain and any subdomain instead.
         return r"^https://([a-z0-9-]+\.)*shopnoltd\.dpdns\.org$"
 
 

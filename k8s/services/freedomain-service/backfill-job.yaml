@@ -1,0 +1,78 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: freedomain-user-backfill
+  namespace: shopno-platform
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+    argocd.argoproj.io/sync-wave: "10"
+  labels:
+    app.kubernetes.io/name: freedomain-user-backfill
+    app.kubernetes.io/part-of: shopnoltd
+spec:
+  backoffLimit: 3
+  activeDeadlineSeconds: 1800
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: freedomain-service
+        app.kubernetes.io/component: freedomain-user-backfill
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      serviceAccountName: freedomain-service
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: backfill
+          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/freedomain-service:cf6ee745bce683cc2631aa051f5c318bc6fd2f35
+          imagePullPolicy: IfNotPresent
+          command:
+            - python
+            - -m
+            - app.backfill_existing_users
+          envFrom:
+            - configMapRef:
+                name: freedomain-service-config
+            - secretRef:
+                name: freedomain-service-secret
+          env:
+            - name: KEYCLOAK_URL
+              value: "http://keycloak.shopno-identity.svc.cluster.local"
+            - name: KEYCLOAK_REALM
+              value: "shopnoltd"
+            - name: KEYCLOAK_ADMIN_USER
+              value: "admin"
+            - name: KEYCLOAK_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-secret
+                  key: KC_BOOTSTRAP_ADMIN_PASSWORD
+            - name: BACKFILL_INCLUDE_DISABLED
+              value: "true"
+          resources:
+            requests:
+              cpu: 25m
+              memory: 128Mi
+              ephemeral-storage: 64Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+              ephemeral-storage: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
