@@ -8,6 +8,8 @@ class Settings(BaseSettings):
     keycloak_issuer: str = "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
     keycloak_audience: str = "api-service"
     keycloak_jwks_url: str = "https://auth.shopnoltd.dpdns.org/realms/shopnoltd/protocol/openid-connect/certs"
+    payment_service_url: str = "http://payment-service.shopno-payments.svc.cluster.local:80"
+    internal_api_key: str = ""
 
 
 settings = Settings()
