@@ -18,7 +18,7 @@ class CampaignCreate(BaseModel):
     pricing_model: str = Field(pattern="^(CPM|CPC|CPA|FLAT)$")
     starts_at: datetime
     ends_at: datetime
-    budget_minor: int = Field(ge=0,le=10_000_000_000)
+    budget_minor: int = Field(gt=0,le=10_000_000_000)
     currency: str = Field(default="USD",pattern="^[A-Z]{3}$")
 
 class CreativeCreate(BaseModel):
