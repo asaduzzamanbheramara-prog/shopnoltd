@@ -7,19 +7,19 @@ function token() { return localStorage.getItem('shopno_token') }
 async function request(path, options = {}) {
   const accessToken = token()
   if (!accessToken) throw new Error('Your session has expired. Please log in again.')
-  const response = await fetch(\`\${API_BASE}\${path}\`, {
+  const response = await fetch(`${API_BASE}${path}`, {
     ...options,
     headers: {
       Accept: 'application/json',
       ...(options.body ? { 'Content-Type': 'application/json' } : {}),
-      Authorization: \`Bearer \${accessToken}\`,
+      Authorization: `Bearer ${accessToken}`,
       ...(options.headers || {}),
     },
   })
   const text = await response.text()
   let data = null
   try { data = text ? JSON.parse(text) : null } catch { data = text }
-  if (!response.ok) throw new Error(data?.detail || data?.message || text || \`HTTP \${response.status}\`)
+  if (!response.ok) throw new Error(data?.detail || data?.message || text || `HTTP ${response.status}`)
   return data
 }
 
@@ -51,9 +51,9 @@ export default function DomainManagement() {
         request('/free-domains/me'),
       ])
       if (real.status === 'fulfilled') setDomains(Array.isArray(real.value) ? real.value : [])
-      else setError(\`Registered domains could not be loaded: \${real.reason?.message || 'domain service unavailable'}\`)
+      else setError(`Registered domains could not be loaded: ${real.reason?.message || 'domain service unavailable'}`)
       if (free.status === 'fulfilled') setFreeDomains(Array.isArray(free.value) ? free.value : [])
-      else setError(prev => prev || \`Free Shopnoltd domain could not be loaded: \${free.reason?.message || 'free-domain service unavailable'}\`)
+      else setError(prev => prev || `Free Shopnoltd domain could not be loaded: ${free.reason?.message || 'free-domain service unavailable'}`)
     } finally {
       setLoading(false)
     }
@@ -62,12 +62,12 @@ export default function DomainManagement() {
   useEffect(() => { load() }, [])
 
   async function renew(name) {
-    const years = Number(window.prompt(\`Renew \${name} for how many years?\`, '1'))
+    const years = Number(window.prompt(`Renew ${name} for how many years?`, '1'))
     if (!Number.isInteger(years) || years < 1 || years > 10) return
     setBusy(true); setMessage(''); setError('')
     try {
-      await request(\`/domains/\${encodeURIComponent(name)}/renew?years=\${years}\`, { method: 'POST' })
-      setMessage(\`\${name} renewal completed.\`)
+      await request(`/domains/${encodeURIComponent(name)}/renew?years=${years}`, { method: 'POST' })
+      setMessage(`${name} renewal completed.`)
       await load()
     } catch (e) {
       setError(e.message)
