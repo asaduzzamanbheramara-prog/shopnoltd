@@ -36,6 +36,9 @@ async def verify_token(token: str) -> dict:
 
 
 async def verify_token_admin(token: str) -> dict:
+    if settings.freedomain_internal_key and token == settings.freedomain_internal_key:
+        return {"service": "freedomain-service", "roles": ["service:freedomain"]}
+
     try:
         u = await verify_token(token)
     except (ValueError, JWTError):
