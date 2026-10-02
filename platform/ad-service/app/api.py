@@ -181,6 +181,27 @@ async def create_creative(body: CreativeCreate, user=Depends(current_user), db=D
     return {"id": str(row.id), "status": row.status, "campaign_id": str(row.campaign_id)}
 
 
+@router.post("/serve")
+async def serve(site_id: UUID, zone_id: UUID, db=Depends(get_db)):
+    """Public, fail-closed inventory check for publisher ad tags.
+
+    This endpoint intentionally does not require a normal user JWT. Publisher
+    inventory remains protected by verified site ownership and approved
+    publisher state, while paid serving stays disabled until the financial,
+    consent/privacy, fraud, signing, and event-ledger gates are complete.
+    """
+    eligible = await db.scalar(select(AdZone.id).join(PublisherSite, PublisherSite.id == AdZone.site_id).join(Publisher, Publisher.id == PublisherSite.publisher_id).where(
+        AdZone.id == zone_id,
+        PublisherSite.id == site_id,
+        AdZone.status == "active",
+        PublisherSite.verification_status == "verified",
+        Publisher.status == "approved",
+    ).limit(1))
+    if not eligible:
+        return {"fill": False, "reason": "INVENTORY_NOT_ELIGIBLE"}
+    return {"fill": False, "reason": "PAID_SERVING_NOT_ENABLED"}
+
+
 @router.get("/admin/advertisers")
 async def admin_advertisers(user=Depends(require_admin), db=Depends(get_db)):
     rows = (await db.scalars(select(Advertiser).order_by(Advertiser.created_at.desc()))).all()
