@@ -23,7 +23,14 @@ async function login(page, username, password) {
   await page.locator('#username').fill(username)
   await page.locator('#password').fill(password)
   await page.getByRole('button', { name: /Sign In|Log In/i }).click()
-  await page.waitForURL(/shopnoltd\.dpdns\.org/, { timeout: 30000 })
+
+  // A successful OIDC login must return to the application callback,
+  // not merely remain on the Shopnoltd login page.
+  await page.waitForURL(url => {
+    const pathname = new URL(url).pathname
+    return pathname === '/callback' || pathname === '/' || pathname === '/dashboard'
+  }, { timeout: 30000 })
+  await expect(page).not.toHaveURL(/\/login(?:\?|$)/)
 }
 
 test('admin account is authenticated and can open admin control plane', async ({ page }) => {
