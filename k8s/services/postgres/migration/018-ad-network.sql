@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS advertisers (
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
-CREATE INDEX IF NOT EXISTS idx_advertisers_owner ON advertisers(owner_user_id);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_advertisers_owner ON advertisers(owner_user_id);
 
 CREATE TABLE IF NOT EXISTS publishers (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS publishers (
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
-CREATE INDEX IF NOT EXISTS idx_publishers_owner ON publishers(owner_user_id);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_publishers_owner ON publishers(owner_user_id);
 
 CREATE TABLE IF NOT EXISTS publisher_sites (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
