@@ -12,6 +12,7 @@ from starlette.responses import Response
 
 from app.core.config import settings
 from app.core.db import Base, engine
+from app.api.domains import ensure_free_domain_schema
 
 log = structlog.get_logger()
 
@@ -22,6 +23,7 @@ async def lifespan(app: FastAPI):
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
     await wait_for_dependencies("freedomain-service", _check_database, redis_client)
+    await ensure_free_domain_schema()
     log.info("freedomain-service.started", env=settings.env)
     yield
     await engine.dispose()
