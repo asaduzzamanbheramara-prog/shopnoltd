@@ -121,7 +121,9 @@ user, password = sys.argv[1], sys.argv[2]
 print(f"postgresql+asyncpg://{quote(user, safe='')}:{quote(password, safe='')}@postgres.shopno-data.svc.cluster.local:5432/ads")
 PY
 )"
-          kubectl -n "$PLATFORM_NAMESPACE" create secret generic ad-service-secret             --from-literal=database-url="$database_url"             --dry-run=client -o yaml | kubectl -n "$PLATFORM_NAMESPACE" apply -f -
+          kubectl -n "$PLATFORM_NAMESPACE" create secret generic ad-service-secret \
+            --from-literal=database-url="$database_url" \
+            --dry-run=client -o yaml | kubectl -n "$PLATFORM_NAMESPACE" apply -f -
           echo 'Ad-service PostgreSQL secret reconciled.'
 
       - name: Provision mail admin mailbox credential
