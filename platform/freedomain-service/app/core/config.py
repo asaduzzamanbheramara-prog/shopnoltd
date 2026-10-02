@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     redis_url: str = "redis://redis.shopno-data.svc.cluster.local:6379/0"
     cors_origins: str = "https://shopnoltd.dpdns.org"
     domain_service_url: str = "http://domain-service.shopno-platform.svc.cluster.local:8080"
-    domain_service_token: str = ""
+    freedomain_internal_key: str = ""
     parent_zone: str = "shopnoltd.dpdns.org"
     default_target: str = "shopnoltd.dpdns.org"
     default_record_type: str = "CNAME"
@@ -24,7 +24,7 @@ class Settings(BaseSettings):
 
     @property
     def cors_origin_regex(self) -> str:
-        return r"^https://([a-z0-9-]+\.)*shopnoltd\.dpdns\.org$"
+        return r"^https://([a-z0-9-]+\\.)*shopnoltd\\.dpdns\\.org$"
 
 
 settings = Settings()
