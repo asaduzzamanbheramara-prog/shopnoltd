@@ -2,6 +2,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 import dns.asyncresolver
 
@@ -38,7 +39,11 @@ async def register_advertiser(body: OwnerCreate, user=Depends(current_user), db=
         raise HTTPException(409, "Advertiser account already exists")
     row = Advertiser(owner_user_id=subject(user), legal_name=body.display_name)
     db.add(row)
-    await db.commit()
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(409, "Advertiser account already exists") from None
     await db.refresh(row)
     return {"id": str(row.id), "status": row.status, "legal_name": row.legal_name}
 
@@ -56,7 +61,11 @@ async def register_publisher(body: OwnerCreate, user=Depends(current_user), db=D
         raise HTTPException(409, "Publisher account already exists")
     row = Publisher(owner_user_id=subject(user), display_name=body.display_name)
     db.add(row)
-    await db.commit()
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(409, "Publisher account already exists") from None
     await db.refresh(row)
     return {"id": str(row.id), "status": row.status, "display_name": row.display_name}
 
