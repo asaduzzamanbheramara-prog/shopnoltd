@@ -1,8 +1,8 @@
 """Public API facade for the Shopnoltd advertising service.
 
-The browser talks only to api.shopnoltd.dpdns.org. The ad-service remains
-cluster-internal; the user's validated Keycloak bearer token is forwarded to
-its normal authorization checks.
+Authenticated advertiser/publisher/admin operations use the normal Keycloak
+bearer token. The publisher ad-tag serve endpoint is intentionally public and
+remains fail-closed until paid-serving gates are complete.
 """
 
 import httpx
@@ -12,12 +12,14 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from app.core.security import verify_token
 
 router = APIRouter()
-bearer = HTTPBearer()
+bearer = HTTPBearer(auto_error=False)
 
 
 async def raw_token(
-    credentials: HTTPAuthorizationCredentials = Depends(bearer),
-) -> str:
+    credentials: HTTPAuthorizationCredentials | None = Depends(bearer),
+) -> str | None:
+    if credentials is None:
+        return None
     try:
         await verify_token(credentials.credentials)
     except Exception as exc:
@@ -32,14 +34,21 @@ async def raw_token(
 async def ads_proxy(
     request: Request,
     path: str,
-    token: str = Depends(raw_token),
+    token: str | None = Depends(raw_token),
 ):
+    # /serve is the only unauthenticated public delivery endpoint. All other
+    # advertising API operations require a validated Shopnoltd JWT.
+    if path != "serve" and token is None:
+        raise HTTPException(401, "Authentication required")
+
     headers = {
         "Accept": request.headers.get("accept", "application/json"),
-        "Authorization": f"Bearer {token}",
     }
+    if token is not None:
+        headers["Authorization"] = f"Bearer {token}"
     if request.headers.get("content-type"):
         headers["Content-Type"] = request.headers["content-type"]
+
     upstream_url = f"http://ad-service.shopno-platform.svc.cluster.local:8080/v1/ads/{path}"
     try:
         async with httpx.AsyncClient(timeout=30) as client:
