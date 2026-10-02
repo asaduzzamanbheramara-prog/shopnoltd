@@ -108,6 +108,22 @@ jobs:
               kubectl apply -f -
           fi
 
+      - name: Provision ad-service PostgreSQL secret
+        shell: bash
+        run: |
+          set -euo pipefail
+          postgres_user="$(kubectl -n shopno-data get secret postgres-secret -o jsonpath='{.data.POSTGRES_USER}' | base64 -d)"
+          postgres_password="$(kubectl -n shopno-data get secret postgres-secret -o jsonpath='{.data.POSTGRES_PASSWORD}' | base64 -d)"
+          database_url="$(python3 - "$postgres_user" "$postgres_password" <<'PY'
+import sys
+from urllib.parse import quote
+user, password = sys.argv[1], sys.argv[2]
+print(f"postgresql+asyncpg://{quote(user, safe='')}:{quote(password, safe='')}@postgres.shopno-data.svc.cluster.local:5432/ads")
+PY
+)"
+          kubectl -n "$PLATFORM_NAMESPACE" create secret generic ad-service-secret             --from-literal=database-url="$database_url"             --dry-run=client -o yaml | kubectl -n "$PLATFORM_NAMESPACE" apply -f -
+          echo 'Ad-service PostgreSQL secret reconciled.'
+
       - name: Provision mail admin mailbox credential
         shell: bash
         run: |
