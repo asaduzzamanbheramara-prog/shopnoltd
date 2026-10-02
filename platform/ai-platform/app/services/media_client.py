@@ -9,10 +9,21 @@ class MediaServiceError(RuntimeError):
         self.status_code = status_code
 
 
+def _secret_value(raw: str | None) -> str | None:
+    if not raw:
+        return None
+    # MEDIA_SERVICE_TOKENS is a comma-separated name:secret list. The current
+    # cluster credential is bootstrap-scoped; the first entry is used until a
+    # dedicated ai-platform credential is provisioned.
+    first = raw.split(",", 1)[0].strip()
+    _name, sep, secret = first.partition(":")
+    return secret if sep and secret else raw
+
+
 class MediaServiceClient:
     def __init__(self, base_url: str | None = None, token: str | None = None):
         self.base_url = (base_url or settings.media_service_url).rstrip("/")
-        self.token = token or settings.media_service_token
+        self.token = token or _secret_value(settings.media_service_token)
 
     def _headers(self, owner: str | None = None) -> dict[str, str]:
         if not self.token:
