@@ -1,0 +1,28 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: media-service
+  namespace: shopno-platform
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: media-service
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: shopno-platform
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: ai-platform
+        - namespaceSelector:
+            matchLabels:
+              name: shopno-apps
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: code-server
+      ports:
+        - port: 8080
+          protocol: TCP
