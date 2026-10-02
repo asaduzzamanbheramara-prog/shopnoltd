@@ -18,7 +18,10 @@ export function getRoles() {
   const token = localStorage.getItem('shopno_token')
   if (!token) return []
   const payload = decodeToken(token)
-  return payload?.roles || []
+  const roles = new Set(payload?.roles || [])
+  for (const role of payload?.realm_access?.roles || []) roles.add(role)
+  for (const role of payload?.resource_access?.['api-service']?.roles || []) roles.add(role)
+  return [...roles]
 }
 
 export function isPlatformAdmin() {
