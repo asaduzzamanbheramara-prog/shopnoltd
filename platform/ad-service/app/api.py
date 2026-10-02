@@ -253,6 +253,39 @@ async def fund_campaign(campaign_id: UUID, user=Depends(current_user), db=Depend
     }
 
 
+@router.post("/campaigns/{campaign_id}/activate")
+async def activate_campaign(campaign_id: UUID, user=Depends(current_user), db=Depends(get_db)):
+    """Activate only a funded campaign with at least one approved creative."""
+    advertiser = await owned_advertiser(db, user)
+    campaign = await db.scalar(
+        select(Campaign).where(
+            Campaign.id == campaign_id,
+            Campaign.advertiser_id == advertiser.id,
+        ).with_for_update()
+    )
+    if not campaign:
+        raise HTTPException(404, "Campaign not found")
+    if campaign.status != "approved":
+        raise HTTPException(409, f"Campaign cannot be activated from status '{campaign.status}'")
+
+    funding = await db.scalar(select(CampaignFunding).where(CampaignFunding.campaign_id == campaign.id))
+    if not funding or funding.status != "charged":
+        raise HTTPException(409, "Campaign must be fully funded before activation")
+
+    approved_creative = await db.scalar(
+        select(Creative.id).where(
+            Creative.campaign_id == campaign.id,
+            Creative.status == "approved",
+        ).limit(1)
+    )
+    if not approved_creative:
+        raise HTTPException(409, "At least one approved creative is required before activation")
+
+    campaign.status = "active"
+    await db.commit()
+    return {"id": str(campaign.id), "status": campaign.status, "funding_status": funding.status}
+
+
 @router.get("/campaigns")
 async def list_campaigns(user=Depends(current_user), db=Depends(get_db)):
     advertiser = await owned_advertiser(db, user)
