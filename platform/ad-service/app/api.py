@@ -8,6 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 import dns.asyncresolver
 
+from .config import settings
 from .db import get_db
 from .models import AdZone, Advertiser, Campaign, CampaignFunding, Creative, Publisher, PublisherSite
 from .schemas import CampaignCreate, CreativeCreate, OwnerCreate, SiteCreate, ZoneCreate
