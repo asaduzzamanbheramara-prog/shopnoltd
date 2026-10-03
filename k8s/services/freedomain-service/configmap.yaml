@@ -21,3 +21,4 @@ data:
   KEYCLOAK_AUDIENCE: "api-service"
   KEYCLOAK_CLIENT_ID: "freedomain-service"
   DOMAIN_SERVICE_URL: "http://domain-service.shopno-platform.svc.cluster.local:80"
+  WILDCARD_DNS_FALLBACK: "true"
