@@ -42,6 +42,15 @@ spec:
         - port: 8080
           protocol: TCP
 
+    # OAuth service JWT verification: HTTP JWKS only.
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: shopno-identity
+      ports:
+        - port: 8080
+          protocol: TCP
+
     # VPN service JWT verification: HTTP JWKS only.
     - from:
         - namespaceSelector:
