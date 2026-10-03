@@ -49,16 +49,15 @@ spec:
                 secretKeyRef:
                   name: freedomain-service-secret
                   key: POSTGRES_USER
+            - name: POD_NAME
+              valueFrom: { fieldRef: { fieldPath: metadata.name } }
+            - name: POD_NAMESPACE
+              valueFrom: { fieldRef: { fieldPath: metadata.namespace } }
           envFrom:
             - configMapRef:
                 name: freedomain-service-config
             - secretRef:
                 name: freedomain-service-secret
-          env:
-            - name: POD_NAME
-              valueFrom: { fieldRef: { fieldPath: metadata.name } }
-            - name: POD_NAMESPACE
-              valueFrom: { fieldRef: { fieldPath: metadata.namespace } }
           resources:
             requests:
               cpu: 20m
