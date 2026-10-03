@@ -12,10 +12,22 @@ spec:
     - hosts:
         - web-portal.shopnoltd.dpdns.org
         - shopnoltd.dpdns.org
+        - "*.shopnoltd.dpdns.org"
       secretName: shopno-wildcard-tls
 
   rules:
     - host: web-portal.shopnoltd.dpdns.org
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: web-portal
+                port:
+                  number: 80
+
+    - host: "*.shopnoltd.dpdns.org"
       http:
         paths:
           - path: /
