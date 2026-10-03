@@ -14,8 +14,6 @@ resources:
 - poddisruptionbudget.yaml
 - servicemonitor.yaml
 - client-sync-job.yaml
-- freedomain-secret-bridge-rbac.yaml
-- freedomain-secret-bridge-job.yaml
 
 configMapGenerator:
 - name: keycloak-realm
@@ -26,12 +24,6 @@ configMapGenerator:
 - name: keycloak-client-sync-script
   files:
   - client-sync.py
-- name: freedomain-secret-bridge-script
-  options:
-    disableNameSuffixHash: true
-  files:
-  - freedomain-secret-bridge.py
-
 labels:
 - includeSelectors: true
   pairs:
