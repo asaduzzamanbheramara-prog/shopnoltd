@@ -124,9 +124,9 @@ jobs:
             freedomain_password="$(openssl rand -hex 32)"
           fi
           if kubectl -n shopno-data exec deployment/postgres -- env PGPASSWORD="$postgres_password" psql -U "$postgres_user" -d postgres -Atqc "SELECT 1 FROM pg_roles WHERE rolname = 'freedomain'" | grep -q 1; then
-            kubectl -n shopno-data exec deployment/postgres -- env PGPASSWORD="$postgres_password" psql -U "$postgres_user" -d postgres -v fdpass="$freedomain_password" -v ON_ERROR_STOP=1 -c "ALTER ROLE freedomain LOGIN PASSWORD :'fdpass'"
+            kubectl -n shopno-data exec deployment/postgres -- env PGPASSWORD="$postgres_password" psql -U "$postgres_user" -d postgres -v ON_ERROR_STOP=1 -c "ALTER ROLE freedomain LOGIN PASSWORD '$freedomain_password'"
           else
-            kubectl -n shopno-data exec deployment/postgres -- env PGPASSWORD="$postgres_password" psql -U "$postgres_user" -d postgres -v fdpass="$freedomain_password" -v ON_ERROR_STOP=1 -c "CREATE ROLE freedomain LOGIN PASSWORD :'fdpass'"
+            kubectl -n shopno-data exec deployment/postgres -- env PGPASSWORD="$postgres_password" psql -U "$postgres_user" -d postgres -v ON_ERROR_STOP=1 -c "CREATE ROLE freedomain LOGIN PASSWORD '$freedomain_password'"
           fi
           if ! kubectl -n shopno-data exec deployment/postgres -- env PGPASSWORD="$postgres_password" psql -U "$postgres_user" -d postgres -Atqc "SELECT 1 FROM pg_database WHERE datname = 'freedomain'" | grep -q 1; then
             kubectl -n shopno-data exec deployment/postgres -- env PGPASSWORD="$postgres_password" psql -U "$postgres_user" -d postgres -v ON_ERROR_STOP=1 -c "CREATE DATABASE freedomain OWNER freedomain"
