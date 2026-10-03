@@ -38,7 +38,17 @@ spec:
             - name: http
               containerPort: 8080
               protocol: TCP
-          envFrom:
+          - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: freedomain-service-secret
+              key: DATABASE_URL
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: freedomain-service-secret
+              key: POSTGRES_USER
+        envFrom:
             - configMapRef:
                 name: freedomain-service-config
             - secretRef:
