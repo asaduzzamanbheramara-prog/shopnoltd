@@ -123,25 +123,27 @@ jobs:
           if [ -z "$freedomain_password" ]; then
             freedomain_password="$(openssl rand -hex 32)"
           fi
-          kubectl -n shopno-data exec deployment/postgres -- env             PGPASSWORD="$postgres_password"             FREEDOMAIN_PASSWORD="$freedomain_password"             PGUSER="$postgres_user"             PGDB="postgres"             /bin/bash -lc 'set -euo pipefail
-              if psql -d "$PGDB" -Atqc "SELECT 1 FROM pg_roles WHERE rolname = '''freedomain'''" | grep -q 1; then
-                psql -v ON_ERROR_STOP=1 -d "$PGDB" -c "ALTER ROLE freedomain LOGIN PASSWORD '''$FREEDOMAIN_PASSWORD'''"
-              else
-                psql -v ON_ERROR_STOP=1 -d "$PGDB" -c "CREATE ROLE freedomain LOGIN PASSWORD '''$FREEDOMAIN_PASSWORD'''"
-              fi
-              if ! psql -d "$PGDB" -Atqc "SELECT 1 FROM pg_database WHERE datname = '''freedomain'''" | grep -q 1; then
-                psql -v ON_ERROR_STOP=1 -d "$PGDB" -c "CREATE DATABASE freedomain OWNER freedomain"
-              else
-                psql -v ON_ERROR_STOP=1 -d "$PGDB" -c "ALTER DATABASE freedomain OWNER TO freedomain"
-              fi
-              psql -v ON_ERROR_STOP=1 -d "$PGDB" -c "GRANT ALL PRIVILEGES ON DATABASE freedomain TO freedomain"
-              psql -v ON_ERROR_STOP=1 -d freedomain -c "GRANT USAGE,CREATE ON SCHEMA public TO freedomain"
-              psql -v ON_ERROR_STOP=1 -d freedomain -c "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO freedomain"
-              psql -v ON_ERROR_STOP=1 -d freedomain -c "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO freedomain"
-              psql -v ON_ERROR_STOP=1 -d freedomain -c "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO freedomain"
-              psql -v ON_ERROR_STOP=1 -d freedomain -c "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO freedomain"'
+          if kubectl -n shopno-data exec deployment/postgres -- env PGPASSWORD="$postgres_password" psql -U "$postgres_user" -d postgres -Atqc "SELECT 1 FROM pg_roles WHERE rolname = 'freedomain'" | grep -q 1; then
+            kubectl -n shopno-data exec deployment/postgres -- env PGPASSWORD="$postgres_password" psql -U "$postgres_user" -d postgres -v fdpass="$freedomain_password" -v ON_ERROR_STOP=1 -c "ALTER ROLE freedomain LOGIN PASSWORD :'fdpass'"
+          else
+            kubectl -n shopno-data exec deployment/postgres -- env PGPASSWORD="$postgres_password" psql -U "$postgres_user" -d postgres -v fdpass="$freedomain_password" -v ON_ERROR_STOP=1 -c "CREATE ROLE freedomain LOGIN PASSWORD :'fdpass'"
+          fi
+          if ! kubectl -n shopno-data exec deployment/postgres -- env PGPASSWORD="$postgres_password" psql -U "$postgres_user" -d postgres -Atqc "SELECT 1 FROM pg_database WHERE datname = 'freedomain'" | grep -q 1; then
+            kubectl -n shopno-data exec deployment/postgres -- env PGPASSWORD="$postgres_password" psql -U "$postgres_user" -d postgres -v ON_ERROR_STOP=1 -c "CREATE DATABASE freedomain OWNER freedomain"
+          else
+            kubectl -n shopno-data exec deployment/postgres -- env PGPASSWORD="$postgres_password" psql -U "$postgres_user" -d postgres -v ON_ERROR_STOP=1 -c "ALTER DATABASE freedomain OWNER TO freedomain"
+          fi
+          kubectl -n shopno-data exec deployment/postgres -- env PGPASSWORD="$postgres_password" psql -U "$postgres_user" -d postgres -v ON_ERROR_STOP=1 -c "GRANT ALL PRIVILEGES ON DATABASE freedomain TO freedomain"
+          kubectl -n shopno-data exec deployment/postgres -- env PGPASSWORD="$postgres_password" psql -U "$postgres_user" -d freedomain -v ON_ERROR_STOP=1 -c "GRANT USAGE,CREATE ON SCHEMA public TO freedomain"
+          kubectl -n shopno-data exec deployment/postgres -- env PGPASSWORD="$postgres_password" psql -U "$postgres_user" -d freedomain -v ON_ERROR_STOP=1 -c "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO freedomain"
+          kubectl -n shopno-data exec deployment/postgres -- env PGPASSWORD="$postgres_password" psql -U "$postgres_user" -d freedomain -v ON_ERROR_STOP=1 -c "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO freedomain"
           database_url="postgresql+asyncpg://freedomain:$freedomain_password@postgres.shopno-data.svc.cluster.local:5432/freedomain"
-          kubectl -n "$PLATFORM_NAMESPACE" create secret generic freedomain-service-secret             --from-literal=KC_BOOTSTRAP_ADMIN_PASSWORD="$keycloak_password"             --from-literal=POSTGRES_USER=freedomain             --from-literal=POSTGRES_PASSWORD="$freedomain_password"             --from-literal=DATABASE_URL="$database_url"             --from-literal=FREEDOMAIN_INTERNAL_KEY="$(kubectl -n "$PLATFORM_NAMESPACE" get secret freedomain-service-secret -o jsonpath='{.data.FREEDOMAIN_INTERNAL_KEY}' 2>/dev/null | base64 -d || openssl rand -hex 32)"             --from-literal=DOMAIN_SERVICE_TOKEN="$(kubectl -n "$PLATFORM_NAMESPACE" get secret freedomain-service-secret -o jsonpath='{.data.DOMAIN_SERVICE_TOKEN}' 2>/dev/null | base64 -d || true)"             --dry-run=client -o yaml | kubectl -n "$PLATFORM_NAMESPACE" apply -f -
+          internal_key="$(kubectl -n "$PLATFORM_NAMESPACE" get secret freedomain-service-secret -o jsonpath='{.data.FREEDOMAIN_INTERNAL_KEY}' 2>/dev/null | base64 -d || true)"
+          if [ -z "$internal_key" ]; then
+            internal_key="$(openssl rand -hex 32)"
+          fi
+          domain_token="$(kubectl -n "$PLATFORM_NAMESPACE" get secret freedomain-service-secret -o jsonpath='{.data.DOMAIN_SERVICE_TOKEN}' 2>/dev/null | base64 -d || true)"
+          kubectl -n "$PLATFORM_NAMESPACE" create secret generic freedomain-service-secret             --from-literal=KC_BOOTSTRAP_ADMIN_PASSWORD="$keycloak_password"             --from-literal=POSTGRES_USER=freedomain             --from-literal=POSTGRES_PASSWORD="$freedomain_password"             --from-literal=DATABASE_URL="$database_url"             --from-literal=FREEDOMAIN_INTERNAL_KEY="$internal_key"             --from-literal=DOMAIN_SERVICE_TOKEN="$domain_token"             --dry-run=client -o yaml | kubectl -n "$PLATFORM_NAMESPACE" apply -f -
           echo 'Free-domain service PostgreSQL and Keycloak credentials reconciled without exposing their values.'
 
       - name: Provision ad-service PostgreSQL secret
