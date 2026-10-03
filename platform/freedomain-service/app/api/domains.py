@@ -114,7 +114,12 @@ async def rdap_domain_available(domain: str):
         return None
 
 
-async def _create_dns_record(subdomain: str, target: str, record_type: str):
+async def _create_dns_record(subdomain: str, target: str, record_type: str, *, allow_wildcard_fallback: bool = False):
+    # The recovered cluster uses an existing Cloudflare wildcard for free Shopnoltd subdomains.
+    # When explicitly enabled, keep the entitlement/database row without requiring the retired
+    # per-record PowerDNS backend. Paid/custom DNS flows remain provider-backed.
+    if allow_wildcard_fallback and settings.wildcard_dns_fallback and target == settings.default_target and record_type.upper() == settings.default_record_type.upper():
+        return
     async with httpx.AsyncClient(
         timeout=httpx.Timeout(10.0, connect=5.0),
         follow_redirects=True,
@@ -155,7 +160,7 @@ async def provision_for_user(user: dict, s: AsyncSession) -> FreeDomain:
         candidate = f"{label}.{settings.parent_zone}"
 
     try:
-        await _create_dns_record(candidate, settings.default_target, settings.default_record_type)
+        await _create_dns_record(candidate, settings.default_target, settings.default_record_type, allow_wildcard_fallback=True)
     except httpx.HTTPStatusError as exc:
         raise HTTPException(
             status_code=502,

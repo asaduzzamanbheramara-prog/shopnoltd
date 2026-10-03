@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     parent_zone: str = "shopnoltd.dpdns.org"
     default_target: str = "shopnoltd.dpdns.org"
     default_record_type: str = "CNAME"
+    wildcard_dns_fallback: bool = False
     keycloak_jwks_url: str | None = None
     keycloak_audience: str = "api-service"
     keycloak_issuer: str = "http://keycloak.shopno-identity.svc.cluster.local/realms/shopnoltd"
