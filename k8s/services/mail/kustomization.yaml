@@ -8,4 +8,6 @@ resources:
   - roundcube-deployment.yaml
   - service.yaml
   - ingress.yaml
+  - roundcube-service.yaml
+  - roundcube-ingress.yaml
   - pvc.yaml
