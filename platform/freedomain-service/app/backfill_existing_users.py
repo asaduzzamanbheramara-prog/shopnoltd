@@ -22,20 +22,29 @@ INCLUDE_DISABLED = os.environ.get("BACKFILL_INCLUDE_DISABLED", "true").lower() =
 async def admin_token(client: httpx.AsyncClient) -> str:
     if not ADMIN_PASSWORD:
         raise RuntimeError("KEYCLOAK_ADMIN_PASSWORD is not configured")
-    response = await client.post(
-        f"{KEYCLOAK_URL}/realms/master/protocol/openid-connect/token",
-        data={
-            "grant_type": "password",
-            "client_id": "admin-cli",
-            "username": ADMIN_USER,
-            "password": ADMIN_PASSWORD,
-        },
-    )
-    response.raise_for_status()
-    token = response.json().get("access_token")
-    if not token:
-        raise RuntimeError("Keycloak admin token was not returned")
-    return token
+    last_error: Exception | None = None
+    for attempt in range(1, 9):
+        try:
+            response = await client.post(
+                f"{KEYCLOAK_URL}/realms/master/protocol/openid-connect/token",
+                data={
+                    "grant_type": "password",
+                    "client_id": "admin-cli",
+                    "username": ADMIN_USER,
+                    "password": ADMIN_PASSWORD,
+                },
+            )
+            response.raise_for_status()
+            token = response.json().get("access_token")
+            if not token:
+                raise RuntimeError("Keycloak admin token was not returned")
+            return token
+        except (httpx.HTTPError, RuntimeError) as exc:
+            last_error = exc
+            if attempt == 8:
+                break
+            await asyncio.sleep(min(5 * attempt, 30))
+    raise RuntimeError(f"Keycloak admin token unavailable after retries: {last_error}")
 
 
 async def list_users(client: httpx.AsyncClient, token: str) -> list[dict]:
