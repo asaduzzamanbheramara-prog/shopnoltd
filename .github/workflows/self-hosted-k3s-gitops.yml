@@ -108,6 +108,20 @@ jobs:
               kubectl apply -f -
           fi
 
+      - name: Provision free-domain service Keycloak secret
+        shell: bash
+        run: |
+          set -euo pipefail
+          keycloak_password="$(kubectl -n shopno-identity get secret keycloak-secret -o jsonpath='{.data.KC_BOOTSTRAP_ADMIN_PASSWORD}' 2>/dev/null | base64 -d || true)"
+          if [ -z "$keycloak_password" ]; then
+            echo 'Existing keycloak-secret is missing KC_BOOTSTRAP_ADMIN_PASSWORD; refusing to create a partial freedomain secret.'
+            exit 1
+          fi
+          kubectl -n "$PLATFORM_NAMESPACE" create secret generic freedomain-service-secret \\
+            --from-literal=KC_BOOTSTRAP_ADMIN_PASSWORD="$keycloak_password" \\
+            --dry-run=client -o yaml | kubectl -n "$PLATFORM_NAMESPACE" apply -f -
+          echo 'Free-domain service Keycloak credential reconciled without exposing its value.'
+
       - name: Provision ad-service PostgreSQL secret
         shell: bash
         run: |
