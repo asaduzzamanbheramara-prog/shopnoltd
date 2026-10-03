@@ -56,7 +56,10 @@ spec:
             - name: ENKETO_POSTGRES_USER
               value: "postgres"
             - name: ENKETO_POSTGRES_PASSWORD
-              value: "5XuByzqhn6nJyq7iR7xva58iKHLSUSj"
+              valueFrom:
+                secretKeyRef:
+                  name: kobotoolbox-database
+                  key: POSTGRES_PASSWORD
             - name: ENKETO_POSTGRES_DB
               value: "enketo"
           resources:
