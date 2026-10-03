@@ -20,3 +20,4 @@ data:
   KEYCLOAK_JWKS_URL: "http://keycloak.shopno-identity.svc.cluster.local/realms/shopnoltd/protocol/openid-connect/certs"
   KEYCLOAK_AUDIENCE: "api-service"
   KEYCLOAK_CLIENT_ID: "freedomain-service"
+  DOMAIN_SERVICE_URL: "http://domain-service.shopno-platform.svc.cluster.local:80"
