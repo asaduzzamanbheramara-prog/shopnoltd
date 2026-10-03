@@ -108,19 +108,41 @@ jobs:
               kubectl apply -f -
           fi
 
-      - name: Provision free-domain service Keycloak secret
+      - name: Provision free-domain service PostgreSQL and Keycloak secrets
         shell: bash
         run: |
           set -euo pipefail
+          postgres_user="$(kubectl -n shopno-data get secret postgres-secret -o jsonpath='{.data.POSTGRES_USER}' | base64 -d)"
+          postgres_password="$(kubectl -n shopno-data get secret postgres-secret -o jsonpath='{.data.POSTGRES_PASSWORD}' | base64 -d)"
           keycloak_password="$(kubectl -n shopno-identity get secret keycloak-secret -o jsonpath='{.data.KC_BOOTSTRAP_ADMIN_PASSWORD}' 2>/dev/null | base64 -d || true)"
           if [ -z "$keycloak_password" ]; then
             echo 'Existing keycloak-secret is missing KC_BOOTSTRAP_ADMIN_PASSWORD; refusing to create a partial freedomain secret.'
             exit 1
           fi
-          kubectl -n "$PLATFORM_NAMESPACE" create secret generic freedomain-service-secret \
-            --from-literal=KC_BOOTSTRAP_ADMIN_PASSWORD="$keycloak_password" \
-            --dry-run=client -o yaml | kubectl -n "$PLATFORM_NAMESPACE" apply -f -
-          echo 'Free-domain service Keycloak credential reconciled without exposing its value.'
+          freedomain_password="$(kubectl -n "$PLATFORM_NAMESPACE" get secret freedomain-service-secret -o jsonpath='{.data.POSTGRES_PASSWORD}' 2>/dev/null | base64 -d || true)"
+          if [ -z "$freedomain_password" ]; then
+            freedomain_password="$(openssl rand -hex 32)"
+          fi
+          kubectl -n shopno-data exec deployment/postgres -- env             PGPASSWORD="$postgres_password"             FREEDOMAIN_PASSWORD="$freedomain_password"             PGUSER="$postgres_user"             PGDB="postgres"             /bin/bash -lc 'set -euo pipefail
+              if psql -d "$PGDB" -Atqc "SELECT 1 FROM pg_roles WHERE rolname = '''freedomain'''" | grep -q 1; then
+                psql -v ON_ERROR_STOP=1 -d "$PGDB" -c "ALTER ROLE freedomain LOGIN PASSWORD '''$FREEDOMAIN_PASSWORD'''"
+              else
+                psql -v ON_ERROR_STOP=1 -d "$PGDB" -c "CREATE ROLE freedomain LOGIN PASSWORD '''$FREEDOMAIN_PASSWORD'''"
+              fi
+              if ! psql -d "$PGDB" -Atqc "SELECT 1 FROM pg_database WHERE datname = '''freedomain'''" | grep -q 1; then
+                psql -v ON_ERROR_STOP=1 -d "$PGDB" -c "CREATE DATABASE freedomain OWNER freedomain"
+              else
+                psql -v ON_ERROR_STOP=1 -d "$PGDB" -c "ALTER DATABASE freedomain OWNER TO freedomain"
+              fi
+              psql -v ON_ERROR_STOP=1 -d "$PGDB" -c "GRANT ALL PRIVILEGES ON DATABASE freedomain TO freedomain"
+              psql -v ON_ERROR_STOP=1 -d freedomain -c "GRANT USAGE,CREATE ON SCHEMA public TO freedomain"
+              psql -v ON_ERROR_STOP=1 -d freedomain -c "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO freedomain"
+              psql -v ON_ERROR_STOP=1 -d freedomain -c "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO freedomain"
+              psql -v ON_ERROR_STOP=1 -d freedomain -c "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO freedomain"
+              psql -v ON_ERROR_STOP=1 -d freedomain -c "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO freedomain"'
+          database_url="postgresql+asyncpg://freedomain:$freedomain_password@postgres.shopno-data.svc.cluster.local:5432/freedomain"
+          kubectl -n "$PLATFORM_NAMESPACE" create secret generic freedomain-service-secret             --from-literal=KC_BOOTSTRAP_ADMIN_PASSWORD="$keycloak_password"             --from-literal=POSTGRES_USER=freedomain             --from-literal=POSTGRES_PASSWORD="$freedomain_password"             --from-literal=DATABASE_URL="$database_url"             --from-literal=FREEDOMAIN_INTERNAL_KEY="$(kubectl -n "$PLATFORM_NAMESPACE" get secret freedomain-service-secret -o jsonpath='{.data.FREEDOMAIN_INTERNAL_KEY}' 2>/dev/null | base64 -d || openssl rand -hex 32)"             --from-literal=DOMAIN_SERVICE_TOKEN="$(kubectl -n "$PLATFORM_NAMESPACE" get secret freedomain-service-secret -o jsonpath='{.data.DOMAIN_SERVICE_TOKEN}' 2>/dev/null | base64 -d || true)"             --dry-run=client -o yaml | kubectl -n "$PLATFORM_NAMESPACE" apply -f -
+          echo 'Free-domain service PostgreSQL and Keycloak credentials reconciled without exposing their values.'
 
       - name: Provision ad-service PostgreSQL secret
         shell: bash
