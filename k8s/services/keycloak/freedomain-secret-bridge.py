@@ -1,11 +1,11 @@
-import base64
 import json
 import os
 import ssl
+import time
 import urllib.error
 import urllib.request
 
-API = f"https://{os.environ['KUBERNETES_SERVICE_HOST']}:{os.environ['KUBERNETES_SERVICE_PORT_HTTPS']}"
+API = "https://kubernetes.default.svc:443"
 TOKEN_PATH = "/var/run/secrets/kubernetes.io/serviceaccount/token"
 CA_PATH = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
 
@@ -18,19 +18,32 @@ headers = {
     "Accept": "application/json",
 }
 
+
 def request(path, method="GET", body=None):
     data = None if body is None else json.dumps(body).encode()
     request_obj = urllib.request.Request(
         API + path,
         data=data,
         method=method,
-        headers=headers | (
+        headers=headers
+        | (
             {"Content-Type": "application/merge-patch+json"}
-            if body is not None else {}
+            if body is not None
+            else {}
         ),
     )
-    with urllib.request.urlopen(request_obj, context=context, timeout=15) as response:
-        return json.loads(response.read())
+    last_error = None
+    for attempt in range(5):
+        try:
+            with urllib.request.urlopen(request_obj, context=context, timeout=15) as response:
+                return json.loads(response.read())
+        except (urllib.error.URLError, TimeoutError) as exc:
+            last_error = exc
+            if attempt == 4:
+                raise
+            time.sleep(2 * (attempt + 1))
+    raise RuntimeError(f"Kubernetes API request failed: {last_error}")
+
 
 source_path = "/api/v1/namespaces/shopno-identity/secrets/keycloak-secret"
 target_path = "/api/v1/namespaces/shopno-platform/secrets/freedomain-service-secret"
