@@ -47,6 +47,13 @@ spec:
             - secretRef:
                 name: oauth-service-secret
           env:
+            - name: KEYCLOAK_ADMIN_USER
+              value: "admin"
+            - name: KEYCLOAK_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-secret
+                  key: KC_BOOTSTRAP_ADMIN_PASSWORD
             - name: POD_NAME
               valueFrom: { fieldRef: { fieldPath: metadata.name } }
             - name: POD_NAMESPACE
