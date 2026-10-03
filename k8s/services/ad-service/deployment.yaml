@@ -22,7 +22,7 @@ spec:
           type: RuntimeDefault
       containers:
       - name: ad-service
-        image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/ad-service:b4ac8b95bfcf5b756366e047c0f64f92b45941d3
+        image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/ad-service:8c64ccfc680fef2e34774b5fd3e45240e0a820ae
         imagePullPolicy: IfNotPresent
         env:
         - name: DATABASE_URL
