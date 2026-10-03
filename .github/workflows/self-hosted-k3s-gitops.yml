@@ -108,6 +108,55 @@ jobs:
               kubectl apply -f -
           fi
 
+      - name: Provision ad-service PostgreSQL secret
+        shell: bash
+        run: |
+          set -euo pipefail
+          postgres_user="$(kubectl -n shopno-data get secret postgres-secret -o jsonpath='{.data.POSTGRES_USER}' | base64 -d)"
+          postgres_password="$(kubectl -n shopno-data get secret postgres-secret -o jsonpath='{.data.POSTGRES_PASSWORD}' | base64 -d)"
+          database_url="$(python3 - "$postgres_user" "$postgres_password" <<'PY'
+          import sys
+          from urllib.parse import quote
+          user, password = sys.argv[1], sys.argv[2]
+          print(f"postgresql+asyncpg://{quote(user, safe='')}:{quote(password, safe='')}@postgres.shopno-data.svc.cluster.local:5432/ads")
+          PY
+          )"
+          kubectl -n "$PLATFORM_NAMESPACE" create secret generic ad-service-secret \
+            --from-literal=database-url="$database_url" \
+            --dry-run=client -o yaml | kubectl -n "$PLATFORM_NAMESPACE" apply -f -
+          echo 'Ad-service PostgreSQL secret reconciled.'
+
+      - name: Provision shared ad-network payment service key
+        shell: bash
+        run: |
+          set -euo pipefail
+          payment_key="$(kubectl -n shopno-payments get secret payment-service-secret -o jsonpath='{.data.INTERNAL_API_KEY}' 2>/dev/null | base64 -d || true)"
+          ad_key="$(kubectl -n "$PLATFORM_NAMESPACE" get secret ad-service-secret -o jsonpath='{.data.INTERNAL_API_KEY}' 2>/dev/null | base64 -d || true)"
+          if [ -n "$payment_key" ] && [ -n "$ad_key" ] && [ "$payment_key" != "$ad_key" ]; then
+            echo 'Existing ad-network payment keys differ; refusing to rotate credentials implicitly.'
+            exit 1
+          fi
+          shared_key="$payment_key"
+          if [ -z "$shared_key" ]; then
+            shared_key="$ad_key"
+          fi
+          if [ -z "$shared_key" ]; then
+            shared_key="$(openssl rand -hex 32)"
+          fi
+          patch_secret() {
+            local namespace="$1"
+            local name="$2"
+            local encoded
+            encoded="$(printf '%s' "$shared_key" | base64 -w0)"
+            kubectl -n "$namespace" get secret "$name" -o json |
+              jq --arg encoded "$encoded" '.data.INTERNAL_API_KEY=$encoded' |
+              kubectl apply -f -
+          }
+          patch_secret shopno-payments payment-service-secret
+          patch_secret "$PLATFORM_NAMESPACE" ad-service-secret
+          echo 'Shared ad-network payment authentication key reconciled without exposing its value.'
+          echo 'Both services retain their existing secret fields.'
+
       - name: Provision mail admin mailbox credential
         shell: bash
         run: |

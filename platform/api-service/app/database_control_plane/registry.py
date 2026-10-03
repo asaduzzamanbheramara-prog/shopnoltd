@@ -38,6 +38,27 @@ def _table(name: str, *, writable: bool = False, bulk: bool = False, importable:
 
 DATABASE_CAPABILITIES: tuple[DatabaseCapability, ...] = (
     DatabaseCapability(
+        service="ad-service",
+        database="ads",
+        schemas=("public",),
+        tables=(
+            _table("advertisers", protected="advertiser ownership/approval is service-owned"),
+            _table("publishers", protected="publisher ownership/approval and revenue share are service-owned"),
+            _table("publisher_sites", protected="site verification is service-owned"),
+            _table("ad_zones", protected="inventory authorization is service-owned"),
+            _table("campaigns", protected="campaign budgets and financial state are service-owned"),
+            _table("creatives", protected="creative moderation and destination validation are service-owned"),
+            _table("ad_deliveries", protected="delivery ledger is append-only/service-owned"),
+            _table("ad_events", protected="event ledger is append-only/service-owned"),
+            _table("fraud_events", protected="fraud/security history is append-only"),
+            _table("publisher_payouts", protected="payout state is financial/service-owned"),
+        ),
+        backup=True,
+        restore=True,
+        tenant_scope="service",
+        protected_reason="advertising inventory, delivery and financial events require validated ad-service APIs",
+    ),
+    DatabaseCapability(
         service="payment-service",
         database="shopnoltd",
         schemas=("public",),

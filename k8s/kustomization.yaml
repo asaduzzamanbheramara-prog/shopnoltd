@@ -23,6 +23,7 @@ resources:
 - services/auth-service
 - services/oauth-service
 - services/payment-service
+- services/ad-service
 - services/exchange-service
 - services/domain-service
 - services/vpn-service.yaml
