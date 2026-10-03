@@ -1,3 +1,4 @@
+import os
 import re
 
 import httpx
@@ -118,7 +119,7 @@ async def _create_dns_record(subdomain: str, target: str, record_type: str, *, a
     # The recovered cluster uses an existing Cloudflare wildcard for free Shopnoltd subdomains.
     # When explicitly enabled, keep the entitlement/database row without requiring the retired
     # per-record PowerDNS backend. Paid/custom DNS flows remain provider-backed.
-    if allow_wildcard_fallback and settings.wildcard_dns_fallback and target == settings.default_target and record_type.upper() == settings.default_record_type.upper():
+    if allow_wildcard_fallback and os.getenv("WILDCARD_DNS_FALLBACK", "false").strip().lower() in {"1", "true", "yes", "on"} and target == settings.default_target and record_type.upper() == settings.default_record_type.upper():
         return
     async with httpx.AsyncClient(
         timeout=httpx.Timeout(10.0, connect=5.0),
