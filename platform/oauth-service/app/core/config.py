@@ -13,7 +13,10 @@ class Settings(BaseSettings):
     keycloak_admin_user: str = "admin"
     keycloak_admin_password: str = "CHANGE_ME"
     keycloak_realm: str = "shopnoltd"
-    keycloak_audience: str = "oauth-service"
+    # Browser access tokens are issued for the unified API audience. The API
+    # proxies authenticated requests to this service, so OAuth must validate
+    # the same audience rather than its own service name.
+    keycloak_audience: str = "api-service"
 
     @property
     def keycloak_issuer(self) -> str:
