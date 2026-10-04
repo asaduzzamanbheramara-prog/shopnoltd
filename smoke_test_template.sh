@@ -2,7 +2,7 @@
 # Backend smoke test for shopnoltd.dpdns.org
 # 1. Run discover_endpoints.sh FIRST and fill in the hostnames below.
 # 2. This tries 3 login strategies in order and uses whichever works.
-# 3. Rotate both test passwords after this session — they were pasted in chat.
+# 3. Supply test credentials only through the environment; never commit or paste them into this file.
 set -uo pipefail  # no -e: we want to keep going after failed checks and report everything
 
 # ── FILL IN FROM discover_endpoints.sh OUTPUT ───────────────────────────────
@@ -17,10 +17,10 @@ PAYMENT_HOST="payment.${BASE}"            # TODO confirm
 EXCHANGE_HOST="exchange.${BASE}"          # TODO confirm
 BLOG_HOST="blog.${BASE}"                  # TODO confirm — dedicated blog/CMS service host
 
-ADMIN_USER="test_admin"
-ADMIN_PASS='GZ5cGMEJ1k8iqaWNdwjiWA'
-USER_USER="test_user"
-USER_PASS='gnNdipU4lfpLhdS0dUv7IA'
+ADMIN_USER="${SHOPNOLTD_ADMIN_USERNAME:?Set SHOPNOLTD_ADMIN_USERNAME in the environment}"
+ADMIN_PASS="${SHOPNOLTD_ADMIN_PASSWORD:?Set SHOPNOLTD_ADMIN_PASSWORD in the environment}"
+USER_USER="${SHOPNOLTD_USER_USERNAME:?Set SHOPNOLTD_USER_USERNAME in the environment}"
+USER_PASS="${SHOPNOLTD_USER_PASSWORD:?Set SHOPNOLTD_USER_PASSWORD in the environment}"
 
 # ── helpers ──────────────────────────────────────────────────────────────
 pass=0; fail=0
