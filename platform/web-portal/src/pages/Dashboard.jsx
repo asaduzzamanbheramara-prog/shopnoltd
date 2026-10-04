@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { SERVICES, ADMIN_SERVICES } from '../data/serviceCatalog'
 import { isPlatformAdmin } from '../lib/jwt'
 import { authenticatedRequest, getTransactions, getWallet } from '../lib/financialApi'
@@ -32,6 +32,7 @@ function Metric({ label, value, href, note }) {
 }
 
 export default function Dashboard() {
+  const navigate = useNavigate()
   const [me, setMe] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -86,7 +87,14 @@ export default function Dashboard() {
       if (freeDomainResult.status === 'fulfilled') setFreeDomains(Array.isArray(freeDomainResult.value) ? freeDomainResult.value : [])
     } catch (err) {
       console.error('Dashboard profile request failed:', err)
-      setError(err.message || 'Unable to load dashboard.')
+      const message = err.message || 'Unable to load dashboard.'
+      if (message === 'Your session has expired. Please log in again.') {
+        localStorage.removeItem('shopno_token')
+        localStorage.removeItem('shopno_refresh_token')
+        setError('Your session has expired. Please sign in again.')
+      } else {
+        setError(message)
+      }
     } finally {
       setRefreshing(false)
       setLoading(false)
@@ -98,7 +106,18 @@ export default function Dashboard() {
   if (loading) return <div style={{ padding: 32 }}>Loading your dashboard…</div>
 
   if (error && !me) {
-    return <div style={{ padding: 32 }}><h2>Dashboard unavailable</h2><p>{error}</p><button type="button" onClick={loadDashboard}>Retry</button></div>
+    const sessionExpired = error === 'Your session has expired. Please sign in again.'
+    return (
+      <div style={{ padding: 32 }}>
+        <h2>Dashboard unavailable</h2>
+        <p>{error}</p>
+        {sessionExpired ? (
+          <button type="button" onClick={() => navigate('/login')}>Sign in again</button>
+        ) : (
+          <button type="button" onClick={loadDashboard}>Retry</button>
+        )}
+      </div>
+    )
   }
 
   const isAdmin = isPlatformAdmin()
