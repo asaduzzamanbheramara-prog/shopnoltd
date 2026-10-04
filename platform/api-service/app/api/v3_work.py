@@ -75,7 +75,7 @@ WORK_PLATFORMS = {"shopnoltd", "facebook", "instagram", "youtube", "tiktok", "te
 def is_admin(u):
     roles = set(u.get("roles") or [])
     realm_roles = set(((u.get("realm_access") or {}).get("roles") or []))
-    return bool(roles.intersection({"admin", "shopnoltd-admin", "administrator"}) or realm_roles.intersection({"admin", "shopnoltd-admin", "administrator"}) or u.get("is_admin") is True)
+    return bool(roles.intersection({"admin", "platform_admin", "shopnoltd-admin", "administrator"}) or realm_roles.intersection({"admin", "platform_admin", "shopnoltd-admin", "administrator"}) or u.get("is_admin") is True)
 
 def rate_dict(r):
     return {"platform": r.platform, "task_type": r.task_type, "rate": str(r.rate), "currency": r.currency, "enabled": bool(r.enabled)}
