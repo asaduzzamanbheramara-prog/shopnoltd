@@ -14,7 +14,7 @@ async def _jwks(force_refresh: bool = False):
     if _jwks_cache:
         return _jwks_cache
     async with httpx.AsyncClient(timeout=10) as c:
-        r = await c.get(f"{settings.keycloak_issuer}/protocol/openid-connect/certs")
+        r = await c.get(settings.keycloak_jwks_url)
         r.raise_for_status()
         _jwks_cache = r.json()
     return _jwks_cache
@@ -31,26 +31,17 @@ async def verify_token(token: str) -> dict:
             key = next((k for k in keys["keys"] if k["kid"] == h["kid"]), None)
         if key is None:
             raise JWTError("Signing key not found")
-
         last_error = None
         for audience in ACCEPTED_AUDIENCES:
             try:
-                return jwt.decode(
-                    token,
-                    key,
-                    algorithms=[key["alg"]],
-                    audience=audience,
-                    issuer=settings.keycloak_issuer,
-                    options={"verify_aud": True, "verify_iss": True},
-                )
+                return jwt.decode(token, key, algorithms=[key["alg"]], audience=audience,
+                                  issuer=settings.keycloak_issuer,
+                                  options={"verify_aud": True, "verify_iss": True})
             except JWTError as exc:
                 last_error = exc
         raise JWTError(f"invalid token audience: {last_error}")
     except Exception as e:
-        raise ValueError(
-            f"invalid token: kid={locals().get('h', {}).get('kid')} "
-            f"aud={locals().get('unverified_claims', {}).get('aud')} error={e}"
-        ) from e
+        raise ValueError(f"invalid token: kid={locals().get('h', {}).get('kid')} aud={locals().get('unverified_claims', {}).get('aud')} error={e}") from e
 
 
 async def verify_token_admin(token: str) -> dict:
