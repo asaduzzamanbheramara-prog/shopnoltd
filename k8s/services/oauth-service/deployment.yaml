@@ -35,7 +35,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: oauth-service
-          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/oauth-service:8e789d0408b6f7e66dea1be146adfcd48d77e495
+          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/oauth-service:1f523da60b5a2cdc34702e547513ea39fc7949a0
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
