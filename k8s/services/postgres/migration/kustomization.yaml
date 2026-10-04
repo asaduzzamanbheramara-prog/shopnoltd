@@ -17,6 +17,7 @@ configMapGenerator:
   - 017-omnichannel-provider-oauth.sql
   - 018-ad-network.sql
   - 019-ad-network-funding.sql
+  - 020-payment-runtime-permissions.sql
   options:
     disableNameSuffixHash: true
 
