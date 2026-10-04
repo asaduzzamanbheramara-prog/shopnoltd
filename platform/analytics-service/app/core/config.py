@@ -10,6 +10,12 @@ class Settings(BaseSettings):
     redis_url: str = "redis://redis.shopno-data.svc.cluster.local:6379/0"
     cors_origins: str = "https://*.shopnoltd.dpdns.org"
     keycloak_issuer: str = "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
+    # Pods use the cluster-local Keycloak service for JWKS retrieval. The public
+    # issuer remains the canonical JWT issuer and is still validated on decode.
+    keycloak_jwks_url: str = (
+        "http://keycloak.shopno-identity.svc.cluster.local/realms/shopnoltd"
+        "/protocol/openid-connect/certs"
+    )
     keycloak_audience: str = "analytics-service"
 
     @property
