@@ -84,16 +84,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if kubectl -n "$PLATFORM_NAMESPACE" get secret ghcr-pull-secret >/dev/null 2>&1; then
-            echo 'Android Cloud GHCR pull secret already exists; preserving it.'
-          else
-            echo 'Provisioning Android Cloud GHCR pull secret from GitHub Actions token.'
-            kubectl -n "$PLATFORM_NAMESPACE" create secret docker-registry ghcr-pull-secret \
-              --docker-server=ghcr.io \
-              --docker-username="$GHCR_USERNAME" \
-              --docker-password="$GHCR_TOKEN" \
-              --dry-run=client -o yaml | kubectl apply -f -
-          fi
+          echo 'Refreshing Android Cloud GHCR pull secret from the current GitHub Actions token.'
+          kubectl -n "$PLATFORM_NAMESPACE" create secret docker-registry ghcr-pull-secret \
+            --docker-server=ghcr.io \
+            --docker-username="$GHCR_USERNAME" \
+            --docker-password="$GHCR_TOKEN" \
+            --dry-run=client -o yaml | kubectl apply -f -
 
       - name: Provision domain service PostgreSQL secret
         shell: bash
