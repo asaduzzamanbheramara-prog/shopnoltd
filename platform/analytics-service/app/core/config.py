@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     redis_url: str = "redis://redis.shopno-data.svc.cluster.local:6379/0"
     cors_origins: str = "https://*.shopnoltd.dpdns.org"
     keycloak_issuer: str = "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
+    keycloak_jwks_url: str = "http://keycloak.shopno-identity.svc.cluster.local:8080/realms/shopnoltd/protocol/openid-connect/certs"
     keycloak_audience: str = "analytics-service"
 
     @property
@@ -18,11 +19,7 @@ class Settings(BaseSettings):
 
     @property
     def cors_origin_regex(self) -> str:
-        # allow_origins does exact string matching in Starlette's CORSMiddleware,
-        # so a literal "*" embedded in a domain string (e.g. "https://*.shopnoltd.dpdns.org")
-        # never actually matches any real browser Origin header. This regex matches
-        # the bare root domain and any subdomain instead.
-        return r"^https://([a-z0-9-]+\.)*shopnoltd\.dpdns\.org$"
+        return r"^https://([a-z0-9-]+\\.)*shopnoltd\\.dpdns\\.org$"
 
 
 settings = Settings()
