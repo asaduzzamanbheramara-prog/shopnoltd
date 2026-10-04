@@ -26,7 +26,7 @@ async def current_user(creds: HTTPAuthorizationCredentials = Depends(bearer)):
 def is_admin(u):
     roles = set(u.get("roles") or [])
     realm = set(((u.get("realm_access") or {}).get("roles") or []))
-    return bool(roles.intersection({"admin","shopnoltd-admin","administrator"}) or realm.intersection({"admin","shopnoltd-admin","administrator"}) or u.get("is_admin") is True)
+    return bool(roles.intersection({"admin","platform_admin","shopnoltd-admin","administrator"}) or realm.intersection({"admin","platform_admin","shopnoltd-admin","administrator"}) or u.get("is_admin") is True)
 
 def code_for(user_id: str) -> str:
     return "SNO-" + hashlib.sha256(("shopnoltd-referral:" + user_id).encode()).hexdigest()[:12].upper()
