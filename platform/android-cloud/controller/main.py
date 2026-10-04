@@ -126,10 +126,10 @@ def make_emulator_pod(session: Session) -> client.V1Pod:
             client.V1ContainerPort(name="grpc", container_port=8554),
             client.V1ContainerPort(name="adb", container_port=5555),
         ],
-        env=[client.V1EnvVar(name="EMULATOR_PARAMS", value="-no-window -no-audio -memory 2048 -grpc 8554")],
+        env=[client.V1EnvVar(name="EMULATOR_PARAMS", value="-no-window -no-audio -memory 1536 -grpc 8554")],
         resources=client.V1ResourceRequirements(
-            requests={"cpu": "2", "memory": "2Gi", "ephemeral-storage": "4Gi"},
-            limits={"cpu": "4", "memory": "3Gi", "ephemeral-storage": "8Gi"},
+            requests={"cpu": "2", "memory": "1280Mi", "ephemeral-storage": "4Gi"},
+            limits={"cpu": "4", "memory": "2Gi", "ephemeral-storage": "8Gi"},
         ),
         volume_mounts=[client.V1VolumeMount(name="android-data", mount_path="/data")],
         security_context=client.V1SecurityContext(privileged=True, allow_privilege_escalation=True),
@@ -304,7 +304,8 @@ def get_session_for_user(session_id: str, user_id: str) -> Session:
 
 
 def exec_emulator(session: Session, command: list[str], stdin_bytes: bytes | None = None) -> str:
-    exec_stream = stream(
+    try:
+        exec_stream = stream(
         core.connect_get_namespaced_pod_exec,
         session.emulator_name,
         NAMESPACE,
@@ -316,7 +317,9 @@ def exec_emulator(session: Session, command: list[str], stdin_bytes: bytes | Non
         tty=False,
         _preload_content=False,
         binary=True,
-    )
+        )
+    except ApiException as exc:
+        raise HTTPException(status_code=503, detail="android_emulator_unavailable") from exc
     stdout = bytearray()
     stderr = bytearray()
     try:
