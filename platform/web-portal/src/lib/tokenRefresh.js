@@ -49,6 +49,6 @@ export async function tryRefresh() {
 }
 
 export function scheduleTokenRefresh() {
-  const id = setInterval(tryRefresh, 4 * 60 * 1000) // every 4 min, access token expires every 5
+  const id = setInterval(tryRefresh, 2 * 60 * 1000) // refresh well before the short-lived access token expires
   return () => clearInterval(id)
 }
