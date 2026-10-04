@@ -50,6 +50,7 @@ spec:
             - name: KEYCLOAK_ADMIN_USER
               value: "admin"
             - name: KEYCLOAK_ADMIN_PASSWORD
+              value: null
               valueFrom:
                 secretKeyRef:
                   name: keycloak-secret
