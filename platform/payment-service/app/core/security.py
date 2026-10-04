@@ -48,7 +48,13 @@ async def verify_token(token: str) -> dict:
         last_error = None
         for audience in (settings.keycloak_audience, settings.keycloak_web_audience):
             try:
-                return jwt.decode(token, key, algorithms=[key["alg"]], audience=audience, options={"verify_aud": True})
+                claims = jwt.decode(token, key, algorithms=[key["alg"]], audience=audience, options={"verify_aud": True})
+                roles = set(claims.get("roles", []) or [])
+                roles.update((claims.get("realm_access") or {}).get("roles", []) or [])
+                for client in (claims.get("resource_access") or {}).values():
+                    roles.update((client or {}).get("roles", []) or [])
+                claims["roles"] = sorted(roles)
+                return claims
             except JWTError as exc:
                 last_error = exc
         raise ValueError(f"invalid token audience: {last_error}")

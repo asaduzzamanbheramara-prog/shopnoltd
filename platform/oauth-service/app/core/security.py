@@ -22,13 +22,19 @@ async def verify_token(token: str) -> dict:
         h = jwt.get_unverified_header(token)
         keys = await _jwks()
         key = next(k for k in keys["keys"] if k["kid"] == h["kid"])
-        return jwt.decode(
+        claims = jwt.decode(
             token,
             key,
             algorithms=[key["alg"]],
             audience=settings.keycloak_audience,
             options={"verify_aud": True},
         )
+        roles = set(claims.get("roles", []) or [])
+        roles.update((claims.get("realm_access") or {}).get("roles", []) or [])
+        for client in (claims.get("resource_access") or {}).values():
+            roles.update((client or {}).get("roles", []) or [])
+        claims["roles"] = sorted(roles)
+        return claims
     except (JWTError, StopIteration) as e:
         raise ValueError(f"invalid token: {e}") from e
 

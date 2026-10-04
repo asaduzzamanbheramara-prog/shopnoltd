@@ -1,3 +1,4 @@
+\connect social
 -- 017 — secure omnichannel provider OAuth credentials
 CREATE TABLE IF NOT EXISTS omnichannel_oauth_tokens (
     id UUID PRIMARY KEY,

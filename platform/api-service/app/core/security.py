@@ -35,7 +35,7 @@ async def verify_token(token: str) -> dict:
             key = next((k for k in keys["keys"] if k["kid"] == h["kid"]), None)
         if key is None:
             raise JWTError("Signing key not found")
-        return jwt.decode(
+        claims = jwt.decode(
             token,
             key,
             algorithms=[key["alg"]],
@@ -43,6 +43,12 @@ async def verify_token(token: str) -> dict:
             issuer=settings.keycloak_issuer,
             options={"verify_aud": True, "verify_iss": True},
         )
+        roles = set(claims.get("roles", []) or [])
+        roles.update((claims.get("realm_access") or {}).get("roles", []) or [])
+        for client in (claims.get("resource_access") or {}).values():
+            roles.update((client or {}).get("roles", []) or [])
+        claims["roles"] = sorted(roles)
+        return claims
     except Exception as e:
         claims = locals().get("unverified_claims") or {}
         logger.warning(
