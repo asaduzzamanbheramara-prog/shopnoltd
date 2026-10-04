@@ -144,6 +144,7 @@ def make_emulator_pod(session: Session) -> client.V1Pod:
             restart_policy="Never",
             automount_service_account_token=False,
             containers=[container],
+            image_pull_secrets=[client.V1LocalObjectReference(name="ghcr-pull-secret")],
             volumes=[client.V1Volume(name="android-data", empty_dir=client.V1EmptyDirVolumeSource(size_limit="6Gi"))],
         ),
     )
@@ -177,6 +178,7 @@ def make_gateway_pod(session: Session) -> client.V1Pod:
             restart_policy="Always",
             automount_service_account_token=False,
             containers=[container],
+            image_pull_secrets=[client.V1LocalObjectReference(name="ghcr-pull-secret")],
         ),
     )
 
