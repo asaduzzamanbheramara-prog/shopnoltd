@@ -35,7 +35,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: storage-service
-          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/storage-service:7469e0aaf9bce4d52bf97a258a3b760f6f6661be
+          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/storage-service:21a017ef8e0442b18f642281880d937ac8c3839f
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
