@@ -18,6 +18,7 @@ spec:
       annotations:
         config.shopnoltd.dpdns.org/enketo-linked-server-revision: "kobo-linked-server-20260924-kobotoolbox-host"
     spec:
+      enableServiceLinks: false
       containers:
         - name: enketo
           image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/enketo:4e94596d3a3c6df65a127ef479eca483a3201b6c
