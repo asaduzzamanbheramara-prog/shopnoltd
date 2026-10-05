@@ -15,6 +15,7 @@ router = APIRouter()
 bearer = HTTPBearer()
 PAYMENT = "http://payment-service.shopno-payments.svc.cluster.local:80"
 SOCIAL = "http://social-service.shopno-platform.svc.cluster.local:80"
+OAUTH = "http://oauth-service.shopno-identity.svc.cluster.local:80"
 
 
 async def current_token(creds: HTTPAuthorizationCredentials = Depends(bearer)) -> str:
@@ -46,6 +47,21 @@ async def proxy(request: Request, base: str, path: str, token: str, *, content: 
         status_code=upstream.status_code,
         media_type=upstream.headers.get("content-type", "application/json").split(";", 1)[0],
     )
+
+
+# Identity/admin user facade. OAuth remains the owner and performs the
+# authoritative admin-role check; the browser stays on the unified API origin.
+@router.api_route("/users", methods=["GET", "POST"])
+async def admin_users(request: Request, token: str = Depends(current_token)):
+    return await proxy(request, OAUTH, "/api/v1/users", token)
+
+@router.api_route("/users/{user_id}", methods=["PATCH", "DELETE"])
+async def admin_user(request: Request, user_id: str, token: str = Depends(current_token)):
+    return await proxy(request, OAUTH, f"/api/v1/users/{user_id}", token)
+
+@router.api_route("/users/{user_id}/password-reset", methods=["POST"])
+async def admin_user_password_reset(request: Request, user_id: str, token: str = Depends(current_token)):
+    return await proxy(request, OAUTH, f"/api/v1/users/{user_id}/password-reset", token)
 
 
 # Payment/service-owned data facade. Write routes are deliberately proxied even
