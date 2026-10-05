@@ -36,6 +36,21 @@ async def proxy(request: Request, upstream_path: str, token: str):
     return Response(content=upstream.content, status_code=upstream.status_code, media_type=upstream.headers.get("content-type", "application/json").split(";", 1)[0])
 
 
+@router.api_route("/inference", methods=["POST"])
+@router.api_route("/inference/stream", methods=["POST"])
+@router.api_route("/inference/models", methods=["GET"])
+async def inference_legacy_paths(request: Request, token: str = Depends(raw_token)):
+    # Keep the browser-facing AI workspace contract stable while the owning
+    # service continues to use /api/v1/inference internally.
+    if request.url.path.endswith("/models"):
+        path = "/api/v1/inference/models"
+    elif request.url.path.endswith("/stream"):
+        path = "/api/v1/inference/stream"
+    else:
+        path = "/api/v1/inference"
+    return await proxy(request, path, token)
+
+
 @router.api_route("/ai/inference", methods=["POST"])
 async def inference(request: Request, token: str = Depends(raw_token)):
     return await proxy(request, "/api/v1/inference", token)
