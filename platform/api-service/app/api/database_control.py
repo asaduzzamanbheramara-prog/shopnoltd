@@ -349,13 +349,15 @@ async def execute_admin_sql(payload: dict[str, Any] = Body(...), token: dict = D
     if first not in {"SELECT", "EXPLAIN", "WITH", "INSERT", "UPDATE", "DELETE"}:
         raise HTTPException(400, "only SELECT, EXPLAIN, WITH, INSERT, UPDATE and DELETE are supported")
 
-    if first == "WITH":\n        raise HTTPException(403, "WITH statements are read-only through the browser SQL control plane")\n    mutation = first in {"INSERT", "UPDATE", "DELETE"}
+    if first == "WITH":
+        raise HTTPException(403, "WITH statements are read-only through the browser SQL control plane")
+    mutation = first in {"INSERT", "UPDATE", "DELETE"}
     if mutation:
         roles = set(token.get("roles", []))
         if "platform_admin" not in roles:
             raise HTTPException(403, "platform_admin is required for SQL mutations")
         candidates = re.findall(
-            r"\\b(?:FROM|JOIN|UPDATE|INTO|DELETE\\s+FROM)\\s+([A-Za-z_][A-Za-z0-9_]*)(?:\\.([A-Za-z_][A-Za-z0-9_]*))?",
+            r"\b(?:FROM|JOIN|UPDATE|INTO|DELETE\s+FROM)\s+([A-Za-z_][A-Za-z0-9_]*)(?:\.([A-Za-z_][A-Za-z0-9_]*))?",
             sql,
             flags=re.IGNORECASE,
         )
