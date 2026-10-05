@@ -115,24 +115,29 @@ def parse_dump(path):
     text = Path(path).read_text(errors="replace")
     columns = _users_columns(text)
     rows = []
-    patterns = [
-        re.compile(r"INSERT\s+INTO\s+[\x60]?users[\x60]?\s*\((.*?)\)\s*VALUES\s*(.*?);", re.I | re.S),
-        re.compile(r"INSERT\s+INTO\s+[\x60]?users[\x60]?\s+VALUES\s*(.*?);", re.I | re.S),
-    ]
-    for index, pattern in enumerate(patterns):
-        for m in pattern.finditer(text):
-            if index == 0:
-                cols = [x.strip().strip(chr(96)).strip('"').lower() for x in m.group(1).split(",")]
-                values_text = m.group(2)
-            else:
-                cols = columns
-                values_text = m.group(1)
-            for group in row_groups(values_text):
-                vals = fields(group)
-                if len(vals) == len(cols):
-                    rows.append(dict(zip(cols, vals)))
-        if rows:
-            break
+
+    # Most MySQL dumps emit one users row per INSERT without a column list.
+    # Parse those statements line-by-line so parentheses inside quoted
+    # user-agent/address values cannot confuse the row-group scanner.
+    for line in text.splitlines():
+        match = re.match(r"\s*INSERT\s+INTO\s+[\x60]?users[\x60]?\s+VALUES\s*(\(.*\));\s*$", line, re.I)
+        if match:
+            vals = fields(match.group(1)[1:-1])
+            if len(vals) == len(columns):
+                rows.append(dict(zip(columns, vals)))
+
+    if rows:
+        return [{str(k).lower(): (None if v is None else str(v).strip()) for k, v in r.items()} for r in rows]
+
+    # Fallback for dumps that use an explicit column list or multiline
+    # INSERT statements.
+    pattern = re.compile(r"INSERT\s+INTO\s+[\x60]?users[\x60]?\s*\((.*?)\)\s*VALUES\s*(.*?);", re.I | re.S)
+    for m in pattern.finditer(text):
+        cols = [x.strip().strip(chr(96)).strip('"').lower() for x in m.group(1).split(",")]
+        for group in row_groups(m.group(2)):
+            vals = fields(group)
+            if len(vals) == len(cols):
+                rows.append(dict(zip(cols, vals)))
     return [{str(k).lower(): (None if v is None else str(v).strip()) for k, v in r.items()} for r in rows]
 
 
