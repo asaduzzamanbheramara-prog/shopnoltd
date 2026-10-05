@@ -33,7 +33,8 @@ jobs:
             platform/api-service/app \
             platform/domain-service/app \
             platform/payment-service/app \
-            platform/social-service/app
+            platform/social-service/app \
+            platform/oauth-service/app
 
   web-portal:
     name: Web portal build
