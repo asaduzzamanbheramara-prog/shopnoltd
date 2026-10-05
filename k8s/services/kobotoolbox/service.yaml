@@ -14,3 +14,4 @@ spec:
       protocol: TCP
   selector:
     app.kubernetes.io/name: kobotoolbox
+    app.kubernetes.io/component: web
