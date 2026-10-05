@@ -52,6 +52,9 @@ spec:
             - secretRef:
                 name: kobotoolbox-smtp
           env:
+            # MongoDB authentication is provided by the dedicated Kobo Mongo secret.
+            # This explicitly overrides the legacy unauthenticated MONGO_DB_URL
+            # inherited from kobotoolbox-secret.
             - name: MONGO_DB_URL
               valueFrom:
                 secretKeyRef:
@@ -142,6 +145,12 @@ spec:
             - name: init-scripts
               mountPath: /srv/init
               readOnly: true
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop: ["ALL"]
+              add: ["CHOWN", "SETUID", "SETGID", "DAC_OVERRIDE", "FOWNER"]
       volumes:
         - name: data
           persistentVolumeClaim:
