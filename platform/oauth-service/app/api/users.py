@@ -9,7 +9,7 @@ from app.core.config import settings
 from app.core.db import SessionLocal
 from app.core.security import verify_token, verify_token_admin
 from app.models.models import UserMirror, UserProfile
-from app.schemas.schemas import UserIn, UserOut
+from app.schemas.schemas import UserAdminPatch, UserIn, UserOut
 
 router = APIRouter()
 bearer = HTTPBearer()
@@ -192,6 +192,102 @@ async def list_(
         select(UserMirror).order_by(UserMirror.created_at, UserMirror.id).offset(offset).limit(limit)
     )
     return [_user_out(u) for u in res.scalars().all()]
+
+
+@router.patch("/{user_id}", response_model=UserOut)
+async def update_user(user_id: str, body: UserAdminPatch, user=Depends(admin), s: AsyncSession = Depends(db)):
+    u = (await s.execute(select(UserMirror).where(UserMirror.id == user_id))).scalar_one_or_none()
+    if not u:
+        raise HTTPException(404, "user not found")
+
+    changes = body.model_dump(exclude_unset=True)
+    if "email" in changes:
+        email = (changes["email"] or "").strip().lower()
+        if not email:
+            raise HTTPException(400, "email cannot be empty")
+        owner = (await s.execute(select(UserMirror).where(UserMirror.email == email, UserMirror.id != u.id))).scalar_one_or_none()
+        if owner:
+            raise HTTPException(409, "email is already linked to another account")
+        if u.keycloak_id.startswith("import:"):
+            raise HTTPException(409, "legacy synthetic identity cannot change email through the admin API")
+        tok = await kc_token()
+        async with httpx.AsyncClient() as c:
+            r = await c.put(
+                f"{ADMIN_URL}/users/{u.keycloak_id}",
+                headers={"Authorization": f"Bearer {tok}"},
+                json={"email": email, "username": email},
+            )
+            r.raise_for_status()
+        u.email = email
+
+    if "name" in changes:
+        u.name = (changes["name"] or "").strip()
+        if not u.keycloak_id.startswith("import:"):
+            tok = await kc_token()
+            async with httpx.AsyncClient() as c:
+                r = await c.put(
+                    f"{ADMIN_URL}/users/{u.keycloak_id}",
+                    headers={"Authorization": f"Bearer {tok}"},
+                    json={"firstName": u.name},
+                )
+                r.raise_for_status()
+
+    if "tenant_id" in changes:
+        u.tenant_id = changes["tenant_id"]
+    if "active" in changes and changes["active"] is not None:
+        active = bool(changes["active"])
+        if not u.keycloak_id.startswith("import:"):
+            tok = await kc_token()
+            async with httpx.AsyncClient() as c:
+                r = await c.put(
+                    f"{ADMIN_URL}/users/{u.keycloak_id}",
+                    headers={"Authorization": f"Bearer {tok}"},
+                    json={"enabled": active},
+                )
+                r.raise_for_status()
+        u.active = active
+
+    await s.commit()
+    await s.refresh(u)
+    return _user_out(u)
+
+
+@router.post("/{user_id}/password-reset", response_model=dict)
+async def password_reset(user_id: str, user=Depends(admin), s: AsyncSession = Depends(db)):
+    u = (await s.execute(select(UserMirror).where(UserMirror.id == user_id))).scalar_one_or_none()
+    if not u:
+        raise HTTPException(404, "user not found")
+    if u.keycloak_id.startswith("import:"):
+        raise HTTPException(409, "legacy synthetic identity has no Keycloak recovery endpoint")
+    tok = await kc_token()
+    async with httpx.AsyncClient() as c:
+        r = await c.put(
+            f"{ADMIN_URL}/users/{u.keycloak_id}/execute-actions-email",
+            params={"lifespan": "1800", "client_id": "shopnoltd-web"},
+            headers={"Authorization": f"Bearer {tok}"},
+            json=["UPDATE_PASSWORD"],
+        )
+        r.raise_for_status()
+    return {"status": "sent", "user_id": u.id, "email": u.email}
+
+
+@router.delete("/{user_id}", response_model=dict)
+async def deactivate_user(user_id: str, user=Depends(admin), s: AsyncSession = Depends(db)):
+    u = (await s.execute(select(UserMirror).where(UserMirror.id == user_id))).scalar_one_or_none()
+    if not u:
+        raise HTTPException(404, "user not found")
+    if not u.keycloak_id.startswith("import:"):
+        tok = await kc_token()
+        async with httpx.AsyncClient() as c:
+            r = await c.put(
+                f"{ADMIN_URL}/users/{u.keycloak_id}",
+                headers={"Authorization": f"Bearer {tok}"},
+                json={"enabled": False},
+            )
+            r.raise_for_status()
+    u.active = False
+    await s.commit()
+    return {"status": "deactivated", "user_id": u.id}
 
 
 @router.get("/reconciliation", response_model=dict)
