@@ -97,17 +97,42 @@ def row_groups(values):
     return groups
 
 
+def _users_columns(text):
+    match = re.search(r"CREATE\s+TABLE\s+[\x60]users[\x60]\s*\((.*?)\)\s*;", text, re.I | re.S)
+    if not match:
+        raise RuntimeError("legacy dump does not contain users CREATE TABLE")
+    columns = []
+    for line in match.group(1).splitlines():
+        m = re.match(r"\s*[\x60]([^\x60]+)[\x60]\s+", line)
+        if m:
+            columns.append(m.group(1).lower())
+    if not columns:
+        raise RuntimeError("legacy users table has no parseable columns")
+    return columns
+
+
 def parse_dump(path):
     text = Path(path).read_text(errors="replace")
+    columns = _users_columns(text)
     rows = []
-    pattern = re.compile(r"INSERT\s+INTO\s+users\s*\((.*?)\)\s*VALUES\s*(.*?);", re.I | re.S)
-    for m in pattern.finditer(text):
-        cols = [x.strip().strip('"') for x in m.group(1).split(",")]
-        cols = [x.lower() for x in cols]
-        for group in row_groups(m.group(2)):
-            vals = fields(group)
-            if len(vals) == len(cols):
-                rows.append(dict(zip(cols, vals)))
+    patterns = [
+        re.compile(r"INSERT\s+INTO\s+[\x60]?users[\x60]?\s*\((.*?)\)\s*VALUES\s*(.*?);", re.I | re.S),
+        re.compile(r"INSERT\s+INTO\s+[\x60]?users[\x60]?\s+VALUES\s*(.*?);", re.I | re.S),
+    ]
+    for index, pattern in enumerate(patterns):
+        for m in pattern.finditer(text):
+            if index == 0:
+                cols = [x.strip().strip(chr(96)).strip('"').lower() for x in m.group(1).split(",")]
+                values_text = m.group(2)
+            else:
+                cols = columns
+                values_text = m.group(1)
+            for group in row_groups(values_text):
+                vals = fields(group)
+                if len(vals) == len(cols):
+                    rows.append(dict(zip(cols, vals)))
+        if rows:
+            break
     return [{str(k).lower(): (None if v is None else str(v).strip()) for k, v in r.items()} for r in rows]
 
 
