@@ -361,7 +361,7 @@ async def execute_admin_sql(payload: dict[str, Any] = Body(...), token: dict = D
         )
         if not candidates:
             raise HTTPException(400, "mutation must name an explicit table")
-        tables = {(schema or "public", table) for table, schema in candidates}
+        tables = {(first_name if second_name is None else first_name, "public" if second_name is None else second_name) for first_name, second_name in candidates}
         for schema, table in tables:
             capability = resolve_table_capability(database, table)
             if not capability["writable"]:
