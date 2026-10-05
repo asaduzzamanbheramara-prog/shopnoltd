@@ -31,17 +31,16 @@ spec:
         - name: meshcentral
           image: ghcr.io/ylianst/meshcentral:latest
           imagePullPolicy: IfNotPresent
-          # MeshCentral's agent update watcher can legitimately exceed the
-          # container runtime's default NOFILE soft limit. Raise it before
-          # starting the same Node entrypoint used by the image so the server
-          # does not crash with EMFILE while watching meshcmd.js.
+          # MeshCentral's agent update watcher can exceed the container
+          # runtime's default NOFILE soft limit. Raise it while preserving
+          # the vendor entrypoint and its config/child-process handling.
           command:
-            - /bin/sh
+            - /bin/bash
             - -c
           args:
             - |
               ulimit -n 65536
-              exec /usr/bin/node --disable-proto=delete /opt/meshcentral/meshcentral/meshcentral --configfile /opt/meshcentral/meshcentral-data/config.json --launch 21
+              exec /opt/meshcentral/entrypoint.sh
           ports:
             - name: https
               containerPort: 443
