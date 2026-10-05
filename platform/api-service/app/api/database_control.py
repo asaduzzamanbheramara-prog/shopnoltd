@@ -351,6 +351,9 @@ async def execute_admin_sql(payload: dict[str, Any] = Body(...), token: dict = D
 
     if first == "WITH":
         raise HTTPException(403, "WITH statements are read-only through the browser SQL control plane")
+    mutation = first in {"INSERT", "UPDATE", "DELETE"}
+    if mutation and "platform_admin" not in set(token.get("roles", [])):
+        raise HTTPException(403, "platform_admin is required for SQL mutations")
     candidates = re.findall(
         r"\b(?:FROM|JOIN|UPDATE|INTO|DELETE\s+FROM)\s+([A-Za-z_][A-Za-z0-9_]*)(?:\.([A-Za-z_][A-Za-z0-9_]*))?",
         sql,
@@ -369,8 +372,6 @@ async def execute_admin_sql(payload: dict[str, Any] = Body(...), token: dict = D
             raise HTTPException(403, f"generic SQL mutation is disabled for {schema}.{table}")
     if mutation and not tables:
         raise HTTPException(400, "mutation must name an explicit table")
-    if mutation and "platform_admin" not in set(token.get("roles", [])):
-        raise HTTPException(403, "platform_admin is required for SQL mutations")
     if database == "kpi":
         raise HTTPException(400, "MongoDB databases are not supported by the PostgreSQL SQL browser")
     conn = await _connect_database(database)
