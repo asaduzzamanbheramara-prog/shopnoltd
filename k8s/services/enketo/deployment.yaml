@@ -26,6 +26,11 @@ spec:
             - name: http
               containerPort: 8005
           env:
+            # Kubernetes service-link injection also creates ENKETO_PORT as a TCP URL.
+            # Enketo maps ENKETO_* variables into application config, so pin the
+            # application port explicitly to the numeric listener port.
+            - name: ENKETO_PORT
+              value: "8005"
             - name: ENKETO_URL
               value: "https://enketo.shopnoltd.dpdns.org"
             - name: ENKETO_API_URL
