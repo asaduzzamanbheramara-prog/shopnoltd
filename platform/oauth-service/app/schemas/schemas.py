@@ -8,6 +8,13 @@ class UserIn(BaseModel):
     tenant_id: str | None = None
 
 
+class UserAdminPatch(BaseModel):
+    email: str | None = None
+    name: str | None = None
+    tenant_id: str | None = None
+    active: bool | None = None
+
+
 class UserOut(BaseModel):
     id: str
     sub: str
@@ -15,6 +22,8 @@ class UserOut(BaseModel):
     name: str
     tenant_id: str | None
     roles: list
+    active: bool = True
+    identity_source: str = "keycloak"
 
     class Config:
         from_attributes = True

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { tryRefresh } from '../lib/tokenRefresh'
 import * as THREE from 'three'
 import {
   Users,
@@ -51,17 +52,20 @@ function authHeaders() {
 }
 
 async function api(path, options = {}) {
-  const response = await fetch(`${API_BASE}${path}`, {
-    ...options,
-    headers: { ...authHeaders(), ...(options.headers || {}) },
-  })
+  let token = localStorage.getItem('shopno_token')
+  let response
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const headers = { ...authHeaders(), ...(options.headers || {}) }
+    if (token) headers.Authorization = `Bearer ${token}`
+    response = await fetch(`${API_BASE}${path}`, { ...options, headers })
+    if (response.status !== 401 || attempt === 1) break
+    const refreshed = await tryRefresh()
+    if (!refreshed) break
+    token = refreshed
+  }
   const text = await response.text()
   let data = null
-  try {
-    data = text ? JSON.parse(text) : null
-  } catch {
-    data = text
-  }
+  try { data = text ? JSON.parse(text) : null } catch { data = text }
   if (!response.ok) {
     const detail = data?.detail || data?.message || (typeof data === 'string' ? data : '') || `${response.status} ${response.statusText}`
     throw new Error(detail)
@@ -153,11 +157,93 @@ export default function AdminDashboard() {
   const [error, setError] = useState('')
   const [reportTable, setReportTable] = useState('')
   const [reportRows, setReportRows] = useState([])
+  const [users, setUsers] = useState([])
+  const [userDraft, setUserDraft] = useState(null)
+  const [userSearch, setUserSearch] = useState('')
 
   const filteredRows = useMemo(() => {
     const q = query.trim().toLowerCase()
     return q ? rows.filter((row) => JSON.stringify(row).toLowerCase().includes(q)) : rows
   }, [rows, query])
+
+  async function loadUsers(search = userSearch) {
+    setLoading(true); setError('')
+    try {
+      const result = []
+      let offset = 0
+      const pageSize = 500
+      while (true) {
+        const qs = new URLSearchParams({ limit: String(pageSize), offset: String(offset) })
+        if (search.trim()) qs.set('q', search.trim())
+        const page = await api(`/api/v1/users?${qs}`)
+        if (!Array.isArray(page)) break
+        result.push(...page)
+        if (page.length < pageSize) break
+        offset += pageSize
+      }
+      setUsers(result)
+    } catch (err) {
+      setError(`Unable to load users: ${err.message}`)
+    } finally { setLoading(false) }
+  }
+
+  async function createUser() {
+    const email = window.prompt('New user email:')?.trim().toLowerCase()
+    if (!email) return
+    const name = window.prompt('Display name (optional):')?.trim() || ''
+    const tenant_id = window.prompt('Tenant ID (optional):')?.trim() || null
+    setLoading(true); setError('')
+    try {
+      await api('/api/v1/users', { method: 'POST', body: JSON.stringify({ email, name, tenant_id }) })
+      await loadUsers()
+      window.alert(`User ${email} created. Use Reset password to send the first recovery link.`)
+    } catch (err) {
+      setError(`Unable to create user: ${err.message}`)
+    } finally { setLoading(false) }
+  }
+
+  async function saveUser() {
+    if (!userDraft?.id) return
+    setLoading(true); setError('')
+    try {
+      await api(`/api/v1/users/${encodeURIComponent(userDraft.id)}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          email: userDraft.email,
+          name: userDraft.name,
+          tenant_id: userDraft.tenant_id || null,
+          active: Boolean(userDraft.active),
+        }),
+      })
+      setUserDraft(null)
+      await loadUsers()
+    } catch (err) {
+      setError(`Unable to update user: ${err.message}`)
+    } finally { setLoading(false) }
+  }
+
+  async function resetUserPassword(user) {
+    if (!window.confirm(`Send a password-reset email to ${user.email}?`)) return
+    setLoading(true); setError('')
+    try {
+      await api(`/api/v1/users/${encodeURIComponent(user.id)}/password-reset`, { method: 'POST' })
+      setError('')
+      window.alert(`Password-reset email requested for ${user.email}.`)
+    } catch (err) {
+      setError(`Unable to request password reset: ${err.message}`)
+    } finally { setLoading(false) }
+  }
+
+  async function deactivateUser(user) {
+    if (!window.confirm(`Deactivate ${user.email}? This keeps the database/profile history but disables the login identity.`)) return
+    setLoading(true); setError('')
+    try {
+      await api(`/api/v1/users/${encodeURIComponent(user.id)}`, { method: 'DELETE' })
+      await loadUsers()
+    } catch (err) {
+      setError(`Unable to deactivate user: ${err.message}`)
+    } finally { setLoading(false) }
+  }
 
   async function loadTables() {
     setLoading(true); setError('')
@@ -212,7 +298,7 @@ export default function AdminDashboard() {
     } finally { setLoading(false) }
   }
 
-  useEffect(() => { loadTables(); loadServices() }, [])
+  useEffect(() => { loadTables(); loadServices(); loadUsers() }, [])
   useEffect(() => { if (selectedTable && tables.length) loadTable(selectedTable, 0) }, [selectedTable, tables])
   useEffect(() => { if (!reportTable && tables.length) setReportTable(tables[0].name) }, [tables])
 
@@ -230,7 +316,7 @@ export default function AdminDashboard() {
   return <div style={{ minHeight: 'calc(100vh - 60px)', display: 'flex', background: TOKENS.bg, color: TOKENS.text, fontFamily: 'IBM Plex Sans, system-ui, sans-serif' }}>
     <aside style={{ width: 205, background: TOKENS.surface, borderRight: `1px solid ${TOKENS.border}`, padding: '20px 12px', flexShrink: 0 }}>
       <div style={{ color: TOKENS.copper, fontFamily: 'IBM Plex Mono, monospace', fontWeight: 700, padding: '0 10px 20px' }}>shopnoltd<span style={{ color: TOKENS.textMuted }}>/admin</span></div>
-      {navItems.map(({ id, label, icon: Icon }) => <button key={id} type="button" onClick={() => { setTab(id); if (id === 'services') loadServices() }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, border: 0, borderRadius: 7, padding: 10, marginBottom: 3, textAlign: 'left', background: tab === id ? TOKENS.surfaceRaised : 'transparent', color: tab === id ? TOKENS.text : TOKENS.textMuted, cursor: 'pointer' }}><Icon size={15} />{label}</button>)}
+      {navItems.map(({ id, label, icon: Icon }) => <button key={id} type="button" onClick={() => { setTab(id); if (id === 'services') loadServices(); if (id === 'users') loadUsers() }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, border: 0, borderRadius: 7, padding: 10, marginBottom: 3, textAlign: 'left', background: tab === id ? TOKENS.surfaceRaised : 'transparent', color: tab === id ? TOKENS.text : TOKENS.textMuted, cursor: 'pointer' }}><Icon size={15} />{label}</button>)}
       <div style={{ marginTop: 20, padding: 10, borderTop: `1px solid ${TOKENS.border}`, color: TOKENS.textMuted, fontSize: 11, lineHeight: 1.5 }}><ShieldCheck size={14} style={{ verticalAlign: 'middle' }} /> Unified admin API<br />Protected service-owned writes</div>
     </aside>
 
@@ -249,7 +335,16 @@ export default function AdminDashboard() {
 
       {tab === 'services' && <Card><div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', marginBottom: 12 }}><h2 style={{ margin: 0, fontSize: 18 }}>Live platform health</h2><Button secondary onClick={loadServices}><RefreshCw size={14} />Check</Button></div>{services.map((service) => <div key={service.name} style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderTop: `1px solid ${TOKENS.border}` }}><span>{service.name}</span><span style={{ color: service.status === 'healthy' ? TOKENS.healthy : service.status === 'degraded' ? TOKENS.degraded : TOKENS.down }}>{service.status}</span></div>)}</Card>}
 
-      {tab === 'users' && <Card><h2 style={{ marginTop: 0 }}>User management</h2><p style={{ color: TOKENS.textMuted, fontSize: 13 }}>User and identity records remain service-owned. Use the controlled database control plane rather than generic SQL mutation.</p><Button onClick={() => setTab('database')}><Database size={14} />Open database view</Button></Card>}
+      {tab === 'users' && <Card>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', marginBottom: 12 }}>
+          <div><h2 style={{ margin: 0 }}>User management</h2><p style={{ color: TOKENS.textMuted, fontSize: 13 }}>Validated identity administration: create, search, edit canonical profile linkage, enable/disable login, and send password-reset recovery. Passwords and Keycloak credentials are never stored in the database control plane.</p></div>
+          <div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}}><input value={userSearch} onChange={e=>setUserSearch(e.target.value)} onKeyDown={e=>e.key==='Enter'&&loadUsers()} placeholder="Search users" style={{background:TOKENS.surface,color:TOKENS.text,border:`1px solid ${TOKENS.border}`,borderRadius:7,padding:9}}/><Button secondary onClick={()=>loadUsers()} disabled={loading}><Search size={14}/>Search</Button><Button secondary onClick={createUser} disabled={loading}><Plus size={14}/>Create user</Button><Button secondary onClick={()=>loadUsers()} disabled={loading}><RefreshCw size={14}/>Refresh</Button></div>
+        </div>
+        <div style={{ overflowX: 'auto' }}><table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}><thead><tr>{['Email','Name','Tenant','Source','Status','Actions'].map(x=><th key={x} style={{ textAlign:'left', padding:9, borderBottom:`1px solid ${TOKENS.border}` }}>{x}</th>)}</tr></thead>
+        <tbody>{users.map(user=><tr key={user.id}><td style={{padding:9}}>{user.email}</td><td style={{padding:9}}>{user.name || '—'}</td><td style={{padding:9}}>{user.tenant_id || '—'}</td><td style={{padding:9}}>{user.identity_source || 'keycloak'}</td><td style={{padding:9}}>{user.active === false ? 'Disabled' : 'Active'}</td><td style={{padding:9,display:'flex',gap:6,flexWrap:'wrap'}}><Button secondary onClick={()=>setUserDraft({...user})}>Edit</Button><Button secondary onClick={()=>resetUserPassword(user)} disabled={loading}>Reset password</Button>{user.active !== false && <Button secondary onClick={()=>deactivateUser(user)} disabled={loading}>Deactivate</Button>}</td></tr>)}</tbody></table></div>
+        {!users.length && <div style={{padding:24,textAlign:'center',color:TOKENS.textMuted}}>No users returned.</div>}
+        {userDraft && <div style={{marginTop:16,padding:14,border:`1px solid ${TOKENS.border}`,borderRadius:8,background:TOKENS.surfaceRaised}}><h3 style={{marginTop:0}}>Edit user</h3><div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(220px,1fr))',gap:10}}>{[['email','Email'],['name','Name'],['tenant_id','Tenant ID']].map(([key,label])=><label key={key} style={{display:'grid',gap:5,color:TOKENS.textMuted}}>{label}<input value={userDraft[key] || ''} onChange={e=>setUserDraft({...userDraft,[key]:e.target.value})} style={{background:TOKENS.surface,color:TOKENS.text,border:`1px solid ${TOKENS.border}`,borderRadius:7,padding:9}} /></label>)}<label style={{display:'flex',gap:8,alignItems:'center',color:TOKENS.textMuted}}><input type="checkbox" checked={userDraft.active !== false} onChange={e=>setUserDraft({...userDraft,active:e.target.checked})}/> Login enabled</label></div><div style={{display:'flex',gap:8,marginTop:12}}><Button onClick={saveUser} disabled={loading}>Save changes</Button><Button secondary onClick={()=>setUserDraft(null)}>Cancel</Button></div></div>}
+      </Card>}
       {tab === 'billing' && <Card><h2 style={{ marginTop: 0 }}>Billing administration</h2><p style={{ color: TOKENS.textMuted, fontSize: 13 }}>Billing and ledger state is service-owned. Generic writes are intentionally disabled; validated billing APIs remain authoritative.</p><Button onClick={() => setTab('database')}><Wallet size={14} />Inspect billing tables</Button></Card>}
       {tab === 'payments' && <Card><h2 style={{ marginTop: 0 }}>Payment administration</h2><p style={{ color: TOKENS.textMuted, fontSize: 13 }}>Payment, transaction, wallet and deposit records are available through the protected admin read API. Money movement must use validated payment APIs.</p><Button onClick={() => setTab('database')}><CreditCard size={14} />Inspect payment tables</Button></Card>}
       {tab === 'exchange' && <Card><h2 style={{ marginTop: 0 }}>Exchange administration</h2><p style={{ color: TOKENS.textMuted, fontSize: 13 }}>Exchange and transaction data is available for controlled inspection and reporting. Rate-changing operations remain service-owned.</p><Button onClick={() => setTab('database')}><ArrowRightLeft size={14} />Inspect exchange tables</Button></Card>}
