@@ -349,7 +349,7 @@ async def execute_admin_sql(payload: dict[str, Any] = Body(...), token: dict = D
     if first not in {"SELECT", "EXPLAIN", "WITH", "INSERT", "UPDATE", "DELETE"}:
         raise HTTPException(400, "only SELECT, EXPLAIN, WITH, INSERT, UPDATE and DELETE are supported")
 
-    mutation = first in {"INSERT", "UPDATE", "DELETE"} or (first == "WITH" and any(word in upper for word in (" INSERT ", " UPDATE ", " DELETE ")))
+    if first == "WITH":\n        raise HTTPException(403, "WITH statements are read-only through the browser SQL control plane")\n    mutation = first in {"INSERT", "UPDATE", "DELETE"}
     if mutation:
         roles = set(token.get("roles", []))
         if "platform_admin" not in roles:
