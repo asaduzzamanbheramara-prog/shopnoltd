@@ -22,6 +22,8 @@ class UserOut(BaseModel):
     name: str
     tenant_id: str | None
     roles: list
+    active: bool = True
+    identity_source: str = "keycloak"
 
     class Config:
         from_attributes = True
