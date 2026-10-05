@@ -16,7 +16,7 @@ export default function SqlBrowser() {
     try {
       const { data } = await api.get('/v1/admin/database/live-catalog')
       const items = data?.databases || []
-      setDatabases(items.filter(item => item.reachable && item.classification !== 'system'))
+      setDatabases(items.filter(item => item.reachable && item.classification !== 'system' && (item.kind === 'postgres' || item.kind === 'postgresql' || !item.kind)))
       if (!database && items[0]?.database) setDatabase(items[0].database)
     } catch (e) {
       setError(e?.response?.data?.detail || e.message || 'Unable to load database inventory')
