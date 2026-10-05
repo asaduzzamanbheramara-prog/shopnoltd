@@ -159,19 +159,46 @@ export default function AdminDashboard() {
   const [reportRows, setReportRows] = useState([])
   const [users, setUsers] = useState([])
   const [userDraft, setUserDraft] = useState(null)
+  const [userSearch, setUserSearch] = useState('')
 
   const filteredRows = useMemo(() => {
     const q = query.trim().toLowerCase()
     return q ? rows.filter((row) => JSON.stringify(row).toLowerCase().includes(q)) : rows
   }, [rows, query])
 
-  async function loadUsers() {
+  async function loadUsers(search = userSearch) {
     setLoading(true); setError('')
     try {
-      const data = await api('/api/v1/users?limit=500&offset=0')
-      setUsers(Array.isArray(data) ? data : [])
+      const result = []
+      let offset = 0
+      const pageSize = 500
+      while (true) {
+        const qs = new URLSearchParams({ limit: String(pageSize), offset: String(offset) })
+        if (search.trim()) qs.set('q', search.trim())
+        const page = await api(`/api/v1/users?${qs}`)
+        if (!Array.isArray(page)) break
+        result.push(...page)
+        if (page.length < pageSize) break
+        offset += pageSize
+      }
+      setUsers(result)
     } catch (err) {
       setError(`Unable to load users: ${err.message}`)
+    } finally { setLoading(false) }
+  }
+
+  async function createUser() {
+    const email = window.prompt('New user email:')?.trim().toLowerCase()
+    if (!email) return
+    const name = window.prompt('Display name (optional):')?.trim() || ''
+    const tenant_id = window.prompt('Tenant ID (optional):')?.trim() || null
+    setLoading(true); setError('')
+    try {
+      await api('/api/v1/users', { method: 'POST', body: JSON.stringify({ email, name, tenant_id }) })
+      await loadUsers()
+      window.alert(`User ${email} created. Use Reset password to send the first recovery link.`)
+    } catch (err) {
+      setError(`Unable to create user: ${err.message}`)
     } finally { setLoading(false) }
   }
 
@@ -310,8 +337,8 @@ export default function AdminDashboard() {
 
       {tab === 'users' && <Card>
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', marginBottom: 12 }}>
-          <div><h2 style={{ margin: 0 }}>User management</h2><p style={{ color: TOKENS.textMuted, fontSize: 13 }}>Validated identity administration: edit canonical profile linkage, enable/disable login, and send password-reset recovery. Passwords and Keycloak credentials are never stored in the database control plane.</p></div>
-          <Button secondary onClick={loadUsers} disabled={loading}><RefreshCw size={14}/>Refresh</Button>
+          <div><h2 style={{ margin: 0 }}>User management</h2><p style={{ color: TOKENS.textMuted, fontSize: 13 }}>Validated identity administration: create, search, edit canonical profile linkage, enable/disable login, and send password-reset recovery. Passwords and Keycloak credentials are never stored in the database control plane.</p></div>
+          <div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}}><input value={userSearch} onChange={e=>setUserSearch(e.target.value)} onKeyDown={e=>e.key==='Enter'&&loadUsers()} placeholder="Search users" style={{background:TOKENS.surface,color:TOKENS.text,border:`1px solid ${TOKENS.border}`,borderRadius:7,padding:9}}/><Button secondary onClick={()=>loadUsers()} disabled={loading}><Search size={14}/>Search</Button><Button secondary onClick={createUser} disabled={loading}><Plus size={14}/>Create user</Button><Button secondary onClick={()=>loadUsers()} disabled={loading}><RefreshCw size={14}/>Refresh</Button></div>
         </div>
         <div style={{ overflowX: 'auto' }}><table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}><thead><tr>{['Email','Name','Tenant','Source','Status','Actions'].map(x=><th key={x} style={{ textAlign:'left', padding:9, borderBottom:`1px solid ${TOKENS.border}` }}>{x}</th>)}</tr></thead>
         <tbody>{users.map(user=><tr key={user.id}><td style={{padding:9}}>{user.email}</td><td style={{padding:9}}>{user.name || '—'}</td><td style={{padding:9}}>{user.tenant_id || '—'}</td><td style={{padding:9}}>{user.identity_source || 'keycloak'}</td><td style={{padding:9}}>{user.active === false ? 'Disabled' : 'Active'}</td><td style={{padding:9,display:'flex',gap:6,flexWrap:'wrap'}}><Button secondary onClick={()=>setUserDraft({...user})}>Edit</Button><Button secondary onClick={()=>resetUserPassword(user)} disabled={loading}>Reset password</Button>{user.active !== false && <Button secondary onClick={()=>deactivateUser(user)} disabled={loading}>Deactivate</Button>}</td></tr>)}</tbody></table></div>
