@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: node-inotify-sysctl
+  namespace: shopno-tools
+spec:
+  selector:
+    matchLabels:
+      app: node-inotify-sysctl
+  template:
+    metadata:
+      labels:
+        app: node-inotify-sysctl
+    spec:
+      tolerations:
+        - operator: Exists
+      initContainers:
+        - name: apply
+          image: alpine:3.20
+          securityContext:
+            privileged: true
+            runAsUser: 0
+            allowPrivilegeEscalation: true
+          command:
+            - /bin/sh
+            - -c
+            - |
+              sysctl -w fs.inotify.max_user_instances=1024
+              sysctl -w fs.inotify.max_user_watches=1048576
+      containers:
+        - name: hold
+          image: alpine:3.20
+          command:
+            - /bin/sh
+            - -c
+            - sleep 365d
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65534
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
