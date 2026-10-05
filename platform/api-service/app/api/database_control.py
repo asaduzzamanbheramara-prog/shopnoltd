@@ -53,6 +53,7 @@ async def table_rows(
     _: dict = Depends(require_admin),
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
+    q: str = Query("", max_length=200),
 ):
     capability = resolve_table_capability(database, table)
     if not capability["readable"]:
@@ -60,16 +61,34 @@ async def table_rows(
     conn = await _connect_database(database)
     try:
         s, t = _ident(schema), _ident(table)
-        rows = await conn.fetch(f"SELECT * FROM {s}.{t} OFFSET $1 LIMIT $2", offset, limit)
         columns = await conn.fetch(
-            """select column_name, data_type, is_nullable from information_schema.columns
-               where table_schema=$1 and table_name=$2 order by ordinal_position""", schema, table
+            """select c.column_name, c.data_type, c.is_nullable,
+                      exists (
+                        select 1 from information_schema.table_constraints tc
+                        join information_schema.key_column_usage kcu
+                          on kcu.constraint_name=tc.constraint_name
+                         and kcu.constraint_schema=tc.constraint_schema
+                         and kcu.table_schema=tc.table_schema
+                         and kcu.table_name=tc.table_name
+                        where tc.table_schema=c.table_schema and tc.table_name=c.table_name
+                          and tc.constraint_type='PRIMARY KEY' and kcu.column_name=c.column_name
+                      ) as primary_key
+               from information_schema.columns c
+               where c.table_schema=$1 and c.table_name=$2 order by c.ordinal_position""", schema, table
         )
+        search = q.strip()
+        params: list[Any] = [offset, limit]
+        where = ""
+        if search:
+            clauses = [f"coalesce({_ident(row["column_name"])}::text, '') ILIKE $3" for row in columns]
+            where = " WHERE " + " OR ".join(clauses)
+            params.append(f"%{search}%")
+        rows = await conn.fetch(f"SELECT * FROM {s}.{t}{where} ORDER BY ctid OFFSET $1 LIMIT $2", *params)
         return {
             "database": database, "schema": schema, "table": table,
             "capability": capability,
             "columns": [dict(c) for c in columns],
-            "rows": [dict(r) for r in rows], "limit": limit, "offset": offset,
+            "rows": [dict(r) for r in rows], "limit": limit, "offset": offset, "search": search,
         }
     finally:
         await conn.close()
@@ -91,6 +110,59 @@ async def table_count(database: str, schema: str, table: str, _: dict = Depends(
             raise HTTPException(404, "table not found")
         count = await conn.fetchval("SELECT count(*) FROM " + _ident(schema) + "." + _ident(table))
         return {"database": database, "schema": schema, "table": table, "total": count, "capability": capability}
+    finally:
+        await conn.close()
+
+
+@router.get("/tables/{database}/{schema}/{table}/analysis")
+async def table_analysis(database: str, schema: str, table: str, _: dict = Depends(require_admin)):
+    capability = resolve_table_capability(database, table)
+    if not capability["readable"]:
+        raise HTTPException(403, "table is not readable")
+    conn = await _connect_database(database)
+    try:
+        exists = await conn.fetchval(
+            "select 1 from information_schema.tables where table_schema=$1 and table_name=$2",
+            schema, table,
+        )
+        if not exists:
+            raise HTTPException(404, "table not found")
+        columns = await conn.fetch(
+            """select column_name, data_type, is_nullable, ordinal_position
+               from information_schema.columns where table_schema=$1 and table_name=$2
+               order by ordinal_position""", schema, table
+        )
+        constraints = await conn.fetch(
+            """select tc.constraint_name, tc.constraint_type,
+                      array_agg(kcu.column_name order by kcu.ordinal_position) as columns
+               from information_schema.table_constraints tc
+               left join information_schema.key_column_usage kcu
+                 on kcu.constraint_name=tc.constraint_name
+                and kcu.constraint_schema=tc.constraint_schema
+                and kcu.table_schema=tc.table_schema
+                and kcu.table_name=tc.table_name
+               where tc.table_schema=$1 and tc.table_name=$2
+               group by tc.constraint_name, tc.constraint_type
+               order by tc.constraint_name""", schema, table
+        )
+        indexes = await conn.fetch(
+            "select indexname, indexdef from pg_indexes where schemaname=$1 and tablename=$2 order by indexname",
+            schema, table,
+        )
+        rows = await conn.fetchval("SELECT count(*) FROM " + _ident(schema) + "." + _ident(table))
+        primary_key = []
+        for item in constraints:
+            if item["constraint_type"] == "PRIMARY KEY":
+                primary_key = list(item["columns"] or [])
+                break
+        return {
+            "database": database, "schema": schema, "table": table,
+            "rows": rows, "columns": len(columns), "primary_key": primary_key,
+            "unique_constraints": [dict(r) for r in constraints if r["constraint_type"] == "UNIQUE"],
+            "constraints": [dict(r) for r in constraints],
+            "indexes": [dict(r) for r in indexes],
+            "capability": capability,
+        }
     finally:
         await conn.close()
 
