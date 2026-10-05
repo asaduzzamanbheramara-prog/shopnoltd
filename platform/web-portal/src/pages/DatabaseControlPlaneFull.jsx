@@ -66,6 +66,7 @@ export default function DatabaseControlPlaneFull() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
+  const [analysis, setAnalysis] = useState(null)
 
   async function refresh() {
     setBusy(true); setError('')
@@ -104,7 +105,10 @@ export default function DatabaseControlPlaneFull() {
       const q = new URLSearchParams({ limit: String(PAGE), offset: String(nextOffset) })
       if (search) q.set('q', search)
       const result = await api(`/api/v1/admin/database/tables/${encodeURIComponent(database)}/${encodeURIComponent(selected.schema)}/${encodeURIComponent(selected.name)}/rows?${q}`)
-      setData(result); setOffset(nextOffset)
+      setData(result)
+      setOffset(nextOffset)
+      const meta = await api(`/api/v1/admin/database/tables/${encodeURIComponent(database)}/${encodeURIComponent(selected.schema)}/${encodeURIComponent(selected.name)}/analysis`)
+      setAnalysis(meta)
     } catch (e) { setError(e.message) } finally { setBusy(false) }
   }
   useEffect(() => { if (selected?.name) inspect(0) }, [database, schema, table])
@@ -166,9 +170,9 @@ export default function DatabaseControlPlaneFull() {
   }
 
   function exportCurrent(format) {
-    if (!data?.rows) return
-    if (format === 'csv') download(csv(data.rows, data.columns || []), `${database}-${selected.name}.csv`, 'text/csv')
-    else download(JSON.stringify(data.rows, null, 2), `${database}-${selected.name}.json`, 'application/json')
+    if (!selected) return
+    if (format === 'csv' && data?.rows) download(csv(data.rows, data.columns || []), `${database}-${selected.name}.csv`, 'text/csv')
+    else download(JSON.stringify(data?.rows || [], null, 2), `${database}-${selected.name}.json`, 'application/json')
   }
 
   return <main style={styles.page}><div style={styles.wrap}>
@@ -182,8 +186,8 @@ export default function DatabaseControlPlaneFull() {
       <label style={styles.search}><Search size={15}/><input value={search} onChange={e=>setSearch(e.target.value)} onKeyDown={e=>e.key==='Enter'&&inspect(0)} placeholder="Search current table"/></label><button style={styles.button} onClick={()=>inspect(0)} disabled={busy}><Search size={15}/> Search</button>
     </section>
     {db && <section style={styles.panel}><div style={styles.between}><div><strong>{declaredServices.join(' · ') || 'Live / undeclared database'}</strong><div style={styles.muted}>{database} · {selected?.schema || schema}.{selected?.name || '—'}</div></div><span style={styles.badge}>{capability.writable?'Controlled write':'Protected / read-only'}</span></div>
-      {selected && <div style={styles.capability}><span>Read: {capability.readable?'Yes':'No'}</span><span>Write: {capability.writable?'Yes':'No'}</span><span>Delete: {capability.destructive?'Yes':'No'}</span><span>Import: {capability.importable?'Yes':'No'}</span><span>Export: {capability.exportable?'Yes':'No'}</span><span>{capability.protected_reason || 'Explicitly allowlisted entity'}</span></div>}
-      <div style={styles.actions}>{capability.writable && <button style={styles.button} onClick={startAdd}><Plus size={15}/> Add row</button>}{capability.writable && selected && <button style={styles.button} onClick={()=>setEditor(null)}>Clear editor</button>}{capability.exportable && <><button style={styles.button} onClick={()=>exportCurrent('json')}><Download size={15}/> JSON</button><button style={styles.button} onClick={()=>exportCurrent('csv')}><Download size={15}/> CSV</button></>}</div>
+      {selected && <div style={styles.capability}><span>Read: {capability.readable?'Yes':'No'}</span><span>Write: {capability.writable?'Yes':'No'}</span><span>Delete: {capability.destructive?'Yes':'No'}</span><span>Import: {capability.importable?'Yes':'No'}</span><span>Export: {capability.exportable?'Yes':'No'}</span><span>{capability.protected_reason || 'Explicitly allowlisted entity'}</span></div>{analysis && <div style={styles.analysis}><span>Rows: {analysis.rows}</span><span>Columns: {analysis.columns}</span><span>Primary key: {analysis.primary_key?.join(', ') || 'None'}</span><span>Unique constraints: {analysis.unique_constraints?.length || 0}</span><span>Indexes: {analysis.indexes?.length || 0}</span></div>}}
+      <div style={styles.actions}>{capability.writable && <button style={styles.button} onClick={startAdd}><Plus size={15}/> Add row</button>}{capability.writable && selected && <button style={styles.button} onClick={()=>setEditor(null)}>Clear editor</button>}{capability.exportable && <><button style={styles.button} onClick={()=>exportCurrent('json')}><Download size={15}/> JSON</button><button style={styles.button} onClick={()=>exportCurrent('csv')}><Download size={15}/> CSV</button></>}{selected && capability.readable && <button style={styles.button} onClick={()=>inspect(offset)} disabled={busy}><Search size={15}/> Analyze</button>}{capability.importable && capability.writable && <label style={styles.button}>Import JSON<input type="file" accept="application/json,.json" onChange={chooseImport} style={{display:'none'}} /></label>}</div>
     </section>}
     {importPreview && <section style={styles.panel}><div style={styles.between}><div><h3>Validated import preview</h3><div style={styles.muted}>{importPreview.rows.length} rows ready for transactional import.</div></div><button style={styles.button} onClick={commitImport} disabled={busy}><Save size={15}/> Commit import</button></div><pre style={styles.pre}>{JSON.stringify(importPreview.rows.slice(0,20), null, 2)}</pre></section>}
     {editor && <section style={styles.panel}><div style={styles.between}><h3>{editor.mode==='add'?'Add row':'Edit row'}</h3><button style={styles.icon} onClick={()=>setEditor(null)}><X/></button></div><div style={styles.form}>{(data?.columns||[]).filter(c=>c.column_name!=='id'||editor.mode==='edit').map(column => <label key={column.column_name}>{column.column_name}<small>{column.data_type}{column.primary_key?' · PK':''}{column.is_nullable==='YES'?' · nullable':''}</small><input disabled={editor.mode==='edit'&&column.primary_key} value={editor.values[column.column_name] ?? ''} onChange={e=>setEditor({...editor,values:{...editor.values,[column.column_name]:e.target.value}})} /></label>)}</div><button style={styles.button} onClick={save} disabled={busy}><Save size={15}/> Save</button></section>}
