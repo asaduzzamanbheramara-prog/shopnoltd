@@ -58,8 +58,6 @@ async def table_rows(
     capability = resolve_table_capability(database, table)
     if not capability["readable"]:
         raise HTTPException(403, "table is not readable")
-    if database == "kpi":
-        raise HTTPException(400, "MongoDB databases are not supported by the PostgreSQL SQL browser")
     conn = await _connect_database(database)
     try:
         s, t = _ident(schema), _ident(table)
@@ -373,6 +371,8 @@ async def execute_admin_sql(payload: dict[str, Any] = Body(...), token: dict = D
         raise HTTPException(400, "mutation must name an explicit table")
     if mutation and "platform_admin" not in set(token.get("roles", [])):
         raise HTTPException(403, "platform_admin is required for SQL mutations")
+    if database == "kpi":
+        raise HTTPException(400, "MongoDB databases are not supported by the PostgreSQL SQL browser")
     conn = await _connect_database(database)
     try:
         if first in {"SELECT", "EXPLAIN", "WITH"}:
