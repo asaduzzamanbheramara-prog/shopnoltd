@@ -40,7 +40,7 @@ spec:
           args:
             - |
               ulimit -n 65536
-              exec /opt/meshcentral/entrypoint.sh
+              exec /bin/bash /opt/meshcentral/entrypoint.sh
           ports:
             - name: https
               containerPort: 443
