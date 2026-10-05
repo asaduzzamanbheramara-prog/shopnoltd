@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { tryRefresh } from '../lib/tokenRefresh'
 import { Database, Download, Edit3, Plus, RefreshCw, Save, Search, ShieldCheck, Trash2, X } from 'lucide-react'
 
 const PAGE = 50
@@ -7,7 +8,17 @@ const apiHeaders = () => {
   return { Accept: 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }
 }
 async function api(path, options = {}) {
-  const response = await fetch(path, { ...options, headers: { ...apiHeaders(), ...(options.headers || {}) } })
+  let token = localStorage.getItem('shopno_token')
+  let response
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const headers = { ...apiHeaders(), ...(options.headers || {}) }
+    if (token) headers.Authorization = `Bearer ${token}`
+    response = await fetch(path, { ...options, headers })
+    if (response.status !== 401 || attempt === 1) break
+    const refreshed = await tryRefresh()
+    if (!refreshed) break
+    token = refreshed
+  }
   const text = await response.text()
   let data = null
   try { data = text ? JSON.parse(text) : null } catch { data = text }
@@ -77,7 +88,7 @@ export default function DatabaseControlPlaneFull() {
   const selected = tables.find(t => t.name === table) || tables[0]
   const capability = selected?.capability || { readable: false, writable: false, destructive: false, importable: false, exportable: false, protected_reason: 'No explicit capability' }
   const declaredServices = db?.declared_services || declared.filter(x => x.database === database).map(x => x.service)
-  const appDatabases = live.filter(x => x.classification === 'application')
+  const appDatabases = live
 
   useEffect(() => {
     if (db && !schemas.includes(schema)) setSchema(schemas[0] || 'public')
@@ -161,9 +172,9 @@ export default function DatabaseControlPlaneFull() {
   }
 
   return <main style={styles.page}><div style={styles.wrap}>
-    <header style={styles.header}><div><div style={styles.title}><Database size={25}/><h1>Website Database Management</h1></div><p style={styles.muted}>Live database inventory with explicit service ownership, guarded CRUD, search, pagination, export and protected financial/identity boundaries. No browser SQL.</p></div><button style={styles.button} onClick={refresh} disabled={busy}><RefreshCw size={15}/> Refresh</button></header>
+    <header style={styles.header}><div><div style={styles.title}><Database size={25}/><h1>Website Database Management</h1></div><p style={styles.muted}>Complete live database/table inventory with capability-gated management. Safe tables expose CRUD/import/export; identity, financial, security and ledger data uses validated service administration rather than unsafe generic mutation. No browser SQL.</p></div><button style={styles.button} onClick={refresh} disabled={busy}><RefreshCw size={15}/> Refresh</button></header>
     {error && <div style={styles.error}>{error}</div>}{message && <div style={styles.message}>{message}<button onClick={() => setMessage('')} style={styles.icon}><X size={14}/></button></div>}
-    <section style={styles.metrics}><Metric icon={<Database/>} label="Live application databases" value={appDatabases.length}/><Metric icon={<ShieldCheck/>} label="Declared services" value={declared.length}/><Metric icon={<ShieldCheck/>} label="Protected tables" value={live.reduce((n,d)=>n+(d.tables||[]).filter(t=>t.capability?.protected_reason).length,0)}/><Metric icon={<Database/>} label="Current database" value={database || '—'}/></section>
+    <section style={styles.metrics}><Metric icon={<Database/>} label="Live databases" value={appDatabases.length}/><Metric icon={<ShieldCheck/>} label="Declared services" value={declared.length}/><Metric icon={<ShieldCheck/>} label="Protected tables" value={live.reduce((n,d)=>n+(d.tables||[]).filter(t=>t.capability?.protected_reason).length,0)}/><Metric icon={<Database/>} label="Current database" value={database || '—'}/></section>
     <section style={styles.toolbar}>
       <label>Database<select value={database} onChange={e=>{setDatabase(e.target.value);setTable('');setOffset(0)}}>{appDatabases.map(d=><option key={d.database} value={d.database}>{d.database}{d.declared_services?.length?' · '+d.declared_services.join(', '):''}</option>)}</select></label>
       <label>Schema<select value={schema} onChange={e=>{setSchema(e.target.value);setTable('');setOffset(0)}}>{schemas.map(s=><option key={s} value={s}>{s}</option>)}</select></label>
