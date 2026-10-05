@@ -375,10 +375,11 @@ jobs:
           kubectl -n shopno-data exec deployment/postgres -- psql -U postgres -d postgres -v ON_ERROR_STOP=1 -c "ALTER DATABASE kobocat OWNER TO kobotoolbox;"
           kubectl -n shopno-data exec deployment/postgres -- psql -U postgres -d kobocat -v ON_ERROR_STOP=1 -c "CREATE EXTENSION IF NOT EXISTS postgis;"
           kubectl -n shopno-data exec deployment/postgres -- psql -U postgres -d kobocat -v ON_ERROR_STOP=1 -c "ALTER SCHEMA public OWNER TO kobotoolbox; GRANT USAGE,CREATE ON SCHEMA public TO kobotoolbox;"
-          echo 'Restarting Kobo worker and beat workloads so they consume the reconciled database credentials.'
-          for deployment in kobotoolbox-beat kobotoolbox-worker; do
+          echo 'Restarting Kobo web, worker, and beat workloads so they consume the reconciled database credentials.'
+          for deployment in kobotoolbox kobotoolbox-beat kobotoolbox-worker; do
             kubectl -n shopno-apps rollout restart deployment/"$deployment"
           done
+          kubectl -n shopno-apps rollout status deployment/kobotoolbox --timeout=180s
           kubectl -n shopno-apps rollout status deployment/kobotoolbox-worker --timeout=180s
           kubectl -n shopno-apps rollout status deployment/kobotoolbox-beat --timeout=180s
           echo 'Applying Kobo django_celery_beat migrations before Argo rollout.'
