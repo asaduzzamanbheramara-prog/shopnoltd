@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api'
 
-const DEFAULT_SQL = 'SELECT * FROM public.users LIMIT 50'
+const DEFAULT_SQL = 'SELECT 1 AS browser_ready'
 
 export default function SqlBrowser() {
   const [databases, setDatabases] = useState([])
