@@ -11,23 +11,12 @@ spec:
   tls:
     - hosts:
         - shopnoltdandroid.shopnoltd.dpdns.org
-        - shopnoltd.dpdns.org
       secretName: shopno-wildcard-tls
   rules:
     - host: shopnoltdandroid.shopnoltd.dpdns.org
       http:
         paths:
           - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: android-portal
-                port:
-                  number: 80
-    - host: shopnoltd.dpdns.org
-      http:
-        paths:
-          - path: /download
             pathType: Prefix
             backend:
               service:
