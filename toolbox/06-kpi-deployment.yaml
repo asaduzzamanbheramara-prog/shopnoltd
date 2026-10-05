@@ -28,11 +28,11 @@ spec:
         - containerPort: 8000
         env:
         - name: DATABASE_URL
-          value: postgis://kobo:kobo_pass@postgres.toolbox.svc.cluster.local:5432/kpidb
+          value: postgis://kobo:REDACTED_USE_KUBERNETES_SECRET@postgres.toolbox.svc.cluster.local:5432/kpidb
         - name: KPI_DATABASE_URL
-          value: postgis://kobo:kobo_pass@postgres.toolbox.svc.cluster.local:5432/kpidb
+          value: postgis://kobo:REDACTED_USE_KUBERNETES_SECRET@postgres.toolbox.svc.cluster.local:5432/kpidb
         - name: KC_DATABASE_URL
-          value: postgis://kobo:kobo_pass@postgres.toolbox.svc.cluster.local:5432/kobodb
+          value: postgis://kobo:REDACTED_USE_KUBERNETES_SECRET@postgres.toolbox.svc.cluster.local:5432/kobodb
         - name: MONGO_DB_URL
           value: mongodb://mongo.toolbox.svc.cluster.local:27017/kobocat
         - name: REDIS_SESSION_URL
@@ -44,7 +44,7 @@ spec:
         - name: DJANGO_SETTINGS_MODULE
           value: kobo.settings.prod
         - name: DJANGO_SECRET_KEY
-          value: y42k8K4M-Ixcc0cGE-f7uLFNMGjrpVs9FK3iQje5UkmdGkWamW9k8Wlx0eoHNaSEQd0
+          value: REDACTED_USE_KUBERNETES_SECRET
         - name: KPI_PREFIX
           value: /
         - name: PUBLIC_DOMAIN_NAME
