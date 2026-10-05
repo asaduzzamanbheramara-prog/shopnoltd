@@ -57,6 +57,11 @@ spec:
           value: "https://kobo.shopnoltd.dpdns.org"
         - name: KOBOCAT_URL
           value: "https://kobo.shopnoltd.dpdns.org"
+        - name: MONGO_DB_URL
+          valueFrom:
+            secretKeyRef:
+              name: kobotoolbox-mongo-auth
+              key: MONGO_DB_URL
         envFrom:
         - configMapRef:
             name: kobotoolbox-config
