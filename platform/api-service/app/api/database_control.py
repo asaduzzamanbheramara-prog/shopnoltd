@@ -80,7 +80,7 @@ async def table_rows(
         params: list[Any] = [offset, limit]
         where = ""
         if search:
-            clauses = [f"coalesce({_ident(row["column_name"])}::text, '') ILIKE $3" for row in columns]
+            clauses = [f"coalesce({_ident(row['column_name'])}::text, '') ILIKE $3" for row in columns]
             where = " WHERE " + " OR ".join(clauses)
             params.append(f"%{search}%")
         rows = await conn.fetch(f"SELECT * FROM {s}.{t}{where} ORDER BY ctid OFFSET $1 LIMIT $2", *params)
