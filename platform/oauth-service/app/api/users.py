@@ -59,6 +59,8 @@ def _user_out(u: UserMirror) -> UserOut:
         name=u.name or "",
         tenant_id=u.tenant_id,
         roles=u.roles or [],
+        active=bool(u.active),
+        identity_source=u.identity_source or "keycloak",
     )
 
 
@@ -187,10 +189,19 @@ async def list_(
     s: AsyncSession = Depends(db),
     limit: int = Query(100, ge=1, le=500),
     offset: int = Query(0, ge=0),
+    q: str = Query("", max_length=200),
 ):
-    res = await s.execute(
-        select(UserMirror).order_by(UserMirror.created_at, UserMirror.id).offset(offset).limit(limit)
-    )
+    stmt = select(UserMirror).order_by(UserMirror.created_at, UserMirror.id)
+    search = q.strip()
+    if search:
+        pattern = f"%{search.lower()}%"
+        stmt = stmt.where(
+            func.lower(UserMirror.email).like(pattern)
+            | func.lower(UserMirror.name).like(pattern)
+            | func.lower(UserMirror.id).like(pattern)
+            | func.lower(UserMirror.identity_source).like(pattern)
+        )
+    res = await s.execute(stmt.offset(offset).limit(limit))
     return [_user_out(u) for u in res.scalars().all()]
 
 
