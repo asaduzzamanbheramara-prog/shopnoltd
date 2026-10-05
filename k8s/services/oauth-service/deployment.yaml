@@ -47,6 +47,11 @@ spec:
             - secretRef:
                 name: oauth-service-secret
           env:
+            - name: PROFILE_SECRET_ENCRYPTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: oauth-service-secret
+                  key: PROFILE_SECRET_ENCRYPTION_KEY
             - name: KEYCLOAK_ADMIN_USER
               value: "admin"
             - name: KEYCLOAK_ADMIN_PASSWORD
