@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { isPlatformAdmin } from '../lib/jwt'
+import { tryRefresh } from '../lib/tokenRefresh'
 
 const API = '/api/v1/ads'
 
@@ -8,10 +9,23 @@ function token() {
 }
 
 async function api(path, options = {}) {
-  const headers = { Accept: 'application/json', ...(options.body ? { 'Content-Type': 'application/json' } : {}) }
-  const t = token()
-  if (t) headers.Authorization = `Bearer ${t}`
-  const response = await fetch(`${API}${path}`, { ...options, headers })
+  const run = async (accessToken) => {
+    const headers = { Accept: 'application/json', ...(options.body ? { 'Content-Type': 'application/json' } : {}) }
+    if (accessToken) headers.Authorization = `Bearer ${accessToken}`
+    return fetch(`${API}${path}`, { ...options, headers })
+  }
+
+  let response = await run(token())
+  if (response.status === 401) {
+    const refreshed = await tryRefresh()
+    if (refreshed) response = await run(refreshed)
+    else {
+      localStorage.removeItem('shopno_token')
+      localStorage.removeItem('shopno_refresh_token')
+      throw new Error('Your session has expired. Please sign in again.')
+    }
+  }
+
   const text = await response.text()
   let body = {}
   try { body = text ? JSON.parse(text) : {} } catch { body = { detail: text } }
