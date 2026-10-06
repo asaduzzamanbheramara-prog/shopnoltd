@@ -26,9 +26,10 @@ async def require_admin(credentials: HTTPAuthorizationCredentials = Depends(bear
 @router.get("/catalog")
 async def database_catalog(_: dict = Depends(require_admin)):
     return {
-        "version": 1,
+        "version": 2,
         "policy": "capability-driven",
-        "sql_endpoint": False,
+        "sql_endpoint": True,
+        "sql_mutation_requires_platform_admin": True,
         "databases": catalog(),
     }
 

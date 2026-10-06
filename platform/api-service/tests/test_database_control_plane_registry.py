@@ -32,3 +32,24 @@ def test_mongodb_capability_is_read_only_and_typed():
     assert collection["readable"] is True
     assert collection["writable"] is False
     assert collection["protected_reason"]
+
+
+def test_protected_capabilities_never_advertise_generic_writes():
+    for database in DATABASE_CAPABILITIES:
+        for table in database.tables:
+            if table.protected_reason:
+                assert table.writable is False
+                assert table.bulk_write is False
+                assert table.importable is False
+
+
+
+def test_capability_cannot_cross_declared_schema_boundary():
+    from app.database_control_plane.access import resolve_table_capability
+
+    declared = resolve_table_capability("social", "blog_posts", "public")
+    undeclared = resolve_table_capability("social", "blog_posts", "other_schema")
+
+    assert declared["writable"] is True
+    assert undeclared["writable"] is False
+    assert undeclared["status"] == "discovered_read_only"

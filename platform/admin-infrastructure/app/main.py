@@ -267,3 +267,23 @@ async def argocd_resources(name: str, _: dict[str, Any] = Depends(require_admin)
         "sync": status.get("sync", {}),
         "health": status.get("health", {}),
     }
+
+
+@app.get("/api/v1/admin/infrastructure/secrets")
+async def secrets(_: dict[str, Any] = Depends(require_admin)) -> list[dict[str, Any]]:
+    """Return Kubernetes Secret metadata only; never return secret values."""
+    result = []
+    for item in normalize_items(await kube_get("/api/v1/secrets")):
+        metadata = item.get("metadata", {})
+        data = item.get("data") or {}
+        result.append({
+            "name": metadata.get("name"),
+            "namespace": metadata.get("namespace"),
+            "uid": metadata.get("uid"),
+            "created_at": metadata.get("creationTimestamp"),
+            "type": item.get("type"),
+            "keys": sorted(data.keys()),
+            "key_count": len(data),
+            "immutable": bool(item.get("immutable", False)),
+        })
+    return result

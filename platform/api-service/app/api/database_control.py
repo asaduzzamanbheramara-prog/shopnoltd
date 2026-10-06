@@ -55,7 +55,7 @@ async def table_rows(
     offset: int = Query(0, ge=0),
     q: str = Query("", max_length=200),
 ):
-    capability = resolve_table_capability(database, table)
+    capability = resolve_table_capability(database, table, schema)
     if not capability["readable"]:
         raise HTTPException(403, "table is not readable")
     conn = await _connect_database(database)
@@ -97,7 +97,7 @@ async def table_rows(
 
 @router.get("/tables/{database}/{schema}/{table}/count")
 async def table_count(database: str, schema: str, table: str, _: dict = Depends(require_admin)):
-    capability = resolve_table_capability(database, table)
+    capability = resolve_table_capability(database, table, schema)
     if not capability["readable"]:
         raise HTTPException(403, "table is not readable")
     conn = await _connect_database(database)
@@ -116,7 +116,7 @@ async def table_count(database: str, schema: str, table: str, _: dict = Depends(
 
 @router.get("/tables/{database}/{schema}/{table}/analysis")
 async def table_analysis(database: str, schema: str, table: str, _: dict = Depends(require_admin)):
-    capability = resolve_table_capability(database, table)
+    capability = resolve_table_capability(database, table, schema)
     if not capability["readable"]:
         raise HTTPException(403, "table is not readable")
     conn = await _connect_database(database)
@@ -169,7 +169,7 @@ async def table_analysis(database: str, schema: str, table: str, _: dict = Depen
 
 @router.post("/tables/{database}/{schema}/{table}/rows", status_code=201)
 async def insert_row(database: str, schema: str, table: str, values: dict[str, Any] = Body(...), _: dict = Depends(require_admin)):
-    capability = resolve_table_capability(database, table)
+    capability = resolve_table_capability(database, table, schema)
     if not capability["writable"]:
         raise HTTPException(403, capability.get("protected_reason") or "insert disabled")
     if not values:
@@ -194,7 +194,7 @@ async def insert_row(database: str, schema: str, table: str, values: dict[str, A
 
 @router.patch("/tables/{database}/{schema}/{table}/rows")
 async def update_row(database: str, schema: str, table: str, payload: dict[str, Any] = Body(...), _: dict = Depends(require_admin)):
-    capability = resolve_table_capability(database, table)
+    capability = resolve_table_capability(database, table, schema)
     if not capability["writable"]:
         raise HTTPException(403, capability.get("protected_reason") or "update disabled")
     key, values = payload.get("key"), payload.get("values")
@@ -227,7 +227,7 @@ async def update_row(database: str, schema: str, table: str, payload: dict[str, 
 
 @router.delete("/tables/{database}/{schema}/{table}/rows")
 async def delete_row(database: str, schema: str, table: str, payload: dict[str, Any] = Body(...), _: dict = Depends(require_admin)):
-    capability = resolve_table_capability(database, table)
+    capability = resolve_table_capability(database, table, schema)
     if not capability["destructive"]:
         raise HTTPException(403, capability.get("protected_reason") or "delete disabled")
     key = payload.get("key")
@@ -257,7 +257,7 @@ async def export_table(
     _: dict = Depends(require_admin),
     limit: int = Query(5000, ge=1, le=10000),
 ):
-    capability = resolve_table_capability(database, table)
+    capability = resolve_table_capability(database, table, schema)
     if not capability["exportable"]:
         raise HTTPException(403, "table export is disabled")
     conn = await _connect_database(database)
@@ -279,7 +279,7 @@ async def import_rows(
     _: dict = Depends(require_admin),
 ):
     """Transactional JSON import for explicitly importable writable tables."""
-    capability = resolve_table_capability(database, table)
+    capability = resolve_table_capability(database, table, schema)
     if not capability["importable"] or not capability["writable"]:
         raise HTTPException(403, capability.get("protected_reason") or "import disabled")
     rows = payload.get("rows") if isinstance(payload, dict) else None
@@ -321,3 +321,80 @@ async def live_catalog(_: dict = Depends(require_admin)):
         for table in database.get("tables", []):
             table["capability"] = resolve_table_capability(database["database"], table["name"])
     return result
+
+
+@router.post("/sql")
+async def execute_admin_sql(payload: dict[str, Any] = Body(...), token: dict = Depends(require_admin)):
+    """Execute one guarded PostgreSQL statement for platform administrators.
+
+    SELECT/EXPLAIN are allowed for admin inspection. INSERT/UPDATE/DELETE are
+    allowed only against explicitly generic-writable tables in the capability
+    registry. Multiple statements, transaction-control commands, COPY, and
+    database-level commands are rejected.
+    """
+    sql = str(payload.get("sql") or "").strip()
+    database = str(payload.get("database") or "").strip()
+    if not sql or not database:
+        raise HTTPException(400, "database and sql are required")
+    if sql.endswith(";"):
+        sql = sql[:-1].rstrip()
+    if ";" in sql:
+        raise HTTPException(400, "multiple SQL statements are not allowed")
+    if "--" in sql or "/*" in sql or "*/" in sql:
+        raise HTTPException(400, "SQL comments are not allowed")
+    upper = sql.upper()
+    first = upper.split(None, 1)[0] if upper.split() else ""
+    if first in {"BEGIN", "COMMIT", "ROLLBACK", "SAVEPOINT", "RELEASE", "COPY", "VACUUM", "REINDEX", "GRANT", "REVOKE", "ALTER", "CREATE", "DROP", "TRUNCATE"}:
+        raise HTTPException(403, "statement type is not available through the browser SQL control plane")
+    if first not in {"SELECT", "EXPLAIN", "WITH", "INSERT", "UPDATE", "DELETE"}:
+        raise HTTPException(400, "only SELECT, EXPLAIN, WITH, INSERT, UPDATE and DELETE are supported")
+
+    if first == "WITH":
+        raise HTTPException(403, "WITH statements are read-only through the browser SQL control plane")
+    mutation = first in {"INSERT", "UPDATE", "DELETE"}
+    if mutation and "platform_admin" not in set(token.get("roles", [])):
+        raise HTTPException(403, "platform_admin is required for SQL mutations")
+    candidates = re.findall(
+        r"\b(?:FROM|JOIN|UPDATE|INTO|DELETE\s+FROM)\s+([A-Za-z_][A-Za-z0-9_]*)(?:\.([A-Za-z_][A-Za-z0-9_]*))?",
+        sql,
+        flags=re.IGNORECASE,
+    )
+    tables = {(("public", first_name) if second_name is None else (first_name, second_name)) for first_name, second_name in candidates}
+    if any(schema in {"pg_catalog", "information_schema"} for schema, _ in tables):
+        raise HTTPException(403, "system catalogs are not available through the browser SQL control plane")
+    for schema, table in tables:
+        capability = resolve_table_capability(database, table, schema)
+        if capability.get("protected_reason"):
+            raise HTTPException(403, capability["protected_reason"])
+        if not capability["readable"]:
+            raise HTTPException(403, f"table {schema}.{table} is not readable")
+        if mutation and not capability["writable"]:
+            raise HTTPException(403, f"generic SQL mutation is disabled for {schema}.{table}")
+    if mutation and not tables:
+        raise HTTPException(400, "mutation must name an explicit table")
+    if database == "kpi":
+        raise HTTPException(400, "MongoDB databases are not supported by the PostgreSQL SQL browser")
+    conn = await _connect_database(database)
+    try:
+        if first in {"SELECT", "EXPLAIN", "WITH"}:
+            # Run browser inspection in a read-only transaction so even a
+            # callable function cannot perform a write as a side effect.
+            async with conn.transaction():
+                await conn.execute("SET TRANSACTION READ ONLY")
+                rows = await conn.fetch(sql)
+            return {
+                "database": database,
+                "statement_type": first,
+                "columns": list(rows[0].keys()) if rows else [],
+                "rows": [dict(row) for row in rows[:1000]],
+                "row_count": len(rows),
+                "truncated": len(rows) > 1000,
+            }
+        status = await conn.execute(sql)
+        return {"database": database, "statement_type": first, "status": status}
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(400, f"SQL execution failed: {type(exc).__name__}") from exc
+    finally:
+        await conn.close()

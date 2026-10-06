@@ -84,6 +84,7 @@ export default function AdminInfrastructure() {
       events: '/api/v1/admin/infrastructure/events',
       hpa: '/api/v1/admin/infrastructure/hpa',
       applications: '/api/v1/admin/argocd/applications',
+      secrets: '/api/v1/admin/infrastructure/secrets',
     }
     const results = await Promise.allSettled(Object.entries(endpoints).map(async ([key, path]) => [key, await get(path)]))
     const next = {}
@@ -110,6 +111,7 @@ export default function AdminInfrastructure() {
   const events = data.events || []
   const hpa = data.hpa || []
   const applications = data.applications || []
+  const secrets = data.secrets || []
 
   const counts = useMemo(() => ({
     pods: pods.length,
@@ -134,7 +136,7 @@ export default function AdminInfrastructure() {
     ['overview', 'Overview'], ['nodes', 'Nodes'], ['namespaces', 'Namespaces'], ['pods', `Pods (${counts.pods})`],
     ['deployments', `Deployments (${counts.deployments})`], ['statefulsets', `StatefulSets (${statefulsets.length})`],
     ['services', `Services (${counts.services})`], ['ingresses', `Ingress (${counts.ingresses})`], ['pvc', `PVC (${counts.pvc})`],
-    ['events', `Events (${events.length})`], ['hpa', `HPA (${counts.hpa})`], ['argocd', `Argo CD (${applications.length})`],
+    ['events', `Events (${events.length})`], ['hpa', `HPA (${counts.hpa})`], ['argocd', `Argo CD (${applications.length})`], ['secrets', `Secrets (${secrets.length})`],
   ]
 
   return (
@@ -143,7 +145,7 @@ export default function AdminInfrastructure() {
         <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', marginBottom: 18 }}>
           <div style={{ marginRight: 'auto' }}>
             <h1 style={{ margin: 0, fontSize: 25 }}>Admin · Infrastructure</h1>
-            <div style={{ color: '#7D8A9C', fontSize: 12, marginTop: 5 }}>Live Kubernetes cluster and Argo CD read-only view</div>
+            <div style={{ color: '#7D8A9C', fontSize: 12, marginTop: 5 }}>Live Kubernetes cluster, Argo CD and secret metadata read-only view</div>
           </div>
           <button type="button" onClick={load} disabled={loading} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '8px 11px', borderRadius: 7, border: '1px solid #2A3341', background: '#1D2530', color: '#E6EDF3', cursor: loading ? 'wait' : 'pointer' }}><RefreshCw size={15} /> {loading ? 'Refreshing…' : 'Refresh'}</button>
           <a href={`${ARGOCD_URL}/applications`} target="_blank" rel="noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '8px 11px', borderRadius: 7, border: '1px solid #2A3341', background: '#1D2530', color: '#E6EDF3', textDecoration: 'none' }}><ExternalLink size={15} /> Open Argo CD</a>
@@ -184,6 +186,7 @@ export default function AdminInfrastructure() {
         {view === 'events' && <Card><Table columns={[{ key: 'name', label: 'Event' }, { key: 'namespace', label: 'Namespace' }, { key: 'created_at', label: 'Created' }, { key: 'status', label: 'Status', render: (r) => <Status value={r.status?.type || r.status?.reason} /> }]} rows={events} /></Card>}
         {view === 'hpa' && <Card><Table columns={[{ key: 'name', label: 'HPA' }, { key: 'namespace', label: 'Namespace' }, { key: 'min', label: 'Min' }, { key: 'max', label: 'Max' }, { key: 'current', label: 'Current' }, { key: 'desired', label: 'Desired' }]} rows={hpaRows} /></Card>}
         {view === 'argocd' && <Card><Table columns={[{ key: 'name', label: 'Application' }, { key: 'project', label: 'Project' }, { key: 'sync', label: 'Sync', render: (r) => <Status value={r.sync} /> }, { key: 'health', label: 'Health', render: (r) => <Status value={r.health} /> }, { key: 'revision', label: 'Git revision', render: (r) => <code>{r.revision ? String(r.revision).slice(0, 12) : '-'}</code> }, { key: 'open', label: 'Open', render: (r) => <a href={`${ARGOCD_URL}/applications/${encodeURIComponent(r.name)}`} target="_blank" rel="noreferrer" style={{ color: '#D4A054', display: 'inline-flex', alignItems: 'center', gap: 5 }}><GitBranch size={13} /> Argo CD</a> }]} rows={applications} /></Card>}
+        {view === 'secrets' && <Card><div style={{ marginBottom: 12, color: '#7D8A9C', fontSize: 12 }}>Secret values are never displayed or returned. This view exposes metadata and key names only; rotation must use an approved service-specific workflow.</div><Table columns={[{ key: 'name', label: 'Secret' }, { key: 'namespace', label: 'Namespace' }, { key: 'type', label: 'Type' }, { key: 'key_count', label: 'Keys' }, { key: 'keys', label: 'Key names', render: (r) => (r.keys || []).join(', ') || '-' }, { key: 'created_at', label: 'Created' }, { key: 'immutable', label: 'Immutable', render: (r) => r.immutable ? 'Yes' : 'No' }]} rows={secrets} empty="No Kubernetes secrets visible to the admin-infrastructure read-only service account." /></Card>}
       </div>
     </main>
   )

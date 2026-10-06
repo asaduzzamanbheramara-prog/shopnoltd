@@ -11,6 +11,7 @@ import Streams from './pages/Streams'
 import AppReleases from './pages/AppReleases'
 import ThreeDDashboard from './pages/ThreeDDashboard'
 import DatabaseManagement from './pages/DatabaseManagement'
+import SqlBrowser from './pages/SqlBrowser'
 import Login from './pages/Login'
 import Callback from './pages/Callback'
 import AdminRoute from './components/AdminRoute'
@@ -32,6 +33,7 @@ function Layout({ children }) {
           <li><Link to="/releases" style={{ color: 'white' }}>App Releases</Link></li>
           <li><Link to="/3d" style={{ color: 'white' }}>3D Insights</Link></li>
           <li><Link to="/database" style={{ color: 'white' }}>Database Management</Link></li>
+          <li><Link to="/sql" style={{ color: 'white' }}>SQL Browser</Link></li>
           <li><a href="https://shopnoltd.dpdns.org/admin/database" style={{ color: 'white' }}>Shopnoltd DB Control Plane</a></li>
         </ul>
       </nav>
@@ -51,6 +53,7 @@ function AdminRoutes() {
     <Route path="/releases" element={<AppReleases />} />
     <Route path="/3d" element={<ThreeDDashboard />} />
     <Route path="/database" element={<DatabaseManagement />} />
+    <Route path="/sql" element={<SqlBrowser />} />
   </Routes>
 }
 
