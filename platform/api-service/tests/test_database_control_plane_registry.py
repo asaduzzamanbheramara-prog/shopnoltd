@@ -32,3 +32,12 @@ def test_mongodb_capability_is_read_only_and_typed():
     assert collection["readable"] is True
     assert collection["writable"] is False
     assert collection["protected_reason"]
+
+
+def test_protected_capabilities_never_advertise_generic_writes():
+    for database in DATABASE_CAPABILITIES:
+        for table in database.tables:
+            if table.protected_reason:
+                assert table.writable is False
+                assert table.bulk_write is False
+                assert table.importable is False
