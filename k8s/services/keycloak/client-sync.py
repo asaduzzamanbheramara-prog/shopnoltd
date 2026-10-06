@@ -19,6 +19,7 @@ REQUIRED_REDIRECT_URIS = [
     "http://localhost:5173/callback",
     "https://shopnoltd.dpdns.org/callback",
     "https://shopnoltd.dpdns.org/android-cloud/callback",
+    "https://admin-portal.shopnoltd.dpdns.org/callback",
     "https://devices.shopnoltd.dpdns.org/",
     "https://devices.shopnoltd.dpdns.org/callback",
     "https://android.shopnoltd.dpdns.org/",
@@ -29,6 +30,7 @@ REQUIRED_REDIRECT_URIS = [
 REQUIRED_WEB_ORIGINS = [
     "http://localhost:5173",
     "https://shopnoltd.dpdns.org",
+    "https://admin-portal.shopnoltd.dpdns.org",
     "https://devices.shopnoltd.dpdns.org",
     "https://android.shopnoltd.dpdns.org",
 ]

@@ -66,6 +66,16 @@ export default function DatabaseManagement() {
 
   if (inventory.isLoading) return <p>Loading live database inventory…</p>
 
+  if (inventory.isError) return (
+    <div>
+      <h1>Database Management</h1>
+      <div style={{ padding: 16, background: '#fee2e2', color: '#991b1b', borderRadius: 10, marginTop: 12 }}>
+        Database inventory unavailable. The live inventory request did not succeed, so no database/table counts are displayed.
+        <div style={{ marginTop: 10 }}><button onClick={() => inventory.refetch()} disabled={inventory.isFetching}>{inventory.isFetching ? 'Retrying…' : 'Retry inventory'}</button></div>
+      </div>
+    </div>
+  )
+
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, marginBottom: 20 }}>
@@ -77,10 +87,6 @@ export default function DatabaseManagement() {
         </div>
         <button onClick={() => inventory.refetch()} disabled={inventory.isFetching}>Refresh inventory</button>
       </div>
-
-      {inventory.isError && <div style={{ padding: 16, background: '#fee2e2', color: '#991b1b', borderRadius: 10 }}>
-        Database inventory unavailable: {inventory.error?.response?.data?.detail || inventory.error?.message}
-      </div>}
 
       {inventory.data && <>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,minmax(0,1fr))', gap: 12, marginBottom: 20 }}>
