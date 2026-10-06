@@ -20,7 +20,7 @@ env:
 jobs:
   storage:
     name: Check PostgreSQL PVC usage
-    runs-on: [self-hosted, linux, shopnoltd, k3s]
+    runs-on: [self-hosted, linux]
     timeout-minutes: 10
     steps:
       - name: Checkout main source
