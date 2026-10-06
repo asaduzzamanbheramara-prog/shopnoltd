@@ -4,9 +4,14 @@ from __future__ import annotations
 from app.database_control_plane.registry import DATABASE_CAPABILITIES
 
 
-def resolve_table_capability(database: str, table: str) -> dict:
-    """Resolve a live table to an explicit capability without granting unknown writes."""
-    matches = [c for c in DATABASE_CAPABILITIES if c.database == database]
+def resolve_table_capability(database: str, table: str, schema: str | None = None) -> dict:
+    """Resolve a live table to an explicit capability without granting unknown writes.
+
+    A capability is only applicable inside one of the registry-declared schemas.
+    This prevents a same-named table in an undeclared schema from inheriting
+    generic write privileges.
+    """
+    matches = [c for c in DATABASE_CAPABILITIES if c.database == database and (schema is None or schema in c.schemas)]
     for database_capability in matches:
         for capability in database_capability.tables:
             if capability.name == table:
