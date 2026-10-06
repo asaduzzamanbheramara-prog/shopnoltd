@@ -228,7 +228,8 @@ async def reconcile_postgres() -> dict[str, Any]:
         "version": 2,
         "source": "live-postgresql-and-mongodb",
         "read_only": True,
-        "sql_endpoint": False,
+        "sql_endpoint": True,
+        "sql_mutation_requires_platform_admin": True,
         "mongo_write_endpoint": False,
         "summary": {
             "live_databases": len(live),
