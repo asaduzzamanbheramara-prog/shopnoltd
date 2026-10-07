@@ -111,7 +111,13 @@ if not value:
 print(value)
 PY
 )"
-kubectl -n shopno-apps patch secret code-server-litellm-key --type merge   -p "{\"data\":{\"LITELLM_MASTER_KEY\":\"$MASTER_KEY_B64\"}}" >/dev/null
+if kubectl -n shopno-apps get secret code-server-litellm-key >/dev/null 2>&1; then
+  kubectl -n shopno-apps patch secret code-server-litellm-key --type merge \
+    -p "{\"data\":{\"LITELLM_MASTER_KEY\":\"$MASTER_KEY_B64\"}}" >/dev/null
+else
+  kubectl -n shopno-apps create secret generic code-server-litellm-key \
+    --from-literal="LITELLM_MASTER_KEY=$(printf '%s' "$MASTER_KEY_B64" | base64 -d)" >/dev/null
+fi
 echo "PASS: synchronized shopno-apps/code-server-litellm-key"
 
 echo "NOTE: restart the affected deployments after changing credentials."
