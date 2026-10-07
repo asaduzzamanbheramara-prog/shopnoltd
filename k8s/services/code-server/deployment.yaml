@@ -49,8 +49,8 @@ spec:
             - name: CODE_SERVER_LITELLM_API_KEY
               valueFrom:
                 secretKeyRef:
-                  name: code-server-secret
-                  key: CODE_SERVER_LITELLM_API_KEY
+                  name: litellm-keys
+                  key: LITELLM_MASTER_KEY
           securityContext:
             runAsNonRoot: false
             runAsUser: 0
