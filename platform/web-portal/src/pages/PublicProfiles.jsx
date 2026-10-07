@@ -53,6 +53,8 @@ export default function PublicProfiles() {
   const { type } = useParams()
   const profile = type === 'interior-business' ? INTERIOR_PROFILE : DATA_PROFILE
   const profileUrl = window.location.href
+  const referralCode = new URLSearchParams(window.location.search).get('ref')
+  const referralRegisterUrl = referralCode ? '/register?ref=' + encodeURIComponent(referralCode) + '&category=' + encodeURIComponent(type) : null
   useEffect(() => { document.title = profile.title + ' — Shopnoltd Profile' }, [profile])
   return <main style={{ maxWidth: 1080, margin: '0 auto', padding: 'clamp(24px,6vw,56px) 18px 80px', fontFamily: 'system-ui,sans-serif' }}>
     <section style={{ padding: 'clamp(28px,6vw,52px)', borderRadius: 24, background: 'linear-gradient(135deg,#0f172a,#0369a1)', color: 'white' }}>
@@ -63,7 +65,7 @@ export default function PublicProfiles() {
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 22 }}>
         <a href={profile.pdf} download style={{ background: 'white', color: '#0369a1', padding: '12px 18px', borderRadius: 10, fontWeight: 800, textDecoration: 'none' }}>Download PDF / CV</a>
         <button type="button" onClick={() => shareProfile(profileUrl, profile.title)} style={{ border: '1px solid rgba(255,255,255,.55)', background: 'transparent', color: 'white', padding: '12px 18px', borderRadius: 10, fontWeight: 700, cursor: 'pointer' }}>↗ Share profile</button>
-        <Link to="/profiles" style={{ border: '1px solid rgba(255,255,255,.55)', color: 'white', padding: '12px 18px', borderRadius: 10, fontWeight: 700, textDecoration: 'none' }}>All profiles</Link>
+        {referralRegisterUrl && <a href={referralRegisterUrl} style={{ border: '1px solid rgba(255,255,255,.55)', color: 'white', padding: '12px 18px', borderRadius: 10, fontWeight: 800, textDecoration: 'none' }}>Join via referral</a>}<Link to="/profiles" style={{ border: '1px solid rgba(255,255,255,.55)', color: 'white', padding: '12px 18px', borderRadius: 10, fontWeight: 700, textDecoration: 'none' }}>All profiles</Link>
         {type === 'interior-business' && <a href="https://shopnoltd.wixsite.com/shopno/home-decoration" target="_blank" rel="noopener noreferrer" style={{ border: '1px solid rgba(255,255,255,.55)', color: 'white', padding: '12px 18px', borderRadius: 10, fontWeight: 700, textDecoration: 'none' }}>Original interior portfolio</a>}
       </div>
     </section>
