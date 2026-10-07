@@ -88,5 +88,15 @@ PY
 )"
 kubectl -n shopno-ai patch secret litellm-provider-keys --type merge -p "$DB_PATCH_JSON" >/dev/null
 echo "PASS: synchronized AI database URL to shopno-ai/litellm-provider-keys"
-echo "PASS: updated shopno-ai/litellm-provider-keys"
+# LiteLLM's catalog sync init container needs the AI platform database URL.
+# Copy only that existing value into the dedicated LiteLLM secret; never print it.
+AI_DB_B64="$(kubectl -n shopno-platform get secret ai-platform-secret -o jsonpath='{.data.DATABASE_URL}')"
+if [[ -z "$AI_DB_B64" ]]; then
+  echo "ERROR: ai-platform-secret/DATABASE_URL is missing" >&2
+  exit 1
+fi
+kubectl -n shopno-ai patch secret litellm-provider-keys --type merge \
+  -p "{\"data\":{\"DATABASE_URL\":\"$AI_DB_B64\"}}" >/dev/null
+echo "PASS: synchronized LiteLLM DATABASE_URL"
+
 echo "NOTE: restart the affected deployments after changing credentials."
