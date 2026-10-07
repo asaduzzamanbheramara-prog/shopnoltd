@@ -152,7 +152,7 @@ DATABASE_CAPABILITIES: tuple[DatabaseCapability, ...] = (
         backup=True,
         restore=True,
         tenant_scope="service",
-    ),,
+    ),
     # Service databases with read-only live-table discovery. Explicit writable
     # capabilities remain listed above; unknown live tables never gain generic
     # write/import/delete permissions.
