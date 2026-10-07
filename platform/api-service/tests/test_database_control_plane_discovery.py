@@ -9,7 +9,7 @@ def test_declared_database_map_preserves_service_ownership():
     data = _declared_by_database()
     assert "shopnoltd" in data
     assert "payment-service" in data["shopnoltd"]
-    assert "ai-platform" in data["shopnoltd"]
+    assert "ai-platform" in data["ai"]
 
 
 def test_postgres_dsn_replaces_only_database_name():
