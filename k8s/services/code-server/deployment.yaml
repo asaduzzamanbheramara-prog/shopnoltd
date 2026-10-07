@@ -34,6 +34,31 @@ spec:
         seccompProfile:
           type: RuntimeDefault
       initContainers:
+        - name: configure-continue
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              set -eu
+              mkdir -p /config/.continue
+              cp /continue-config/config.json /config/.continue/config.json
+              printf 'LITELLM_MASTER_KEY=%s\n' "$LITELLM_MASTER_KEY" > /config/.continue/.env
+              chown -R 10001:10001 /config/.continue
+          env:
+            - name: LITELLM_MASTER_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: code-server-secret
+                  key: LITELLM_MASTER_KEY
+          securityContext:
+            runAsNonRoot: false
+            runAsUser: 0
+          volumeMounts:
+            - name: data
+              mountPath: /config
+            - name: continue-config
+              mountPath: /continue-config
         - name: fix-run-perms
           image: busybox:1.36
           command: ["sh", "-c", "chown -R 10001:10001 /run"]
@@ -109,6 +134,9 @@ spec:
             capabilities:
               drop: ["ALL"]
       volumes:
+        - name: continue-config
+          configMap:
+            name: code-server-continue-config
         - name: data
           persistentVolumeClaim:
             claimName: code-server-data
