@@ -43,9 +43,10 @@ printf '%s\n' "$rows" | while IFS='	' read -r provider provider_type base_url mo
   esac
 
   # Keep every provider/model deployment separately discoverable in LiteLLM.
-  alias="$(printf '%s:%s' "$provider" "$model" | sed 's/\/\\/g; s/:/\\:/g; s/'"'"'/''/g')"
+  # YAML single-quoted scalars do not require backslash escaping for ':' or '/'. Keep
+  # the provider/model alias literal so LiteLLM exposes the exact catalog identity.
+  alias="$(printf '%s:%s' "$provider" "$model")"
   alias_q="$(printf '%s' "$alias" | sed "s/'/''/g")"
-  model_q="$(printf '%s' "$model" | sed "s/'/''/g")"
   upstream_q="$(printf '%s%s' "$upstream_prefix" "$model" | sed "s/'/''/g")"
 
   printf "  - model_name: '%s'\n    litellm_params:\n      model: '%s'\n      api_key: os.environ/%s\n"     "$alias_q" "$upstream_q" "$key" >> "$tmp"
