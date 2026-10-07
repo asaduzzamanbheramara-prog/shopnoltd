@@ -15,15 +15,16 @@ async function startSocialSignup(provider) {
   sessionStorage.setItem('pkce_verifier', verifier)
   sessionStorage.setItem('oidc_state', state)
 
-  const incomingDomain =
-    new URLSearchParams(window.location.search).get('domain')
-  const incomingReferral =
-    new URLSearchParams(window.location.search).get('ref')
+  const searchParams = new URLSearchParams(window.location.search)
+  const incomingDomain = searchParams.get('domain')
+  const incomingReferral = searchParams.get('ref')
+  const incomingProfileCategory = searchParams.get('category')
 
   if (incomingReferral) {
     const value = incomingReferral.trim().toUpperCase()
     if (value) sessionStorage.setItem('pending_referral_code', value)
   }
+  if (incomingProfileCategory?.trim()) sessionStorage.setItem('pending_referral_category', incomingProfileCategory.trim().toLowerCase())
 
   if (incomingDomain) {
     const value = incomingDomain
@@ -53,8 +54,11 @@ async function startSocialSignup(provider) {
 }
 
 async function startLocalSignup() {
-  const incomingReferral = new URLSearchParams(window.location.search).get('ref')
+  const searchParams = new URLSearchParams(window.location.search)
+  const incomingReferral = searchParams.get('ref')
+  const incomingProfileCategory = searchParams.get('category')
   if (incomingReferral?.trim()) sessionStorage.setItem('pending_referral_code', incomingReferral.trim().toUpperCase())
+  if (incomingProfileCategory?.trim()) sessionStorage.setItem('pending_referral_category', incomingProfileCategory.trim().toLowerCase())
   const verifier = randomString(64)
   const challenge = await codeChallengeFor(verifier)
   const state = randomString(32)
