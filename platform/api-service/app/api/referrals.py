@@ -13,6 +13,12 @@ from app.services.referrals import ensure_fallback_referral, get_policy
 router = APIRouter(prefix="/referrals")
 bearer = HTTPBearer()
 
+PROFILE_CATEGORIES = {
+    "data-management": "Data Management & Research",
+    "interior-business": "Business & Interior Design",
+}
+MAX_SOURCE_LEN = 24
+
 async def db():
     async with SessionLocal() as s:
         yield s
@@ -30,6 +36,17 @@ def is_admin(u):
 
 def code_for(user_id: str) -> str:
     return "SNO-" + hashlib.sha256(("shopnoltd-referral:" + user_id).encode()).hexdigest()[:12].upper()
+
+def referral_source(category: str | None) -> str:
+    if not category:
+        return "direct"
+    category = str(category).strip().lower()
+    if category not in PROFILE_CATEGORIES:
+        raise HTTPException(422, "invalid referral profile category")
+    value = f"direct:{category}"
+    if len(value) > MAX_SOURCE_LEN:
+        raise HTTPException(422, "referral profile category is too long")
+    return value
 
 async def ensure_code(s, user_id):
     row = await s.scalar(select(ReferralCode).where(ReferralCode.referrer_id == user_id))
@@ -66,6 +83,8 @@ async def me(u=Depends(current_user), s: AsyncSession = Depends(db)):
         "pending_amount": str(sum((Decimal(str(x.reward_amount)) for x in rewards if x.status == "pending"), Decimal("0"))),
         "confirmed_amount": str(sum((Decimal(str(x.reward_amount)) for x in rewards if x.status == "settled"), Decimal("0"))),
         "attribution": {"referrer_id": referral.referrer_id if referral else None, "source": referral.source if referral else None},
+        "is_admin": is_admin(u),
+        "profile_categories": [{"slug": slug, "label": label} for slug, label in PROFILE_CATEGORIES.items()] if is_admin(u) else [],
         "rewards": [{"id": x.id, "work_id": x.work_id, "submission_id": x.submission_id, "amount": str(x.reward_amount), "currency": x.currency, "status": x.status, "created_at": x.created_at.isoformat()} for x in rewards],
     }
 
@@ -78,14 +97,16 @@ async def claim(body: dict, u=Depends(current_user), s: AsyncSession = Depends(d
         raise HTTPException(403, "referral program is disabled by administrator")
     code = str(body.get("referral_code") or body.get("code") or "").strip().upper()
     if not code: raise HTTPException(422, "referral_code is required")
+    category = body.get("profile_category") or body.get("category")
+    source = referral_source(category)
     existing = await s.scalar(select(Referral).where(Referral.referred_id == user_id))
     if existing: return {"claimed": False, "already_claimed": True, "referrer_id": existing.referrer_id}
     owner = await s.scalar(select(ReferralCode).where(ReferralCode.code == code))
     if not owner: raise HTTPException(404, "referral code not found")
     if owner.referrer_id == user_id: raise HTTPException(400, "self-referral is not allowed")
-    s.add(Referral(referrer_id=owner.referrer_id, referred_id=user_id, referral_code=code, source="direct"))
+    s.add(Referral(referrer_id=owner.referrer_id, referred_id=user_id, referral_code=code, source=source))
     await s.commit()
-    return {"claimed": True, "referrer_id": owner.referrer_id}
+    return {"claimed": True, "referrer_id": owner.referrer_id, "profile_category": category}
 
 @router.get("/admin/policy")
 async def admin_policy(u=Depends(current_user), s: AsyncSession = Depends(db)):

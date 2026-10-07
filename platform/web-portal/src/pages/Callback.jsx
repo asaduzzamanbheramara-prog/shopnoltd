@@ -57,8 +57,9 @@ export default function Callback() {
         try { await platformApi.me(); sessionStorage.setItem('shopno_profile_provisioned', '1') } catch (error) { console.warn('Shopnoltd profile provisioning check failed after login:', error) }
 
         const pendingReferral = sessionStorage.getItem('pending_referral_code')
+        const pendingReferralCategory = sessionStorage.getItem('pending_referral_category')
         if (pendingReferral) {
-          try { await platformApi.claimReferral(pendingReferral) } catch (error) { console.warn('Referral attribution could not be claimed:', error) }
+          try { await platformApi.claimReferral(pendingReferral, pendingReferralCategory) } catch (error) { console.warn('Referral attribution could not be claimed:', error) }
         }
         // If no direct referral was supplied, the API preserves legacy/direct attribution or binds Admin Office as the fallback.
         try { await platformApi.referralMe() } catch (error) { console.warn('Referral attribution initialization skipped:', error) }
@@ -69,6 +70,7 @@ export default function Callback() {
         sessionStorage.removeItem('oidc_state')
         sessionStorage.removeItem('pending_domain')
         sessionStorage.removeItem('pending_referral_code')
+        sessionStorage.removeItem('pending_referral_category')
         sessionStorage.removeItem('post_login_next')
 
         if (pendingDomain) {
