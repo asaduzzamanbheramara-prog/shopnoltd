@@ -65,6 +65,8 @@ spec:
           envFrom:
             - secretRef:
                 name: litellm-provider-keys
+            - secretRef:
+                name: litellm-keys
           volumeMounts:
             - name: generated-config
               mountPath: /app/config.yaml
