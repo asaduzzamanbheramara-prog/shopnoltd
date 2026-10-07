@@ -42,7 +42,7 @@ spec:
             - name: AI_DATABASE_URL
               valueFrom:
                 secretKeyRef:
-                  name: ai-model-catalog-reader
+                  name: litellm-provider-keys
                   key: DATABASE_URL
           volumeMounts:
             - name: sync-script
@@ -185,7 +185,6 @@ spec:
       ports:
         - protocol: TCP
           port: 11434
-
     - to:
         - namespaceSelector:
             matchLabels:
