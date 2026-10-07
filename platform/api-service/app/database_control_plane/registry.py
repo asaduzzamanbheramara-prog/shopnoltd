@@ -143,7 +143,7 @@ DATABASE_CAPABILITIES: tuple[DatabaseCapability, ...] = (
     ),
     DatabaseCapability(
         service="ai-platform",
-        database="shopnoltd",
+        database="ai",
         tables=(
             _table("ai_providers", writable=True, bulk=True, importable=True, tenant_scoped=True),
             _table("ai_models", writable=True, bulk=True, importable=True, tenant_scoped=True),
