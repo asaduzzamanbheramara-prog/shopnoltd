@@ -10,6 +10,6 @@ resources:
   - 01-litellm-proxy.yaml
 
 configMapGenerator:
-  - name: litellm-config
+  - name: ai-model-catalog-sync
     files:
-      - config.yaml=litellm-config.conf
+      - sync.sh=model-catalog-sync.sh

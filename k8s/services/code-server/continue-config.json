@@ -1,0 +1,11 @@
+{
+  "models": [
+    {
+      "title": "Shopnoltd AI — Active Model Catalog",
+      "provider": "openai",
+      "model": "AUTODETECT",
+      "apiBase": "http://litellm-proxy.shopno-ai.svc.cluster.local:4000/v1",
+      "apiKey": "${{ secrets.CODE_SERVER_LITELLM_API_KEY }}"
+    }
+  ]
+}
