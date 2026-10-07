@@ -5,7 +5,7 @@
       "provider": "openai",
       "model": "AUTODETECT",
       "apiBase": "http://litellm-proxy.shopno-ai.svc.cluster.local:4000/v1",
-      "apiKey": "${{ secrets.LITELLM_MASTER_KEY }}"
+      "apiKey": "${{ secrets.CODE_SERVER_LITELLM_API_KEY }}"
     }
   ]
 }
