@@ -3,8 +3,12 @@ set -eu
 
 : "${AI_DATABASE_URL:?AI_DATABASE_URL is required}"
 
+# ai-platform stores an async SQLAlchemy URL. psql needs a plain PostgreSQL
+# URL, so normalize the driver suffix before connecting.
+PSQL_DATABASE_URL="$(printf '%s' "$AI_DATABASE_URL" | sed 's/^postgresql+asyncpg:/postgresql:/')"
+
 tmp=/generated/config.yaml
-rows="$(psql "$AI_DATABASE_URL" -AtF '	' -c "
+rows="$(psql "$PSQL_DATABASE_URL" -AtF '	' -c "
   SELECT p.name, p.provider_type::text, COALESCE(p.base_url, ''), m.model_name
   FROM ai_models m
   JOIN ai_providers p ON p.id = m.provider_id

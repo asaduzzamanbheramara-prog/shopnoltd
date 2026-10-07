@@ -6,8 +6,8 @@ set -euo pipefail
 #   chmod +x scripts/apply-ai-provider-secrets.sh
 #   scripts/apply-ai-provider-secrets.sh .env.ai-providers.local
 #
-# The helper never prints secret values. It patches only provider keys, so
-# existing non-provider settings in ai-platform-secret are preserved.
+# The helper never prints secret values. It patches only provider keys and the
+# dedicated runtime secrets needed by LiteLLM and Code Server.
 
 ENV_FILE="${1:-.env.ai-providers.local}"
 if [[ ! -f "$ENV_FILE" ]]; then
@@ -98,5 +98,20 @@ fi
 kubectl -n shopno-ai patch secret litellm-provider-keys --type merge \
   -p "{\"data\":{\"DATABASE_URL\":\"$AI_DB_B64\"}}" >/dev/null
 echo "PASS: synchronized LiteLLM DATABASE_URL"
+
+# Code Server runs in a different namespace, so it cannot reference the
+# shopno-ai Secret directly. Keep a namespace-local Secret containing only the
+# LiteLLM master key required by Continue.
+MASTER_KEY_B64="$(python3 - "$PATCH_JSON" <<'PY'
+import json, sys
+data = json.loads(sys.argv[1]).get("data", {})
+value = data.get("LITELLM_MASTER_KEY", "")
+if not value:
+    raise SystemExit("ERROR: LITELLM_MASTER_KEY is required for Code Server")
+print(value)
+PY
+)"
+kubectl -n shopno-apps patch secret code-server-litellm-key --type merge   -p "{\"data\":{\"LITELLM_MASTER_KEY\":\"$MASTER_KEY_B64\"}}" >/dev/null
+echo "PASS: synchronized shopno-apps/code-server-litellm-key"
 
 echo "NOTE: restart the affected deployments after changing credentials."
