@@ -43,7 +43,8 @@ spec:
               set -eu
               mkdir -p /config/.continue
               cp /continue-config/config.json /config/.continue/config.json
-              printf 'LITELLM_MASTER_KEY=%s\n' "$LITELLM_MASTER_KEY" > /config/.continue/.env
+              printf 'LITELLM_MASTER_KEY=%s
+' "$LITELLM_MASTER_KEY" > /config/.continue/.env
               chown -R 10001:10001 /config/.continue
           env:
             - name: LITELLM_MASTER_KEY
@@ -132,7 +133,7 @@ spec:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: false
             capabilities:
-              drop: ["ALL"]
+              drop: [ALL]
       volumes:
         - name: continue-config
           configMap:
