@@ -71,7 +71,7 @@ export const platformApi = {
   me: () => request('/api/v1/users/me'),
   analyticsVisitors: (days = 30, limit = 25) => request(`/api/v1/analytics/reports/visitors?days=${encodeURIComponent(days)}&limit=${encodeURIComponent(limit)}`),
   referralMe: () => request('/api/v1/referrals/me'),
-  claimReferral: (referral_code) => request('/api/v1/referrals/claim', { method: 'POST', body: JSON.stringify({ referral_code }) }),
+  claimReferral: (referral_code, profile_category = null) => request('/api/v1/referrals/claim', { method: 'POST', body: JSON.stringify({ referral_code, profile_category }) }),
   referralPolicy: () => request('/api/v1/referrals/admin/policy'),
   setReferralPolicy: (body) => request('/api/v1/referrals/admin/policy', { method: 'PUT', body: JSON.stringify(body) }),
   referralRewards: () => request('/api/v1/referrals/admin/rewards'),
