@@ -41,6 +41,11 @@ async def inference(request: Request, token: str = Depends(raw_token)):
     return await proxy(request, "/api/v1/inference", token)
 
 
+@router.api_route("/ai/inference/stream", methods=["POST"])
+async def inference_stream(request: Request, token: str = Depends(raw_token)):
+    return await proxy(request, "/api/v1/inference/stream", token)
+
+
 @router.api_route("/ai/inference/models", methods=["GET"])
 async def inference_models(request: Request, token: str = Depends(raw_token)):
     return await proxy(request, "/api/v1/inference/models", token)
