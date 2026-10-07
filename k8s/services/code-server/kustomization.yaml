@@ -24,3 +24,8 @@ labels:
   pairs:
     app.kubernetes.io/name: code-server
     app.kubernetes.io/part-of: shopnoltd
+
+configMapGenerator:
+- name: code-server-continue-config
+  files:
+  - config.json=continue-config.json
