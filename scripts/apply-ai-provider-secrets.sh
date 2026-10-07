@@ -71,5 +71,22 @@ else
     --from-env-file="$ENV_FILE" >/dev/null
 fi
 
+# The catalog sync init container also needs the AI Platform database URL.
+# Copy only that one existing secret key into the dedicated LiteLLM namespace;
+# never print the value and never overwrite unrelated LiteLLM credentials.
+AI_DATABASE_URL_B64="$(kubectl -n shopno-platform get secret ai-platform-secret -o jsonpath='{.data.DATABASE_URL}')"
+if [[ -z "$AI_DATABASE_URL_B64" ]]; then
+  echo "ERROR: shopno-platform/ai-platform-secret has no DATABASE_URL; refusing to create an unusable catalog sync." >&2
+  exit 1
+fi
+DB_PATCH_JSON="$(python3 - "$AI_DATABASE_URL_B64" <<'PY'
+import base64, json, sys
+value = sys.argv[1]
+base64.b64decode(value).decode()
+print(json.dumps({"data": {"DATABASE_URL": value}}, separators=(",", ":")))
+PY
+)"
+kubectl -n shopno-ai patch secret litellm-provider-keys --type merge -p "$DB_PATCH_JSON" >/dev/null
+echo "PASS: synchronized AI database URL to shopno-ai/litellm-provider-keys"
 echo "PASS: updated shopno-ai/litellm-provider-keys"
 echo "NOTE: restart the affected deployments after changing credentials."
