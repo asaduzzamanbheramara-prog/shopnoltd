@@ -42,13 +42,23 @@ spec:
             requests: { cpu: 50m, memory: 64Mi }
             limits:   { cpu: 200m, memory: 128Mi }
           livenessProbe:
-            httpGet: { path: /ready, port: 2000 }
-            initialDelaySeconds: 10
+            httpGet:
+              host: 127.0.0.1
+              path: /ready
+              port: 2000
+            initialDelaySeconds: 20
             periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
           readinessProbe:
-            httpGet: { path: /ready, port: 2000 }
-            initialDelaySeconds: 5
+            httpGet:
+              host: 127.0.0.1
+              path: /ready
+              port: 2000
+            initialDelaySeconds: 10
             periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 6
           volumeMounts:
             - name: config
               mountPath: /etc/cloudflared
