@@ -153,6 +153,25 @@ DATABASE_CAPABILITIES: tuple[DatabaseCapability, ...] = (
         restore=True,
         tenant_scope="service",
     ),
+    # Service databases with read-only live-table discovery. Explicit writable
+    # capabilities remain listed above; unknown live tables never gain generic
+    # write/import/delete permissions.
+    DatabaseCapability(service="auth-service", database="auth", schemas=("public",), backup=True, restore=True),
+    DatabaseCapability(service="mobile-api", database="mobile", schemas=("public",), backup=True, restore=True),
+    DatabaseCapability(service="meet-service", database="meet", schemas=("public",), backup=True, restore=True),
+    DatabaseCapability(service="mail-service", database="mail", schemas=("public",), backup=True, restore=True),
+    DatabaseCapability(service="live-service", database="live", schemas=("public",), backup=True, restore=True),
+    DatabaseCapability(service="tenant-router", database="router", schemas=("public",), backup=True, restore=True),
+    DatabaseCapability(service="event-service", database="events", schemas=("public",), backup=True, restore=True),
+    DatabaseCapability(service="report-service", database="reports", schemas=("public",), backup=True, restore=True),
+    DatabaseCapability(service="worker-service", database="worker", schemas=("public",), backup=True, restore=True),
+    DatabaseCapability(service="domain-service", database="domains", schemas=("public",), backup=True, restore=True),
+    DatabaseCapability(service="storage-service", database="storage", schemas=("public",), backup=True, restore=True),
+    DatabaseCapability(service="license-service", database="licenses", schemas=("public",), backup=True, restore=True),
+    DatabaseCapability(service="interior-service", database="interior", schemas=("public",), backup=True, restore=True),
+    DatabaseCapability(service="analytics-service", database="analytics", schemas=("public",), backup=True, restore=True),
+    DatabaseCapability(service="foundation-service", database="foundation", schemas=("public",), backup=True, restore=True),
+
 )
 
 
