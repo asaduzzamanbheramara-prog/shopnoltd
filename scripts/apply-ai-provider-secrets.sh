@@ -95,9 +95,18 @@ if [[ -z "$AI_DB_B64" ]]; then
   echo "ERROR: ai-platform-secret/DATABASE_URL is missing" >&2
   exit 1
 fi
+# LiteLLM rejects SQLAlchemy async driver URLs, so normalize only the
+# dedicated LiteLLM copy; the application secret remains unchanged.
+LITELLM_DB_B64="$(python3 - "$AI_DB_B64" <<'PY'
+import base64, sys
+value = base64.b64decode(sys.argv[1]).decode()
+value = value.replace("postgresql+asyncpg://", "postgresql://", 1)
+print(base64.b64encode(value.encode()).decode())
+PY
+)"
 kubectl -n shopno-ai patch secret litellm-provider-keys --type merge \
-  -p "{\"data\":{\"DATABASE_URL\":\"$AI_DB_B64\"}}" >/dev/null
-echo "PASS: synchronized LiteLLM DATABASE_URL"
+  -p "{\"data\":{\"DATABASE_URL\":\"$LITELLM_DB_B64\"}}" >/dev/null
+echo "PASS: synchronized normalized LiteLLM DATABASE_URL"
 
 # Code Server runs in a different namespace, so it cannot reference the
 # shopno-ai Secret directly. Keep a namespace-local Secret containing only the
