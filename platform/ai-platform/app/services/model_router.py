@@ -235,7 +235,13 @@ async def run_inference(
     attachments: list[dict] | None = None,
     history: list[dict] | None = None,
 ) -> tuple[InferenceResult, AIModel]:
-    attachments = attachments or []
+    # Pydantic request models arrive here as InferAttachment objects. Adapters
+    # intentionally consume plain mappings, so normalize once at the service boundary
+    # instead of making every provider adapter know about Pydantic.
+    attachments = [
+        item.model_dump() if hasattr(item, "model_dump") else item
+        for item in (attachments or [])
+    ]
     prompt = _with_history(prompt, history)
     needs_vision = _requires_vision(attachments)
     explicit_selection = model_id is not None or bool(model_name)
