@@ -319,7 +319,7 @@ async def live_catalog(_: dict = Depends(require_admin)):
     result = await discover_postgres()
     for database in result["databases"]:
         for table in database.get("tables", []):
-            table["capability"] = resolve_table_capability(database["database"], table["name"])
+            table["capability"] = resolve_table_capability(database["database"], table["name"], table.get("schema"))
     return result
 
 
