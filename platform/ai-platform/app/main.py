@@ -28,7 +28,7 @@ async def _model_catalog_loop(interval_hours: float) -> None:
     while True:
         try:
             async with AsyncSessionLocal() as db:
-                reports = await sync_all_providers(db, activation="recommended")
+                reports = await sync_all_providers(db, activation="all")
             log.info("ai-platform.model_catalog_sync", reports=reports)
         except Exception:
             log.exception("ai-platform.model_catalog_sync_failed")
