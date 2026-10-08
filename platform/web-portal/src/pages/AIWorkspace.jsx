@@ -113,7 +113,17 @@ function ChatMessage({ message, onSpeak, onCopy, onDownload, onRetry, onEdit, on
       <div style={{ display: 'flex', gap: 12, maxWidth: 'min(820px, 94%)', alignItems: 'flex-start', flexDirection: user ? 'row-reverse' : 'row' }}>
         <div style={{ width: 32, height: 32, borderRadius: 10, display: 'grid', placeItems: 'center', flex: '0 0 auto', background: user ? '#111827' : '#10a37f', color: 'white' }}>{user ? 'U' : <Bot size={18} />}</div>
         <div style={{ minWidth: 0, padding: user ? '10px 14px' : '4px 0' }}>
-          {message.fileNames?.length ? <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>{message.fileNames.map((name) => <span key={name} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, border: '1px solid #d1d5db', borderRadius: 999, padding: '4px 8px', color: '#4b5563' }}><FileText size={12} />{name}</span>)}</div> : null}
+          {message.attachments?.length ? <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 10 }}>{message.attachments.map((file, index) => {
+            const mime = file.mime_type || 'application/octet-stream'
+            const src = file.data ? `data:${mime};base64,${file.data}` : ''
+            return src && mime.startsWith('image/') ? <div key={`${file.name}-${index}`} style={{ position: 'relative', maxWidth: 360 }}>
+              <img src={src} alt={file.name || 'Attached image'} style={{ display: 'block', maxWidth: '100%', maxHeight: 320, borderRadius: 10, border: '1px solid #d1d5db', objectFit: 'contain' }} />
+              <button type="button" onClick={() => {
+                try { const raw = atob(file.data); const bytes = new Uint8Array(raw.length); for (let i = 0; i < raw.length; i += 1) bytes[i] = raw.charCodeAt(i); downloadBlob(new Blob([bytes], { type: mime }), file.name || `image-${index + 1}`)
+                } catch { onError('Image download failed.') }
+              }} style={{ marginTop: 6, display: 'inline-flex', alignItems: 'center', gap: 5, border: '1px solid #d1d5db', background: '#fff', borderRadius: 7, padding: '5px 9px', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}><Download size={13} /> Download image</button>
+            </div> : <span key={`${file.name}-${index}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, border: '1px solid #d1d5db', borderRadius: 999, padding: '4px 8px', color: '#4b5563' }}><FileText size={12} />{file.name}</span>
+          })}</div> : message.fileNames?.length ? <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>{message.fileNames.map((name) => <span key={name} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, border: '1px solid #d1d5db', borderRadius: 999, padding: '4px 8px', color: '#4b5563' }}><FileText size={12} />{name}</span>)}</div> : null}
           <MessageBody content={message.content} onError={onError} />
           <div style={{ display: 'flex', gap: 2, marginTop: 5 }}>
             <button onClick={() => onCopy(messageText(message))} aria-label="Copy message" title="Copy message" style={actionStyle}><Copy size={14} /></button>
@@ -437,7 +447,13 @@ export default function AIWorkspace() {
       .filter((message) => message.role === 'user' || message.role === 'assistant')
       .slice(-24)
       .map((message) => ({ role: message.role, content: message.content || '' }))
-    const userMessage = retryMessage ? null : { id: crypto.randomUUID(), role: 'user', content: text, fileNames: attachments.map((file) => file.name) }
+    const userMessage = retryMessage ? null : {
+      id: crypto.randomUUID(),
+      role: 'user',
+      content: text,
+      fileNames: attachments.map((file) => file.name),
+      attachments: multimodalAttachments.map((file) => ({ name: file.name, mime_type: file.mime_type, data: file.data })).filter((file) => file.data && file.mime_type?.startsWith('image/'))
+    }
     const chatId = activeId
     stickRef.current = true
     if (!retryMessage) {
