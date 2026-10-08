@@ -22,6 +22,12 @@ spec:
       namespace: shopno-ai
       jsonPointers:
         - /data
+    - group: ""
+      kind: Secret
+      name: code-server-litellm-key
+      namespace: shopno-apps
+      jsonPointers:
+        - /data
 
   syncPolicy:
     automated:
