@@ -17,6 +17,39 @@ type: Opaque
 stringData: {}
 
 ---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: litellm-migrations
+  namespace: shopno-ai
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+spec:
+  backoffLimit: 2
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: migrate
+          image: ghcr.io/berriai/litellm@sha256:0f4dce575a6c33d737886fe0796a6b3022358b45c2068a5e1312293e28b35f0f
+          command:
+            - /app/.venv/bin/prisma
+            - migrate
+            - deploy
+            - --schema=/app/litellm-proxy-extras/litellm_proxy_extras/schema.prisma
+          envFrom:
+            - secretRef:
+                name: litellm-provider-keys
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              cpu: 1000m
+              memory: 4Gi
+
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
