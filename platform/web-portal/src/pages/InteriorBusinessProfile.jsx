@@ -72,7 +72,7 @@ export default function InteriorBusinessProfile() {
         <div className="ib-hero-inner">
           <div>
             <h1 className="ib-title">Shopno Interior Design &amp; Decoration</h1>
-            <p className="ib-sub">Residential, corporate, retail and commercial interiors — designed and built by architects, engineers and craftsmen who see a project through from drawing to finished room.</p>
+            <p className="ib-sub">Residential, workplace, retail and commercial interiors — from space planning and design concepts to material selection, lighting, cabinetry, finishes and coordinated fit-out. Each project is scoped around the client's brief, site requirements, budget and delivery location.</p>
             <div className="ib-actions">
               <a className="ib-btn ib-btn-brass" href="/cv/shopno-business-interior-profile.pdf" download>Download profile</a>
               <a className="ib-btn ib-btn-ghost" href="https://shopnoltd.wixsite.com/shopno/home-decoration" target="_blank" rel="noopener noreferrer">Original portfolio</a>
