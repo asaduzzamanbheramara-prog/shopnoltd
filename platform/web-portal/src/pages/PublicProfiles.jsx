@@ -15,7 +15,7 @@ const DATA_PROFILE = {
 
 const INTERIOR_PROFILE = {
   title: 'Shopno Database Firm', subtitle: 'Business · Interior Design & Decoration',
-  description: 'A business profile combining Shopno Database Firm’s long-standing data and technology background with Shopno Interior Design & Decoration services.',
+  description: 'A professional interior design and fit-out profile for residential, workplace, retail and commercial spaces. Services cover space planning, interior concepts, lighting, finishes, cabinetry and decoration, with project scope and delivery tailored to each client brief and location. The wider Shopno business also brings data and technology experience.',
   pdf: '/cv/shopno-business-interior-profile.pdf',
   sections: [
     ['Interior services', ['Corporate office interior design', 'Flat / residence interior design', 'Bank decoration and renovation', 'Super shop / showroom interior', 'Rooftop garden ideas and implementation', 'Living, dining and kitchen solutions', 'False ceiling, lighting, wall treatment and wallpaper', 'Floor, tile, glass and wooden partition work', 'Kitchen cabinet, hood, wall cabinet and TV unit', 'Metal, plastic-board, gypsum and wood-board decoration', 'Bathroom, bedroom, dining, drawing and guest-room decoration', 'Restaurant, retail, fashion, beauty, meeting-room and exterior decoration']],

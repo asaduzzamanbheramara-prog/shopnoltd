@@ -34,7 +34,7 @@ export default function Profiles() {
   return <main style={{ maxWidth: 1080, margin: '0 auto', padding: 'clamp(28px,6vw,56px) 18px 80px', fontFamily: 'system-ui,sans-serif' }}>
     <section style={{ padding: 'clamp(28px,6vw,50px)', borderRadius: 24, background: 'linear-gradient(135deg,#0f172a,#0369a1)', color: 'white' }}>
       <div style={{ fontSize: 42 }}>👤</div><h1 style={{ fontSize: 'clamp(34px,6vw,56px)', margin: '8px 0' }}>Shopnoltd Profiles</h1>
-      <p style={{ maxWidth: 780, lineHeight: 1.75, fontSize: 17, opacity: .92 }}>Two separate public profiles designed for sharing professional background, business capability and downloadable PDF documents.</p>
+      <p style={{ maxWidth: 780, lineHeight: 1.75, fontSize: 17, opacity: .92 }}>Two public-facing profiles for international professional and business enquiries, with clear service information, shareable links and downloadable PDF documents.</p>
     </section>
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: 20, marginTop: 24 }}>
       {cards.map(card => {

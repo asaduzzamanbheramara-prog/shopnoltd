@@ -86,7 +86,7 @@ export default function DataManagementProfile() {
       <div className="dm-hero">
         <p className="dm-kicker">DATA MANAGEMENT PROFILE</p>
         <h1 className="dm-name">Md. Asaduzzaman</h1>
-        <p className="dm-role">Database development, statistical analysis, survey methodology and digital data-collection systems — twenty years across national-scale field surveys and census work in Bangladesh.</p>
+        <p className="dm-role">Database development, statistical analysis, survey methodology and digital data-collection systems, with experience spanning large-scale research, field surveys and census programmes. Selected assignments include work in Bangladesh; the methods and technical skills are relevant to international research, public-sector and business environments.</p>
 
         <div className="dm-tally">
           {RECORD_SURVEYS.map(r => (
