@@ -28,3 +28,9 @@ def test_rejects_only_parenthesized_table_syntax():
     with pytest.raises(HTTPException) as exc:
         _extract_sql_tables("SELECT * FROM ONLY (public.users)")
     assert exc.value.status_code == 403
+
+
+def test_rejects_unqualified_postgres_system_relations():
+    with pytest.raises(HTTPException) as exc:
+        _extract_sql_tables("SELECT * FROM pg_class")
+    assert exc.value.status_code == 403
