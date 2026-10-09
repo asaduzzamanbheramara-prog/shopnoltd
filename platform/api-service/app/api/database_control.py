@@ -67,6 +67,10 @@ def _extract_sql_tables(sql: str) -> set[tuple[str, str]]:
         first = _sql_identifier_value(match.group('first'))
         second = match.group('second')
         if second is None:
+            # PostgreSQL resolves pg_* relation names from pg_catalog before
+            # public; treating them as public tables would bypass catalog guards.
+            if first.lower().startswith("pg_"):
+                raise HTTPException(403, "system catalog relations must not be referenced without an explicit application schema")
             tables.add(("public", first))
         else:
             tables.add((first, _sql_identifier_value(second)))
