@@ -284,12 +284,28 @@ jobs:
             exit 1
           fi
 
-          echo 'Reconciling migration ConfigMap from the trusted main checkout.'
-          mapfile -t migration_files < <(find k8s/services/postgres/migration -maxdepth 1 -type f -name '*.sql' -printf '%f\n' | sort)
-          if [ "${#migration_files[@]}" -eq 0 ]; then
-            echo 'No migration SQL files were found in the trusted checkout.'
+          echo 'Reconciling migration ConfigMap from the exact file list declared in Kustomize.'
+          # The runtime ConfigMap must match Kustomize's configMapGenerator exactly.
+          # Including every historical *.sql file makes Argo CD report this resource
+          # OutOfSync indefinitely because only the declared files are desired.
+          mapfile -t migration_files < <(
+            awk '
+              /^configMapGenerator:/ { in_generator=1; next }
+              in_generator && /^  files:/ { in_files=1; next }
+              in_generator && /^  options:/ { exit }
+              in_generator && in_files && /^  - / { sub(/^  - /, ""); print }
+            ' k8s/services/postgres/migration/kustomization.yaml
+          )
+          if [ "${migration_files[@]}" = "" ]; then
+            echo 'No migration SQL files are declared in the Kustomize ConfigMap generator.'
             exit 1
           fi
+          for migration_file in "${migration_files[@]}"; do
+            if [ ! -f "k8s/services/postgres/migration/$migration_file" ]; then
+              echo "Declared migration SQL file is missing: $migration_file"
+              exit 1
+            fi
+          done
           configmap_args=()
           for migration_file in "${migration_files[@]}"; do
             configmap_args+=(--from-file="${migration_file}=k8s/services/postgres/migration/${migration_file}")
@@ -297,7 +313,6 @@ jobs:
           kubectl create configmap "$MIGRATION_CONFIGMAP" "${configmap_args[@]}" --dry-run=client -o yaml |
             kubectl --request-timeout=30s -n "$MIGRATION_NAMESPACE" apply -f -
           kubectl --request-timeout=30s -n "$MIGRATION_NAMESPACE" annotate configmap "$MIGRATION_CONFIGMAP" argocd.argoproj.io/sync-wave=-11 --overwrite
-
           if timeout 30s kubectl --request-timeout=30s -n "$MIGRATION_NAMESPACE" get job "$MIGRATION_JOB" >/dev/null 2>&1; then
             echo 'Removing the stale migration hook without waiting for Kubernetes pod termination.'
             timeout 30s kubectl --request-timeout=30s -n "$MIGRATION_NAMESPACE" delete job "$MIGRATION_JOB" --ignore-not-found --wait=false
