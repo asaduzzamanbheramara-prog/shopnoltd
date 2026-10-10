@@ -44,7 +44,7 @@ def _guarded_sql_table_references(sql: str) -> set[tuple[str, str]]:
         raise HTTPException(403, "quoted identifiers are not supported by the guarded SQL browser")
 
     from_clause = re.search(
-        r"\\bFROM\\b(.*?)(?=\\bWHERE\\b|\\bGROUP\\s+BY\\b|\\bORDER\\s+BY\\b|\\bLIMIT\\b|\\bOFFSET\\b|\\bFETCH\\b|$)",
+        r"\bFROM\b(.*?)(?=\bWHERE\b|\bGROUP\s+BY\b|\bORDER\s+BY\b|\bLIMIT\b|\bOFFSET\b|\bFETCH\b|$)",
         sql,
         flags=re.IGNORECASE | re.DOTALL,
     )
@@ -52,11 +52,11 @@ def _guarded_sql_table_references(sql: str) -> set[tuple[str, str]]:
         raise HTTPException(403, "comma-separated FROM lists are not supported by the guarded SQL browser")
 
     candidates = re.findall(
-        r"\\b(?:FROM|JOIN|UPDATE|INTO|DELETE\\s+FROM)\\s+([A-Za-z_][A-Za-z0-9_]*)(?:\\.([A-Za-z_][A-Za-z0-9_]*))?",
+        r"\b(?:FROM|JOIN|UPDATE|INTO|DELETE\s+FROM)\s+([A-Za-z_][A-Za-z0-9_]*)(?:\.([A-Za-z_][A-Za-z0-9_]*))?",
         sql,
         flags=re.IGNORECASE,
     )
-    if re.search(r"\\b(?:FROM|JOIN)\\b", sql, flags=re.IGNORECASE) and not candidates:
+    if re.search(r"\b(?:FROM|JOIN)\b", sql, flags=re.IGNORECASE) and not candidates:
         raise HTTPException(403, "table references could not be safely resolved")
 
     return {
