@@ -296,7 +296,7 @@ jobs:
               in_generator && in_files && /^  - / { sub(/^  - /, ""); print }
             ' k8s/services/postgres/migration/kustomization.yaml
           )
-          if [ "${migration_files[@]}" = "" ]; then
+          if [ "${#migration_files[@]}" -eq 0 ]; then
             echo 'No migration SQL files are declared in the Kustomize ConfigMap generator.'
             exit 1
           fi
