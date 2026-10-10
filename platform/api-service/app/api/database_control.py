@@ -38,6 +38,33 @@ def _ident(value: str) -> str:
     return '"' + value.replace('"', '""') + '"'
 
 
+def _guarded_sql_table_references(sql: str) -> set[tuple[str, str]]:
+    """Extract table references only where the lightweight SQL guard is reliable."""
+    if any(char in sql for char in ('"', "`", "[", "]")):
+        raise HTTPException(403, "quoted identifiers are not supported by the guarded SQL browser")
+
+    from_clause = re.search(
+        r"\\bFROM\\b(.*?)(?=\\bWHERE\\b|\\bGROUP\\s+BY\\b|\\bORDER\\s+BY\\b|\\bLIMIT\\b|\\bOFFSET\\b|\\bFETCH\\b|$)",
+        sql,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    if from_clause and "," in from_clause.group(1):
+        raise HTTPException(403, "comma-separated FROM lists are not supported by the guarded SQL browser")
+
+    candidates = re.findall(
+        r"\\b(?:FROM|JOIN|UPDATE|INTO|DELETE\\s+FROM)\\s+([A-Za-z_][A-Za-z0-9_]*)(?:\\.([A-Za-z_][A-Za-z0-9_]*))?",
+        sql,
+        flags=re.IGNORECASE,
+    )
+    if re.search(r"\\b(?:FROM|JOIN)\\b", sql, flags=re.IGNORECASE) and not candidates:
+        raise HTTPException(403, "table references could not be safely resolved")
+
+    return {
+        (("public", first_name) if second_name is None else (first_name, second_name))
+        for first_name, second_name in candidates
+    }
+
+
 async def _connect_database(database: str):
     try:
         return await _connect(database)
@@ -354,12 +381,7 @@ async def execute_admin_sql(payload: dict[str, Any] = Body(...), token: dict = D
     mutation = first in {"INSERT", "UPDATE", "DELETE"}
     if mutation and "platform_admin" not in set(token.get("roles", [])):
         raise HTTPException(403, "platform_admin is required for SQL mutations")
-    candidates = re.findall(
-        r"\b(?:FROM|JOIN|UPDATE|INTO|DELETE\s+FROM)\s+([A-Za-z_][A-Za-z0-9_]*)(?:\.([A-Za-z_][A-Za-z0-9_]*))?",
-        sql,
-        flags=re.IGNORECASE,
-    )
-    tables = {(("public", first_name) if second_name is None else (first_name, second_name)) for first_name, second_name in candidates}
+    tables = _guarded_sql_table_references(sql)
     if any(schema in {"pg_catalog", "information_schema"} for schema, _ in tables):
         raise HTTPException(403, "system catalogs are not available through the browser SQL control plane")
     for schema, table in tables:
