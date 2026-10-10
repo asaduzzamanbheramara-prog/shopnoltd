@@ -131,12 +131,19 @@ async def table_rows(
             clauses = [f"coalesce({_ident(row['column_name'])}::text, '') ILIKE $3" for row in columns]
             where = " WHERE " + " OR ".join(clauses)
             params.append(f"%{search}%")
+        count_where = ""
+        count_params: list[Any] = []
+        if search:
+            count_clauses = [f"coalesce({_ident(row['column_name'])}::text, '') ILIKE $1" for row in columns]
+            count_where = " WHERE " + " OR ".join(count_clauses)
+            count_params.append(f"%{search}%")
+        total = await conn.fetchval(f"SELECT count(*) FROM {s}.{t}{count_where}", *count_params)
         rows = await conn.fetch(f"SELECT * FROM {s}.{t}{where} ORDER BY ctid OFFSET $1 LIMIT $2", *params)
         return {
             "database": database, "schema": schema, "table": table,
             "capability": capability,
             "columns": [dict(c) for c in columns],
-            "rows": [dict(r) for r in rows], "limit": limit, "offset": offset, "search": search,
+            "rows": [dict(r) for r in rows], "total": total, "limit": limit, "offset": offset, "search": search,
         }
     finally:
         await conn.close()
