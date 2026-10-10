@@ -88,3 +88,43 @@ test('normal user is denied the admin database route', async ({ page }) => {
   await expect(page).toHaveURL(/\/dashboard(?:\?|$)/, { timeout: 15000 })
   await expect(page).not.toHaveURL(/\/admin\/database(?:\?|$)/)
 })
+
+test('admin can inspect the live PostgreSQL database inventory', async ({ page }) => {
+  await login(page, adminUser, adminPassword)
+  const catalogResponse = page.waitForResponse(r =>
+    r.url().includes('/api/v1/admin/database/catalog') && r.request().method() === 'GET',
+    { timeout: 30000 },
+  )
+  const liveResponse = page.waitForResponse(r =>
+    r.url().includes('/api/v1/admin/database/live-catalog') && r.request().method() === 'GET',
+    { timeout: 30000 },
+  )
+  await page.goto(`${baseURL}/admin/database`, { waitUntil: 'domcontentloaded' })
+  const [catalog, live] = await Promise.all([catalogResponse, liveResponse])
+  expect(catalog.status(), 'database capability catalog must be available to admins').toBeGreaterThanOrEqual(200)
+  expect(catalog.status(), 'database capability catalog must not return an error').toBeLessThan(300)
+  expect(live.status(), 'live database inventory must be available to admins').toBeGreaterThanOrEqual(200)
+  expect(live.status(), 'live database inventory must not return an error').toBeLessThan(300)
+
+  const catalogPayload = await catalog.json()
+  const livePayload = await live.json()
+  expect(Array.isArray(catalogPayload.databases), 'capability catalog must list declared service databases').toBe(true)
+  expect(catalogPayload.databases.length, 'capability catalog must not be empty').toBeGreaterThan(0)
+  expect(Array.isArray(livePayload.databases), 'live PostgreSQL inventory must return database results').toBe(true)
+  expect(livePayload.databases.length, 'live inventory must not silently report zero databases').toBeGreaterThan(0)
+  expect(Array.isArray(livePayload.declared_not_live),
+    'inventory must report capability-declared PostgreSQL databases not found live').toBe(true)
+
+  const applicationDatabases = livePayload.databases.filter(database => database.classification === 'application')
+  expect(applicationDatabases.length, 'live inventory must discover application databases').toBeGreaterThan(0)
+  expect(applicationDatabases.some(database => database.reachable === true),
+    'at least one application database must be reachable').toBe(true)
+  for (const database of applicationDatabases) {
+    expect(typeof database.database, 'each application database must identify its database').toBe('string')
+    expect(typeof database.reachable, 'each application database must explicitly report reachability').toBe('boolean')
+    if (database.reachable) {
+      expect(Array.isArray(database.tables), 'reachable PostgreSQL databases must expose table metadata').toBe(true)
+      expect(database.tables.length, 'reachable PostgreSQL databases must expose at least one table').toBeGreaterThan(0)
+    }
+  }
+})
