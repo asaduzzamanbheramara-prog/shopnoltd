@@ -88,3 +88,39 @@ test('normal user is denied the admin database route', async ({ page }) => {
   await expect(page).toHaveURL(/\/dashboard(?:\?|$)/, { timeout: 15000 })
   await expect(page).not.toHaveURL(/\/admin\/database(?:\?|$)/)
 })
+
+test('admin can inspect the unified live database inventory', async ({ page }) => {
+  await login(page, adminUser, adminPassword)
+  const catalogResponse = page.waitForResponse(r =>
+    r.url().includes('/api/v1/admin/database/catalog') && r.request().method() === 'GET',
+    { timeout: 30000 },
+  )
+  const liveResponse = page.waitForResponse(r =>
+    r.url().includes('/api/v1/admin/database/live-catalog') && r.request().method() === 'GET',
+    { timeout: 30000 },
+  )
+  await page.goto(`${baseURL}/admin/database`, { waitUntil: 'domcontentloaded' })
+  const [catalog, live] = await Promise.all([catalogResponse, liveResponse])
+  expect(catalog.status(), 'database capability catalog must be available to admins').toBeGreaterThanOrEqual(200)
+  expect(catalog.status(), 'database capability catalog must not return an error').toBeLessThan(300)
+  expect(live.status(), 'live database inventory must be available to admins').toBeGreaterThanOrEqual(200)
+  expect(live.status(), 'live database inventory must not return an error').toBeLessThan(300)
+
+  const catalogPayload = await catalog.json()
+  const livePayload = await live.json()
+  expect(Array.isArray(catalogPayload.databases), 'capability catalog must list declared service databases').toBe(true)
+  expect(catalogPayload.databases.length, 'capability catalog must not be empty').toBeGreaterThan(0)
+  expect(Array.isArray(livePayload.databases), 'live inventory must return database results').toBe(true)
+  expect(livePayload.databases.length, 'live inventory must not silently report zero databases').toBeGreaterThan(0)
+
+  const applicationDatabases = livePayload.databases.filter(database => database.classification === 'application')
+  expect(applicationDatabases.length, 'live inventory must discover at least one application database').toBeGreaterThan(0)
+  for (const database of applicationDatabases) {
+    expect(typeof database.database, 'each database result must identify its database').toBe('string')
+    expect(typeof database.reachable, 'each application database must explicitly report reachability').toBe('boolean')
+    if (database.reachable) {
+      expect(Array.isArray(database.tables), 'reachable databases must expose table metadata').toBe(true)
+    }
+  }
+})
+
