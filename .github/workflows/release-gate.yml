@@ -247,12 +247,41 @@ jobs:
           done
           test "$ok" -eq 1
 
+  adsense-live:
+    name: Live AdSense verification
+    needs:
+      - repository-validation
+      - wait-for-gitops
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify live ads.txt publisher authorization
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --retry 4 --retry-all-errors --retry-delay 5 --connect-timeout 10 --max-time 30 -fsSL https://shopnoltd.dpdns.org/ads.txt -o /tmp/shopnoltd-ads.txt
+          expected='google.com, pub-4532970890139771, DIRECT, f08c47fec0942fa0'
+          grep -Fxq "$expected" /tmp/shopnoltd-ads.txt
+          echo 'Live ads.txt serves the expected AdSense publisher record.'
+
+      - name: Verify live homepage AdSense script is present exactly once
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --retry 4 --retry-all-errors --retry-delay 5 --connect-timeout 10 --max-time 30 -fsSL https://shopnoltd.dpdns.org/ -o /tmp/shopnoltd-homepage.html
+          script='https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4532970890139771'
+          count="$(grep -oF "$script" /tmp/shopnoltd-homepage.html | wc -l)"
+          echo "Live AdSense script occurrences: $count"
+          test "$count" -eq 1
+          grep -Fq 'google-adsense-account' /tmp/shopnoltd-homepage.html
+
   release-summary:
     name: Release gate summary
     needs:
       - repository-validation
       - wait-for-gitops
       - public-smoke
+      - adsense-live
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -278,3 +307,11 @@ jobs:
           set -euo pipefail
           echo "public-smoke=${{ needs.public-smoke.result }}"
           test '${{ needs.public-smoke.result }}' = success
+
+      - name: Require live AdSense verification on deployed events
+        if: github.event_name != 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "adsense-live=${{ needs.adsense-live.result }}"
+          test '${{ needs.adsense-live.result }}' = success
