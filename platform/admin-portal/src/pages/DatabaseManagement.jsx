@@ -82,7 +82,7 @@ export default function DatabaseManagement() {
         <div>
           <h1 style={{ marginBottom: 6 }}>Database Management</h1>
           <p style={{ margin: 0, color: '#475569' }}>
-            Complete live inventory, table inspection, export and capability-gated row management. No browser SQL console.
+            Live inventory, table inspection, export and capability-gated row management. Use SQL Browser for guarded queries; schema-changing DDL and protected financial, identity, security and audit mutations remain restricted.
           </p>
         </div>
         <button onClick={() => inventory.refetch()} disabled={inventory.isFetching}>Refresh inventory</button>
