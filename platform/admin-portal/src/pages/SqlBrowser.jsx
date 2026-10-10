@@ -46,8 +46,8 @@ export default function SqlBrowser() {
       <div style={{ marginBottom: 18 }}>
         <h1 style={{ marginBottom: 6 }}>Shopnoltd SQL Browser</h1>
         <p style={{ color: '#475569', marginTop: 0 }}>
-          Browser SQL inspection plus capability-gated CRUD. SELECT/EXPLAIN are available to administrators.
-          INSERT/UPDATE/DELETE require platform_admin and an explicitly writable table.
+          Guarded SQL inspection and capability-gated row mutations. SELECT/EXPLAIN are available to administrators.
+          INSERT/UPDATE/DELETE require platform_admin and an explicitly writable table. Schema-changing DDL is not exposed here.
           Protected financial, identity, security, credential and audit data remains service-owned.
         </p>
       </div>
