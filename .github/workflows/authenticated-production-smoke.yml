@@ -1,0 +1,64 @@
+name: Authenticated production smoke
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'tests/browser-role/**'
+      - '.github/workflows/authenticated-production-smoke.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: authenticated-production-smoke
+  cancel-in-progress: false
+
+jobs:
+  authenticated-smoke:
+    name: Read-only authenticated browser checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Require dedicated test-account secrets
+        shell: bash
+        env:
+          ADMIN_USERNAME: ${{ secrets.SHOPNOLTD_ADMIN_USERNAME }}
+          ADMIN_PASSWORD: ${{ secrets.SHOPNOLTD_ADMIN_PASSWORD }}
+          USER_USERNAME: ${{ secrets.SHOPNOLTD_USER_USERNAME }}
+          USER_PASSWORD: ${{ secrets.SHOPNOLTD_USER_PASSWORD }}
+        run: |
+          set -euo pipefail
+          for name in ADMIN_USERNAME ADMIN_PASSWORD USER_USERNAME USER_PASSWORD; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Missing GitHub Actions secret for ${name}. Configure dedicated, least-privilege production test accounts; do not commit credentials."
+              exit 1
+            fi
+          done
+      - name: Install Playwright dependencies
+        working-directory: tests/browser-role
+        run: |
+          npm install --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Run authenticated read-only smoke tests
+        working-directory: tests/browser-role
+        env:
+          SHOPNOLTD_BASE_URL: https://shopnoltd.dpdns.org
+          SHOPNOLTD_ADMIN_USERNAME: ${{ secrets.SHOPNOLTD_ADMIN_USERNAME }}
+          SHOPNOLTD_ADMIN_PASSWORD: ${{ secrets.SHOPNOLTD_ADMIN_PASSWORD }}
+          SHOPNOLTD_USER_USERNAME: ${{ secrets.SHOPNOLTD_USER_USERNAME }}
+          SHOPNOLTD_USER_PASSWORD: ${{ secrets.SHOPNOLTD_USER_PASSWORD }}
+        run: npx playwright test --config=playwright.config.js --reporter=line --workers=1 authenticated-production.spec.js
+      - name: Upload Playwright traces on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: authenticated-production-playwright-traces
+          path: tests/browser-role/test-results/
+          if-no-files-found: ignore
+          retention-days: 7
