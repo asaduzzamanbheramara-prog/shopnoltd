@@ -78,7 +78,22 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          kubectl kustomize k8s >/dev/null
+          echo 'Rendering Kubernetes source with retries for transient remote-base fetch failures.'
+          rendered=0
+          for attempt in {1..4}; do
+            if kubectl kustomize k8s >/dev/null; then
+              rendered=1
+              break
+            fi
+            if [ "$attempt" -lt 4 ]; then
+              echo "Kustomize render attempt $attempt/4 failed; retrying in 10 seconds."
+              sleep 10
+            fi
+          done
+          if [ "$rendered" -ne 1 ]; then
+            echo 'ERROR: Kubernetes source did not render after four attempts.'
+            exit 1
+          fi
 
       - name: Provision Android Cloud GHCR pull secret
         shell: bash
