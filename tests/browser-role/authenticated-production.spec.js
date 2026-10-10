@@ -110,17 +110,40 @@ test('admin can inspect the unified live database inventory', async ({ page }) =
   const livePayload = await live.json()
   expect(Array.isArray(catalogPayload.databases), 'capability catalog must list declared service databases').toBe(true)
   expect(catalogPayload.databases.length, 'capability catalog must not be empty').toBeGreaterThan(0)
-  expect(Array.isArray(livePayload.databases), 'live inventory must return database results').toBe(true)
-  expect(livePayload.databases.length, 'live inventory must not silently report zero databases').toBeGreaterThan(0)
+  expect(livePayload.read_only, 'live inventory must explicitly be read-only').toBe(true)
+  expect(livePayload.source, 'live inventory must identify its discovery sources').toBe('live-postgresql-and-mongodb')
+  expect(livePayload.postgres && Array.isArray(livePayload.postgres.databases),
+    'live inventory must return PostgreSQL database results').toBe(true)
+  expect(livePayload.mongodb && Array.isArray(livePayload.mongodb.databases),
+    'live inventory must return MongoDB database results').toBe(true)
 
-  const applicationDatabases = livePayload.databases.filter(database => database.classification === 'application')
-  expect(applicationDatabases.length, 'live inventory must discover at least one application database').toBeGreaterThan(0)
+  const postgresDatabases = livePayload.postgres.databases
+  const mongoDatabases = livePayload.mongodb.databases
+  expect(postgresDatabases.length + mongoDatabases.length,
+    'live inventory must not silently report zero databases').toBeGreaterThan(0)
+
+  const applicationDatabases = [
+    ...postgresDatabases.filter(database => database.classification === 'application'),
+    ...mongoDatabases.filter(database => database.classification === 'application'),
+  ]
+  expect(applicationDatabases.length, 'live inventory must discover application databases').toBeGreaterThan(0)
+  expect(applicationDatabases.some(database => database.reachable === true),
+    'at least one application database must be reachable').toBe(true)
   for (const database of applicationDatabases) {
-    expect(typeof database.database, 'each database result must identify its database').toBe('string')
-    expect(typeof database.reachable, 'each application database must explicitly report reachability').toBe('boolean')
-    if (database.reachable) {
-      expect(Array.isArray(database.tables), 'reachable databases must expose table metadata').toBe(true)
+    if (database.database) {
+      expect(typeof database.reachable, 'each named application database must explicitly report reachability').toBe('boolean')
+    }
+    if (database.reachable && Array.isArray(database.tables)) {
+      expect(database.tables.length, 'reachable PostgreSQL databases must expose table metadata').toBeGreaterThan(0)
+    }
+    if (database.reachable && Array.isArray(database.collections)) {
+      expect(Array.isArray(database.collections), 'reachable MongoDB databases must expose collection metadata').toBe(true)
     }
   }
+
+  expect(Array.isArray(livePayload.postgres.declared_not_live),
+    'inventory must report capability-declared PostgreSQL databases not found live').toBe(true)
+  expect(livePayload.summary && typeof livePayload.summary.reachable_databases === 'number',
+    'inventory must include reachability summary metrics').toBe(true)
 })
 
