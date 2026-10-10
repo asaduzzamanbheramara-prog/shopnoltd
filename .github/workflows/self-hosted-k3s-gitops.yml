@@ -413,7 +413,7 @@ jobs:
               kubectl -n shopno-apps logs "$pod" --all-containers=true --tail=120 || true
               echo "===== PREVIOUS LOGS: $pod ====="
               kubectl -n shopno-apps logs "$pod" --all-containers=true --previous --tail=120 || true
-            done < <(kubectl -n shopno-apps get pods -o name | grep -E "/\${deployment}-" || true)
+            done < <(kubectl -n shopno-apps get pods -o name || true)
             return 1
           }
           rollout_status_with_diagnostics kobotoolbox
