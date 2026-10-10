@@ -114,6 +114,7 @@ jobs:
         working-directory: platform/api-service
     env:
       DATABASE_URL: postgresql+asyncpg://test:test@localhost/postgres
+      PYTHONPATH: .
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
