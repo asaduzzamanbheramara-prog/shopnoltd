@@ -38,32 +38,53 @@ def _ident(value: str) -> str:
     return '"' + value.replace('"', '""') + '"'
 
 
-def _guarded_sql_table_references(sql: str) -> set[tuple[str, str]]:
-    """Extract table references only where the lightweight SQL guard is reliable."""
-    if any(char in sql for char in ('"', "`", "[", "]")):
-        raise HTTPException(403, "quoted identifiers are not supported by the guarded SQL browser")
+_SQL_IDENT = r'(?:\"(?:[^\"]|\"\")*\"|[A-Za-z_][A-Za-z0-9_]*)'
+_SQL_TABLE_REF_RE = re.compile(
+    rf'\b(?:FROM|JOIN|UPDATE|INTO|DELETE\s+FROM)\s+(?:ONLY\s+)?'
+    rf'(?P<first>{_SQL_IDENT})(?:\s*\.\s*(?P<second>{_SQL_IDENT}))?',
+    re.IGNORECASE,
+)
+_SQL_LITERAL_RE = re.compile(r"""(?is)(?:E)?'(?:''|\\.|[^'])*'""")
 
+
+def _sql_identifier_value(value: str) -> str:
+    if value.startswith('"') and value.endswith('"'):
+        return value[1:-1].replace('""', '"')
+    return value
+
+
+def _guarded_sql_table_references(sql: str) -> set[tuple[str, str]]:
+    """Extract table references conservatively for capability checks.
+
+    Quoted identifiers are supported so quoting cannot bypass protected-table
+    checks. Unsupported PostgreSQL ONLY (table) syntax fails closed.
+    """
+    masked = _SQL_LITERAL_RE.sub("''", sql)
+    if re.search(r"\bFROM\s+ONLY\s*\(", masked, flags=re.IGNORECASE):
+        raise HTTPException(403, "FROM ONLY (table) syntax is not supported by the SQL browser")
     from_clause = re.search(
         r"\bFROM\b(.*?)(?=\bWHERE\b|\bGROUP\s+BY\b|\bORDER\s+BY\b|\bLIMIT\b|\bOFFSET\b|\bFETCH\b|$)",
-        sql,
+        masked,
         flags=re.IGNORECASE | re.DOTALL,
     )
     if from_clause and "," in from_clause.group(1):
         raise HTTPException(403, "comma-separated FROM lists are not supported by the guarded SQL browser")
 
-    candidates = re.findall(
-        r"\b(?:FROM|JOIN|UPDATE|INTO|DELETE\s+FROM)\s+([A-Za-z_][A-Za-z0-9_]*)(?:\.([A-Za-z_][A-Za-z0-9_]*))?",
-        sql,
-        flags=re.IGNORECASE,
-    )
-    if re.search(r"\b(?:FROM|JOIN)\b", sql, flags=re.IGNORECASE) and not candidates:
+    tables: set[tuple[str, str]] = set()
+    for match in _SQL_TABLE_REF_RE.finditer(masked):
+        first = _sql_identifier_value(match.group("first"))
+        second = match.group("second")
+        if second is None:
+            # PostgreSQL resolves pg_* relation names from pg_catalog before
+            # public; fail closed rather than letting a catalog bypass guards.
+            if first.lower().startswith("pg_"):
+                raise HTTPException(403, "system catalog relations must not be referenced without an explicit application schema")
+            tables.add(("public", first))
+        else:
+            tables.add((first, _sql_identifier_value(second)))
+    if re.search(r"\b(?:FROM|JOIN)\b", masked, flags=re.IGNORECASE) and not tables:
         raise HTTPException(403, "table references could not be safely resolved")
-
-    return {
-        (("public", first_name) if second_name is None else (first_name, second_name))
-        for first_name, second_name in candidates
-    }
-
+    return tables
 
 async def _connect_database(database: str):
     try:
