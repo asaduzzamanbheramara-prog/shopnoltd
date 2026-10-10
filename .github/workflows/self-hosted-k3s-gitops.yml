@@ -411,7 +411,10 @@ jobs:
           done
           rollout_status_with_diagnostics() {
             local deployment="$1"
-            if kubectl -n shopno-apps rollout status "deployment/$deployment" --timeout=180s; then
+            # Kobo's image currently synchronizes Python dependencies during startup.
+            # Its startup probe allows up to ~10 minutes; the rollout wait must not
+            # fail at 180 seconds while that supported startup window is still active.
+            if kubectl -n shopno-apps rollout status "deployment/$deployment" --timeout=600s; then
               return 0
             fi
             echo "ERROR: rollout failed for $deployment; collecting targeted diagnostics before exiting."
