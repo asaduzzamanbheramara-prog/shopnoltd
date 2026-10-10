@@ -394,9 +394,31 @@ jobs:
           for deployment in kobotoolbox kobotoolbox-beat kobotoolbox-worker; do
             kubectl -n shopno-apps rollout restart deployment/"$deployment"
           done
-          kubectl -n shopno-apps rollout status deployment/kobotoolbox --timeout=180s
-          kubectl -n shopno-apps rollout status deployment/kobotoolbox-worker --timeout=180s
-          kubectl -n shopno-apps rollout status deployment/kobotoolbox-beat --timeout=180s
+          rollout_status_with_diagnostics() {
+            local deployment="$1"
+            if kubectl -n shopno-apps rollout status "deployment/$deployment" --timeout=180s; then
+              return 0
+            fi
+            echo "ERROR: rollout failed for $deployment; collecting targeted diagnostics before exiting."
+            kubectl -n shopno-apps get deployment "$deployment" -o wide || true
+            kubectl -n shopno-apps get rs -o wide || true
+            kubectl -n shopno-apps get pods -o wide || true
+            kubectl -n shopno-apps describe deployment "$deployment" || true
+            kubectl -n shopno-apps get events --sort-by=.lastTimestamp | tail -n 100 || true
+            while IFS= read -r pod; do
+              [ -n "$pod" ] || continue
+              echo "===== POD DESCRIPTION: $pod ====="
+              kubectl -n shopno-apps describe "$pod" || true
+              echo "===== CURRENT LOGS: $pod ====="
+              kubectl -n shopno-apps logs "$pod" --all-containers=true --tail=120 || true
+              echo "===== PREVIOUS LOGS: $pod ====="
+              kubectl -n shopno-apps logs "$pod" --all-containers=true --previous --tail=120 || true
+            done < <(kubectl -n shopno-apps get pods -o name | grep -E "/\${deployment}-" || true)
+            return 1
+          }
+          rollout_status_with_diagnostics kobotoolbox
+          rollout_status_with_diagnostics kobotoolbox-worker
+          rollout_status_with_diagnostics kobotoolbox-beat
           echo 'Applying Kobo django_celery_beat migrations before Argo rollout.'
           kubectl exec -n shopno-apps deployment/kobotoolbox-worker -- env KPI_DATABASE_URL="$kpi_database_url" KC_DATABASE_URL="$kobocat_database_url" DATABASE_URL="$kobocat_database_url" python /srv/src/kpi/manage.py migrate django_celery_beat --noinput
 
