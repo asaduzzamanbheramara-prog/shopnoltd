@@ -113,47 +113,6 @@ function OAuthProviderCallback() {
   </main>
 }
 
-const ADSENSE_CLIENT = 'ca-pub-4532970890139771'
-
-const PUBLIC_AD_ROUTES = [
-  /^\/about$/,
-  /^\/contact$/,
-  /^\/terms$/,
-  /^\/$/,
-  /^\/pricing$/,
-  /^\/profiles$/,
-  /^\/profile\/interior-business$/,
-  /^\/profile\/data-management$/,
-  /^\/blog$/,
-  /^\/blog\/[^/]+$/,
-  /^\/services$/,
-  /^\/downloads$/,
-  /^\/phone$/,
-  /^\/domain-registration$/,
-  /^\/privacy$/,
-  /^\/plugins$/,
-]
-
-function shouldLoadAdSense(pathname) {
-  return PUBLIC_AD_ROUTES.some((pattern) => pattern.test(pathname))
-}
-
-function AdSenseLoader() {
-  const location = useLocation()
-  useEffect(() => {
-    if (!shouldLoadAdSense(location.pathname)) return
-    if (document.querySelector('script[data-shopnoltd-adsense="true"]')) return
-    const script = document.createElement('script')
-    script.async = true
-    script.crossOrigin = 'anonymous'
-    script.dataset.shopnoltdAdsense = 'true'
-    script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}`
-    document.head.appendChild(script)
-    return () => {}
-  }, [location.pathname])
-  return null
-}
-
 function AnalyticsTracker() {
   const location = useLocation()
   useEffect(() => { trackPageView(location.pathname + location.search) }, [location.pathname, location.search])
@@ -161,7 +120,7 @@ function AnalyticsTracker() {
 }
 
 function App() {
-  return <BrowserRouter><AnalyticsTracker /><AdSenseLoader /><Nav /><SubdomainRedirect /><Routes>
+  return <BrowserRouter><AnalyticsTracker /><Nav /><SubdomainRedirect /><Routes>
     <Route path="/" element={<Home />} /><Route path="/pricing" element={<Pricing />} /><Route path="/privacy" element={<Privacy />} /><Route path="/about" element={<About />} /><Route path="/contact" element={<Contact />} /><Route path="/terms" element={<Terms />} /><Route path="/create-website" element={<ProtectedRoute><WebsiteBuilder /></ProtectedRoute>} /><Route path="/discover" element={<ProtectedRoute><Discover /></ProtectedRoute>} /><Route path="/feed" element={<ProtectedRoute><SocialFeed /></ProtectedRoute>} /><Route path="/post/:id" element={<ProtectedRoute><PostDetail /></ProtectedRoute>} />
     <Route path="/work" element={<ProtectedRoute><WorkHub /></ProtectedRoute>} /><Route path="/referrals" element={<ProtectedRoute><ReferralHub /></ProtectedRoute>} /><Route path="/work/:id" element={<ProtectedRoute><WorkDetail /></ProtectedRoute>} /><Route path="/create-work" element={<ProtectedRoute><WorkHub /></ProtectedRoute>} /><Route path="/my-created-work" element={<ProtectedRoute><WorkHub /></ProtectedRoute>} /><Route path="/my-active-work" element={<ProtectedRoute><WorkHub /></ProtectedRoute>} /><Route path="/my-submission" element={<ProtectedRoute><WorkHub /></ProtectedRoute>} /><Route path="/work-review" element={<ProtectedRoute><WorkHub /></ProtectedRoute>} />
     <Route path="/account" element={<ProtectedRoute><AccountHub /></ProtectedRoute>} /><Route path="/notifications" element={<ProtectedRoute><AccountHub /></ProtectedRoute>} />
