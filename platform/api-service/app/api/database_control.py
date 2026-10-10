@@ -38,6 +38,45 @@ def _ident(value: str) -> str:
     return '"' + value.replace('"', '""') + '"'
 
 
+_SQL_IDENT = r'(?:\"(?:[^\"]|\"\")*\"|[A-Za-z_][A-Za-z0-9_]*)'
+_SQL_TABLE_REF_RE = re.compile(
+    rf'\b(?:FROM|JOIN|UPDATE|INTO|DELETE\s+FROM)\s+(?:ONLY\s+)?'
+    rf'(?P<first>{_SQL_IDENT})(?:\s*\.\s*(?P<second>{_SQL_IDENT}))?',
+    re.IGNORECASE,
+)
+_SQL_LITERAL_RE = re.compile(r"(?is)(?:E)?'(?:''|\\.|[^'])*'")
+
+
+def _sql_identifier_value(value: str) -> str:
+    if value.startswith('"') and value.endswith('"'):
+        return value[1:-1].replace('""', '"')
+    return value
+
+
+def _extract_sql_tables(sql: str) -> set[tuple[str, str]]:
+    """Conservatively extract SQL table references for capability checks.
+
+    Quoted identifiers are supported so quoting cannot bypass protected-table
+    checks. Unsupported PostgreSQL ONLY (table) syntax fails closed.
+    """
+    masked = _SQL_LITERAL_RE.sub("''", sql)
+    if re.search(r"\bFROM\s+ONLY\s*\(", masked, flags=re.IGNORECASE):
+        raise HTTPException(403, "FROM ONLY (table) syntax is not supported by the SQL browser")
+    tables: set[tuple[str, str]] = set()
+    for match in _SQL_TABLE_REF_RE.finditer(masked):
+        first = _sql_identifier_value(match.group('first'))
+        second = match.group('second')
+        if second is None:
+            # PostgreSQL resolves pg_* relation names from pg_catalog before
+            # public; treating them as public tables would bypass catalog guards.
+            if first.lower().startswith("pg_"):
+                raise HTTPException(403, "system catalog relations must not be referenced without an explicit application schema")
+            tables.add(("public", first))
+        else:
+            tables.add((first, _sql_identifier_value(second)))
+    return tables
+
+
 async def _connect_database(database: str):
     try:
         return await _connect(database)
@@ -354,12 +393,7 @@ async def execute_admin_sql(payload: dict[str, Any] = Body(...), token: dict = D
     mutation = first in {"INSERT", "UPDATE", "DELETE"}
     if mutation and "platform_admin" not in set(token.get("roles", [])):
         raise HTTPException(403, "platform_admin is required for SQL mutations")
-    candidates = re.findall(
-        r"\b(?:FROM|JOIN|UPDATE|INTO|DELETE\s+FROM)\s+([A-Za-z_][A-Za-z0-9_]*)(?:\.([A-Za-z_][A-Za-z0-9_]*))?",
-        sql,
-        flags=re.IGNORECASE,
-    )
-    tables = {(("public", first_name) if second_name is None else (first_name, second_name)) for first_name, second_name in candidates}
+    tables = _extract_sql_tables(sql)
     if any(schema in {"pg_catalog", "information_schema"} for schema, _ in tables):
         raise HTTPException(403, "system catalogs are not available through the browser SQL control plane")
     for schema, table in tables:
