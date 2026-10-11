@@ -21,6 +21,7 @@ async def list_methods():
                 "id": method.value,
                 "display_name": method.value.replace("_", " ").title(),
                 "enabled": enabled,
+                "credentials_configured": bool(getattr(provider, "enabled", False)),
                 "currencies": currencies,
             }
         )
