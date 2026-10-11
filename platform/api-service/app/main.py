@@ -52,12 +52,39 @@ async def lifespan(app: FastAPI):
             """))
             await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_referral_system_identities_user_id ON referral_system_identities (user_id)"))
             await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_referral_system_identities_tenant_id ON referral_system_identities (tenant_id)"))
-            # Never guess the Admin Office recipient from a legacy email address.
-            # Recovered deployments may use Keycloak IDs rather than public.users IDs.
-            # Seed only when the operator explicitly configures the canonical user ID,
-            # and never overwrite an existing alias mapping during application startup.
+            # Prefer an explicitly configured canonical identity ID. For deployments
+            # that still maintain public.users, resolve only the current Shopnoltd
+            # Admin Office email; never fall back to the retired kesug.com domain.
+            # Keycloak-only deployments must configure the ID explicitly.
             admin_office_user_id = os.getenv("SHOPNOLTD_ADMIN_OFFICE_REFERRAL_USER_ID", "").strip()
             admin_office_tenant_id = os.getenv("SHOPNOLTD_ADMIN_OFFICE_REFERRAL_TENANT_ID", "default").strip()
+            admin_office_email = os.getenv(
+                "SHOPNOLTD_ADMIN_OFFICE_REFERRAL_EMAIL",
+                "admin@shopnoltd.dpdns.org",
+            ).strip().lower()
+            if not admin_office_user_id and admin_office_email:
+                users_table = await conn.execute(text("SELECT to_regclass('public.users')"))
+                if users_table.scalar_one_or_none() is not None:
+                    matches = (
+                        await conn.execute(
+                            text("""
+                                SELECT id::text
+                                FROM public.users
+                                WHERE lower(email) = :email
+                                ORDER BY id
+                                LIMIT 2
+                            """),
+                            {"email": admin_office_email},
+                        )
+                    ).scalars().all()
+                    if len(matches) == 1:
+                        admin_office_user_id = matches[0]
+                    elif len(matches) > 1:
+                        log.error(
+                            "referral.admin_office_email_ambiguous",
+                            email=admin_office_email,
+                            matches=len(matches),
+                        )
             if admin_office_user_id and admin_office_tenant_id:
                 await conn.execute(
                     text("""
@@ -71,6 +98,7 @@ async def lifespan(app: FastAPI):
                 log.warning(
                     "referral.admin_office_unconfigured",
                     required_env="SHOPNOLTD_ADMIN_OFFICE_REFERRAL_USER_ID",
+                    email_lookup=admin_office_email,
                 )
             # Global task rates are keyed by task type + currency. This compatibility
             # migration upgrades databases created by the earlier single-currency model.
