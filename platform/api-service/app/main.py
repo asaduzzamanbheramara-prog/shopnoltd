@@ -65,25 +65,43 @@ async def lifespan(app: FastAPI):
             if not admin_office_user_id and admin_office_email:
                 users_table = await conn.execute(text("SELECT to_regclass('public.users')"))
                 if users_table.scalar_one_or_none() is not None:
-                    matches = (
+                    user_columns = (
                         await conn.execute(
                             text("""
-                                SELECT id::text
-                                FROM public.users
-                                WHERE lower(email) = :email
-                                ORDER BY id
-                                LIMIT 2
-                            """),
-                            {"email": admin_office_email},
+                                SELECT column_name
+                                FROM information_schema.columns
+                                WHERE table_schema = 'public'
+                                  AND table_name = 'users'
+                                  AND column_name IN ('id', 'email')
+                            """)
                         )
                     ).scalars().all()
-                    if len(matches) == 1:
-                        admin_office_user_id = matches[0]
-                    elif len(matches) > 1:
-                        log.error(
-                            "referral.admin_office_email_ambiguous",
-                            email=admin_office_email,
-                            matches=len(matches),
+                    if {"id", "email"}.issubset(set(user_columns)):
+                        matches = (
+                            await conn.execute(
+                                text("""
+                                    SELECT id::text
+                                    FROM public.users
+                                    WHERE lower(email) = :email
+                                    ORDER BY id
+                                    LIMIT 2
+                                """),
+                                {"email": admin_office_email},
+                            )
+                        ).scalars().all()
+                        if len(matches) == 1:
+                            admin_office_user_id = matches[0]
+                        elif len(matches) > 1:
+                            log.error(
+                                "referral.admin_office_email_ambiguous",
+                                email=admin_office_email,
+                                matches=len(matches),
+                            )
+                    else:
+                        log.warning(
+                            "referral.admin_office_users_schema_unexpected",
+                            required_columns=["id", "email"],
+                            found_columns=sorted(user_columns),
                         )
             if admin_office_user_id and admin_office_tenant_id:
                 await conn.execute(
