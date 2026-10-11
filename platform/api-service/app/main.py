@@ -1,6 +1,7 @@
 """Shopnoltd Unified API Service."""
 
 from contextlib import asynccontextmanager
+import os
 
 import structlog
 from fastapi import FastAPI
@@ -51,21 +52,26 @@ async def lifespan(app: FastAPI):
             """))
             await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_referral_system_identities_user_id ON referral_system_identities (user_id)"))
             await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_referral_system_identities_tenant_id ON referral_system_identities (tenant_id)"))
-            # Some recovered deployments keep identity users in Keycloak rather than
-            # a legacy public.users table. Only seed the legacy mapping when that
-            # table actually exists; its absence must not prevent API startup.
-            await conn.execute(text("""
-                DO $$
-                BEGIN
-                    IF to_regclass('public.users') IS NOT NULL THEN
+            # Never guess the Admin Office recipient from a legacy email address.
+            # Recovered deployments may use Keycloak IDs rather than public.users IDs.
+            # Seed only when the operator explicitly configures the canonical user ID,
+            # and never overwrite an existing alias mapping during application startup.
+            admin_office_user_id = os.getenv("SHOPNOLTD_ADMIN_OFFICE_REFERRAL_USER_ID", "").strip()
+            admin_office_tenant_id = os.getenv("SHOPNOLTD_ADMIN_OFFICE_REFERRAL_TENANT_ID", "default").strip()
+            if admin_office_user_id and admin_office_tenant_id:
+                await conn.execute(
+                    text("""
                         INSERT INTO referral_system_identities (alias, user_id, tenant_id, active)
-                        SELECT 'admin_office', id, 'default', 1
-                        FROM users WHERE lower(email) = 'admin@shopnoltd.kesug.com'
-                        ORDER BY id LIMIT 1
-                        ON CONFLICT (alias) DO UPDATE SET user_id=EXCLUDED.user_id, tenant_id=EXCLUDED.tenant_id, active=1, updated_at=CURRENT_TIMESTAMP;
-                    END IF;
-                END $$;
-            """))
+                        VALUES ('admin_office', :user_id, :tenant_id, 1)
+                        ON CONFLICT DO NOTHING
+                    """),
+                    {"user_id": admin_office_user_id, "tenant_id": admin_office_tenant_id},
+                )
+            else:
+                log.warning(
+                    "referral.admin_office_unconfigured",
+                    required_env="SHOPNOLTD_ADMIN_OFFICE_REFERRAL_USER_ID",
+                )
             # Global task rates are keyed by task type + currency. This compatibility
             # migration upgrades databases created by the earlier single-currency model.
             await conn.execute(text("ALTER TABLE global_task_rates ADD COLUMN IF NOT EXISTS platform VARCHAR(64) NOT NULL DEFAULT 'shopnoltd'"))
