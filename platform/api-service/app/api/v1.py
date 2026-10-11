@@ -122,7 +122,8 @@ async def billing_gateways(creds: HTTPAuthorizationCredentials = Depends(bearer)
         gateways.append({
             "name": method, "id": method,
             "display_name": item.get("display_name") or meta.get("name") or str(method).replace("_", " ").title(),
-            "enabled": enabled, "available": enabled and native, "live": enabled and native,
+            "enabled": enabled, "available": enabled and native,
+            "credentials_configured": bool(item.get("credentials_configured", enabled)),
             "integration": meta.get("integration", "unknown"),
             "capabilities": meta.get("capabilities", []),
             "currencies": item.get("currencies") or meta.get("currencies", []),
