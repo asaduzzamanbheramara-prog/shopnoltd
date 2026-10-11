@@ -314,7 +314,7 @@ function GatewayView() {
               <strong>{gateway.name}</strong>
               <p style={{ marginBottom: 6 }}>
                 Status:{' '}
-                <strong>{gateway.live ? 'LIVE' : 'NOT LIVE'}</strong>
+                <strong>{gateway.available ? 'AVAILABLE' : 'NOT AVAILABLE'}</strong>
               </p>
               <p style={{ margin: 0, color: '#64748b' }}>
                 Credentials:{' '}
@@ -350,12 +350,12 @@ function CheckoutView() {
   useEffect(() => {
     getPaymentGateways()
       .then((data) => {
-        const live = (data?.gateways || []).filter((g) => g.live)
-        setGateways(live)
-        if (live.length) {
+        const available = (data?.gateways || []).filter((g) => g.available)
+        setGateways(available)
+        if (available.length) {
           const preferred = currency === 'BDT'
-            ? live.find((g) => g.name === 'moneybag') || live[0]
-            : live.find((g) => g.name === gateway) || live[0]
+            ? available.find((g) => g.name === 'moneybag') || available[0]
+            : available.find((g) => g.name === gateway) || available[0]
           setGateway(preferred.name)
         }
       })
