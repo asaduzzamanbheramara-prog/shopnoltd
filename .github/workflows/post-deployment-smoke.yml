@@ -2,17 +2,17 @@ name: Post-deployment smoke
 
 on:
   workflow_run:
-    workflows: ["Promote built images"]
+    workflows: ["Build and promote platform images", "Shopnoltd Self-Hosted K3s GitOps"]
     types: [completed]
   push:
     branches: [main]
     paths:
       - 'k8s/**'
       - '.github/workflows/post-deployment-smoke.yml'
-      - 'platform/web-portal/**'
   workflow_dispatch:
 
 permissions:
+  actions: write
   contents: read
 
 concurrency:
@@ -24,7 +24,81 @@ env:
   DELAY_SECONDS: "15"
 
 jobs:
+  wait-for-gitops:
+    name: Wait for matching GitOps reconciliation
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'push' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'main')
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Dispatch reconciliation when explicitly requested or when only this workflow changed
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          dispatch=0
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            dispatch=1
+          elif [ "$GITHUB_EVENT_NAME" = "push" ]; then
+            before="$(jq -r '.before // empty' "$GITHUB_EVENT_PATH")"
+            after="$(jq -r '.after // empty' "$GITHUB_EVENT_PATH")"
+            changed=""
+            if [ -n "$before" ] && [ "$before" != "0000000000000000000000000000000000000000" ] && [ -n "$after" ] && [ "$before" != "$after" ]; then
+              changed="$(gh api -H 'Accept: application/vnd.github+json' "/repos/$GITHUB_REPOSITORY/compare/$before...$after" | jq -r '.files[]?.filename // empty')"
+            fi
+            if ! grep -Eq '^(k8s/|platform/|services/|\.github/workflows/self-hosted-k3s-gitops\.yml$)' <<<"$changed"; then
+              dispatch=1
+            fi
+          fi
+          if [ "$dispatch" -eq 1 ]; then
+            gh workflow run self-hosted-k3s-gitops.yml --repo "$GITHUB_REPOSITORY" --ref main
+            echo 'Dispatched GitOps reconciliation.'
+          else
+            echo 'A push-triggered GitOps run is expected; waiting for that run rather than dispatching a duplicate.'
+          fi
+
+      - name: Wait for successful reconciliation of the expected revision
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          workflow='self-hosted-k3s-gitops.yml'
+          if [ "$GITHUB_EVENT_NAME" = "workflow_run" ] && [ "$(jq -r '.workflow_run.name' "$GITHUB_EVENT_PATH")" = "Shopnoltd Self-Hosted K3s GitOps" ]; then
+            expected_sha="$(jq -r '.workflow_run.head_sha' "$GITHUB_EVENT_PATH")"
+          elif [ "$GITHUB_EVENT_NAME" = "push" ]; then
+            expected_sha="$GITHUB_SHA"
+          else
+            expected_sha="$(gh api -H 'Accept: application/vnd.github+json' "/repos/$GITHUB_REPOSITORY/commits/main" --jq '.sha')"
+          fi
+          test -n "$expected_sha"
+          echo "Waiting for GitOps reconciliation at revision $expected_sha"
+          deadline=$((SECONDS + 2100))
+          while [ "$SECONDS" -lt "$deadline" ]; do
+            runs="$(gh api -H 'Accept: application/vnd.github+json' "/repos/$GITHUB_REPOSITORY/actions/workflows/$workflow/runs?branch=main&per_page=50" | jq -r --arg sha "$expected_sha" '[.workflow_runs[] | select(.head_sha == $sha and (.event == "push" or .event == "workflow_dispatch"))] | sort_by(.created_at) | reverse | .[0] // empty')"
+            if [ -n "$runs" ]; then
+              run_id="$(jq -r '.id' <<<"$runs")"
+              status="$(jq -r '.status' <<<"$runs")"
+              conclusion="$(jq -r '.conclusion // empty' <<<"$runs")"
+              echo "GitOps run=$run_id revision=$expected_sha status=$status conclusion=${conclusion:-pending}"
+              if [ "$status" = "completed" ]; then
+                test "$conclusion" = "success"
+                exit 0
+              fi
+            else
+              echo "Waiting for GitOps run for $expected_sha"
+            fi
+            sleep 15
+          done
+          echo "Timed out waiting for GitOps reconciliation at $expected_sha"
+          exit 1
+
   verify-required-services:
+    needs: [wait-for-gitops]
     name: Verify ${{ matrix.name }}
     if: >-
       github.event_name == 'workflow_dispatch' ||
