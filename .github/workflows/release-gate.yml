@@ -119,7 +119,15 @@ jobs:
                   raise SystemExit(f'{path}: workflow must remain inactive until credentials and live tests pass')
               if any(node.get('continueOnFail') is True for node in workflow.get('nodes', [])):
                   raise SystemExit(f'{path}: downstream API failures must not be reported as successful webhook responses')
-          print('n8n image, webhook URL, mirrored workflow JSON, and fail-closed staging checks passed.')
+              if path.name == 'shopnoltd-platform-account-registry.json':
+                  normalize_nodes = [node for node in workflow.get('nodes', []) if node.get('name') == 'Normalize Account']
+                  if len(normalize_nodes) != 1:
+                      raise SystemExit(f'{path}: expected exactly one Normalize Account node')
+                  code = normalize_nodes[0].get('parameters', {}).get('jsCode', '')
+                  for marker in ("throw new Error('unsupported_platform')", "throw new Error('platform_account_id_required')"):
+                      if marker not in code:
+                          raise SystemExit(f'{path}: invalid account input must stop before Register Connection')
+          print('n8n image, webhook URL, mirrored workflow JSON, validation fail-closed checks, and inactive staging checks passed.')
           PY
 
       - name: Validate release gate documentation
