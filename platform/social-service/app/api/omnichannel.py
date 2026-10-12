@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hmac
+import os
 from typing import Any
 from uuid import uuid4
 
@@ -15,6 +17,7 @@ from app.core.config import settings
 
 router = APIRouter()
 bearer = HTTPBearer()
+AUTOMATION_TOKEN = os.getenv("SHOPNOLTD_INTERNAL_AUTOMATION_TOKEN", "")
 
 PLATFORMS = {
     "whatsapp", "facebook", "instagram", "linkedin", "x", "telegram",
@@ -42,7 +45,17 @@ async def db():
         yield s
 
 async def current_user(creds: HTTPAuthorizationCredentials = Depends(bearer)):
-    return await verify_token(creds.credentials)
+    try:
+        return await verify_token(creds.credentials)
+    except Exception as exc:
+        raise HTTPException(status_code=401, detail="Invalid authentication token") from exc
+
+
+async def registration_user(creds: HTTPAuthorizationCredentials = Depends(bearer)):
+    """Allow the internal automation token only for connection registration."""
+    if AUTOMATION_TOKEN and hmac.compare_digest(creds.credentials, AUTOMATION_TOKEN):
+        return {"sub": "n8n-automation", "tenant_id": "default", "automation": True}
+    return await current_user(creds)
 
 class ConnectionIn(BaseModel):
     platform: str
@@ -201,7 +214,7 @@ async def delete_connection(connection_id: str, user=Depends(current_user), s: A
 
 
 @router.post("/connections", status_code=201)
-async def add_connection(body: ConnectionIn, user=Depends(current_user), s: AsyncSession = Depends(db)):
+async def add_connection(body: ConnectionIn, user=Depends(registration_user), s: AsyncSession = Depends(db)):
     platform = body.platform.lower().strip()
     if platform not in PLATFORMS:
         raise HTTPException(400, f"unsupported platform: {platform}")
