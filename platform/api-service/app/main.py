@@ -1,6 +1,7 @@
 """Shopnoltd Unified API Service."""
 
 from contextlib import asynccontextmanager
+import os
 
 import structlog
 from fastapi import FastAPI
@@ -51,21 +52,72 @@ async def lifespan(app: FastAPI):
             """))
             await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_referral_system_identities_user_id ON referral_system_identities (user_id)"))
             await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_referral_system_identities_tenant_id ON referral_system_identities (tenant_id)"))
-            # Some recovered deployments keep identity users in Keycloak rather than
-            # a legacy public.users table. Only seed the legacy mapping when that
-            # table actually exists; its absence must not prevent API startup.
-            await conn.execute(text("""
-                DO $$
-                BEGIN
-                    IF to_regclass('public.users') IS NOT NULL THEN
+            # Prefer an explicitly configured canonical identity ID. For deployments
+            # that still maintain public.users, resolve only the current Shopnoltd
+            # Admin Office email; never fall back to the retired kesug.com domain.
+            # Keycloak-only deployments must configure the ID explicitly.
+            admin_office_user_id = os.getenv("SHOPNOLTD_ADMIN_OFFICE_REFERRAL_USER_ID", "").strip()
+            admin_office_tenant_id = os.getenv("SHOPNOLTD_ADMIN_OFFICE_REFERRAL_TENANT_ID", "default").strip()
+            admin_office_email = os.getenv(
+                "SHOPNOLTD_ADMIN_OFFICE_REFERRAL_EMAIL",
+                "admin@shopnoltd.dpdns.org",
+            ).strip().lower()
+            if not admin_office_user_id and admin_office_email:
+                users_table = await conn.execute(text("SELECT to_regclass('public.users')"))
+                if users_table.scalar_one_or_none() is not None:
+                    user_columns = (
+                        await conn.execute(
+                            text("""
+                                SELECT column_name
+                                FROM information_schema.columns
+                                WHERE table_schema = 'public'
+                                  AND table_name = 'users'
+                                  AND column_name IN ('id', 'email')
+                            """)
+                        )
+                    ).scalars().all()
+                    if {"id", "email"}.issubset(set(user_columns)):
+                        matches = (
+                            await conn.execute(
+                                text("""
+                                    SELECT id::text
+                                    FROM public.users
+                                    WHERE lower(email) = :email
+                                    ORDER BY id
+                                    LIMIT 2
+                                """),
+                                {"email": admin_office_email},
+                            )
+                        ).scalars().all()
+                        if len(matches) == 1:
+                            admin_office_user_id = matches[0]
+                        elif len(matches) > 1:
+                            log.error(
+                                "referral.admin_office_email_ambiguous",
+                                email=admin_office_email,
+                                matches=len(matches),
+                            )
+                    else:
+                        log.warning(
+                            "referral.admin_office_users_schema_unexpected",
+                            required_columns=["id", "email"],
+                            found_columns=sorted(user_columns),
+                        )
+            if admin_office_user_id and admin_office_tenant_id:
+                await conn.execute(
+                    text("""
                         INSERT INTO referral_system_identities (alias, user_id, tenant_id, active)
-                        SELECT 'admin_office', id, 'default', 1
-                        FROM users WHERE lower(email) = 'admin@shopnoltd.kesug.com'
-                        ORDER BY id LIMIT 1
-                        ON CONFLICT (alias) DO UPDATE SET user_id=EXCLUDED.user_id, tenant_id=EXCLUDED.tenant_id, active=1, updated_at=CURRENT_TIMESTAMP;
-                    END IF;
-                END $$;
-            """))
+                        VALUES ('admin_office', :user_id, :tenant_id, 1)
+                        ON CONFLICT DO NOTHING
+                    """),
+                    {"user_id": admin_office_user_id, "tenant_id": admin_office_tenant_id},
+                )
+            else:
+                log.warning(
+                    "referral.admin_office_unconfigured",
+                    required_env="SHOPNOLTD_ADMIN_OFFICE_REFERRAL_USER_ID",
+                    email_lookup=admin_office_email,
+                )
             # Global task rates are keyed by task type + currency. This compatibility
             # migration upgrades databases created by the earlier single-currency model.
             await conn.execute(text("ALTER TABLE global_task_rates ADD COLUMN IF NOT EXISTS platform VARCHAR(64) NOT NULL DEFAULT 'shopnoltd'"))
