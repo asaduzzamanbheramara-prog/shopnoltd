@@ -51,6 +51,7 @@ export default function Dashboard() {
     inFlight.current = true
     const token = localStorage.getItem('shopno_token')
     if (!token) {
+      inFlight.current = false
       setLoading(false)
       setError('Please log in.')
       return
