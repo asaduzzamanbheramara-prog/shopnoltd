@@ -165,12 +165,15 @@ def _mongo_server_metadata(uri: str) -> list[dict[str, Any]]:
             collections: list[dict[str, Any]] = []
             for name in sorted(db.list_collection_names()):
                 collection = db[name]
+                # Profile a bounded random sample instead of scanning every document.
+                # This endpoint is for responsive metadata discovery, not an exhaustive data audit.
                 fields = list(collection.aggregate([
-                    {"$project": {"pairs": {"$objectToArray": "$$ROOT"}}},
+                    {"$sample": {"size": 500}},
+                    {"$project": {"pairs": {"$objectToArray": "$ROOT"}}},
                     {"$unwind": "$pairs"},
                     {"$group": {"_id": "$pairs.k", "types": {"$addToSet": {"$type": "$pairs.v"}}}},
                     {"$sort": {"_id": 1}},
-                ]))
+                ], maxTimeMS=5000))
                 indexes = [
                     {
                         "name": item["name"],
@@ -182,6 +185,7 @@ def _mongo_server_metadata(uri: str) -> list[dict[str, Any]]:
                 collections.append({
                     "name": name,
                     "estimated_documents": collection.estimated_document_count(),
+                    "field_profile": "sampled_up_to_500_documents",
                     "fields": [
                         {"name": item["_id"], "types": sorted(item["types"])}
                         for item in fields
