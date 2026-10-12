@@ -33,4 +33,3 @@ async def verify_token(token: str) -> dict:
         )
     except (JWTError, StopIteration) as e:
         raise ValueError(f"invalid token: {e}") from e
-}
