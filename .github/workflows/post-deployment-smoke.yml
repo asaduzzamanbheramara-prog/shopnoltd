@@ -40,25 +40,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          dispatch=0
           if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
-            dispatch=1
-          elif [ "$GITHUB_EVENT_NAME" = "push" ]; then
-            before="$(jq -r '.before // empty' "$GITHUB_EVENT_PATH")"
-            after="$(jq -r '.after // empty' "$GITHUB_EVENT_PATH")"
-            changed=""
-            if [ -n "$before" ] && [ "$before" != "0000000000000000000000000000000000000000" ] && [ -n "$after" ] && [ "$before" != "$after" ]; then
-              changed="$(gh api -H 'Accept: application/vnd.github+json' "/repos/$GITHUB_REPOSITORY/compare/$before...$after" | jq -r '.files[]?.filename // empty')"
-            fi
-            if ! grep -Eq '^(k8s/|platform/|services/|\.github/workflows/self-hosted-k3s-gitops\.yml$)' <<<"$changed"; then
-              dispatch=1
-            fi
-          fi
-          if [ "$dispatch" -eq 1 ]; then
             gh workflow run self-hosted-k3s-gitops.yml --repo "$GITHUB_REPOSITORY" --ref main
-            echo 'Dispatched GitOps reconciliation.'
+            echo 'Dispatched GitOps reconciliation for an explicit manual request.'
           else
-            echo 'A push-triggered GitOps run is expected; waiting for that run rather than dispatching a duplicate.'
+            echo 'Push-triggered checks never dispatch a duplicate GitOps run.'
           fi
 
       - name: Wait for successful reconciliation of the expected revision
@@ -76,6 +62,25 @@ jobs:
             expected_sha="$(gh api -H 'Accept: application/vnd.github+json' "/repos/$GITHUB_REPOSITORY/commits/main" --jq '.sha')"
           fi
           test -n "$expected_sha"
+          if [ "$GITHUB_EVENT_NAME" = "push" ]; then
+            before="$(jq -r '.before // empty' "$GITHUB_EVENT_PATH")"
+            after="$(jq -r '.after // empty' "$GITHUB_EVENT_PATH")"
+            changed=""
+            if [ -n "$before" ] && [ "$before" != "0000000000000000000000000000000000000000" ] && [ -n "$after" ] && [ "$before" != "$after" ]; then
+              for api_attempt in 1 2 3 4 5; do
+                if changed="$(gh api -H 'Accept: application/vnd.github+json' "/repos/$GITHUB_REPOSITORY/compare/$before...$after" --jq '[.files[]?.filename] | .[]' 2>/tmp/shopnoltd-compare-error.txt)"; then
+                  break
+                fi
+                echo "GitHub compare API failed (attempt $api_attempt/5); retrying."
+                changed=""
+                if [ "$api_attempt" -lt 5 ]; then sleep "$((api_attempt * 2))"; fi
+              done
+            fi
+            if [ -n "$before" ] && [ "$before" != "$after" ] && ! grep -Eq '^(k8s/|platform/|services/|\.github/workflows/self-hosted-k3s-gitops\.yml$)' <<<"$changed"; then
+              echo 'No deployable Kubernetes/platform/service files changed; skipping GitOps wait and proceeding to public smoke tests.'
+              exit 0
+            fi
+          fi
           echo "Waiting for GitOps reconciliation at revision $expected_sha"
           deadline=$((SECONDS + 2100))
           while [ "$SECONDS" -lt "$deadline" ]; do
