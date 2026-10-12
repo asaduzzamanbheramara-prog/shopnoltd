@@ -119,8 +119,116 @@ function AnalyticsTracker() {
   return null
 }
 
+const ROUTE_METADATA = {
+  '/': {
+    title: 'Shopnoltd | Digital Services, Domains & Business Tools',
+    description: 'Explore Shopnoltd digital services, domain registration, business tools, data collection, communication, and workspace applications.',
+  },
+  '/about': {
+    title: 'About Shopnoltd | Our Platform and Services',
+    description: 'Learn about Shopnoltd and its digital platform for domains, business tools, data workflows, communication, and online services.',
+  },
+  '/services': {
+    title: 'Shopnoltd Services | Digital and Business Tools',
+    description: 'Explore Shopnoltd services for domain registration, data collection, business applications, communication, and connected platforms.',
+  },
+  '/pricing': {
+    title: 'Shopnoltd Pricing | Plans and Services',
+    description: 'Review Shopnoltd service and plan information to find the tools that fit your business and digital workspace needs.',
+  },
+  '/contact': {
+    title: 'Contact Shopnoltd | Support and Inquiries',
+    description: 'Contact Shopnoltd for questions about the platform, services, domain registration, and business tools.',
+  },
+  '/privacy': {
+    title: 'Privacy Policy | Shopnoltd',
+    description: 'Read how Shopnoltd handles information and privacy when you use its website and digital services.',
+  },
+  '/terms': {
+    title: 'Terms of Service | Shopnoltd',
+    description: 'Review the terms and conditions for using the Shopnoltd website and digital services.',
+  },
+  '/blog': {
+    title: 'Shopnoltd Blog | Guides and Updates',
+    description: 'Read Shopnoltd guides, practical tips, and platform updates about digital services and business tools.',
+  },
+  '/profiles': {
+    title: 'Shopnoltd Profiles | Professional and Business Profiles',
+    description: 'Explore Shopnoltd public professional and business profiles, including data management and interior design services.',
+  },
+  '/profile/data-management': {
+    title: 'Md. Asaduzzaman — Data Management Profile — Shopnoltd',
+    description: 'Explore data management, research, statistics, databases, survey systems, ETL, and analysis experience.',
+  },
+  '/profile/interior-business': {
+    title: 'Shopno Interior Design & Decoration — Shopnoltd',
+    description: 'Explore residential, corporate, retail, and commercial interior design, renovation, and decoration services.',
+  },
+  '/plugins': {
+    title: 'Shopnoltd Plugins | Integrations and Tools',
+    description: 'Explore available Shopnoltd plugins, integrations, and tools for extending your digital workspace.',
+  },
+  '/downloads': {
+    title: 'Shopnoltd Downloads | Official Applications',
+    description: 'Find official Shopnoltd applications and downloads for supported devices and operating systems.',
+  },
+  '/phone': {
+    title: 'Shopnoltd Phone | Business Calling and Meetings',
+    description: 'Explore Shopnoltd Phone information for business calling, team communication, and meetings.',
+  },
+  '/domain-registration': {
+    title: 'Domain Registration | Shopnoltd',
+    description: 'Search for a Shopnoltd subdomain and learn how to register and manage your online address.',
+  },
+  '/affiliate': {
+    title: 'Shopnoltd Affiliate & Tools | Partner Resources',
+    description: 'Explore Shopnoltd affiliate information and available tools for partners and users.',
+  },
+}
+
+function RouteMetadata() {
+  const location = useLocation()
+  useEffect(() => {
+    const path = location.pathname.replace(/\/+$/, '') || '/'
+    let metadata = ROUTE_METADATA[path]
+    const blogMatch = path.match(/^\/blog\/([^/]+)$/)
+    if (!metadata && blogMatch) {
+      const articleTitle = blogMatch[1].split('-').filter(Boolean).map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+      metadata = {
+        title: articleTitle + ' | Shopnoltd Blog',
+        description: 'Read this Shopnoltd blog article for practical guides, insights, and platform updates.',
+      }
+    }
+
+    let description = document.querySelector('meta[name="description"]')
+    if (!description) {
+      description = document.createElement('meta')
+      description.name = 'description'
+      document.head.appendChild(description)
+    }
+    let canonical = document.querySelector('link[rel="canonical"]')
+
+    if (!metadata) {
+      if (canonical) canonical.remove()
+      document.title = 'Shopnoltd'
+      description.content = 'Shopnoltd — All-in-one platform for surveys, chat, meetings, live streaming, cloud storage, and payments.'
+      return
+    }
+
+    document.title = metadata.title
+    description.content = metadata.description
+    if (!canonical) {
+      canonical = document.createElement('link')
+      canonical.rel = 'canonical'
+      document.head.appendChild(canonical)
+    }
+    canonical.href = 'https://shopnoltd.dpdns.org' + path
+  }, [location.pathname])
+  return null
+}
+
 function App() {
-  return <BrowserRouter><AnalyticsTracker /><Nav /><SubdomainRedirect /><Routes>
+  return <BrowserRouter><AnalyticsTracker /><RouteMetadata /><Nav /><SubdomainRedirect /><Routes>
     <Route path="/" element={<Home />} /><Route path="/pricing" element={<Pricing />} /><Route path="/privacy" element={<Privacy />} /><Route path="/about" element={<About />} /><Route path="/contact" element={<Contact />} /><Route path="/terms" element={<Terms />} /><Route path="/create-website" element={<ProtectedRoute><WebsiteBuilder /></ProtectedRoute>} /><Route path="/discover" element={<ProtectedRoute><Discover /></ProtectedRoute>} /><Route path="/feed" element={<ProtectedRoute><SocialFeed /></ProtectedRoute>} /><Route path="/post/:id" element={<ProtectedRoute><PostDetail /></ProtectedRoute>} />
     <Route path="/work" element={<ProtectedRoute><WorkHub /></ProtectedRoute>} /><Route path="/referrals" element={<ProtectedRoute><ReferralHub /></ProtectedRoute>} /><Route path="/work/:id" element={<ProtectedRoute><WorkDetail /></ProtectedRoute>} /><Route path="/create-work" element={<ProtectedRoute><WorkHub /></ProtectedRoute>} /><Route path="/my-created-work" element={<ProtectedRoute><WorkHub /></ProtectedRoute>} /><Route path="/my-active-work" element={<ProtectedRoute><WorkHub /></ProtectedRoute>} /><Route path="/my-submission" element={<ProtectedRoute><WorkHub /></ProtectedRoute>} /><Route path="/work-review" element={<ProtectedRoute><WorkHub /></ProtectedRoute>} />
     <Route path="/account" element={<ProtectedRoute><AccountHub /></ProtectedRoute>} /><Route path="/notifications" element={<ProtectedRoute><AccountHub /></ProtectedRoute>} />
