@@ -14,6 +14,7 @@ from typing import Any
 import asyncpg
 import httpx
 from pymongo import MongoClient
+from pymongo.errors import PyMongoError
 from sqlalchemy.engine import make_url
 
 from app.core.config import settings
@@ -167,31 +168,62 @@ def _mongo_server_metadata(uri: str) -> list[dict[str, Any]]:
                 collection = db[name]
                 # Profile a bounded random sample instead of scanning every document.
                 # This endpoint is for responsive metadata discovery, not an exhaustive data audit.
-                fields = list(collection.aggregate([
-                    {"$sample": {"size": 500}},
-                    {"$project": {"pairs": {"$objectToArray": "$$ROOT"}}},
-                    {"$unwind": "$pairs"},
-                    {"$group": {"_id": "$pairs.k", "types": {"$addToSet": {"$type": "$pairs.v"}}}},
-                    {"$sort": {"_id": 1}},
-                ], maxTimeMS=5000))
-                indexes = [
-                    {
-                        "name": item["name"],
-                        "key": list(item["key"].items()),
-                        "unique": bool(item.get("unique", False)),
-                    }
-                    for item in collection.list_indexes()
-                ]
-                collections.append({
+                # A slow/unsupported field-profile query must not hide the whole
+                # database from the admin inventory. Preserve the collection entry
+                # and report which optional metadata could not be inspected.
+                field_profile = "sampled_up_to_500_documents"
+                field_profile_error = None
+                try:
+                    fields = list(collection.aggregate([
+                        {"$sample": {"size": 500}},
+                        {"$project": {"pairs": {"$objectToArray": "$ROOT"}}},
+                        {"$unwind": "$pairs"},
+                        {"$group": {"_id": "$pairs.k", "types": {"$addToSet": {"$type": "$pairs.v"}}}},
+                        {"$sort": {"_id": 1}},
+                    ], maxTimeMS=5000))
+                except PyMongoError as exc:
+                    fields = []
+                    field_profile = "unavailable"
+                    field_profile_error = type(exc).__name__
+
+                try:
+                    indexes = [
+                        {
+                            "name": item["name"],
+                            "key": list(item["key"].items()),
+                            "unique": bool(item.get("unique", False)),
+                        }
+                        for item in collection.list_indexes()
+                    ]
+                    indexes_error = None
+                except PyMongoError as exc:
+                    indexes = []
+                    indexes_error = type(exc).__name__
+
+                try:
+                    estimated_documents = collection.estimated_document_count()
+                    count_error = None
+                except PyMongoError as exc:
+                    estimated_documents = None
+                    count_error = type(exc).__name__
+
+                collection_item = {
                     "name": name,
-                    "estimated_documents": collection.estimated_document_count(),
-                    "field_profile": "sampled_up_to_500_documents",
+                    "estimated_documents": estimated_documents,
+                    "field_profile": field_profile,
                     "fields": [
                         {"name": item["_id"], "types": sorted(item["types"])}
                         for item in fields
                     ],
                     "indexes": indexes,
-                })
+                }
+                if field_profile_error:
+                    collection_item["field_profile_error"] = field_profile_error
+                if indexes_error:
+                    collection_item["indexes_error"] = indexes_error
+                if count_error:
+                    collection_item["count_error"] = count_error
+                collections.append(collection_item)
             databases.append({"database": database, "reachable": True, "collections": collections})
         return databases
     finally:
