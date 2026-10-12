@@ -152,6 +152,18 @@ const ROUTE_METADATA = {
     title: 'Shopnoltd Blog | Guides and Updates',
     description: 'Read Shopnoltd guides, practical tips, and platform updates about digital services and business tools.',
   },
+  '/profiles': {
+    title: 'Shopnoltd Profiles | Professional and Business Profiles',
+    description: 'Explore Shopnoltd public professional and business profiles, including data management and interior design services.',
+  },
+  '/profile/data-management': {
+    title: 'Md. Asaduzzaman — Data Management Profile — Shopnoltd',
+    description: 'Explore data management, research, statistics, databases, survey systems, ETL, and analysis experience.',
+  },
+  '/profile/interior-business': {
+    title: 'Shopno Interior Design & Decoration — Shopnoltd',
+    description: 'Explore residential, corporate, retail, and commercial interior design, renovation, and decoration services.',
+  },
   '/plugins': {
     title: 'Shopnoltd Plugins | Integrations and Tools',
     description: 'Explore available Shopnoltd plugins, integrations, and tools for extending your digital workspace.',
@@ -178,25 +190,39 @@ function RouteMetadata() {
   const location = useLocation()
   useEffect(() => {
     const path = location.pathname.replace(/\/+$/, '') || '/'
-    const metadata = ROUTE_METADATA[path]
-    if (!metadata) return
+    let metadata = ROUTE_METADATA[path]
+    const blogMatch = path.match(/^\/blog\/([^/]+)$/)
+    if (!metadata && blogMatch) {
+      const articleTitle = blogMatch[1].split('-').filter(Boolean).map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+      metadata = {
+        title: articleTitle + ' | Shopnoltd Blog',
+        description: 'Read this Shopnoltd blog article for practical guides, insights, and platform updates.',
+      }
+    }
 
-    document.title = metadata.title
     let description = document.querySelector('meta[name="description"]')
     if (!description) {
       description = document.createElement('meta')
       description.name = 'description'
       document.head.appendChild(description)
     }
-    description.content = metadata.description
-
     let canonical = document.querySelector('link[rel="canonical"]')
+
+    if (!metadata) {
+      if (canonical) canonical.remove()
+      document.title = 'Shopnoltd'
+      description.content = 'Shopnoltd — All-in-one platform for surveys, chat, meetings, live streaming, cloud storage, and payments.'
+      return
+    }
+
+    document.title = metadata.title
+    description.content = metadata.description
     if (!canonical) {
       canonical = document.createElement('link')
       canonical.rel = 'canonical'
       document.head.appendChild(canonical)
     }
-    canonical.href = `https://shopnoltd.dpdns.org${path}`
+    canonical.href = 'https://shopnoltd.dpdns.org' + path
   }, [location.pathname])
   return null
 }
