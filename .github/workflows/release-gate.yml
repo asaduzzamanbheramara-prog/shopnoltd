@@ -102,7 +102,7 @@ jobs:
     needs: repository-validation
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 70
     steps:
       - name: Determine whether this commit requires GitOps reconciliation
         id: deployment-scope
@@ -133,43 +133,81 @@ jobs:
           echo 'Changed files from push comparison:'
           printf '%s\n' "$files"
 
-          if grep -Eq '^(k8s/|ops/cloudflare/|\.github/workflows/self-hosted-k3s-gitops\.yml$)' <<<"$files"; then
+          image_build_required=false
+          if grep -Eq '^(platform/|enketo/|billing-engine/|services/vpn-service/|shared/|\.github/workflows/build-platform\.yml$)' <<<"$files"; then
+            image_build_required=true
+          fi
+          echo "image_build_required=$image_build_required" >> "$GITHUB_OUTPUT"
+
+          if grep -Eq '^(k8s/|ops/cloudflare/|platform/|services/|billing-engine/|enketo/|shared/|\.github/workflows/(self-hosted-k3s-gitops|build-platform)\.yml$)' <<<"$files"; then
             echo 'deployment_required=true' >> "$GITHUB_OUTPUT"
-            echo 'This push changes deployment-controlled files; a matching self-hosted GitOps run is required.'
+            echo 'This push changes application or deployment-controlled files; image promotion and/or matching self-hosted GitOps reconciliation is required.'
           else
             echo 'deployment_required=false' >> "$GITHUB_OUTPUT"
-            echo 'No deployment-controlled files changed; self-hosted GitOps reconciliation is not required for this push.'
+            echo 'No application or deployment-controlled files changed; self-hosted GitOps reconciliation is not required for this push.'
           fi
+
+      - name: Wait for image build and promotion
+        if: steps.deployment-scope.outputs.image_build_required == 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          workflow='build-platform.yml'
+          deadline=$((SECONDS + 2100))
+          while [ "$SECONDS" -lt "$deadline" ]; do
+            runs="$(gh api -H 'Accept: application/vnd.github+json' "/repos/$GITHUB_REPOSITORY/actions/workflows/$workflow/runs?branch=main&per_page=50" | jq -r --arg sha "$GITHUB_SHA" '[.workflow_runs[] | select(.head_sha == $sha and .event == "push")] | sort_by(.created_at) | reverse | .[0] // empty')"
+            if [ -n "$runs" ]; then
+              run_id="$(jq -r '.id' <<<"$runs")"
+              status="$(jq -r '.status' <<<"$runs")"
+              conclusion="$(jq -r '.conclusion // empty' <<<"$runs")"
+              echo "image build/promotion run=$run_id status=$status conclusion=${conclusion:-pending}"
+              if [ "$status" = "completed" ]; then
+                test "$conclusion" = "success"
+                exit 0
+              fi
+            else
+              echo "Waiting for image build/promotion run for $GITHUB_SHA"
+            fi
+            sleep 15
+          done
+          echo "Timed out waiting for image build/promotion for $GITHUB_SHA"
+          exit 1
 
       - name: Wait for matching self-hosted deployment run
         if: steps.deployment-scope.outputs.deployment_required == 'true'
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
+          IMAGE_BUILD_REQUIRED: ${{ steps.deployment-scope.outputs.image_build_required }}
         run: |
           set -euo pipefail
           workflow='self-hosted-k3s-gitops.yml'
+          if [ "$IMAGE_BUILD_REQUIRED" = "true" ]; then
+            expected_sha="$(gh api -H 'Accept: application/vnd.github+json' "/repos/$GITHUB_REPOSITORY/commits/main" --jq '.sha')"
+          else
+            expected_sha="$GITHUB_SHA"
+          fi
+          echo "Waiting for GitOps reconciliation at expected revision $expected_sha"
           deadline=$((SECONDS + 2100))
           while [ "$SECONDS" -lt "$deadline" ]; do
-            runs="$(gh api \
-              -H 'Accept: application/vnd.github+json' \
-              "/repos/${GITHUB_REPOSITORY}/actions/workflows/${workflow}/runs?branch=main&per_page=50" \
-              | jq -r --arg sha "$GITHUB_SHA" '[.workflow_runs[] | select(.head_sha == $sha and (.event == "push" or .event == "workflow_dispatch"))] | sort_by(.created_at) | reverse | .[0] // empty')"
+            runs="$(gh api -H 'Accept: application/vnd.github+json' "/repos/$GITHUB_REPOSITORY/actions/workflows/$workflow/runs?branch=main&per_page=50" | jq -r --arg sha "$expected_sha" '[.workflow_runs[] | select(.head_sha == $sha and (.event == "push" or .event == "workflow_dispatch"))] | sort_by(.created_at) | reverse | .[0] // empty')"
             if [ -n "$runs" ]; then
               run_id="$(jq -r '.id' <<<"$runs")"
               status="$(jq -r '.status' <<<"$runs")"
               conclusion="$(jq -r '.conclusion // empty' <<<"$runs")"
-              echo "self-hosted-k3s-gitops run=$run_id status=$status conclusion=${conclusion:-pending}"
-              if [ "$status" = completed ]; then
-                test "$conclusion" = success
+              echo "self-hosted-k3s-gitops run=$run_id revision=$expected_sha status=$status conclusion=${conclusion:-pending}"
+              if [ "$status" = "completed" ]; then
+                test "$conclusion" = "success"
                 exit 0
               fi
             else
-              echo "Waiting for self-hosted-k3s-gitops run for $GITHUB_SHA"
+              echo "Waiting for self-hosted-k3s-gitops run for $expected_sha"
             fi
             sleep 15
           done
-          echo 'Timed out waiting for self-hosted k3s GitOps reconciliation.'
+          echo "Timed out waiting for self-hosted k3s GitOps reconciliation at $expected_sha."
           exit 1
 
       - name: Confirm GitOps was not required
