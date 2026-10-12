@@ -192,7 +192,20 @@ jobs:
           echo "Waiting for GitOps reconciliation at expected revision $expected_sha"
           deadline=$((SECONDS + 2100))
           while [ "$SECONDS" -lt "$deadline" ]; do
-            runs="$(gh api -H 'Accept: application/vnd.github+json' "/repos/$GITHUB_REPOSITORY/actions/workflows/$workflow/runs?branch=main&per_page=50" | jq -r --arg sha "$expected_sha" '[.workflow_runs[] | select(.head_sha == $sha and (.event == "push" or .event == "workflow_dispatch"))] | sort_by(.created_at) | reverse | .[0] // empty')"
+            response=""
+            for api_attempt in 1 2 3 4 5; do
+              if response="$(gh api -H 'Accept: application/vnd.github+json' "/repos/$GITHUB_REPOSITORY/actions/workflows/$workflow/runs?branch=main&per_page=50" 2>/tmp/shopnoltd-gh-api-error.json)"; then
+                break
+              fi
+              echo "GitHub Actions API request failed (attempt $api_attempt/5); retrying."
+              if [ "$api_attempt" -lt 5 ]; then sleep "$((api_attempt * 2))"; fi
+            done
+            if [ -z "$response" ]; then
+              echo "GitHub Actions API unavailable; retrying reconciliation poll in 15 seconds."
+              sleep 15
+              continue
+            fi
+            runs="$(jq -r --arg sha "$expected_sha" '[.workflow_runs[]? | select(.head_sha == $sha and (.event == "push" or .event == "workflow_dispatch"))] | sort_by(.created_at) | reverse | .[0] // empty' <<<"$response")"
             if [ -n "$runs" ]; then
               run_id="$(jq -r '.id' <<<"$runs")"
               status="$(jq -r '.status' <<<"$runs")"
