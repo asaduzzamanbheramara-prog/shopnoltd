@@ -66,15 +66,21 @@ jobs:
             before="$(jq -r '.before // empty' "$GITHUB_EVENT_PATH")"
             after="$(jq -r '.after // empty' "$GITHUB_EVENT_PATH")"
             changed=""
+            compare_ok=0
             if [ -n "$before" ] && [ "$before" != "0000000000000000000000000000000000000000" ] && [ -n "$after" ] && [ "$before" != "$after" ]; then
               for api_attempt in 1 2 3 4 5; do
                 if changed="$(gh api -H 'Accept: application/vnd.github+json' "/repos/$GITHUB_REPOSITORY/compare/$before...$after" --jq '[.files[]?.filename] | .[]' 2>/tmp/shopnoltd-compare-error.txt)"; then
+                  compare_ok=1
                   break
                 fi
                 echo "GitHub compare API failed (attempt $api_attempt/5); retrying."
                 changed=""
                 if [ "$api_attempt" -lt 5 ]; then sleep "$((api_attempt * 2))"; fi
               done
+              if [ "$compare_ok" -ne 1 ] || [ -z "$changed" ]; then
+                echo 'ERROR: Could not reliably determine changed files; refusing to skip the GitOps reconciliation gate.'
+                exit 1
+              fi
             fi
             if [ -n "$before" ] && [ "$before" != "$after" ] && ! grep -Eq '^(k8s/|platform/|services/|\.github/workflows/self-hosted-k3s-gitops\.yml$)' <<<"$changed"; then
               echo 'No deployable Kubernetes/platform/service files changed; skipping GitOps wait and proceeding to public smoke tests.'
