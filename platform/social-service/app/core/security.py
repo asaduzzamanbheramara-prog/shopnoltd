@@ -1,11 +1,9 @@
 import httpx
-import os
 from shopno_core.security.jwt import JWTError, jwt
 
 from app.core.config import settings
 
 _jwks_cache = None
-AUTOMATION_TOKEN = os.getenv("SHOPNOLTD_INTERNAL_AUTOMATION_TOKEN", "")
 
 
 async def _jwks():
@@ -21,8 +19,7 @@ async def _jwks():
 
 
 async def verify_token(token: str) -> dict:
-    if AUTOMATION_TOKEN and token == AUTOMATION_TOKEN:
-        return {"sub": "n8n-automation", "tenant_id": "default", "automation": True}
+    """Validate user/service JWTs; internal automation tokens are route-scoped elsewhere."""
     try:
         h = jwt.get_unverified_header(token)
         keys = await _jwks()
@@ -36,3 +33,4 @@ async def verify_token(token: str) -> dict:
         )
     except (JWTError, StopIteration) as e:
         raise ValueError(f"invalid token: {e}") from e
+}
