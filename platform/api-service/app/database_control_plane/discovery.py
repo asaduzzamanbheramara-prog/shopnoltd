@@ -124,7 +124,9 @@ async def discover_postgres() -> dict[str, Any]:
             return item
         async with semaphore:
             try:
-                item.update(await asyncio.wait_for(_inspect_database(name), timeout=12.0))
+                # Catalog inspection performs several metadata queries per table; a 12-second
+                # whole-database deadline incorrectly classified larger live databases as unreachable.
+                item.update(await asyncio.wait_for(_inspect_database(name), timeout=45.0))
                 item["classification"] = "application"
             except Exception as exc:
                 item.update({"reachable": False, "error_type": type(exc).__name__})
