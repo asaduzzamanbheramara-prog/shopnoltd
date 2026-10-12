@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import {
   convertExchange,
@@ -111,9 +111,12 @@ function WalletView() {
   const [ledger, setLedger] = useState([])
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(true)
+  const inFlight = useRef(false)
 
-  async function load() {
-    setLoading(true)
+  async function load({ silent = false } = {}) {
+    if (inFlight.current) return
+    inFlight.current = true
+    if (!silent) setLoading(true)
     setError(null)
 
     try {
@@ -126,12 +129,22 @@ function WalletView() {
     } catch (err) {
       setError(err.message)
     } finally {
-      setLoading(false)
+      inFlight.current = false
+      if (!silent) setLoading(false)
     }
   }
 
   useEffect(() => {
-    load()
+    void load()
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'visible') void load({ silent: true })
+    }
+    const timer = window.setInterval(refreshWhenVisible, 30000)
+    document.addEventListener('visibilitychange', refreshWhenVisible)
+    return () => {
+      window.clearInterval(timer)
+      document.removeEventListener('visibilitychange', refreshWhenVisible)
+    }
   }, [currency])
 
   return (
@@ -229,12 +242,35 @@ function TransactionsView() {
   const [items, setItems] = useState([])
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(true)
+  const inFlight = useRef(false)
+
+  async function load({ silent = false } = {}) {
+    if (inFlight.current) return
+    inFlight.current = true
+    if (!silent) setLoading(true)
+    setError(null)
+    try {
+      const data = await getTransactions()
+      setItems(Array.isArray(data) ? data : [])
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      inFlight.current = false
+      if (!silent) setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    getTransactions()
-      .then((data) => setItems(Array.isArray(data) ? data : []))
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false))
+    void load()
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'visible') void load({ silent: true })
+    }
+    const timer = window.setInterval(refreshWhenVisible, 30000)
+    document.addEventListener('visibilitychange', refreshWhenVisible)
+    return () => {
+      window.clearInterval(timer)
+      document.removeEventListener('visibilitychange', refreshWhenVisible)
+    }
   }, [])
 
   return (
