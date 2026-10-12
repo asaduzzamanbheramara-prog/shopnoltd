@@ -176,7 +176,7 @@ def _mongo_server_metadata(uri: str) -> list[dict[str, Any]]:
                 try:
                     fields = list(collection.aggregate([
                         {"$sample": {"size": 500}},
-                        {"$project": {"pairs": {"$objectToArray": "$ROOT"}}},
+                        {"$project": {"pairs": {"$objectToArray": "$$ROOT"}}},
                         {"$unwind": "$pairs"},
                         {"$group": {"_id": "$pairs.k", "types": {"$addToSet": {"$type": "$pairs.v"}}}},
                         {"$sort": {"_id": 1}},
