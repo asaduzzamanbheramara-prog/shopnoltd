@@ -22,11 +22,7 @@ export default function Callback() {
       sessionStorage.removeItem('oidc_state')
       return
     }
-    if (!code || !verifier) {
-      setError('Missing authentication code. Please try again.')
-      return
-    }
-    if (expectedState && returnedState !== expectedState) {
+    if (!code || !verifier || !expectedState || returnedState !== expectedState) {
       setError('Authentication state validation failed. Please try again.')
       sessionStorage.removeItem('pkce_verifier')
       sessionStorage.removeItem('oidc_state')
