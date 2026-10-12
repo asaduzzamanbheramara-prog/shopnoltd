@@ -64,8 +64,7 @@
       ],
       "retryOnFail": true,
       "maxTries": 3,
-      "waitBetweenTries": 2000,
-      "continueOnFail": true
+      "waitBetweenTries": 2000
     },
     {
       "parameters": {
@@ -120,7 +119,7 @@
       ]
     }
   },
-  "active": true,
+  "active": false,
   "settings": {
     "executionOrder": "v1"
   },
