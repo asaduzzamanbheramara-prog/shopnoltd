@@ -13,7 +13,7 @@ data:
   PATH_PREFIX: "/"
   N8N_EDITOR_BASE_URL: "https://n8n.shopnoltd.dpdns.org"
   N8N_PROXY_HOPS: "1"
-  WEBHOOK_URL: "https://n8n.shopnoltd.dpdns.org"
+  N8N_WEBHOOK_URL: "https://n8n.shopnoltd.dpdns.org/"
   OTEL_EXPORTER_OTLP_ENDPOINT: "http://tempo.observability.svc.cluster.local:4317"
   REDIS_HOST: "redis.shopno-data.svc.cluster.local"
   REDIS_PORT: "6379"

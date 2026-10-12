@@ -81,9 +81,17 @@ platform_actions is the common action queue. Typical actions include:
 
 Availability is recorded in platform_capabilities because provider capabilities and permissions vary.
 
+## Current integration readiness
+
+The checked-in workflows are integration scaffolding, not proof that the platforms are connected. The n8n deployment must be running, provider credentials and OAuth grants must be configured in n8n, the internal automation token must match the API/social-service secret, and each enabled provider must pass a live account-connect and end-to-end test. The imported workflows must remain inactive until those checks pass.
+
+**Blog publishing is not wired to n8n by these omnichannel workflows.** The Shopnoltd blog API currently uses authenticated user/role context for authoring. Do not reuse the broad internal automation token to impersonate a blog author or publish articles. A separate narrowly scoped, audited draft-creation integration is required before blog automation can be enabled. Use draft-first human approval for AdSense-oriented content.
+
+The action/account webhook endpoints must also have caller authentication configured in the n8n credential store before production activation. Workflow JSON must not contain credentials or tokens. A successful workflow import alone is not a readiness check.
+
 ## n8n
 
-The existing WhatsApp inbound/outbound workflows remain inactive until credentials are configured and their end-to-end webhook tests pass.
+The imported action-queue and account-registry workflows are intentionally inactive until caller authentication, credentials, API authorization, and end-to-end webhook tests pass.
 
 Recommended workflow groups:
 

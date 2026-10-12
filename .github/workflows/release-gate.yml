@@ -94,6 +94,34 @@ jobs:
           test -s k8s/services/social-service/ingress.yaml
           test -s k8s/services/chatwoot/deployment.yaml
 
+      - name: Validate n8n integration remains safely staged
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          deployment = Path('k8s/services/n8n/deployment.yaml').read_text()
+          if 'image: n8nio/n8n:latest' in deployment or 'image: n8nio/n8n:2.40.6' not in deployment:
+              raise SystemExit('n8n runtime image must be pinned to the tested importer version')
+          config = Path('k8s/services/n8n/configmap.yaml').read_text()
+          if 'N8N_WEBHOOK_URL: "https://n8n.shopnoltd.dpdns.org/"' not in config:
+              raise SystemExit('n8n production webhook base URL is missing or not canonical')
+          files = [
+              Path('ops/n8n/workflows/shopnoltd-omnichannel-action-queue.json'),
+              Path('ops/n8n/workflows/shopnoltd-platform-account-registry.json'),
+              Path('k8s/services/n8n/workflows/shopnoltd-omnichannel-action-queue.json'),
+              Path('k8s/services/n8n/workflows/shopnoltd-platform-account-registry.json'),
+          ]
+          for path in files:
+              workflow = json.loads(path.read_text())
+              if workflow.get('active') is not False:
+                  raise SystemExit(f'{path}: workflow must remain inactive until credentials and live tests pass')
+              if any(node.get('continueOnFail') is True for node in workflow.get('nodes', [])):
+                  raise SystemExit(f'{path}: downstream API failures must not be reported as successful webhook responses')
+          print('n8n image, webhook URL, mirrored workflow JSON, and fail-closed staging checks passed.')
+          PY
+
       - name: Validate release gate documentation
         run: test -s docs/OBSERVABILITY-RELEASE-GATE.md
 
