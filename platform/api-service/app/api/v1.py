@@ -1,6 +1,7 @@
 """Versioned REST facade that aggregates downstream services."""
 
 import httpx
+import hmac
 import os
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -21,15 +22,22 @@ PAYMENT = "http://payment-service.shopno-payments.svc.cluster.local:80"
 OAUTH = "http://oauth-service.shopno-identity.svc.cluster.local:80"
 
 
-async def omnichannel_token(creds: HTTPAuthorizationCredentials = Depends(bearer)) -> str:
+async def omnichannel_user_token(creds: HTTPAuthorizationCredentials = Depends(bearer)) -> str:
+    """Authenticate ordinary JWTs; never accept the automation token here."""
     token = creds.credentials
-    if AUTOMATION_TOKEN and token == AUTOMATION_TOKEN:
-        return token
     try:
         await verify_token(token)
     except Exception as e:
         raise HTTPException(status_code=401, detail="Invalid authentication token") from e
     return token
+
+
+async def omnichannel_registration_token(creds: HTTPAuthorizationCredentials = Depends(bearer)) -> str:
+    """Permit the internal token only for connection registration."""
+    token = creds.credentials
+    if AUTOMATION_TOKEN and hmac.compare_digest(token, AUTOMATION_TOKEN):
+        return token
+    return await omnichannel_user_token(creds)
 
 
 async def user(creds: HTTPAuthorizationCredentials = Depends(bearer)):
@@ -180,7 +188,7 @@ async def payment_exchange_convert(body: dict, creds: HTTPAuthorizationCredentia
 
 @router.get("/omnichannel/oauth/start/{provider}/{platform}")
 async def omnichannel_oauth_start(provider: str, platform: str, creds: HTTPAuthorizationCredentials = Depends(bearer)):
-    token = await omnichannel_token(creds)
+    token = await omnichannel_user_token(creds)
     try:
         async with httpx.AsyncClient(timeout=20, follow_redirects=False) as client:
             r = await client.get(
@@ -224,48 +232,48 @@ async def omnichannel_oauth_callback(code: str | None = None, state: str | None 
 
 @router.get("/omnichannel/oauth/status")
 async def omnichannel_oauth_status(creds: HTTPAuthorizationCredentials = Depends(bearer)):
-    token = await omnichannel_token(creds)
+    token = await omnichannel_user_token(creds)
     return await call("GET", f"{SOCIAL}/api/v1/omnichannel/oauth/status", token)
 
 
 @router.get("/omnichannel/providers")
 async def omnichannel_providers(creds: HTTPAuthorizationCredentials = Depends(bearer)):
-    token = await omnichannel_token(creds)
+    token = await omnichannel_user_token(creds)
     return await call("GET", f"{SOCIAL}/api/v1/omnichannel/providers", token)
 
 
 @router.get("/omnichannel/capabilities")
 async def omnichannel_capabilities(creds: HTTPAuthorizationCredentials = Depends(bearer)):
-    token = await omnichannel_token(creds)
+    token = await omnichannel_user_token(creds)
     return await call("GET", f"{SOCIAL}/api/v1/omnichannel/capabilities", token)
 
 
 @router.get("/omnichannel/connections")
 async def omnichannel_connections(creds: HTTPAuthorizationCredentials = Depends(bearer)):
-    token = await omnichannel_token(creds)
+    token = await omnichannel_user_token(creds)
     return await call("GET", f"{SOCIAL}/api/v1/omnichannel/connections", token)
 
 
 @router.post("/omnichannel/connections")
 async def omnichannel_add_connection(body: dict, creds: HTTPAuthorizationCredentials = Depends(bearer)):
-    token = await omnichannel_token(creds)
+    token = await omnichannel_registration_token(creds)
     return await call("POST", f"{SOCIAL}/api/v1/omnichannel/connections", token, json=body)
 
 @router.get("/omnichannel/connections/{connection_id}")
 async def omnichannel_connection(connection_id: str, creds: HTTPAuthorizationCredentials = Depends(bearer)):
-    token = await omnichannel_token(creds)
+    token = await omnichannel_user_token(creds)
     return await call("GET", f"{SOCIAL}/api/v1/omnichannel/connections/{connection_id}", token)
 
 
 @router.patch("/omnichannel/connections/{connection_id}")
 async def omnichannel_update_connection(connection_id: str, body: dict, creds: HTTPAuthorizationCredentials = Depends(bearer)):
-    token = await omnichannel_token(creds)
+    token = await omnichannel_user_token(creds)
     return await call("PATCH", f"{SOCIAL}/api/v1/omnichannel/connections/{connection_id}", token, json=body)
 
 
 @router.delete("/omnichannel/connections/{connection_id}", status_code=204)
 async def omnichannel_delete_connection(connection_id: str, creds: HTTPAuthorizationCredentials = Depends(bearer)):
-    token = await omnichannel_token(creds)
+    token = await omnichannel_user_token(creds)
     await call("DELETE", f"{SOCIAL}/api/v1/omnichannel/connections/{connection_id}", token)
     return Response(status_code=204)
 
@@ -273,19 +281,19 @@ async def omnichannel_delete_connection(connection_id: str, creds: HTTPAuthoriza
 
 @router.get("/omnichannel/clients/{client_id}/identities")
 async def omnichannel_client_identities(client_id: str, creds: HTTPAuthorizationCredentials = Depends(bearer)):
-    token = await omnichannel_token(creds)
+    token = await omnichannel_user_token(creds)
     return await call("GET", f"{SOCIAL}/api/v1/omnichannel/clients/{client_id}/identities", token)
 
 
 @router.get("/omnichannel/clients/search")
 async def omnichannel_search_clients(q: str = Query(min_length=2, max_length=200), creds: HTTPAuthorizationCredentials = Depends(bearer)):
-    token = await omnichannel_token(creds)
+    token = await omnichannel_user_token(creds)
     return await call("GET", f"{SOCIAL}/api/v1/omnichannel/clients/search", token, params={"q": q})
 
 
 @router.post("/omnichannel/actions")
 async def omnichannel_action(body: dict, creds: HTTPAuthorizationCredentials = Depends(bearer)):
-    token = await omnichannel_token(creds)
+    token = await omnichannel_user_token(creds)
     return await call("POST", f"{SOCIAL}/api/v1/omnichannel/actions", token, json=body)
 
 
