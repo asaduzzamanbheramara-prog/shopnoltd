@@ -2,7 +2,7 @@ name: Post-deployment smoke
 
 on:
   workflow_run:
-    workflows: ["Build and promote platform images", "Shopnoltd Self-Hosted K3s GitOps"]
+    workflows: ["Build and promote platform images"]
     types: [completed]
   push:
     branches: [main]
