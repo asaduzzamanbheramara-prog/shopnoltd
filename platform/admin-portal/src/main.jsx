@@ -16,7 +16,17 @@ import Login from './pages/Login'
 import Callback from './pages/Callback'
 import AdminRoute from './components/AdminRoute'
 
-const qc = new QueryClient()
+const qc = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 15000,
+      refetchInterval: 30000,
+      refetchIntervalInBackground: false,
+      refetchOnWindowFocus: true,
+      refetchOnReconnect: true,
+    },
+  },
+})
 
 function Layout({ children }) {
   return (
