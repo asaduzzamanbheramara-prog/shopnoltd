@@ -169,7 +169,7 @@ def _mongo_server_metadata(uri: str) -> list[dict[str, Any]]:
                 # This endpoint is for responsive metadata discovery, not an exhaustive data audit.
                 fields = list(collection.aggregate([
                     {"$sample": {"size": 500}},
-                    {"$project": {"pairs": {"$objectToArray": "$ROOT"}}},
+                    {"$project": {"pairs": {"$objectToArray": "$$ROOT"}}},
                     {"$unwind": "$pairs"},
                     {"$group": {"_id": "$pairs.k", "types": {"$addToSet": {"$type": "$pairs.v"}}}},
                     {"$sort": {"_id": 1}},
