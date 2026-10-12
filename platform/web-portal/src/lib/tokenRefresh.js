@@ -10,10 +10,10 @@ export async function tryRefresh() {
   if (refreshPromise) return refreshPromise
 
   refreshPromise = (async () => {
-    const refreshToken = localStorage.getItem('shopno_refresh_token')
-    if (!refreshToken) return null
-
     try {
+      const refreshToken = localStorage.getItem('shopno_refresh_token')
+      if (!refreshToken) return null
+
       const res = await fetch(TOKEN_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
