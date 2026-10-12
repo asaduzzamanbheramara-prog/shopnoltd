@@ -10,10 +10,10 @@ export async function tryRefresh() {
   if (refreshPromise) return refreshPromise
 
   refreshPromise = (async () => {
-    const refreshToken = localStorage.getItem('shopno_refresh_token')
-    if (!refreshToken) return null
-
     try {
+      const refreshToken = localStorage.getItem('shopno_refresh_token')
+      if (!refreshToken) return null
+
       const res = await fetch(TOKEN_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -24,9 +24,17 @@ export async function tryRefresh() {
         }),
       })
 
-      if (!res.ok) return null
-
-      const data = await res.json()
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        // A revoked/expired refresh token is terminal; clear stale local auth.
+        // Preserve tokens on transient server/network errors so users can retry.
+        if ((res.status === 400 || res.status === 401) &&
+            ['invalid_grant', 'invalid_token'].includes(data.error)) {
+          localStorage.removeItem('shopno_token')
+          localStorage.removeItem('shopno_refresh_token')
+        }
+        return null
+      }
       if (!data.access_token) return null
 
       localStorage.setItem('shopno_token', data.access_token)
