@@ -127,7 +127,20 @@ jobs:
                   for marker in ("throw new Error('unsupported_platform')", "throw new Error('platform_account_id_required')"):
                       if marker not in code:
                           raise SystemExit(f'{path}: invalid account input must stop before Register Connection')
-          print('n8n image, webhook URL, mirrored workflow JSON, validation fail-closed checks, and inactive staging checks passed.')
+          social_security = Path('platform/social-service/app/core/security.py').read_text()
+          social_api = Path('platform/social-service/app/api/omnichannel.py').read_text()
+          api_facade = Path('platform/api-service/app/api/v1.py').read_text()
+          if 'SHOPNOLTD_INTERNAL_AUTOMATION_TOKEN' in social_security:
+              raise SystemExit('shared social-service JWT verifier must not accept the internal automation token')
+          if 'async def registration_user(' not in social_api or 'user=Depends(registration_user)' not in social_api:
+              raise SystemExit('only the connection registration route may accept the internal automation token')
+          if 'async def omnichannel_user_token(' not in api_facade or 'async def omnichannel_registration_token(' not in api_facade:
+              raise SystemExit('API facade must separate normal JWT auth from registration-only automation auth')
+          if 'token = await omnichannel_registration_token(creds)' not in api_facade:
+              raise SystemExit('connection registration route must use registration-only automation auth')
+          if api_facade.count('omnichannel_user_token(creds)') < 10:
+              raise SystemExit('omnichannel read/update/delete/action routes must continue to require normal JWT auth')
+          print('n8n staging and route-scoped automation-token security checks passed.')
           PY
 
       - name: Validate release gate documentation
