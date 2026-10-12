@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { SERVICES, ADMIN_SERVICES } from '../data/serviceCatalog'
 import { isPlatformAdmin } from '../lib/jwt'
@@ -44,8 +44,11 @@ export default function Dashboard() {
   const [works, setWorks] = useState([])
   const [platformConnections, setPlatformConnections] = useState([])
   const [refreshing, setRefreshing] = useState(false)
+  const inFlight = useRef(false)
 
-  async function loadDashboard() {
+  async function loadDashboard({ silent = false } = {}) {
+    if (inFlight.current) return
+    inFlight.current = true
     const token = localStorage.getItem('shopno_token')
     if (!token) {
       setLoading(false)
@@ -53,8 +56,10 @@ export default function Dashboard() {
       return
     }
 
-    setRefreshing(true)
-    setError(null)
+    if (!silent) {
+      setRefreshing(true)
+      setError(null)
+    }
     try {
       const results = await Promise.allSettled([
         authenticatedRequest('/api/v1/users/me'),
@@ -96,12 +101,24 @@ export default function Dashboard() {
         setError(message)
       }
     } finally {
-      setRefreshing(false)
+      inFlight.current = false
+      if (!silent) setRefreshing(false)
       setLoading(false)
     }
   }
 
-  useEffect(() => { loadDashboard() }, [])
+  useEffect(() => {
+    void loadDashboard()
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'visible') void loadDashboard({ silent: true })
+    }
+    const timer = window.setInterval(refreshWhenVisible, 60000)
+    document.addEventListener('visibilitychange', refreshWhenVisible)
+    return () => {
+      window.clearInterval(timer)
+      document.removeEventListener('visibilitychange', refreshWhenVisible)
+    }
+  }, [])
 
   if (loading) return <div style={{ padding: 32 }}>Loading your dashboard…</div>
 
