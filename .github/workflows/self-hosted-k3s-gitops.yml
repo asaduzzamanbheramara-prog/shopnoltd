@@ -469,6 +469,66 @@ jobs:
             fi
           done
 
+      - name: Remove only orphaned n8n workflow ConfigMaps
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          # The deployment sync deliberately uses prune:false to protect unrelated
+          # resources. A changed Kustomize-generated workflow ConfigMap therefore
+          # leaves its previous hash-named ConfigMap orphaned and Argo stays OutOfSync.
+          # Delete only exact n8n workflow ConfigMaps that Argo marks requiresPruning,
+          # and only after the current desired ConfigMap exists in the live cluster.
+          desired_name="$(kubectl kustomize k8s/services/n8n | awk '
+            /^kind: ConfigMap$/ { in_cm=1; name="" }
+            in_cm && /^  name: n8n-omnichannel-workflow-/ { name=$2 }
+            in_cm && /shopnoltd-omnichannel-action-queue\.json:/ { print name; exit }
+            /^---$/ { in_cm=0 }
+          ')"
+          if [[ ! "$desired_name" =~ ^n8n-omnichannel-workflow-[a-z0-9]+$ ]]; then
+            echo "ERROR: Could not safely determine the desired n8n workflow ConfigMap name."
+            exit 1
+          fi
+          if ! kubectl -n shopno-apps get configmap "$desired_name" >/dev/null 2>&1; then
+            echo "Desired ConfigMap $desired_name is not live yet; refusing orphan cleanup."
+            exit 1
+          fi
+
+          active_imports="$(kubectl -n shopno-apps get jobs -o json | jq '[.items[] | select(.metadata.name == "n8n-workflow-import") | (.status.active // 0)] | add // 0')"
+          if [ "$active_imports" -gt 0 ]; then
+            echo "n8n workflow import is active; refusing to delete any workflow ConfigMap."
+            exit 1
+          fi
+
+          mapfile -t stale_names < <(
+            kubectl -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o json |
+              jq -r --arg desired "$desired_name" '
+                .status.resources[]?
+                | select(.requiresPruning == true
+                    and .kind == "ConfigMap"
+                    and .namespace == "shopno-apps"
+                    and (.name | startswith("n8n-omnichannel-workflow-"))
+                    and .name != $desired)
+                | .name
+              ' | sort -u
+          )
+
+          for stale_name in "${stale_names[@]}"; do
+            if [[ "$stale_name" =~ ^n8n-omnichannel-workflow-[a-z0-9]+$ ]]; then
+              echo "Deleting confirmed orphaned generated ConfigMap: shopno-apps/$stale_name"
+              kubectl -n shopno-apps delete configmap "$stale_name" --wait=true --timeout=30s
+            else
+              echo "ERROR: Refusing unexpected ConfigMap name: $stale_name"
+              exit 1
+            fi
+          done
+
+          if [ "${#stale_names[@]}" -gt 0 ]; then
+            kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" annotate application "$ARGOCD_APP" argocd.argoproj.io/refresh=hard --overwrite
+          else
+            echo "No orphaned n8n workflow ConfigMaps require cleanup."
+          fi
+
       - name: Wait for Argo CD full sync
         shell: bash
         run: |
