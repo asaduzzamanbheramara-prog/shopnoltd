@@ -42,6 +42,10 @@
             {
               "name": "Content-Type",
               "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SHOPNOLTD_N8N_ACTION_TOKEN}}"
             }
           ]
         },
@@ -78,6 +82,57 @@
         360,
         0
       ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "action-secret-check",
+              "leftValue": "={{!!$env.SHOPNOLTD_N8N_WEBHOOK_SECRET && $json.headers[\"x-shopnoltd-webhook-secret\"] === $env.SHOPNOLTD_N8N_WEBHOOK_SECRET}}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "action-auth",
+      "name": "Authenticate Webhook",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -300,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {error:'unauthorized'} }}",
+        "options": {
+          "responseCode": 401
+        }
+      },
+      "id": "action-reject",
+      "name": "Reject Unauthenticated Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        300
+      ]
     }
   ],
   "connections": {
@@ -85,7 +140,7 @@
       "main": [
         [
           {
-            "node": "Normalize Action",
+            "node": "Authenticate Webhook",
             "type": "main",
             "index": 0
           }
@@ -108,6 +163,24 @@
         [
           {
             "node": "Respond 202",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Authenticate Webhook": {
+      "main": [
+        [
+          {
+            "node": "Normalize Action",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reject Unauthenticated Webhook",
             "type": "main",
             "index": 0
           }
