@@ -1,0 +1,198 @@
+{
+  "id": "c8d6e65b-4fd4-4f14-91c5-0b7a4d2b0e33",
+  "name": "Shopnoltd - AdSense Blog Draft Intake",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "shopnoltd/blog/draft",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook",
+      "name": "Webhook (Blog Draft)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -600,
+        0
+      ],
+      "webhookId": "shopnoltd-blog-draft"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "webhook-secret-check",
+              "leftValue": "={{!!$env.SHOPNOLTD_N8N_WEBHOOK_SECRET && $json.headers[\"x-shopnoltd-webhook-secret\"] === $env.SHOPNOLTD_N8N_WEBHOOK_SECRET}}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "auth",
+      "name": "Authenticate Webhook",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -380,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body ?? $json;\nconst title = String(body.title ?? '').trim();\nconst content = String(body.content ?? '').trim();\nif (!title) throw new Error('title_required');\nif (!content) throw new Error('content_required');\nif (title.length > 300) throw new Error('title_too_long');\nif (content.length > 30000) throw new Error('content_too_long');\nreturn [{json:{title,content,excerpt:body.excerpt ? String(body.excerpt).slice(0,1000) : null,slug:body.slug ? String(body.slug).slice(0,320) : null,cover_image:body.cover_image ? String(body.cover_image).slice(0,2000) : null,status:'draft'}}];"
+      },
+      "id": "normalize",
+      "name": "Validate Blog Draft",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -140,
+        -100
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.shopnoltd.dpdns.org/api/v1/blog",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SHOPNOLTD_N8N_BLOG_DRAFT_TOKEN}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{$json}}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "create-draft",
+      "name": "Create Shopnoltd Draft",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        100,
+        -100
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 1500
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{$json}}",
+        "options": {
+          "responseCode": 201
+        }
+      },
+      "id": "respond-created",
+      "name": "Respond Draft Created",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        360,
+        -100
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {error:'unauthorized'} }}",
+        "options": {
+          "responseCode": 401
+        }
+      },
+      "id": "respond-unauthorized",
+      "name": "Reject Unauthenticated Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        -140,
+        160
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook (Blog Draft)": {
+      "main": [
+        [
+          {
+            "node": "Authenticate Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Authenticate Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate Blog Draft",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reject Unauthenticated Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Blog Draft": {
+      "main": [
+        [
+          {
+            "node": "Create Shopnoltd Draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Shopnoltd Draft": {
+      "main": [
+        [
+          {
+            "node": "Respond Draft Created",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": []
+}
