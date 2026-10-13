@@ -608,11 +608,11 @@ jobs:
         run: |
           set -euo pipefail
 
-          # The import hook writes workflow publication state to PostgreSQL after
-          # the n8n Deployment has already become healthy in the sync waves.
-          # Restart n8n only when the imported workflow definitions or importer
-          # changed, so its running trigger registry reloads the published state.
-          if ! git diff --name-only "${GIT_REVISION}^" "${GIT_REVISION}" | grep -Eq '^k8s/services/n8n/(workflow-import-job\.yaml|workflows/.*\.json|kustomization\.yaml)        shell: bash
+          # CLI publish writes state to PostgreSQL after n8n is already healthy in the sync waves.
+          # Restart only when the imported definitions or importer changed, so triggers reload.
+          if ! git diff --name-only "${GIT_REVISION}^" "${GIT_REVISION}" | grep -Eq '^k8s/services/n8n/(workflow-import-job\.yaml|workflows/.*\.json|kustomization\.yaml)
+        if: always()
+        shell: bash
         run: |
           set -euo pipefail
           if ! kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o jsonpath='{.spec.syncPolicy.automated}' 2>/dev/null | grep -q .; then
@@ -690,7 +690,6 @@ jobs:
             exit 1
           fi
           echo "n8n rollout verified: ready replicas=$ready/$desired."
-
       - name: Restore Argo CD automated sync
         if: always()
         shell: bash
