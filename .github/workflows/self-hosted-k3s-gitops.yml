@@ -479,10 +479,12 @@ jobs:
           # leaves its previous hash-named ConfigMap orphaned and Argo stays OutOfSync.
           # Delete only exact n8n workflow ConfigMaps that Argo marks requiresPruning,
           # and only after the current desired ConfigMap exists in the live cluster.
+          # The n8n kustomization has exactly one generated workflow ConfigMap.
+          # Resolve it by its generated-name prefix; YAML data keys may be quoted
+          # or rendered differently across Kustomize versions.
           desired_name="$(kubectl kustomize k8s/services/n8n | awk '
-            /^kind: ConfigMap$/ { in_cm=1; name="" }
-            in_cm && /^  name: n8n-omnichannel-workflow-/ { name=$2 }
-            in_cm && /shopnoltd-omnichannel-action-queue\.json:/ { print name; exit }
+            /^kind: ConfigMap$/ { in_cm=1 }
+            in_cm && /^  name: n8n-omnichannel-workflow-/ { print $2; exit }
             /^---$/ { in_cm=0 }
           ')"
           if [[ ! "$desired_name" =~ ^n8n-omnichannel-workflow-[a-z0-9]+$ ]]; then
