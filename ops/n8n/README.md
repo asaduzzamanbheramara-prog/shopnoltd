@@ -83,15 +83,15 @@ Availability is recorded in platform_capabilities because provider capabilities 
 
 ## Current integration readiness
 
-The checked-in workflows are integration scaffolding, not proof that the platforms are connected. The account-registry workflow may use the registration-only internal automation token; the action-queue workflow must never use that token. The action queue remains fail-closed until a separately approved, least-privilege API credential is configured and tested. Provider credentials and OAuth grants must be configured, and each enabled provider must pass a live account-connect and end-to-end test. The imported workflows must remain inactive until those checks pass.
+The account-registry and blog-draft workflows are activated by GitOps but fail closed unless the shared webhook secret is configured. The account registry may use the registration-only internal automation token; the action queue must never use that token. The action queue remains inactive until a separate least-privilege action token and a real action executor are deployed and tested. Provider credentials and OAuth grants must be configured, and each enabled provider must pass a live account-connect and end-to-end test.
 
-**Blog publishing is not wired to n8n by these omnichannel workflows.** The Shopnoltd blog API currently uses authenticated user/role context for authoring. Do not reuse the broad internal automation token to impersonate a blog author or publish articles. A separate narrowly scoped, audited draft-creation integration is required before blog automation can be enabled. Use draft-first human approval for AdSense-oriented content.
+**Blog draft intake is wired to n8n** at `POST /webhook/shopnoltd/blog/draft`. It requires `x-shopnoltd-webhook-secret`, accepts title/content metadata, and always creates a draft using the separate `SHOPNOLTD_N8N_BLOG_DRAFT_TOKEN`. That token is allowed to create drafts only; it cannot publish, edit, delete, manage accounts, or queue actions. Human review is required before publication.
 
 The action/account webhook endpoints must also have caller authentication configured in the n8n credential store before production activation. Workflow JSON must not contain credentials or tokens. The action queue deliberately has no API Authorization header until its approved normal-user/service-account credential is wired; unauthenticated calls should be rejected by the API. Never restore `SHOPNOLTD_INTERNAL_AUTOMATION_TOKEN` on the action endpoint. A successful workflow import alone is not a readiness check.
 
 ## n8n
 
-The imported action-queue and account-registry workflows are intentionally inactive until caller authentication, credentials, API authorization, and end-to-end webhook tests pass.
+The account-registry and blog-draft workflows are imported active with a fail-closed shared-header check. The action queue remains imported inactive until the action executor and its provider-backed end-to-end tests pass.
 
 Recommended workflow groups:
 
@@ -123,13 +123,12 @@ The PostgreSQL password exposed during the implementation should be rotated befo
 
 Do not publish/activate the workflows merely because they import successfully. Required checks are:
 
-1. n8n workflow JSON import succeeds.
-2. Credential references are resolved.
+1. n8n workflow JSON import succeeds and webhook auth rejects missing/wrong secrets.
+2. Scoped action and blog-draft credentials are configured in Kubernetes secrets.
 3. PostgreSQL contract queries succeed.
-4. WhatsApp webhook verification succeeds.
-5. WhatsApp inbound test creates/updates identity and inbox rows.
-6. WhatsApp outbound test sends and logs the provider message ID.
-7. At least one account-connect test succeeds for every provider enabled in production.
-8. Unsupported actions return a structured non-success result instead of attempting browser automation.
-9. GitHub Actions -> GHCR -> ArgoCD/k3s completes successfully.
-10. Public endpoint smoke tests pass.
+4. Provider webhook verification and inbound/outbound tests pass for enabled providers.
+5. At least one account-connect test succeeds for every provider enabled in production.
+6. Provider-backed action execution is implemented, idempotent, and records provider IDs.
+7. Unsupported actions return a structured non-success result instead of attempting browser automation.
+8. GitHub Actions -> GHCR -> ArgoCD/k3s completes successfully.
+9. Public endpoint smoke tests pass.
