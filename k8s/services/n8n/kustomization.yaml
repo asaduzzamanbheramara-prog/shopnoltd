@@ -21,6 +21,7 @@ configMapGenerator:
   files:
   - workflows/shopnoltd-omnichannel-action-queue.json
   - workflows/shopnoltd-platform-account-registry.json
+  - workflows/shopnoltd-blog-draft-intake.json
 
 labels:
 - includeSelectors: true
