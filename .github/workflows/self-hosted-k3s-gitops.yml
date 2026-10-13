@@ -603,6 +603,94 @@ jobs:
           kubectl -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o yaml
           exit 1
 
+      - name: Restart n8n after workflow definitions are published
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          # The import hook writes workflow publication state to PostgreSQL after
+          # the n8n Deployment has already become healthy in the sync waves.
+          # Restart n8n only when the imported workflow definitions or importer
+          # changed, so its running trigger registry reloads the published state.
+          if ! git diff --name-only "${GIT_REVISION}^" "${GIT_REVISION}" | grep -Eq '^k8s/services/n8n/(workflow-import-job\.yaml|workflows/.*\.json|kustomization\.yaml)        shell: bash
+        run: |
+          set -euo pipefail
+          if ! kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o jsonpath='{.spec.syncPolicy.automated}' 2>/dev/null | grep -q .; then
+            echo 'Restoring Argo CD automated sync policy from source.'
+            kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" patch application "$ARGOCD_APP" --type=merge -p='{"spec":{"syncPolicy":{"automated":{"prune":true,"selfHeal":true}}}}'
+          else
+            echo 'Argo CD automated sync is already enabled.'
+          fi
+
+      - name: Verify Cloudflare tunnel
+        shell: bash
+        run: |
+          set -euo pipefail
+          kubectl --request-timeout=30s -n "$CLOUDFLARED_NAMESPACE" rollout status deployment/"$CLOUDFLARED_DEPLOYMENT" --timeout=180s
+          test "$(kubectl --request-timeout=30s -n "$CLOUDFLARED_NAMESPACE" get deployment "$CLOUDFLARED_DEPLOYMENT" -o jsonpath='{.status.availableReplicas}')" = "$(kubectl --request-timeout=30s -n "$CLOUDFLARED_NAMESPACE" get deployment "$CLOUDFLARED_DEPLOYMENT" -o jsonpath='{.spec.replicas}')"
+
+      - name: Verify Cloudflare API secret reference
+        shell: bash
+        run: |
+          set -euo pipefail
+          kubectl --request-timeout=30s -n "$CLOUDFLARE_SECRET_NAMESPACE" get secret "$CLOUDFLARE_SECRET_NAME" >/dev/null
+
+      - name: Verify deployed images are registry-backed
+        shell: bash
+        run: |
+          set -euo pipefail
+          kubectl get pods --all-namespaces -o json             | jq -r '.items[] | .spec.containers[]? | .image'             | grep -E '(^ghcr.io/|^[^/]+/[^/]+/)'             | sort -u >/dev/null
+
+      - name: Verify platform communications
+        shell: bash
+        run: |
+          set -euo pipefail
+          kubectl --request-timeout=30s -n "$PLATFORM_NAMESPACE" get pods -o wide
+
+      - name: Verify migration hook
+        shell: bash
+        run: |
+          set -euo pipefail
+          if kubectl --request-timeout=30s -n "$MIGRATION_NAMESPACE" get job "$MIGRATION_JOB" -o wide; then
+            kubectl --request-timeout=30s -n "$MIGRATION_NAMESPACE" wait --for=condition=complete job/"$MIGRATION_JOB" --timeout=300s
+          else
+            echo "Migration hook Job is already absent; accepting successful Argo hook cleanup."
+          fi
+
+      - name: Collect diagnostics on failure
+        if: failure()
+        shell: bash
+        run: |
+          set +e
+          echo '===== APPLICATION ====='
+          kubectl -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o yaml
+          echo '===== MIGRATION JOB ====='
+          kubectl -n "$MIGRATION_NAMESPACE" get job "$MIGRATION_JOB" -o yaml
+          echo '===== MIGRATION PODS ====='
+          kubectl -n "$MIGRATION_NAMESPACE" get pods -l job-name="$MIGRATION_JOB" -o wide
+          kubectl -n "$MIGRATION_NAMESPACE" logs job/"$MIGRATION_JOB" --all-containers=true --tail=300
+          echo '===== PLATFORM PODS ====='
+          kubectl -n "$PLATFORM_NAMESPACE" get pods -o wide
+          echo '===== CLOUDFLARED ====='
+          kubectl -n "$CLOUDFLARED_NAMESPACE" get pods -o wide
+; then
+            echo 'No n8n workflow definitions/importer changed; restart not required.'
+            exit 0
+          fi
+
+          echo 'Restarting n8n so published workflow triggers are loaded by the running process.'
+          kubectl --request-timeout=30s -n shopno-apps rollout restart deployment/n8n
+          kubectl --request-timeout=30s -n shopno-apps rollout status deployment/n8n --timeout=300s
+          desired="$(kubectl --request-timeout=30s -n shopno-apps get deployment n8n -o jsonpath='{.spec.replicas}')"
+          ready="$(kubectl --request-timeout=30s -n shopno-apps get deployment n8n -o jsonpath='{.status.readyReplicas}')"
+          if [ -z "$desired" ] || [ "$desired" -lt 1 ] || [ "$ready" != "$desired" ]; then
+            echo "ERROR: n8n is not fully ready after workflow activation restart (ready=${ready:-0}, desired=${desired:-0})."
+            kubectl -n shopno-apps get deployment n8n -o wide
+            kubectl -n shopno-apps get pods -l app.kubernetes.io/name=n8n -o wide
+            exit 1
+          fi
+          echo "n8n rollout verified: ready replicas=$ready/$desired."
+
       - name: Restore Argo CD automated sync
         if: always()
         shell: bash
