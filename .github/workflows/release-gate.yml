@@ -165,8 +165,13 @@ jobs:
                   if not (code.index(markers[0]) < code.index('return [{json:{')):
                       raise SystemExit(f'{path}: input validation must run before normalized data is emitted')
           importer = Path('k8s/services/n8n/workflow-import-job.yaml').read_text()
-          if 'shopnoltd-platform-account-registry.json --activeState=true' not in importer or 'shopnoltd-blog-draft-intake.json --activeState=true' not in importer:
-              raise SystemExit('GitOps importer must activate only the webhook-authenticated account registry and blog draft workflows')
+          if (
+              'shopnoltd-platform-account-registry.json --activeState=false' not in importer
+              or 'shopnoltd-blog-draft-intake.json --activeState=false' not in importer
+              or 'n8n publish:workflow --id=b4c8c0a7-5e32-47e0-a2b9-4d7c4a1f92d3' not in importer
+              or 'n8n publish:workflow --id=c8d6e65b-4fd4-4f14-91c5-0b7a4d2b0e33' not in importer
+          ):
+              raise SystemExit('GitOps importer must import workflows inactive and explicitly publish only the authenticated account registry and blog draft workflows')
           if 'shopnoltd-omnichannel-action-queue.json --activeState=false' not in importer:
               raise SystemExit('n8n action queue must remain inactive until the provider action executor is verified')
           social_security = Path('platform/social-service/app/core/security.py').read_text()
