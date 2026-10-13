@@ -9,7 +9,6 @@ metadata:
     argocd.argoproj.io/sync-wave: "20"
 spec:
   backoffLimit: 4
-  ttlSecondsAfterFinished: 300
   template:
     metadata:
       labels:
