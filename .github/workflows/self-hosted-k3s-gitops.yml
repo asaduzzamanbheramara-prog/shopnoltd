@@ -610,70 +610,7 @@ jobs:
 
           # CLI publish writes state to PostgreSQL after n8n is already healthy in the sync waves.
           # Restart only when the imported definitions or importer changed, so triggers reload.
-          if ! git diff --name-only "${GIT_REVISION}^" "${GIT_REVISION}" | grep -Eq '^k8s/services/n8n/(workflow-import-job\.yaml|workflows/.*\.json|kustomization\.yaml)
-        if: always()
-        shell: bash
-        run: |
-          set -euo pipefail
-          if ! kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o jsonpath='{.spec.syncPolicy.automated}' 2>/dev/null | grep -q .; then
-            echo 'Restoring Argo CD automated sync policy from source.'
-            kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" patch application "$ARGOCD_APP" --type=merge -p='{"spec":{"syncPolicy":{"automated":{"prune":true,"selfHeal":true}}}}'
-          else
-            echo 'Argo CD automated sync is already enabled.'
-          fi
-
-      - name: Verify Cloudflare tunnel
-        shell: bash
-        run: |
-          set -euo pipefail
-          kubectl --request-timeout=30s -n "$CLOUDFLARED_NAMESPACE" rollout status deployment/"$CLOUDFLARED_DEPLOYMENT" --timeout=180s
-          test "$(kubectl --request-timeout=30s -n "$CLOUDFLARED_NAMESPACE" get deployment "$CLOUDFLARED_DEPLOYMENT" -o jsonpath='{.status.availableReplicas}')" = "$(kubectl --request-timeout=30s -n "$CLOUDFLARED_NAMESPACE" get deployment "$CLOUDFLARED_DEPLOYMENT" -o jsonpath='{.spec.replicas}')"
-
-      - name: Verify Cloudflare API secret reference
-        shell: bash
-        run: |
-          set -euo pipefail
-          kubectl --request-timeout=30s -n "$CLOUDFLARE_SECRET_NAMESPACE" get secret "$CLOUDFLARE_SECRET_NAME" >/dev/null
-
-      - name: Verify deployed images are registry-backed
-        shell: bash
-        run: |
-          set -euo pipefail
-          kubectl get pods --all-namespaces -o json             | jq -r '.items[] | .spec.containers[]? | .image'             | grep -E '(^ghcr.io/|^[^/]+/[^/]+/)'             | sort -u >/dev/null
-
-      - name: Verify platform communications
-        shell: bash
-        run: |
-          set -euo pipefail
-          kubectl --request-timeout=30s -n "$PLATFORM_NAMESPACE" get pods -o wide
-
-      - name: Verify migration hook
-        shell: bash
-        run: |
-          set -euo pipefail
-          if kubectl --request-timeout=30s -n "$MIGRATION_NAMESPACE" get job "$MIGRATION_JOB" -o wide; then
-            kubectl --request-timeout=30s -n "$MIGRATION_NAMESPACE" wait --for=condition=complete job/"$MIGRATION_JOB" --timeout=300s
-          else
-            echo "Migration hook Job is already absent; accepting successful Argo hook cleanup."
-          fi
-
-      - name: Collect diagnostics on failure
-        if: failure()
-        shell: bash
-        run: |
-          set +e
-          echo '===== APPLICATION ====='
-          kubectl -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o yaml
-          echo '===== MIGRATION JOB ====='
-          kubectl -n "$MIGRATION_NAMESPACE" get job "$MIGRATION_JOB" -o yaml
-          echo '===== MIGRATION PODS ====='
-          kubectl -n "$MIGRATION_NAMESPACE" get pods -l job-name="$MIGRATION_JOB" -o wide
-          kubectl -n "$MIGRATION_NAMESPACE" logs job/"$MIGRATION_JOB" --all-containers=true --tail=300
-          echo '===== PLATFORM PODS ====='
-          kubectl -n "$PLATFORM_NAMESPACE" get pods -o wide
-          echo '===== CLOUDFLARED ====='
-          kubectl -n "$CLOUDFLARED_NAMESPACE" get pods -o wide
-; then
+          if ! git diff --name-only "${GIT_REVISION}^" "${GIT_REVISION}" | grep -Eq "k8s/services/n8n/(workflow-import-job|workflows/|kustomization)"; then
             echo 'No n8n workflow definitions/importer changed; restart not required.'
             exit 0
           fi
