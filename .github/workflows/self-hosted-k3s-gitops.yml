@@ -36,7 +36,6 @@ jobs:
     runs-on: [self-hosted, linux]
     timeout-minutes: 30
     env:
-      GIT_REVISION: ${{ github.sha }}
       GHCR_USERNAME: ${{ github.actor }}
       GHCR_TOKEN: ${{ github.token }}
     steps:
@@ -45,6 +44,14 @@ jobs:
         with:
           ref: main
           fetch-depth: 1
+
+      - name: Pin reconciliation to the checked-out main revision
+        shell: bash
+        run: |
+          set -euo pipefail
+          revision="$(git rev-parse HEAD)"
+          echo "GIT_REVISION=$revision" >> "$GITHUB_ENV"
+          echo "Reconciliation target is the checked-out main commit: $revision"
 
       - name: Verify runner prerequisites
         shell: bash
