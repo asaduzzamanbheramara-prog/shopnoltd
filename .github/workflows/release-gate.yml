@@ -128,6 +128,15 @@ jobs:
                       if marker not in code:
                           raise SystemExit(f'{path}: invalid account input must stop before Register Connection')
               if path.name == 'shopnoltd-omnichannel-action-queue.json':
+                  serialized_workflow = json.dumps(workflow)
+                  if 'SHOPNOLTD_INTERNAL_AUTOMATION_TOKEN' in serialized_workflow:
+                      raise SystemExit(f'{path}: registration-only automation token must never authorize queued actions')
+                  queue_nodes = [node for node in workflow.get('nodes', []) if node.get('name') == 'Queue in Shopnoltd']
+                  if len(queue_nodes) != 1:
+                      raise SystemExit(f'{path}: expected exactly one Queue in Shopnoltd node')
+                  headers = queue_nodes[0].get('parameters', {}).get('headerParameters', {}).get('parameters', [])
+                  if any(str(header.get('name', '')).lower() == 'authorization' and 'SHOPNOLTD_INTERNAL_AUTOMATION_TOKEN' in str(header.get('value', '')) for header in headers):
+                      raise SystemExit(f'{path}: action queue must not reuse registration-only automation credentials')
                   normalize_nodes = [node for node in workflow.get('nodes', []) if node.get('name') == 'Normalize Action']
                   if len(normalize_nodes) != 1:
                       raise SystemExit(f'{path}: expected exactly one Normalize Action node')
