@@ -117,14 +117,13 @@ jobs:
           ]
           for path in files:
               workflow = json.loads(path.read_text())
-              should_be_active = path.name in {'shopnoltd-platform-account-registry.json', 'shopnoltd-blog-draft-intake.json'}
-              if workflow.get('active') is not should_be_active:
-                  state = 'active' if should_be_active else 'inactive'
-                  raise SystemExit(f'{path}: workflow must be {state} for its current readiness stage')
+              should_be_activated_by_importer = path.name in {'shopnoltd-platform-account-registry.json', 'shopnoltd-blog-draft-intake.json'}
+              if workflow.get('active') is not False:
+                  raise SystemExit(f'{path}: source workflow JSON must remain inactive; GitOps controls activation after validation')
               if any(node.get('continueOnFail') is True for node in workflow.get('nodes', [])):
                   raise SystemExit(f'{path}: downstream API failures must not be reported as successful webhook responses')
               auth_nodes = [node for node in workflow.get('nodes', []) if node.get('name') == 'Authenticate Webhook']
-              if should_be_active:
+              if should_be_activated_by_importer:
                   if len(auth_nodes) != 1 or 'SHOPNOLTD_N8N_WEBHOOK_SECRET' not in json.dumps(auth_nodes[0].get('parameters', {})):
                       raise SystemExit(f'{path}: active webhook workflow must fail closed on the shared webhook secret')
               if path.name == 'shopnoltd-platform-account-registry.json':
@@ -165,6 +164,11 @@ jobs:
                       raise SystemExit(f'{path}: unsupported platforms, missing actions, and missing connection IDs must stop before Queue in Shopnoltd')
                   if not (code.index(markers[0]) < code.index('return [{json:{')):
                       raise SystemExit(f'{path}: input validation must run before normalized data is emitted')
+          importer = Path('k8s/services/n8n/workflow-import-job.yaml').read_text()
+          if 'shopnoltd-platform-account-registry.json --activeState=true' not in importer or 'shopnoltd-blog-draft-intake.json --activeState=true' not in importer:
+              raise SystemExit('GitOps importer must activate only the webhook-authenticated account registry and blog draft workflows')
+          if 'shopnoltd-omnichannel-action-queue.json --activeState=false' not in importer:
+              raise SystemExit('n8n action queue must remain inactive until the provider action executor is verified')
           social_security = Path('platform/social-service/app/core/security.py').read_text()
           social_api = Path('platform/social-service/app/api/omnichannel.py').read_text()
           api_facade = Path('platform/api-service/app/api/v1.py').read_text()
