@@ -66,7 +66,7 @@ spec:
               n8n import:workflow --input=/workflows/shopnoltd-omnichannel-action-queue.json --activeState=false
               n8n unpublish:workflow --id=7b2a0a2f-5d1f-4e9f-8e0a-9f4a8f1c0d21
               n8n import:workflow --input=/workflows/shopnoltd-platform-account-registry.json --activeState=fromJson
-              n8n import:workflow --input=/workflows/shopnoltd-blog-draft-intake.json --activeState=true
+              n8n import:workflow --input=/workflows/shopnoltd-blog-draft-intake.json --activeState=fromJson
           volumeMounts:
             - name: workflow
               mountPath: /workflows
