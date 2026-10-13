@@ -127,6 +127,20 @@ jobs:
                   for marker in ("throw new Error('unsupported_platform')", "throw new Error('platform_account_id_required')"):
                       if marker not in code:
                           raise SystemExit(f'{path}: invalid account input must stop before Register Connection')
+              if path.name == 'shopnoltd-omnichannel-action-queue.json':
+                  normalize_nodes = [node for node in workflow.get('nodes', []) if node.get('name') == 'Normalize Action']
+                  if len(normalize_nodes) != 1:
+                      raise SystemExit(f'{path}: expected exactly one Normalize Action node')
+                  code = normalize_nodes[0].get('parameters', {}).get('jsCode', '')
+                  markers = (
+                      "throw new Error('unsupported_platform')",
+                      "throw new Error('action_required')",
+                      "throw new Error('connection_id_required')",
+                  )
+                  if any(marker not in code for marker in markers):
+                      raise SystemExit(f'{path}: unsupported platforms, missing actions, and missing connection IDs must stop before Queue in Shopnoltd')
+                  if not (code.index(markers[0]) < code.index('return [{json:{')):
+                      raise SystemExit(f'{path}: input validation must run before normalized data is emitted')
           social_security = Path('platform/social-service/app/core/security.py').read_text()
           social_api = Path('platform/social-service/app/api/omnichannel.py').read_text()
           api_facade = Path('platform/api-service/app/api/v1.py').read_text()

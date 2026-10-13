@@ -21,7 +21,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const body = $json.body ?? $json;\nconst platforms = ['whatsapp','facebook','instagram','linkedin','x','telegram','tiktok','youtube','gmail','outlook','3cx'];\nif (!platforms.includes(String(body.platform || '').toLowerCase())) return [{json:{success:false,status:'unsupported',error:'unsupported_platform',platform:body.platform ?? null}}];\nif (!body.action) return [{json:{success:false,status:'rejected',error:'action_required',platform:body.platform}}];\nreturn [{json:{platform:String(body.platform).toLowerCase(),action:String(body.action),connection_id:body.connection_id ?? null,client_id:body.client_id ?? null,target_type:body.target_type ?? null,target_id:body.target_id ?? null,idempotency_key:body.idempotency_key ?? ('n8n-' + $execution.id),payload:body.payload ?? {}}}];"
+        "jsCode": "const body = $json.body ?? $json;\nconst platforms = ['whatsapp','facebook','instagram','linkedin','x','telegram','tiktok','youtube','gmail','outlook','3cx'];\nconst platform = String(body.platform || '').trim().toLowerCase();\nif (!platforms.includes(platform)) throw new Error('unsupported_platform');\nconst action = String(body.action ?? '').trim();\nif (!action) throw new Error('action_required');\nconst connectionId = String(body.connection_id ?? '').trim();\nif (!connectionId) throw new Error('connection_id_required');\nreturn [{json:{\n  platform,\n  action,\n  connection_id:connectionId,\n  client_id:body.client_id ?? null,\n  target_type:body.target_type ?? null,\n  target_id:body.target_id ?? null,\n  idempotency_key:body.idempotency_key ?? ('n8n-' + $execution.id),\n  payload:body.payload ?? {}\n}}];"
       },
       "id": "normalize",
       "name": "Normalize Action",
