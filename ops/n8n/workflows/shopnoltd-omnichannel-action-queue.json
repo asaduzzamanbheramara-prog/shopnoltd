@@ -40,10 +40,6 @@
         "headerParameters": {
           "parameters": [
             {
-              "name": "Authorization",
-              "value": "={{'Bearer ' + $env.SHOPNOLTD_INTERNAL_AUTOMATION_TOKEN}}"
-            },
-            {
               "name": "Content-Type",
               "value": "application/json"
             }
