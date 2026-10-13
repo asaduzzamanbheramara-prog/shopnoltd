@@ -52,6 +52,18 @@ spec:
                 secretKeyRef:
                   name: shopnoltd-automation-secret
                   key: token
+            - name: SHOPNOLTD_N8N_ACTION_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: shopnoltd-n8n-action-secret
+                  key: token
+                  optional: true
+            - name: SHOPNOLTD_N8N_BLOG_DRAFT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: shopnoltd-n8n-blog-draft-secret
+                  key: token
+                  optional: true
             - name: POD_NAME
               valueFrom: { fieldRef: { fieldPath: metadata.name } }
             - name: POD_NAMESPACE
