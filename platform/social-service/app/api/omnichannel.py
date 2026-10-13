@@ -18,6 +18,7 @@ from app.core.config import settings
 router = APIRouter()
 bearer = HTTPBearer()
 AUTOMATION_TOKEN = os.getenv("SHOPNOLTD_INTERNAL_AUTOMATION_TOKEN", "")
+N8N_ACTION_TOKEN = os.getenv("SHOPNOLTD_N8N_ACTION_TOKEN", "")
 
 PLATFORMS = {
     "whatsapp", "facebook", "instagram", "linkedin", "x", "telegram",
@@ -55,6 +56,13 @@ async def registration_user(creds: HTTPAuthorizationCredentials = Depends(bearer
     """Allow the internal automation token only for connection registration."""
     if AUTOMATION_TOKEN and hmac.compare_digest(creds.credentials, AUTOMATION_TOKEN):
         return {"sub": "n8n-automation", "tenant_id": "default", "automation": True}
+    return await current_user(creds)
+
+
+async def action_user(creds: HTTPAuthorizationCredentials = Depends(bearer)):
+    """Allow the dedicated n8n action token to enqueue in the default tenant only."""
+    if N8N_ACTION_TOKEN and hmac.compare_digest(creds.credentials, N8N_ACTION_TOKEN):
+        return {"sub": "n8n-action-queue", "tenant_id": "default", "automation": True}
     return await current_user(creds)
 
 class ConnectionIn(BaseModel):
@@ -273,7 +281,7 @@ async def search_clients(q: str = Query(min_length=2, max_length=200), user=Depe
     return [dict(r) for r in rows]
 
 @router.post("/actions", status_code=202)
-async def queue_action(body: ActionIn, user=Depends(current_user), s: AsyncSession = Depends(db)):
+async def queue_action(body: ActionIn, user=Depends(action_user), s: AsyncSession = Depends(db)):
     platform = body.platform.lower().strip()
     if platform not in PLATFORMS:
         raise HTTPException(400, f"unsupported platform: {platform}")

@@ -14,6 +14,8 @@ router = APIRouter()
 bearer = HTTPBearer()
 SOCIAL = "http://social-service.shopno-platform.svc.cluster.local:80"
 AUTOMATION_TOKEN = os.getenv("SHOPNOLTD_INTERNAL_AUTOMATION_TOKEN", "")
+N8N_ACTION_TOKEN = os.getenv("SHOPNOLTD_N8N_ACTION_TOKEN", "")
+N8N_BLOG_DRAFT_TOKEN = os.getenv("SHOPNOLTD_N8N_BLOG_DRAFT_TOKEN", "")
 MESSAGING = "http://messaging-service.shopno-platform.svc.cluster.local:80"
 MEET = "http://meet-service.shopno-platform.svc.cluster.local:80"
 LIVE = "http://live-service.shopno-platform.svc.cluster.local:80"
@@ -36,6 +38,22 @@ async def omnichannel_registration_token(creds: HTTPAuthorizationCredentials = D
     """Permit the internal token only for connection registration."""
     token = creds.credentials
     if AUTOMATION_TOKEN and hmac.compare_digest(token, AUTOMATION_TOKEN):
+        return token
+    return await omnichannel_user_token(creds)
+
+
+async def omnichannel_action_token(creds: HTTPAuthorizationCredentials = Depends(bearer)) -> str:
+    """Allow a separately scoped n8n credential to enqueue actions only."""
+    token = creds.credentials
+    if N8N_ACTION_TOKEN and hmac.compare_digest(token, N8N_ACTION_TOKEN):
+        return token
+    return await omnichannel_user_token(creds)
+
+
+async def blog_draft_token(creds: HTTPAuthorizationCredentials = Depends(bearer)) -> str:
+    """Allow a separately scoped n8n credential to create drafts only."""
+    token = creds.credentials
+    if N8N_BLOG_DRAFT_TOKEN and hmac.compare_digest(token, N8N_BLOG_DRAFT_TOKEN):
         return token
     return await omnichannel_user_token(creds)
 
@@ -293,7 +311,7 @@ async def omnichannel_search_clients(q: str = Query(min_length=2, max_length=200
 
 @router.post("/omnichannel/actions")
 async def omnichannel_action(body: dict, creds: HTTPAuthorizationCredentials = Depends(bearer)):
-    token = await omnichannel_user_token(creds)
+    token = await omnichannel_action_token(creds)
     return await call("POST", f"{SOCIAL}/api/v1/omnichannel/actions", token, json=body)
 
 
@@ -310,7 +328,14 @@ async def blog_post(slug: str): return await public_call("GET", f"{SOCIAL}/api/v
 
 
 @router.post("/blog")
-async def blog_create(body: dict, creds: HTTPAuthorizationCredentials = Depends(bearer)): return await call("POST", f"{SOCIAL}/api/v1/blog", creds.credentials, json=body)
+async def blog_create(body: dict, creds: HTTPAuthorizationCredentials = Depends(bearer)):
+    token = creds.credentials
+    if N8N_BLOG_DRAFT_TOKEN and hmac.compare_digest(token, N8N_BLOG_DRAFT_TOKEN):
+        if body.get("status", "draft") != "draft":
+            raise HTTPException(status_code=403, detail="n8n automation may create drafts only")
+    else:
+        token = await omnichannel_user_token(creds)
+    return await call("POST", f"{SOCIAL}/api/v1/blog", token, json=body)
 
 
 @router.put("/blog/{post_id}")

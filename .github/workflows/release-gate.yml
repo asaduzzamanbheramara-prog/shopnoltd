@@ -110,15 +110,22 @@ jobs:
           files = [
               Path('ops/n8n/workflows/shopnoltd-omnichannel-action-queue.json'),
               Path('ops/n8n/workflows/shopnoltd-platform-account-registry.json'),
+              Path('ops/n8n/workflows/shopnoltd-blog-draft-intake.json'),
               Path('k8s/services/n8n/workflows/shopnoltd-omnichannel-action-queue.json'),
               Path('k8s/services/n8n/workflows/shopnoltd-platform-account-registry.json'),
+              Path('k8s/services/n8n/workflows/shopnoltd-blog-draft-intake.json'),
           ]
           for path in files:
               workflow = json.loads(path.read_text())
+              should_be_activated_by_importer = path.name in {'shopnoltd-platform-account-registry.json', 'shopnoltd-blog-draft-intake.json'}
               if workflow.get('active') is not False:
-                  raise SystemExit(f'{path}: workflow must remain inactive until credentials and live tests pass')
+                  raise SystemExit(f'{path}: source workflow JSON must remain inactive; GitOps controls activation after validation')
               if any(node.get('continueOnFail') is True for node in workflow.get('nodes', [])):
                   raise SystemExit(f'{path}: downstream API failures must not be reported as successful webhook responses')
+              auth_nodes = [node for node in workflow.get('nodes', []) if node.get('name') == 'Authenticate Webhook']
+              if should_be_activated_by_importer:
+                  if len(auth_nodes) != 1 or 'SHOPNOLTD_N8N_WEBHOOK_SECRET' not in json.dumps(auth_nodes[0].get('parameters', {})):
+                      raise SystemExit(f'{path}: active webhook workflow must fail closed on the shared webhook secret')
               if path.name == 'shopnoltd-platform-account-registry.json':
                   normalize_nodes = [node for node in workflow.get('nodes', []) if node.get('name') == 'Normalize Account']
                   if len(normalize_nodes) != 1:
@@ -127,6 +134,13 @@ jobs:
                   for marker in ("throw new Error('unsupported_platform')", "throw new Error('platform_account_id_required')"):
                       if marker not in code:
                           raise SystemExit(f'{path}: invalid account input must stop before Register Connection')
+              if path.name == 'shopnoltd-blog-draft-intake.json':
+                  normalize_nodes = [node for node in workflow.get('nodes', []) if node.get('name') == 'Validate Blog Draft']
+                  if len(normalize_nodes) != 1 or "status:'draft'" not in normalize_nodes[0].get('parameters', {}).get('jsCode', ''):
+                      raise SystemExit(f'{path}: blog automation must force draft status')
+                  create_nodes = [node for node in workflow.get('nodes', []) if node.get('name') == 'Create Shopnoltd Draft']
+                  if len(create_nodes) != 1 or 'SHOPNOLTD_N8N_BLOG_DRAFT_TOKEN' not in json.dumps(create_nodes[0].get('parameters', {})):
+                      raise SystemExit(f'{path}: blog draft creation must use the dedicated scoped token')
               if path.name == 'shopnoltd-omnichannel-action-queue.json':
                   serialized_workflow = json.dumps(workflow)
                   if 'SHOPNOLTD_INTERNAL_AUTOMATION_TOKEN' in serialized_workflow:
@@ -150,6 +164,11 @@ jobs:
                       raise SystemExit(f'{path}: unsupported platforms, missing actions, and missing connection IDs must stop before Queue in Shopnoltd')
                   if not (code.index(markers[0]) < code.index('return [{json:{')):
                       raise SystemExit(f'{path}: input validation must run before normalized data is emitted')
+          importer = Path('k8s/services/n8n/workflow-import-job.yaml').read_text()
+          if 'shopnoltd-platform-account-registry.json --activeState=true' not in importer or 'shopnoltd-blog-draft-intake.json --activeState=true' not in importer:
+              raise SystemExit('GitOps importer must activate only the webhook-authenticated account registry and blog draft workflows')
+          if 'shopnoltd-omnichannel-action-queue.json --activeState=false' not in importer:
+              raise SystemExit('n8n action queue must remain inactive until the provider action executor is verified')
           social_security = Path('platform/social-service/app/core/security.py').read_text()
           social_api = Path('platform/social-service/app/api/omnichannel.py').read_text()
           api_facade = Path('platform/api-service/app/api/v1.py').read_text()
@@ -161,6 +180,13 @@ jobs:
               raise SystemExit('API facade must separate normal JWT auth from registration-only automation auth')
           if 'token = await omnichannel_registration_token(creds)' not in api_facade:
               raise SystemExit('connection registration route must use registration-only automation auth')
+          if 'async def omnichannel_action_token(' not in api_facade or 'async def blog_draft_token(' not in api_facade:
+              raise SystemExit('n8n action and blog draft credentials must have separate scoped API auth helpers')
+          if 'N8N_ACTION_TOKEN' not in social_api or 'async def action_user(' not in social_api:
+              raise SystemExit('social action queue must accept only the separate scoped action credential or a normal user JWT')
+          blog_api = Path('platform/social-service/app/api/blog.py').read_text()
+          if 'N8N_BLOG_DRAFT_TOKEN' not in blog_api or 'n8n automation may create drafts only' not in blog_api:
+              raise SystemExit('social blog API must restrict n8n credentials to draft creation')
           if api_facade.count('omnichannel_user_token(creds)') < 10:
               raise SystemExit('omnichannel read/update/delete/action routes must continue to require normal JWT auth')
           print('n8n staging and route-scoped automation-token security checks passed.')

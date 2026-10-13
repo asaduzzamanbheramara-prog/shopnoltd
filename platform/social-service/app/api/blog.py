@@ -1,4 +1,6 @@
 from datetime import datetime, timezone
+import hmac
+import os
 import re
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -13,6 +15,7 @@ from app.models.models import BlogPost
 
 router = APIRouter()
 bearer = HTTPBearer(auto_error=False)
+N8N_BLOG_DRAFT_TOKEN = os.getenv("SHOPNOLTD_N8N_BLOG_DRAFT_TOKEN", "")
 
 
 async def db():
@@ -138,7 +141,13 @@ async def get_blog_post(slug: str, s: AsyncSession = Depends(db)):
 
 
 @router.post("", response_model=BlogPostOut, status_code=201)
-async def create_blog_post(body: BlogPostIn, user=Depends(current_user), s: AsyncSession = Depends(db)):
+async def create_blog_post(body: BlogPostIn, creds: HTTPAuthorizationCredentials | None = Depends(bearer), s: AsyncSession = Depends(db)):
+    if creds is not None and N8N_BLOG_DRAFT_TOKEN and hmac.compare_digest(creds.credentials, N8N_BLOG_DRAFT_TOKEN):
+        if body.status != "draft":
+            raise HTTPException(403, "n8n automation may create drafts only")
+        user = {"sub": "n8n-blog-drafter", "tenant_id": "default"}
+    else:
+        user = await current_user(creds)
     slug = slugify(body.slug or body.title)
     if (await s.execute(select(BlogPost).where(BlogPost.slug == slug))).scalar_one_or_none():
         raise HTTPException(409, "slug already exists")
