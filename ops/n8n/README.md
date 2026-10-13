@@ -119,6 +119,16 @@ Do not commit:
 
 The PostgreSQL password exposed during the implementation should be rotated before production use.
 
+## Runtime secret contract
+
+The n8n pod receives webhook/action/blog values from the existing `shopno-apps/n8n-secret` through `envFrom`. Configure these keys there:
+
+- `SHOPNOLTD_N8N_WEBHOOK_SECRET`: shared header value required as `x-shopnoltd-webhook-secret` on account-registration and blog-draft webhooks.
+- `SHOPNOLTD_N8N_BLOG_DRAFT_TOKEN`: must match `token` in `shopno-platform/shopnoltd-n8n-blog-draft-secret`.
+- `SHOPNOLTD_N8N_ACTION_TOKEN`: must match `token` in `shopno-platform/shopnoltd-n8n-action-secret`; action workflow remains inactive until the executor is implemented and tested.
+
+The two `shopno-platform` Secret objects are optional references in deployments so an absent token cannot prevent unrelated website services from starting. Missing credentials cause the automation endpoints to reject requests rather than fall back to the broad internal automation token. Never place any secret values in workflow JSON or Git.
+
 ## Release gate
 
 Do not publish/activate the workflows merely because they import successfully. Required checks are:
