@@ -83,11 +83,11 @@ Availability is recorded in platform_capabilities because provider capabilities 
 
 ## Current integration readiness
 
-The checked-in workflows are integration scaffolding, not proof that the platforms are connected. The n8n deployment must be running, provider credentials and OAuth grants must be configured in n8n, the internal automation token must match the API/social-service secret, and each enabled provider must pass a live account-connect and end-to-end test. The imported workflows must remain inactive until those checks pass.
+The checked-in workflows are integration scaffolding, not proof that the platforms are connected. The account-registry workflow may use the registration-only internal automation token; the action-queue workflow must never use that token. The action queue remains fail-closed until a separately approved, least-privilege API credential is configured and tested. Provider credentials and OAuth grants must be configured, and each enabled provider must pass a live account-connect and end-to-end test. The imported workflows must remain inactive until those checks pass.
 
 **Blog publishing is not wired to n8n by these omnichannel workflows.** The Shopnoltd blog API currently uses authenticated user/role context for authoring. Do not reuse the broad internal automation token to impersonate a blog author or publish articles. A separate narrowly scoped, audited draft-creation integration is required before blog automation can be enabled. Use draft-first human approval for AdSense-oriented content.
 
-The action/account webhook endpoints must also have caller authentication configured in the n8n credential store before production activation. Workflow JSON must not contain credentials or tokens. A successful workflow import alone is not a readiness check.
+The action/account webhook endpoints must also have caller authentication configured in the n8n credential store before production activation. Workflow JSON must not contain credentials or tokens. The action queue deliberately has no API Authorization header until its approved normal-user/service-account credential is wired; unauthenticated calls should be rejected by the API. Never restore `SHOPNOLTD_INTERNAL_AUTOMATION_TOKEN` on the action endpoint. A successful workflow import alone is not a readiness check.
 
 ## n8n
 
