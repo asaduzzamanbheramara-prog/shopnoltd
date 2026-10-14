@@ -312,6 +312,35 @@
           }
         }
       }
+    },
+    {
+      "if": {
+        "properties": {
+          "verification": {
+            "properties": {
+              "method": {
+                "const": "publisher-checksum"
+              }
+            },
+            "required": [
+              "method"
+            ]
+          }
+        },
+        "required": [
+          "verification"
+        ]
+      },
+      "then": {
+        "properties": {
+          "verification": {
+            "required": [
+              "checksum_algorithm",
+              "checksum"
+            ]
+          }
+        }
+      }
     }
   ]
 }
