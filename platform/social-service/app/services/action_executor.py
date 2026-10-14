@@ -60,7 +60,7 @@ async def process_one() -> bool:
         row = (await s.execute(text("""
             WITH candidate AS (
               SELECT id FROM platform_actions
-              WHERE status IN ('queued','retry_wait')
+              WHERE status IN ('queued','retry_wait') AND approval_status='approved'
                 AND (next_attempt_at IS NULL OR next_attempt_at <= NOW())
                 AND attempt_count < :max_attempts
               ORDER BY created_at FOR UPDATE SKIP LOCKED LIMIT 1
