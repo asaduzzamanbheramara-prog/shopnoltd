@@ -36,6 +36,7 @@ class BlogPost(Base):
     content = Column(Text, nullable=False)
     cover_image = Column(String(1024), nullable=True)
     status = Column(String(16), nullable=False, default="draft", index=True)
+    scheduled_at = Column(DateTime, nullable=True, index=True)
     published_at = Column(DateTime, nullable=True, index=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
