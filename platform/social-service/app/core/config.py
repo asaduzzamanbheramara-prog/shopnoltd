@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     keycloak_jwks_url: str | None = None
     keycloak_audience: str = "api-service"
     storage_service_url: str = "http://storage-service.shopno-platform.svc.cluster.local:8080"
+    # Disabled by default: only enable after controlled provider E2E verification.
+    action_worker_enabled: bool = False
     # Provider OAuth configuration is injected from the runtime secret manager.
     # Never commit client secrets or user access/refresh tokens to Git.
     provider_oauth_encryption_key: str | None = None
@@ -46,9 +48,7 @@ class Settings(BaseSettings):
     @property
     def cors_origin_regex(self) -> str:
         # allow_origins does exact string matching in Starlette's CORSMiddleware,
-        # so a literal "*" embedded in a domain string (e.g. "https://*.shopnoltd.dpdns.org")
-        # never actually matches any real browser Origin header. This regex matches
-        # the bare root domain and any subdomain instead.
+        # so a literal "*" embedded in a domain string never matches a browser Origin.
         return r"^https://([a-z0-9-]+\.)*shopnoltd\.dpdns\.org$"
 
 
