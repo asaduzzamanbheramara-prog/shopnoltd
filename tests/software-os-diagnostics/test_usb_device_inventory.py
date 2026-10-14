@@ -61,6 +61,13 @@ class UsbInventoryTests(unittest.TestCase):
         self.assertEqual(found[0]["model"], "External USB")
         self.assertFalse(found[0]["write_authorized"])
 
+    def test_malformed_cross_platform_inventory_fails_closed(self):
+        from usb_device_inventory import parse_macos_inventory, parse_windows_inventory
+
+        self.assertEqual(parse_windows_inventory({"unexpected": "shape"}), [])
+        with self.assertRaises(ValueError):
+            parse_macos_inventory({"not": "a list"}, {})
+
     def test_unknown_model_is_handled(self):
         found = parse_lsblk({"blockdevices": [
             {"type": "disk", "rm": "1", "size": 1024}
