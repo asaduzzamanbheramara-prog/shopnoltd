@@ -26,6 +26,7 @@ test('rejects non-HTTPS and credential-bearing URLs', () => {
 
 test('only permits HTTPS external links to be opened externally', () => {
   assert.equal(isSafeExternalUrl('https://www.example.com/help', PORTAL), true);
+  assert.equal(isSafeExternalUrl('https://user:pass@www.example.com/help', PORTAL), false);
   assert.equal(isSafeExternalUrl('http://www.example.com/help', PORTAL), false);
   assert.equal(isSafeExternalUrl('javascript:alert(1)', PORTAL), false);
   assert.equal(isSafeExternalUrl('file:///etc/passwd', PORTAL), false);
