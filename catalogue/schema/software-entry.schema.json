@@ -133,7 +133,7 @@
         },
         "checksum": {
           "type": "string",
-          "pattern": "^[a-fA-F0-9]{64}$"
+          "pattern": "^(?:[a-fA-F0-9]{64}|[a-fA-F0-9]{128})$"
         },
         "status": {
           "type": "string",
@@ -247,6 +247,66 @@
                 "type": "string",
                 "minLength": 1,
                 "maxLength": 120
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "verification": {
+            "properties": {
+              "checksum_algorithm": {
+                "const": "sha256"
+              }
+            },
+            "required": [
+              "checksum_algorithm"
+            ]
+          }
+        },
+        "required": [
+          "verification"
+        ]
+      },
+      "then": {
+        "properties": {
+          "verification": {
+            "properties": {
+              "checksum": {
+                "pattern": "^[a-fA-F0-9]{64}$"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "verification": {
+            "properties": {
+              "checksum_algorithm": {
+                "const": "sha512"
+              }
+            },
+            "required": [
+              "checksum_algorithm"
+            ]
+          }
+        },
+        "required": [
+          "verification"
+        ]
+      },
+      "then": {
+        "properties": {
+          "verification": {
+            "properties": {
+              "checksum": {
+                "pattern": "^[a-fA-F0-9]{128}$"
               }
             }
           }
