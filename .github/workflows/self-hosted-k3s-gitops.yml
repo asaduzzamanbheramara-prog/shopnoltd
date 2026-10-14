@@ -605,6 +605,23 @@ jobs:
           kubectl -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o yaml
           exit 1
 
+      - name: Verify n8n is healthy before trigger reload
+        shell: bash
+        run: |
+          set -euo pipefail
+          desired="$(kubectl --request-timeout=30s -n shopno-apps get deployment n8n -o jsonpath='{.spec.replicas}')"
+          ready="$(kubectl --request-timeout=30s -n shopno-apps get deployment n8n -o jsonpath='{.status.readyReplicas}')"
+          available="$(kubectl --request-timeout=30s -n shopno-apps get deployment n8n -o jsonpath='{.status.availableReplicas}')"
+          updated="$(kubectl --request-timeout=30s -n shopno-apps get deployment n8n -o jsonpath='{.status.updatedReplicas}')"
+          if [ -z "$desired" ] || [ "$desired" -lt 1 ] || [ "$ready" != "$desired" ] || [ "$available" != "$desired" ] || [ "$updated" != "$desired" ]; then
+            echo "ERROR: n8n is not healthy before trigger reload (ready=${ready:-0}, available=${available:-0}, updated=${updated:-0}, desired=${desired:-0})."
+            kubectl --request-timeout=30s -n shopno-apps get deployment n8n -o wide
+            kubectl --request-timeout=30s -n shopno-apps get pods -l app.kubernetes.io/name=n8n -o wide
+            kubectl --request-timeout=30s -n shopno-apps get events --sort-by=.lastTimestamp | tail -n 60
+            exit 1
+          fi
+          echo "n8n healthy before trigger reload: ready=$ready/$desired, available=$available/$desired, updated=$updated/$desired."
+
       - name: Restart n8n after workflow definitions are published
         shell: bash
         run: |
