@@ -37,8 +37,8 @@ async def _finish(s, action_id: str, status: str, *, result: dict | None = None,
         UPDATE platform_actions
         SET status=:status, response_payload=CAST(:result AS jsonb),
             error_code=:code, error_message=:message,
-            next_attempt_at=CASE WHEN :delay IS NULL THEN NULL
-              ELSE NOW() + (:delay * INTERVAL '1 second') END,
+            next_attempt_at=CASE WHEN CAST(:delay AS INTEGER) IS NULL THEN NULL
+              ELSE NOW() + (CAST(:delay AS INTEGER) * INTERVAL '1 second') END,
             completed_at=CASE WHEN :is_terminal THEN NOW() ELSE NULL END, updated_at=NOW()
         WHERE id=:id
     """), {"id": action_id, "status": status, "result": json.dumps(result or {}),
