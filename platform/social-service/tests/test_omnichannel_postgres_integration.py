@@ -82,7 +82,7 @@ class OmnichannelPostgresIntegrationTests(unittest.IsolatedAsyncioTestCase):
                 WHERE tenant_id=:tenant AND idempotency_key=:key
             """), {"tenant": self.tenant, "key": key})).all()
         self.assertEqual(len(rows), 1)
-        self.assertEqual(str(rows[0][0]), original["id"])
+        self.assertEqual(str(rows[0][0]), str(original["id"]))
         self.assertEqual(rows[0][1], {"text": "original"})
 
     async def test_approval_is_tenant_scoped_and_audited_once(self):
