@@ -2,7 +2,7 @@
 
 ## Existing implementation found
 
-The repository already contains `apps/desktop-shell`, an Electron wrapper for the Shopnoltd web/admin portals. The reviewed `src/main.js` sets `nodeIntegration: false`, `contextIsolation: true`, and `sandbox: true`. Its `src/preload.js` explicitly exposes no privileged bridge. This is a good security boundary for a web portal, but it means the current shell cannot install software, inspect disks, change boot settings, or repair an operating system.
+The repository already contains `apps/desktop-shell`, an Electron wrapper for the Shopnoltd web/admin portals. The reviewed `src/main.js` sets `nodeIntegration: false`, `contextIsolation: true`, and `sandbox: true`. Its `src/preload.js` explicitly exposes no privileged bridge. The navigation boundary now trusts only the exact HTTPS origin baked into the selected build (not all hostname suffix matches) and opens only HTTPS external links in the system browser. Node's built-in test runner covers lookalike hosts, sibling portals, unsafe protocols, credential-bearing URLs, and malformed input. This is a good security boundary for a web portal, but it means the current shell cannot install software, inspect disks, change boot settings, or repair an operating system.
 
 ## Do not turn the portal into an administrator shell
 
