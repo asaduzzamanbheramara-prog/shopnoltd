@@ -1,5 +1,6 @@
 """Shopnoltd Social Service."""
 
+import asyncio
 from contextlib import asynccontextmanager
 
 import structlog
@@ -22,10 +23,23 @@ async def lifespan(app: FastAPI):
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
     await wait_for_dependencies("social-service", _check_database, redis_client)
+    worker_task = None
+    if settings.action_worker_enabled:
+        from app.services.action_executor import run_action_worker
+        worker_task = asyncio.create_task(run_action_worker(), name="social-action-worker")
+        log.warning("social_action_worker.enabled", adapter_scope="telegram.send_message_only")
     log.info("social-service.started", env=settings.env)
-    yield
-    await engine.dispose()
-    await redis_client.aclose()
+    try:
+        yield
+    finally:
+        if worker_task is not None:
+            worker_task.cancel()
+            try:
+                await worker_task
+            except asyncio.CancelledError:
+                pass
+        await engine.dispose()
+        await redis_client.aclose()
 
 
 app = FastAPI(title="Shopnoltd Social Service", version="0.6.0", lifespan=lifespan)
@@ -66,4 +80,4 @@ async def readyz():
 
 @app.get("/metrics", include_in_schema=False)
 def metrics():
-    return Response(generate_latest(), media_type="text/plain; version=0.0.4")
+    return Response(generate_latest(), media_type="text/plain; version=0.4.0")
