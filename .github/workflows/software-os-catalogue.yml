@@ -8,7 +8,9 @@ on:
       - 'docs/universal-software-os-center/**'
       - 'scripts/validate-software-os-catalogue.py'
       - 'scripts/build-software-os-catalogue.py'
+      - 'tools/software-os-diagnostics/**'
       - 'tests/software-os-catalogue/**'
+      - 'tests/software-os-diagnostics/**'
       - 'frontend/software-os-center.html'
       - 'frontend/index.html'
       - 'frontend/Dockerfile'
@@ -37,11 +39,13 @@ jobs:
           python-version: '3.12'
       - name: Install schema validator
         run: python -m pip install 'jsonschema==4.23.0'
-      - name: Validate sample catalogue entry
+      - name: Validate all catalogue entries
         run: python scripts/validate-software-os-catalogue.py
       - name: Generate browser catalogue JSON
         run: python scripts/build-software-os-catalogue.py
       - name: Run catalogue policy regression tests
         run: python -m unittest discover -s tests/software-os-catalogue -p 'test_*.py' -v
+      - name: Run read-only diagnostics tests
+        run: python -m unittest discover -s tests/software-os-diagnostics -p 'test_*.py' -v
       - name: Build static frontend image
         run: docker build -f frontend/Dockerfile -t shopnoltd-software-os-center .
