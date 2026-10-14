@@ -334,6 +334,15 @@ class TelegramExecutorTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn('"provider_message_id": 9001', finish_params["result"])
         self.assertIn('"provider_chat_id": 42', finish_params["result"])
 
+    async def test_malformed_success_response_never_claims_delivery(self):
+        with patch.object(_FakeTelegramSendResponse, "json", return_value={"ok": True, "result": {}}):
+            processed, session = await self._run(200)
+        self.assertTrue(processed)
+        finish_params = session.calls[-1][1]
+        self.assertEqual(finish_params["status"], "needs_review")
+        self.assertEqual(finish_params["code"], "provider_result_unverified")
+        self.assertNotIn('"provider_message_id"', finish_params["result"])
+
     async def test_explicit_429_is_scheduled_for_bounded_retry(self):
         processed, session = await self._run(429)
         self.assertTrue(processed)
