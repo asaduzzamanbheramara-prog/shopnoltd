@@ -283,14 +283,15 @@ async def search_clients(q: str = Query(min_length=2, max_length=200), user=Depe
 @router.post("/actions", status_code=202)
 async def queue_action(body: ActionIn, user=Depends(action_user), s: AsyncSession = Depends(db)):
     platform = body.platform.lower().strip()
+    verb = body.action.lower().strip()
     if platform not in PLATFORMS:
         raise HTTPException(400, f"unsupported platform: {platform}")
     tenant_id = user.get("tenant_id", "default")
     capability = (await s.execute(text(
         "SELECT availability FROM platform_capabilities WHERE platform=:platform AND action=:action"
-    ), {"platform": platform, "action": body.action})).scalar_one_or_none()
+    ), {"platform": platform, "action": verb})).scalar_one_or_none()
     if capability is None:
-        raise HTTPException(400, f"unsupported action for platform: {platform}/{body.action}")
+        raise HTTPException(400, f"unsupported action for platform: {platform}/{verb}")
 
     if body.connection_id:
         connection = (await s.execute(text(
@@ -302,20 +303,48 @@ async def queue_action(body: ActionIn, user=Depends(action_user), s: AsyncSessio
             raise HTTPException(409, "connection platform does not match action platform")
 
     action_id = str(uuid4())
+    idem = body.idempotency_key or action_id
+    params = {
+        "id": action_id, "tenant": tenant_id, "connection_id": body.connection_id or "",
+        "client": body.client_id, "platform": platform, "action": verb,
+        "target_type": body.target_type, "target_id": body.target_id,
+        "idem": idem, "payload": __import__("json").dumps(body.payload),
+    }
     row = (await s.execute(text(
         """INSERT INTO platform_actions
         (id, tenant_id, connection_id, client_id, platform, action, target_type, target_id,
          status, idempotency_key, request_payload)
         VALUES (:id, :tenant, NULLIF(:connection_id,'')::uuid, :client, :platform, :action,
-                :target_type, :target_id, 'queued', NULLIF(:idem,''), :payload::jsonb)
-        ON CONFLICT (tenant_id, idempotency_key) DO UPDATE SET updated_at=NOW()
+                :target_type, :target_id, 'queued', NULLIF(:idem,''), CAST(:payload AS jsonb))
+        ON CONFLICT (tenant_id, idempotency_key) DO NOTHING
         RETURNING id, status, platform, action, created_at"""
-    ), {
-        "id": action_id, "tenant": tenant_id, "connection_id": body.connection_id or "",
-        "client": body.client_id, "platform": platform, "action": body.action,
-        "target_type": body.target_type, "target_id": body.target_id,
-        "idem": body.idempotency_key or action_id,
-        "payload": __import__("json").dumps(body.payload),
-    })).mappings().one()
+    ), params)).mappings().one_or_none()
+    if row is None:
+        existing = (await s.execute(text(
+            """SELECT id, status, platform, action, connection_id, client_id, target_type,
+                      target_id, request_payload, created_at
+               FROM platform_actions
+               WHERE tenant_id=:tenant AND idempotency_key=:idem"""
+        ), {"tenant": tenant_id, "idem": idem})).mappings().one_or_none()
+        if existing is None:
+            raise HTTPException(409, "idempotency key conflict could not be resolved")
+        existing_payload = existing["request_payload"] or {}
+        if isinstance(existing_payload, str):
+            try:
+                existing_payload = __import__("json").loads(existing_payload)
+            except ValueError:
+                raise HTTPException(409, "idempotency key is associated with an invalid stored payload") from None
+        same_request = (
+            existing["platform"] == platform
+            and existing["action"] == verb
+            and str(existing["connection_id"] or "") == str(body.connection_id or "")
+            and existing["client_id"] == body.client_id
+            and existing["target_type"] == body.target_type
+            and existing["target_id"] == body.target_id
+            and existing_payload == body.payload
+        )
+        if not same_request:
+            raise HTTPException(409, "idempotency key already used for a different action")
+        row = {key: existing[key] for key in ("id", "status", "platform", "action", "created_at")}
     await s.commit()
     return {**dict(row), "capability": capability}
