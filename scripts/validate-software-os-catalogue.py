@@ -27,6 +27,20 @@ def main() -> int:
 
     validator = Draft202012Validator(schema, format_checker=FormatChecker())
     failed = False
+    seen_ids: dict[str, Path] = {}
+    for path, entry in entries:
+        entry_id = entry.get("id") if isinstance(entry, dict) else None
+        if not isinstance(entry_id, str):
+            continue
+        if entry_id in seen_ids:
+            failed = True
+            print(
+                f"ERROR {path.relative_to(ROOT)}:id: duplicate catalogue id "
+                f"{entry_id!r}; first declared in {seen_ids[entry_id].relative_to(ROOT)}",
+                file=sys.stderr,
+            )
+        else:
+            seen_ids[entry_id] = path
     for path, entry in entries:
         errors = sorted(validator.iter_errors(entry), key=lambda err: list(map(str, err.path)))
         if errors:
