@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'catalogue/**'
+      - 'docs/universal-software-os-center/**'
       - 'scripts/validate-software-os-catalogue.py'
       - 'tests/software-os-catalogue/**'
       - 'frontend/software-os-center.html'
