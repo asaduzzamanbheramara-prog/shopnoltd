@@ -343,7 +343,7 @@ async def connect_telegram_bot(
                 username, display_name, scopes, encrypted_access_token, metadata, status)
                VALUES (:id, :tenant, :user, 'telegram', 'telegram', :account_id,
                        :username, :display_name, '[]'::jsonb, :encrypted,
-                       :metadata::jsonb, 'connected')
+                       CAST(:metadata AS jsonb), 'connected')
                ON CONFLICT (tenant_id, provider, platform, provider_account_id)
                DO UPDATE SET user_id=EXCLUDED.user_id, username=EXCLUDED.username,
                              display_name=EXCLUDED.display_name,
