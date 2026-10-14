@@ -84,12 +84,9 @@ async def process_one() -> bool:
             await _finish(s, aid, "unsupported", code="provider_action_not_implemented",
                           message="No verified provider adapter is available for this action.")
             return True
-        if not settings.telegram_bot_token:
-            await _finish(s, aid, "failed", code="provider_not_configured",
-                          message="Telegram bot credentials are not configured.")
-            return True
         conn = (await s.execute(text("""
-            SELECT status,platform FROM social_connections
+            SELECT status,platform,platform_account_id,access_token_ref
+            FROM social_connections
             WHERE id=:id AND tenant_id=:tenant
         """), {"id": action["connection_id"], "tenant": action["tenant_id"]})).mappings().one_or_none()
         if not conn or conn["platform"] != platform or conn["status"] != "connected":
@@ -103,6 +100,27 @@ async def process_one() -> bool:
             await _finish(s, aid, "unsupported", code="capability_not_verified",
                           message="Provider capability is not explicitly marked supported.")
             return True
+        if not conn["access_token_ref"]:
+            await _finish(s, aid, "failed", code="connection_credentials_not_bound",
+                          message="This Telegram connection has no tenant-bound encrypted credential.")
+            return True
+        token_row = (await s.execute(text("""
+            SELECT encrypted_access_token FROM omnichannel_oauth_tokens
+            WHERE id::text=:ref AND tenant_id=:tenant AND provider='telegram'
+              AND platform='telegram' AND provider_account_id=:account_id AND status='connected'
+        """), {"ref": conn["access_token_ref"], "tenant": action["tenant_id"],
+              "account_id": conn["platform_account_id"]})).mappings().one_or_none()
+        if not token_row:
+            await _finish(s, aid, "failed", code="connection_credentials_unavailable",
+                          message="No matching tenant-bound Telegram credential is available.")
+            return True
+        try:
+            from app.api.omnichannel_oauth import _fernet
+            token = _fernet().decrypt(token_row["encrypted_access_token"].encode()).decode()
+        except Exception:
+            await _finish(s, aid, "failed", code="connection_credentials_unavailable",
+                          message="The encrypted Telegram credential could not be resolved.")
+            return True
         try:
             body = telegram_message_payload(verb, payload, action.get("target_id"))
         except ValueError as exc:
@@ -112,7 +130,7 @@ async def process_one() -> bool:
         try:
             async with httpx.AsyncClient(timeout=15) as client:
                 response = await client.post(
-                    f"https://api.telegram.org/bot{settings.telegram_bot_token}/sendMessage", json=body)
+                    f"https://api.telegram.org/bot{token}/sendMessage", json=body)
         except (httpx.TimeoutException, httpx.NetworkError):
             await _finish(s, aid, "needs_review", code="provider_result_unknown",
                           message="Provider result is unknown; retry stopped to avoid duplicate delivery.")
