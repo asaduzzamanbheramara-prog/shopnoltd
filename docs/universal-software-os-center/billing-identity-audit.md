@@ -43,3 +43,14 @@ Before adding a software entitlement table or granting catalogue access, resolve
 - Verify existing payment writes and schema constraints in a disposable test database before adding any new foreign key or migration. Do not edit or run production migrations as part of this audit.
 
 This is a release blocker for a paid entitlement implementation, not a claim that all existing payment routes are broken. The repository has multiple payment paths and schema histories, so the runtime database state must be checked before drawing that broader conclusion.
+
+
+## Database-boundary follow-up (repository configuration review)
+
+The checked-in defaults point the OAuth service at database `oauth` and the payment service at database `payments`. The Kubernetes payment deployment overrides `DATABASE_URL` from the separate secret `payment-service-canonical-db`. The shared PostgreSQL migration Job instead connects to `POSTGRES_DB` from `postgres-secret` (falling back to `postgres` in its shell command) and runs the shared `k8s/services/postgres/migration/*.sql` files there; it does not read the payment service's `DATABASE_URL` secret.
+
+This means repository source alone does **not** prove that the shared payment-table reconciliation migration targets the same database used by the payment service. It also cannot make a PostgreSQL foreign key in the payment database reference the OAuth service's `oauth.users` table, because PostgreSQL foreign keys cannot span databases. The `public.users(id)` references in migration `012-payment-schema-reconciliation.sql` therefore require an explicit database-target/schema review before they can be considered a valid identity constraint.
+
+**Required before release:** verify the actual value of `payment-service-canonical-db/DATABASE_URL`, `postgres-secret/POSTGRES_DB`, the migration Job's effective target, and the deployed schema using read-only checks. Do not print credentials or connection strings in CI logs. Then choose and document one ownership model for payment rows (prefer the verified JWT subject as a stable external identity key, or a canonical internal ID resolved through a trusted identity service) and enforce it consistently across wallets, transactions, transfers, and entitlements. Any schema repair must be a new, idempotent migration tested against disposable copies of both the migration target and payment-service database; do not edit historical migrations as a substitute for repairing an already-deployed database.
+
+This remains an explicit release blocker. No production database was accessed or changed during this repository review.
