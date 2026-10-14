@@ -603,6 +603,30 @@ jobs:
           kubectl -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o yaml
           exit 1
 
+      - name: Restart n8n after workflow definitions are published
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          # CLI publish writes state to PostgreSQL after n8n is already healthy in the sync waves.
+          # Restart only when the imported definitions or importer changed, so triggers reload.
+          if ! git diff --name-only "${GIT_REVISION}^" "${GIT_REVISION}" | grep -Eq "k8s/services/n8n/(workflow-import-job|workflows/|kustomization)"; then
+            echo 'No n8n workflow definitions/importer changed; restart not required.'
+            exit 0
+          fi
+
+          echo 'Restarting n8n so published workflow triggers are loaded by the running process.'
+          kubectl --request-timeout=30s -n shopno-apps rollout restart deployment/n8n
+          kubectl --request-timeout=30s -n shopno-apps rollout status deployment/n8n --timeout=300s
+          desired="$(kubectl --request-timeout=30s -n shopno-apps get deployment n8n -o jsonpath='{.spec.replicas}')"
+          ready="$(kubectl --request-timeout=30s -n shopno-apps get deployment n8n -o jsonpath='{.status.readyReplicas}')"
+          if [ -z "$desired" ] || [ "$desired" -lt 1 ] || [ "$ready" != "$desired" ]; then
+            echo "ERROR: n8n is not fully ready after workflow activation restart (ready=${ready:-0}, desired=${desired:-0})."
+            kubectl -n shopno-apps get deployment n8n -o wide
+            kubectl -n shopno-apps get pods -l app.kubernetes.io/name=n8n -o wide
+            exit 1
+          fi
+          echo "n8n rollout verified: ready replicas=$ready/$desired."
       - name: Restore Argo CD automated sync
         if: always()
         shell: bash
