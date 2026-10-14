@@ -39,11 +39,11 @@ async def _finish(s, action_id: str, status: str, *, result: dict | None = None,
             error_code=:code, error_message=:message,
             next_attempt_at=CASE WHEN :delay IS NULL THEN NULL
               ELSE NOW() + (:delay * INTERVAL '1 second') END,
-            completed_at=CASE WHEN :status IN ('succeeded','failed','unsupported','needs_review')
-              THEN NOW() ELSE NULL END, updated_at=NOW()
+            completed_at=CASE WHEN :is_terminal THEN NOW() ELSE NULL END, updated_at=NOW()
         WHERE id=:id
     """), {"id": action_id, "status": status, "result": json.dumps(result or {}),
-           "code": code, "message": message, "delay": retry_after})
+           "code": code, "message": message, "delay": retry_after,
+           "is_terminal": status in {"succeeded", "failed", "unsupported", "needs_review"}})
     await s.commit()
 
 
