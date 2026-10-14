@@ -514,7 +514,13 @@ async def my_provisioning_status(
     s: AsyncSession = Depends(db),
 ):
     """Return only the authenticated user's provisioning state, never provider secrets."""
-    payload = await verify_token(creds.credentials)
+    try:
+        payload = await verify_token(creds.credentials)
+    except (ValueError, PermissionError) as exc:
+        # Authentication failures are client errors, not unhandled 500s. Keep
+        # verifier details (which may contain token/header data) out of responses.
+        raise HTTPException(401, "invalid or expired authentication token") from exc
+
     keycloak_id = payload.get("sub")
     if not keycloak_id:
         raise HTTPException(401, "authenticated token is missing subject")
