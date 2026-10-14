@@ -134,6 +134,8 @@ async def ensure_user_mirror(payload: dict, s: AsyncSession) -> UserMirror:
             await s.execute(select(UserMirror).where(UserMirror.keycloak_id == keycloak_id))
         ).scalar_one_or_none()
         if existing:
+            await _ensure_account_provisioning_jobs(s, existing)
+            await s.commit()
             return existing
         email_owner = (
             await s.execute(select(UserMirror).where(UserMirror.email == email))
