@@ -32,6 +32,17 @@ def telegram_message_payload(action: str, payload: dict[str, Any], target_id: st
 
 
 async def _claim_one(s) -> dict[str, Any] | None:
+    # Never automatically replay a request interrupted after it may have reached a provider.
+    # Require reconciliation for stale processing rows instead of risking duplicate side effects.
+    await s.execute(text(
+        """
+        UPDATE platform_actions
+        SET status='needs_review', error_code='worker_interrupted',
+            error_message='Worker stopped during execution; reconcile provider state before retrying.',
+            completed_at=NOW(), updated_at=NOW()
+        WHERE status='processing' AND claimed_at < NOW() - INTERVAL '5 minutes'
+        """
+    ))
     # Claim and increment in one statement. SKIP LOCKED permits safe scale-out.
     row = (await s.execute(text(
         """
