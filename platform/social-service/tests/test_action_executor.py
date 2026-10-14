@@ -402,6 +402,72 @@ class TelegramExecutorTests(unittest.IsolatedAsyncioTestCase):
 
 
 
+    async def test_provider_timeout_stops_for_manual_reconciliation(self):
+        session = _FakeExecutionSession()
+
+        class TimeoutClient:
+            def __init__(self, *args, **kwargs):
+                pass
+            async def __aenter__(self):
+                return self
+            async def __aexit__(self, exc_type, exc, tb):
+                return False
+            async def post(self, url, json):
+                raise action_executor.httpx.TimeoutException("simulated timeout")
+
+        class FakeCipher:
+            @staticmethod
+            def decrypt(value):
+                return b"tenant-bound-bot-token"
+
+        with (
+            patch.object(action_executor, "SessionLocal", return_value=_FakeExecutionSessionContext(session)),
+            patch.object(action_executor.httpx, "AsyncClient", TimeoutClient),
+            patch.object(omnichannel_oauth, "_fernet", return_value=FakeCipher()),
+        ):
+            processed = await action_executor.process_one()
+
+        self.assertTrue(processed)
+        finish_params = session.calls[-1][1]
+        self.assertEqual(finish_params["status"], "needs_review")
+        self.assertEqual(finish_params["code"], "provider_result_unknown")
+        self.assertNotIn("tenant-bound-bot-token", repr(finish_params))
+        self.assertNotIn("simulated timeout", repr(finish_params))
+
+
+    async def test_provider_network_error_stops_for_manual_reconciliation(self):
+        session = _FakeExecutionSession()
+
+        class NetworkErrorClient:
+            def __init__(self, *args, **kwargs):
+                pass
+            async def __aenter__(self):
+                return self
+            async def __aexit__(self, exc_type, exc, tb):
+                return False
+            async def post(self, url, json):
+                raise action_executor.httpx.NetworkError("simulated connection failure")
+
+        class FakeCipher:
+            @staticmethod
+            def decrypt(value):
+                return b"tenant-bound-bot-token"
+
+        with (
+            patch.object(action_executor, "SessionLocal", return_value=_FakeExecutionSessionContext(session)),
+            patch.object(action_executor.httpx, "AsyncClient", NetworkErrorClient),
+            patch.object(omnichannel_oauth, "_fernet", return_value=FakeCipher()),
+        ):
+            processed = await action_executor.process_one()
+
+        self.assertTrue(processed)
+        finish_params = session.calls[-1][1]
+        self.assertEqual(finish_params["status"], "needs_review")
+        self.assertEqual(finish_params["code"], "provider_result_unknown")
+        self.assertNotIn("tenant-bound-bot-token", repr(finish_params))
+        self.assertNotIn("simulated connection failure", repr(finish_params))
+
+
 class _QueueResult:
     def __init__(self, scalar=None, row=None):
         self.scalar = scalar
