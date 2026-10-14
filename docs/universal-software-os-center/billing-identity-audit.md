@@ -54,3 +54,26 @@ This means repository source alone does **not** prove that the shared payment-ta
 **Required before release:** verify the actual value of `payment-service-canonical-db/DATABASE_URL`, `postgres-secret/POSTGRES_DB`, the migration Job's effective target, and the deployed schema using read-only checks. Do not print credentials or connection strings in CI logs. Then choose and document one ownership model for payment rows (prefer the verified JWT subject as a stable external identity key, or a canonical internal ID resolved through a trusted identity service) and enforce it consistently across wallets, transactions, transfers, and entitlements. Any schema repair must be a new, idempotent migration tested against disposable copies of both the migration target and payment-service database; do not edit historical migrations as a substitute for repairing an already-deployed database.
 
 This remains an explicit release blocker. No production database was accessed or changed during this repository review.
+
+## Follow-up: migration target and destructive reconciliation gate
+
+A second read-only pass verified the migration Job manifest, rather than relying only on a search excerpt:
+
+- `k8s/services/postgres/migration/migrate-job.yaml` imports `postgres-secret` and runs every mounted SQL file against `POSTGRES_HOST` (default `postgres`) and `POSTGRES_DB` (default `postgres`). It does **not** read the payment deployment's `payment-service-canonical-db` secret.
+- `k8s/services/payment-service/deployment.yaml` separately supplies `DATABASE_URL` from `payment-service-canonical-db`.
+- `platform/oauth-service/app/models/models.py` defines `users.id` as an application-generated UUID string and `users.keycloak_id` as a separate unique identity. `platform/oauth-service/app/api/users.py` returns these as `id` and `sub`, respectively.
+- `012-payment-schema-reconciliation.sql` contains a guarded table-replacement path: when its completion sentinel is absent, it checks several existing payment tables for rows, then drops/recreates those tables with user foreign keys. The row-count guard and RESTRICT constraints are useful fail-closed checks, but they do not prove that the target database is correct or that all business-critical data is represented in the checked tables.
+
+### Release-blocking decision
+
+This is not just an unknown runtime value: the repository manifests show that the migration Job and payment service obtain connection settings from different configuration sources. It is still unknown whether those secrets intentionally resolve to the same PostgreSQL database/schema in the deployed cluster. The SQL also assumes `public.users(id)` is present in the migration target. Do not run or re-run this reconciliation Job, alter its target, or apply another payment migration until an authorized operator confirms the target safely.
+
+### Required read-only verification (do not print secret values)
+
+1. Confirm the payment service's effective database host/database/schema and the migration Job's effective host/database/schema using approved tooling that redacts credentials. Compare only non-secret connection metadata; never print a full connection URL or password.
+2. On each intended target, inspect `current_database()`, `current_schema()`, the `public.users` table definition, the payment tables, foreign-key definitions, and the migration sentinel. Use a read-only database role and avoid selecting customer/payment rows.
+3. Verify whether `public.users.id` contains the same canonical identifier as the payment JWT subject. The source model says these are distinct fields; do not assume they are interchangeable.
+4. In disposable test databases, test both the already-applied and first-application paths of `012-payment-schema-reconciliation.sql`, including non-empty payment tables and missing/wrong `public.users`. Confirm that unsafe cases stop without dropping or modifying data.
+5. Only after the canonical identity and database target are proven should a separate reviewed change introduce an explicit identity-resolution boundary and integration tests. Do not solve this by trusting a client email, blindly changing a foreign key, or guessing which database is canonical.
+
+No cluster, secret, or database was accessed by this repository-only audit. Paid catalogue access remains disabled/not implemented by this PR.
