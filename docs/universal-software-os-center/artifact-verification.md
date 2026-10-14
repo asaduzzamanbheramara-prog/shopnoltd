@@ -25,6 +25,22 @@ provided; a checksum only establishes equality with the supplied digest.
 
 Exit codes: `0` match, `1` mismatch, `2` invalid input or file error.
 
+## Verify a detached OpenPGP signature offline
+
+When a publisher provides a detached OpenPGP signature, verify it against a
+trusted local keyring and a fingerprint checked independently from the publisher:
+
+```sh
+python tools/software-os-diagnostics/verify_detached_signature.py /path/to/image.iso /path/to/image.iso.sig \
+  --keyring /path/to/publisher-trusted.gpg --expected-fingerprint PASTE_TRUSTED_FINGERPRINT_HERE
+```
+
+The verifier calls local `gpgv`, makes no network requests, and requires the
+signature's signing or primary-key fingerprint to match the expected fingerprint.
+A keyring supplied by an untrusted mirror is not trustworthy merely because
+signature verification succeeds. The unit tests mock `gpgv`; they verify policy
+and fail-closed handling, not a real publisher signature.
+
 ## Safety boundary
 
 - Reads the selected file in chunks; does not change it.
