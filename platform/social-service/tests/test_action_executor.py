@@ -309,10 +309,22 @@ class TelegramExecutorTests(unittest.IsolatedAsyncioTestCase):
             processed = await action_executor.process_one()
         return processed, session
 
+
+    async def test_unapproved_action_is_not_claimed_or_sent(self):
+        session = _FakeExecutionSession()
+        session.results[1] = _FakeExecutionResult(mapping=None)
+        _FakeTelegramSendClient.last_request = None
+        with patch.object(action_executor, "SessionLocal", return_value=_FakeExecutionSessionContext(session)):
+            processed = await action_executor.process_one()
+        self.assertFalse(processed)
+        self.assertIn("approval_status='approved'", session.calls[1][0])
+        self.assertIsNone(_FakeTelegramSendClient.last_request)
+
     async def test_success_uses_tenant_bound_credential_and_persists_provider_ids(self):
         processed, session = await self._run(200)
         self.assertTrue(processed)
         self.assertIn("tenant_id=:tenant", session.calls[2][0])
+        self.assertIn("approval_status='approved'", session.calls[1][0])
         self.assertEqual(session.calls[2][1]["tenant"], "tenant-a")
         self.assertEqual(session.calls[3][1], {"platform": "telegram", "action": "send_message"})
         self.assertEqual(_FakeTelegramSendClient.last_request["json"], {"chat_id": "chat-42", "text": "safe test"})
@@ -413,7 +425,7 @@ class _QueueSession:
 class ActionQueueIdempotencyTests(unittest.IsolatedAsyncioTestCase):
     def _existing(self, payload):
         return {
-            "id": "existing-action-id", "status": "queued", "platform": "telegram",
+            "id": "existing-action-id", "status": "queued", "approval_status": "pending", "platform": "telegram",
             "action": "send_message", "connection_id": None, "client_id": None,
             "target_type": None, "target_id": None, "request_payload": payload,
             "created_at": "2026-10-14T10:00:00Z",
@@ -453,6 +465,35 @@ class ActionQueueIdempotencyTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(caught.exception.status_code, 409)
         self.assertIn("idempotency key", str(caught.exception.detail))
         self.assertEqual(session.commits, 0)
+
+
+
+class ActionApprovalTests(unittest.IsolatedAsyncioTestCase):
+    async def test_non_admin_cannot_approve_action(self):
+        session = _QueueSession([])
+        with self.assertRaises(HTTPException) as caught:
+            await omnichannel_api.approve_action(
+                "action-id", user={"tenant_id": "tenant-1", "roles": ["user"]}, s=session
+            )
+        self.assertEqual(caught.exception.status_code, 403)
+        self.assertEqual(session.calls, [])
+
+    async def test_admin_approval_is_tenant_scoped_and_audited(self):
+        row = {
+            "id": "action-id", "status": "queued", "approval_status": "approved",
+            "approved_by": "admin-1", "approved_at": "2026-10-14T10:00:00Z",
+        }
+        session = _QueueSession([_QueueResult(row=row)])
+        result = await omnichannel_api.approve_action(
+            "action-id", user={"sub": "admin-1", "tenant_id": "tenant-1", "roles": ["platform_admin"]},
+            s=session,
+        )
+        self.assertEqual(result["approval_status"], "approved")
+        self.assertEqual(session.calls[0][1]["tenant"], "tenant-1")
+        self.assertIn("status='queued' AND approval_status='pending'", session.calls[0][0])
+        self.assertEqual(session.calls[0][1]["user_id"], "admin-1")
+        self.assertEqual(session.commits, 1)
+
 
 
 if __name__ == "__main__":
