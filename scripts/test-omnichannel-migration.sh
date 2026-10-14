@@ -4,6 +4,7 @@ set -euo pipefail
 : "${TEST_DATABASE_URL:?TEST_DATABASE_URL must point to the disposable CI database}"
 base_migration="k8s/services/postgres/migration/016-omnichannel-crm.sql"
 migration="k8s/services/postgres/migration/021-omnichannel-action-executor.sql"
+blog_migration="k8s/services/postgres/migration/022-blog-scheduled-publication.sql"
 
 # Reproduce the relevant pre-existing social schema, not a partial hand-built
 # platform_actions table. Migration 016 grants privileges to the production
@@ -17,11 +18,21 @@ BEGIN
 END $$;
 SQL
 
-# Apply the real baseline contract and the new migration. Re-apply 021 to prove
-# the new migration is idempotent against the actual existing table definition.
+# Apply the real baseline contract and migration 021 twice to prove idempotency.
 psql "$TEST_DATABASE_URL" -v ON_ERROR_STOP=1 -f "$base_migration"
 psql "$TEST_DATABASE_URL" -v ON_ERROR_STOP=1 -f "$migration"
 psql "$TEST_DATABASE_URL" -v ON_ERROR_STOP=1 -f "$migration"
+
+# The baseline contract is older than blog_posts, so model the pre-existing table
+# contract that migration 022 extends; never test an ALTER against an empty DB.
+psql "$TEST_DATABASE_URL" -v ON_ERROR_STOP=1 <<'SQL'
+CREATE TABLE IF NOT EXISTS blog_posts (
+  id VARCHAR(64) PRIMARY KEY,
+  status VARCHAR(16) NOT NULL DEFAULT 'draft'
+);
+SQL
+psql "$TEST_DATABASE_URL" -v ON_ERROR_STOP=1 -f "$blog_migration"
+psql "$TEST_DATABASE_URL" -v ON_ERROR_STOP=1 -f "$blog_migration"
 
 psql "$TEST_DATABASE_URL" -v ON_ERROR_STOP=1 <<'SQL'
 DO $$
@@ -63,7 +74,25 @@ BEGIN
   IF actual_status IS DISTINCT FROM 'pending' THEN
     RAISE EXCEPTION 'new action approval_status must default to pending, got %', actual_status;
   END IF;
-END $$;
+END $;
 SQL
 
-echo "PASS: baseline social schema plus migration 021 apply; migration 021 is repeatable and new actions default to pending."
+psql "$TEST_DATABASE_URL" -v ON_ERROR_STOP=1 <<'SQL'
+DO $
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema='public' AND table_name='blog_posts' AND column_name='scheduled_at'
+  ) THEN
+    RAISE EXCEPTION 'migration 022 did not create scheduled_at';
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_indexes
+    WHERE schemaname='public' AND indexname='ix_blog_posts_scheduled_publication'
+  ) THEN
+    RAISE EXCEPTION 'migration 022 did not create scheduled publication index';
+  END IF;
+END $;
+SQL
+
+echo "PASS: migrations 021 and 022 are repeatable; action approval defaults to pending and blog scheduling column/index exist."
