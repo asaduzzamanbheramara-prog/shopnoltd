@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.core.db import SessionLocal
 from app.core.security import verify_token, verify_token_admin
-from app.models.models import UserMirror, UserProfile
+from app.models.models import AccountProvisioningJob, UserMirror, UserProfile
 from app.schemas.schemas import UserAdminPatch, UserIn, UserOut
 
 router = APIRouter()
@@ -51,6 +51,29 @@ def _user_name(payload: dict) -> str:
     return " ".join(part for part in (given, family) if part)
 
 
+async def _ensure_account_provisioning_jobs(s: AsyncSession, u: UserMirror) -> None:
+    """Queue domain and mailbox work idempotently; provider work is not done here."""
+    for resource_type in ("subdomain", "mailbox"):
+        job = (
+            await s.execute(
+                select(AccountProvisioningJob).where(
+                    AccountProvisioningJob.user_id == u.id,
+                    AccountProvisioningJob.resource_type == resource_type,
+                )
+            )
+        ).scalar_one_or_none()
+        if job is None:
+            s.add(
+                AccountProvisioningJob(
+                    user_id=u.id,
+                    keycloak_id=u.keycloak_id,
+                    resource_type=resource_type,
+                    status="pending",
+                    attempts=0,
+                )
+            )
+
+
 def _user_out(u: UserMirror) -> UserOut:
     return UserOut(
         id=u.id,
@@ -89,7 +112,8 @@ async def ensure_user_mirror(payload: dict, s: AsyncSession) -> UserMirror:
                 source="registration",
             )
             s.add(profile)
-            await s.commit()
+        await _ensure_account_provisioning_jobs(s, existing)
+        await s.commit()
         return existing
 
     email_owner = (
@@ -137,6 +161,7 @@ async def ensure_user_mirror(payload: dict, s: AsyncSession) -> UserMirror:
             source="registration",
         )
         s.add(profile)
+    await _ensure_account_provisioning_jobs(s, u)
     await s.commit()
     await s.refresh(u)
     return u
