@@ -1,0 +1,37 @@
+{
+  "entries": [
+    {
+      "id": "ubuntu-desktop",
+      "name": "Ubuntu Desktop",
+      "kind": "operating-system",
+      "description": "Linux desktop operating system. Use the official project page to choose a supported release and review its system requirements.",
+      "platforms": [
+        "linux"
+      ],
+      "architectures": [
+        "x86_64",
+        "arm64"
+      ],
+      "source": {
+        "type": "official-download-page",
+        "url": "https://ubuntu.com/download/desktop",
+        "publisher": "Canonical"
+      },
+      "license_note": "Review Ubuntu licensing and third-party component terms on the official project site. Shopnoltd does not repackage or redistribute the ISO in this scaffold.",
+      "verification": {
+        "method": "source-only-not-yet-verified",
+        "status": "needs-review",
+        "evidence_url": "https://ubuntu.com/tutorials/how-to-verify-ubuntu"
+      },
+      "pricing": {
+        "model": "free"
+      },
+      "installation_guide": "https://ubuntu.com/tutorials/install-ubuntu-desktop",
+      "notes": [
+        "This is metadata only; no ISO is hosted here.",
+        "Confirm current release, hardware compatibility, and published signature/checksum before use.",
+        "Installing an OS can erase data; back up first."
+      ]
+    }
+  ]
+}
