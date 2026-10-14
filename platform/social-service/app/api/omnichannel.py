@@ -233,8 +233,8 @@ async def add_connection(body: ConnectionIn, user=Depends(registration_user), s:
         (id, tenant_id, platform, account_type, platform_account_id, username, display_name,
          status, scopes, access_token_ref, refresh_token_ref, token_expires_at, metadata, connected_at)
         VALUES (:id, :tenant, :platform, :account_type, :account_id, :username, :display_name,
-                :status, :scopes::jsonb, :access_ref, :refresh_ref,
-                NULLIF(:expires, '')::timestamptz, :metadata::jsonb, NOW())
+                :status, CAST(:scopes AS jsonb), :access_ref, :refresh_ref,
+                NULLIF(:expires, '')::timestamptz, CAST(:metadata AS jsonb), NOW())
         ON CONFLICT (tenant_id, platform, platform_account_id)
         DO UPDATE SET username=EXCLUDED.username, display_name=EXCLUDED.display_name,
                       status=EXCLUDED.status, scopes=EXCLUDED.scopes,
