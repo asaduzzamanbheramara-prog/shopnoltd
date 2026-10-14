@@ -507,3 +507,43 @@ async def me(creds: HTTPAuthorizationCredentials = Depends(bearer), s: AsyncSess
     payload = await verify_token(creds.credentials)
     u = await ensure_user_mirror(payload, s)
     return _user_out(u)
+
+@router.get("/me/provisioning", response_model=dict)
+async def my_provisioning_status(
+    creds: HTTPAuthorizationCredentials = Depends(bearer),
+    s: AsyncSession = Depends(db),
+):
+    """Return only the authenticated user's provisioning state, never provider secrets."""
+    payload = await verify_token(creds.credentials)
+    keycloak_id = payload.get("sub")
+    if not keycloak_id:
+        raise HTTPException(401, "authenticated token is missing subject")
+
+    jobs = (
+        await s.execute(
+            select(AccountProvisioningJob)
+            .where(AccountProvisioningJob.keycloak_id == keycloak_id)
+            .order_by(AccountProvisioningJob.created_at.asc(), AccountProvisioningJob.resource_type.asc())
+        )
+    ).scalars().all()
+
+    return {
+        "status": "ok",
+        "provisioning": [
+            {
+                "resource_type": job.resource_type,
+                "status": job.status,
+                "attempts": job.attempts,
+                "created_at": job.created_at.isoformat() if job.created_at else None,
+                "updated_at": job.updated_at.isoformat() if job.updated_at else None,
+                # Never return raw exception/provider text, which can contain internal details.
+                "message": (
+                    "Provisioning failed; contact support."
+                    if job.status == "failed"
+                    else None
+                ),
+            }
+            for job in jobs
+        ],
+    }
+
