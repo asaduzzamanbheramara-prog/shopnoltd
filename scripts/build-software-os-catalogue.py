@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -12,6 +13,14 @@ OUTPUT = ROOT / "frontend/catalogue.json"
 
 
 def main() -> int:
+    validation = subprocess.run(
+        [sys.executable, str(ROOT / "scripts/validate-software-os-catalogue.py")],
+        cwd=ROOT,
+        check=False,
+    )
+    if validation.returncode:
+        print("ERROR: refusing to generate browser catalogue from invalid metadata", file=sys.stderr)
+        return validation.returncode
     try:
         paths = sorted(ENTRIES_DIR.glob("*.json"))
         if not paths:
