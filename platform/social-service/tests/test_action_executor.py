@@ -435,11 +435,41 @@ class ActionQueueIdempotencyTests(unittest.IsolatedAsyncioTestCase):
     def _existing(self, payload):
         return {
             "id": "existing-action-id", "status": "queued", "approval_status": "pending", "platform": "telegram",
-            "action": "send_message", "connection_id": None, "client_id": None,
+            "action": "send_message", "connection_id": "connection-1", "client_id": None,
             "target_type": None, "target_id": None, "request_payload": payload,
             "created_at": "2026-10-14T10:00:00Z",
         }
 
+
+    async def test_missing_connection_is_rejected_before_queueing(self):
+        session = _QueueSession([_QueueResult(scalar="supported")])
+        with self.assertRaises(HTTPException) as caught:
+            await omnichannel_api.queue_action(
+                omnichannel_api.ActionIn(platform="telegram", action="send_message", payload={"text": "hello"}),
+                user={"tenant_id": "tenant-1"}, s=session,
+            )
+        self.assertEqual(caught.exception.status_code, 400)
+        self.assertIn("connection_id is required", str(caught.exception.detail))
+        self.assertEqual(len(session.calls), 1)
+        self.assertEqual(session.commits, 0)
+
+    async def test_pending_connection_is_rejected_before_queueing(self):
+        session = _QueueSession([
+            _QueueResult(scalar="supported"),
+            _QueueResult(row={"platform": "telegram", "status": "pending"}),
+        ])
+        with self.assertRaises(HTTPException) as caught:
+            await omnichannel_api.queue_action(
+                omnichannel_api.ActionIn(
+                    platform="telegram", action="send_message", connection_id="connection-1",
+                    payload={"text": "hello"},
+                ),
+                user={"tenant_id": "tenant-1"}, s=session,
+            )
+        self.assertEqual(caught.exception.status_code, 409)
+        self.assertIn("connection is not connected", str(caught.exception.detail))
+        self.assertEqual(len(session.calls), 2)
+        self.assertEqual(session.commits, 0)
 
     async def test_unimplemented_provider_adapter_is_rejected_before_queueing(self):
         session = _QueueSession([_QueueResult(scalar="supported")])
@@ -468,12 +498,13 @@ class ActionQueueIdempotencyTests(unittest.IsolatedAsyncioTestCase):
     async def test_same_idempotency_key_and_request_returns_existing_action(self):
         session = _QueueSession([
             _QueueResult(scalar="supported"),
+            _QueueResult(row={"platform": "telegram", "status": "connected"}),
             _QueueResult(row=None),
             _QueueResult(row=self._existing({"text": "hello"})),
         ])
         result = await omnichannel_api.queue_action(
             omnichannel_api.ActionIn(
-                platform="telegram", action="send_message",
+                platform="telegram", action="send_message", connection_id="connection-1",
                 idempotency_key="stable-key-1", payload={"text": "hello"},
             ),
             user={"tenant_id": "tenant-1"}, s=session,
@@ -485,13 +516,14 @@ class ActionQueueIdempotencyTests(unittest.IsolatedAsyncioTestCase):
     async def test_reused_idempotency_key_with_different_payload_returns_409(self):
         session = _QueueSession([
             _QueueResult(scalar="supported"),
+            _QueueResult(row={"platform": "telegram", "status": "connected"}),
             _QueueResult(row=None),
             _QueueResult(row=self._existing({"text": "original"})),
         ])
         with self.assertRaises(HTTPException) as caught:
             await omnichannel_api.queue_action(
                 omnichannel_api.ActionIn(
-                    platform="telegram", action="send_message",
+                    platform="telegram", action="send_message", connection_id="connection-1",
                     idempotency_key="stable-key-1", payload={"text": "different"},
                 ),
                 user={"tenant_id": "tenant-1"}, s=session,
