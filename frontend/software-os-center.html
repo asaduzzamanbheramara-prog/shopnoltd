@@ -16,13 +16,13 @@
 <section class="hero">
 <span class="pill">SOFTWARE · OPERATING SYSTEMS · RECOVERY</span>
 <h1>Software &amp; OS Center</h1>
-<p>Find official downloads, choose a supported installation path, and learn how to recover a PC safely.</p>
+<p>Find software and operating systems for supported computers, phones, tablets, servers, TVs, embedded devices, browsers and recovery environments. Filter by platform, device class, CPU architecture and package format.</p>
 <div class="notice"><strong>PC won't boot?</strong> A website cannot run on a computer that cannot start. Use another working computer to create bootable recovery media, or use network boot only if your device and network are already configured for it.</div>
 </section>
 <section class="section">
 <h2>Browse catalogue</h2>
-<label for="search">Search operating systems and tools</label>
-<input class="search" id="search" type="search" placeholder="Try Ubuntu, Windows, drivers…" autocomplete="off">
+<label for="search">Search software, OS, APKs, drivers, package formats and devices</label>
+<input class="search" id="search" type="search" placeholder="Try Windows, Ubuntu, Android APK, iOS, MSI, APK, ISO, phone…" autocomplete="off">
 <div class="grid" id="catalogue">
 <article class="card" data-search="ubuntu linux operating system desktop iso install recovery">
 <h3>Ubuntu Desktop</h3><p class="muted small">Linux · OS · x86-64 (review current requirements)</p><p>Choose a supported release and verify the downloaded image using Ubuntu's official instructions.</p><p class="ok small">Official source · Metadata example, not yet release-verified</p><a class="btn primary" href="https://ubuntu.com/download/desktop" rel="noopener noreferrer" target="_blank">Official download</a><a class="btn" href="https://ubuntu.com/tutorials/how-to-verify-ubuntu" rel="noopener noreferrer" target="_blank">Verify image</a>
@@ -73,9 +73,11 @@
   function renderEntry(entry){
     const card=document.createElement('article');
     card.className='card';
-    card.dataset.search=[entry.name,entry.kind,...(entry.platforms||[]),...(entry.architectures||[]),entry.description].join(' ');
+    card.dataset.search=[entry.name,entry.kind,...(entry.platforms||[]),...(entry.architectures||[]),...(entry.device_types||[]),...(entry.package_formats||[]),entry.description].join(' ');
     card.append(makeText('h3',entry.name));
     card.append(makeText('p',(entry.platforms||[]).join(' · ')+' · '+entry.kind+' · '+((entry.architectures||[]).join(', ')||'architecture not specified'),'muted small'));
+    if((entry.device_types||[]).length)card.append(makeText('p','Devices: '+entry.device_types.join(', '),'small'));
+    if((entry.package_formats||[]).length)card.append(makeText('p','Package formats: '+entry.package_formats.join(', '),'small'));
     card.append(makeText('p',entry.description));
     const status=(entry.verification&&entry.verification.status)||'needs-review';
     card.append(makeText('p','Catalogue status: '+status+' · '+((entry.source&&entry.source.publisher)||'Publisher not specified'),'small'));
