@@ -47,6 +47,15 @@ class DetachedSignatureTests(unittest.TestCase):
         self.assertEqual(run.call_args.args[0][-2:], [str(self.signature), str(self.artifact)])
 
     @patch("verify_detached_signature.subprocess.run")
+    def test_rejects_signing_subkey_fingerprint_when_primary_key_is_not_expected(self, run):
+        run.return_value = SimpleNamespace(returncode=0, stdout=self.status(), stderr="")
+        valid, reason = verifier.verify_detached_signature(
+            self.artifact, self.signature, self.keyring, self.signer, gpgv_path="gpgv"
+        )
+        self.assertFalse(valid)
+        self.assertIn("does not match", reason)
+
+    @patch("verify_detached_signature.subprocess.run")
     def test_rejects_valid_signature_from_wrong_key(self, run):
         run.return_value = SimpleNamespace(returncode=0, stdout=self.status(), stderr="")
         valid, reason = verifier.verify_detached_signature(
