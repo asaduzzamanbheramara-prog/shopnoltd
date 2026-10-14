@@ -49,6 +49,20 @@ def can_manage_post(user: dict, post: BlogPost) -> bool:
     return post.tenant_id == tenant_id and post.author_id == user.get("sub")
 
 
+def validate_scheduled_at(status: str, value: datetime | None) -> datetime | None:
+    """Validate an explicitly scheduled post and normalize its time to naive UTC for the DB."""
+    if status != "scheduled":
+        return None
+    if value is None:
+        raise HTTPException(422, "scheduled_at is required for scheduled posts")
+    if value.tzinfo is None:
+        raise HTTPException(422, "scheduled_at must include a timezone")
+    normalized = value.astimezone(timezone.utc).replace(tzinfo=None)
+    if normalized <= datetime.now(timezone.utc).replace(tzinfo=None):
+        raise HTTPException(422, "scheduled_at must be in the future")
+    return normalized
+
+
 def slugify(value: str) -> str:
     slug = re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
     return slug or "post"
@@ -153,17 +167,7 @@ async def create_blog_post(body: BlogPostIn, creds: HTTPAuthorizationCredentials
         user = await current_user(creds)
     if body.status in {"published", "scheduled"} and not can_manage_blog(user):
         raise HTTPException(403, "Blog management privileges required to publish or schedule")
-    if body.status == "scheduled":
-        if body.scheduled_at is None:
-            raise HTTPException(422, "scheduled_at is required for scheduled posts")
-        scheduled_at = body.scheduled_at
-        if scheduled_at.tzinfo is None:
-            raise HTTPException(422, "scheduled_at must include a timezone")
-        scheduled_at = scheduled_at.astimezone(timezone.utc).replace(tzinfo=None)
-        if scheduled_at <= datetime.now(timezone.utc).replace(tzinfo=None):
-            raise HTTPException(422, "scheduled_at must be in the future")
-    else:
-        scheduled_at = None
+    scheduled_at = validate_scheduled_at(body.status, body.scheduled_at)
     slug = slugify(body.slug or body.title)
     if (await s.execute(select(BlogPost).where(BlogPost.slug == slug))).scalar_one_or_none():
         raise HTTPException(409, "slug already exists")
@@ -195,17 +199,7 @@ async def update_blog_post(post_id: str, body: BlogPostIn, user=Depends(current_
         raise HTTPException(403, "You cannot manage this blog post")
     if body.status in {"published", "scheduled"} and not can_manage_blog(user):
         raise HTTPException(403, "Blog management privileges required to publish or schedule")
-    if body.status == "scheduled":
-        if body.scheduled_at is None:
-            raise HTTPException(422, "scheduled_at is required for scheduled posts")
-        scheduled_at = body.scheduled_at
-        if scheduled_at.tzinfo is None:
-            raise HTTPException(422, "scheduled_at must include a timezone")
-        scheduled_at = scheduled_at.astimezone(timezone.utc).replace(tzinfo=None)
-        if scheduled_at <= datetime.now(timezone.utc).replace(tzinfo=None):
-            raise HTTPException(422, "scheduled_at must be in the future")
-    else:
-        scheduled_at = None
+    scheduled_at = validate_scheduled_at(body.status, body.scheduled_at)
     slug = slugify(body.slug or body.title)
     conflict = (await s.execute(select(BlogPost).where(BlogPost.slug == slug, BlogPost.id != post_id))).scalar_one_or_none()
     if conflict:
