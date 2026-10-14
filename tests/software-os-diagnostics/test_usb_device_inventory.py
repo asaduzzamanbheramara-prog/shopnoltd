@@ -30,6 +30,37 @@ class UsbInventoryTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             parse_lsblk({"blockdevices": "unexpected"})
 
+
+    def test_windows_inventory_only_reports_explicit_usb_disks(self):
+        from usb_device_inventory import parse_windows_inventory
+
+        found = parse_windows_inventory([
+            {"Index": 0, "Model": "Internal SSD", "Size": 512000, "InterfaceType": "SCSI", "PNPDeviceID": "SCSI\\DISK"},
+            {"Index": 2, "Model": "USB Stick", "Size": 32000000000, "InterfaceType": "USB", "PNPDeviceID": "USB\\VID_1234"},
+            {"Index": 3, "Model": "Unknown", "Size": 0, "InterfaceType": "USB", "PNPDeviceID": "USB\\VID_9999"},
+        ])
+        self.assertEqual(len(found), 1)
+        self.assertEqual(found[0]["path"], r"\\.\PHYSICALDRIVE2")
+        self.assertEqual(found[0]["transport"], "usb")
+        self.assertFalse(found[0]["write_authorized"])
+
+    def test_macos_inventory_excludes_internal_and_unknown_disks(self):
+        from usb_device_inventory import parse_macos_inventory
+
+        found = parse_macos_inventory(
+            ["disk0", "disk2", "disk3"],
+            {
+                "disk0": {"Internal": True, "BusProtocol": "Apple Fabric", "TotalSize": 500000000000},
+                "disk2": {"Internal": False, "BusProtocol": "USB", "TotalSize": 32000000000,
+                          "MediaName": "External USB", "DeviceNode": "/dev/disk2"},
+                "disk3": {"Internal": False, "BusProtocol": "Thunderbolt", "TotalSize": 1000000000},
+            },
+        )
+        self.assertEqual(len(found), 1)
+        self.assertEqual(found[0]["path"], "/dev/disk2")
+        self.assertEqual(found[0]["model"], "External USB")
+        self.assertFalse(found[0]["write_authorized"])
+
     def test_unknown_model_is_handled(self):
         found = parse_lsblk({"blockdevices": [
             {"type": "disk", "rm": "1", "size": 1024}
