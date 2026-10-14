@@ -11,6 +11,10 @@ on:
       - 'tools/software-os-diagnostics/**'
       - 'tests/software-os-catalogue/**'
       - 'tests/software-os-diagnostics/**'
+      - 'apps/desktop-shell/src/main.js'
+      - 'apps/desktop-shell/src/navigation-policy.js'
+      - 'apps/desktop-shell/test/**'
+      - 'apps/desktop-shell/package.json'
       - 'frontend/software-os-center.html'
       - 'frontend/index.html'
       - 'frontend/Dockerfile'
@@ -26,6 +30,10 @@ on:
       - 'tools/software-os-diagnostics/**'
       - 'tests/software-os-catalogue/**'
       - 'tests/software-os-diagnostics/**'
+      - 'apps/desktop-shell/src/main.js'
+      - 'apps/desktop-shell/src/navigation-policy.js'
+      - 'apps/desktop-shell/test/**'
+      - 'apps/desktop-shell/package.json'
       - '.github/workflows/software-os-catalogue.yml'
   workflow_dispatch:
 
@@ -40,6 +48,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
       - name: Install schema validator
         run: python -m pip install 'jsonschema==4.23.0'
       - name: Validate all catalogue entries
@@ -48,9 +59,12 @@ jobs:
         run: python scripts/build-software-os-catalogue.py
       - name: Check generated catalogue is committed and current
         run: git diff --exit-code -- frontend/catalogue.json
-      - name: Run catalogue policy regression tests
+      - name: Run catalogue and entitlement policy regression tests
         run: python -m unittest discover -s tests/software-os-catalogue -p 'test_*.py' -v
       - name: Run read-only diagnostics tests
         run: python -m unittest discover -s tests/software-os-diagnostics -p 'test_*.py' -v
+      - name: Run Electron navigation security tests
+        working-directory: apps/desktop-shell
+        run: npm test
       - name: Build static frontend image
         run: docker build -t shopnoltd-software-os-center frontend
