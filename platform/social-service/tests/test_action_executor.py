@@ -163,6 +163,43 @@ class TelegramConnectionTests(unittest.IsolatedAsyncioTestCase):
         client.assert_not_called()
 
 
+    async def test_network_error_does_not_expose_token_url_in_http_exception(self):
+        token = "valid-shaped-test-token-" + ("x" * 30)
+
+        class FakeCipher:
+            @staticmethod
+            def encrypt(value):
+                return b"encrypted"
+
+        class FailingTelegramClient:
+            def __init__(self, *args, **kwargs):
+                pass
+            async def __aenter__(self):
+                return self
+            async def __aexit__(self, exc_type, exc, tb):
+                return False
+            async def get(self, url):
+                raise omnichannel_oauth.httpx.NetworkError("request failed for " + url)
+
+        with (
+            patch.object(omnichannel_oauth, "verify_token", new=AsyncMock(return_value={
+                "sub": "user-1", "tenant_id": "tenant-1"
+            })),
+            patch.object(omnichannel_oauth, "_fernet", return_value=FakeCipher()),
+            patch.object(omnichannel_oauth.httpx, "AsyncClient", FailingTelegramClient),
+        ):
+            with self.assertRaises(HTTPException) as caught:
+                await omnichannel_oauth.connect_telegram_bot(
+                    omnichannel_oauth.TelegramBotConnectIn(bot_token=token),
+                    HTTPAuthorizationCredentials(scheme="Bearer", credentials="test-jwt"),
+                )
+
+        self.assertEqual(caught.exception.status_code, 502)
+        self.assertNotIn(token, str(caught.exception))
+        self.assertTrue(caught.exception.__suppress_context__)
+
+
+
 class _FakeExecutionResult:
     def __init__(self, mapping=None, scalar=None):
         self.mapping = mapping
