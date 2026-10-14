@@ -88,7 +88,11 @@ async def add(domain_id: str, body: MailboxIn, user=Depends(admin), s: AsyncSess
 
 
 @router.get("/{domain_id}")
-async def list_mb(domain_id: str, s: AsyncSession = Depends(db)):
+async def list_mb(
+    domain_id: str,
+    user=Depends(admin),
+    s: AsyncSession = Depends(db),
+):
     res = await s.execute(select(Mailbox).where(Mailbox.domain_id == domain_id))
     return [
         {"id": m.id, "address": m.full_address, "quota_mb": m.quota_mb, "active": m.active}
