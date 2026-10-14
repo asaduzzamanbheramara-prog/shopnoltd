@@ -81,6 +81,21 @@ platform_actions is the common action queue. Typical actions include:
 
 Availability is recorded in platform_capabilities because provider capabilities and permissions vary.
 
+## Runtime capability matrix (current implementation)
+
+This matrix describes what the current executor can actually run, not what a provider API might theoretically permit. The API registry may list provider-dependent capabilities; that does not mean Shopnoltd has an adapter or the account has the required scopes.
+
+| Platform/action family | Current executor status | Gate before claiming support |
+|---|---|---|
+| Telegram `send_message` | Implemented in code; production E2E still outstanding | Connected tenant-owned bot, explicit admin approval, private test-chat delivery, persisted provider message/chat IDs |
+| Facebook/Messenger, Instagram, LinkedIn, X, TikTok, YouTube publishing/comments/replies/likes/reactions/shares/live | Not implemented; reject/fail closed | Official API adapter, account/product eligibility, least-privilege granted scopes, provider response persistence, idempotency and provider-backed E2E |
+| WhatsApp Business, Gmail, Outlook, 3CX | Not implemented by the action executor; reject/fail closed | Official API adapter, verified connection/permissions, provider-backed E2E and safe retries |
+| Blog draft intake | Implemented as draft-only n8n intake | Separate draft token; approval remains a human/admin action |
+| Blog scheduled publication | Scheduling code and migration 022 added; release/E2E not yet verified | Migration 022 applied through normal migration process; scheduler and public visibility tested in the deployed environment |
+| n8n action workflow | Inactive; worker defaults disabled | Dedicated least-privilege action token, approved provider test, all release gates below |
+
+Do not infer live readiness from `platform_capabilities`, OAuth registration, workflow import, or a green image build alone. A capability is production-ready only after its real adapter, permission checks, provider result IDs, retry/idempotency behavior, and controlled E2E evidence exist.
+
 ## Current integration readiness
 
 The account-registry and blog-draft workflows are activated by GitOps but fail closed unless the shared webhook secret is configured. The account registry may use the registration-only internal automation token; the action queue must never use that token. The action queue remains inactive until a separate least-privilege action token and provider-backed end-to-end tests pass. The executor's only adapter is Telegram `send_message`; other providers/actions fail closed as unsupported until their own adapter and tests are implemented. New actions default to `approval_status=pending`; only a tenant-scoped `admin`/`platform_admin` can approve a queued action through `POST /api/v1/omnichannel/actions/{action_id}/approve`, and the worker only claims approved rows. The queue rejects provider-dependent and unimplemented adapters before inserting a row. The runtime worker defaults to disabled (`ACTION_WORKER_ENABLED=false`). Migration 021 must be applied before deploying this code. Provider credentials and OAuth grants must be configured, and each enabled provider must pass a live account-connect and end-to-end test.
