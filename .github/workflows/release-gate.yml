@@ -156,12 +156,15 @@ jobs:
                       raise SystemExit(f'{path}: expected exactly one Normalize Action node')
                   code = normalize_nodes[0].get('parameters', {}).get('jsCode', '')
                   markers = (
-                      "throw new Error('unsupported_platform')",
-                      "throw new Error('action_required')",
+                      "platform !== 'telegram' || action !== 'send_message'",
                       "throw new Error('connection_id_required')",
+                      "throw new Error('target_chat_required')",
+                      "throw new Error('message_text_required')",
+                      "throw new Error('message_too_long')",
+                      "throw new Error('invalid_idempotency_key')",
                   )
                   if any(marker not in code for marker in markers):
-                      raise SystemExit(f'{path}: unsupported platforms, missing actions, and missing connection IDs must stop before Queue in Shopnoltd')
+                      raise SystemExit(f'{path}: only validated Telegram send_message actions with connection, target, bounded message, and safe idempotency key may reach Queue in Shopnoltd')
                   if not (code.index(markers[0]) < code.index('return [{json:{')):
                       raise SystemExit(f'{path}: input validation must run before normalized data is emitted')
           importer = Path('k8s/services/n8n/workflow-import-job.yaml').read_text()
