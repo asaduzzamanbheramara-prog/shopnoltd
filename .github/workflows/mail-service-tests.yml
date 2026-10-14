@@ -1,9 +1,10 @@
-name: Mail Service Tests
+name: Provisioning Regression Tests
 
 on:
   pull_request:
     paths:
       - "platform/mail-service/**"
+      - "platform/oauth-service/**"
       - ".github/workflows/mail-service-tests.yml"
   push:
     branches:
@@ -11,6 +12,7 @@ on:
       - "feat/automatic-user-domain-mailbox-provisioning"
     paths:
       - "platform/mail-service/**"
+      - "platform/oauth-service/**"
       - ".github/workflows/mail-service-tests.yml"
 
 permissions:
@@ -20,9 +22,9 @@ jobs:
   mailbox-security-tests:
     name: Mailbox security regression tests
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     env:
       PYTHONPATH: shared/libraries/python
-    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -38,3 +40,26 @@ jobs:
           python -m pip install -r platform/mail-service/requirements.txt pytest==8.4.1
       - name: Run mailbox security tests
         run: python -m pytest -q platform/mail-service/tests/test_mailboxes_security.py
+
+  oauth-provisioning-tests:
+    name: OAuth provisioning outbox tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      PYTHONPATH: shared/libraries/python
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: platform/oauth-service/requirements.txt
+      - name: Install OAuth service dependencies and pytest
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r platform/oauth-service/requirements.txt pytest==8.4.1
+      - name: Run provisioning outbox tests
+        working-directory: platform/oauth-service
+        run: python -m pytest -q tests/test_account_provisioning_jobs.py
