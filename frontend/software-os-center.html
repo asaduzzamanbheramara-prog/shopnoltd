@@ -43,6 +43,19 @@
 <article class="card"><h2>2. Offline recovery</h2><ol class="list"><li>Use another working computer.</li><li>Download the OS/recovery image from its official source.</li><li>Verify its signature or publisher checksum.</li><li>Create bootable media using a trusted tool.</li><li>Boot the target PC and choose diagnostics or installation.</li></ol></article>
 <article class="card"><h2>Safety first</h2><ul class="list"><li>Back up important files before recovery.</li><li>Confirm the target disk before formatting or installing.</li><li>Never share passwords, licence keys or recovery keys.</li><li>Use official sources and respect each software licence.</li></ul></article>
 </section>
+<section class="section card" id="recovery-guide">
+<h2>Guided recovery planner · Preview</h2>
+<p class="muted">Choose the target device and goal to get a safer, device-specific checklist. This page does not download images, inspect connected drives, or write a pendrive.</p>
+<div class="grid">
+<div><label for="recovery-device">Device family</label><select class="search" id="recovery-device"><option value="pc">PC / laptop / workstation</option><option value="android">Android phone / tablet</option><option value="apple-mobile">iPhone / iPad</option><option value="tv">TV / streaming device</option><option value="router">Router / embedded device</option><option value="other">Other device</option></select></div>
+<div><label for="recovery-os">Target OS / platform</label><select class="search" id="recovery-os"><option value="windows">Windows</option><option value="linux">Linux</option><option value="android">Android</option><option value="ios">iOS / iPadOS</option><option value="vendor">Vendor-specific / unknown</option></select></div>
+<div><label for="recovery-goal">Recovery goal</label><select class="search" id="recovery-goal"><option value="repair">Repair startup / system</option><option value="rescue">Rescue files / back up data</option><option value="reinstall">Reinstall OS / factory recovery</option></select></div>
+<div><label for="recovery-firmware">PC firmware (PC only)</label><select class="search" id="recovery-firmware"><option value="unknown">Unknown / not checked</option><option value="uefi">UEFI</option><option value="legacy">Legacy BIOS</option></select></div>
+</div>
+<button class="btn primary" id="build-recovery-guide" type="button">Generate recovery checklist</button>
+<div id="recovery-result" class="notice" role="status" aria-live="polite"><strong>Before you begin:</strong> identify the exact device model and back up data where possible.</div>
+<p class="small muted">Important: PC bootable USB is not a universal phone, TV, router, or embedded-device recovery method. For those devices, use only documented vendor recovery steps.</p>
+</section>
 <section class="section card"><h2>Payments and paid features</h2><p>Paid Shopnoltd features must be enabled only after server-side verification through the existing billing system. This preview does not process payments or unlock paid downloads.</p><p class="muted small">No payment form, credential collection, or entitlement bypass is included.</p></section>
 </main>
 <footer><p>Shopnoltd Software &amp; OS Center · Catalogue preview. This page does not guarantee compatibility or repair success and does not host operating-system images.</p><p><a href="/">Back to Shopnoltd</a></p></footer>
@@ -63,6 +76,39 @@
     empty.classList.toggle('hidden',visible!==0);
   }
   input.addEventListener('input',refreshSearch);
+  const recoveryDevice=document.getElementById('recovery-device');
+  const recoveryOS=document.getElementById('recovery-os');
+  const recoveryGoal=document.getElementById('recovery-goal');
+  const recoveryFirmware=document.getElementById('recovery-firmware');
+  const recoveryResult=document.getElementById('recovery-result');
+  document.getElementById('build-recovery-guide').addEventListener('click',function(){
+    const device=recoveryDevice.value, os=recoveryOS.value, goal=recoveryGoal.value;
+    const lines=[];
+    if(device==='pc'){
+      lines.push('Use a separate working computer if the target PC cannot boot.');
+      lines.push(os==='windows'?'Start with Microsoft’s official Windows recovery/installation instructions.':'Start with the selected Linux distribution’s official live/recovery image and verification instructions.');
+      lines.push('Confirm CPU architecture, image requirements, '+(recoveryFirmware.value==='unknown'?'UEFI versus Legacy BIOS':'firmware mode '+recoveryFirmware.value)+', and Secure Boot compatibility.');
+      lines.push('Verify the image using a publisher-provided signature or checksum from a trusted official source.');
+      lines.push('Before any USB writer is used, identify the physical USB by model and capacity; confirm separately because writing usually erases that USB.');
+    }else{
+      lines.push('Do not assume a generic PC bootable USB can recover this device.');
+      lines.push('Identify the exact manufacturer, model, region/variant, and current firmware version.');
+      lines.push('Use only the manufacturer’s documented recovery, restore, or service procedure for this device family.');
+      if(device==='android'||os==='android')lines.push('Android recovery may require the vendor recovery menu or vendor-supported tools; USB OTG support does not imply OS reinstall support.');
+      if(device==='apple-mobile'||os==='ios')lines.push('For iPhone/iPad, use Apple’s documented recovery/update workflow and a supported Mac or Windows computer.');
+      if(device==='tv'||device==='router')lines.push('Check exact model and firmware package compatibility; do not flash firmware from a similar-looking model.');
+    }
+    if(goal==='rescue')lines.push('Prefer a data-preserving or read-only rescue path first; avoid factory reset, reinstall, or formatting until data is backed up.');
+    if(goal==='repair')lines.push('Try documented non-destructive diagnostics before reinstalling; stop if the next step may erase data.');
+    if(goal==='reinstall')lines.push('Reinstall/factory recovery can erase data. Confirm backups, device identity, correct image, and licence/vendor instructions first.');
+    lines.push('This preview only generates guidance. It does not download, verify, install, or write any image.');
+    recoveryResult.replaceChildren();
+    const title=document.createElement('strong');title.textContent=device==='pc'?'PC recovery checklist':'Device-specific recovery checklist';recoveryResult.append(title);
+    const list=document.createElement('ol');list.className='list';
+    lines.forEach(line=>{const item=document.createElement('li');item.textContent=line;list.append(item);});
+    recoveryResult.append(list);
+  });
+
 
   function makeText(tag, text, className){
     const node=document.createElement(tag);
