@@ -13,6 +13,22 @@ SCHEMA_PATH = ROOT / "catalogue/schema/software-entry.schema.json"
 ENTRIES_DIR = ROOT / "catalogue/entries"
 
 
+def duplicate_id_errors(entries: list[tuple[Path, object]]) -> list[tuple[Path, str, Path]]:
+    """Return duplicate ID declarations as (duplicate path, ID, first path)."""
+    first_paths: dict[str, Path] = {}
+    duplicates: list[tuple[Path, str, Path]] = []
+    for path, entry in entries:
+        entry_id = entry.get("id") if isinstance(entry, dict) else None
+        if not isinstance(entry_id, str):
+            continue
+        first_path = first_paths.get(entry_id)
+        if first_path is not None:
+            duplicates.append((path, entry_id, first_path))
+        else:
+            first_paths[entry_id] = path
+    return duplicates
+
+
 def main() -> int:
     try:
         schema = json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
@@ -27,20 +43,13 @@ def main() -> int:
 
     validator = Draft202012Validator(schema, format_checker=FormatChecker())
     failed = False
-    seen_ids: dict[str, Path] = {}
-    for path, entry in entries:
-        entry_id = entry.get("id") if isinstance(entry, dict) else None
-        if not isinstance(entry_id, str):
-            continue
-        if entry_id in seen_ids:
-            failed = True
-            print(
-                f"ERROR {path.relative_to(ROOT)}:id: duplicate catalogue id "
-                f"{entry_id!r}; first declared in {seen_ids[entry_id].relative_to(ROOT)}",
-                file=sys.stderr,
-            )
-        else:
-            seen_ids[entry_id] = path
+    for path, entry_id, first_path in duplicate_id_errors(entries):
+        failed = True
+        print(
+            f"ERROR {path.relative_to(ROOT)}:id: duplicate catalogue id "
+            f"{entry_id!r}; first declared in {first_path.relative_to(ROOT)}",
+            file=sys.stderr,
+        )
     for path, entry in entries:
         errors = sorted(validator.iter_errors(entry), key=lambda err: list(map(str, err.path)))
         if errors:
