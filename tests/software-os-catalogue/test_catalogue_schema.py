@@ -97,6 +97,15 @@ class CatalogueSchemaTests(unittest.TestCase):
         entry["verification"]["checksum"] = "b" * 64
         self.assertTrue(list(VALIDATOR.iter_errors(entry)))
 
+
+    def test_frontend_renders_supported_catalogue_kinds_not_only_operating_systems(self):
+        page = (ROOT / "frontend/software-os-center.html").read_text(encoding="utf-8")
+        self.assertIn(
+            "entries.filter(entry=>entry&&typeof entry.name==='string'&&typeof entry.kind==='string')",
+            page,
+        )
+        self.assertNotIn("entry.kind==='operating-system').forEach(entry=>catalogue.append(renderEntry(entry))", page)
+
     def test_rejects_non_https_source(self):
         entry = json.loads(json.dumps(SAMPLE))
         entry["source"]["url"] = "http://example.invalid/software"
