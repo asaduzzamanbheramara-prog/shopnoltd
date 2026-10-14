@@ -88,6 +88,7 @@ This matrix describes what the current executor can actually run, not what a pro
 | Platform/action family | Current executor status | Gate before claiming support |
 |---|---|---|
 | Telegram `send_message` | Implemented in code; production E2E still outstanding | Connected tenant-owned bot, explicit admin approval, private test-chat delivery, persisted provider message/chat IDs |
+| n8n action intake validation | Workflow now accepts only Telegram `send_message`; validates connection, target chat, message length, and idempotency-key format before calling the API | Import/deploy the inactive workflow and test authentication plus rejection paths in the actual n8n environment |
 | Facebook/Messenger, Instagram, LinkedIn, X, TikTok, YouTube publishing/comments/replies/likes/reactions/shares/live | Not implemented; reject/fail closed | Official API adapter, account/product eligibility, least-privilege granted scopes, provider response persistence, idempotency and provider-backed E2E |
 | WhatsApp Business, Gmail, Outlook, 3CX | Not implemented by the action executor; reject/fail closed | Official API adapter, verified connection/permissions, provider-backed E2E and safe retries |
 | Blog draft intake | Implemented as draft-only n8n intake | Separate draft token; approval remains a human/admin action |
