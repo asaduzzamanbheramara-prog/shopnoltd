@@ -431,6 +431,31 @@ class ActionQueueIdempotencyTests(unittest.IsolatedAsyncioTestCase):
             "created_at": "2026-10-14T10:00:00Z",
         }
 
+
+    async def test_unimplemented_provider_adapter_is_rejected_before_queueing(self):
+        session = _QueueSession([_QueueResult(scalar="supported")])
+        with self.assertRaises(HTTPException) as caught:
+            await omnichannel_api.queue_action(
+                omnichannel_api.ActionIn(platform="gmail", action="send_message", payload={"text": "hello"}),
+                user={"tenant_id": "tenant-1"}, s=session,
+            )
+        self.assertEqual(caught.exception.status_code, 409)
+        self.assertIn("provider adapter not implemented", str(caught.exception.detail))
+        self.assertEqual(len(session.calls), 1)
+        self.assertEqual(session.commits, 0)
+
+    async def test_provider_dependent_action_is_rejected_before_queueing(self):
+        session = _QueueSession([_QueueResult(scalar="provider_dependent")])
+        with self.assertRaises(HTTPException) as caught:
+            await omnichannel_api.queue_action(
+                omnichannel_api.ActionIn(platform="facebook", action="create_post", payload={"text": "hello"}),
+                user={"tenant_id": "tenant-1"}, s=session,
+            )
+        self.assertEqual(caught.exception.status_code, 409)
+        self.assertIn("provider_dependent", str(caught.exception.detail))
+        self.assertEqual(len(session.calls), 1)
+        self.assertEqual(session.commits, 0)
+
     async def test_same_idempotency_key_and_request_returns_existing_action(self):
         session = _QueueSession([
             _QueueResult(scalar="supported"),
