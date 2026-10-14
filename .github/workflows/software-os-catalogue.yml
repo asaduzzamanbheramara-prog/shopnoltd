@@ -46,6 +46,8 @@ jobs:
         run: python scripts/validate-software-os-catalogue.py
       - name: Generate browser catalogue JSON
         run: python scripts/build-software-os-catalogue.py
+      - name: Check generated catalogue is committed and current
+        run: git diff --exit-code -- frontend/catalogue.json
       - name: Run catalogue policy regression tests
         run: python -m unittest discover -s tests/software-os-catalogue -p 'test_*.py' -v
       - name: Run read-only diagnostics tests
