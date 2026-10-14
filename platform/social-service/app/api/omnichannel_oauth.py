@@ -294,7 +294,8 @@ async def oauth_status(creds: HTTPAuthorizationCredentials = Depends(bearer)):
 
 
 class TelegramBotConnectIn(BaseModel):
-    bot_token: str = Field(min_length=30, max_length=512)
+    # Validate length in the handler so request-validation errors never echo the submitted secret.
+    bot_token: str
 
 
 @router.post("/telegram/connect", status_code=201)
@@ -308,6 +309,8 @@ async def connect_telegram_bot(
     user_id = str(user.get("sub") or user.get("user_id") or "")
     if not user_id:
         raise HTTPException(401, "authenticated user identity is missing")
+    if not 30 <= len(body.bot_token) <= 512:
+        raise HTTPException(400, "invalid Telegram bot credential")
 
     # Validate the credential with Telegram without logging or returning it.
     try:
