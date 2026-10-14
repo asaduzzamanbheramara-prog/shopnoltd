@@ -35,7 +35,7 @@ async def _finish(s, action_id: str, status: str, *, result: dict | None = None,
                   retry_after: int | None = None) -> None:
     await s.execute(text("""
         UPDATE platform_actions
-        SET status=:status, response_payload=:result::jsonb,
+        SET status=:status, response_payload=CAST(:result AS jsonb),
             error_code=:code, error_message=:message,
             next_attempt_at=CASE WHEN :delay IS NULL THEN NULL
               ELSE NOW() + (:delay * INTERVAL '1 second') END,
