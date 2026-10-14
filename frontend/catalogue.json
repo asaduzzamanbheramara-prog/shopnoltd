@@ -1,0 +1,96 @@
+[
+  {
+    "id": "linux-mint",
+    "name": "Linux Mint",
+    "kind": "operating-system",
+    "description": "Official Linux Mint download page. Choose a supported edition and release, then follow the project's published integrity-verification guidance.",
+    "platforms": [
+      "linux"
+    ],
+    "architectures": [
+      "x86_64"
+    ],
+    "source": {
+      "type": "official-download-page",
+      "url": "https://linuxmint.com/download.php",
+      "publisher": "Linux Mint Project"
+    },
+    "license_note": "Review the distribution and bundled third-party software licences on the official project site. Shopnoltd does not repackage or redistribute the ISO in this scaffold.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://linuxmint.com/download.php"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "notes": [
+      "Metadata only; no ISO is hosted here.",
+      "Verify the downloaded image using project-published checksums/signatures before use."
+    ]
+  },
+  {
+    "id": "ubuntu-desktop",
+    "name": "Ubuntu Desktop",
+    "kind": "operating-system",
+    "description": "Linux desktop operating system. Use the official project page to choose a supported release and review its system requirements.",
+    "platforms": [
+      "linux"
+    ],
+    "architectures": [
+      "x86_64",
+      "arm64"
+    ],
+    "source": {
+      "type": "official-download-page",
+      "url": "https://ubuntu.com/download/desktop",
+      "publisher": "Canonical"
+    },
+    "license_note": "Review Ubuntu licensing and third-party component terms on the official project site. Shopnoltd does not repackage or redistribute the ISO in this scaffold.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://ubuntu.com/tutorials/how-to-verify-ubuntu"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "installation_guide": "https://ubuntu.com/tutorials/install-ubuntu-desktop",
+    "notes": [
+      "This is metadata only; no ISO is hosted here.",
+      "Confirm current release, hardware compatibility, and published signature/checksum before use.",
+      "Installing an OS can erase data; back up first."
+    ]
+  },
+  {
+    "id": "windows-downloads",
+    "name": "Windows installation media",
+    "kind": "operating-system",
+    "description": "Official Microsoft page for Windows download and installation-media options. Confirm edition, current release, device compatibility, and licence requirements on the publisher site.",
+    "platforms": [
+      "windows"
+    ],
+    "architectures": [
+      "x86_64",
+      "arm64"
+    ],
+    "source": {
+      "type": "official-download-page",
+      "url": "https://www.microsoft.com/software-download/",
+      "publisher": "Microsoft"
+    },
+    "license_note": "Windows activation, edition eligibility, and redistribution are governed by Microsoft's terms. Shopnoltd does not host or redistribute Windows images.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://www.microsoft.com/software-download/"
+    },
+    "pricing": {
+      "model": "external-vendor-license"
+    },
+    "notes": [
+      "Metadata points to the official download page, not a direct ISO URL.",
+      "Check the target PC's architecture and back up data before installing."
+    ]
+  }
+]
