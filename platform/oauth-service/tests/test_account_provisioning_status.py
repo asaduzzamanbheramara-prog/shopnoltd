@@ -93,3 +93,22 @@ def test_status_rejects_token_without_subject(monkeypatch):
         assert exc.status_code == 401
     else:
         raise AssertionError("missing subject must be rejected")
+
+def test_status_returns_401_for_invalid_or_expired_token(monkeypatch):
+    from fastapi import HTTPException
+
+    monkeypatch.setattr(users, "verify_token", AsyncMock(side_effect=ValueError("sensitive verifier detail")))
+
+    try:
+        asyncio.run(
+            users.my_provisioning_status(
+                creds=SimpleNamespace(credentials="invalid-token"),
+                s=FakeSession([]),
+            )
+        )
+    except HTTPException as exc:
+        assert exc.status_code == 401
+        assert exc.detail == "invalid or expired authentication token"
+        assert "sensitive verifier detail" not in exc.detail
+    else:
+        raise AssertionError("invalid token must be rejected with 401")
