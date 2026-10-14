@@ -319,8 +319,9 @@ async def connect_telegram_bot(
             response = await client.get(
                 f"https://api.telegram.org/bot{body.bot_token}/getMe"
             )
-    except (httpx.TimeoutException, httpx.NetworkError) as exc:
-        raise HTTPException(502, "Telegram credential validation could not be completed") from exc
+    except (httpx.TimeoutException, httpx.NetworkError):
+        # Do not chain the HTTP client exception: its request URL contains the bot token.
+        raise HTTPException(502, "Telegram credential validation could not be completed")
     if response.status_code != 200:
         raise HTTPException(400, "Telegram rejected the bot credential")
     try:
