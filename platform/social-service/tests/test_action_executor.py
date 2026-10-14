@@ -217,7 +217,7 @@ class _FakeExecutionResult:
 
 
 class _FakeExecutionSession:
-    def __init__(self, provider_status=200):
+    def __init__(self, provider_status=200, attempt_count=1):
         self.calls = []
         self.commits = 0
         self.provider_status = provider_status
@@ -226,7 +226,7 @@ class _FakeExecutionSession:
             _FakeExecutionResult(mapping={
                 "id": "action-1", "tenant_id": "tenant-a", "connection_id": "connection-a",
                 "platform": "telegram", "action": "send_message", "target_id": "chat-42",
-                "request_payload": {"text": "safe test"}, "attempt_count": 1,
+                "request_payload": {"text": "safe test"}, "attempt_count": attempt_count,
             }),
             _FakeExecutionResult(mapping={
                 "status": "connected", "platform": "telegram", "platform_account_id": "bot-42",
@@ -288,8 +288,8 @@ class _FakeExecutionSessionContext:
 
 
 class TelegramExecutorTests(unittest.IsolatedAsyncioTestCase):
-    async def _run(self, provider_status, connection_row=None, capability="supported"):
-        session = _FakeExecutionSession(provider_status=provider_status)
+    async def _run(self, provider_status, connection_row=None, capability="supported", attempt_count=1):
+        session = _FakeExecutionSession(provider_status=provider_status, attempt_count=attempt_count)
         if connection_row is not None:
             session.results[2] = _FakeExecutionResult(mapping=connection_row)
         if capability != "supported":
@@ -346,6 +346,22 @@ class TelegramExecutorTests(unittest.IsolatedAsyncioTestCase):
         finish_params = session.calls[-1][1]
         self.assertEqual(finish_params["status"], "unsupported")
         self.assertEqual(finish_params["code"], "capability_not_verified")
+
+
+    async def test_provider_401_is_terminal_failure(self):
+        processed, session = await self._run(401)
+        self.assertTrue(processed)
+        finish_params = session.calls[-1][1]
+        self.assertEqual(finish_params["status"], "failed")
+        self.assertEqual(finish_params["code"], "provider_rejected")
+        self.assertIn("HTTP 401", finish_params["message"])
+
+    async def test_429_after_retry_budget_is_terminal_rate_limit_failure(self):
+        processed, session = await self._run(429, attempt_count=3)
+        self.assertTrue(processed)
+        finish_params = session.calls[-1][1]
+        self.assertEqual(finish_params["status"], "failed")
+        self.assertEqual(finish_params["code"], "provider_rate_limit_exhausted")
 
     async def test_provider_403_is_terminal_failure(self):
         processed, session = await self._run(403)
