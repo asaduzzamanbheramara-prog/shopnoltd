@@ -2,20 +2,24 @@
 set -euo pipefail
 
 : "${TEST_DATABASE_URL:?TEST_DATABASE_URL must point to the disposable CI database}"
+base_migration="k8s/services/postgres/migration/016-omnichannel-crm.sql"
 migration="k8s/services/postgres/migration/021-omnichannel-action-executor.sql"
 
-# Build the minimum pre-existing table contract that migration 021 extends.
+# Reproduce the relevant pre-existing social schema, not a partial hand-built
+# platform_actions table. Migration 016 grants privileges to the production
+# service role, so create that role in the disposable CI cluster if absent.
 psql "$TEST_DATABASE_URL" -v ON_ERROR_STOP=1 <<'SQL'
-CREATE TABLE platform_actions (
-  id UUID PRIMARY KEY,
-  status VARCHAR(24) NOT NULL DEFAULT 'queued',
-  response_payload JSONB NOT NULL DEFAULT '{}'::jsonb,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'shopno') THEN
+    CREATE ROLE shopno NOLOGIN;
+  END IF;
+END $$;
 SQL
 
-# Run twice to prove the migration is safe to retry.
+# Apply the real baseline contract and the new migration. Re-apply 021 to prove
+# the new migration is idempotent against the actual existing table definition.
+psql "$TEST_DATABASE_URL" -v ON_ERROR_STOP=1 -f "$base_migration"
 psql "$TEST_DATABASE_URL" -v ON_ERROR_STOP=1 -f "$migration"
 psql "$TEST_DATABASE_URL" -v ON_ERROR_STOP=1 -f "$migration"
 
@@ -62,4 +66,4 @@ BEGIN
 END $$;
 SQL
 
-echo "PASS: migration 021 applies twice, creates approval/worker columns and index, and defaults actions to pending."
+echo "PASS: baseline social schema plus migration 021 apply; migration 021 is repeatable and new actions default to pending."
