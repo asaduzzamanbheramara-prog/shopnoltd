@@ -43,7 +43,9 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: main
-          fetch-depth: 1
+          # Recent-commit diff below must see the workflow-import merge even when
+          # the trigger-restart guard is introduced in a follow-up commit.
+          fetch-depth: 0
 
       - name: Pin reconciliation to the checked-out main revision
         shell: bash
@@ -609,8 +611,9 @@ jobs:
           set -euo pipefail
 
           # CLI publish writes state to PostgreSQL after n8n is already healthy in the sync waves.
-          # Restart only when the imported definitions or importer changed, so triggers reload.
-          if ! git diff --name-only "${GIT_REVISION}^" "${GIT_REVISION}" | grep -Eq "k8s/services/n8n/(workflow-import-job|workflows/|kustomization)"; then
+          # Inspect the last three first-parent commits so a follow-up fix still catches
+          # importer/workflow changes merged immediately before this restart guard.
+          if ! git diff --name-only "${GIT_REVISION}~3" "${GIT_REVISION}" -- k8s/services/n8n/workflow-import-job.yaml k8s/services/n8n/workflows k8s/services/n8n/kustomization.yaml | grep -Eq "."; then
             echo 'No n8n workflow definitions/importer changed; restart not required.'
             exit 0
           fi
