@@ -133,3 +133,24 @@ class Customer(Base):
     preferences = Column(JSON, default=dict)
     active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class AccountProvisioningJob(Base):
+    """Durable, idempotent outbox for post-registration domain/mail provisioning.
+
+    A job remains pending until a separately configured worker has confirmed the
+    provider operation. This table alone does not claim that a resource is active.
+    """
+    __tablename__ = "account_provisioning_jobs"
+    id = Column(String(64), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String(64), nullable=False, index=True)
+    keycloak_id = Column(String(64), nullable=False, index=True)
+    resource_type = Column(String(32), nullable=False)
+    status = Column(String(16), nullable=False, default="pending", index=True)
+    attempts = Column(Integer, nullable=False, default=0)
+    last_error = Column(Text)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    __table_args__ = (
+        UniqueConstraint("user_id", "resource_type", name="uq_account_provisioning_user_resource"),
+    )
