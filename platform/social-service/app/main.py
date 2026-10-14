@@ -10,11 +10,34 @@ from prometheus_client import generate_latest
 from shopno_core.database.redis import redis_client
 from shopno_core.database.dependencies import wait_for_dependencies
 from starlette.responses import Response
+from sqlalchemy import text
 
 from app.core.config import settings
 from app.core.db import Base, engine
 
 log = structlog.get_logger()
+
+
+async def _run_blog_scheduler() -> None:
+    """Publish only explicitly scheduled blog posts once their UTC time arrives."""
+    while True:
+        try:
+            async with engine.begin() as conn:
+                result = await conn.execute(text("""
+                    UPDATE blog_posts
+                    SET status='published', published_at=scheduled_at, updated_at=NOW()
+                    WHERE status='scheduled' AND scheduled_at IS NOT NULL AND scheduled_at <= NOW()
+                    RETURNING id
+                """))
+                published_ids = [str(row[0]) for row in result.fetchall()]
+            if published_ids:
+                log.info("blog.scheduled_posts_published", count=len(published_ids))
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            # Avoid logging SQL/connection details; retry on the next polling interval.
+            log.error("blog.scheduled_publisher.poll_failed")
+        await asyncio.sleep(15)
 
 
 @asynccontextmanager
@@ -23,6 +46,7 @@ async def lifespan(app: FastAPI):
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
     await wait_for_dependencies("social-service", _check_database, redis_client)
+    blog_scheduler_task = asyncio.create_task(_run_blog_scheduler(), name="blog-scheduled-publisher")
     worker_task = None
     if settings.action_worker_enabled:
         from app.services.action_executor import run_action_worker
@@ -32,6 +56,11 @@ async def lifespan(app: FastAPI):
     try:
         yield
     finally:
+        blog_scheduler_task.cancel()
+        try:
+            await blog_scheduler_task
+        except asyncio.CancelledError:
+            pass
         if worker_task is not None:
             worker_task.cancel()
             try:
@@ -70,8 +99,6 @@ async def healthz():
 
 @app.get("/readyz", include_in_schema=False)
 async def readyz():
-    from sqlalchemy import text
-
     async with engine.connect() as c:
         await c.execute(text("SELECT 1"))
     await redis_client.ping()
