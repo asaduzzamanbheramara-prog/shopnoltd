@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import subprocess
+import shutil
 import tempfile
 import unittest
 from pathlib import Path
@@ -80,3 +81,73 @@ class DetachedSignatureTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
+
+@unittest.skipUnless(shutil.which("gpg") and shutil.which("gpgv"), "gpg and gpgv are required for real OpenPGP integration tests")
+class RealOpenPGPIntegrationTests(unittest.TestCase):
+    """Exercise gpg/gpgv with a throwaway key; never uses a real publisher key."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.base = Path(self.tmp.name)
+        self.home = self.base / "gnupg"
+        self.home.mkdir(mode=0o700)
+        self.env = dict(__import__("os").environ, GNUPGHOME=str(self.home))
+        self.artifact = self.base / "fixture.iso"
+        self.signature = self.base / "fixture.iso.sig"
+        self.keyring = self.base / "fixture-trusted.gpg"
+        self.artifact.write_bytes(b"safe test fixture; not an operating-system image")
+        subprocess.run(
+            [
+                shutil.which("gpg"), "--batch", "--pinentry-mode", "loopback",
+                "--passphrase", "", "--quick-generate-key",
+                "Shopnoltd test fixture <fixture@example.invalid>", "rsa2048", "sign", "0",
+            ],
+            env=self.env, check=True, capture_output=True, text=True, timeout=60,
+        )
+        listing = subprocess.run(
+            [shutil.which("gpg"), "--batch", "--with-colons", "--fingerprint", "--list-keys"],
+            env=self.env, check=True, capture_output=True, text=True, timeout=15,
+        )
+        fingerprints = [
+            line.split(":")[9].upper()
+            for line in listing.stdout.splitlines()
+            if line.startswith("fpr:") and len(line.split(":")) > 9
+        ]
+        self.fingerprint = fingerprints[0]
+        exported = subprocess.run(
+            [shutil.which("gpg"), "--batch", "--export", self.fingerprint],
+            env=self.env, check=True, capture_output=True, timeout=15,
+        )
+        self.keyring.write_bytes(exported.stdout)
+        subprocess.run(
+            [
+                shutil.which("gpg"), "--batch", "--yes", "--pinentry-mode", "loopback",
+                "--passphrase", "", "--local-user", self.fingerprint,
+                "--output", str(self.signature), "--detach-sign", str(self.artifact),
+            ],
+            env=self.env, check=True, capture_output=True, timeout=30,
+        )
+
+    def test_real_gpgv_signature_passes_for_expected_key(self):
+        valid, reason = verifier.verify_detached_signature(
+            self.artifact, self.signature, self.keyring, self.fingerprint
+        )
+        self.assertTrue(valid, reason)
+        self.assertIn("expected fingerprint", reason)
+
+    def test_real_gpgv_signature_fails_for_different_expected_key(self):
+        wrong = ("0" if self.fingerprint[0] != "0" else "1") + self.fingerprint[1:]
+        valid, reason = verifier.verify_detached_signature(
+            self.artifact, self.signature, self.keyring, wrong
+        )
+        self.assertFalse(valid)
+        self.assertIn("does not match", reason)
+
+    def test_real_gpgv_detects_tampered_artifact(self):
+        self.artifact.write_bytes(b"tampered fixture")
+        valid, _ = verifier.verify_detached_signature(
+            self.artifact, self.signature, self.keyring, self.fingerprint
+        )
+        self.assertFalse(valid)
+
