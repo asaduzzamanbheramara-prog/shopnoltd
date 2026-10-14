@@ -233,11 +233,9 @@ class _FakeExecutionSessionContext:
 class TelegramExecutorTests(unittest.IsolatedAsyncioTestCase):
     async def _run(self, provider_status, connection_row=None, capability="supported"):
         session = _FakeExecutionSession(provider_status=provider_status)
-        if connection_row is not None or capability != "supported":
-            session.results[2] = _FakeExecutionResult(mapping=connection_row or {
-                "status": "connected", "platform": "telegram", "platform_account_id": "bot-42",
-                "access_token_ref": "token-row-42",
-            })
+        if connection_row is not None:
+            session.results[2] = _FakeExecutionResult(mapping=connection_row)
+        if capability != "supported":
             session.results[3] = _FakeExecutionResult(scalar=capability)
         _FakeTelegramSendClient.response_status = provider_status
         _FakeTelegramSendClient.last_request = None
