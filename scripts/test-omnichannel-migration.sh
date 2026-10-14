@@ -10,12 +10,12 @@ blog_migration="k8s/services/postgres/migration/022-blog-scheduled-publication.s
 # platform_actions table. Migration 016 grants privileges to the production
 # service role, so create that role in the disposable CI cluster if absent.
 psql "$TEST_DATABASE_URL" -v ON_ERROR_STOP=1 <<'SQL'
-DO $$
+DO $block$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'shopno') THEN
     CREATE ROLE shopno NOLOGIN;
   END IF;
-END $$;
+END $block$;
 SQL
 
 # Apply the real baseline contract and migration 021 twice to prove idempotency.
@@ -35,7 +35,7 @@ psql "$TEST_DATABASE_URL" -v ON_ERROR_STOP=1 -f "$blog_migration"
 psql "$TEST_DATABASE_URL" -v ON_ERROR_STOP=1 -f "$blog_migration"
 
 psql "$TEST_DATABASE_URL" -v ON_ERROR_STOP=1 <<'SQL'
-DO $$
+DO $block$
 DECLARE
   missing_column TEXT;
 BEGIN
@@ -59,12 +59,12 @@ BEGIN
   ) THEN
     RAISE EXCEPTION 'approved action queue index was not created';
   END IF;
-END $$;
+END $block$;
 
 INSERT INTO platform_actions (id, platform, action, status)
 VALUES ('00000000-0000-4000-8000-000000000021', 'telegram', 'send_message', 'queued');
 
-DO $$
+DO $block$
 DECLARE
   actual_status TEXT;
 BEGIN
@@ -74,11 +74,11 @@ BEGIN
   IF actual_status IS DISTINCT FROM 'pending' THEN
     RAISE EXCEPTION 'new action approval_status must default to pending, got %', actual_status;
   END IF;
-END $;
+END $block$;
 SQL
 
 psql "$TEST_DATABASE_URL" -v ON_ERROR_STOP=1 <<'SQL'
-DO $
+DO $block$
 BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM information_schema.columns
@@ -92,7 +92,7 @@ BEGIN
   ) THEN
     RAISE EXCEPTION 'migration 022 did not create scheduled publication index';
   END IF;
-END $;
+END $block$;
 SQL
 
 echo "PASS: migrations 021 and 022 are repeatable; action approval defaults to pending and blog scheduling column/index exist."
