@@ -39,6 +39,20 @@ class CatalogueSchemaTests(unittest.TestCase):
         ]
         self.assertEqual(generated, source)
 
+
+    def test_paid_shopnoltd_feature_requires_server_entitlement_key(self):
+        entry = json.loads(json.dumps(SAMPLE))
+        entry["pricing"] = {"model": "paid-shopnoltd-feature"}
+        self.assertTrue(list(VALIDATOR.iter_errors(entry)))
+
+    def test_paid_shopnoltd_feature_with_entitlement_key_is_valid(self):
+        entry = json.loads(json.dumps(SAMPLE))
+        entry["pricing"] = {
+            "model": "paid-shopnoltd-feature",
+            "entitlement_key": "software-os-center-premium",
+        }
+        self.assertEqual(list(VALIDATOR.iter_errors(entry)), [])
+
     def test_rejects_non_https_source(self):
         entry = json.loads(json.dumps(SAMPLE))
         entry["source"]["url"] = "http://example.invalid/software"
