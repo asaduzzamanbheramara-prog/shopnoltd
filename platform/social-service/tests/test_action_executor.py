@@ -3,6 +3,7 @@ from unittest.mock import AsyncMock, patch
 
 from fastapi.security import HTTPAuthorizationCredentials
 
+from app.services import action_executor
 from app.services.action_executor import telegram_message_payload
 from app.api import omnichannel_oauth
 
@@ -145,3 +146,128 @@ class TelegramConnectionTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(session.calls[1][1]["token_ref"], "telegram-token-row-id")
         self.assertNotIn(token, repr(result))
         self.assertNotIn(token, repr(session.calls[0][1]["metadata"]))
+
+
+class _FakeExecutionResult:
+    def __init__(self, mapping=None, scalar=None):
+        self.mapping = mapping
+        self.scalar = scalar
+
+    def mappings(self):
+        return self
+
+    def one_or_none(self):
+        return self.mapping
+
+    def scalar_one_or_none(self):
+        return self.scalar
+
+
+class _FakeExecutionSession:
+    def __init__(self, provider_status=200):
+        self.calls = []
+        self.commits = 0
+        self.provider_status = provider_status
+        self.results = [
+            _FakeExecutionResult(),
+            _FakeExecutionResult(mapping={
+                "id": "action-1", "tenant_id": "tenant-a", "connection_id": "connection-a",
+                "platform": "telegram", "action": "send_message", "target_id": "chat-42",
+                "request_payload": {"text": "safe test"}, "attempt_count": 1,
+            }),
+            _FakeExecutionResult(mapping={
+                "status": "connected", "platform": "telegram", "platform_account_id": "bot-42",
+                "access_token_ref": "token-row-42",
+            }),
+            _FakeExecutionResult(scalar="supported"),
+            _FakeExecutionResult(mapping={"encrypted_access_token": "encrypted-token"}),
+            _FakeExecutionResult(),
+        ]
+
+    async def execute(self, statement, params):
+        self.calls.append((str(statement), params))
+        return self.results[len(self.calls) - 1]
+
+    async def commit(self):
+        self.commits += 1
+
+
+class _FakeTelegramSendResponse:
+    def __init__(self, status_code):
+        self.status_code = status_code
+
+    @staticmethod
+    def json():
+        return {
+            "ok": True,
+            "parameters": {"retry_after": 3},
+            "result": {"message_id": 9001, "chat": {"id": 42}},
+        }
+
+
+class _FakeTelegramSendClient:
+    response_status = 200
+    last_request = None
+
+    def __init__(self, *args, **kwargs):
+        self.options = kwargs
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, exc_type, exc, tb):
+        return False
+
+    async def post(self, url, json):
+        type(self).last_request = {"url": url, "json": json}
+        return _FakeTelegramSendResponse(type(self).response_status)
+
+
+class _FakeExecutionSessionContext:
+    def __init__(self, session):
+        self.session = session
+
+    async def __aenter__(self):
+        return self.session
+
+    async def __aexit__(self, exc_type, exc, tb):
+        return False
+
+
+class TelegramExecutorTests(unittest.IsolatedAsyncioTestCase):
+    async def _run(self, provider_status):
+        session = _FakeExecutionSession(provider_status=provider_status)
+        _FakeTelegramSendClient.response_status = provider_status
+        class FakeCipher:
+            @staticmethod
+            def decrypt(value):
+                return b"tenant-bound-bot-token"
+
+        with (
+            patch.object(action_executor, "SessionLocal", return_value=_FakeExecutionSessionContext(session)),
+            patch.object(action_executor.httpx, "AsyncClient", _FakeTelegramSendClient),
+            patch.object(omnichannel_oauth, "_fernet", return_value=FakeCipher()),
+        ):
+            processed = await action_executor.process_one()
+        return processed, session
+
+    async def test_success_uses_tenant_bound_credential_and_persists_provider_ids(self):
+        processed, session = await self._run(200)
+        self.assertTrue(processed)
+        self.assertIn("tenant_id=:tenant", session.calls[2][0])
+        self.assertEqual(session.calls[2][1]["tenant"], "tenant-a")
+        self.assertEqual(session.calls[3][1], {"platform": "telegram", "action": "send_message"})
+        self.assertEqual(_FakeTelegramSendClient.last_request["json"], {"chat_id": "chat-42", "text": "safe test"})
+        self.assertIn("tenant-bound-bot-token", _FakeTelegramSendClient.last_request["url"])
+        finish_params = session.calls[-1][1]
+        self.assertEqual(finish_params["status"], "succeeded")
+        self.assertIn('"provider_message_id": 9001', finish_params["result"])
+        self.assertIn('"provider_chat_id": 42', finish_params["result"])
+
+    async def test_explicit_429_is_scheduled_for_bounded_retry(self):
+        processed, session = await self._run(429)
+        self.assertTrue(processed)
+        finish_params = session.calls[-1][1]
+        self.assertEqual(finish_params["status"], "retry_wait")
+        self.assertEqual(finish_params["delay"], 3)
+        self.assertEqual(finish_params["code"], "provider_rate_limited")
