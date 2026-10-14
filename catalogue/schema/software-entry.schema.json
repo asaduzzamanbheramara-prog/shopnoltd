@@ -217,6 +217,41 @@
           }
         }
       }
+    },
+    {
+      "if": {
+        "properties": {
+          "pricing": {
+            "properties": {
+              "model": {
+                "const": "paid-shopnoltd-feature"
+              }
+            },
+            "required": [
+              "model"
+            ]
+          }
+        },
+        "required": [
+          "pricing"
+        ]
+      },
+      "then": {
+        "properties": {
+          "pricing": {
+            "required": [
+              "entitlement_key"
+            ],
+            "properties": {
+              "entitlement_key": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120
+              }
+            }
+          }
+        }
+      }
     }
   ]
 }
