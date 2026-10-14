@@ -83,7 +83,7 @@ Availability is recorded in platform_capabilities because provider capabilities 
 
 ## Current integration readiness
 
-The account-registry and blog-draft workflows are activated by GitOps but fail closed unless the shared webhook secret is configured. The account registry may use the registration-only internal automation token; the action queue must never use that token. The action queue remains inactive until a separate least-privilege action token and a real action executor are deployed and tested. Provider credentials and OAuth grants must be configured, and each enabled provider must pass a live account-connect and end-to-end test.
+The account-registry and blog-draft workflows are activated by GitOps but fail closed unless the shared webhook secret is configured. The account registry may use the registration-only internal automation token; the action queue must never use that token. The action queue remains inactive until a separate least-privilege action token and provider-backed end-to-end tests pass. A gated executor foundation is being introduced first; its initial adapter is deliberately limited to Telegram `send_message`. Other providers/actions fail closed as unsupported until their own adapter and tests are implemented. The runtime worker defaults to disabled (`ACTION_WORKER_ENABLED=false`). Provider credentials and OAuth grants must be configured, and each enabled provider must pass a live account-connect and end-to-end test.
 
 **Blog draft intake is wired to n8n** at `POST /webhook/shopnoltd/blog/draft`. It requires `x-shopnoltd-webhook-secret`, accepts title/content metadata, and always creates a draft using the separate `SHOPNOLTD_N8N_BLOG_DRAFT_TOKEN`. That token is allowed to create drafts only; it cannot publish, edit, delete, manage accounts, or queue actions. Human review is required before publication.
 
@@ -138,7 +138,7 @@ Do not publish/activate the workflows merely because they import successfully. R
 3. PostgreSQL contract queries succeed.
 4. Provider webhook verification and inbound/outbound tests pass for enabled providers.
 5. At least one account-connect test succeeds for every provider enabled in production.
-6. Provider-backed action execution is implemented, idempotent, and records provider IDs.
+6. Provider-backed action execution is implemented, idempotent, and records provider IDs. The current initial adapter supports Telegram `send_message` only; other actions must remain unsupported until implemented and tested. The worker is disabled by default.
 7. Unsupported actions return a structured non-success result instead of attempting browser automation.
 8. GitHub Actions -> GHCR -> ArgoCD/k3s completes successfully.
 9. Public endpoint smoke tests pass.
