@@ -54,7 +54,7 @@ async def process_one() -> bool:
             UPDATE platform_actions SET status='needs_review', error_code='worker_interrupted',
               error_message='Execution interrupted; reconcile provider state before retrying.',
               completed_at=NOW(), updated_at=NOW()
-            WHERE status='processing' AND claimed_at < NOW() - INTERVAL '5 minutes'
+            WHERE status='processing' AND (claimed_at IS NULL OR claimed_at < NOW() - INTERVAL '5 minutes')
         """))
         await s.commit()
         row = (await s.execute(text("""
