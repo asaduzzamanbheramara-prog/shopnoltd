@@ -51,4 +51,4 @@ jobs:
       - name: Run read-only diagnostics tests
         run: python -m unittest discover -s tests/software-os-diagnostics -p 'test_*.py' -v
       - name: Build static frontend image
-        run: docker build -f frontend/Dockerfile -t shopnoltd-software-os-center .
+        run: docker build -t shopnoltd-software-os-center frontend
