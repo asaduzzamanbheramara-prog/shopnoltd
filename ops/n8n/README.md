@@ -129,6 +129,10 @@ The n8n pod receives webhook/action/blog values from the existing `shopno-apps/n
 
 The two `shopno-platform` Secret objects are optional references in deployments so an absent token cannot prevent unrelated website services from starting. Missing credentials cause the automation endpoints to reject requests rather than fall back to the broad internal automation token. Never place any secret values in workflow JSON or Git.
 
+## Telegram bot connection
+
+The social-service OAuth router exposes `POST /api/v1/omnichannel/oauth/telegram/connect` for an authenticated user to validate a Telegram bot token with Telegram's `getMe` endpoint. The token is encrypted with the configured provider OAuth encryption key and stored in the social database; the API response does not include the token. The action worker resolves the credential by tenant, connection, provider account ID, and encrypted token-row reference. It does not use a global bot token for tenant actions. Keep the worker disabled until a controlled test-chat delivery confirms provider IDs are persisted.
+
 ## Release gate
 
 Do not publish/activate the workflows merely because they import successfully. Required checks are:
