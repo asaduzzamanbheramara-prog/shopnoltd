@@ -22,7 +22,10 @@ on:
       - 'frontend/**'
       - 'docs/universal-software-os-center/**'
       - 'scripts/validate-software-os-catalogue.py'
+      - 'scripts/build-software-os-catalogue.py'
+      - 'tools/software-os-diagnostics/**'
       - 'tests/software-os-catalogue/**'
+      - 'tests/software-os-diagnostics/**'
       - '.github/workflows/software-os-catalogue.yml'
   workflow_dispatch:
 
