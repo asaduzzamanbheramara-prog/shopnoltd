@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "id": "linux-recovery-image-template",
+  "display_name": "Linux recovery image manifest template",
+  "publisher": "Replace with the actual distribution publisher",
+  "official_source_url": "https://www.kernel.org/",
+  "target_platforms": ["linux"],
+  "architectures": ["x86_64"],
+  "firmware_modes": ["uefi", "legacy-bios"],
+  "secure_boot": "unknown",
+  "minimum_usb_capacity_gib": 8,
+  "verification": {
+    "status": "not-verified",
+    "digest_algorithm": "none",
+    "digest": null,
+    "digest_source_url": null
+  },
+  "boot_test": {
+    "status": "not-tested",
+    "environment": null,
+    "tested_at": null
+  },
+  "notes": [
+    "Template only: this is not a downloadable image record and is not approved for user-facing recommendations.",
+    "Replace the publisher and source with a specific distribution's official recovery-image page before review."
+  ],
+  "validation_status": "draft"
+}
