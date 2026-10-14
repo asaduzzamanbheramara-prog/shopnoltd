@@ -25,6 +25,15 @@ async def admin(creds: HTTPAuthorizationCredentials = Depends(bearer)):
     return await verify_token_admin(creds.credentials)
 
 
+def _require_mailcow_success(response: object) -> None:
+    # Mailcow's add/mailbox endpoint returns a list of result objects. HTTP 2xx
+    # alone is insufficient: Mailcow can report application-level failures in JSON.
+    if not isinstance(response, list) or not response:
+        raise RuntimeError("Mailcow did not confirm mailbox creation")
+    if any(not isinstance(item, dict) or item.get("type") != "success" for item in response):
+        raise RuntimeError("Mailcow did not confirm mailbox creation")
+
+
 @router.post("/{domain_id}", status_code=201)
 async def add(domain_id: str, body: MailboxIn, user=Depends(admin), s: AsyncSession = Depends(db)):
     d = (await s.execute(select(Domain).where(Domain.id == domain_id))).scalar_one_or_none()
@@ -51,7 +60,7 @@ async def add(domain_id: str, body: MailboxIn, user=Depends(admin), s: AsyncSess
     password = secrets.token_urlsafe(32)
     try:
         await s.flush()
-        await call_mailcow(
+        response = await call_mailcow(
             "add/mailbox",
             {
                 "local_part": body.local_part,
@@ -62,6 +71,7 @@ async def add(domain_id: str, body: MailboxIn, user=Depends(admin), s: AsyncSess
                 "active": "1",
             },
         )
+        _require_mailcow_success(response)
         mailbox.active = True
         await s.commit()
         await s.refresh(mailbox)
