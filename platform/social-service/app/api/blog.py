@@ -60,7 +60,8 @@ class BlogPostIn(BaseModel):
     excerpt: str | None = None
     content: str = Field(min_length=1)
     cover_image: str | None = None
-    status: str = Field(default="draft", pattern="^(draft|published)$")
+    status: str = Field(default="draft", pattern="^(draft|published|scheduled)$")
+    scheduled_at: datetime | None = None
 
 
 class BlogPostOut(BaseModel):
@@ -72,6 +73,7 @@ class BlogPostOut(BaseModel):
     cover_image: str | None
     status: str
     published_at: str | None
+    scheduled_at: str | None
     created_at: str
     updated_at: str
 
@@ -86,6 +88,7 @@ def out(p: BlogPost) -> BlogPostOut:
         cover_image=p.cover_image,
         status=p.status,
         published_at=p.published_at.isoformat() if p.published_at else None,
+        scheduled_at=p.scheduled_at.isoformat() if p.scheduled_at else None,
         created_at=p.created_at.isoformat(),
         updated_at=p.updated_at.isoformat(),
     )
@@ -148,6 +151,19 @@ async def create_blog_post(body: BlogPostIn, creds: HTTPAuthorizationCredentials
         user = {"sub": "n8n-blog-drafter", "tenant_id": "default"}
     else:
         user = await current_user(creds)
+    if body.status in {"published", "scheduled"} and not can_manage_blog(user):
+        raise HTTPException(403, "Blog management privileges required to publish or schedule")
+    if body.status == "scheduled":
+        if body.scheduled_at is None:
+            raise HTTPException(422, "scheduled_at is required for scheduled posts")
+        scheduled_at = body.scheduled_at
+        if scheduled_at.tzinfo is None:
+            raise HTTPException(422, "scheduled_at must include a timezone")
+        scheduled_at = scheduled_at.astimezone(timezone.utc).replace(tzinfo=None)
+        if scheduled_at <= datetime.now(timezone.utc).replace(tzinfo=None):
+            raise HTTPException(422, "scheduled_at must be in the future")
+    else:
+        scheduled_at = None
     slug = slugify(body.slug or body.title)
     if (await s.execute(select(BlogPost).where(BlogPost.slug == slug))).scalar_one_or_none():
         raise HTTPException(409, "slug already exists")
@@ -162,6 +178,7 @@ async def create_blog_post(body: BlogPostIn, creds: HTTPAuthorizationCredentials
         cover_image=body.cover_image,
         status=body.status,
         published_at=now if body.status == "published" else None,
+        scheduled_at=scheduled_at,
     )
     s.add(p)
     await s.commit()
@@ -176,6 +193,19 @@ async def update_blog_post(post_id: str, body: BlogPostIn, user=Depends(current_
         raise HTTPException(404, "blog post not found")
     if not can_manage_post(user, p):
         raise HTTPException(403, "You cannot manage this blog post")
+    if body.status in {"published", "scheduled"} and not can_manage_blog(user):
+        raise HTTPException(403, "Blog management privileges required to publish or schedule")
+    if body.status == "scheduled":
+        if body.scheduled_at is None:
+            raise HTTPException(422, "scheduled_at is required for scheduled posts")
+        scheduled_at = body.scheduled_at
+        if scheduled_at.tzinfo is None:
+            raise HTTPException(422, "scheduled_at must include a timezone")
+        scheduled_at = scheduled_at.astimezone(timezone.utc).replace(tzinfo=None)
+        if scheduled_at <= datetime.now(timezone.utc).replace(tzinfo=None):
+            raise HTTPException(422, "scheduled_at must be in the future")
+    else:
+        scheduled_at = None
     slug = slugify(body.slug or body.title)
     conflict = (await s.execute(select(BlogPost).where(BlogPost.slug == slug, BlogPost.id != post_id))).scalar_one_or_none()
     if conflict:
@@ -187,9 +217,10 @@ async def update_blog_post(post_id: str, body: BlogPostIn, user=Depends(current_
     p.content = body.content
     p.cover_image = body.cover_image
     p.status = body.status
+    p.scheduled_at = scheduled_at
     if body.status == "published" and not was_published:
         p.published_at = datetime.now(timezone.utc).replace(tzinfo=None)
-    elif body.status == "draft":
+    elif body.status in {"draft", "scheduled"}:
         p.published_at = None
     await s.commit()
     await s.refresh(p)
