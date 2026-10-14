@@ -317,11 +317,11 @@ async def queue_action(body: ActionIn, user=Depends(action_user), s: AsyncSessio
         VALUES (:id, :tenant, NULLIF(:connection_id,'')::uuid, :client, :platform, :action,
                 :target_type, :target_id, 'queued', NULLIF(:idem,''), CAST(:payload AS jsonb))
         ON CONFLICT (tenant_id, idempotency_key) DO NOTHING
-        RETURNING id, status, platform, action, created_at"""
+        RETURNING id, status, approval_status, platform, action, created_at"""
     ), params)).mappings().one_or_none()
     if row is None:
         existing = (await s.execute(text(
-            """SELECT id, status, platform, action, connection_id, client_id, target_type,
+            """SELECT id, status, approval_status, platform, action, connection_id, client_id, target_type,
                       target_id, request_payload, created_at
                FROM platform_actions
                WHERE tenant_id=:tenant AND idempotency_key=:idem"""
@@ -345,6 +345,42 @@ async def queue_action(body: ActionIn, user=Depends(action_user), s: AsyncSessio
         )
         if not same_request:
             raise HTTPException(409, "idempotency key already used for a different action")
-        row = {key: existing[key] for key in ("id", "status", "platform", "action", "created_at")}
+        row = {key: existing[key] for key in ("id", "status", "approval_status", "platform", "action", "created_at")}
     await s.commit()
     return {**dict(row), "capability": capability}
+
+@router.post("/actions/{action_id}/approve")
+async def approve_action(action_id: str, user=Depends(current_user), s: AsyncSession = Depends(db)):
+    roles = set(user.get("roles") or [])
+    roles.update((user.get("realm_access") or {}).get("roles") or [])
+    for client in (user.get("resource_access") or {}).values():
+        roles.update((client or {}).get("roles") or [])
+    if not roles.intersection({"admin", "platform_admin"}):
+        raise HTTPException(403, "administrator approval required")
+
+    tenant_id = user.get("tenant_id", "default")
+    row = (await s.execute(text(
+        """UPDATE platform_actions
+           SET approval_status='approved', approved_by=:user_id,
+               approved_at=NOW(), updated_at=NOW()
+           WHERE tenant_id=:tenant AND id=CAST(:id AS uuid)
+             AND status='queued' AND approval_status='pending'
+           RETURNING id, status, approval_status, approved_by, approved_at"""
+    ), {
+        "tenant": tenant_id, "id": action_id,
+        "user_id": str(user.get("sub") or user.get("user_id") or ""),
+    })).mappings().one_or_none()
+    if row is not None:
+        await s.commit()
+        return dict(row)
+
+    existing = (await s.execute(text(
+        """SELECT id, status, approval_status, approved_by, approved_at
+           FROM platform_actions WHERE tenant_id=:tenant AND id=CAST(:id AS uuid)"""
+    ), {"tenant": tenant_id, "id": action_id})).mappings().one_or_none()
+    if existing is None:
+        raise HTTPException(404, "action not found")
+    if existing["approval_status"] == "approved":
+        return dict(existing)
+    raise HTTPException(409, "action is not awaiting approval")
+
