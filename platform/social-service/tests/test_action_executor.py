@@ -231,9 +231,16 @@ class _FakeExecutionSessionContext:
 
 
 class TelegramExecutorTests(unittest.IsolatedAsyncioTestCase):
-    async def _run(self, provider_status):
+    async def _run(self, provider_status, connection_row=None, capability="supported"):
         session = _FakeExecutionSession(provider_status=provider_status)
+        if connection_row is not None or capability != "supported":
+            session.results[2] = _FakeExecutionResult(mapping=connection_row or {
+                "status": "connected", "platform": "telegram", "platform_account_id": "bot-42",
+                "access_token_ref": "token-row-42",
+            })
+            session.results[3] = _FakeExecutionResult(scalar=capability)
         _FakeTelegramSendClient.response_status = provider_status
+        _FakeTelegramSendClient.last_request = None
         class FakeCipher:
             @staticmethod
             def decrypt(value):
@@ -267,6 +274,23 @@ class TelegramExecutorTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(finish_params["status"], "retry_wait")
         self.assertEqual(finish_params["delay"], 3)
         self.assertEqual(finish_params["code"], "provider_rate_limited")
+
+
+    async def test_missing_tenant_owned_connection_fails_without_provider_request(self):
+        processed, session = await self._run(200, connection_row={})
+        self.assertTrue(processed)
+        self.assertIsNone(_FakeTelegramSendClient.last_request)
+        finish_params = session.calls[-1][1]
+        self.assertEqual(finish_params["status"], "failed")
+        self.assertEqual(finish_params["code"], "connection_not_ready")
+
+    async def test_unverified_capability_fails_closed(self):
+        processed, session = await self._run(200, capability="provider_dependent")
+        self.assertTrue(processed)
+        self.assertIsNone(_FakeTelegramSendClient.last_request)
+        finish_params = session.calls[-1][1]
+        self.assertEqual(finish_params["status"], "unsupported")
+        self.assertEqual(finish_params["code"], "capability_not_verified")
 
     async def test_provider_403_is_terminal_failure(self):
         processed, session = await self._run(403)
