@@ -29,6 +29,6 @@ The catalogue and tooling should accept software metadata for any device/OS/pack
 3. Make the UI filter by OS, device type, architecture and package format.
 4. Add read-only device detection in the local helper, with user consent and no upload by default.
 5. Add platform-specific install flows only after signed releases, least privilege, rollback and tests exist.
-6. Build and test recovery media for supported architectures; maintain a compatibility matrix instead of claiming universal boot.
+6. Build and test recovery media for supported architectures; maintain a compatibility matrix instead of claiming universal boot. The bootable USB safety and acceptance requirements are defined in [bootable-usb-recovery.md](bootable-usb-recovery.md).
 
 The current PR is a foundation. This roadmap does not mean every platform or installer is already implemented.
