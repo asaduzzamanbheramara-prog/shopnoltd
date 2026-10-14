@@ -520,6 +520,10 @@ async def my_provisioning_status(
         # Authentication failures are client errors, not unhandled 500s. Keep
         # verifier details (which may contain token/header data) out of responses.
         raise HTTPException(401, "invalid or expired authentication token") from exc
+    except httpx.HTTPError as exc:
+        # A JWKS/identity-provider outage is not evidence that the user's token
+        # is invalid. Return a generic temporary failure without leaking details.
+        raise HTTPException(503, "authentication service temporarily unavailable") from exc
 
     keycloak_id = payload.get("sub")
     if not keycloak_id:
