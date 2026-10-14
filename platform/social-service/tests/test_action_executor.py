@@ -1,6 +1,7 @@
 import unittest
 from unittest.mock import AsyncMock, patch
 
+from fastapi import HTTPException
 from fastapi.security import HTTPAuthorizationCredentials
 
 from app.services import action_executor
@@ -142,6 +143,24 @@ class TelegramConnectionTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(session.calls[1][1]["token_ref"], "telegram-token-row-id")
         self.assertNotIn(token, repr(result))
         self.assertNotIn(token, repr(session.calls[0][1]["metadata"]))
+
+
+    async def test_invalid_token_length_is_not_reflected_or_sent_to_provider(self):
+        token = "short-secret-token"
+        with (
+            patch.object(omnichannel_oauth, "verify_token", new=AsyncMock(return_value={
+                "sub": "user-1", "tenant_id": "tenant-1"
+            })),
+            patch.object(omnichannel_oauth.httpx, "AsyncClient") as client,
+        ):
+            with self.assertRaises(HTTPException) as caught:
+                await omnichannel_oauth.connect_telegram_bot(
+                    omnichannel_oauth.TelegramBotConnectIn(bot_token=token),
+                    HTTPAuthorizationCredentials(scheme="Bearer", credentials="test-jwt"),
+                )
+        self.assertEqual(caught.exception.status_code, 400)
+        self.assertNotIn(token, str(caught.exception))
+        client.assert_not_called()
 
 
 class _FakeExecutionResult:
