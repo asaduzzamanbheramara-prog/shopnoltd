@@ -35,6 +35,39 @@ class RecoveryImageManifestTests(unittest.TestCase):
         manifest["official_source_url"] = "http://example.com/image.iso"
         self.assertTrue(list(VALIDATOR.iter_errors(manifest)))
 
+    def test_digest_verified_requires_real_digest_and_trusted_source_url(self):
+        manifest = json.loads(TEMPLATE.read_text(encoding="utf-8"))
+        manifest["verification"] = {
+            "status": "digest-verified",
+            "digest_algorithm": "none",
+            "digest": None,
+            "digest_source_url": None,
+        }
+        self.assertTrue(list(VALIDATOR.iter_errors(manifest)))
+
+    def test_signature_verified_requires_signature_and_signer_metadata(self):
+        manifest = json.loads(TEMPLATE.read_text(encoding="utf-8"))
+        manifest["verification"] = {
+            "status": "signature-verified",
+            "digest_algorithm": "sha256",
+            "digest": "a" * 64,
+            "digest_source_url": "https://publisher.example/checksums.txt",
+        }
+        self.assertTrue(list(VALIDATOR.iter_errors(manifest)))
+
+    def test_complete_signature_metadata_satisfies_verification_contract(self):
+        manifest = json.loads(TEMPLATE.read_text(encoding="utf-8"))
+        manifest["verification"] = {
+            "status": "signature-verified",
+            "digest_algorithm": "sha256",
+            "digest": "a" * 64,
+            "digest_source_url": "https://publisher.example/checksums.txt",
+            "signature_url": "https://publisher.example/image.iso.sig",
+            "signature_format": "openpgp",
+            "signer_identity": "Publisher release signing key 2026",
+        }
+        self.assertEqual(list(VALIDATOR.iter_errors(manifest)), [])
+
     def test_cli_accepts_template(self):
         result = subprocess.run(
             [sys.executable, str(ROOT / "scripts/validate-recovery-image-manifest.py"), str(TEMPLATE)],
