@@ -50,8 +50,8 @@ BEGIN
   END IF;
 END $$;
 
-INSERT INTO platform_actions (id, status)
-VALUES ('00000000-0000-4000-8000-000000000021', 'queued');
+INSERT INTO platform_actions (id, platform, action, status)
+VALUES ('00000000-0000-4000-8000-000000000021', 'telegram', 'send_message', 'queued');
 
 DO $$
 DECLARE
