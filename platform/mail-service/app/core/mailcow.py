@@ -3,7 +3,7 @@ import httpx
 from app.core.config import settings
 
 
-async def call_mailcow(action: str, payload: dict) -> dict:
+async def call_mailcow(action: str, payload: dict) -> object:
     async with httpx.AsyncClient() as c:
         r = await c.post(
             f"{settings.mailcow_api_url}/{action}",
