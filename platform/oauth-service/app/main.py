@@ -13,6 +13,7 @@ from starlette.responses import Response
 
 from app.core.config import settings
 from app.core.db import Base, engine
+from app.core.provisioning_migrations import ensure_account_provisioning_constraints
 
 log = structlog.get_logger()
 
@@ -29,38 +30,7 @@ async def lifespan(app: FastAPI):
             await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS source_sheet VARCHAR(255)"))
             await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS source_row INTEGER"))
             await conn.execute(text("ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS banner_url VARCHAR(1024)"))
-            await conn.execute(text("""
-                DO $
-                BEGIN
-                    IF NOT EXISTS (
-                        SELECT 1 FROM pg_constraint
-                        WHERE conname = 'ck_account_provisioning_resource_type'
-                          AND conrelid = 'account_provisioning_jobs'::regclass
-                    ) THEN
-                        ALTER TABLE account_provisioning_jobs
-                        ADD CONSTRAINT ck_account_provisioning_resource_type
-                        CHECK (resource_type IN ('subdomain', 'mailbox')) NOT VALID;
-                    END IF;
-                    IF NOT EXISTS (
-                        SELECT 1 FROM pg_constraint
-                        WHERE conname = 'ck_account_provisioning_status'
-                          AND conrelid = 'account_provisioning_jobs'::regclass
-                    ) THEN
-                        ALTER TABLE account_provisioning_jobs
-                        ADD CONSTRAINT ck_account_provisioning_status
-                        CHECK (status IN ('pending', 'processing', 'active', 'failed')) NOT VALID;
-                    END IF;
-                    IF NOT EXISTS (
-                        SELECT 1 FROM pg_constraint
-                        WHERE conname = 'ck_account_provisioning_attempts_nonnegative'
-                          AND conrelid = 'account_provisioning_jobs'::regclass
-                    ) THEN
-                        ALTER TABLE account_provisioning_jobs
-                        ADD CONSTRAINT ck_account_provisioning_attempts_nonnegative
-                        CHECK (attempts >= 0) NOT VALID;
-                    END IF;
-                END $;
-            """))
+            await ensure_account_provisioning_constraints(conn)
             await conn.execute(text("""CREATE TABLE IF NOT EXISTS kyc_identities (
                 id VARCHAR(64) PRIMARY KEY,
                 user_id VARCHAR(64) UNIQUE NOT NULL,
