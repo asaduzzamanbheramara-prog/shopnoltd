@@ -20,6 +20,8 @@ jobs:
   mailbox-security-tests:
     name: Mailbox security regression tests
     runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: shared/libraries/python
     timeout-minutes: 10
     steps:
       - name: Checkout
