@@ -28,3 +28,16 @@ The current catalogue is public metadata and official-source links. It does not 
 ## Desktop helper and recovery boundary
 
 A future desktop helper must be a separately signed, versioned client with least-privilege operations. Start with read-only diagnostics. Never let catalogue HTML/JSON or a remote API provide arbitrary shell commands. Destructive operations require a local target-device summary, backup warning, and explicit confirmation. A recovery image must be reproducible, license-reviewed, checksummed/signed, and tested in virtual machines before publication.
+
+
+## Identity mapping follow-up (verified against current source)
+
+The payment service currently authenticates a token and uses the JWT `sub` directly as `user_id` in payment routes (for example, `platform/payment-service/app/api/deposits.py`). The OAuth service's `UserMirror` model distinguishes its internal `id` from `keycloak_id`; the `/users/me` response exposes the internal `id` as `id` and the Keycloak subject as `sub`. Separately, the payment schema reconciliation SQL defines payment `user_id` columns with foreign keys to `public.users(id)`.
+
+These identifiers are not interchangeable by definition. Before adding a software entitlement table or granting catalogue access, resolve and test the canonical mapping explicitly:
+- Decide whether payment/entitlement ownership stores the internal Shopnoltd user ID, the Keycloak subject, or both as separately named columns.
+- If a JWT subject is used for authentication, resolve it through the trusted identity service to the canonical Shopnoltd user ID before database writes; never resolve accounts by browser-supplied email.
+- Confirm that the deployed `public.users` table and the payment service use the same canonical identifier and tenant policy. Add an integration test proving a real authenticated subject maps to exactly one owner row.
+- Verify existing payment writes and schema constraints in a disposable test database before adding any new foreign key or migration. Do not edit or run production migrations as part of this audit.
+
+This is a release blocker for a paid entitlement implementation, not a claim that all existing payment routes are broken. The repository has multiple payment paths and schema histories, so the runtime database state must be checked before drawing that broader conclusion.
