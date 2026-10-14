@@ -70,6 +70,33 @@ class CatalogueSchemaTests(unittest.TestCase):
         ])
         self.assertEqual(errors, [(duplicate, "same-id", first)])
 
+
+    def test_sha256_checksum_requires_64_hex_characters(self):
+        entry = json.loads(json.dumps(SAMPLE))
+        entry["verification"].update({
+            "method": "publisher-checksum",
+            "status": "verified",
+            "checksum_algorithm": "sha256",
+            "checksum": "a" * 64,
+            "evidence_url": "https://example.com/verification",
+        })
+        self.assertEqual(list(VALIDATOR.iter_errors(entry)), [])
+        entry["verification"]["checksum"] = "a" * 128
+        self.assertTrue(list(VALIDATOR.iter_errors(entry)))
+
+    def test_sha512_checksum_requires_128_hex_characters(self):
+        entry = json.loads(json.dumps(SAMPLE))
+        entry["verification"].update({
+            "method": "publisher-checksum",
+            "status": "verified",
+            "checksum_algorithm": "sha512",
+            "checksum": "b" * 128,
+            "evidence_url": "https://example.com/verification",
+        })
+        self.assertEqual(list(VALIDATOR.iter_errors(entry)), [])
+        entry["verification"]["checksum"] = "b" * 64
+        self.assertTrue(list(VALIDATOR.iter_errors(entry)))
+
     def test_rejects_non_https_source(self):
         entry = json.loads(json.dumps(SAMPLE))
         entry["source"]["url"] = "http://example.invalid/software"
