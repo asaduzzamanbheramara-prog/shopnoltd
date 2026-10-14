@@ -2,8 +2,12 @@
 from __future__ import annotations
 
 import unittest
+import sys
+from pathlib import Path
 
-from tools.software_os_diagnostics_usb_device_inventory import parse_lsblk
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "tools/software-os-diagnostics"))
+from usb_device_inventory import parse_lsblk  # noqa: E402
 
 
 class UsbInventoryTests(unittest.TestCase):
