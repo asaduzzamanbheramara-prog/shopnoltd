@@ -47,7 +47,63 @@
 </main>
 <footer><p>Shopnoltd Software &amp; OS Center · Catalogue preview. This page does not guarantee compatibility or repair success and does not host operating-system images.</p><p><a href="/">Back to Shopnoltd</a></p></footer>
 <script>
-(function(){const input=document.getElementById('search');const cards=[...document.querySelectorAll('#catalogue [data-search]')];const empty=document.getElementById('empty');input.addEventListener('input',function(){const q=this.value.trim().toLowerCase();let visible=0;cards.forEach(card=>{const show=(card.dataset.search+' '+card.textContent).toLowerCase().includes(q);card.classList.toggle('hidden',!show);if(show)visible++});empty.classList.toggle('hidden',visible!==0)});})();
+(function(){
+  const input=document.getElementById('search');
+  const catalogue=document.getElementById('catalogue');
+  const empty=document.getElementById('empty');
+  function refreshSearch(){
+    const q=input.value.trim().toLowerCase();
+    const cards=[...catalogue.querySelectorAll('[data-search]')];
+    let visible=0;
+    cards.forEach(card=>{
+      const show=(card.dataset.search+' '+card.textContent).toLowerCase().includes(q);
+      card.classList.toggle('hidden',!show);
+      if(show)visible++;
+    });
+    empty.classList.toggle('hidden',visible!==0);
+  }
+  input.addEventListener('input',refreshSearch);
+
+  function makeText(tag, text, className){
+    const node=document.createElement(tag);
+    node.textContent=String(text || '');
+    if(className)node.className=className;
+    return node;
+  }
+  function renderEntry(entry){
+    const card=document.createElement('article');
+    card.className='card';
+    card.dataset.search=[entry.name,entry.kind,...(entry.platforms||[]),...(entry.architectures||[]),entry.description].join(' ');
+    card.append(makeText('h3',entry.name));
+    card.append(makeText('p',(entry.platforms||[]).join(' · ')+' · '+entry.kind+' · '+((entry.architectures||[]).join(', ')||'architecture not specified'),'muted small'));
+    card.append(makeText('p',entry.description));
+    const status=(entry.verification&&entry.verification.status)||'needs-review';
+    card.append(makeText('p','Catalogue status: '+status+' · '+((entry.source&&entry.source.publisher)||'Publisher not specified'),'small'));
+    const url=entry.source&&entry.source.url;
+    if(typeof url==='string' && url.startsWith('https://')){
+      const link=document.createElement('a');
+      link.className='btn primary';
+      link.href=url;
+      link.target='_blank';
+      link.rel='noopener noreferrer';
+      link.textContent='Official source';
+      card.append(link);
+    }
+    return card;
+  }
+  fetch('/catalogue.json',{cache:'no-cache'})
+    .then(response=>{if(!response.ok)throw new Error('Catalogue unavailable');return response.json();})
+    .then(entries=>{
+      if(!Array.isArray(entries))throw new Error('Invalid catalogue payload');
+      const current=[...catalogue.querySelectorAll('article.card')];
+      const usb=current.find(card=>card.textContent.includes('Bootable USB guidance'));
+      catalogue.replaceChildren();
+      entries.filter(entry=>entry&&entry.kind==='operating-system').forEach(entry=>catalogue.append(renderEntry(entry)));
+      if(usb)catalogue.append(usb);
+      refreshSearch();
+    })
+    .catch(()=>{ /* Keep the safe, official-link fallback cards if the JSON catalogue is unavailable. */ });
+})();
 </script>
 </body>
 </html>
