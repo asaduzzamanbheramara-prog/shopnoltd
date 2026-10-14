@@ -32,9 +32,11 @@ A future desktop helper must be a separately signed, versioned client with least
 
 ## Identity mapping follow-up (verified against current source)
 
-The payment service currently authenticates a token and uses the JWT `sub` directly as `user_id` in payment routes (for example, `platform/payment-service/app/api/deposits.py`). The OAuth service's `UserMirror` model distinguishes its internal `id` from `keycloak_id`; the `/users/me` response exposes the internal `id` as `id` and the Keycloak subject as `sub`. Separately, the payment schema reconciliation SQL defines payment `user_id` columns with foreign keys to `public.users(id)`.
+The payment service currently authenticates a token and uses the JWT `sub` directly as `user_id` in payment routes (including `platform/payment-service/app/api/deposits.py` and `platform/payment-service/app/api/transactions.py`). The OAuth service's `UserMirror` model distinguishes its internal `id` from `keycloak_id`; the `/users/me` response exposes the internal `id` as `id` and the Keycloak subject as `sub`. Separately, `k8s/services/postgres/migration/012-payment-schema-reconciliation.sql` defines `wallets.user_id` and `transactions.user_id` as foreign keys to `public.users(id)`.
 
-These identifiers are not interchangeable by definition. Before adding a software entitlement table or granting catalogue access, resolve and test the canonical mapping explicitly:
+**This is a concrete source-level identity/schema mismatch that must be investigated before release.** The payment routes write `sub`, while the reconciliation schema expects the internal `users.id`. If that schema is the one deployed and the IDs differ as the OAuth model indicates, payment writes can fail their foreign-key constraints. Repository inspection alone cannot establish which schema is currently deployed or whether another compatibility layer exists, so treat this as a high-priority verification/fix—not as a confirmed production incident.
+
+Before adding a software entitlement table or granting catalogue access, resolve and test the canonical mapping explicitly:
 - Decide whether payment/entitlement ownership stores the internal Shopnoltd user ID, the Keycloak subject, or both as separately named columns.
 - If a JWT subject is used for authentication, resolve it through the trusted identity service to the canonical Shopnoltd user ID before database writes; never resolve accounts by browser-supplied email.
 - Confirm that the deployed `public.users` table and the payment service use the same canonical identifier and tenant policy. Add an integration test proving a real authenticated subject maps to exactly one owner row.
