@@ -184,8 +184,8 @@ class _FakeExecutionSession:
             _FakeExecutionResult(),
         ]
 
-    async def execute(self, statement, params):
-        self.calls.append((str(statement), params))
+    async def execute(self, statement, params=None):
+        self.calls.append((str(statement), params or {}))
         return self.results[len(self.calls) - 1]
 
     async def commit(self):
