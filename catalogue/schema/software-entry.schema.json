@@ -51,8 +51,17 @@
           "macos",
           "android",
           "ios",
+          "ipados",
+          "chromeos",
+          "tvos",
+          "watchos",
+          "harmonyos",
+          "kaios",
+          "bsd",
+          "web",
           "firmware",
-          "cross-platform"
+          "cross-platform",
+          "other"
         ]
       }
     },
@@ -66,7 +75,14 @@
           "x86",
           "arm64",
           "arm",
+          "arm64-v8a",
+          "armeabi-v7a",
           "riscv64",
+          "mips",
+          "ppc64le",
+          "s390x",
+          "wasm32",
+          "universal",
           "any"
         ]
       }
@@ -178,6 +194,64 @@
       "items": {
         "type": "string",
         "maxLength": 500
+      }
+    },
+    "device_types": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "desktop",
+          "laptop",
+          "workstation",
+          "server",
+          "phone",
+          "tablet",
+          "tv",
+          "wearable",
+          "router",
+          "single-board-computer",
+          "virtual-machine",
+          "embedded",
+          "browser",
+          "other"
+        ]
+      }
+    },
+    "package_formats": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "exe",
+          "msi",
+          "msix",
+          "appx",
+          "dmg",
+          "pkg",
+          "appimage",
+          "deb",
+          "rpm",
+          "flatpak",
+          "snap",
+          "apk",
+          "apks",
+          "xapk",
+          "aab",
+          "ipa",
+          "zip",
+          "tar",
+          "iso",
+          "img",
+          "bin",
+          "source",
+          "web-app",
+          "container",
+          "firmware",
+          "other"
+        ]
       }
     }
   },
