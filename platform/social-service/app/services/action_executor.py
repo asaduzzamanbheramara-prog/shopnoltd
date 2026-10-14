@@ -160,14 +160,23 @@ async def process_one() -> bool:
             result = response.json()
         except (ValueError, json.JSONDecodeError):
             result = {}
-        if result.get("ok") is not True:
+        if not isinstance(result, dict) or result.get("ok") is not True:
             await _finish(s, aid, "needs_review", code="provider_result_unverified",
                           message="Provider response did not confirm the action.")
             return True
-        msg = result.get("result") or {}
+        msg = result.get("result")
+        chat = msg.get("chat") if isinstance(msg, dict) else None
+        message_id = msg.get("message_id") if isinstance(msg, dict) else None
+        chat_id = chat.get("id") if isinstance(chat, dict) else None
+        # A bare {"ok": true} is not sufficient proof of delivery. Do not
+        # report success unless Telegram returns both durable provider IDs.
+        if message_id is None or chat_id is None:
+            await _finish(s, aid, "needs_review", code="provider_result_unverified",
+                          message="Provider response lacked message identifiers; reconcile provider state.")
+            return True
         await _finish(s, aid, "succeeded", result={
-            "provider": "telegram", "provider_message_id": msg.get("message_id"),
-            "provider_chat_id": (msg.get("chat") or {}).get("id")})
+            "provider": "telegram", "provider_message_id": message_id,
+            "provider_chat_id": chat_id})
         log.info("social_action.succeeded", action_id=aid, platform=platform, action=verb)
         return True
 
