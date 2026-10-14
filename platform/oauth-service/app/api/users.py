@@ -198,6 +198,9 @@ async def create(body: UserIn, user=Depends(admin), s: AsyncSession = Depends(db
     s.add(u)
     await s.flush()
     s.add(UserProfile(user_id=u.id, display_name=body.name or body.email.split("@")[0], source="admin_created"))
+    # Admin-created identities must receive the same durable provisioning jobs
+    # as identities first mirrored during an authenticated user request.
+    await _ensure_account_provisioning_jobs(s, u)
     await s.commit()
     await s.refresh(u)
     return _user_out(u)
