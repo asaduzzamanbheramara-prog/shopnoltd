@@ -48,19 +48,25 @@ def verify_detached_signature(
         line for line in result.stdout.splitlines()
         if line.startswith("[GNUPG:] ")
     ]
-    valid_signers: set[str] = set()
+    trusted_signers: set[str] = set()
     for line in status_lines:
         fields = line.split()
         if len(fields) >= 3 and fields[1] == "VALIDSIG":
-            # GnuPG includes the signing-key fingerprint first and, for a
-            # signing subkey, the primary-key fingerprint as the final field.
-            valid_signers.add(fields[2].upper())
-            if len(fields) >= 12 and FINGERPRINT_RE.fullmatch(fields[-1]):
-                valid_signers.add(fields[-1].upper())
+            signing_fingerprint = fields[2].upper()
+            # For a signature made by a subkey, GnuPG reports the primary
+            # key fingerprint as the final VALIDSIG field. Pin the primary
+            # publisher key when available; do not accidentally accept a
+            # subkey fingerprint while the configured primary key differs.
+            primary_fingerprint = (
+                fields[-1].upper()
+                if len(fields) >= 12 and FINGERPRINT_RE.fullmatch(fields[-1])
+                else None
+            )
+            trusted_signers.add(primary_fingerprint or signing_fingerprint)
 
-    if result.returncode != 0 or not valid_signers:
+    if result.returncode != 0 or not trusted_signers:
         return False, "signature verification failed against the supplied keyring"
-    if expected not in valid_signers:
+    if expected not in trusted_signers:
         return False, "signature is valid, but the signer fingerprint does not match the expected publisher key"
     return True, "valid OpenPGP signature from the expected fingerprint"
 
