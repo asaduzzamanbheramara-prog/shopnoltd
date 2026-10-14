@@ -9,7 +9,7 @@ from pathlib import Path
 
 from jsonschema import Draft202012Validator, FormatChecker
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[1]
 SCHEMA_PATH = ROOT / "catalogue/schema/recovery-image-manifest.schema.json"
 
 
