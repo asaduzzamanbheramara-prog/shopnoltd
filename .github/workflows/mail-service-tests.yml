@@ -42,11 +42,26 @@ jobs:
         run: python -m pytest -q platform/mail-service/tests/test_mailboxes_security.py
 
   oauth-provisioning-tests:
-    name: OAuth provisioning outbox tests
+    name: OAuth provisioning outbox and PostgreSQL migration tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: provisioning_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d provisioning_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     env:
       PYTHONPATH: shared/libraries/python
+      TEST_DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/provisioning_test
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -62,4 +77,4 @@ jobs:
           python -m pip install -r platform/oauth-service/requirements.txt pytest==8.4.1
       - name: Run provisioning outbox tests
         working-directory: platform/oauth-service
-        run: python -m pytest -q tests/test_account_provisioning_jobs.py
+        run: python -m pytest -q tests/test_account_provisioning_jobs.py tests/test_provisioning_migration.py
