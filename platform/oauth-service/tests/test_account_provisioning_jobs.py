@@ -40,3 +40,14 @@ def test_enqueue_is_idempotent_for_subdomain_and_mailbox_jobs():
     assert all(item["user_id"] == "user-123" for item in params)
     assert all(item["keycloak_id"] == "kc-subject-456" for item in params)
     assert all(item["status"] == "pending" and item["attempts"] == 0 for item in params)
+
+def test_outbox_model_enforces_valid_resource_status_and_attempt_count():
+    from app.models.models import AccountProvisioningJob
+
+    constraint_names = {
+        constraint.name for constraint in AccountProvisioningJob.__table__.constraints
+    }
+    assert "uq_account_provisioning_user_resource" in constraint_names
+    assert "ck_account_provisioning_resource_type" in constraint_names
+    assert "ck_account_provisioning_status" in constraint_names
+    assert "ck_account_provisioning_attempts_nonnegative" in constraint_names
