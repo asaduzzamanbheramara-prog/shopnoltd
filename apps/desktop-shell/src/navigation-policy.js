@@ -24,7 +24,7 @@ function isTrustedPortalUrl(candidate, configuredPortalUrl) {
 /** External links may open in the system browser only when they are HTTPS URLs. */
 function isSafeExternalUrl(candidate, configuredPortalUrl) {
   const parsed = parseUrl(candidate);
-  if (!parsed || parsed.protocol !== 'https:' || !parsed.hostname) return false;
+  if (!parsed || parsed.protocol !== 'https:' || !parsed.hostname || parsed.username !== '' || parsed.password !== '') return false;
   return !isTrustedPortalUrl(candidate, configuredPortalUrl);
 }
 
