@@ -180,5 +180,43 @@
         "maxLength": 500
       }
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "verification": {
+            "properties": {
+              "status": {
+                "const": "verified"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          }
+        },
+        "required": [
+          "verification"
+        ]
+      },
+      "then": {
+        "properties": {
+          "verification": {
+            "required": [
+              "evidence_url"
+            ],
+            "properties": {
+              "method": {
+                "enum": [
+                  "publisher-signature",
+                  "publisher-checksum"
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
 }
