@@ -14,6 +14,7 @@ from cryptography.fernet import Fernet, InvalidToken
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import RedirectResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from pydantic import BaseModel, Field
 from sqlalchemy import text
 
 from app.api.omnichannel import PROVIDER_CONFIG
@@ -290,3 +291,89 @@ async def oauth_status(creds: HTTPAuthorizationCredentials = Depends(bearer)):
                ORDER BY provider, platform, display_name"""
         ), {"tenant": tenant, "user": str(user.get("sub") or user.get("user_id") or "")})).mappings().all()
     return [dict(row) for row in rows]
+
+
+class TelegramBotConnectIn(BaseModel):
+    bot_token: str = Field(min_length=30, max_length=512)
+
+
+@router.post("/telegram/connect", status_code=201)
+async def connect_telegram_bot(
+    body: TelegramBotConnectIn,
+    creds: HTTPAuthorizationCredentials = Depends(bearer),
+):
+    """Validate and store a tenant-owned Telegram bot token encrypted at rest."""
+    user = await verify_token(creds.credentials)
+    tenant_id = str(user.get("tenant_id") or "default")
+    user_id = str(user.get("sub") or user.get("user_id") or "")
+    if not user_id:
+        raise HTTPException(401, "authenticated user identity is missing")
+
+    # Validate the credential with Telegram without logging or returning it.
+    try:
+        cipher = _fernet()
+    except HTTPException:
+        raise
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            response = await client.get(
+                f"https://api.telegram.org/bot{body.bot_token}/getMe"
+            )
+    except (httpx.TimeoutException, httpx.NetworkError) as exc:
+        raise HTTPException(502, "Telegram credential validation could not be completed") from exc
+    if response.status_code != 200:
+        raise HTTPException(400, "Telegram rejected the bot credential")
+    try:
+        provider_result = response.json()
+    except (ValueError, json.JSONDecodeError) as exc:
+        raise HTTPException(502, "Telegram returned an invalid credential response") from exc
+    bot = provider_result.get("result") or {}
+    if provider_result.get("ok") is not True or not bot.get("id") or bot.get("is_bot") is not True:
+        raise HTTPException(400, "Telegram credential did not identify a bot account")
+
+    account_id = str(bot["id"])
+    username = str(bot.get("username") or "")
+    display_name = str(bot.get("first_name") or username or f"Telegram bot {account_id}")
+    encrypted_token = cipher.encrypt(body.bot_token.encode()).decode()
+    async with SessionLocal() as s:
+        token_id = (await s.execute(text(
+            """INSERT INTO omnichannel_oauth_tokens
+               (id, tenant_id, user_id, provider, platform, provider_account_id,
+                username, display_name, scopes, encrypted_access_token, metadata, status)
+               VALUES (:id, :tenant, :user, 'telegram', 'telegram', :account_id,
+                       :username, :display_name, '[]'::jsonb, :encrypted,
+                       :metadata::jsonb, 'connected')
+               ON CONFLICT (tenant_id, provider, platform, provider_account_id)
+               DO UPDATE SET user_id=EXCLUDED.user_id, username=EXCLUDED.username,
+                             display_name=EXCLUDED.display_name,
+                             encrypted_access_token=EXCLUDED.encrypted_access_token,
+                             metadata=EXCLUDED.metadata, status='connected', updated_at=NOW()
+               RETURNING id"""
+        ), {
+            "id": str(uuid4()), "tenant": tenant_id, "user": user_id,
+            "account_id": account_id, "username": username,
+            "display_name": display_name, "encrypted": encrypted_token,
+            "metadata": json.dumps({"account_type": "telegram_bot"}),
+        })).scalar_one()
+        row = (await s.execute(text(
+            """INSERT INTO social_connections
+               (tenant_id, platform, account_type, platform_account_id, username,
+                display_name, status, scopes, access_token_ref, metadata, connected_at)
+               VALUES (:tenant, 'telegram', 'bot', :account_id, :username,
+                       :display_name, 'connected', '[]'::jsonb, :token_ref,
+                       :metadata::jsonb, NOW())
+               ON CONFLICT (tenant_id, platform, platform_account_id)
+               DO UPDATE SET account_type='bot', username=EXCLUDED.username,
+                             display_name=EXCLUDED.display_name, status='connected',
+                             scopes='[]'::jsonb, access_token_ref=EXCLUDED.access_token_ref,
+                             metadata=EXCLUDED.metadata, connected_at=NOW(), updated_at=NOW()
+               RETURNING id, platform, account_type, platform_account_id, username,
+                         display_name, status, scopes, token_expires_at, metadata,
+                         connected_at, last_sync_at"""
+        ), {
+            "tenant": tenant_id, "account_id": account_id, "username": username,
+            "display_name": display_name, "token_ref": str(token_id),
+            "metadata": json.dumps({"provider": "telegram", "account_type": "bot"}),
+        })).mappings().one()
+        await s.commit()
+    return dict(row)
