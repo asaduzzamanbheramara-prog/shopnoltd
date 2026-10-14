@@ -135,14 +135,18 @@ async def process_one() -> bool:
             await _finish(s, aid, "needs_review", code="provider_result_unknown",
                           message="Provider result is unknown; retry stopped to avoid duplicate delivery.")
             return True
-        if response.status_code == 429 and int(action["attempt_count"]) < MAX_ATTEMPTS:
-            try:
-                delay = int(response.json().get("parameters", {}).get("retry_after", 5))
-            except (ValueError, TypeError, json.JSONDecodeError):
-                delay = 5
-            await _finish(s, aid, "retry_wait", code="provider_rate_limited",
-                          message="Provider rate limit; bounded retry scheduled.",
-                          retry_after=min(max(delay, 1), 120))
+        if response.status_code == 429:
+            if int(action["attempt_count"]) < MAX_ATTEMPTS:
+                try:
+                    delay = int(response.json().get("parameters", {}).get("retry_after", 5))
+                except (ValueError, TypeError, json.JSONDecodeError):
+                    delay = 5
+                await _finish(s, aid, "retry_wait", code="provider_rate_limited",
+                              message="Provider rate limit; bounded retry scheduled.",
+                              retry_after=min(max(delay, 1), 120))
+            else:
+                await _finish(s, aid, "failed", code="provider_rate_limit_exhausted",
+                              message="Provider rate limit retry budget exhausted.")
             return True
         if response.status_code >= 500:
             await _finish(s, aid, "needs_review", code="provider_result_unknown",
