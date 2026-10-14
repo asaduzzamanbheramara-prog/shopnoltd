@@ -667,6 +667,32 @@ jobs:
           set -euo pipefail
           kubectl --request-timeout=30s -n "$PLATFORM_NAMESPACE" get pods -o wide
 
+      - name: Diagnose n8n rollout failure
+        if: failure()
+        shell: bash
+        run: |
+          set +e
+          echo '===== N8N DEPLOYMENT ====='
+          kubectl --request-timeout=30s -n shopno-apps get deployment n8n -o wide
+          kubectl --request-timeout=30s -n shopno-apps describe deployment n8n
+          echo '===== N8N PODS ====='
+          kubectl --request-timeout=30s -n shopno-apps get pods -l app.kubernetes.io/name=n8n -o wide
+          for pod in $(kubectl --request-timeout=30s -n shopno-apps get pods -l app.kubernetes.io/name=n8n -o name); do
+            echo "===== DESCRIBE $pod ====="
+            kubectl --request-timeout=30s -n shopno-apps describe "$pod"
+            echo "===== CURRENT LOGS $pod ====="
+            kubectl --request-timeout=30s -n shopno-apps logs "$pod" --all-containers=true --tail=200
+            echo "===== PREVIOUS LOGS $pod ====="
+            kubectl --request-timeout=30s -n shopno-apps logs "$pod" --all-containers=true --previous --tail=200
+          done
+          echo '===== RECENT EVENTS ====='
+          kubectl --request-timeout=30s -n shopno-apps get events --sort-by=.lastTimestamp | tail -n 100
+          echo '===== NODE STATUS ====='
+          kubectl --request-timeout=30s get nodes -o wide
+          echo '===== N8N PVC ====='
+          kubectl --request-timeout=30s -n shopno-apps get pvc n8n-data -o wide
+          exit 0
+
       - name: Verify migration hook
         shell: bash
         run: |
