@@ -18,6 +18,7 @@ This document records the source audit and implementation safety gates. It does 
 - `platform/mail-service/app/api/mailboxes.py` currently restricts mailbox creation to an administrator, commits the local mailbox row before calling the provider, uses a hard-coded `change-me-immediately` password, and swallows provider errors. This is unsafe for automatic provisioning and must be replaced before the endpoint is used by signup.
 - `platform/mail-service/app/core/config.py` defaults to a Mailcow API URL and placeholder API key. The Kubernetes mail-service ConfigMap currently configures Brevo SMTP relay only.
 - The checked-in mail-server manifest uses `mailu/postfix:2.0`, while Roundcube expects an IMAP server on 993 and SMTP submission on 587. The source manifest does not demonstrate a complete, correctly wired IMAP mailbox backend. The mail-server manifest is also in a separate legacy path/namespace from `k8s/services/mail`.
+- The current `k8s/services/mail/kustomization.yaml` includes the mail API and Roundcube resources, but no Mailu/Postfix/Dovecot mail-server workload or service. `roundcube-deployment.yaml` points to `mail-server.shopno-mail.svc.cluster.local:993` for IMAP and port 587 for SMTP, while `configmap.yaml` only declares Brevo SMTP relay settings for the mail API. Therefore the checked-in current mail stack does not prove that the Roundcube IMAP/SMTP endpoints exist or that messages can be received and persisted. This is a repository-manifest finding, not a claim about live cluster state.
 
 ## Required architecture
 
