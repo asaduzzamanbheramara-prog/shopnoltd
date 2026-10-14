@@ -80,4 +80,4 @@ async def readyz():
 
 @app.get("/metrics", include_in_schema=False)
 def metrics():
-    return Response(generate_latest(), media_type="text/plain; version=0.4.0")
+    return Response(generate_latest(), media_type="text/plain; version=0.0.4")
