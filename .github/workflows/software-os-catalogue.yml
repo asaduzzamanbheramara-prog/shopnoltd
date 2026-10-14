@@ -6,6 +6,7 @@ on:
     paths:
       - 'catalogue/**'
       - 'scripts/validate-software-os-catalogue.py'
+      - 'tests/software-os-catalogue/**'
       - 'frontend/software-os-center.html'
       - 'frontend/index.html'
       - 'frontend/Dockerfile'
@@ -33,5 +34,7 @@ jobs:
         run: python -m pip install 'jsonschema==4.23.0'
       - name: Validate sample catalogue entry
         run: python scripts/validate-software-os-catalogue.py
+      - name: Run catalogue policy regression tests
+        run: python -m unittest discover -s tests/software-os-catalogue -p 'test_*.py' -v
       - name: Build static frontend image
         run: docker build -f frontend/Dockerfile -t shopnoltd-software-os-center frontend
