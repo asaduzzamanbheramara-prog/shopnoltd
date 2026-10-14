@@ -2,6 +2,7 @@
 """Regression tests for catalogue metadata policy; never execute catalogue content."""
 from __future__ import annotations
 
+import importlib.util
 import json
 import subprocess
 import sys
@@ -14,6 +15,12 @@ ROOT = Path(__file__).resolve().parents[2]
 SCHEMA = json.loads((ROOT / "catalogue/schema/software-entry.schema.json").read_text(encoding="utf-8"))
 SAMPLE = json.loads((ROOT / "catalogue/entries/sample-linux-tools.json").read_text(encoding="utf-8"))
 VALIDATOR = Draft202012Validator(SCHEMA, format_checker=FormatChecker())
+VALIDATOR_SPEC = importlib.util.spec_from_file_location(
+    "validate_software_os_catalogue", ROOT / "scripts/validate-software-os-catalogue.py"
+)
+VALIDATOR_MODULE = importlib.util.module_from_spec(VALIDATOR_SPEC)
+assert VALIDATOR_SPEC and VALIDATOR_SPEC.loader
+VALIDATOR_SPEC.loader.exec_module(VALIDATOR_MODULE)
 
 
 class CatalogueSchemaTests(unittest.TestCase):
@@ -52,6 +59,16 @@ class CatalogueSchemaTests(unittest.TestCase):
             "entitlement_key": "software-os-center-premium",
         }
         self.assertEqual(list(VALIDATOR.iter_errors(entry)), [])
+
+
+    def test_duplicate_catalogue_ids_are_reported(self):
+        first = ROOT / "catalogue/entries/first.json"
+        duplicate = ROOT / "catalogue/entries/duplicate.json"
+        errors = VALIDATOR_MODULE.duplicate_id_errors([
+            (first, {"id": "same-id"}),
+            (duplicate, {"id": "same-id"}),
+        ])
+        self.assertEqual(errors, [(duplicate, "same-id", first)])
 
     def test_rejects_non_https_source(self):
         entry = json.loads(json.dumps(SAMPLE))
