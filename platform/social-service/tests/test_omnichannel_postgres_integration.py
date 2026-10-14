@@ -15,19 +15,12 @@ from app.services import action_executor
 class OmnichannelPostgresIntegrationTests(unittest.IsolatedAsyncioTestCase):
     """Real PostgreSQL tests for the API SQL contracts and SKIP LOCKED worker claim."""
 
-    @classmethod
-    def setUpClass(cls):
+    async def asyncSetUp(self):
         database_url = os.environ.get("DATABASE_URL", "")
         if not database_url.startswith("postgresql+asyncpg://"):
             raise RuntimeError("DATABASE_URL must use postgresql+asyncpg for integration tests")
-        cls.engine = create_async_engine(database_url, pool_size=5, max_overflow=5)
-        cls.sessions = async_sessionmaker(cls.engine, expire_on_commit=False)
-
-    @classmethod
-    def tearDownClass(cls):
-        asyncio.run(cls.engine.dispose())
-
-    async def asyncSetUp(self):
+        self.engine = create_async_engine(database_url, pool_size=5, max_overflow=5)
+        self.sessions = async_sessionmaker(self.engine, expire_on_commit=False)
         self.tenant = "it-" + uuid4().hex[:24]
         self.connection_id = str(uuid4())
         async with self.sessions() as session:
@@ -43,6 +36,7 @@ class OmnichannelPostgresIntegrationTests(unittest.IsolatedAsyncioTestCase):
             await session.execute(text("DELETE FROM platform_actions WHERE tenant_id=:tenant"), {"tenant": self.tenant})
             await session.execute(text("DELETE FROM social_connections WHERE tenant_id=:tenant"), {"tenant": self.tenant})
             await session.commit()
+        await self.engine.dispose()
 
     def _body(self, key=None, message="integration message"):
         return omnichannel_api.ActionIn(
