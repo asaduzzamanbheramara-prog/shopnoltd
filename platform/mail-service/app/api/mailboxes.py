@@ -1,6 +1,9 @@
+import secrets
+
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import SessionLocal
@@ -27,31 +30,51 @@ async def add(domain_id: str, body: MailboxIn, user=Depends(admin), s: AsyncSess
     d = (await s.execute(select(Domain).where(Domain.id == domain_id))).scalar_one_or_none()
     if not d:
         raise HTTPException(404, "domain not found")
+
+    if body.quota_mb <= 0:
+        raise HTTPException(422, "quota_mb must be positive")
+
     full = f"{body.local_part}@{d.name}"
-    m = Mailbox(
+    mailbox = Mailbox(
         tenant_id=user.get("tenant_id", "default"),
         domain_id=d.id,
         local_part=body.local_part,
         full_address=full,
         quota_mb=body.quota_mb,
+        active=False,
     )
-    s.add(m)
-    await s.commit()
+    s.add(mailbox)
+
+    # Never use a shared/default password. This credential is deliberately not
+    # returned or logged; a separate verified activation/reset flow is required
+    # before this endpoint can be used for self-service signup.
+    password = secrets.token_urlsafe(32)
     try:
+        await s.flush()
         await call_mailcow(
             "add/mailbox",
             {
                 "local_part": body.local_part,
                 "domain": d.name,
-                "password": "change-me-immediately",
-                "password2": "change-me-immediately",
+                "password": password,
+                "password2": password,
                 "quota": body.quota_mb,
                 "active": "1",
             },
         )
-    except Exception:
-        pass
-    return {"id": m.id, "address": full}
+        mailbox.active = True
+        await s.commit()
+        await s.refresh(mailbox)
+    except IntegrityError as exc:
+        await s.rollback()
+        raise HTTPException(409, "mailbox already exists") from exc
+    except Exception as exc:
+        await s.rollback()
+        # Do not expose provider errors or credentials to the caller. A failed
+        # provider request must never be reported as a successfully-created box.
+        raise HTTPException(502, "mailbox provider provisioning failed") from exc
+
+    return {"id": mailbox.id, "address": full, "active": mailbox.active}
 
 
 @router.get("/{domain_id}")
