@@ -65,7 +65,7 @@ def test_mailbox_uses_random_provider_password_and_does_not_return_it(monkeypatc
 
     async def provider(action, payload):
         captured.update(action=action, payload=payload)
-        return {"success": True}
+        return [{"type": "success", "msg": "mailbox added"}]
 
     session = setup(monkeypatch, provider)
     result = run(
@@ -88,7 +88,7 @@ def test_mailbox_uses_random_provider_password_and_does_not_return_it(monkeypatc
     assert session.rolled_back is False
 
 
-def test_provider_failure_rolls_back_and_never_reports_success(monkeypatch):
+def test_provider_exception_rolls_back_and_never_reports_success(monkeypatch):
     async def provider(_action, _payload):
         raise RuntimeError("provider unavailable")
 
@@ -109,12 +109,40 @@ def test_provider_failure_rolls_back_and_never_reports_success(monkeypatch):
     assert session.committed is False
 
 
+@pytest.mark.parametrize(
+    "provider_response",
+    [
+        [{"type": "error", "msg": "mailbox already exists"}],
+        {"success": True},
+        [],
+    ],
+)
+def test_provider_non_success_response_rolls_back(monkeypatch, provider_response):
+    async def provider(_action, _payload):
+        return provider_response
+
+    session = setup(monkeypatch, provider)
+    with pytest.raises(HTTPException) as raised:
+        run(
+            mailboxes.add(
+                "domain-1",
+                mailboxes.MailboxIn(local_part="alice", quota_mb=512),
+                user={"tenant_id": "tenant-1"},
+                s=session,
+            )
+        )
+
+    assert raised.value.status_code == 502
+    assert session.rolled_back is True
+    assert session.committed is False
+
+
 def test_nonpositive_quota_is_rejected_before_provider_call(monkeypatch):
     calls = []
 
     async def provider(action, payload):
         calls.append((action, payload))
-        return {"success": True}
+        return [{"type": "success", "msg": "mailbox added"}]
 
     session = setup(monkeypatch, provider)
     with pytest.raises(HTTPException) as raised:
