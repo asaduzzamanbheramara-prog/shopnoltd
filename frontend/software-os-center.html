@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Shopnoltd Software & OS Center: official downloads, installation guidance, and recovery options.">
+<title>Software & OS Center | Shopnoltd</title>
+<style>
+:root{color-scheme:light dark;--bg:#0b1220;--panel:#121d30;--line:#293851;--ink:#edf4ff;--muted:#a9b8ce;--accent:#70a5ff;--good:#8fe0b0;--warn:#ffd18b}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 system-ui,-apple-system,Segoe UI,sans-serif}a{color:var(--accent)}header,main,footer{max-width:1080px;margin:auto;padding:22px}header{display:flex;justify-content:space-between;align-items:center;gap:16px;border-bottom:1px solid var(--line)}.brand{font-weight:800;font-size:1.2rem;text-decoration:none;color:var(--ink)}.pill{border:1px solid var(--line);border-radius:999px;padding:5px 11px;color:var(--muted);font-size:.82rem}.hero{padding:42px 0 24px}.hero h1{font-size:clamp(2rem,5vw,3.2rem);line-height:1.1;margin:12px 0}.hero p,.muted{color:var(--muted)}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(245px,1fr));gap:16px}.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px}.card h2,.card h3{margin-top:0}.btn{display:inline-block;border:1px solid var(--accent);border-radius:9px;padding:9px 13px;text-decoration:none;font-weight:650;margin:5px 5px 0 0}.primary{background:var(--accent);color:#071326}.search{width:100%;padding:12px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font:inherit;margin:12px 0 18px}.notice{border-left:4px solid var(--warn);padding:12px 15px;background:#332819;border-radius:6px;margin:16px 0}.ok{color:var(--good)}.list{padding-left:20px}.section{margin:30px 0}footer{color:var(--muted);border-top:1px solid var(--line);font-size:.9rem}.small{font-size:.9rem}.hidden{display:none!important}
+</style>
+</head>
+<body>
+<header><a class="brand" href="/">Shopnoltd</a><span class="pill">Preview · Catalogue foundation</span></header>
+<main>
+<section class="hero">
+<span class="pill">SOFTWARE · OPERATING SYSTEMS · RECOVERY</span>
+<h1>Software &amp; OS Center</h1>
+<p>Find official downloads, choose a supported installation path, and learn how to recover a PC safely.</p>
+<div class="notice"><strong>PC won't boot?</strong> A website cannot run on a computer that cannot start. Use another working computer to create bootable recovery media, or use network boot only if your device and network are already configured for it.</div>
+</section>
+<section class="section">
+<h2>Browse catalogue</h2>
+<label for="search">Search operating systems and tools</label>
+<input class="search" id="search" type="search" placeholder="Try Ubuntu, Windows, drivers…" autocomplete="off">
+<div class="grid" id="catalogue">
+<article class="card" data-search="ubuntu linux operating system desktop iso install recovery">
+<h3>Ubuntu Desktop</h3><p class="muted small">Linux · OS · x86-64 (review current requirements)</p><p>Choose a supported release and verify the downloaded image using Ubuntu's official instructions.</p><p class="ok small">Official source · Metadata example, not yet release-verified</p><a class="btn primary" href="https://ubuntu.com/download/desktop" rel="noopener noreferrer" target="_blank">Official download</a><a class="btn" href="https://ubuntu.com/tutorials/how-to-verify-ubuntu" rel="noopener noreferrer" target="_blank">Verify image</a>
+</article>
+<article class="card" data-search="windows operating system microsoft installation media recovery">
+<h3>Windows</h3><p class="muted small">Windows · OS · Vendor-provided media</p><p>Use Microsoft's official download and installation-media instructions. Edition, licence and device compatibility apply.</p><p class="small">Official source · Review release requirements</p><a class="btn primary" href="https://www.microsoft.com/software-download/" rel="noopener noreferrer" target="_blank">Microsoft downloads</a>
+</article>
+<article class="card" data-search="linux mint linux operating system desktop iso">
+<h3>Linux Mint</h3><p class="muted small">Linux · OS · Community distribution</p><p>Use the official project site and its verification instructions; check the current release and hardware requirements.</p><p class="small">Official source · Review release metadata</p><a class="btn primary" href="https://linuxmint.com/download.php" rel="noopener noreferrer" target="_blank">Official download</a>
+</article>
+<article class="card" data-search="ventoy bootable usb recovery media tool">
+<h3>Bootable USB guidance</h3><p class="muted small">Recovery · External tool</p><p>For a non-bootable PC, prepare recovery media on another working computer. Writing an image can erase the selected USB drive.</p><a class="btn" href="https://www.ventoy.net/en/index.html" rel="noopener noreferrer" target="_blank">Ventoy official site</a>
+</article>
+</div><p id="empty" class="muted hidden">No catalogue entry matches that search.</p>
+</section>
+<section class="section grid">
+<article class="card"><h2>1. Online mode</h2><p>When your OS is running, use official software downloads, installation guides, driver resources and compatibility information. A future signed Shopnoltd helper may support approved local tasks.</p><p class="small muted">No system-level changes are performed by this catalogue page.</p></article>
+<article class="card"><h2>2. Offline recovery</h2><ol class="list"><li>Use another working computer.</li><li>Download the OS/recovery image from its official source.</li><li>Verify its signature or publisher checksum.</li><li>Create bootable media using a trusted tool.</li><li>Boot the target PC and choose diagnostics or installation.</li></ol></article>
+<article class="card"><h2>Safety first</h2><ul class="list"><li>Back up important files before recovery.</li><li>Confirm the target disk before formatting or installing.</li><li>Never share passwords, licence keys or recovery keys.</li><li>Use official sources and respect each software licence.</li></ul></article>
+</section>
+<section class="section card"><h2>Payments and paid features</h2><p>Paid Shopnoltd features must be enabled only after server-side verification through the existing billing system. This preview does not process payments or unlock paid downloads.</p><p class="muted small">No payment form, credential collection, or entitlement bypass is included.</p></section>
+</main>
+<footer><p>Shopnoltd Software &amp; OS Center · Catalogue preview. This page does not guarantee compatibility or repair success and does not host operating-system images.</p><p><a href="/">Back to Shopnoltd</a></p></footer>
+<script>
+(function(){const input=document.getElementById('search');const cards=[...document.querySelectorAll('#catalogue [data-search]')];const empty=document.getElementById('empty');input.addEventListener('input',function(){const q=this.value.trim().toLowerCase();let visible=0;cards.forEach(card=>{const show=(card.dataset.search+' '+card.textContent).toLowerCase().includes(q);card.classList.toggle('hidden',!show);if(show)visible++});empty.classList.toggle('hidden',visible!==0)});})();
+</script>
+</body>
+</html>
