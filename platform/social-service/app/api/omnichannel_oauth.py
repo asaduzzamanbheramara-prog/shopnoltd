@@ -216,8 +216,8 @@ async def callback(code: str | None = None, state: str | None = None, error: str
                 display_name, status, scopes, access_token_ref, refresh_token_ref,
                 token_expires_at, metadata, connected_at)
                VALUES (:id, :tenant, :platform, 'user', :account_id, :username,
-                       :display_name, 'connected', :scopes::jsonb,
-                       :access_ref, :refresh_ref, :expires, :metadata::jsonb, NOW())
+                       :display_name, 'connected', CAST(:scopes AS jsonb),
+                       :access_ref, :refresh_ref, :expires, CAST(:metadata AS jsonb), NOW())
                ON CONFLICT (tenant_id, platform, platform_account_id)
                DO UPDATE SET username=EXCLUDED.username, display_name=EXCLUDED.display_name,
                              status='connected', scopes=EXCLUDED.scopes,
@@ -246,8 +246,8 @@ async def callback(code: str | None = None, state: str | None = None, error: str
                 username, display_name, scopes, encrypted_access_token,
                 encrypted_refresh_token, token_expires_at, metadata)
                VALUES (:id, :tenant, :user, :provider, :platform, :account_id,
-                       :username, :display_name, :scopes::jsonb, :access,
-                       :refresh, :expires, :metadata::jsonb)
+                       :username, :display_name, CAST(:scopes AS jsonb), :access,
+                       :refresh, :expires, CAST(:metadata AS jsonb))
                ON CONFLICT (tenant_id, provider, platform, provider_account_id)
                DO UPDATE SET user_id=EXCLUDED.user_id, username=EXCLUDED.username,
                              display_name=EXCLUDED.display_name, scopes=EXCLUDED.scopes,
@@ -362,7 +362,7 @@ async def connect_telegram_bot(
                 display_name, status, scopes, access_token_ref, metadata, connected_at)
                VALUES (:tenant, 'telegram', 'bot', :account_id, :username,
                        :display_name, 'connected', '[]'::jsonb, :token_ref,
-                       :metadata::jsonb, NOW())
+                       CAST(:metadata AS jsonb), NOW())
                ON CONFLICT (tenant_id, platform, platform_account_id)
                DO UPDATE SET account_type='bot', username=EXCLUDED.username,
                              display_name=EXCLUDED.display_name, status='connected',
