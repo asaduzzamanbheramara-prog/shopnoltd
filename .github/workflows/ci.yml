@@ -68,7 +68,14 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y postgresql-client
-      - name: Apply migration twice and verify approval defaults
+      - name: Apply omnichannel migrations and verify schema defaults
         env:
           TEST_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/social
         run: bash scripts/test-omnichannel-migration.sh
+      - name: Install social-service dependencies
+        run: pip install --disable-pip-version-check -r platform/social-service/requirements.txt
+      - name: Run real PostgreSQL omnichannel integration tests
+        working-directory: platform/social-service
+        env:
+          DATABASE_URL: postgresql+asyncpg://postgres:postgres@127.0.0.1:5432/social
+        run: python -m unittest tests.test_omnichannel_postgres_integration -v
