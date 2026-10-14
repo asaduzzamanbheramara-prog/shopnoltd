@@ -297,14 +297,17 @@ async def queue_action(body: ActionIn, user=Depends(action_user), s: AsyncSessio
     if (platform, verb) != ("telegram", "send_message"):
         raise HTTPException(409, f"provider adapter not implemented: {platform}/{verb}")
 
-    if body.connection_id:
-        connection = (await s.execute(text(
-            "SELECT platform FROM social_connections WHERE tenant_id=:tenant AND id=:id"
-        ), {"tenant": tenant_id, "id": body.connection_id})).scalar_one_or_none()
-        if connection is None:
-            raise HTTPException(404, "connection not found")
-        if connection != platform:
-            raise HTTPException(409, "connection platform does not match action platform")
+    if not body.connection_id:
+        raise HTTPException(400, "connected Telegram account connection_id is required")
+    connection = (await s.execute(text(
+        "SELECT platform, status FROM social_connections WHERE tenant_id=:tenant AND id=:id"
+    ), {"tenant": tenant_id, "id": body.connection_id})).mappings().one_or_none()
+    if connection is None:
+        raise HTTPException(404, "connection not found")
+    if connection["platform"] != platform:
+        raise HTTPException(409, "connection platform does not match action platform")
+    if connection["status"] != "connected":
+        raise HTTPException(409, "connection is not connected")
 
     action_id = str(uuid4())
     idem = body.idempotency_key or action_id
