@@ -1,8 +1,15 @@
 import asyncio
+import sys
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
 from fastapi import HTTPException
+
+# Allow pytest to run from the repository root or this service directory.
+SERVICE_ROOT = Path(__file__).resolve().parents[1]
+if str(SERVICE_ROOT) not in sys.path:
+    sys.path.insert(0, str(SERVICE_ROOT))
 
 from app.api import mailboxes
 
