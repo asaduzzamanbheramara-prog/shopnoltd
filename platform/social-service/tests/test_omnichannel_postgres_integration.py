@@ -27,7 +27,7 @@ class OmnichannelPostgresIntegrationTests(unittest.IsolatedAsyncioTestCase):
             await session.execute(text("""
                 INSERT INTO social_connections
                   (id, tenant_id, platform, account_type, platform_account_id, status)
-                VALUES (:id, :tenant, 'telegram', 'bot', :account, 'connected')
+                VALUES (CAST(:id AS uuid), :tenant, 'telegram', 'bot', :account, 'connected')
             """), {"id": self.connection_id, "tenant": self.tenant, "account": "bot-" + uuid4().hex})
             await session.commit()
 
