@@ -47,6 +47,9 @@ class _FakeTelegramResponse:
 
 
 class _FakeTelegramClient:
+    def __init__(self, *args, **kwargs):
+        self.options = kwargs
+
     async def __aenter__(self):
         return self
 
