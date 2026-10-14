@@ -35,10 +35,6 @@ class TelegramPayloadTests(unittest.TestCase):
                     telegram_message_payload(action, payload, target)
 
 
-if __name__ == "__main__":
-    unittest.main()
-
-
 class _FakeTelegramResponse:
     status_code = 200
 
@@ -271,3 +267,24 @@ class TelegramExecutorTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(finish_params["status"], "retry_wait")
         self.assertEqual(finish_params["delay"], 3)
         self.assertEqual(finish_params["code"], "provider_rate_limited")
+
+    async def test_provider_403_is_terminal_failure(self):
+        processed, session = await self._run(403)
+        self.assertTrue(processed)
+        finish_params = session.calls[-1][1]
+        self.assertEqual(finish_params["status"], "failed")
+        self.assertEqual(finish_params["code"], "provider_rejected")
+        self.assertIn("HTTP 403", finish_params["message"])
+
+    async def test_provider_5xx_stops_for_manual_reconciliation(self):
+        processed, session = await self._run(503)
+        self.assertTrue(processed)
+        finish_params = session.calls[-1][1]
+        self.assertEqual(finish_params["status"], "needs_review")
+        self.assertEqual(finish_params["code"], "provider_result_unknown")
+        self.assertNotIn("retry_after", finish_params)
+
+
+
+if __name__ == "__main__":
+    unittest.main()
