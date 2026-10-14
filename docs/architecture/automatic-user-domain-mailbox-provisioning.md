@@ -58,5 +58,6 @@ This document records the source audit and implementation safety gates. It does 
 ## Current branch implementation status (Oct 14, 2026)
 
 - Implemented and unit-tested: idempotent outbox enqueue for normal mirrored users and administrator-created accounts; unique resource constraint; constrained outbox state values; secure provider password generation; Mailcow JSON success validation; rollback/sanitized failures; focused CI regression tests.
-- Not implemented: outbox worker, retry/reconciliation loop, user-visible provisioning status/retry endpoint, verified credential activation flow, real provider configuration, verified full mailbox server, DNS/mail delivery integration tests.
+- Implemented: authenticated `GET /api/v1/users/me/provisioning` returns the caller's own queued job states and sanitized failure messaging; it does not trigger provider operations or expose raw provider errors.
+- Not implemented: outbox worker, retry/reconciliation loop, user-triggered retry endpoint, verified credential activation flow, real provider configuration, verified full mailbox server, DNS/mail delivery integration tests.
 - All of the above tests are mock/unit-level. Keep this PR Draft and do not run backfills or deploy as part of these changes.
