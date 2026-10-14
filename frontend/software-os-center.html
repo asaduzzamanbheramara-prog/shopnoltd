@@ -98,7 +98,7 @@
       const current=[...catalogue.querySelectorAll('article.card')];
       const usb=current.find(card=>card.textContent.includes('Bootable USB guidance'));
       catalogue.replaceChildren();
-      entries.filter(entry=>entry&&entry.kind==='operating-system').forEach(entry=>catalogue.append(renderEntry(entry)));
+      entries.filter(entry=>entry&&typeof entry.name==='string'&&typeof entry.kind==='string').forEach(entry=>catalogue.append(renderEntry(entry)));
       if(usb)catalogue.append(usb);
       refreshSearch();
     })
