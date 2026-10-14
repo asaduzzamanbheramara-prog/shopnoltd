@@ -46,7 +46,7 @@ BEGIN
         ADD CONSTRAINT ck_account_provisioning_attempts_nonnegative
         CHECK (attempts >= 0) NOT VALID;
     END IF;
-END
+END;
 $migration$;
 """
 
