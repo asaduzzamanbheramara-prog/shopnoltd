@@ -158,3 +158,26 @@ def test_nonpositive_quota_is_rejected_before_provider_call(monkeypatch):
     assert raised.value.status_code == 422
     assert calls == []
     assert session.committed is False
+
+
+
+def test_mailcow_placeholder_key_fails_closed_before_network_call(monkeypatch):
+    from app.core import mailcow
+
+    monkeypatch.setattr(mailcow.settings, "mailcow_api_key", "CHANGE_ME_MAILCOW_KEY")
+
+    class NetworkMustNotBeUsed:
+        def __init__(self, *args, **kwargs):
+            raise AssertionError("network client must not be created with a placeholder key")
+
+    monkeypatch.setattr(mailcow.httpx, "AsyncClient", NetworkMustNotBeUsed)
+    with pytest.raises(RuntimeError, match="API key is not configured"):
+        run(mailcow.call_mailcow("add/mailbox", {"local_part": "alice"}))
+
+
+def test_mailcow_blank_key_fails_closed(monkeypatch):
+    from app.core import mailcow
+
+    monkeypatch.setattr(mailcow.settings, "mailcow_api_key", "   ")
+    with pytest.raises(RuntimeError, match="API key is not configured"):
+        run(mailcow.call_mailcow("add/mailbox", {"local_part": "alice"}))
