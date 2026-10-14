@@ -8,6 +8,39 @@ from app.services import action_executor
 from app.services.action_executor import telegram_message_payload
 from app.api import omnichannel as omnichannel_api
 from app.api import omnichannel_oauth
+from app.api.blog import validate_scheduled_at
+from datetime import datetime, timedelta, timezone
+
+
+class BlogScheduleValidationTests(unittest.TestCase):
+    def test_draft_and_published_do_not_keep_schedule(self):
+        future = datetime.now(timezone.utc) + timedelta(days=1)
+        self.assertIsNone(validate_scheduled_at("draft", future))
+        self.assertIsNone(validate_scheduled_at("published", future))
+        self.assertIsNone(validate_scheduled_at("draft", None))
+
+    def test_scheduled_requires_timestamp(self):
+        with self.assertRaises(HTTPException) as caught:
+            validate_scheduled_at("scheduled", None)
+        self.assertEqual(caught.exception.status_code, 422)
+
+    def test_scheduled_requires_timezone(self):
+        with self.assertRaises(HTTPException) as caught:
+            validate_scheduled_at("scheduled", datetime(2035, 1, 1, 12, 0))
+        self.assertEqual(caught.exception.status_code, 422)
+
+    def test_scheduled_rejects_past_and_normalizes_future_to_utc(self):
+        past = datetime.now(timezone.utc) - timedelta(minutes=1)
+        with self.assertRaises(HTTPException) as caught:
+            validate_scheduled_at("scheduled", past)
+        self.assertEqual(caught.exception.status_code, 422)
+        future = datetime.now(timezone(timedelta(hours=6))) + timedelta(days=1)
+        normalized = validate_scheduled_at("scheduled", future)
+        self.assertIsNone(normalized.tzinfo)
+        expected = future.astimezone(timezone.utc).replace(tzinfo=None)
+        self.assertEqual(normalized, expected)
+
+
 
 
 class TelegramPayloadTests(unittest.TestCase):
