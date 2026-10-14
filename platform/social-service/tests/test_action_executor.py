@@ -6,6 +6,7 @@ from fastapi.security import HTTPAuthorizationCredentials
 
 from app.services import action_executor
 from app.services.action_executor import telegram_message_payload
+from app.api import omnichannel as omnichannel_api
 from app.api import omnichannel_oauth
 
 
@@ -362,6 +363,80 @@ class TelegramExecutorTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(finish_params["code"], "provider_result_unknown")
         self.assertNotIn("retry_after", finish_params)
 
+
+
+class _QueueResult:
+    def __init__(self, scalar=None, row=None):
+        self.scalar = scalar
+        self.row = row
+
+    def scalar_one_or_none(self):
+        return self.scalar
+
+    def mappings(self):
+        return self
+
+    def one_or_none(self):
+        return self.row
+
+
+class _QueueSession:
+    def __init__(self, results):
+        self.results = list(results)
+        self.calls = []
+        self.commits = 0
+
+    async def execute(self, statement, params=None):
+        self.calls.append((str(statement), params or {}))
+        return self.results.pop(0)
+
+    async def commit(self):
+        self.commits += 1
+
+
+class ActionQueueIdempotencyTests(unittest.IsolatedAsyncioTestCase):
+    def _existing(self, payload):
+        return {
+            "id": "existing-action-id", "status": "queued", "platform": "telegram",
+            "action": "send_message", "connection_id": None, "client_id": None,
+            "target_type": None, "target_id": None, "request_payload": payload,
+            "created_at": "2026-10-14T10:00:00Z",
+        }
+
+    async def test_same_idempotency_key_and_request_returns_existing_action(self):
+        session = _QueueSession([
+            _QueueResult(scalar="supported"),
+            _QueueResult(row=None),
+            _QueueResult(row=self._existing({"text": "hello"})),
+        ])
+        result = await omnichannel_api.queue_action(
+            omnichannel_api.ActionIn(
+                platform="telegram", action="send_message",
+                idempotency_key="stable-key-1", payload={"text": "hello"},
+            ),
+            user={"tenant_id": "tenant-1"}, s=session,
+        )
+        self.assertEqual(result["id"], "existing-action-id")
+        self.assertEqual(result["status"], "queued")
+        self.assertEqual(session.commits, 1)
+
+    async def test_reused_idempotency_key_with_different_payload_returns_409(self):
+        session = _QueueSession([
+            _QueueResult(scalar="supported"),
+            _QueueResult(row=None),
+            _QueueResult(row=self._existing({"text": "original"})),
+        ])
+        with self.assertRaises(HTTPException) as caught:
+            await omnichannel_api.queue_action(
+                omnichannel_api.ActionIn(
+                    platform="telegram", action="send_message",
+                    idempotency_key="stable-key-1", payload={"text": "different"},
+                ),
+                user={"tenant_id": "tenant-1"}, s=session,
+            )
+        self.assertEqual(caught.exception.status_code, 409)
+        self.assertIn("idempotency key", str(caught.exception.detail))
+        self.assertEqual(session.commits, 0)
 
 
 if __name__ == "__main__":
