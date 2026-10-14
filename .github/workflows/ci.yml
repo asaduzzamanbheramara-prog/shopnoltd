@@ -78,4 +78,4 @@ jobs:
         working-directory: platform/social-service
         env:
           DATABASE_URL: postgresql+asyncpg://postgres:postgres@127.0.0.1:5432/social
-        run: python -m unittest tests.test_omnichannel_postgres_integration -v
+        run: python -m unittest discover -s tests -p 'test_omnichannel_postgres_integration.py' -v
