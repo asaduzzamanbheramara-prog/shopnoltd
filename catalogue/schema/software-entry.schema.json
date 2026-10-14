@@ -1,0 +1,184 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://shopnoltd.dpdns.org/schemas/software-entry.schema.json",
+  "title": "Shopnoltd Software Catalogue Entry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "name",
+    "kind",
+    "description",
+    "platforms",
+    "source",
+    "license_note",
+    "verification"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{1,63}$"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "operating-system",
+        "application",
+        "driver",
+        "recovery-tool",
+        "documentation"
+      ]
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1000
+    },
+    "platforms": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "windows",
+          "linux",
+          "macos",
+          "android",
+          "ios",
+          "firmware",
+          "cross-platform"
+        ]
+      }
+    },
+    "architectures": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "x86_64",
+          "x86",
+          "arm64",
+          "arm",
+          "riscv64",
+          "any"
+        ]
+      }
+    },
+    "version": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "url"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "official-download-page",
+            "official-release",
+            "repository",
+            "documentation"
+          ]
+        },
+        "url": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^https://"
+        },
+        "publisher": {
+          "type": "string",
+          "maxLength": 160
+        }
+      }
+    },
+    "license_note": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1000
+    },
+    "verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "method",
+        "status"
+      ],
+      "properties": {
+        "method": {
+          "type": "string",
+          "enum": [
+            "publisher-signature",
+            "publisher-checksum",
+            "source-only-not-yet-verified"
+          ]
+        },
+        "checksum_algorithm": {
+          "type": "string",
+          "enum": [
+            "sha256",
+            "sha512"
+          ]
+        },
+        "checksum": {
+          "type": "string",
+          "pattern": "^[a-fA-F0-9]{64}$"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "needs-review",
+            "verified",
+            "blocked"
+          ]
+        },
+        "evidence_url": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^https://"
+        }
+      }
+    },
+    "pricing": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "model": {
+          "type": "string",
+          "enum": [
+            "free",
+            "paid-shopnoltd-feature",
+            "external-vendor-license"
+          ]
+        },
+        "entitlement_key": {
+          "type": "string",
+          "maxLength": 120
+        }
+      }
+    },
+    "installation_guide": {
+      "type": "string",
+      "format": "uri",
+      "pattern": "^https://"
+    },
+    "notes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "maxLength": 500
+      }
+    }
+  }
+}
