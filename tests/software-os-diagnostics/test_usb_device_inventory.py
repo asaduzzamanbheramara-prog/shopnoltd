@@ -35,14 +35,17 @@ class UsbInventoryTests(unittest.TestCase):
         from usb_device_inventory import parse_windows_inventory
 
         found = parse_windows_inventory([
-            {"Index": 0, "Model": "Internal SSD", "Size": 512000, "InterfaceType": "SCSI", "PNPDeviceID": "SCSI\\DISK"},
-            {"Index": 2, "Model": "USB Stick", "Size": 32000000000, "InterfaceType": "USB", "PNPDeviceID": "USB\\VID_1234"},
-            {"Index": 3, "Model": "Unknown", "Size": 0, "InterfaceType": "USB", "PNPDeviceID": "USB\\VID_9999"},
+            {"Index": 0, "Model": "Internal SSD", "Size": 512000, "InterfaceType": "SCSI", "PNPDeviceID": "SCSI\\\\DISK"},
+            {"Index": 2, "Model": "USB Stick", "Size": 32000000000, "InterfaceType": "USB", "PNPDeviceID": "USB\\\\VID_1234"},
+            {"Index": 3, "Model": "Unknown", "Size": 0, "InterfaceType": "USB", "PNPDeviceID": "USB\\\\VID_9999"},
+            {"Index": 4, "Model": "USB Storage", "Size": 16000000000, "InterfaceType": "SCSI", "PNPDeviceID": "USBSTOR\\\\DISK&VEN_TEST"},
         ])
-        self.assertEqual(len(found), 1)
-        self.assertEqual(found[0]["path"], r"\\.\PHYSICALDRIVE2")
+        self.assertEqual(len(found), 2)
+        self.assertEqual(found[0]["path"], r"\\\\.\\PHYSICALDRIVE2")
         self.assertEqual(found[0]["transport"], "usb")
-        self.assertFalse(found[0]["write_authorized"])
+        self.assertEqual(found[1]["path"], r"\\\\.\\PHYSICALDRIVE4")
+        self.assertEqual(found[1]["transport"], "usb")
+        self.assertFalse(any(item["write_authorized"] for item in found))
 
     def test_macos_inventory_excludes_internal_and_unknown_disks(self):
         from usb_device_inventory import parse_macos_inventory
