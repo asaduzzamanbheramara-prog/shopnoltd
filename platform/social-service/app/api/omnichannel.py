@@ -292,6 +292,10 @@ async def queue_action(body: ActionIn, user=Depends(action_user), s: AsyncSessio
     ), {"platform": platform, "action": verb})).scalar_one_or_none()
     if capability is None:
         raise HTTPException(400, f"unsupported action for platform: {platform}/{verb}")
+    if capability != "supported":
+        raise HTTPException(409, f"provider_dependent action is not enabled: {platform}/{verb}")
+    if (platform, verb) != ("telegram", "send_message"):
+        raise HTTPException(409, f"provider adapter not implemented: {platform}/{verb}")
 
     if body.connection_id:
         connection = (await s.execute(text(
