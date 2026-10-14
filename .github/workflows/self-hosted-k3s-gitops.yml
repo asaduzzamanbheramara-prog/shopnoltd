@@ -680,10 +680,6 @@ jobs:
           for pod in $(kubectl --request-timeout=30s -n shopno-apps get pods -l app.kubernetes.io/name=n8n -o name); do
             echo "===== DESCRIBE $pod ====="
             kubectl --request-timeout=30s -n shopno-apps describe "$pod"
-            echo "===== CURRENT LOGS $pod ====="
-            kubectl --request-timeout=30s -n shopno-apps logs "$pod" --all-containers=true --tail=200
-            echo "===== PREVIOUS LOGS $pod ====="
-            kubectl --request-timeout=30s -n shopno-apps logs "$pod" --all-containers=true --previous --tail=200
           done
           echo '===== RECENT EVENTS ====='
           kubectl --request-timeout=30s -n shopno-apps get events --sort-by=.lastTimestamp | tail -n 100
