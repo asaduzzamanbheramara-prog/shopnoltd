@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import subprocess
+import sys
 import unittest
 from pathlib import Path
 
@@ -17,6 +19,25 @@ VALIDATOR = Draft202012Validator(SCHEMA, format_checker=FormatChecker())
 class CatalogueSchemaTests(unittest.TestCase):
     def test_sample_entry_is_valid(self):
         self.assertEqual(list(VALIDATOR.iter_errors(SAMPLE)), [])
+
+    def test_every_catalogue_entry_is_valid(self):
+        for path in sorted((ROOT / "catalogue/entries").glob("*.json")):
+            with self.subTest(entry=path.name):
+                entry = json.loads(path.read_text(encoding="utf-8"))
+                self.assertEqual(list(VALIDATOR.iter_errors(entry)), [])
+
+    def test_generated_browser_catalogue_matches_source_entries(self):
+        subprocess.run(
+            [sys.executable, str(ROOT / "scripts/build-software-os-catalogue.py")],
+            cwd=ROOT,
+            check=True,
+        )
+        generated = json.loads((ROOT / "frontend/catalogue.json").read_text(encoding="utf-8"))
+        source = [
+            json.loads(path.read_text(encoding="utf-8"))
+            for path in sorted((ROOT / "catalogue/entries").glob("*.json"))
+        ]
+        self.assertEqual(generated, source)
 
     def test_rejects_non_https_source(self):
         entry = json.loads(json.dumps(SAMPLE))
