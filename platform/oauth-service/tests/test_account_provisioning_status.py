@@ -112,3 +112,27 @@ def test_status_returns_401_for_invalid_or_expired_token(monkeypatch):
         assert "sensitive verifier detail" not in exc.detail
     else:
         raise AssertionError("invalid token must be rejected with 401")
+
+def test_status_returns_503_when_identity_provider_is_unavailable(monkeypatch):
+    import httpx
+    from fastapi import HTTPException
+
+    monkeypatch.setattr(
+        users,
+        "verify_token",
+        AsyncMock(side_effect=httpx.ConnectError("internal host and credentials must not leak")),
+    )
+
+    try:
+        asyncio.run(
+            users.my_provisioning_status(
+                creds=SimpleNamespace(credentials="signed-user-token"),
+                s=FakeSession([]),
+            )
+        )
+    except HTTPException as exc:
+        assert exc.status_code == 503
+        assert exc.detail == "authentication service temporarily unavailable"
+        assert "internal host" not in exc.detail
+    else:
+        raise AssertionError("identity-provider outages must return 503")
