@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import JSON, Boolean, Column, DateTime, Integer, LargeBinary, String, Text, UniqueConstraint
+from sqlalchemy import CheckConstraint, JSON, Boolean, Column, DateTime, Integer, LargeBinary, String, Text, UniqueConstraint
 
 from app.core.db import Base
 
@@ -153,4 +153,7 @@ class AccountProvisioningJob(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     __table_args__ = (
         UniqueConstraint("user_id", "resource_type", name="uq_account_provisioning_user_resource"),
+        CheckConstraint("resource_type IN ('subdomain', 'mailbox')", name="ck_account_provisioning_resource_type"),
+        CheckConstraint("status IN ('pending', 'processing', 'active', 'failed')", name="ck_account_provisioning_status"),
+        CheckConstraint("attempts >= 0", name="ck_account_provisioning_attempts_nonnegative"),
     )
