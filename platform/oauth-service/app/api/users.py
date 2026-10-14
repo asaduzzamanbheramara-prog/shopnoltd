@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
@@ -52,26 +53,18 @@ def _user_name(payload: dict) -> str:
 
 
 async def _ensure_account_provisioning_jobs(s: AsyncSession, u: UserMirror) -> None:
-    """Queue domain and mailbox work idempotently; provider work is not done here."""
+    """Atomically enqueue domain and mailbox work; never claim provider success."""
     for resource_type in ("subdomain", "mailbox"):
-        job = (
-            await s.execute(
-                select(AccountProvisioningJob).where(
-                    AccountProvisioningJob.user_id == u.id,
-                    AccountProvisioningJob.resource_type == resource_type,
-                )
-            )
-        ).scalar_one_or_none()
-        if job is None:
-            s.add(
-                AccountProvisioningJob(
-                    user_id=u.id,
-                    keycloak_id=u.keycloak_id,
-                    resource_type=resource_type,
-                    status="pending",
-                    attempts=0,
-                )
-            )
+        stmt = pg_insert(AccountProvisioningJob).values(
+            user_id=u.id,
+            keycloak_id=u.keycloak_id,
+            resource_type=resource_type,
+            status="pending",
+            attempts=0,
+        ).on_conflict_do_nothing(
+            constraint="uq_account_provisioning_user_resource"
+        )
+        await s.execute(stmt)
 
 
 def _user_out(u: UserMirror) -> UserOut:
