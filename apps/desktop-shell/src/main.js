@@ -12,7 +12,7 @@ let mainWindow;
 function openSafeExternalUrl(url) {
   if (isSafeExternalUrl(url, config.url)) {
     // Electron's external opener is only reached for HTTPS URLs.
-    void shell.openExternal(url);
+    void shell.openExternal(url).catch(() => {});
   }
 }
 
