@@ -64,7 +64,7 @@ def parse_windows_inventory(payload: Any) -> list[dict[str, Any]]:
             continue
         pnp_id = str(device.get("PNPDeviceID") or "")
         interface = str(device.get("InterfaceType") or "")
-        if interface.casefold() != "usb" and not pnp_id.upper().startswith(("USB\\\\", "USBSTOR\\\\")):
+        if interface.casefold() != "usb" and not pnp_id.upper().startswith(("USB\\", "USBSTOR\\")):
             continue
         size = device.get("Size")
         index = device.get("Index")
