@@ -54,3 +54,28 @@ Android phones/tablets, iOS/iPadOS devices, TVs, wearables and embedded hardware
 - [ ] VM boot tests pass for each claimed image/architecture; physical-device limits documented.
 - [ ] Recovery steps distinguish non-destructive repair from data-erasing reinstall.
 - [ ] No claim of universal compatibility; unsupported devices receive an honest limitation message.
+
+## Available non-destructive planner prototype
+
+The repository now includes a command-line checklist generator at
+`tools/software-os-diagnostics/recovery_media_plan.py`. It accepts the target OS,
+architecture, firmware mode, Secure Boot state, recovery goal, USB capacity, and
+whether image verification has already been completed. It emits JSON with safety
+checks and warnings. It does not detect physical drives, download images, or write
+to a USB. When `--image-verified` is omitted, the CLI returns exit code 2 and marks
+the plan blocked pending verification.
+
+Example (planning only; no disk is modified):
+
+```sh
+python tools/software-os-diagnostics/recovery_media_plan.py \
+  --target-os linux --architecture x86_64 --firmware uefi \
+  --secure-boot unknown --goal rescue-data --usb-capacity-gib 16
+```
+
+Automated regression tests are in
+`tests/software-os-diagnostics/test_recovery_media_plan.py`. Passing these tests
+validates checklist logic only; it does not prove that a USB writer or bootable
+recovery image exists. Physical USB writing remains intentionally unimplemented
+until a separately reviewed, least-privilege local helper and destructive-action
+test plan are available.
