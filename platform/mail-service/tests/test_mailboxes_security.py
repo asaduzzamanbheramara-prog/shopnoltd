@@ -181,3 +181,11 @@ def test_mailcow_blank_key_fails_closed(monkeypatch):
     monkeypatch.setattr(mailcow.settings, "mailcow_api_key", "   ")
     with pytest.raises(RuntimeError, match="API key is not configured"):
         run(mailcow.call_mailcow("add/mailbox", {"local_part": "alice"}))
+
+def test_mailbox_listing_requires_admin_authentication():
+    import inspect
+    from fastapi.params import Depends
+
+    parameter = inspect.signature(mailboxes.list_mb).parameters["user"]
+    assert isinstance(parameter.default, Depends)
+    assert parameter.default.dependency is mailboxes.admin
