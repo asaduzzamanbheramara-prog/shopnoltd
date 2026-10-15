@@ -97,7 +97,8 @@ class ActionIn(BaseModel):
     client_id: str | None = None
     target_type: str | None = None
     target_id: str | None = None
-    idempotency_key: str | None = None
+    # Bound and normalize the idempotency contract at the API boundary, not only in n8n.
+    idempotency_key: str | None = Field(default=None, max_length=200, pattern=r"^[A-Za-z0-9._:-]+$")
     payload: dict[str, Any] = Field(default_factory=dict)
 
 
