@@ -21,6 +21,11 @@ MAX_ATTEMPTS = 8
 LEASE_MINUTES = 5
 
 
+def domain_confirmation_is_valid(body: object) -> bool:
+    """Require an explicit active status and a non-empty domain before acknowledging work."""
+    return isinstance(body, dict) and body.get("status") == "active" and isinstance(body.get("subdomain"), str) and bool(body["subdomain"].strip())
+
+
 async def process_one_subdomain_job() -> bool:
     """Claim one job with SKIP LOCKED, then call the idempotent domain endpoint."""
     now = datetime.utcnow()
@@ -76,7 +81,7 @@ async def process_one_subdomain_job() -> bool:
             )
             response.raise_for_status()
             body = response.json()
-            if body.get("status") != "active" or not body.get("subdomain"):
+            if not domain_confirmation_is_valid(body):
                 raise RuntimeError("provider_confirmation_missing")
     except Exception as exc:
         # Store only a fixed error code, never response bodies, URLs with credentials,
