@@ -272,8 +272,10 @@ jobs:
               if [ -n "$hook_name" ]; then
                 hook_json="$(timeout 20s kubectl --request-timeout=15s get jobs -A -o json 2>/dev/null || true)"
                 hook_record="$(jq -c --arg name "$hook_name" '[.items[] | select(.metadata.name == $name) | {namespace:.metadata.namespace, complete:any(.status.conditions[]?; .type == "Complete" and .status == "True"), deleting:(.metadata.deletionTimestamp // ""), finalizers:(.metadata.finalizers // [])}] | .[0] // empty' <<<"$hook_json")"
-                hook_namespace="$(jq -r '.namespace // ""' <<<"$hook_record")"
-                hook_state="$(jq -r 'if . == null then "absent" elif .complete then "complete" else "not-complete" end' <<<"$hook_record")"
+                if [ -n "$hook_record" ]; then
+                  hook_namespace="$(jq -r '.namespace // ""' <<<"$hook_record")"
+                  hook_state="$(jq -r 'if .complete then "complete" else "not-complete" end' <<<"$hook_record")"
+                fi
               fi
 
               if [ -z "$hook_namespace" ]; then
@@ -306,7 +308,7 @@ jobs:
           done
 
           if [ "$operation_stopped" -ne 1 ]; then
-            echo 'Argo CD operation did not leave Running/Terminating after 120 seconds.'
+            echo 'Argo CD operation did not leave Running/Terminating after 240 seconds.'
             kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o jsonpath='phase={.status.operationState.phase}{"\n"}message={.status.operationState.message}{"\n"}revision={.status.operationState.operation.sync.revision}{"\n"}'
             echo '===== ALL JOBS WITH HOOK-RELATED NAMES ====='
             kubectl --request-timeout=30s get jobs -A -o wide | grep -Ei 'NAME|hook|migration|litellm|binder' || true
