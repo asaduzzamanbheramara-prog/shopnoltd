@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: mail-service
-        image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/mail-service:654dc9fcefacb7fd5b09c8d2407d272128a7f124
+        image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/mail-service:c0b0793d341be994621c19a568304d67547889ed
         imagePullPolicy: Always
         ports:
         - containerPort: 8080
