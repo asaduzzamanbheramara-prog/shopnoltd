@@ -132,8 +132,6 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          postgres_user="$(kubectl -n shopno-data get secret postgres-secret -o jsonpath='{.data.POSTGRES_USER}' | base64 -d)"
-          postgres_password="$(kubectl -n shopno-data get secret postgres-secret -o jsonpath='{.data.POSTGRES_PASSWORD}' | base64 -d)"
           keycloak_password="$(kubectl -n shopno-identity get secret keycloak-secret -o jsonpath='{.data.KC_BOOTSTRAP_ADMIN_PASSWORD}' 2>/dev/null | base64 -d || true)"
           if [ -z "$keycloak_password" ]; then
             echo 'Existing keycloak-secret is missing KC_BOOTSTRAP_ADMIN_PASSWORD; refusing to create a partial freedomain secret.'
@@ -143,21 +141,6 @@ jobs:
           if [ -z "$freedomain_password" ]; then
             freedomain_password="$(openssl rand -hex 32)"
           fi
-          if kubectl -n shopno-data exec deployment/postgres -- env PGPASSWORD="$postgres_password" psql -U "$postgres_user" -d postgres -Atqc "SELECT 1 FROM pg_roles WHERE rolname = 'freedomain'" | grep -q 1; then
-            kubectl -n shopno-data exec deployment/postgres -- env PGPASSWORD="$postgres_password" psql -U "$postgres_user" -d postgres -v ON_ERROR_STOP=1 -c "ALTER ROLE freedomain LOGIN PASSWORD '$freedomain_password'"
-          else
-            kubectl -n shopno-data exec deployment/postgres -- env PGPASSWORD="$postgres_password" psql -U "$postgres_user" -d postgres -v ON_ERROR_STOP=1 -c "CREATE ROLE freedomain LOGIN PASSWORD '$freedomain_password'"
-          fi
-          if ! kubectl -n shopno-data exec deployment/postgres -- env PGPASSWORD="$postgres_password" psql -U "$postgres_user" -d postgres -Atqc "SELECT 1 FROM pg_database WHERE datname = 'freedomain'" | grep -q 1; then
-            kubectl -n shopno-data exec deployment/postgres -- env PGPASSWORD="$postgres_password" psql -U "$postgres_user" -d postgres -v ON_ERROR_STOP=1 -c "CREATE DATABASE freedomain OWNER freedomain"
-          else
-            kubectl -n shopno-data exec deployment/postgres -- env PGPASSWORD="$postgres_password" psql -U "$postgres_user" -d postgres -v ON_ERROR_STOP=1 -c "ALTER DATABASE freedomain OWNER TO freedomain"
-          fi
-          kubectl -n shopno-data exec deployment/postgres -- env PGPASSWORD="$postgres_password" psql -U "$postgres_user" -d postgres -v ON_ERROR_STOP=1 -c "GRANT ALL PRIVILEGES ON DATABASE freedomain TO freedomain"
-          kubectl -n shopno-data exec deployment/postgres -- env PGPASSWORD="$postgres_password" psql -U "$postgres_user" -d freedomain -v ON_ERROR_STOP=1 -c "GRANT USAGE,CREATE ON SCHEMA public TO freedomain"
-          kubectl -n shopno-data exec deployment/postgres -- env PGPASSWORD="$postgres_password" psql -U "$postgres_user" -d freedomain -v ON_ERROR_STOP=1 -c "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO freedomain"
-          kubectl -n shopno-data exec deployment/postgres -- env PGPASSWORD="$postgres_password" psql -U "$postgres_user" -d freedomain -v ON_ERROR_STOP=1 -c "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO freedomain"
-          kubectl -n shopno-data exec deployment/postgres -- env PGPASSWORD="$postgres_password" psql -U "$postgres_user" -d freedomain -v ON_ERROR_STOP=1 -c "DO \$\$ DECLARE r record; BEGIN FOR r IN SELECT tablename FROM pg_tables WHERE schemaname = 'public' LOOP EXECUTE format('ALTER TABLE public.%I OWNER TO freedomain', r.tablename); END LOOP; FOR r IN SELECT sequencename FROM pg_sequences WHERE schemaname = 'public' LOOP EXECUTE format('ALTER SEQUENCE public.%I OWNER TO freedomain', r.sequencename); END LOOP; END \$\$;"
           database_url="postgresql+asyncpg://freedomain:$freedomain_password@postgres.shopno-data.svc.cluster.local:5432/freedomain"
           internal_key="$(kubectl -n "$PLATFORM_NAMESPACE" get secret freedomain-service-secret -o jsonpath='{.data.FREEDOMAIN_INTERNAL_KEY}' 2>/dev/null | base64 -d || true)"
           if [ -z "$internal_key" ]; then
@@ -420,6 +403,60 @@ jobs:
           timeout 60s kubectl --request-timeout=30s             -n "$ARGOCD_NAMESPACE"             patch application "$ARGOCD_APP"             --type=merge             -p "$(jq -nc --arg revision "$GIT_REVISION"               '{operation:{sync:{revision:$revision,prune:false}}}')"
 
           echo 'Argo CD full sync request submitted to the controller.'
+
+      - name: Wait for PostgreSQL readiness before runtime database setup
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo 'Waiting for the PostgreSQL Deployment and its actual application container to become ready before any database exec.'
+          if ! kubectl --request-timeout=20s -n "$MIGRATION_NAMESPACE" wait --for=condition=available deployment/postgres --timeout=180s; then
+            echo 'ERROR: PostgreSQL Deployment did not become available.'
+            kubectl --request-timeout=20s -n "$MIGRATION_NAMESPACE" get deployment postgres -o wide || true
+            kubectl --request-timeout=20s -n "$MIGRATION_NAMESPACE" get pods -l app.kubernetes.io/name=postgres -o wide || true
+            kubectl --request-timeout=20s -n "$MIGRATION_NAMESPACE" describe pods -l app.kubernetes.io/name=postgres || true
+            for pod in $(kubectl --request-timeout=20s -n "$MIGRATION_NAMESPACE" get pods -l app.kubernetes.io/name=postgres -o name 2>/dev/null || true); do
+              echo "===== PostgreSQL pod logs: $pod ====="
+              kubectl --request-timeout=20s -n "$MIGRATION_NAMESPACE" logs "$pod" -c postgres --tail=200 || true
+              kubectl --request-timeout=20s -n "$MIGRATION_NAMESPACE" logs "$pod" -c init-data-dir --tail=100 || true
+            done
+            exit 1
+          fi
+          if ! kubectl --request-timeout=20s -n "$MIGRATION_NAMESPACE" wait --for=condition=ready pod -l app.kubernetes.io/name=postgres --timeout=180s; then
+            echo 'ERROR: PostgreSQL pod did not become Ready even though the Deployment availability check returned.'
+            kubectl --request-timeout=20s -n "$MIGRATION_NAMESPACE" get pods -l app.kubernetes.io/name=postgres -o wide || true
+            kubectl --request-timeout=20s -n "$MIGRATION_NAMESPACE" describe pods -l app.kubernetes.io/name=postgres || true
+            for pod in $(kubectl --request-timeout=20s -n "$MIGRATION_NAMESPACE" get pods -l app.kubernetes.io/name=postgres -o name 2>/dev/null || true); do
+              echo "===== PostgreSQL pod logs: $pod ====="
+              kubectl --request-timeout=20s -n "$MIGRATION_NAMESPACE" logs "$pod" -c postgres --tail=200 || true
+              kubectl --request-timeout=20s -n "$MIGRATION_NAMESPACE" logs "$pod" -c init-data-dir --tail=100 || true
+            done
+            exit 1
+          fi
+          echo 'PostgreSQL Deployment and pod are Ready; proceeding to runtime database setup.'
+
+      - name: Ensure free-domain PostgreSQL role and database
+        shell: bash
+        run: |
+          set -euo pipefail
+          postgres_user="$(kubectl -n shopno-data get secret postgres-secret -o jsonpath='{.data.POSTGRES_USER}' | base64 -d)"
+          postgres_password="$(kubectl -n shopno-data get secret postgres-secret -o jsonpath='{.data.POSTGRES_PASSWORD}' | base64 -d)"
+          freedomain_password="$(kubectl -n "$PLATFORM_NAMESPACE" get secret freedomain-service-secret -o jsonpath='{.data.POSTGRES_PASSWORD}' | base64 -d)"
+          if kubectl -n shopno-data exec deployment/postgres -- env PGPASSWORD="$postgres_password" psql -U "$postgres_user" -d postgres -Atqc "SELECT 1 FROM pg_roles WHERE rolname = 'freedomain'" | grep -q 1; then
+            kubectl -n shopno-data exec deployment/postgres -- env PGPASSWORD="$postgres_password" psql -U "$postgres_user" -d postgres -v ON_ERROR_STOP=1 -c "ALTER ROLE freedomain LOGIN PASSWORD '$freedomain_password'"
+          else
+            kubectl -n shopno-data exec deployment/postgres -- env PGPASSWORD="$postgres_password" psql -U "$postgres_user" -d postgres -v ON_ERROR_STOP=1 -c "CREATE ROLE freedomain LOGIN PASSWORD '$freedomain_password'"
+          fi
+          if ! kubectl -n shopno-data exec deployment/postgres -- env PGPASSWORD="$postgres_password" psql -U "$postgres_user" -d postgres -Atqc "SELECT 1 FROM pg_database WHERE datname = 'freedomain'" | grep -q 1; then
+            kubectl -n shopno-data exec deployment/postgres -- env PGPASSWORD="$postgres_password" psql -U "$postgres_user" -d postgres -v ON_ERROR_STOP=1 -c "CREATE DATABASE freedomain OWNER freedomain"
+          else
+            kubectl -n shopno-data exec deployment/postgres -- env PGPASSWORD="$postgres_password" psql -U "$postgres_user" -d postgres -v ON_ERROR_STOP=1 -c "ALTER DATABASE freedomain OWNER TO freedomain"
+          fi
+          kubectl -n shopno-data exec deployment/postgres -- env PGPASSWORD="$postgres_password" psql -U "$postgres_user" -d postgres -v ON_ERROR_STOP=1 -c "GRANT ALL PRIVILEGES ON DATABASE freedomain TO freedomain"
+          kubectl -n shopno-data exec deployment/postgres -- env PGPASSWORD="$postgres_password" psql -U "$postgres_user" -d freedomain -v ON_ERROR_STOP=1 -c "GRANT USAGE,CREATE ON SCHEMA public TO freedomain"
+          kubectl -n shopno-data exec deployment/postgres -- env PGPASSWORD="$postgres_password" psql -U "$postgres_user" -d freedomain -v ON_ERROR_STOP=1 -c "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO freedomain"
+          kubectl -n shopno-data exec deployment/postgres -- env PGPASSWORD="$postgres_password" psql -U "$postgres_user" -d freedomain -v ON_ERROR_STOP=1 -c "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO freedomain"
+          kubectl -n shopno-data exec deployment/postgres -- env PGPASSWORD="$postgres_password" psql -U "$postgres_user" -d freedomain -v ON_ERROR_STOP=1 -c "DO \$\$ DECLARE r record; BEGIN FOR r IN SELECT tablename FROM pg_tables WHERE schemaname = 'public' LOOP EXECUTE format('ALTER TABLE public.%I OWNER TO freedomain', r.tablename); END LOOP; FOR r IN SELECT sequencename FROM pg_sequences WHERE schemaname = 'public' LOOP EXECUTE format('ALTER SEQUENCE public.%I OWNER TO freedomain', r.sequencename); END LOOP; END \$\$;"
+          echo 'Free-domain PostgreSQL role, database, and existing object privileges reconciled.'
 
       - name: Ensure Kobo and session-manager runtime database secrets
         shell: bash
