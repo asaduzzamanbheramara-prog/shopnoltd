@@ -82,7 +82,7 @@ function replaceTag(html, tagPattern, attributes) {
   let tag = match[0]
   for (const [name, value] of Object.entries(attributes)) {
     const escaped = escapeHtml(value)
-    const attrPattern = new RegExp(`(\b${name}=")[^"]*(")`)
+    const attrPattern = new RegExp(`(${name}=")[^"]*(")`)
     if (!attrPattern.test(tag)) throw new Error(`SEO attribute missing: ${name}`)
     tag = tag.replace(attrPattern, `$1${escaped}$2`)
   }
