@@ -2,6 +2,7 @@ import unittest
 from unittest.mock import AsyncMock, patch
 
 from fastapi import HTTPException
+from pydantic import ValidationError
 from fastapi.security import HTTPAuthorizationCredentials
 
 from app.services import action_executor
@@ -41,6 +42,35 @@ class BlogScheduleValidationTests(unittest.TestCase):
         self.assertEqual(normalized, expected)
 
 
+
+
+class ActionInputValidationTests(unittest.TestCase):
+    def test_idempotency_key_accepts_safe_bounded_characters(self):
+        action = omnichannel_api.ActionIn(
+            platform="telegram",
+            action="send_message",
+            idempotency_key="n8n-execution:123.abc_4",
+            payload={"text": "hello"},
+        )
+        self.assertEqual(action.idempotency_key, "n8n-execution:123.abc_4")
+
+    def test_idempotency_key_rejects_whitespace_or_unsupported_characters(self):
+        for key in ("has spaces", "slash/key", "line\\nbreak"):
+            with self.subTest(key=key):
+                with self.assertRaises(ValidationError):
+                    omnichannel_api.ActionIn(
+                        platform="telegram",
+                        action="send_message",
+                        idempotency_key=key,
+                    )
+
+    def test_idempotency_key_rejects_values_over_200_characters(self):
+        with self.assertRaises(ValidationError):
+            omnichannel_api.ActionIn(
+                platform="telegram",
+                action="send_message",
+                idempotency_key="x" * 201,
+            )
 
 
 class TelegramPayloadTests(unittest.TestCase):
