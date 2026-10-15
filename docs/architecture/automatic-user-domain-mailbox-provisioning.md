@@ -68,3 +68,12 @@ This document records the source audit and implementation safety gates. It does 
 - Provider exceptions, malformed/empty responses, and application-level failures roll back the local database session and return a generic HTTP 502; provider response details are not returned to callers.
 - Added mocked regression tests in `platform/mail-service/tests/test_mail_domains_provisioning.py` and included them in the Provisioning Regression Tests workflow.
 - This fixes a false-success path in the admin domain API. It does not implement the outbox worker, create a self-service mailbox activation flow, or establish that the configured Mailcow provider is live and working.
+
+
+## Follow-up worker implementation (Oct 15, 2026)
+
+- Added an OAuth background reconciler for **subdomain jobs only**. It claims work using PostgreSQL row locks with `SKIP LOCKED`, reclaims stale processing leases, increments attempts, caps attempts at eight, and only marks a job active after an explicit successful response from the FreeDomain service. Provider/network details and response bodies are not stored in job errors.
+- Added `POST /api/v1/domains/internal/provision` as an internal-only endpoint guarded by a dedicated `X-Account-Provisioning-Key` secret with constant-time comparison. It fails closed if the key is unset and delegates to the existing idempotent domain provisioner.
+- The OAuth worker is **disabled by default** (`ACCOUNT_PROVISIONING_WORKER_ENABLED=false`). To enable domain jobs, operators must provision the same high-entropy `ACCOUNT_PROVISIONING_INTERNAL_KEY` into the OAuth service and FreeDomain service secrets in their respective namespaces, verify internal service DNS/network policy, then explicitly enable the worker. Do not commit the secret or reuse the DNS provider key.
+- Mailbox jobs are deliberately not consumed by this worker. The mailbox activation/reset and verified full mail-server gaps remain; leaving them pending is safer than creating a mailbox with an inaccessible random password or falsely marking it active.
+- Added focused tests for the worker's explicit provider-confirmation contract. This change has not been deployed, and live DNS/mail delivery has not been verified. Keep release status blocked until the secret configuration, service tests, CI, and mailbox activation path are complete.

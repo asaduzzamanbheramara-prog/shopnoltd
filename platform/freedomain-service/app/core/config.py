@@ -11,6 +11,8 @@ class Settings(BaseSettings):
     cors_origins: str = "https://shopnoltd.dpdns.org"
     domain_service_url: str = "http://domain-service.shopno-platform.svc.cluster.local:8080"
     freedomain_internal_key: str = ""
+    # Separate credential for OAuth-service provisioning calls; never reuse the DNS provider key.
+    account_provisioning_internal_key: str = ""
     parent_zone: str = "shopnoltd.dpdns.org"
     default_target: str = "shopnoltd.dpdns.org"
     default_record_type: str = "CNAME"

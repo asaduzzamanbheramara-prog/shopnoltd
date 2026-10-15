@@ -1,5 +1,6 @@
 """Shopnoltd OAuth Service."""
 
+import asyncio
 from contextlib import asynccontextmanager
 
 import structlog
@@ -14,6 +15,7 @@ from starlette.responses import Response
 from app.core.config import settings
 from app.core.db import Base, engine
 from app.core.provisioning_migrations import ensure_account_provisioning_constraints
+from app.core.provisioning_worker import provisioning_worker
 
 log = structlog.get_logger()
 
@@ -43,9 +45,17 @@ async def lifespan(app: FastAPI):
                 metadata JSON, created_at TIMESTAMP, updated_at TIMESTAMP
             )"""))
     await wait_for_dependencies("oauth-service", _check_database, redis_client)
+    worker_task = asyncio.create_task(provisioning_worker())
     log.info("oauth-service.started", env=settings.env)
-    yield
-    await engine.dispose()
+    try:
+        yield
+    finally:
+        worker_task.cancel()
+        try:
+            await worker_task
+        except asyncio.CancelledError:
+            pass
+        await engine.dispose()
     await redis_client.aclose()
 
 

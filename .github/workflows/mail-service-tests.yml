@@ -77,4 +77,4 @@ jobs:
           python -m pip install -r platform/oauth-service/requirements.txt pytest==8.4.1
       - name: Run provisioning outbox tests
         working-directory: platform/oauth-service
-        run: python -m pytest -q tests/test_account_provisioning_jobs.py tests/test_provisioning_migration.py tests/test_account_provisioning_status.py
+        run: python -m pytest -q tests/test_account_provisioning_jobs.py tests/test_provisioning_migration.py tests/test_account_provisioning_status.py tests/test_provisioning_worker_contract.py
