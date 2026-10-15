@@ -32,7 +32,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: freedomain-service
-          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/freedomain-service:f4072b77f9cba0accaac9ab1992bb51f6ba0abe1
+          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/freedomain-service:a8530fae600cb535e7ecefc0c807ef11ef048c39
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
