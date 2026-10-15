@@ -36,9 +36,9 @@ async def process_one_subdomain_job() -> bool:
                     select(AccountProvisioningJob)
                     .where(
                         AccountProvisioningJob.resource_type == "subdomain",
-                        AccountProvisioningJob.attempts < MAX_ATTEMPTS,
                         or_(
-                            AccountProvisioningJob.status.in_(( "pending", "failed")),
+                            (AccountProvisioningJob.attempts < MAX_ATTEMPTS)
+                            & AccountProvisioningJob.status.in_(("pending", "failed")),
                             (AccountProvisioningJob.status == "processing")
                             & (AccountProvisioningJob.updated_at < now - timedelta(minutes=LEASE_MINUTES)),
                         ),
@@ -50,6 +50,11 @@ async def process_one_subdomain_job() -> bool:
             ).scalar_one_or_none()
             if job is None:
                 return False
+            if job.status == "processing" and job.attempts >= MAX_ATTEMPTS:
+                job.status = "failed"
+                job.last_error = "retry_limit_exhausted"
+                job.updated_at = now
+                return True
             user = (
                 await session.execute(
                     select(UserMirror).where(UserMirror.id == job.user_id)
@@ -57,6 +62,7 @@ async def process_one_subdomain_job() -> bool:
             ).scalar_one_or_none()
             if user is None or not user.active or user.keycloak_id != job.keycloak_id:
                 job.status = "failed"
+                job.attempts = MAX_ATTEMPTS
                 job.last_error = "identity_missing_or_inactive"
                 job.updated_at = now
                 return True
