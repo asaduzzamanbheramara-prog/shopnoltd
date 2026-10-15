@@ -82,7 +82,7 @@ function replaceTag(html, tagPattern, attributes) {
   let tag = match[0]
   for (const [name, value] of Object.entries(attributes)) {
     const escaped = escapeHtml(value)
-    const attrPattern = new RegExp(`(\\b${name}=")[^"]*(")`)
+    const attrPattern = new RegExp(`(\b${name}=")[^"]*(")`)
     if (!attrPattern.test(tag)) throw new Error(`SEO attribute missing: ${name}`)
     tag = tag.replace(attrPattern, `$1${escaped}$2`)
   }
@@ -90,7 +90,7 @@ function replaceTag(html, tagPattern, attributes) {
 }
 
 const sitemap = await readFile(sitemapPath, 'utf8')
-const urls = [...sitemap.matchAll(/<loc>([^<]+)<\\/loc>/g)].map((match) => match[1].trim())
+const urls = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map((match) => match[1].trim())
 if (urls.length === 0) throw new Error('Sitemap contains no URLs')
 
 const template = await readFile(path.join(outputRoot, 'index.html'), 'utf8')
@@ -100,17 +100,16 @@ for (const url of urls) {
   if (parsed.origin !== siteOrigin || parsed.search || parsed.hash) {
     throw new Error(`Sitemap URL must use the canonical origin and a clean path: ${url}`)
   }
-  const routePath = parsed.pathname.replace(/\\/+$/, '') || '/'
+  const routePath = parsed.pathname.replace(/\/+$/, '') || '/'
   const metadata = metadataByPath[routePath]
   if (!metadata) throw new Error(`Missing SEO metadata for sitemap route: ${routePath}`)
 
-  let html = replaceTag(template, /<title>[\\s\\S]*?<\\/title>/, {})
-  html = html.replace(/<title>[\\s\\S]*?<\\/title>/, `<title>${escapeHtml(metadata.title)}</title>`)
-  html = replaceTag(html, /<meta\\b(?=[^>]*\\bname="description")[^>]*>/, { content: metadata.description })
-  html = replaceTag(html, /<link\\b(?=[^>]*\\brel="canonical")[^>]*>/, { href: url })
-  html = replaceTag(html, /<meta\\b(?=[^>]*\\bproperty="og:url")[^>]*>/, { content: url })
-  html = replaceTag(html, /<meta\\b(?=[^>]*\\bproperty="og:title")[^>]*>/, { content: metadata.title })
-  html = replaceTag(html, /<meta\\b(?=[^>]*\\bproperty="og:description")[^>]*>/, { content: metadata.description })
+  let html = template.replace(/<title>[\s\S]*?<\/title>/, `<title>${escapeHtml(metadata.title)}</title>`)
+  html = replaceTag(html, /<meta\b(?=[^>]*\bname="description")[^>]*>/, { content: metadata.description })
+  html = replaceTag(html, /<link\b(?=[^>]*\brel="canonical")[^>]*>/, { href: url })
+  html = replaceTag(html, /<meta\b(?=[^>]*\bproperty="og:url")[^>]*>/, { content: url })
+  html = replaceTag(html, /<meta\b(?=[^>]*\bproperty="og:title")[^>]*>/, { content: metadata.title })
+  html = replaceTag(html, /<meta\b(?=[^>]*\bproperty="og:description")[^>]*>/, { content: metadata.description })
 
   if (routePath === '/') {
     await writeFile(path.join(outputRoot, 'index.html'), html)
