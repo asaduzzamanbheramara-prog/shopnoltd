@@ -132,8 +132,6 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          postgres_user="$(kubectl -n shopno-data get secret postgres-secret -o jsonpath='{.data.POSTGRES_USER}' | base64 -d)"
-          postgres_password="$(kubectl -n shopno-data get secret postgres-secret -o jsonpath='{.data.POSTGRES_PASSWORD}' | base64 -d)"
           keycloak_password="$(kubectl -n shopno-identity get secret keycloak-secret -o jsonpath='{.data.KC_BOOTSTRAP_ADMIN_PASSWORD}' 2>/dev/null | base64 -d || true)"
           if [ -z "$keycloak_password" ]; then
             echo 'Existing keycloak-secret is missing KC_BOOTSTRAP_ADMIN_PASSWORD; refusing to create a partial freedomain secret.'
@@ -457,7 +455,7 @@ jobs:
           kubectl -n shopno-data exec deployment/postgres -- env PGPASSWORD="$postgres_password" psql -U "$postgres_user" -d freedomain -v ON_ERROR_STOP=1 -c "GRANT USAGE,CREATE ON SCHEMA public TO freedomain"
           kubectl -n shopno-data exec deployment/postgres -- env PGPASSWORD="$postgres_password" psql -U "$postgres_user" -d freedomain -v ON_ERROR_STOP=1 -c "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO freedomain"
           kubectl -n shopno-data exec deployment/postgres -- env PGPASSWORD="$postgres_password" psql -U "$postgres_user" -d freedomain -v ON_ERROR_STOP=1 -c "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO freedomain"
-          kubectl -n shopno-data exec deployment/postgres -- env PGPASSWORD="$postgres_password" psql -U "$postgres_user" -d freedomain -v ON_ERROR_STOP=1 -c "DO \\$\\$ DECLARE r record; BEGIN FOR r IN SELECT tablename FROM pg_tables WHERE schemaname = 'public' LOOP EXECUTE format('ALTER TABLE public.%I OWNER TO freedomain', r.tablename); END LOOP; FOR r IN SELECT sequencename FROM pg_sequences WHERE schemaname = 'public' LOOP EXECUTE format('ALTER SEQUENCE public.%I OWNER TO freedomain', r.sequencename); END LOOP; END \\$\\$;"
+          kubectl -n shopno-data exec deployment/postgres -- env PGPASSWORD="$postgres_password" psql -U "$postgres_user" -d freedomain -v ON_ERROR_STOP=1 -c "DO \$\$ DECLARE r record; BEGIN FOR r IN SELECT tablename FROM pg_tables WHERE schemaname = 'public' LOOP EXECUTE format('ALTER TABLE public.%I OWNER TO freedomain', r.tablename); END LOOP; FOR r IN SELECT sequencename FROM pg_sequences WHERE schemaname = 'public' LOOP EXECUTE format('ALTER SEQUENCE public.%I OWNER TO freedomain', r.sequencename); END LOOP; END \$\$;"
           echo 'Free-domain PostgreSQL role, database, and existing object privileges reconciled.'
 
       - name: Ensure Kobo and session-manager runtime database secrets
