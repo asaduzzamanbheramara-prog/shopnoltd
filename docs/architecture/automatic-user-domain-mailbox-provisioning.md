@@ -61,3 +61,10 @@ This document records the source audit and implementation safety gates. It does 
 - Implemented: authenticated `GET /api/v1/users/me/provisioning` returns the caller's own queued job states and sanitized failure messaging; it does not trigger provider operations or expose raw provider errors.
 - Not implemented: outbox worker, retry/reconciliation loop, user-triggered retry endpoint, verified credential activation flow, real provider configuration, verified full mailbox server, DNS/mail delivery integration tests.
 - All of the above tests are mock/unit-level. Keep this PR Draft and do not run backfills or deploy as part of these changes.
+
+## Mail-domain provider result hardening (Oct 15, 2026)
+
+- `platform/mail-service/app/api/domains.py` no longer ignores Mailcow failures when adding a domain. The local domain row starts inactive and becomes active only after Mailcow returns a non-empty list where every result has `type: success`.
+- Provider exceptions, malformed/empty responses, and application-level failures roll back the local database session and return a generic HTTP 502; provider response details are not returned to callers.
+- Added mocked regression tests in `platform/mail-service/tests/test_mail_domains_provisioning.py` and included them in the Provisioning Regression Tests workflow.
+- This fixes a false-success path in the admin domain API. It does not implement the outbox worker, create a self-service mailbox activation flow, or establish that the configured Mailcow provider is live and working.
