@@ -244,7 +244,7 @@ jobs:
 
           echo 'Waiting for the Argo CD controller to clear the stale operation.'
           operation_stopped=0
-          for _ in {1..24}; do
+          for _ in {1..48}; do
             app_state="$(timeout 15s kubectl --request-timeout=15s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o json 2>/dev/null || true)"
             phase="$(jq -r '.status.operationState.phase // ""' <<<"$app_state")"
             message="$(jq -r '.status.operationState.message // ""' <<<"$app_state")"
@@ -262,48 +262,58 @@ jobs:
               break
             fi
 
-            if [[ "$message" == *"waiting for completion of hook batch/Job/"* ]]; then
-              # The reported hook may be any Sync hook, not just the PostgreSQL
-              # migration. Recover only when that exact Job is already Complete.
-              hook_name="$(sed -n 's/.*waiting for completion of hook batch\/Job\/\([^ /]*\).*/\1/p' <<<"$message")"
+            if [[ "$message" == *"waiting for completion of hook batch/Job/"* ]] || [[ "$message" == *"waiting for deletion of hook batch/Job/"* ]]; then
+              # Argo can stall on either hook completion or hook deletion. Only remove
+              # a hook Job when it is confirmed Complete; never delete a running/failed
+              # migration or application hook as a generic recovery action.
+              hook_name="$(sed -n 's/.*waiting for \(completion\|deletion\) of hook batch\/Job\/\([^ /]*\).*/\2/p' <<<"$message")"
               hook_namespace=""
+              hook_state=""
               if [ -n "$hook_name" ]; then
-                hook_namespace="$(timeout 20s kubectl --request-timeout=15s get jobs -A -o json 2>/dev/null |
-                  jq -r --arg name "$hook_name" '.items[] | select(.metadata.name == $name) | select(any(.status.conditions[]?; .type == "Complete" and .status == "True")) | .metadata.namespace' |
-                  head -n 1 || true)"
+                hook_json="$(timeout 20s kubectl --request-timeout=15s get jobs -A -o json 2>/dev/null || true)"
+                hook_record="$(jq -c --arg name "$hook_name" '[.items[] | select(.metadata.name == $name) | {namespace:.metadata.namespace, complete:any(.status.conditions[]?; .type == "Complete" and .status == "True"), deleting:(.metadata.deletionTimestamp // ""), finalizers:(.metadata.finalizers // [])}] | .[0] // empty' <<<"$hook_json")"
+                if [ -n "$hook_record" ]; then
+                  hook_namespace="$(jq -r '.namespace // ""' <<<"$hook_record")"
+                  hook_state="$(jq -r 'if .complete then "complete" else "not-complete" end' <<<"$hook_record")"
+                fi
               fi
 
-              if [ -n "$hook_namespace" ]; then
-                echo "Argo CD is waiting on already-completed hook $hook_namespace/$hook_name; requesting hook cleanup."
+              if [ -z "$hook_namespace" ]; then
+                echo "Hook Job $hook_name is absent from the API listing; requesting a hard Argo CD refresh and continuing to wait."
+                timeout 45s kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" annotate application "$ARGOCD_APP" argocd.argoproj.io/refresh=hard --overwrite || true
+              elif [ "$hook_state" = "complete" ]; then
+                echo "Argo CD is blocked on completed hook $hook_namespace/$hook_name; requesting cleanup."
                 timeout 30s kubectl --request-timeout=30s -n "$hook_namespace" delete job "$hook_name" --ignore-not-found --wait=false || true
 
-                for _ in {1..6}; do
-                  if ! timeout 15s kubectl --request-timeout=15s -n "$hook_namespace" get job "$hook_name" >/dev/null 2>&1; then
+                for _ in {1..8}; do
+                  hook_json="$(timeout 15s kubectl --request-timeout=15s -n "$hook_namespace" get job "$hook_name" -o json 2>/dev/null || true)"
+                  if [ -z "$hook_json" ]; then
                     echo "Completed hook $hook_namespace/$hook_name removed."
                     break
                   fi
 
-                  finalizers="$(timeout 15s kubectl --request-timeout=15s -n "$hook_namespace" get job "$hook_name" -o jsonpath='{.metadata.finalizers}' 2>/dev/null || true)"
-                  deletion_timestamp="$(timeout 15s kubectl --request-timeout=15s -n "$hook_namespace" get job "$hook_name" -o jsonpath='{.metadata.deletionTimestamp}' 2>/dev/null || true)"
-                  if [ -n "$deletion_timestamp" ] && grep -q 'argocd.argoproj.io/hook-finalizer' <<<"$finalizers"; then
-                    echo "Completed hook $hook_namespace/$hook_name is blocked by its Argo hook finalizer; clearing that finalizer after deletion was requested."
+                  deletion_timestamp="$(jq -r '.metadata.deletionTimestamp // ""' <<<"$hook_json")"
+                  finalizers="$(jq -r '.metadata.finalizers // [] | join(",")' <<<"$hook_json")"
+                  if [ -n "$deletion_timestamp" ] && [[ "$finalizers" == *"argocd.argoproj.io/hook-finalizer"* ]]; then
+                    echo "Completed hook $hook_namespace/$hook_name is deletion-blocked by its Argo hook finalizer; clearing that finalizer after deletion was requested."
                     timeout 30s kubectl --request-timeout=30s -n "$hook_namespace" patch job "$hook_name" --type=json -p='[{"op":"remove","path":"/metadata/finalizers"}]' || true
                   fi
                   sleep 5
                 done
               else
-                echo "The reported hook ${hook_name:-unknown} is not confirmed Complete; preserving it and continuing to wait."
+                echo "Hook Job $hook_namespace/$hook_name is not confirmed Complete; preserving it and continuing to wait."
               fi
             fi
-
             sleep 5
           done
 
           if [ "$operation_stopped" -ne 1 ]; then
-            echo 'Argo CD operation did not leave Running/Terminating after 120 seconds.'
+            echo 'Argo CD operation did not leave Running/Terminating after 240 seconds.'
             kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o jsonpath='phase={.status.operationState.phase}{"\n"}message={.status.operationState.message}{"\n"}revision={.status.operationState.operation.sync.revision}{"\n"}'
-            echo '===== BLOCKING HOOK JOBS ====='
-            kubectl --request-timeout=30s get jobs -A -o wide | grep -E 'bind-disabled|migration|NAME' || true
+            echo '===== ALL JOBS WITH HOOK-RELATED NAMES ====='
+            kubectl --request-timeout=30s get jobs -A -o wide | grep -Ei 'NAME|hook|migration|litellm|binder' || true
+            echo '===== LITELLM MIGRATION HOOK DETAILS ====='
+            kubectl --request-timeout=30s get jobs -A -o json | jq -r '[.items[] | select(.metadata.name | test("litellm-migrations")) | {namespace:.metadata.namespace,name:.metadata.name,complete:any(.status.conditions[]?; .type=="Complete" and .status=="True"),failed:any(.status.conditions[]?; .type=="Failed" and .status=="True"),deletionTimestamp:(.metadata.deletionTimestamp // ""),finalizers:(.metadata.finalizers // [])}]' || true
             echo '===== MONITORING PVC STATUS ====='
             kubectl --request-timeout=30s -n shopno-monitoring get pvc grafana-data loki-data prometheus-data -o wide || true
             echo '===== MONITORING BINDER JOB ====='
