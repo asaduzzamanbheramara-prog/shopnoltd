@@ -421,6 +421,36 @@ jobs:
 
           echo 'Argo CD full sync request submitted to the controller.'
 
+      - name: Wait for PostgreSQL readiness before runtime database setup
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo 'Waiting for the PostgreSQL Deployment and its actual application container to become ready before any database exec.'
+          if ! kubectl --request-timeout=20s -n "$MIGRATION_NAMESPACE" wait --for=condition=available deployment/postgres --timeout=180s; then
+            echo 'ERROR: PostgreSQL Deployment did not become available.'
+            kubectl --request-timeout=20s -n "$MIGRATION_NAMESPACE" get deployment postgres -o wide || true
+            kubectl --request-timeout=20s -n "$MIGRATION_NAMESPACE" get pods -l app.kubernetes.io/name=postgres -o wide || true
+            kubectl --request-timeout=20s -n "$MIGRATION_NAMESPACE" describe pods -l app.kubernetes.io/name=postgres || true
+            for pod in $(kubectl --request-timeout=20s -n "$MIGRATION_NAMESPACE" get pods -l app.kubernetes.io/name=postgres -o name 2>/dev/null || true); do
+              echo "===== PostgreSQL pod logs: $pod ====="
+              kubectl --request-timeout=20s -n "$MIGRATION_NAMESPACE" logs "$pod" -c postgres --tail=200 || true
+              kubectl --request-timeout=20s -n "$MIGRATION_NAMESPACE" logs "$pod" -c init-data-dir --tail=100 || true
+            done
+            exit 1
+          fi
+          if ! kubectl --request-timeout=20s -n "$MIGRATION_NAMESPACE" wait --for=condition=ready pod -l app.kubernetes.io/name=postgres --timeout=180s; then
+            echo 'ERROR: PostgreSQL pod did not become Ready even though the Deployment availability check returned.'
+            kubectl --request-timeout=20s -n "$MIGRATION_NAMESPACE" get pods -l app.kubernetes.io/name=postgres -o wide || true
+            kubectl --request-timeout=20s -n "$MIGRATION_NAMESPACE" describe pods -l app.kubernetes.io/name=postgres || true
+            for pod in $(kubectl --request-timeout=20s -n "$MIGRATION_NAMESPACE" get pods -l app.kubernetes.io/name=postgres -o name 2>/dev/null || true); do
+              echo "===== PostgreSQL pod logs: $pod ====="
+              kubectl --request-timeout=20s -n "$MIGRATION_NAMESPACE" logs "$pod" -c postgres --tail=200 || true
+              kubectl --request-timeout=20s -n "$MIGRATION_NAMESPACE" logs "$pod" -c init-data-dir --tail=100 || true
+            done
+            exit 1
+          fi
+          echo 'PostgreSQL Deployment and pod are Ready; proceeding to runtime database setup.'
+
       - name: Ensure Kobo and session-manager runtime database secrets
         shell: bash
         run: |
