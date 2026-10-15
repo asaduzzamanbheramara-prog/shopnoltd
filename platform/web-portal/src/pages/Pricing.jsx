@@ -1,5 +1,5 @@
 import React from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 export default function Pricing() {
   const navigate = useNavigate()
   const plans = [
@@ -11,7 +11,14 @@ export default function Pricing() {
   ]
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto', padding: 32, fontFamily: 'system-ui, sans-serif' }}>
-      <h1>Pricing</h1>
+      <h1>Shopnoltd Pricing &amp; Plans</h1>
+      <p style={{ maxWidth: 820, margin: '0 auto 16px', color: '#334155', lineHeight: 1.7 }}>
+        Compare the listed Shopnoltd plans by team size, storage allowance, and support needs. The plan cards below show the monthly prices and included features for each option, from the Free plan through Enterprise.
+      </p>
+      <p style={{ maxWidth: 820, margin: '0 auto 24px', color: '#334155', lineHeight: 1.7 }}>
+        Choose the option that best fits your current needs to continue to checkout and review the selected plan before payment. You can also explore <Link to="/services">Shopnoltd services</Link> or <Link to="/contact">contact us</Link> if you need help understanding which option is right for you.
+      </p>
+      <h2 style={{ fontSize: 20, marginBottom: 16 }}>Compare plans by team, storage, and support</h2>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
         {plans.map(p => (
           <div key={p.name} style={{ padding: 20, background: 'white', borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
