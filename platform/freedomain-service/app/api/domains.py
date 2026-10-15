@@ -1,8 +1,9 @@
+import hmac
 import os
 import re
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select, text
 from sqlalchemy.exc import IntegrityError
@@ -296,6 +297,33 @@ async def check(subdomain: str, s: AsyncSession = Depends(db)):
     full = f"{sub}.{settings.parent_zone}"
     exists = await s.scalar(select(FreeDomain).where(FreeDomain.subdomain == full))
     return {"available": exists is None, "subdomain": full}
+
+
+@router.post("/internal/provision", include_in_schema=False)
+async def provision_internal(
+    payload: dict,
+    x_account_provisioning_key: str | None = Header(default=None),
+    s: AsyncSession = Depends(db),
+):
+    """Idempotent service-to-service domain provisioning for the OAuth outbox worker."""
+    expected = settings.account_provisioning_internal_key
+    if not expected:
+        raise HTTPException(503, "internal provisioning is not configured")
+    if not x_account_provisioning_key or not hmac.compare_digest(x_account_provisioning_key, expected):
+        raise HTTPException(401, "unauthorized")
+
+    keycloak_id = str(payload.get("keycloak_id") or "").strip()
+    username = str(payload.get("username") or "").strip()
+    if not keycloak_id or not username or len(keycloak_id) > 64 or len(username) > 256:
+        raise HTTPException(422, "keycloak_id and username are required")
+
+    fd = await provision_for_user({"sub": keycloak_id, "preferred_username": username}, s)
+    return {
+        "status": "active",
+        "subdomain": fd.subdomain,
+        "target": fd.target,
+        "record_type": fd.record_type,
+    }
 
 
 @router.delete("/{dom_id}")
