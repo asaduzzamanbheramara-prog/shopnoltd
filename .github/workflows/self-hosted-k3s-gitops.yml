@@ -308,6 +308,21 @@ jobs:
           if [ "$operation_stopped" -ne 1 ]; then
             echo 'Argo CD operation did not leave Running/Terminating after 120 seconds.'
             kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o jsonpath='phase={.status.operationState.phase}{"\n"}message={.status.operationState.message}{"\n"}revision={.status.operationState.operation.sync.revision}{"\n"}'
+            echo '===== BLOCKING HOOK JOBS ====='
+            kubectl --request-timeout=30s get jobs -A -o wide | grep -E 'bind-disabled|migration|NAME' || true
+            echo '===== MONITORING PVC STATUS ====='
+            kubectl --request-timeout=30s -n shopno-monitoring get pvc grafana-data loki-data prometheus-data -o wide || true
+            echo '===== MONITORING BINDER JOB ====='
+            kubectl --request-timeout=30s -n shopno-monitoring get job bind-disabled-monitoring-pvcs -o yaml || true
+            echo '===== MONITORING PODS ====='
+            kubectl --request-timeout=30s -n shopno-monitoring get pods -o wide || true
+            echo '===== MONITORING EVENTS ====='
+            kubectl --request-timeout=30s -n shopno-monitoring get events --sort-by=.lastTimestamp | tail -n 80 || true
+            echo '===== PLATFORM PVC AND BINDER STATUS ====='
+            kubectl --request-timeout=30s -n shopno-platform get pvc interior-service-data license-service-data training-service-data -o wide || true
+            kubectl --request-timeout=30s -n shopno-platform get job bind-disabled-platform-pvcs -o wide || true
+            echo '===== ARGO APP HOOK RESOURCE STATUS ====='
+            kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o json | jq -r '[.status.resources[]? | select((.kind=="Job") or (.kind=="PersistentVolumeClaim")) | {group,kind,namespace,name,status,health:(.health.status // ""),message:(.health.message // "")}]' || true
             exit 1
           fi
 
