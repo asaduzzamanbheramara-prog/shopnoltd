@@ -13,6 +13,7 @@ from starlette.responses import Response
 
 from app.core.config import settings
 from app.core.db import Base, engine
+from app.core.provisioning_migrations import ensure_account_provisioning_constraints
 
 log = structlog.get_logger()
 
@@ -29,6 +30,7 @@ async def lifespan(app: FastAPI):
             await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS source_sheet VARCHAR(255)"))
             await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS source_row INTEGER"))
             await conn.execute(text("ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS banner_url VARCHAR(1024)"))
+            await ensure_account_provisioning_constraints(conn)
             await conn.execute(text("""CREATE TABLE IF NOT EXISTS kyc_identities (
                 id VARCHAR(64) PRIMARY KEY,
                 user_id VARCHAR(64) UNIQUE NOT NULL,

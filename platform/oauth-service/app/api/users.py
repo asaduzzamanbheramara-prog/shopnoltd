@@ -3,12 +3,13 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.db import SessionLocal
 from app.core.security import verify_token, verify_token_admin
-from app.models.models import UserMirror, UserProfile
+from app.models.models import AccountProvisioningJob, UserMirror, UserProfile
 from app.schemas.schemas import UserAdminPatch, UserIn, UserOut
 
 router = APIRouter()
@@ -51,6 +52,21 @@ def _user_name(payload: dict) -> str:
     return " ".join(part for part in (given, family) if part)
 
 
+async def _ensure_account_provisioning_jobs(s: AsyncSession, u: UserMirror) -> None:
+    """Atomically enqueue domain and mailbox work; never claim provider success."""
+    for resource_type in ("subdomain", "mailbox"):
+        stmt = pg_insert(AccountProvisioningJob).values(
+            user_id=u.id,
+            keycloak_id=u.keycloak_id,
+            resource_type=resource_type,
+            status="pending",
+            attempts=0,
+        ).on_conflict_do_nothing(
+            constraint="uq_account_provisioning_user_resource"
+        )
+        await s.execute(stmt)
+
+
 def _user_out(u: UserMirror) -> UserOut:
     return UserOut(
         id=u.id,
@@ -89,7 +105,8 @@ async def ensure_user_mirror(payload: dict, s: AsyncSession) -> UserMirror:
                 source="registration",
             )
             s.add(profile)
-            await s.commit()
+        await _ensure_account_provisioning_jobs(s, existing)
+        await s.commit()
         return existing
 
     email_owner = (
@@ -117,6 +134,8 @@ async def ensure_user_mirror(payload: dict, s: AsyncSession) -> UserMirror:
             await s.execute(select(UserMirror).where(UserMirror.keycloak_id == keycloak_id))
         ).scalar_one_or_none()
         if existing:
+            await _ensure_account_provisioning_jobs(s, existing)
+            await s.commit()
             return existing
         email_owner = (
             await s.execute(select(UserMirror).where(UserMirror.email == email))
@@ -137,6 +156,7 @@ async def ensure_user_mirror(payload: dict, s: AsyncSession) -> UserMirror:
             source="registration",
         )
         s.add(profile)
+    await _ensure_account_provisioning_jobs(s, u)
     await s.commit()
     await s.refresh(u)
     return u
@@ -178,6 +198,9 @@ async def create(body: UserIn, user=Depends(admin), s: AsyncSession = Depends(db
     s.add(u)
     await s.flush()
     s.add(UserProfile(user_id=u.id, display_name=body.name or body.email.split("@")[0], source="admin_created"))
+    # Admin-created identities must receive the same durable provisioning jobs
+    # as identities first mirrored during an authenticated user request.
+    await _ensure_account_provisioning_jobs(s, u)
     await s.commit()
     await s.refresh(u)
     return _user_out(u)
@@ -484,3 +507,53 @@ async def me(creds: HTTPAuthorizationCredentials = Depends(bearer), s: AsyncSess
     payload = await verify_token(creds.credentials)
     u = await ensure_user_mirror(payload, s)
     return _user_out(u)
+
+@router.get("/me/provisioning", response_model=dict)
+async def my_provisioning_status(
+    creds: HTTPAuthorizationCredentials = Depends(bearer),
+    s: AsyncSession = Depends(db),
+):
+    """Return only the authenticated user's provisioning state, never provider secrets."""
+    try:
+        payload = await verify_token(creds.credentials)
+    except (ValueError, PermissionError) as exc:
+        # Authentication failures are client errors, not unhandled 500s. Keep
+        # verifier details (which may contain token/header data) out of responses.
+        raise HTTPException(401, "invalid or expired authentication token") from exc
+    except httpx.HTTPError as exc:
+        # A JWKS/identity-provider outage is not evidence that the user's token
+        # is invalid. Return a generic temporary failure without leaking details.
+        raise HTTPException(503, "authentication service temporarily unavailable") from exc
+
+    keycloak_id = payload.get("sub")
+    if not keycloak_id:
+        raise HTTPException(401, "authenticated token is missing subject")
+
+    jobs = (
+        await s.execute(
+            select(AccountProvisioningJob)
+            .where(AccountProvisioningJob.keycloak_id == keycloak_id)
+            .order_by(AccountProvisioningJob.created_at.asc(), AccountProvisioningJob.resource_type.asc())
+        )
+    ).scalars().all()
+
+    return {
+        "status": "ok",
+        "provisioning": [
+            {
+                "resource_type": job.resource_type,
+                "status": job.status,
+                "attempts": job.attempts,
+                "created_at": job.created_at.isoformat() if job.created_at else None,
+                "updated_at": job.updated_at.isoformat() if job.updated_at else None,
+                # Never return raw exception/provider text, which can contain internal details.
+                "message": (
+                    "Provisioning failed; contact support."
+                    if job.status == "failed"
+                    else None
+                ),
+            }
+            for job in jobs
+        ],
+    }
+
