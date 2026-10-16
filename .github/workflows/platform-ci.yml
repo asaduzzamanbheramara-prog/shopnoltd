@@ -51,6 +51,23 @@ jobs:
           cache-dependency-path: platform/web-portal/package-lock.json
       - run: npm ci
       - run: npm run build
+      - name: Verify crawlable SEO HTML and canonical URLs
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFile } from 'node:fs/promises'
+          import assert from 'node:assert/strict'
+
+          const root = await readFile('dist/index.html', 'utf8')
+          const pricing = await readFile('dist/pricing/index.html', 'utf8')
+          assert.match(root, /<link rel="canonical" href="https:\/\/shopnoltd\.dpdns\.org\/"\s*\/>/)
+          assert.match(root, /<h1>Shopnoltd — Digital Services, Domains &amp; Business Tools<\/h1>/)
+          assert.match(pricing, /<link rel="canonical" href="https:\/\/shopnoltd\.dpdns\.org\/pricing"\s*\/>/)
+          assert.match(pricing, /<h1>Shopnoltd Pricing<\/h1>/)
+          assert.match(pricing, /<th scope="row">Enterprise<\/th>/)
+          assert.match(pricing, /Confirm the selected plan and final payable amount at checkout/)
+          assert.doesNotMatch(pricing, /<link rel="canonical" href="https:\/\/shopnoltd\.dpdns\.org\/"\s*\/>/)
+          console.log('SEO HTML checks passed for homepage and pricing route.')
+          NODE
 
   migration-shape:
     name: Payment migration validation
