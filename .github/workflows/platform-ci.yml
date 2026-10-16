@@ -36,6 +36,26 @@ jobs:
             platform/social-service/app \
             platform/oauth-service/app
 
+  domain-service-tests:
+    name: Domain service pricing regression tests
+    runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: .
+    defaults:
+      run:
+        working-directory: platform/domain-service
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install domain service dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pytest
+      - name: Test registrar pricing safeguards
+        run: pytest -q tests/test_namecheap_pricing.py
+
   web-portal:
     name: Web portal build
     runs-on: ubuntu-latest
