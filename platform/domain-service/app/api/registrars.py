@@ -16,8 +16,9 @@ from app.core.security import verify_token
 from app.models.models import Domain, Registrar
 from app.schemas.schemas import DomainOut, RegisterDomainIn
 from app.services.billing_service import BillingService
+from app.services.domain_pricing import registration_quote
 from app.services.registrar_factory import get_adapter
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -82,7 +83,9 @@ def _domain_out(d: Domain) -> DomainOut:
 
 
 @router.get("/domains/check-availability")
-async def check_availability(domain: str, years: int = 1, s: AsyncSession = Depends(db)):
+async def check_availability(
+    domain: str, years: int = Query(default=1, ge=1, le=10), s: AsyncSession = Depends(db)
+):
     """Public — no auth required, matches the free-subdomain checker's UX.
     Returns availability AND price together so the frontend can show both
     in one round trip."""
@@ -99,23 +102,23 @@ async def check_availability(domain: str, years: int = 1, s: AsyncSession = Depe
         raise HTTPException(502, f"Registrar check failed: {e}") from e
 
     price = None
-    currency = None
+    currency = "USD"
     if avail["available"]:
         try:
             pricing = await adapter.get_pricing(_tld_of(domain), years=years)
-            price, currency = pricing["price"], pricing["currency"]
+            quote, currency = registration_quote(avail, pricing, years)
+            price = float(quote)
         except (RuntimeError, ValueError):
-            # Availability is still meaningful even if pricing lookup fails —
-            # surface it as available with unknown price rather than erroring
-            # the whole request out.
+            # Availability is still meaningful if the registrar cannot provide
+            # a safe exact-duration quote. Never display a guessed premium price.
             pass
 
     return {
         "domain": avail["domain"],
         "available": avail["available"],
         "premium": avail.get("premium", False),
-        "price": avail.get("premium_price") or price,
-        "currency": currency or "USD",
+        "price": price,
+        "currency": currency,
         "years": years,
     }
 
@@ -147,8 +150,10 @@ async def register_domain_user(
         pricing = await adapter.get_pricing(_tld_of(domain), years=body.years)
     except (RuntimeError, ValueError) as e:
         raise HTTPException(502, f"Registrar pricing lookup failed: {e}") from e
-    price = Decimal(str(avail.get("premium_price") or pricing["price"]))
-    currency = pricing["currency"]
+    try:
+        price, currency = registration_quote(avail, pricing, body.years)
+    except ValueError as e:
+        raise HTTPException(502, f"Registrar pricing quote is not safe to charge: {e}") from e
 
     billing = _billing()
     balance = await billing.check_wallet_balance(token, currency, price)
