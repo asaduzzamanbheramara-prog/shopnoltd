@@ -203,7 +203,7 @@ async def register_domain_user(
 @router.post("/domains/{domain}/renew", response_model=DomainOut)
 async def renew_domain_user(
     domain: str,
-    years: int = 1,
+    years: int = Query(default=1, ge=1, le=10),
     user_and_token=Depends(current_user),
     s: AsyncSession = Depends(db),
 ):
