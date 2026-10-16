@@ -39,6 +39,8 @@ jobs:
   domain-service-tests:
     name: Domain service pricing regression tests
     runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: .
     defaults:
       run:
         working-directory: platform/domain-service
