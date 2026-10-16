@@ -50,7 +50,7 @@ jobs:
             echo "::error::Backup timestamp is missing or has an unexpected format."
             exit 1
           fi
-          timestamp_iso="${timestamp:0:8}T${timestamp:9:2}:${timestamp:11:2}:${timestamp:13:2}Z"
+          timestamp_iso="${timestamp:0:4}-${timestamp:4:2}-${timestamp:6:2}T${timestamp:9:2}:${timestamp:11:2}:${timestamp:13:2}Z"
           backup_epoch="$(date -u -d "$timestamp_iso" +%s)"
           now_epoch="$(date -u +%s)"
           age_seconds="$((now_epoch - backup_epoch))"
