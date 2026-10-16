@@ -1,0 +1,21 @@
+{
+  "name": "Shopnoltd Codespaces",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:1-22-bookworm",
+  "forwardPorts": [5173],
+  "portsAttributes": {
+    "5173": {
+      "label": "Shopnoltd web portal (Vite preview)",
+      "onAutoForward": "openBrowser",
+      "visibility": "public"
+    }
+  },
+  "postCreateCommand": "npm ci --prefix platform/web-portal",
+  "postStartCommand": "bash -lc 'if ! curl -fsS http://127.0.0.1:5173/ >/dev/null 2>&1; then (cd /workspaces/shopnoltd/platform/web-portal && nohup npm run dev -- --host 0.0.0.0 --port 5173 > /tmp/shopnoltd-vite.log 2>&1 </dev/null &); fi'",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint"
+      ]
+    }
+  }
+}
