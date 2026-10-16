@@ -88,7 +88,8 @@ function pageHtml(path, title, description) {
 }
 
 for (const [path, [title, description]] of Object.entries(pages)) {
-  const destination = new URL(path.slice(1) + '/index.html', outputDirectory)
+  const relativePath = path === '/' ? 'index.html' : path.slice(1) + '/index.html'
+  const destination = new URL(relativePath, outputDirectory)
   await mkdir(dirname(destination.pathname), { recursive: true })
   await writeFile(destination, pageHtml(path, title, description), 'utf8')
 }
