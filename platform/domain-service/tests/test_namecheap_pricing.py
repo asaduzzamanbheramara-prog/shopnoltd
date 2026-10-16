@@ -104,6 +104,14 @@ class RegistrationQuoteTests(unittest.TestCase):
                 years=1,
             )
 
+    def test_quote_duration_must_match_requested_duration(self):
+        with self.assertRaisesRegex(ValueError, "does not match"):
+            registration_quote(
+                {"available": True, "premium": False},
+                {"price": "49.95", "currency": "USD", "years": 1},
+                years=3,
+            )
+
 
 if __name__ == "__main__":
     unittest.main()
