@@ -6,6 +6,7 @@ const htmlPath = new URL('../dist/index.html', import.meta.url)
 const baseHtml = await readFile(htmlPath, 'utf8')
 
 const pages = {
+  '/': ['Shopnoltd | Digital Services, Domains & Business Tools', 'Explore Shopnoltd digital services, domain registration, business tools, data collection, communication, and workspace applications.'],
   '/about': ['About Shopnoltd | Our Platform and Services', 'Learn about Shopnoltd and its digital platform for domains, business tools, data workflows, communication, and online services.'],
   '/services': ['Shopnoltd Services | Digital and Business Tools', 'Explore Shopnoltd services for domain registration, data collection, business applications, communication, and connected platforms.'],
   '/pricing': ['Shopnoltd Pricing | Plans and Services', 'Compare Shopnoltd service plans, prices, included users, storage, and support options to choose the right plan for your business.'],
@@ -24,6 +25,20 @@ const pages = {
 }
 
 const staticBodies = {
+  '/': `
+    <main>
+      <h1>Shopnoltd — Digital Services, Domains &amp; Business Tools</h1>
+      <p>Shopnoltd brings domain registration, data collection, business applications, communication, and workspace tools together in one platform.</p>
+      <section><h2>Explore Shopnoltd</h2>
+        <ul>
+          <li><a href="/services">Services and business tools</a> for online workflows and connected applications.</li>
+          <li><a href="/pricing">Pricing and plans</a> to compare displayed user limits, storage, and support.</li>
+          <li><a href="/domain-registration">Domain registration</a> to explore available online addresses.</li>
+          <li><a href="/blog">Blog and guides</a> for practical information and platform updates.</li>
+          <li><a href="/contact">Contact Shopnoltd</a> for service questions and support inquiries.</li>
+        </ul>
+      </section>
+    </main>`,
   '/pricing': `
     <main>
       <h1>Shopnoltd Pricing</h1>
