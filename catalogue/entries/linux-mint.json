@@ -1,0 +1,30 @@
+{
+  "id": "linux-mint",
+  "name": "Linux Mint",
+  "kind": "operating-system",
+  "description": "Official Linux Mint download page. Choose a supported edition and release, then follow the project's published integrity-verification guidance.",
+  "platforms": [
+    "linux"
+  ],
+  "architectures": [
+    "x86_64"
+  ],
+  "source": {
+    "type": "official-download-page",
+    "url": "https://linuxmint.com/download.php",
+    "publisher": "Linux Mint Project"
+  },
+  "license_note": "Review the distribution and bundled third-party software licences on the official project site. Shopnoltd does not repackage or redistribute the ISO in this scaffold.",
+  "verification": {
+    "method": "source-only-not-yet-verified",
+    "status": "needs-review",
+    "evidence_url": "https://linuxmint.com/download.php"
+  },
+  "pricing": {
+    "model": "free"
+  },
+  "notes": [
+    "Metadata only; no ISO is hosted here.",
+    "Verify the downloaded image using project-published checksums/signatures before use."
+  ]
+}

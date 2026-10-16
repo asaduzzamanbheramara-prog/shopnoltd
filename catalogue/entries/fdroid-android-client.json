@@ -1,0 +1,42 @@
+{
+  "id": "fdroid-android-client",
+  "name": "F-Droid Android app repository",
+  "kind": "application",
+  "description": "Official F-Droid project page for its Android app repository client. Review publisher guidance, device compatibility, and package integrity before installing any APK.",
+  "platforms": [
+    "android"
+  ],
+  "architectures": [
+    "arm64-v8a",
+    "armeabi-v7a",
+    "x86_64",
+    "x86"
+  ],
+  "device_types": [
+    "phone",
+    "tablet",
+    "tv"
+  ],
+  "package_formats": [
+    "apk"
+  ],
+  "source": {
+    "type": "official-download-page",
+    "url": "https://f-droid.org/",
+    "publisher": "F-Droid"
+  },
+  "license_note": "Review F-Droid and each app's licence and signing information. Shopnoltd does not repackage, sign, or host APK files.",
+  "verification": {
+    "method": "source-only-not-yet-verified",
+    "status": "needs-review",
+    "evidence_url": "https://f-droid.org/"
+  },
+  "pricing": {
+    "model": "free"
+  },
+  "notes": [
+    "This is an official project page, not a direct APK binary URL.",
+    "Android may require the user to approve installing apps from a selected source; only proceed after verifying publisher and package signing information.",
+    "APK compatibility depends on Android version, CPU ABI, device policy, and app requirements."
+  ]
+}

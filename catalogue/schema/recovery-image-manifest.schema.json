@@ -1,0 +1,365 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://shopnoltd.dpdns.org/schemas/recovery-image-manifest.schema.json",
+  "title": "Recovery Image Manifest",
+  "description": "Metadata contract for publisher-sourced recovery images. A valid manifest does not imply the image has been downloaded, verified, or boot-tested.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "id",
+    "display_name",
+    "publisher",
+    "official_source_url",
+    "target_platforms",
+    "architectures",
+    "firmware_modes",
+    "secure_boot",
+    "minimum_usb_capacity_gib",
+    "verification",
+    "validation_status"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "display_name": {
+      "type": "string",
+      "minLength": 3
+    },
+    "publisher": {
+      "type": "string",
+      "minLength": 2
+    },
+    "official_source_url": {
+      "type": "string",
+      "format": "uri",
+      "pattern": "^https://"
+    },
+    "target_platforms": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "windows",
+          "linux",
+          "bsd",
+          "vendor-recovery",
+          "other"
+        ]
+      }
+    },
+    "architectures": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "x86_64",
+          "x86",
+          "arm64",
+          "arm",
+          "riscv64",
+          "other"
+        ]
+      }
+    },
+    "firmware_modes": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "uefi",
+          "legacy-bios",
+          "vendor-specific",
+          "unknown"
+        ]
+      }
+    },
+    "secure_boot": {
+      "enum": [
+        "supported",
+        "unsupported",
+        "conditional",
+        "unknown"
+      ]
+    },
+    "minimum_usb_capacity_gib": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "digest_algorithm",
+        "digest",
+        "digest_source_url"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "not-verified",
+            "digest-verified",
+            "signature-verified"
+          ]
+        },
+        "digest_algorithm": {
+          "enum": [
+            "sha256",
+            "sha512",
+            "none"
+          ]
+        },
+        "digest": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^(?:[A-Fa-f0-9]{64}|[A-Fa-f0-9]{128})$"
+        },
+        "digest_source_url": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uri"
+        },
+        "signature_url": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uri",
+          "pattern": "^https://"
+        },
+        "signature_format": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "openpgp",
+            "minisign",
+            "cosign",
+            "x509",
+            "other",
+            null
+          ]
+        },
+        "signer_identity": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 3
+        }
+      }
+    },
+    "boot_test": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "environment",
+        "tested_at"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "not-tested",
+            "vm-boot-passed",
+            "physical-device-tested",
+            "failed"
+          ]
+        },
+        "environment": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "tested_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date"
+        }
+      }
+    },
+    "notes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "validation_status": {
+      "enum": [
+        "draft",
+        "review-required",
+        "approved-for-listing",
+        "blocked"
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "validation_status": {
+            "const": "approved-for-listing"
+          }
+        },
+        "required": [
+          "validation_status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "verification": {
+            "properties": {
+              "status": {
+                "enum": [
+                  "digest-verified",
+                  "signature-verified"
+                ]
+              }
+            },
+            "required": [
+              "status",
+              "digest_algorithm",
+              "digest",
+              "digest_source_url"
+            ]
+          },
+          "boot_test": {
+            "properties": {
+              "status": {
+                "enum": [
+                  "vm-boot-passed",
+                  "physical-device-tested"
+                ]
+              }
+            },
+            "required": [
+              "status",
+              "environment",
+              "tested_at"
+            ]
+          }
+        },
+        "required": [
+          "boot_test"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "verification": {
+            "properties": {
+              "status": {
+                "enum": [
+                  "digest-verified",
+                  "signature-verified"
+                ]
+              }
+            },
+            "required": [
+              "status"
+            ]
+          }
+        },
+        "required": [
+          "verification"
+        ]
+      },
+      "then": {
+        "properties": {
+          "verification": {
+            "properties": {
+              "digest_algorithm": {
+                "enum": [
+                  "sha256",
+                  "sha512"
+                ]
+              },
+              "digest": {
+                "type": "string",
+                "pattern": "^(?:[A-Fa-f0-9]{64}|[A-Fa-f0-9]{128})$"
+              },
+              "digest_source_url": {
+                "type": "string",
+                "format": "uri",
+                "pattern": "^https://"
+              }
+            },
+            "required": [
+              "digest_algorithm",
+              "digest",
+              "digest_source_url"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "verification": {
+            "properties": {
+              "status": {
+                "const": "signature-verified"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          }
+        },
+        "required": [
+          "verification"
+        ]
+      },
+      "then": {
+        "properties": {
+          "verification": {
+            "properties": {
+              "signature_url": {
+                "type": "string",
+                "format": "uri",
+                "pattern": "^https://"
+              },
+              "signature_format": {
+                "enum": [
+                  "openpgp",
+                  "minisign",
+                  "cosign",
+                  "x509",
+                  "other"
+                ]
+              },
+              "signer_identity": {
+                "type": "string",
+                "minLength": 3
+              }
+            },
+            "required": [
+              "signature_url",
+              "signature_format",
+              "signer_identity"
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

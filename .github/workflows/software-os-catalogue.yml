@@ -1,0 +1,70 @@
+name: Software and OS catalogue validation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'catalogue/**'
+      - 'docs/universal-software-os-center/**'
+      - 'scripts/validate-software-os-catalogue.py'
+      - 'scripts/build-software-os-catalogue.py'
+      - 'tools/software-os-diagnostics/**'
+      - 'tests/software-os-catalogue/**'
+      - 'tests/software-os-diagnostics/**'
+      - 'apps/desktop-shell/src/main.js'
+      - 'apps/desktop-shell/src/navigation-policy.js'
+      - 'apps/desktop-shell/test/**'
+      - 'apps/desktop-shell/package.json'
+      - 'frontend/software-os-center.html'
+      - 'frontend/index.html'
+      - 'frontend/Dockerfile'
+      - '.github/workflows/software-os-catalogue.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'catalogue/**'
+      - 'frontend/**'
+      - 'docs/universal-software-os-center/**'
+      - 'scripts/validate-software-os-catalogue.py'
+      - 'scripts/build-software-os-catalogue.py'
+      - 'tools/software-os-diagnostics/**'
+      - 'tests/software-os-catalogue/**'
+      - 'tests/software-os-diagnostics/**'
+      - 'apps/desktop-shell/src/main.js'
+      - 'apps/desktop-shell/src/navigation-policy.js'
+      - 'apps/desktop-shell/test/**'
+      - 'apps/desktop-shell/package.json'
+      - '.github/workflows/software-os-catalogue.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-catalogue:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install schema validator
+        run: python -m pip install 'jsonschema==4.23.0'
+      - name: Validate all catalogue entries
+        run: python scripts/validate-software-os-catalogue.py
+      - name: Generate browser catalogue JSON
+        run: python scripts/build-software-os-catalogue.py
+      - name: Check generated catalogue is committed and current
+        run: git diff --exit-code -- frontend/catalogue.json
+      - name: Run catalogue and entitlement policy regression tests
+        run: python -m unittest discover -s tests/software-os-catalogue -p 'test_*.py' -v
+      - name: Run read-only diagnostics tests
+        run: python -m unittest discover -s tests/software-os-diagnostics -p 'test_*.py' -v
+      - name: Run Electron navigation security tests
+        working-directory: apps/desktop-shell
+        run: npm test
+      - name: Build static frontend image
+        run: docker build -t shopnoltd-software-os-center frontend
