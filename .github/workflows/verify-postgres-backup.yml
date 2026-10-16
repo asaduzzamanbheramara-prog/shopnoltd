@@ -1,0 +1,90 @@
+name: Verify encrypted PostgreSQL recovery backup
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-postgres-backup
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Verify backup checksum, decryption and PostgreSQL archive
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout workflow source
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: source
+          persist-credentials: false
+
+      - name: Checkout encrypted backup branch
+        uses: actions/checkout@v4
+        with:
+          ref: database-backups
+          path: backup-source
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Validate checksum and decrypt backup
+        shell: bash
+        env:
+          BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "${BACKUP_ENCRYPTION_KEY:-}" || {
+            echo "::error::Repository secret BACKUP_ENCRYPTION_KEY is missing."
+            exit 1
+          }
+          encrypted="backup-source/backup/latest.dump.enc"
+          checksum_file="backup-source/backup/latest.dump.enc.sha256"
+          test -s "$encrypted"
+          test -s "$checksum_file"
+          test -s "backup-source/backup/timestamp.txt"
+          test -s "backup-source/backup/source-revision.txt"
+
+          expected="$(awk 'NR==1 {print $1}' "$checksum_file")"
+          actual="$(sha256sum "$encrypted" | awk '{print $1}')"
+          if [[ ! "$expected" =~ ^[[:xdigit:]]{64}$ ]] || [[ "$expected" != "$actual" ]]; then
+            echo "::error::Encrypted backup checksum does not match the recorded SHA-256."
+            exit 1
+          fi
+          echo "PASS: encrypted backup SHA-256 matches."
+
+          umask 077
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 \
+            -in "$encrypted" -out "$RUNNER_TEMP/shopnoltd-restore-test.dump" \
+            -pass env:BACKUP_ENCRYPTION_KEY
+          test -s "$RUNNER_TEMP/shopnoltd-restore-test.dump"
+          echo "PASS: encrypted backup decrypts with the configured key."
+
+      - name: Validate PostgreSQL custom-format archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client
+          pg_restore --list "$RUNNER_TEMP/shopnoltd-restore-test.dump" \
+            > "$RUNNER_TEMP/shopnoltd-archive-list.txt"
+          test -s "$RUNNER_TEMP/shopnoltd-archive-list.txt"
+          entries="$(grep -cE '^[0-9]+; ' "$RUNNER_TEMP/shopnoltd-archive-list.txt" || true)"
+          if [[ ! "$entries" =~ ^[0-9]+$ ]] || (( entries < 1 )); then
+            echo "::error::PostgreSQL archive has no recognizable entries."
+            exit 1
+          fi
+          echo "PASS: pg_restore recognizes the custom-format archive."
+          echo "Archive entry count: $entries"
+          echo "Backup timestamp: $(cat backup-source/backup/timestamp.txt)"
+          echo "Source revision: $(cat backup-source/backup/source-revision.txt)"
+          echo "NOTE: archive validation is not a full restore test and does not prove all platform data is backed up."
+
+      - name: Remove decrypted test artifact
+        if: always()
+        shell: bash
+        run: |
+          rm -f "$RUNNER_TEMP/shopnoltd-restore-test.dump" "$RUNNER_TEMP/shopnoltd-archive-list.txt"
