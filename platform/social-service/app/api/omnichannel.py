@@ -97,7 +97,8 @@ class ActionIn(BaseModel):
     client_id: str | None = None
     target_type: str | None = None
     target_id: str | None = None
-    idempotency_key: str | None = None
+    # Bound and normalize the idempotency contract at the API boundary, not only in n8n.
+    idempotency_key: str | None = Field(default=None, max_length=200, pattern=r"^[A-Za-z0-9._:-]+$")
     payload: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -233,8 +234,8 @@ async def add_connection(body: ConnectionIn, user=Depends(registration_user), s:
         (id, tenant_id, platform, account_type, platform_account_id, username, display_name,
          status, scopes, access_token_ref, refresh_token_ref, token_expires_at, metadata, connected_at)
         VALUES (:id, :tenant, :platform, :account_type, :account_id, :username, :display_name,
-                :status, :scopes::jsonb, :access_ref, :refresh_ref,
-                NULLIF(:expires, '')::timestamptz, :metadata::jsonb, NOW())
+                :status, CAST(:scopes AS jsonb), :access_ref, :refresh_ref,
+                NULLIF(:expires, '')::timestamptz, CAST(:metadata AS jsonb), NOW())
         ON CONFLICT (tenant_id, platform, platform_account_id)
         DO UPDATE SET username=EXCLUDED.username, display_name=EXCLUDED.display_name,
                       status=EXCLUDED.status, scopes=EXCLUDED.scopes,
@@ -283,39 +284,111 @@ async def search_clients(q: str = Query(min_length=2, max_length=200), user=Depe
 @router.post("/actions", status_code=202)
 async def queue_action(body: ActionIn, user=Depends(action_user), s: AsyncSession = Depends(db)):
     platform = body.platform.lower().strip()
+    verb = body.action.lower().strip()
     if platform not in PLATFORMS:
         raise HTTPException(400, f"unsupported platform: {platform}")
     tenant_id = user.get("tenant_id", "default")
     capability = (await s.execute(text(
         "SELECT availability FROM platform_capabilities WHERE platform=:platform AND action=:action"
-    ), {"platform": platform, "action": body.action})).scalar_one_or_none()
+    ), {"platform": platform, "action": verb})).scalar_one_or_none()
     if capability is None:
-        raise HTTPException(400, f"unsupported action for platform: {platform}/{body.action}")
+        raise HTTPException(400, f"unsupported action for platform: {platform}/{verb}")
+    if capability != "supported":
+        raise HTTPException(409, f"provider_dependent action is not enabled: {platform}/{verb}")
+    if (platform, verb) != ("telegram", "send_message"):
+        raise HTTPException(409, f"provider adapter not implemented: {platform}/{verb}")
 
-    if body.connection_id:
-        connection = (await s.execute(text(
-            "SELECT platform FROM social_connections WHERE tenant_id=:tenant AND id=:id"
-        ), {"tenant": tenant_id, "id": body.connection_id})).scalar_one_or_none()
-        if connection is None:
-            raise HTTPException(404, "connection not found")
-        if connection != platform:
-            raise HTTPException(409, "connection platform does not match action platform")
+    if not body.connection_id:
+        raise HTTPException(400, "connected Telegram account connection_id is required")
+    connection = (await s.execute(text(
+        "SELECT platform, status FROM social_connections WHERE tenant_id=:tenant AND id=:id"
+    ), {"tenant": tenant_id, "id": body.connection_id})).mappings().one_or_none()
+    if connection is None:
+        raise HTTPException(404, "connection not found")
+    if connection["platform"] != platform:
+        raise HTTPException(409, "connection platform does not match action platform")
+    if connection["status"] != "connected":
+        raise HTTPException(409, "connection is not connected")
 
     action_id = str(uuid4())
+    idem = body.idempotency_key or action_id
+    params = {
+        "id": action_id, "tenant": tenant_id, "connection_id": body.connection_id or "",
+        "client": body.client_id, "platform": platform, "action": verb,
+        "target_type": body.target_type, "target_id": body.target_id,
+        "idem": idem, "payload": __import__("json").dumps(body.payload),
+    }
     row = (await s.execute(text(
         """INSERT INTO platform_actions
         (id, tenant_id, connection_id, client_id, platform, action, target_type, target_id,
          status, idempotency_key, request_payload)
         VALUES (:id, :tenant, NULLIF(:connection_id,'')::uuid, :client, :platform, :action,
-                :target_type, :target_id, 'queued', NULLIF(:idem,''), :payload::jsonb)
-        ON CONFLICT (tenant_id, idempotency_key) DO UPDATE SET updated_at=NOW()
-        RETURNING id, status, platform, action, created_at"""
-    ), {
-        "id": action_id, "tenant": tenant_id, "connection_id": body.connection_id or "",
-        "client": body.client_id, "platform": platform, "action": body.action,
-        "target_type": body.target_type, "target_id": body.target_id,
-        "idem": body.idempotency_key or action_id,
-        "payload": __import__("json").dumps(body.payload),
-    })).mappings().one()
+                :target_type, :target_id, 'queued', NULLIF(:idem,''), CAST(:payload AS jsonb))
+        ON CONFLICT (tenant_id, idempotency_key) DO NOTHING
+        RETURNING id, status, approval_status, platform, action, created_at"""
+    ), params)).mappings().one_or_none()
+    if row is None:
+        existing = (await s.execute(text(
+            """SELECT id, status, approval_status, platform, action, connection_id, client_id, target_type,
+                      target_id, request_payload, created_at
+               FROM platform_actions
+               WHERE tenant_id=:tenant AND idempotency_key=:idem"""
+        ), {"tenant": tenant_id, "idem": idem})).mappings().one_or_none()
+        if existing is None:
+            raise HTTPException(409, "idempotency key conflict could not be resolved")
+        existing_payload = existing["request_payload"] or {}
+        if isinstance(existing_payload, str):
+            try:
+                existing_payload = __import__("json").loads(existing_payload)
+            except ValueError:
+                raise HTTPException(409, "idempotency key is associated with an invalid stored payload") from None
+        same_request = (
+            existing["platform"] == platform
+            and existing["action"] == verb
+            and str(existing["connection_id"] or "") == str(body.connection_id or "")
+            and existing["client_id"] == body.client_id
+            and existing["target_type"] == body.target_type
+            and existing["target_id"] == body.target_id
+            and existing_payload == body.payload
+        )
+        if not same_request:
+            raise HTTPException(409, "idempotency key already used for a different action")
+        row = {key: existing[key] for key in ("id", "status", "approval_status", "platform", "action", "created_at")}
     await s.commit()
     return {**dict(row), "capability": capability}
+
+@router.post("/actions/{action_id}/approve")
+async def approve_action(action_id: str, user=Depends(current_user), s: AsyncSession = Depends(db)):
+    roles = set(user.get("roles") or [])
+    roles.update((user.get("realm_access") or {}).get("roles") or [])
+    for client in (user.get("resource_access") or {}).values():
+        roles.update((client or {}).get("roles") or [])
+    if not roles.intersection({"admin", "platform_admin"}):
+        raise HTTPException(403, "administrator approval required")
+
+    tenant_id = user.get("tenant_id", "default")
+    row = (await s.execute(text(
+        """UPDATE platform_actions
+           SET approval_status='approved', approved_by=:user_id,
+               approved_at=NOW(), updated_at=NOW()
+           WHERE tenant_id=:tenant AND id=CAST(:id AS uuid)
+             AND status='queued' AND approval_status='pending'
+           RETURNING id, status, approval_status, approved_by, approved_at"""
+    ), {
+        "tenant": tenant_id, "id": action_id,
+        "user_id": str(user.get("sub") or user.get("user_id") or ""),
+    })).mappings().one_or_none()
+    if row is not None:
+        await s.commit()
+        return dict(row)
+
+    existing = (await s.execute(text(
+        """SELECT id, status, approval_status, approved_by, approved_at
+           FROM platform_actions WHERE tenant_id=:tenant AND id=CAST(:id AS uuid)"""
+    ), {"tenant": tenant_id, "id": action_id})).mappings().one_or_none()
+    if existing is None:
+        raise HTTPException(404, "action not found")
+    if existing["approval_status"] == "approved":
+        return dict(existing)
+    raise HTTPException(409, "action is not awaiting approval")
+

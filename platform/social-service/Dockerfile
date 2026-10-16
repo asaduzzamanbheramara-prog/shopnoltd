@@ -15,7 +15,11 @@ COPY platform/social-service/requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r /app/requirements.txt
 
 COPY platform/social-service/app/ /app/app/
+COPY platform/social-service/tests/ /app/tests/
 COPY shared/libraries/python/shopno_core /app/shopno_core
+
+# Run focused provider-action contract tests in the same dependency environment as the image.
+RUN python -m unittest discover -s /app/tests -p 'test_action_executor.py'
 
 # Fail the image build if the application imports are inconsistent. This prevents
 # a stale/corrupt image from being promoted when admin_data imports blog helpers.

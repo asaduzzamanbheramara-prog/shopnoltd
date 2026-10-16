@@ -81,9 +81,25 @@ platform_actions is the common action queue. Typical actions include:
 
 Availability is recorded in platform_capabilities because provider capabilities and permissions vary.
 
+## Runtime capability matrix (current implementation)
+
+This matrix describes what the current executor can actually run, not what a provider API might theoretically permit. The API registry may list provider-dependent capabilities; that does not mean Shopnoltd has an adapter or the account has the required scopes.
+
+| Platform/action family | Current executor status | Gate before claiming support |
+|---|---|---|
+| Telegram `send_message` | Implemented in code; production E2E still outstanding | Connected tenant-owned bot, explicit admin approval, private test-chat delivery, persisted provider message/chat IDs |
+| n8n action intake validation | Workflow now accepts only Telegram `send_message`; validates connection, target chat, message length, and idempotency-key format before calling the API | Import/deploy the inactive workflow and test authentication plus rejection paths in the actual n8n environment |
+| Facebook/Messenger, Instagram, LinkedIn, X, TikTok, YouTube publishing/comments/replies/likes/reactions/shares/live | Not implemented; reject/fail closed | Official API adapter, account/product eligibility, least-privilege granted scopes, provider response persistence, idempotency and provider-backed E2E |
+| WhatsApp Business, Gmail, Outlook, 3CX | Not implemented by the action executor; reject/fail closed | Official API adapter, verified connection/permissions, provider-backed E2E and safe retries |
+| Blog draft intake | Implemented as draft-only n8n intake | Separate draft token; approval remains a human/admin action |
+| Blog scheduled publication | Scheduling code and migration 022 added; release/E2E not yet verified | Migration 022 applied through normal migration process; scheduler and public visibility tested in the deployed environment |
+| n8n action workflow | Inactive; worker defaults disabled | Dedicated least-privilege action token, approved provider test, all release gates below |
+
+Do not infer live readiness from `platform_capabilities`, OAuth registration, workflow import, or a green image build alone. A capability is production-ready only after its real adapter, permission checks, provider result IDs, retry/idempotency behavior, and controlled E2E evidence exist.
+
 ## Current integration readiness
 
-The account-registry and blog-draft workflows are activated by GitOps but fail closed unless the shared webhook secret is configured. The account registry may use the registration-only internal automation token; the action queue must never use that token. The action queue remains inactive until a separate least-privilege action token and a real action executor are deployed and tested. Provider credentials and OAuth grants must be configured, and each enabled provider must pass a live account-connect and end-to-end test.
+The account-registry and blog-draft workflows are activated by GitOps but fail closed unless the shared webhook secret is configured. The account registry may use the registration-only internal automation token; the action queue must never use that token. The action queue remains inactive until a separate least-privilege action token and provider-backed end-to-end tests pass. The executor's only adapter is Telegram `send_message`; other providers/actions fail closed as unsupported until their own adapter and tests are implemented. New actions default to `approval_status=pending`; only a tenant-scoped `admin`/`platform_admin` can approve a queued action through `POST /api/v1/omnichannel/actions/{action_id}/approve`, and the worker only claims approved rows. The queue rejects provider-dependent and unimplemented adapters before inserting a row. The runtime worker defaults to disabled (`ACTION_WORKER_ENABLED=false`). Migration 021 must be applied before deploying this code. Provider credentials and OAuth grants must be configured, and each enabled provider must pass a live account-connect and end-to-end test.
 
 **Blog draft intake is wired to n8n** at `POST /webhook/shopnoltd/blog/draft`. It requires `x-shopnoltd-webhook-secret`, accepts title/content metadata, and always creates a draft using the separate `SHOPNOLTD_N8N_BLOG_DRAFT_TOKEN`. That token is allowed to create drafts only; it cannot publish, edit, delete, manage accounts, or queue actions. Human review is required before publication.
 
@@ -129,6 +145,10 @@ The n8n pod receives webhook/action/blog values from the existing `shopno-apps/n
 
 The two `shopno-platform` Secret objects are optional references in deployments so an absent token cannot prevent unrelated website services from starting. Missing credentials cause the automation endpoints to reject requests rather than fall back to the broad internal automation token. Never place any secret values in workflow JSON or Git.
 
+## Telegram bot connection
+
+The social-service OAuth router exposes `POST /api/v1/omnichannel/oauth/telegram/connect` for an authenticated user to validate a Telegram bot token with Telegram's `getMe` endpoint. The token is encrypted with the configured provider OAuth encryption key and stored in the social database; the API response does not include the token. The action worker resolves the credential by tenant, connection, provider account ID, and encrypted token-row reference. It does not use a global bot token for tenant actions. Keep the worker disabled until a controlled test-chat delivery confirms provider IDs are persisted.
+
 ## Release gate
 
 Do not publish/activate the workflows merely because they import successfully. Required checks are:
@@ -138,7 +158,7 @@ Do not publish/activate the workflows merely because they import successfully. R
 3. PostgreSQL contract queries succeed.
 4. Provider webhook verification and inbound/outbound tests pass for enabled providers.
 5. At least one account-connect test succeeds for every provider enabled in production.
-6. Provider-backed action execution is implemented, idempotent, and records provider IDs.
+6. Provider-backed action execution is implemented, idempotent, and records provider IDs. The current initial adapter supports Telegram `send_message` only; other actions must remain unsupported until implemented and tested. The worker is disabled by default.
 7. Unsupported actions return a structured non-success result instead of attempting browser automation.
 8. GitHub Actions -> GHCR -> ArgoCD/k3s completes successfully.
 9. Public endpoint smoke tests pass.

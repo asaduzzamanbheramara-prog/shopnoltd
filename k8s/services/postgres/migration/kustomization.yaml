@@ -18,6 +18,8 @@ configMapGenerator:
   - 018-ad-network.sql
   - 019-ad-network-funding.sql
   - 020-payment-runtime-permissions.sql
+  - 021-omnichannel-action-executor.sql
+  - 022-blog-scheduled-publication.sql
   options:
     disableNameSuffixHash: true
 

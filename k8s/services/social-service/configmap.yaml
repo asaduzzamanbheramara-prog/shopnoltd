@@ -14,3 +14,4 @@ data:
   KEYCLOAK_AUDIENCE: "api-service"
   STORAGE_SERVICE_URL: "http://storage-service.shopno-platform.svc.cluster.local:80"
   CORS_ORIGINS: "https://*.shopnoltd.dpdns.org"
+  ACTION_WORKER_ENABLED: "false"
