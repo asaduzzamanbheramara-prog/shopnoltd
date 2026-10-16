@@ -1,7 +1,9 @@
 import unittest
+from decimal import Decimal
 from xml.etree import ElementTree
 
 from app.services.registrars.namecheap import NamecheapAdapter
+from app.services.domain_pricing import registration_quote
 
 
 def pricing_xml(prices: str) -> ElementTree.Element:
@@ -74,6 +76,33 @@ class NamecheapPricingTests(unittest.IsolatedAsyncioTestCase):
         self.adapter._call = fake_call
         with self.assertRaisesRegex(RuntimeError, "no 2-year price returned for .com"):
             await self.adapter.get_pricing("com", years=2)
+
+
+class RegistrationQuoteTests(unittest.TestCase):
+    def test_regular_quote_uses_exact_duration_price_and_currency(self):
+        amount, currency = registration_quote(
+            {"available": True, "premium": False},
+            {"price": "49.95", "currency": "USD", "years": 3},
+            years=3,
+        )
+        self.assertEqual(amount, Decimal("49.95"))
+        self.assertEqual(currency, "USD")
+
+    def test_multi_year_premium_quote_fails_closed(self):
+        with self.assertRaisesRegex(ValueError, "multi-year premium quotes are unavailable"):
+            registration_quote(
+                {"available": True, "premium": True, "premium_price": "120.00"},
+                {"price": "12.00", "currency": "USD", "years": 3},
+                years=3,
+            )
+
+    def test_non_positive_price_is_rejected(self):
+        with self.assertRaisesRegex(ValueError, "non-positive"):
+            registration_quote(
+                {"available": True, "premium": False},
+                {"price": "0", "currency": "USD", "years": 1},
+                years=1,
+            )
 
 
 if __name__ == "__main__":
