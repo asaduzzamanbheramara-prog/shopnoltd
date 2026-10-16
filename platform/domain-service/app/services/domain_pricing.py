@@ -11,6 +11,10 @@ def registration_quote(availability: dict, pricing: dict, years: int) -> tuple[D
     if years < 1 or years > 10:
         raise ValueError("Registration duration must be between 1 and 10 years")
 
+    quoted_years = pricing.get("years")
+    if quoted_years is not None and int(quoted_years) != years:
+        raise ValueError("Registrar quote duration does not match the requested duration")
+
     currency = str(pricing.get("currency") or "USD").upper()
     if availability.get("premium"):
         if years != 1:
