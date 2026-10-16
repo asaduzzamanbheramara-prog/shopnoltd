@@ -2,6 +2,9 @@ name: Verify encrypted PostgreSQL recovery backup
 
 on:
   workflow_dispatch:
+  schedule:
+    # Run on GitHub-hosted infrastructure, independent of the production PC.
+    - cron: '0 19 * * *'
   push:
     branches:
       - main
@@ -17,7 +20,7 @@ concurrency:
 
 jobs:
   verify:
-    name: Verify backup checksum, decryption and PostgreSQL archive
+    name: Verify backup freshness, checksum, decryption and PostgreSQL archive
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -36,6 +39,35 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
 
+      - name: Validate backup timestamp freshness
+        shell: bash
+        run: |
+          set -euo pipefail
+          timestamp_file="backup-source/backup/timestamp.txt"
+          test -s "$timestamp_file"
+          timestamp="$(tr -d '\r\n' < "$timestamp_file")"
+          if [[ ! "$timestamp" =~ ^[0-9]{8}T[0-9]{6}Z$ ]]; then
+            echo "::error::Backup timestamp is missing or has an unexpected format."
+            exit 1
+          fi
+          timestamp_iso="${timestamp:0:8}T${timestamp:9:2}:${timestamp:11:2}:${timestamp:13:2}Z"
+          backup_epoch="$(date -u -d "$timestamp_iso" +%s)"
+          now_epoch="$(date -u +%s)"
+          age_seconds="$((now_epoch - backup_epoch))"
+          max_age_seconds="$((48 * 60 * 60))"
+          if (( age_seconds < 0 )); then
+            echo "::error::Backup timestamp is in the future; check the backup producer clock."
+            exit 1
+          fi
+          if (( age_seconds > max_age_seconds )); then
+            echo "::error::Latest PostgreSQL backup is older than 48 hours. The self-hosted backup producer may be unavailable."
+            echo "Backup timestamp (UTC): $timestamp"
+            echo "Backup age (hours): $((age_seconds / 3600))"
+            exit 1
+          fi
+          echo "PASS: latest PostgreSQL backup is $((age_seconds / 3600)) hours old (limit: 48 hours)."
+          echo "Backup timestamp (UTC): $timestamp"
+
       - name: Validate checksum and decrypt backup
         shell: bash
         env:
@@ -50,7 +82,6 @@ jobs:
           checksum_file="backup-source/backup/latest.dump.enc.sha256"
           test -s "$encrypted"
           test -s "$checksum_file"
-          test -s "backup-source/backup/timestamp.txt"
           test -s "backup-source/backup/source-revision.txt"
 
           expected="$(awk 'NR==1 {print $1}' "$checksum_file")"
