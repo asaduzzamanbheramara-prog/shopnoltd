@@ -315,10 +315,10 @@ jobs:
             app_state="$(timeout 20s kubectl --request-timeout=15s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o json 2>/dev/null || true)"
             phase="$(jq -r '.status.operationState.phase // ""' <<<"$app_state")"
             message="$(jq -r '.status.operationState.message // ""' <<<"$app_state")"
-            operation_revision="$(jq -r '.operation.sync.revision // ""' <<<"$app_state")"
+            live_operation="$(jq -r 'if .operation == null then "false" else "true" end' <<<"$app_state")"
             stale_hook_name="$(sed -n 's/.*waiting for \(completion\|deletion\) of hook batch\/Job\/\([^ /]*\).*/\2/p' <<<"$message")"
 
-            if [ -z "$operation_revision" ] &&
+            if [ "$live_operation" = "false" ] &&
               [ "$phase" = "Running" ] &&
               [ -n "$stale_hook_name" ] &&
               { [[ "$message" == *"waiting for completion of hook batch/Job/"* ]] || [[ "$message" == *"waiting for deletion of hook batch/Job/"* ]]; }; then
@@ -345,7 +345,7 @@ jobs:
                     phase="$(jq -r '.status.operationState.phase // ""' <<<"$app_state")"
                     operation_revision="$(jq -r '.operation.sync.revision // ""' <<<"$app_state")"
                     echo "Post-controller-restart ArgoCD phase=$phase liveOperationRevision=$operation_revision"
-                    if [ -z "$operation_revision" ] && { [ -z "$phase" ] || { [ "$phase" != "Running" ] && [ "$phase" != "Terminating" ]; }; }; then
+                    if [ "$live_operation" = "false" ] && { [ -z "$phase" ] || { [ "$phase" != "Running" ] && [ "$phase" != "Terminating" ]; }; }; then
                       operation_stopped=1
                       echo 'Argo CD stale operation is now terminal and no live operation remains.'
                       break
