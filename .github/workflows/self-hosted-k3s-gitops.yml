@@ -343,8 +343,8 @@ jobs:
                   for _ in {1..36}; do
                     app_state="$(timeout 15s kubectl --request-timeout=12s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o json 2>/dev/null || true)"
                     phase="$(jq -r '.status.operationState.phase // ""' <<<"$app_state")"
-                    operation_revision="$(jq -r '.operation.sync.revision // ""' <<<"$app_state")"
-                    echo "Post-controller-restart ArgoCD phase=$phase liveOperationRevision=$operation_revision"
+                    live_operation="$(jq -r 'if .operation == null then "false" else "true" end' <<<"$app_state")"
+                    echo "Post-controller-restart ArgoCD phase=$phase liveOperation=$live_operation"
                     if [ "$live_operation" = "false" ] && { [ -z "$phase" ] || { [ "$phase" != "Running" ] && [ "$phase" != "Terminating" ]; }; }; then
                       operation_stopped=1
                       echo 'Argo CD stale operation is now terminal and no live operation remains.'
