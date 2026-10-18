@@ -1,0 +1,164 @@
+# Shopnoltd hybrid runtime preflight
+
+Status: **planning/preflight only**. This document does not authorize production changes.
+
+## Architecture boundary
+
+- GitHub repository: source of truth for manifests, workflows, and review.
+- GitHub Actions on hosted runners: CI/render validation only; runners are ephemeral.
+- GHCR: immutable image distribution, not a runtime.
+- Existing local K3s node: current production runtime; preserve it until acceptance checks and rollback are proven.
+- Codespaces: development and integration testing only. Its current devcontainer starts a Vite preview on port 5173; it is not a durable Kubernetes production replica.
+- **Owner's requested split:** keep currently live production services on the PC-hosted K3s cluster; investigate each service at zero replicas as a candidate to run in Codespaces only if it is stateless or has safe external dependencies and can tolerate Codespaces stopping. Do not move live production traffic or claim the zero-replica services are migrated until individually deployed and tested.
+
+## Explicit Codespaces candidate policy
+
+The existing Codespaces configuration installs the web portal dependencies and starts a Vite preview on port 5173. It does not provision Kubernetes, build a service mesh, or start the zero-replica Kubernetes workloads. Codespaces can host temporary development/test processes, but not a guaranteed always-on replica.
+
+- **Reasonable first Codespaces test candidate:** web/UI development preview and isolated stateless services with test-only configuration, after checking each service's build/run instructions and ports. Keep any forwarded ports private unless public access is deliberately required.
+- **Not safe to move as-is:** database/storage systems (PostgreSQL, Redis, MinIO, Gitea with data), schedulers/workers (Kobo beat/worker), production n8n/background jobs, monitoring that depends on durable retention, Android Cloud/device controllers, and any service with PVCs, privileged access, cluster-admin credentials, or dependencies reachable only inside K3s. These require redesign, persistent shared services, secure credentials, and explicit testing first.
+- **Production availability rule:** if a Codespace stops, all processes in it can stop. Therefore a Codespace-hosted process must not become the only production copy or receive production traffic that cannot safely fail back to the PC. Keep the PC instance and routing unchanged until an independently persistent runtime exists or the owner explicitly accepts the availability limitation.
+- **Do not copy production kubeconfig, Kubernetes Secrets, database passwords, Cloudflare credentials, or user data into Codespaces or GitHub files.** Use least-privilege, short-lived credentials and sanitized test data only.
+- For every zero-replica entry, record: live namespace/name and actual desired/ready count; manifest source/overlay; reason disabled; data/PVC/queue/scheduler dependencies; Codespaces run method; required environment variables (names only); port and health check; resource use; stop/restart behavior; and rollback. Only then promote an individual candidate.
+
+## Gate 0 — Read-only production inventory
+
+Run from the authorized machine that has the existing K3s kubeconfig. Never copy the production kubeconfig or secrets into Codespaces or repository files.
+
+```bash
+set -eu
+kubectl config current-context
+kubectl get nodes -o wide
+kubectl get applications.argoproj.io -n argocd shopnoltd -o wide
+kubectl get deployments -A -o custom-columns='NAMESPACE:.metadata.namespace,NAME:.metadata.name,DESIRED:.spec.replicas,READY:.status.readyReplicas,AVAILABLE:.status.availableReplicas'
+kubectl get statefulsets -A -o wide
+kubectl get daemonsets -A -o wide
+kubectl get pvc -A -o wide
+kubectl get ingress -A -o wide
+kubectl get pods -A --field-selector=status.phase!=Running,status.phase!=Succeeded -o wide
+kubectl top nodes
+kubectl top pods -A
+```
+
+Record output securely; do not paste secret values or full Secret YAML into issues/logs.
+
+## Gate 1 — Classify workloads
+
+Before changing replicas, review each candidate Deployment's manifest and dependencies:
+- **Potential horizontal candidates:** stateless HTTP services only after verifying externalized sessions, shared database/storage, idempotent startup, readiness/liveness probes, and resource headroom.
+- **Do not scale by default:** PostgreSQL, Redis, MongoDB, MinIO, queues, schedulers, migration hooks, n8n workers/schedulers, Kobo beat/worker, Ollama, code-server, Android Cloud controller, or anything with local/PVC state. First verify clustering, leader election, queue semantics, licensing, storage access mode, and resource demand.
+- Do not assume a workload at zero replicas is safe to enable. Determine why it was disabled and validate dependencies and capacity first.
+
+## Gate 1A — Known manifest entries declared at zero replicas
+
+A GitHub code search at repository revision `eca8f614c771eaed8ec8d331d10b276ec0b0e680` found these manifest entries explicitly set to `replicas: 0`. This is a **source-manifest inventory, not a current live-cluster inventory**; overlays, later commits, and live drift may change the effective count. Re-run Gate 0 against the live cluster before acting.
+
+| Workload / manifest | Initial disposition |
+| --- | --- |
+| Ollama — `k8s/ollama.yaml` | Keep off until GPU/CPU/memory capacity, model storage, and actual product dependency are confirmed. |
+| Kobo beat — `k8s/shopno-apps/kobo-beat.yaml` | Scheduler: do not run a duplicate without leader/queue ownership review. |
+| Kobo worker — `k8s/shopno-apps/kobo-worker.yaml` | Queue worker: verify broker, queue depth, idempotency and concurrency before enabling. |
+| Loki — `k8s/services/loki/deployment.yaml`; monitoring Loki — `k8s/services/observability/loki-deployment.yaml` | Observability workload; verify storage and current logging stack before enabling. |
+| Gitea — `k8s/services/gitea/deployment.yaml` | Stateful Git service; verify PVC and whether it is intentionally retired before enabling. |
+| Owncast — `k8s/services/owncast/deployment.yaml` | Optional streaming workload; enable only if explicitly required and capacity is available. |
+| OnlyOffice — `k8s/services/onlyoffice/deployment.yaml` | Optional document service; check CPU/memory and document-storage integration first. |
+| Code-server — `k8s/services/code-server/deployment.yaml` | Interactive development service; do not treat it as the GitHub Codespaces runtime or enable it by default. |
+| Alertmanager — `k8s/services/alertmanager/deployment.yaml`; Grafana — `k8s/services/observability/grafana-deployment.yaml`; Prometheus — `k8s/services/observability/prometheus-deployment.yaml` | Monitoring stack; verify the intended replacement/retention and persistent storage before enabling. |
+| Android Cloud controller — `k8s/services/android-cloud/deployment.yaml` | Controller may cause workload/resource changes; require explicit feature and resource review. |
+| License service — `k8s/services/license-service/deployment.yaml` | Check feature dependency and licensing behavior before enabling. |
+| Interior service — `k8s/services/interior-service/deployment.yaml` | Check product dependency, configuration and resources before enabling. |
+| Training service — `k8s/services/training-service/deployment.yaml` | Check product dependency, configuration and resources before enabling. |
+
+Do **not** bulk-scale these workloads up, copy them into Codespaces, or alter GitOps manifests just because their replica count is zero. Some are stateful, background schedulers, optional features, or potentially intentionally disabled. First match the live namespace/name and owner to the source manifest and establish why it is off.
+
+## Gate 1B — Duplicate Argo CD in `default`
+
+The previously verified operational action was to scale the seven duplicate Argo CD workloads in namespace `default` to zero while preserving all objects. The canonical controller remains `argocd/shopnoltd` in namespace `argocd`. Keep the duplicate down and retain its resources until ownership/dependency review is complete; do not delete the namespace or its data as part of migration.
+
+The seven duplicate workloads are:
+- Deployments: `argocd-applicationset-controller`, `argocd-dex-server`, `argocd-notifications-controller`, `argocd-redis`, `argocd-repo-server`, `argocd-server`
+- StatefulSet: `argocd-application-controller`
+
+Confirm current desired/ready replicas using Gate 0; this historical record does not guarantee live state now.
+
+## Gate 2 — Choose a real second runtime
+
+A production second runtime must be persistent, independently reachable, patched, monitored, and capable of securely reaching the required shared services. Codespaces and hosted Actions runners do not satisfy this requirement by themselves.
+
+GitHub's documented Codespaces lifecycle includes idle stopping and a maximum lifetime (currently documented as 12 hours). Codespaces should therefore be used for development, validation, and controlled operator tasks—not as an always-on production replica. See [GitHub's Codespaces lifecycle documentation](https://docs.github.com/en/codespaces/about-codespaces/understanding-the-codespace-lifecycle).
+
+If no second always-on runtime is available, mark high availability **BLOCKED**. Keep the existing public route unchanged.
+
+## Gate 3 — Shared state and secure connectivity
+
+Before traffic can reach two runtimes, document:
+- database ownership, migrations, backup/restore, and network access;
+- session/authentication consistency and key rotation;
+- object/file storage consistency;
+- secrets delivery without committing secrets;
+- internal service discovery, TLS, firewall policy, and health-check behavior;
+- background-job ownership to prevent duplicate execution.
+
+Do not expose database/admin ports publicly as a shortcut. Never copy the production kubeconfig or secret material into Codespaces.
+
+## Gate 4 — Acceptance and controlled rollout
+
+Required before changing DNS/tunnel/routing:
+1. Render manifests and run CI checks.
+2. Confirm both runtimes run the same immutable image digest and compatible configuration.
+3. Verify public homepage, API `/healthz` and `/readyz`, OIDC discovery/login, admin authorization, and browser journeys.
+4. Verify database read/write, object storage, mail, and queued/background work.
+5. Restart one candidate instance and prove service remains healthy.
+6. Test loss of the second runtime and recovery; inspect resource pressure and error rates.
+7. Shift a small amount of traffic, monitor, and document rollback to the existing route.
+8. Keep the original runtime and rollback path until an agreed observation window passes.
+
+## Rollback
+
+Restore the last known-good routing/tunnel configuration and immutable image digest. Do not scale down or remove the original K3s runtime as part of initial rollout. Stop rollout immediately on failed readiness, authentication, data consistency, elevated errors, or resource pressure.
+
+## Evidence reporting
+
+Report each gate as **PASS**, **BLOCKED**, or **FAIL**, with timestamp, commit/image digest, and sanitized command output. A GitHub workflow passing a manifest render is not proof that production is healthy.
+
+
+## Gate 0 — Live inventory snapshot supplied by operator (2026-10-19)
+
+The operator ran read-only `kubectl get` commands against the PC-hosted K3s cluster. This is a timestamped snapshot, not continuous monitoring; re-check before any changes.
+
+- Node: `shopnoltd-pc-1`, Ready, K3s `v1.37.0+k3s1`.
+- Canonical Argo CD Application `argocd/shopnoltd`: Synced / Healthy at revision `eca8f614c771eaed8ec8d331d10b276ec0b0e680`.
+- The six duplicate Argo CD Deployments in `default` are desired 0; duplicate `argocd-application-controller` StatefulSet is 0/0. Canonical Argo CD Deployments and StatefulSet in `argocd` are running.
+- Thirteen non-duplicate Deployments were observed at desired 0 (ready/available not reported): `shopno-apps/code-server`, `shopno-apps/gitea`, `shopno-apps/kobotoolbox-beat`, `shopno-apps/kobotoolbox-worker`, `shopno-apps/ollama`, `shopno-apps/owncast`, `shopno-monitoring/grafana`, `shopno-monitoring/loki`, `shopno-monitoring/prometheus`, `shopno-platform/android-cloud-controller`, `shopno-platform/interior-service`, `shopno-platform/license-service`, `shopno-platform/training-service`.
+- Bound PVCs were reported for these zero-replica services: code-server (`code-server-data`), Gitea (`gitea-data`, `gitea-etc`), Ollama (`ollama-models`), Owncast (`owncast-data`), Grafana (`grafana-data`), Loki (`loki-data`), Prometheus (`prometheus-data`), and the platform PVCs for interior, license, and training services. KoboToolbox data PVC is also bound and shared with its app components.
+- All listed PVCs in the operator output were Bound. This does not prove data is backed up or that it is safe to attach the same volume to another runtime.
+
+### Next read-only investigation before selecting a Codespaces candidate
+
+For each of the thirteen workloads, capture only non-secret metadata: `kubectl -n <namespace> get deploy <name> -o yaml` with Secret values excluded, `kubectl -n <namespace> describe deploy <name>`, related Services/Ingress, events, image reference, resource requests/limits, probes, PVC mounts, and declared environment-variable names (not values). Compare with the Git-tracked manifest and identify the commit/reason it was disabled. Do not start these deployments or copy PVC data to Codespaces as part of this investigation.
+
+### Preliminary disposition
+
+- **Do not migrate directly into Codespaces:** Gitea, Kobo beat/worker, Ollama, Owncast, Grafana/Loki/Prometheus, and Android Cloud controller until persistent data, queue/scheduler semantics, hardware, network and uptime requirements are resolved.
+- **Investigate first as possible isolated Codespaces tests:** code-server only if its existing PVC/user state is not needed, plus interior/license/training services only after their build/run commands and dependencies are confirmed. This is a test-candidate shortlist, not authorization to enable or expose them.
+- The current `.devcontainer/devcontainer.json` still starts only the web-portal Vite preview on port 5173. No zero-replica workload has been proven to run in Codespaces.
+
+
+## Gate 1C — Workload-specific metadata review (operator snapshot, 2026-10-19)
+
+The operator supplied Deployment metadata from the live PC K3s cluster. This section records conclusions from those fields plus manifests at source revision `eca8f614c771eaed8ec8d331d10b276ec0b0e680`; it does not establish why the workloads were originally scaled down.
+
+- `interior-service`, `license-service`, and `training-service`: each mounts its own bound PVC at `/var/lib/<service>`, imports a Kubernetes ConfigMap and Secret, and declares in-cluster Redis, PostgreSQL, MinIO, and Keycloak endpoints in the matching ConfigMap. They are **not standalone Codespaces candidates as currently configured**. A separate test profile would need explicit non-production dependencies and disposable test data, and the service's code/tests must confirm whether the PVC is necessary.
+- `android-cloud-controller`: source code loads in-cluster Kubernetes configuration and creates/deletes emulator pods, services, and ingresses; repository RBAC permits pod exec and resource creation/deletion in `shopno-android`. **Do not run it in Codespaces with production credentials**. Any test must use a disposable isolated cluster, fake Kubernetes client, or unit tests only.
+- `code-server`: mounts the existing `code-server-data` PVC at `/config` and its workspace subpath at `/mnt`. Do not mount or copy the same live user data into Codespaces. Prefer the existing GitHub Codespaces editor for repository development; use code-server only if its separate product role is explicitly required.
+- `gitea`: mounts both `gitea-data` and `gitea-etc`. Keep its current data untouched; do not duplicate repository storage or treat Codespaces as its replacement.
+- `kobotoolbox-beat` and `kobotoolbox-worker`: use the KPI image and depend on Kobo/Mongo/database configuration. They are scheduled/queued background processes without health probes. Do not start a second copy until broker/queue ownership, duplicate execution, idempotency, and intended enabled state are confirmed.
+- `ollama`: image uses `latest`, declares up to 6Gi memory and mounts `ollama-models`; no portable model/data migration is established. Not a first Codespaces candidate.
+- `owncast`: mounts `owncast-data`; keep off unless explicitly needed and streaming data/configuration are planned.
+- `grafana`, `loki`, `prometheus`: all mount their own persistent data PVCs; Grafana also depends on provisioned ConfigMaps. Treat as one monitoring/retention decision and verify the intended observability design before enabling or moving any component.
+
+### Candidate decision
+
+No production service from this zero-replica list is approved for direct migration into Codespaces based on the evidence available. The next low-risk step is repository-side isolated testing of the three Python HTTP services with test-only configuration and disposable/mock dependencies, after their tests and settings are reviewed. This is development validation only and does not restore production endpoints. Keep the existing Codespaces Vite preview as-is and keep public routing unchanged.
+
+The operator's Kubernetes Event query returned “No resources found” for Deployment-scoped events. That only means no matching Event objects were returned at query time; it does not explain why each workload is disabled.
