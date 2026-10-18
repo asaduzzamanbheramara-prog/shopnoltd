@@ -307,8 +307,61 @@ jobs:
             sleep 5
           done
 
+            # Recover only the known stale-operation signature: the Application has no
+            # live .operation, Argo reports Running while waiting on a migration hook,
+            # and that named Job is absent. Do not restart the controller for an
+            # arbitrary running sync or when a migration Job still exists.
+            app_state="$(timeout 20s kubectl --request-timeout=15s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o json 2>/dev/null || true)"
+            phase="$(jq -r '.status.operationState.phase // ""' <<<"$app_state")"
+            message="$(jq -r '.status.operationState.message // ""' <<<"$app_state")"
+            live_operation="$(jq -r 'if .operation == null then "false" else "true" end' <<<"$app_state")"
+            stale_hook_name="$(sed -n 's/.*waiting for \(completion\|deletion\) of hook batch\/Job\/\([^ /]*\).*/\2/p' <<<"$message")"
+
+            if [ "$live_operation" = "false" ] &&
+              [ "$phase" = "Running" ] &&
+              [ -n "$stale_hook_name" ] &&
+              { [[ "$message" == *"waiting for completion of hook batch/Job/"* ]] || [[ "$message" == *"waiting for deletion of hook batch/Job/"* ]]; }; then
+              jobs_json="$(timeout 20s kubectl --request-timeout=15s get jobs -A -o json 2>/dev/null || true)"
+              if ! jq -e '.items | type == "array"' <<<"$jobs_json" >/dev/null 2>&1; then
+                echo 'Refusing stale-hook recovery: Kubernetes Jobs query did not return a valid item list.'
+              else
+                hook_exists="$(jq -r --arg name "$stale_hook_name" '[.items[] | select(.metadata.name == $name)] | length' <<<"$jobs_json")"
+                if [ "$hook_exists" = "0" ]; then
+                  echo "Detected stale Argo operation waiting on absent hook Job $stale_hook_name with no live Application operation."
+                  controller_json="$(timeout 20s kubectl --request-timeout=15s -n "$ARGOCD_NAMESPACE" get statefulsets,deployments -o json 2>/dev/null || true)"
+                  if ! jq -e '.items | type == "array"' <<<"$controller_json" >/dev/null 2>&1; then
+                    echo 'Refusing stale-hook recovery: controller workload query did not return a valid item list.'
+                    controller_resource=""
+                  else
+                    controller_resource="$(jq -r '[.items[]? | select((.metadata.name // "") == "argocd-application-controller" or (.metadata.labels["app.kubernetes.io/name"] // "") == "argocd-application-controller") | select((.spec.replicas // 1) > 0) | select((.status.readyReplicas // 0) > 0) | "\(.kind | ascii_downcase)/\(.metadata.name)"] | if length == 1 then .[0] else "" end' <<<"$controller_json")"
+                  fi
+                  if [ -n "$controller_resource" ]; then
+                  echo "Restarting only $ARGOCD_NAMESPACE/$controller_resource to make the controller reconcile the already-cancelled stale operation."
+                  timeout 30s kubectl --request-timeout=20s -n "$ARGOCD_NAMESPACE" rollout restart "$controller_resource"
+                  timeout 210s kubectl --request-timeout=20s -n "$ARGOCD_NAMESPACE" rollout status "$controller_resource" --timeout=180s
+                  for _ in {1..36}; do
+                    app_state="$(timeout 15s kubectl --request-timeout=12s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o json 2>/dev/null || true)"
+                    phase="$(jq -r '.status.operationState.phase // ""' <<<"$app_state")"
+                    live_operation="$(jq -r 'if .operation == null then "false" else "true" end' <<<"$app_state")"
+                    echo "Post-controller-restart ArgoCD phase=$phase liveOperation=$live_operation"
+                    if [ "$live_operation" = "false" ] && { [ -z "$phase" ] || { [ "$phase" != "Running" ] && [ "$phase" != "Terminating" ]; }; }; then
+                      operation_stopped=1
+                      echo 'Argo CD stale operation is now terminal and no live operation remains.'
+                      break
+                    fi
+                    sleep 5
+                  done
+                else
+                  echo 'Refusing automatic restart: expected exactly one ready Argo CD application-controller workload, but could not identify it unambiguously.'
+                fi
+              else
+                echo "Preserving recovery boundary: hook Job $stale_hook_name still exists; no controller restart attempted."
+              fi
+            fi
+          fi
+
           if [ "$operation_stopped" -ne 1 ]; then
-            echo 'Argo CD operation did not leave Running/Terminating after 240 seconds.'
+            echo 'Argo CD operation did not leave Running/Terminating after the bounded recovery attempt.'
             kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o jsonpath='phase={.status.operationState.phase}{"\n"}message={.status.operationState.message}{"\n"}revision={.status.operationState.operation.sync.revision}{"\n"}'
             echo '===== ALL JOBS WITH HOOK-RELATED NAMES ====='
             kubectl --request-timeout=30s get jobs -A -o wide | grep -Ei 'NAME|hook|migration|litellm|binder' || true
