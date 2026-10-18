@@ -38,9 +38,43 @@ Before changing replicas, review each candidate Deployment's manifest and depend
 - **Do not scale by default:** PostgreSQL, Redis, MongoDB, MinIO, queues, schedulers, migration hooks, n8n workers/schedulers, Kobo beat/worker, Ollama, code-server, Android Cloud controller, or anything with local/PVC state. First verify clustering, leader election, queue semantics, licensing, storage access mode, and resource demand.
 - Do not assume a workload at zero replicas is safe to enable. Determine why it was disabled and validate dependencies and capacity first.
 
+## Gate 1A — Known manifest entries declared at zero replicas
+
+A GitHub code search at repository revision `eca8f614c771eaed8ec8d331d10b276ec0b0e680` found these manifest entries explicitly set to `replicas: 0`. This is a **source-manifest inventory, not a current live-cluster inventory**; overlays, later commits, and live drift may change the effective count. Re-run Gate 0 against the live cluster before acting.
+
+| Workload / manifest | Initial disposition |
+| --- | --- |
+| Ollama — `k8s/ollama.yaml` | Keep off until GPU/CPU/memory capacity, model storage, and actual product dependency are confirmed. |
+| Kobo beat — `k8s/shopno-apps/kobo-beat.yaml` | Scheduler: do not run a duplicate without leader/queue ownership review. |
+| Kobo worker — `k8s/shopno-apps/kobo-worker.yaml` | Queue worker: verify broker, queue depth, idempotency and concurrency before enabling. |
+| Loki — `k8s/services/loki/deployment.yaml`; monitoring Loki — `k8s/services/observability/loki-deployment.yaml` | Observability workload; verify storage and current logging stack before enabling. |
+| Gitea — `k8s/services/gitea/deployment.yaml` | Stateful Git service; verify PVC and whether it is intentionally retired before enabling. |
+| Owncast — `k8s/services/owncast/deployment.yaml` | Optional streaming workload; enable only if explicitly required and capacity is available. |
+| OnlyOffice — `k8s/services/onlyoffice/deployment.yaml` | Optional document service; check CPU/memory and document-storage integration first. |
+| Code-server — `k8s/services/code-server/deployment.yaml` | Interactive development service; do not treat it as the GitHub Codespaces runtime or enable it by default. |
+| Alertmanager — `k8s/services/alertmanager/deployment.yaml`; Grafana — `k8s/services/observability/grafana-deployment.yaml`; Prometheus — `k8s/services/observability/prometheus-deployment.yaml` | Monitoring stack; verify the intended replacement/retention and persistent storage before enabling. |
+| Android Cloud controller — `k8s/services/android-cloud/deployment.yaml` | Controller may cause workload/resource changes; require explicit feature and resource review. |
+| License service — `k8s/services/license-service/deployment.yaml` | Check feature dependency and licensing behavior before enabling. |
+| Interior service — `k8s/services/interior-service/deployment.yaml` | Check product dependency, configuration and resources before enabling. |
+| Training service — `k8s/services/training-service/deployment.yaml` | Check product dependency, configuration and resources before enabling. |
+
+Do **not** bulk-scale these workloads up, copy them into Codespaces, or alter GitOps manifests just because their replica count is zero. Some are stateful, background schedulers, optional features, or potentially intentionally disabled. First match the live namespace/name and owner to the source manifest and establish why it is off.
+
+## Gate 1B — Duplicate Argo CD in `default`
+
+The previously verified operational action was to scale the seven duplicate Argo CD workloads in namespace `default` to zero while preserving all objects. The canonical controller remains `argocd/shopnoltd` in namespace `argocd`. Keep the duplicate down and retain its resources until ownership/dependency review is complete; do not delete the namespace or its data as part of migration.
+
+The seven duplicate workloads are:
+- Deployments: `argocd-applicationset-controller`, `argocd-dex-server`, `argocd-notifications-controller`, `argocd-redis`, `argocd-repo-server`, `argocd-server`
+- StatefulSet: `argocd-application-controller`
+
+Confirm current desired/ready replicas using Gate 0; this historical record does not guarantee live state now.
+
 ## Gate 2 — Choose a real second runtime
 
 A production second runtime must be persistent, independently reachable, patched, monitored, and capable of securely reaching the required shared services. Codespaces and hosted Actions runners do not satisfy this requirement by themselves.
+
+GitHub's documented Codespaces lifecycle includes idle stopping and a maximum lifetime (currently documented as 12 hours). Codespaces should therefore be used for development, validation, and controlled operator tasks—not as an always-on production replica. See [GitHub's Codespaces lifecycle documentation](https://docs.github.com/en/codespaces/about-codespaces/understanding-the-codespace-lifecycle).
 
 If no second always-on runtime is available, mark high availability **BLOCKED**. Keep the existing public route unchanged.
 
@@ -54,7 +88,7 @@ Before traffic can reach two runtimes, document:
 - internal service discovery, TLS, firewall policy, and health-check behavior;
 - background-job ownership to prevent duplicate execution.
 
-Do not expose database/admin ports publicly as a shortcut.
+Do not expose database/admin ports publicly as a shortcut. Never copy the production kubeconfig or secret material into Codespaces.
 
 ## Gate 4 — Acceptance and controlled rollout
 
