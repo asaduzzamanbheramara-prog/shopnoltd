@@ -9,6 +9,17 @@ Status: **planning/preflight only**. This document does not authorize production
 - GHCR: immutable image distribution, not a runtime.
 - Existing local K3s node: current production runtime; preserve it until acceptance checks and rollback are proven.
 - Codespaces: development and integration testing only. Its current devcontainer starts a Vite preview on port 5173; it is not a durable Kubernetes production replica.
+- **Owner's requested split:** keep currently live production services on the PC-hosted K3s cluster; investigate each service at zero replicas as a candidate to run in Codespaces only if it is stateless or has safe external dependencies and can tolerate Codespaces stopping. Do not move live production traffic or claim the zero-replica services are migrated until individually deployed and tested.
+
+## Explicit Codespaces candidate policy
+
+The existing Codespaces configuration installs the web portal dependencies and starts a Vite preview on port 5173. It does not provision Kubernetes, build a service mesh, or start the zero-replica Kubernetes workloads. Codespaces can host temporary development/test processes, but not a guaranteed always-on replica.
+
+- **Reasonable first Codespaces test candidate:** web/UI development preview and isolated stateless services with test-only configuration, after checking each service's build/run instructions and ports. Keep any forwarded ports private unless public access is deliberately required.
+- **Not safe to move as-is:** database/storage systems (PostgreSQL, Redis, MinIO, Gitea with data), schedulers/workers (Kobo beat/worker), production n8n/background jobs, monitoring that depends on durable retention, Android Cloud/device controllers, and any service with PVCs, privileged access, cluster-admin credentials, or dependencies reachable only inside K3s. These require redesign, persistent shared services, secure credentials, and explicit testing first.
+- **Production availability rule:** if a Codespace stops, all processes in it can stop. Therefore a Codespace-hosted process must not become the only production copy or receive production traffic that cannot safely fail back to the PC. Keep the PC instance and routing unchanged until an independently persistent runtime exists or the owner explicitly accepts the availability limitation.
+- **Do not copy production kubeconfig, Kubernetes Secrets, database passwords, Cloudflare credentials, or user data into Codespaces or GitHub files.** Use least-privilege, short-lived credentials and sanitized test data only.
+- For every zero-replica entry, record: live namespace/name and actual desired/ready count; manifest source/overlay; reason disabled; data/PVC/queue/scheduler dependencies; Codespaces run method; required environment variables (names only); port and health check; resource use; stop/restart behavior; and rollback. Only then promote an individual candidate.
 
 ## Gate 0 — Read-only production inventory
 
