@@ -120,3 +120,25 @@ Restore the last known-good routing/tunnel configuration and immutable image dig
 ## Evidence reporting
 
 Report each gate as **PASS**, **BLOCKED**, or **FAIL**, with timestamp, commit/image digest, and sanitized command output. A GitHub workflow passing a manifest render is not proof that production is healthy.
+
+
+## Gate 0 — Live inventory snapshot supplied by operator (2026-10-19)
+
+The operator ran read-only `kubectl get` commands against the PC-hosted K3s cluster. This is a timestamped snapshot, not continuous monitoring; re-check before any changes.
+
+- Node: `shopnoltd-pc-1`, Ready, K3s `v1.37.0+k3s1`.
+- Canonical Argo CD Application `argocd/shopnoltd`: Synced / Healthy at revision `eca8f614c771eaed8ec8d331d10b276ec0b0e680`.
+- The six duplicate Argo CD Deployments in `default` are desired 0; duplicate `argocd-application-controller` StatefulSet is 0/0. Canonical Argo CD Deployments and StatefulSet in `argocd` are running.
+- Thirteen non-duplicate Deployments were observed at desired 0 (ready/available not reported): `shopno-apps/code-server`, `shopno-apps/gitea`, `shopno-apps/kobotoolbox-beat`, `shopno-apps/kobotoolbox-worker`, `shopno-apps/ollama`, `shopno-apps/owncast`, `shopno-monitoring/grafana`, `shopno-monitoring/loki`, `shopno-monitoring/prometheus`, `shopno-platform/android-cloud-controller`, `shopno-platform/interior-service`, `shopno-platform/license-service`, `shopno-platform/training-service`.
+- Bound PVCs were reported for these zero-replica services: code-server (`code-server-data`), Gitea (`gitea-data`, `gitea-etc`), Ollama (`ollama-models`), Owncast (`owncast-data`), Grafana (`grafana-data`), Loki (`loki-data`), Prometheus (`prometheus-data`), and the platform PVCs for interior, license, and training services. KoboToolbox data PVC is also bound and shared with its app components.
+- All listed PVCs in the operator output were Bound. This does not prove data is backed up or that it is safe to attach the same volume to another runtime.
+
+### Next read-only investigation before selecting a Codespaces candidate
+
+For each of the thirteen workloads, capture only non-secret metadata: `kubectl -n <namespace> get deploy <name> -o yaml` with Secret values excluded, `kubectl -n <namespace> describe deploy <name>`, related Services/Ingress, events, image reference, resource requests/limits, probes, PVC mounts, and declared environment-variable names (not values). Compare with the Git-tracked manifest and identify the commit/reason it was disabled. Do not start these deployments or copy PVC data to Codespaces as part of this investigation.
+
+### Preliminary disposition
+
+- **Do not migrate directly into Codespaces:** Gitea, Kobo beat/worker, Ollama, Owncast, Grafana/Loki/Prometheus, and Android Cloud controller until persistent data, queue/scheduler semantics, hardware, network and uptime requirements are resolved.
+- **Investigate first as possible isolated Codespaces tests:** code-server only if its existing PVC/user state is not needed, plus interior/license/training services only after their build/run commands and dependencies are confirmed. This is a test-candidate shortlist, not authorization to enable or expose them.
+- The current `.devcontainer/devcontainer.json` still starts only the web-portal Vite preview on port 5173. No zero-replica workload has been proven to run in Codespaces.
