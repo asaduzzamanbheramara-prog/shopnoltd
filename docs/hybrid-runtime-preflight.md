@@ -142,3 +142,23 @@ For each of the thirteen workloads, capture only non-secret metadata: `kubectl -
 - **Do not migrate directly into Codespaces:** Gitea, Kobo beat/worker, Ollama, Owncast, Grafana/Loki/Prometheus, and Android Cloud controller until persistent data, queue/scheduler semantics, hardware, network and uptime requirements are resolved.
 - **Investigate first as possible isolated Codespaces tests:** code-server only if its existing PVC/user state is not needed, plus interior/license/training services only after their build/run commands and dependencies are confirmed. This is a test-candidate shortlist, not authorization to enable or expose them.
 - The current `.devcontainer/devcontainer.json` still starts only the web-portal Vite preview on port 5173. No zero-replica workload has been proven to run in Codespaces.
+
+
+## Gate 1C — Workload-specific metadata review (operator snapshot, 2026-10-19)
+
+The operator supplied Deployment metadata from the live PC K3s cluster. This section records conclusions from those fields plus manifests at source revision `eca8f614c771eaed8ec8d331d10b276ec0b0e680`; it does not establish why the workloads were originally scaled down.
+
+- `interior-service`, `license-service`, and `training-service`: each mounts its own bound PVC at `/var/lib/<service>`, imports a Kubernetes ConfigMap and Secret, and declares in-cluster Redis, PostgreSQL, MinIO, and Keycloak endpoints in the matching ConfigMap. They are **not standalone Codespaces candidates as currently configured**. A separate test profile would need explicit non-production dependencies and disposable test data, and the service's code/tests must confirm whether the PVC is necessary.
+- `android-cloud-controller`: source code loads in-cluster Kubernetes configuration and creates/deletes emulator pods, services, and ingresses; repository RBAC permits pod exec and resource creation/deletion in `shopno-android`. **Do not run it in Codespaces with production credentials**. Any test must use a disposable isolated cluster, fake Kubernetes client, or unit tests only.
+- `code-server`: mounts the existing `code-server-data` PVC at `/config` and its workspace subpath at `/mnt`. Do not mount or copy the same live user data into Codespaces. Prefer the existing GitHub Codespaces editor for repository development; use code-server only if its separate product role is explicitly required.
+- `gitea`: mounts both `gitea-data` and `gitea-etc`. Keep its current data untouched; do not duplicate repository storage or treat Codespaces as its replacement.
+- `kobotoolbox-beat` and `kobotoolbox-worker`: use the KPI image and depend on Kobo/Mongo/database configuration. They are scheduled/queued background processes without health probes. Do not start a second copy until broker/queue ownership, duplicate execution, idempotency, and intended enabled state are confirmed.
+- `ollama`: image uses `latest`, declares up to 6Gi memory and mounts `ollama-models`; no portable model/data migration is established. Not a first Codespaces candidate.
+- `owncast`: mounts `owncast-data`; keep off unless explicitly needed and streaming data/configuration are planned.
+- `grafana`, `loki`, `prometheus`: all mount their own persistent data PVCs; Grafana also depends on provisioned ConfigMaps. Treat as one monitoring/retention decision and verify the intended observability design before enabling or moving any component.
+
+### Candidate decision
+
+No production service from this zero-replica list is approved for direct migration into Codespaces based on the evidence available. The next low-risk step is repository-side isolated testing of the three Python HTTP services with test-only configuration and disposable/mock dependencies, after their tests and settings are reviewed. This is development validation only and does not restore production endpoints. Keep the existing Codespaces Vite preview as-is and keep public routing unchanged.
+
+The operator's Kubernetes Event query returned “No resources found” for Deployment-scoped events. That only means no matching Event objects were returned at query time; it does not explain why each workload is disabled.
