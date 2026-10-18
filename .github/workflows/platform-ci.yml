@@ -34,7 +34,11 @@ jobs:
             platform/domain-service/app \
             platform/payment-service/app \
             platform/social-service/app \
-            platform/oauth-service/app
+            platform/oauth-service/app \
+            platform/interior-service/app \
+            platform/license-service/app \
+            platform/training-service/app \
+            shared/libraries/python/shopno_core
 
   web-portal:
     name: Web portal build
