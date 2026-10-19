@@ -621,39 +621,70 @@ jobs:
           rollout_status_with_diagnostics kobotoolbox
           rollout_status_with_diagnostics kobotoolbox-worker
           rollout_status_with_diagnostics kobotoolbox-beat
-          echo 'Applying Kobo django_celery_beat migrations before Argo rollout.'
-          # A Deployment-targeted exec can time out while kubectl resolves a replacement
-          # pod even after rollout status reports success. Resolve a Ready worker pod
-          # explicitly, then retry only this idempotent Django migration if the pod is
-          # replaced between readiness and exec.
-          worker_selector="$(kubectl -n shopno-apps get deployment kobotoolbox-worker -o json | jq -r '.spec.selector.matchLabels | to_entries | map("\(.key)=\(.value)") | join(",")')"
-          if [ -z "$worker_selector" ]; then
-            echo 'ERROR: could not derive the Kobo worker pod selector from its Deployment.'
+          echo 'Applying Kobo django_celery_beat migrations using a one-off Job (the worker Deployment is intentionally scaled to zero).'
+          worker_json="$(kubectl --request-timeout=20s -n shopno-apps get deployment kobotoolbox-worker -o json)"
+          worker_container="$(jq -c '.spec.template.spec.containers[] | select(.name == "worker")' <<<"$worker_json")"
+          worker_image="$(jq -r '.image // ""' <<<"$worker_container")"
+          if [ -z "$worker_image" ] || [ "$worker_image" = "null" ]; then
+            echo 'ERROR: could not resolve the image from the Kobo worker Deployment.'
             exit 1
           fi
-          migration_applied=0
-          for attempt in {1..4}; do
-            kubectl --request-timeout=20s -n shopno-apps wait --for=condition=ready pod -l "$worker_selector" --timeout=180s || true
-            worker_pod="$(kubectl --request-timeout=20s -n shopno-apps get pods -l "$worker_selector" -o json | jq -r '[.items[] | select(.status.phase == "Running") | select(any(.status.conditions[]?; .type == "Ready" and .status == "True")) | .metadata.name] | first // ""')"
-            if [ -z "$worker_pod" ]; then
-              echo "Kobo worker Ready pod not found on migration attempt $attempt/4."
-              sleep 5
-              continue
-            fi
-            if kubectl --request-timeout=30s -n shopno-apps exec "$worker_pod" -- env KPI_DATABASE_URL="$kpi_database_url" KC_DATABASE_URL="$kobocat_database_url" DATABASE_URL="$kobocat_database_url" python /srv/src/kpi/manage.py migrate django_celery_beat --noinput; then
-              migration_applied=1
-              break
-            fi
-            echo "Kobo migration exec failed on attempt $attempt/4; rechecking worker readiness before retry."
-            sleep 5
-          done
-          if [ "$migration_applied" -ne 1 ]; then
-            echo 'ERROR: Kobo django_celery_beat migration did not complete after four Ready-pod attempts.'
-            kubectl -n shopno-apps get deployment kobotoolbox-worker -o wide || true
-            kubectl -n shopno-apps get pods -l "$worker_selector" -o wide || true
-            kubectl -n shopno-apps get events --sort-by=.lastTimestamp | tail -n 60 || true
+          worker_env_from="$(jq -c '.envFrom // []' <<<"$worker_container")"
+          worker_env="$(jq -c '(.env // []) | map(select(.name != "KPI_DATABASE_URL" and .name != "KC_DATABASE_URL"))' <<<"$worker_container")"
+          worker_resources="$(jq -c '.resources // {}' <<<"$worker_container")"
+          worker_security="$(jq -c '.spec.template.spec.securityContext // {}' <<<"$worker_json")"
+          migration_job="kobotoolbox-django-celery-beat-migration"
+          kubectl --request-timeout=30s -n shopno-apps delete job "$migration_job" --ignore-not-found --wait=true
+          migration_manifest="$(jq -cn \
+            --arg namespace shopno-apps \
+            --arg name "$migration_job" \
+            --arg image "$worker_image" \
+            --argjson envFrom "$worker_env_from" \
+            --argjson env "$worker_env" \
+            --argjson resources "$worker_resources" \
+            --argjson security "$worker_security" \
+            --arg kpi "$kpi_database_url" \
+            --arg kc "$kobocat_database_url" \
+            '{
+              apiVersion:"batch/v1",
+              kind:"Job",
+              metadata:{name:$name,namespace:$namespace,labels:{"app.kubernetes.io/name":"kobotoolbox","app.kubernetes.io/component":"migration","app.kubernetes.io/part-of":"shopnoltd"}},
+              spec:{
+                backoffLimit:1,
+                activeDeadlineSeconds:300,
+                ttlSecondsAfterFinished:3600,
+                template:{
+                  metadata:{labels:{"app.kubernetes.io/name":"kobotoolbox","app.kubernetes.io/component":"migration","app.kubernetes.io/part-of":"shopnoltd"}},
+                  spec:{
+                    restartPolicy:"Never",
+                    serviceAccountName:"kobotoolbox-worker",
+                    automountServiceAccountToken:false,
+                    securityContext:$security,
+                    containers:[{
+                      name:"django-migration",
+                      image:$image,
+                      imagePullPolicy:"Always",
+                      command:["/bin/bash","-lc"],
+                      args:["cd /srv/src/kpi && exec /opt/venv/bin/python manage.py migrate django_celery_beat --noinput"],
+                      envFrom:$envFrom,
+                      env:($env + [{name:"KPI_DATABASE_URL",value:$kpi},{name:"KC_DATABASE_URL",value:$kc}]),
+                      resources:$resources
+                    }]
+                  }
+                }
+              }
+            }')"
+          jq -e '.spec.template.spec.containers[0].image != "" and (.spec.template.spec.containers[0].envFrom | type == "array")' <<<"$migration_manifest" >/dev/null
+          kubectl --request-timeout=30s -n shopno-apps apply -f - <<<"$migration_manifest"
+          if ! kubectl --request-timeout=20s -n shopno-apps wait --for=condition=complete "job/$migration_job" --timeout=300s; then
+            echo 'ERROR: Kobo django_celery_beat migration Job did not complete.'
+            kubectl --request-timeout=20s -n shopno-apps describe job "$migration_job" || true
+            kubectl --request-timeout=20s -n shopno-apps logs "job/$migration_job" --all-containers=true --tail=200 || true
+            kubectl --request-timeout=20s -n shopno-apps get pods -l app.kubernetes.io/component=migration -o wide || true
             exit 1
           fi
+          kubectl --request-timeout=20s -n shopno-apps logs "job/$migration_job" --all-containers=true --tail=200
+          echo 'Kobo django_celery_beat migration Job completed successfully.'
 
       - name: Recreate only unbound disabled-service PVCs after storage migration
         shell: bash
