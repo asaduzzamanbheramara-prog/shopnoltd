@@ -51,6 +51,20 @@ def _fernet() -> Fernet:
     return Fernet(key.encode())
 
 
+def _response_disposition(status_code: int) -> str:
+    if status_code == 429:
+        return "rate_limited"
+    if status_code == 401:
+        return "unauthorized"
+    if status_code == 403:
+        return "forbidden"
+    if status_code >= 500:
+        return "unknown"
+    if status_code >= 400:
+        return "rejected"
+    return "success"
+
+
 def _approval_is_valid(action: dict[str, Any]) -> bool:
     payload = action.get("request_payload") or {}
     approval = payload.get("approval") or {}
@@ -254,7 +268,8 @@ async def process_action(action: dict[str, Any], *, client: httpx.AsyncClient | 
     http = client or httpx.AsyncClient(timeout=httpx.Timeout(20.0, connect=5.0))
     try:
         response = await http.request(method, url, headers=headers, json=request_body)
-        if response.status_code == 429:
+        disposition = _response_disposition(response.status_code)
+        if disposition == "rate_limited":
             response_payload = payload.get("_executor") or {}
             attempt = int(response_payload.get("rate_limit_attempt", 0)) + 1
             if attempt < MAX_RATE_LIMIT_RETRIES:
@@ -272,17 +287,17 @@ async def process_action(action: dict[str, Any], *, client: httpx.AsyncClient | 
             await _finish(action_id, "failed", error_code="provider_rate_limited",
                           error_message="Provider rate limit persisted after bounded retries.")
             return
-        if response.status_code in (401, 403):
+        if disposition in {"unauthorized", "forbidden"}:
             await _finish(action_id, "failed",
-                          error_code="provider_unauthorized" if response.status_code == 401 else "provider_forbidden",
+                          error_code="provider_unauthorized" if disposition == "unauthorized" else "provider_forbidden",
                           error_message="Provider rejected the connection or its granted permissions.")
             return
-        if response.status_code >= 500:
+        if disposition == "unknown":
             # A 5xx may occur after a side effect. Never replay an ambiguous POST.
             await _finish(action_id, "unknown", error_code="provider_result_unknown",
                           error_message="Provider returned a server error; automatic replay was suppressed to avoid duplicates.")
             return
-        if response.status_code >= 400:
+        if disposition == "rejected":
             await _finish(action_id, "failed", error_code="provider_rejected",
                           error_message=f"Provider rejected the request (HTTP {response.status_code}).")
             return
