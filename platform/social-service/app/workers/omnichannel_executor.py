@@ -57,6 +57,7 @@ def _approval_is_valid(action: dict[str, Any]) -> bool:
     return (
         approval.get("approved") is True
         and bool(str(approval.get("approved_by") or "").strip())
+        and str(approval.get("approved_by") or "") == str(payload.get("_requested_by") or "")
         and not str(approval.get("approved_by") or "").startswith(("n8n-", "automation-"))
         and bool(str(approval.get("approved_at") or "").strip())
     )
@@ -177,6 +178,11 @@ async def process_action(action: dict[str, Any], *, client: httpx.AsyncClient | 
                       error_message="A human-approved action is required before provider execution.")
         return
     connection_id = action.get("connection_id")
+    requested_by = str(payload.get("_requested_by") or "").strip()
+    if not requested_by:
+        await _finish(action_id, "failed", error_code="requester_missing",
+                      error_message="The authenticated requesting user could not be verified.")
+        return
     if not connection_id:
         await _finish(action_id, "failed", error_code="connection_required",
                       error_message="A connected provider account is required.")
@@ -188,15 +194,20 @@ async def process_action(action: dict[str, Any], *, client: httpx.AsyncClient | 
                    COALESCE(t.token_expires_at, c.token_expires_at) AS token_expires_at,
                    t.provider, t.encrypted_access_token, t.status AS token_status
             FROM social_connections c
-            LEFT JOIN omnichannel_oauth_tokens t
+            JOIN omnichannel_oauth_tokens t
               ON t.tenant_id=c.tenant_id
              AND t.platform=c.platform
              AND t.provider_account_id=c.platform_account_id
+             AND t.user_id=:user
             WHERE c.tenant_id=:tenant AND c.id=:connection
-        """), {"tenant": action["tenant_id"], "connection": connection_id})).mappings().one_or_none()
-    if row is None or row["connection_status"] != "connected":
+        """), {"tenant": action["tenant_id"], "connection": connection_id, "user": requested_by})).mappings().one_or_none()
+    if row is None:
+        await _finish(action_id, "failed", error_code="connection_not_owned",
+                      error_message="The selected provider account is missing or is not owned by the requesting user.")
+        return
+    if row["connection_status"] != "connected":
         await _finish(action_id, "failed", error_code="connection_unavailable",
-                      error_message="The selected provider connection is missing or not connected.")
+                      error_message="The selected provider connection is not connected.")
         return
     if row["token_status"] != "connected" or not row["encrypted_access_token"]:
         await _finish(action_id, "failed", error_code="token_unavailable",
