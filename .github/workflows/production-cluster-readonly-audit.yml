@@ -99,23 +99,24 @@ jobs:
             if [ -n "$ingress" ]; then
               check_object ingress "$namespace" "$ingress"
               kubectl -n "$namespace" get ingress "$ingress" -o custom-columns='NAME:.metadata.name,HOSTS:.spec.rules[*].host,TLS:.spec.tls[*].secretName' --no-headers 2>/dev/null || true
+              tls_names="$(kubectl -n "$namespace" get ingress "$ingress" -o jsonpath='{range .spec.tls[*]}{.secretName}{"\n"}{end}' 2>/dev/null || true)"
+              if [ -n "$tls_names" ]; then
+                while IFS= read -r tls_name; do
+                  [ -n "$tls_name" ] || continue
+                  check_object secret "$namespace" "$tls_name" || true
+                done <<< "$tls_names"
+              fi
             fi
           }
           check_service shopno-apps gitea gitea-data gitea-config gitea-secret gitea
-          check_object secret shopno-apps gitea-tls
           check_service shopno-apps owncast owncast-data owncast-config owncast-secret owncast
-          check_object secret shopno-apps owncast-tls
           check_service shopno-apps code-server code-server-data code-server-config code-server-secret code-server
           check_object secret shopno-apps code-server-litellm-key
           check_object configmap shopno-apps code-server-continue-config
-          check_object secret shopno-apps code-server-tls
           check_service shopno-monitoring loki loki-data loki-config loki-secret loki
           check_service shopno-platform interior-service interior-service-data interior-service-config interior-service-secret interior-service
-          check_object secret shopno-platform interior-service-tls
-          check_service shopno-platform license-service license-service-data license-service-secret license-service
-          check_object secret shopno-platform license-service-tls
+          check_service shopno-platform license-service license-service-data license-service-config license-service-secret license-service
           check_service shopno-platform training-service training-service-data training-service-config training-service-secret training-service
-          check_object secret shopno-platform training-service-tls
           check_service shopno-platform android-cloud-controller "" android-cloud-controller-config android-cloud-turn-secret ""
           check_object secret shopno-platform ghcr-pull-secret
           check_service shopno-apps onlyoffice onlyoffice-data onlyoffice-config onlyoffice-secret onlyoffice
