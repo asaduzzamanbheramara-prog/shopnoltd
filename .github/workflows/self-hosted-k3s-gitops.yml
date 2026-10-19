@@ -383,7 +383,13 @@ jobs:
                 finished_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
                 terminal_message="$message [recovery: stale operation metadata terminalized after confirming no live operation, absent hook Job, and completed PostgreSQL migration prerequisite]"
                 status_patch="$(jq -cn --arg finished "$finished_at" --arg msg "$terminal_message" '{status:{operationState:{phase:"Failed",finishedAt:$finished,message:$msg}}}')"
-                timeout 30s kubectl --request-timeout=20s -n "$ARGOCD_NAMESPACE" patch application "$ARGOCD_APP" --subresource=status --type=merge -p "$status_patch"
+                # Some Kubernetes/API-server combinations do not expose the Argo Application
+                # status subresource consistently. Try it first, then the ordinary resource
+                # endpoint only if that request fails; in either case verify the persisted result.
+                if ! timeout 30s kubectl --request-timeout=20s -n "$ARGOCD_NAMESPACE" patch application "$ARGOCD_APP" --subresource=status --type=merge -p "$status_patch"; then
+                  echo 'Status-subresource patch endpoint failed; attempting ordinary Application patch as a compatibility fallback.'
+                  timeout 30s kubectl --request-timeout=20s -n "$ARGOCD_NAMESPACE" patch application "$ARGOCD_APP" --type=merge -p "$status_patch"
+                fi
                 verify_state="$(timeout 20s kubectl --request-timeout=15s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o json)"
                 verify_phase="$(jq -r '.status.operationState.phase // ""' <<<"$verify_state")"
                 verify_live_operation="$(jq -r 'if .operation == null then "false" else "true" end' <<<"$verify_state")"
