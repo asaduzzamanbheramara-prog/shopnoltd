@@ -265,18 +265,19 @@ jobs:
             echo 'Argo CD automated sync is already disabled.'
           fi
 
-          phase="$(timeout 30s kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o jsonpath='{.status.operationState.phase}' 2>/dev/null || true)"
-          if [ "$phase" = "Running" ]; then
-            echo 'Requesting proper Argo CD operation termination through the supported CLI in Kubernetes-core mode.'
-
-            echo 'Clearing the pending Argo CD operation directly through the Kubernetes Application resource.'
-            timeout 45s kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" patch application "$ARGOCD_APP" --type=merge -p='{"operation":null}'
-            echo 'Forcing an Argo CD application refresh so the controller observes the terminated operation immediately.'
-            timeout 45s kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" annotate application "$ARGOCD_APP" argocd.argoproj.io/refresh=hard --overwrite
-          elif [ "$phase" = "Terminating" ]; then
-            echo 'Argo CD operation is already terminating; waiting for the controller.'
+          initial_state="$(timeout 30s kubectl --request-timeout=20s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o json)"
+          phase="$(jq -r '.status.operationState.phase // ""' <<<"$initial_state")"
+          live_operation="$(jq -r 'if .operation == null then "false" else "true" end' <<<"$initial_state")"
+          live_revision="$(jq -r '.operation.sync.revision // ""' <<<"$initial_state")"
+          if [ "$live_operation" = "true" ] && [ "$live_revision" = "$GIT_REVISION" ]; then
+            echo "Argo CD already has a live sync for the exact requested revision $GIT_REVISION; preserving it instead of cancelling or overlapping it."
+            exit 0
+          elif [ "$live_operation" = "true" ]; then
+            echo "A live Argo CD operation for revision ${live_revision:-unknown} is still present (phase=${phase:-none}); preserving it and refusing to cancel or overlap it."
+          elif [ "$phase" = "Running" ] || [ "$phase" = "Terminating" ]; then
+            echo "Argo CD has operation history in phase $phase but no live .operation field; checking the known stale-hook case without cancelling a live operation."
           else
-            echo "No running Argo CD operation requires termination (phase=${phase:-none})."
+            echo "No live Argo CD operation requires termination (phase=${phase:-none})."
           fi
 
           echo 'Waiting for the Argo CD controller to clear the stale operation.'
@@ -397,71 +398,54 @@ jobs:
             fi
           fi
 
-          # A controller restart cannot always repair a persisted stale status.operationState.
-          # Only terminalize that historical status after verifying the exact stale-hook signature,
-          # no live Application operation, an absent referenced hook Job, and a completed
-          # PostgreSQL prerequisite migration. This does not alter .operation or any Job/DB.
+          # If the controller restart did not clear an abandoned hook wait, only
+          # terminalize the old history when the live operation is absent, the referenced
+          # migration hook is absent, and no pod for that hook remains active. Mark it Failed,
+          # never Succeeded; the subsequent fresh sync reruns the idempotent migration hook.
           if [ "$operation_stopped" -ne 1 ]; then
             app_state="$(timeout 20s kubectl --request-timeout=15s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o json 2>/dev/null || true)"
             phase="$(jq -r '.status.operationState.phase // ""' <<<"$app_state")"
             message="$(jq -r '.status.operationState.message // ""' <<<"$app_state")"
             live_operation="$(jq -r 'if .operation == null then "false" else "true" end' <<<"$app_state")"
             stale_hook_name="$(sed -n 's/.*waiting for \(completion\|deletion\) of hook batch\/Job\/\([^ /]*\).*/\2/p' <<<"$message")"
+            known_migration_hook=0
+            case "$stale_hook_name" in
+              litellm-migrations|chatwoot-rails-migration) known_migration_hook=1 ;;
+            esac
+            hook_namespace="$(jq -r --arg name "$stale_hook_name" '[.status.operationState.syncResult.resources[]? | select(.kind == "Job" and .name == $name) | .namespace][0] // ""' <<<"$app_state")"
             if [ "$live_operation" = "false" ] &&
-              [ "$phase" = "Running" ] &&
-              [ -n "$stale_hook_name" ] &&
+              { [ "$phase" = "Running" ] || [ "$phase" = "Terminating" ]; } &&
+              [ -n "$stale_hook_name" ] && [ "$known_migration_hook" = "1" ] &&
+              [ -n "$hook_namespace" ] &&
               { [[ "$message" == *"waiting for completion of hook batch/Job/"* ]] || [[ "$message" == *"waiting for deletion of hook batch/Job/"* ]]; }; then
               jobs_json="$(timeout 20s kubectl --request-timeout=15s get jobs -A -o json 2>/dev/null || true)"
-              migration_json="$(timeout 20s kubectl --request-timeout=15s -n "$MIGRATION_NAMESPACE" get job "$MIGRATION_JOB" -o json 2>/dev/null || true)"
               if jq -e '.items | type == "array"' <<<"$jobs_json" >/dev/null 2>&1 &&
-                [ "$(jq -r --arg name "$stale_hook_name" '[.items[] | select(.metadata.name == $name)] | length' <<<"$jobs_json")" = "0" ] &&
-                jq -e 'any(.status.conditions[]?; .type == "Complete" and .status == "True") and (any(.status.conditions[]?; .type == "Failed" and .status == "True") | not)' <<<"$migration_json" >/dev/null 2>&1; then
-                echo "Confirmed stale status for absent hook $stale_hook_name and completed prerequisite migration; marking only the stale operation history terminal."
-                finished_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-                terminal_message="$message [recovery: stale operation metadata terminalized after confirming no live operation, absent hook Job, and completed PostgreSQL migration prerequisite]"
-                status_patch="$(jq -cn --arg finished "$finished_at" --arg msg "$terminal_message" '{status:{operationState:{phase:"Failed",finishedAt:$finished,message:$msg}}}')"
-                # Some Kubernetes/API-server combinations do not expose the Argo Application
-                # status subresource consistently. Try it first, then the ordinary resource
-                # endpoint only if that request fails; in either case verify the persisted result.
-                if ! timeout 30s kubectl --request-timeout=20s -n "$ARGOCD_NAMESPACE" patch application "$ARGOCD_APP" --subresource=status --type=merge -p "$status_patch"; then
-                  echo 'Status-subresource patch endpoint failed; checking whether the root Application still exists.'
-                  if timeout 15s kubectl --request-timeout=10s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o json >/dev/null 2>&1; then
-                    echo 'Application exists; attempting ordinary Application patch as a compatibility fallback.'
+                [ "$(jq -r --arg name "$stale_hook_name" '[.items[] | select(.metadata.name == $name)] | length' <<<"$jobs_json")" = "0" ]; then
+                hook_pods_json="$(timeout 20s kubectl --request-timeout=15s -n "$hook_namespace" get pods -l "job-name=$stale_hook_name" -o json 2>/dev/null || true)"
+                if jq -e '.items | type == "array"' <<<"$hook_pods_json" >/dev/null 2>&1 &&
+                  [ "$(jq -r '[.items[]? | select(.status.phase == "Running" or .status.phase == "Pending" or .status.phase == "Unknown")] | length' <<<"$hook_pods_json")" = "0" ]; then
+                  echo "Confirmed abandoned migration hook $hook_namespace/$stale_hook_name is absent with no active pod; marking old operation history Failed so a fresh sync can rerun the hook."
+                  finished_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+                  terminal_message="$message [recovery: no live operation; allowlisted migration hook absent; no active hook pod; old operation marked Failed so the next sync retries safely]"
+                  status_patch="$(jq -cn --arg finished "$finished_at" --arg msg "$terminal_message" '{status:{operationState:{phase:"Failed",finishedAt:$finished,message:$msg}}}')"
+                  if ! timeout 30s kubectl --request-timeout=20s -n "$ARGOCD_NAMESPACE" patch application "$ARGOCD_APP" --subresource=status --type=merge -p "$status_patch"; then
+                    echo 'Status-subresource patch failed; verifying the Application exists before using the compatibility fallback.'
                     timeout 30s kubectl --request-timeout=20s -n "$ARGOCD_NAMESPACE" patch application "$ARGOCD_APP" --type=merge -p "$status_patch"
-                  else
-                    echo 'Root Application disappeared during stale-operation recovery; restoring only the repository-defined root Application manifest.'
-                    test -s k8s/argocd/shopnoltd-root.yaml
-                    timeout 45s kubectl --request-timeout=30s apply -f k8s/argocd/shopnoltd-root.yaml
-                    restored=0
-                    for _ in {1..12}; do
-                      restored_json="$(timeout 15s kubectl --request-timeout=10s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o json 2>/dev/null || true)"
-                      if jq -e --arg repo_url "https://github.com/asaduzzamanbheramara-prog/shopnoltd.git" '.metadata.name == "shopnoltd" and .metadata.namespace == "argocd" and .spec.source.repoURL == $repo_url and .spec.source.path == "k8s"' <<<"$restored_json" >/dev/null 2>&1; then
-                        restored=1
-                        break
-                      fi
-                      sleep 5
-                    done
-                    if [ "$restored" -ne 1 ]; then
-                      echo 'ERROR: repository-defined root Application did not become readable with the expected source after apply.'
-                      exit 1
-                    fi
-                    echo 'Repository-defined root Application is restored and its source was verified; the new object has no stale operation record.'
-                    operation_stopped=1
                   fi
-                fi
-                if [ "$operation_stopped" -ne 1 ]; then
                   verify_state="$(timeout 20s kubectl --request-timeout=15s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o json)"
                   verify_phase="$(jq -r '.status.operationState.phase // ""' <<<"$verify_state")"
                   verify_live_operation="$(jq -r 'if .operation == null then "false" else "true" end' <<<"$verify_state")"
                   if [ "$verify_live_operation" = "false" ] && [ "$verify_phase" != "Running" ] && [ "$verify_phase" != "Terminating" ]; then
                     operation_stopped=1
-                    echo "Verified stale operation is terminal (phase=$verify_phase) and no live operation exists."
+                    echo "Verified abandoned hook history is terminal ($verify_phase), no live operation exists, and the next sync can retry the hook."
                   else
-                    echo "ERROR: stale operation status patch did not produce a verified terminal state (phase=$verify_phase liveOperation=$verify_live_operation)."
+                    echo "ERROR: abandoned-hook history did not become terminal (phase=$verify_phase liveOperation=$verify_live_operation)."
                   fi
+                else
+                  echo "Refusing stale-hook recovery: active/unknown pods remain for $hook_namespace/$stale_hook_name or the pod API response was invalid."
                 fi
               else
-                echo 'Refusing status recovery: hook absence, Kubernetes API response, or completed PostgreSQL migration prerequisite was not verified.'
+                echo "Refusing stale-hook recovery: referenced Job $stale_hook_name still exists or the Jobs API response was invalid."
               fi
             fi
           fi
@@ -1102,6 +1086,13 @@ jobs:
           diagnostic 'MIGRATION JOB' -n "$MIGRATION_NAMESPACE" get job "$MIGRATION_JOB" -o yaml
           diagnostic 'MIGRATION PODS' -n "$MIGRATION_NAMESPACE" get pods -l job-name="$MIGRATION_JOB" -o wide
           diagnostic 'MIGRATION LOGS' -n "$MIGRATION_NAMESPACE" logs job/"$MIGRATION_JOB" --all-containers=true --tail=300
+          diagnostic 'LITELLM MIGRATION JOB' -n shopno-ai get job litellm-migrations -o yaml
+          diagnostic 'LITELLM MIGRATION PODS' -n shopno-ai get pods -l job-name=litellm-migrations -o wide
+          diagnostic 'LITELLM MIGRATION EVENTS' -n shopno-ai get events --sort-by=.lastTimestamp
+          for pod in $(kubectl --request-timeout=20s -n shopno-ai get pods -l job-name=litellm-migrations -o name 2>/dev/null); do
+            diagnostic "LITELLM MIGRATION POD DETAILS $pod" -n shopno-ai describe "$pod"
+            diagnostic "LITELLM MIGRATION POD LOGS $pod" -n shopno-ai logs "$pod" --all-containers=true --tail=200
+          done
           diagnostic 'POSTGRES DEPLOYMENT' -n shopno-data get deployment postgres -o yaml
           diagnostic 'POSTGRES PODS' -n shopno-data get pods -l app.kubernetes.io/name=postgres -o wide
           diagnostic 'POSTGRES PVC' -n shopno-data get pvc postgres-data -o yaml
