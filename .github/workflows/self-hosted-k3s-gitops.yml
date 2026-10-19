@@ -269,13 +269,10 @@ jobs:
           phase="$(jq -r '.status.operationState.phase // ""' <<<"$initial_state")"
           live_operation="$(jq -r 'if .operation == null then "false" else "true" end' <<<"$initial_state")"
           live_revision="$(jq -r '.operation.sync.revision // ""' <<<"$initial_state")"
-          if [ "$live_operation" = "true" ] && [ "$live_revision" = "$GIT_REVISION" ]; then
-            echo "Argo CD already has a live sync for the exact requested revision $GIT_REVISION; preserving it instead of cancelling or overlapping it."
-            exit 0
-          elif [ "$live_operation" = "true" ]; then
-            echo "A live Argo CD operation for revision ${live_revision:-unknown} is still present (phase=${phase:-none}); preserving it and refusing to cancel or overlap it."
+          if [ "$live_operation" = "true" ]; then
+            echo "A live Argo CD operation exists for revision ${live_revision:-unknown} (phase=${phase:-none}); preserving it. The bounded wait below must observe it finish before another sync is submitted."
           elif [ "$phase" = "Running" ] || [ "$phase" = "Terminating" ]; then
-            echo "Argo CD has operation history in phase $phase but no live .operation field; checking the known stale-hook case without cancelling a live operation."
+            echo "Argo CD has operation history in phase $phase but no live .operation field; checking the known stale-hook case without cancelling any live operation."
           else
             echo "No live Argo CD operation requires termination (phase=${phase:-none})."
           fi
