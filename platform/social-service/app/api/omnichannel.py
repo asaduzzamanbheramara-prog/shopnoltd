@@ -301,6 +301,8 @@ async def queue_action(body: ActionIn, user=Depends(action_user), s: AsyncSessio
     }
     if (platform, action) in supported_provider_actions and not body.connection_id:
         raise HTTPException(422, "connection_id is required for this provider action")
+    if (platform, action) in supported_provider_actions and not (body.idempotency_key or "").strip():
+        raise HTTPException(422, "idempotency_key is required for this provider action")
 
     if body.connection_id:
         connection = (await s.execute(text(
