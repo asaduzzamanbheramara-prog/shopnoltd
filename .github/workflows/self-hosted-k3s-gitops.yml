@@ -458,9 +458,44 @@ jobs:
                     finished_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
                     terminal_message="$message [recovery: no live operation; allowlisted migration hook absent; no active hook pod; old operation marked Failed so the next sync retries safely]"
                     status_patch="$(jq -cn --arg finished "$finished_at" --arg msg "$terminal_message" '{status:{operationState:{phase:"Failed",finishedAt:$finished,message:$msg}}}')"
+                    # The Application can be briefly absent during controller restart or root-app reconciliation.
+                    # Re-read it and validate the stale signature before retrying any status mutation.
+                    patch_ready=0
+                    for attempt in {1..12}; do
+                      verify_state="$(timeout 20s kubectl --request-timeout=15s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o json 2>/dev/null || true)"
+                      if jq -e '.kind == "Application" and .metadata.name != ""' <<<"$verify_state" >/dev/null 2>&1; then
+                        verify_phase="$(jq -r '.status.operationState.phase // ""' <<<"$verify_state")"
+                        verify_message="$(jq -r '.status.operationState.message // ""' <<<"$verify_state")"
+                        verify_live_operation="$(jq -r 'if .operation == null then "false" else "true" end' <<<"$verify_state")"
+                        if [ "$verify_live_operation" = "false" ] && [ "$verify_phase" = "Running" ] &&
+                          [[ "$verify_message" == *"waiting for completion of hook batch/Job/$stale_hook_name"* || "$verify_message" == *"waiting for deletion of hook batch/Job/$stale_hook_name"* ]]; then
+                          patch_ready=1
+                          break
+                        fi
+                        echo "Application returned but stale-hook signature changed (phase=$verify_phase liveOperation=$verify_live_operation); refusing status mutation."
+                        break
+                      fi
+                      echo "Application object not currently readable (attempt $attempt/12); retrying."
+                      sleep 5
+                    done
+                    if [ "$patch_ready" != "1" ]; then
+                      echo "ERROR: Application object did not return with the exact stale-hook signature; refusing status mutation."
+                      exit 1
+                    fi
                     if ! timeout 30s kubectl --request-timeout=20s -n "$ARGOCD_NAMESPACE" patch application "$ARGOCD_APP" --subresource=status --type=merge -p "$status_patch"; then
-                      echo 'Status-subresource patch failed; verifying the Application exists before using the compatibility fallback.'
-                      timeout 30s kubectl --request-timeout=20s -n "$ARGOCD_NAMESPACE" patch application "$ARGOCD_APP" --type=merge -p "$status_patch"
+                      echo 'Status-subresource patch failed; re-reading and revalidating before compatibility fallback.'
+                      fallback_state="$(timeout 20s kubectl --request-timeout=15s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o json 2>/dev/null || true)"
+                      fallback_phase="$(jq -r '.status.operationState.phase // ""' <<<"$fallback_state")"
+                      fallback_message="$(jq -r '.status.operationState.message // ""' <<<"$fallback_state")"
+                      fallback_live_operation="$(jq -r 'if .operation == null then "false" else "true" end' <<<"$fallback_state")"
+                      if jq -e '.kind == "Application"' <<<"$fallback_state" >/dev/null 2>&1 &&
+                        [ "$fallback_live_operation" = "false" ] && [ "$fallback_phase" = "Running" ] &&
+                        [[ "$fallback_message" == *"waiting for completion of hook batch/Job/$stale_hook_name"* || "$fallback_message" == *"waiting for deletion of hook batch/Job/$stale_hook_name"* ]]; then
+                        timeout 30s kubectl --request-timeout=20s -n "$ARGOCD_NAMESPACE" patch application "$ARGOCD_APP" --type=merge -p "$status_patch"
+                      else
+                        echo "ERROR: Application missing or stale signature changed; refusing compatibility fallback."
+                        exit 1
+                      fi
                     fi
                     verify_state="$(timeout 20s kubectl --request-timeout=15s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o json)"
                   verify_phase="$(jq -r '.status.operationState.phase // ""' <<<"$verify_state")"
