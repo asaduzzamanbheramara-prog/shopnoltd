@@ -171,6 +171,25 @@ export default function Dashboard() {
         </Link>
       </section>
 
+      <section style={{ marginTop: 16 }}>
+        <a
+          href="https://auth.shopnoltd.dpdns.org/realms/shopnoltd/account/"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ display: 'block', padding: 20, borderRadius: 12, background: '#f8fafc', border: '1px solid #cbd5e1', textDecoration: 'none', color: 'inherit' }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+            <div>
+              <h2 style={{ margin: 0 }}>🛡️ Account Security &amp; Two-Factor Authentication</h2>
+              <p style={{ margin: '7px 0 0', color: '#64748b' }}>
+                Manage your sign-in security in the Shopnoltd identity console. You can set up an authenticator app (TOTP), review sessions, and manage account credentials.
+              </p>
+            </div>
+            <span style={{ padding: '10px 16px', borderRadius: 8, background: '#0f172a', color: 'white', fontWeight: 700 }}>Manage Security ↗</span>
+          </div>
+        </a>
+      </section>
+
       <section style={{ marginTop: 28 }}>
         <h2>Account overview</h2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginTop: 14 }}>
