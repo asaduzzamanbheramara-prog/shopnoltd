@@ -2,6 +2,11 @@ name: Production cluster read-only migration audit
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/production-cluster-readonly-audit.yml'
 
 permissions:
   contents: read
@@ -70,5 +75,50 @@ jobs:
           fi
           echo "=== REPOSITORY ZERO-REPLICA DEPLOYMENT MANIFESTS ==="
           grep -R -nE 'replicas:[[:space:]]*0' k8s/services --include='deployment.yaml' || true
+          echo "=== NODE CAPACITY SNAPSHOT ==="
+          kubectl top nodes 2>&1 || echo "NOTE: metrics-server resource metrics unavailable."
+          echo "=== SERVICE START PREREQUISITES (METADATA ONLY; NO SECRET VALUES) ==="
+          check_object() {
+            local kind="$1" namespace="$2" name="$3"
+            if kubectl -n "$namespace" get "$kind" "$name" >/dev/null 2>&1; then
+              echo "PASS $kind $namespace/$name exists"
+            else
+              echo "BLOCKED $kind $namespace/$name missing"
+            fi
+          }
+          check_service() {
+            local namespace="$1" app="$2" pvc="$3" config="$4" secret="$5" ingress="$6"
+            echo "--- $namespace/$app ---"
+            check_object serviceaccount "$namespace" "$app"
+            check_object configmap "$namespace" "$config"
+            check_object secret "$namespace" "$secret"
+            if [ -n "$pvc" ]; then
+              check_object pvc "$namespace" "$pvc"
+              kubectl -n "$namespace" get pvc "$pvc" -o custom-columns='NAME:.metadata.name,STATUS:.status.phase,CAPACITY:.status.capacity.storage,STORAGECLASS:.spec.storageClassName' --no-headers 2>/dev/null || true
+            fi
+            if [ -n "$ingress" ]; then
+              check_object ingress "$namespace" "$ingress"
+              kubectl -n "$namespace" get ingress "$ingress" -o custom-columns='NAME:.metadata.name,HOSTS:.spec.rules[*].host,TLS:.spec.tls[*].secretName' --no-headers 2>/dev/null || true
+            fi
+          }
+          check_service shopno-apps gitea gitea-data gitea-config gitea-secret gitea
+          check_object secret shopno-apps gitea-tls
+          check_service shopno-apps owncast owncast-data owncast-config owncast-secret owncast
+          check_object secret shopno-apps owncast-tls
+          check_service shopno-apps code-server code-server-data code-server-config code-server-secret code-server
+          check_object secret shopno-apps code-server-litellm-key
+          check_object configmap shopno-apps code-server-continue-config
+          check_object secret shopno-apps code-server-tls
+          check_service shopno-monitoring loki loki-data loki-config loki-secret loki
+          check_service shopno-platform interior-service interior-service-data interior-service-config interior-service-secret interior-service
+          check_object secret shopno-platform interior-service-tls
+          check_service shopno-platform license-service license-service-data license-service-secret license-service
+          check_object secret shopno-platform license-service-tls
+          check_service shopno-platform training-service training-service-data training-service-config training-service-secret training-service
+          check_object secret shopno-platform training-service-tls
+          check_service shopno-platform android-cloud-controller "" android-cloud-controller-config android-cloud-turn-secret ""
+          check_object secret shopno-platform ghcr-pull-secret
+          check_service shopno-apps onlyoffice onlyoffice-data onlyoffice-config onlyoffice-secret onlyoffice
+          check_object secret shopno-apps onlyoffice-tls
           echo "=== AUDIT SAFETY ==="
           echo "Read-only inventory only: no scale, apply, delete, rollout, secret values, or database contents were requested."
