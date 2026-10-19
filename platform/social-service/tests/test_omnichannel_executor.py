@@ -6,6 +6,7 @@ import pytest
 from app.workers.omnichannel_executor import (
     _approval_is_valid,
     _provider_request,
+    _response_disposition,
 )
 
 
@@ -105,3 +106,21 @@ def test_unsupported_or_invalid_requests_fail_closed(platform, action, payload):
     else:
         with pytest.raises(ValueError):
             _provider_request(platform, action, "token", "account", payload)
+
+
+
+@pytest.mark.parametrize(
+    "status,expected",
+    [
+        (200, "success"),
+        (202, "success"),
+        (400, "rejected"),
+        (401, "unauthorized"),
+        (403, "forbidden"),
+        (429, "rate_limited"),
+        (500, "unknown"),
+        (503, "unknown"),
+    ],
+)
+def test_provider_response_disposition_is_fail_closed(status, expected):
+    assert _response_disposition(status) == expected
