@@ -77,6 +77,13 @@ jobs:
           grep -R -nE 'replicas:[[:space:]]*0' k8s/services --include='deployment.yaml' || true
           echo "=== NODE CAPACITY SNAPSHOT ==="
           kubectl top nodes 2>&1 || echo "NOTE: metrics-server resource metrics unavailable."
+          node_name="$(kubectl get nodes -o jsonpath='{.items[0].metadata.name}')"
+          echo "=== NODE CONDITIONS (PRESSURE / READINESS) ==="
+          kubectl describe node "$node_name" | sed -n '/Conditions:/,/Addresses:/p'
+          echo "=== NODE ALLOCATED RESOURCE REQUESTS AND LIMITS ==="
+          kubectl describe node "$node_name" | sed -n '/Allocated resources:/,/Events:/p'
+          echo "=== TOP 25 PODS BY MEMORY (METRICS ONLY) ==="
+          kubectl top pods -A --sort-by=memory 2>&1 | head -n 26 || echo "NOTE: pod resource metrics unavailable."
           echo "=== SERVICE START PREREQUISITES (METADATA ONLY; NO SECRET VALUES) ==="
           check_object() {
             local kind="$1" namespace="$2" name="$3"
