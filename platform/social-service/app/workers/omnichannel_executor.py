@@ -99,8 +99,10 @@ def _provider_request(platform: str, action: str, token: str, account_id: str, p
     if platform == "x":
         return "POST", "https://api.x.com/2/tweets", headers, {"text": text_value}
     headers.update({"LinkedIn-Version": "202601", "X-Restli-Protocol-Version": "2.0.0"})
+    # OAuth currently identifies a member account; organization posting requires
+    # a separately verified organization grant and is intentionally unsupported.
     author_type = str((payload.get("author_type") or "person")).strip()
-    if author_type not in {"person", "organization"}:
+    if author_type != "person":
         raise ValueError("invalid_author_type")
     return "POST", "https://api.linkedin.com/rest/posts", headers, {
         "author": f"urn:li:{author_type}:{account_id}",
@@ -297,7 +299,15 @@ async def run_executor(stop_event: asyncio.Event) -> None:
         try:
             action = await _claim_one()
             if action:
-                await process_action(action)
+                try:
+                    await process_action(action)
+                except Exception:
+                    log.exception("omnichannel executor action failed unexpectedly")
+                    try:
+                        await _finish(str(action["id"]), "unknown", error_code="executor_internal_error",
+                                      error_message="Executor encountered an internal error; automatic replay was suppressed.")
+                    except Exception:
+                        log.exception("could not persist terminal executor failure")
                 continue
         except Exception:
             log.exception("omnichannel executor cycle failed")
