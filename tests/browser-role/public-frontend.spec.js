@@ -44,9 +44,9 @@ test('homepage navigation remains usable on a narrow mobile viewport', async ({ 
 
   const response = await page.goto(baseURL, { waitUntil: 'domcontentloaded' })
   expect(response?.status()).toBeLessThan(400)
-  await expect(page.getByRole('link', { name: 'Shopnoltd' })).toBeVisible()
-  await expect(page.getByRole('link', { name: 'Login' })).toBeVisible()
-  await expect(page.getByRole('link', { name: 'Register' })).toBeVisible()
+  await expect(page.locator('nav a[href="/"]').first()).toBeVisible()
+  await expect(page.locator('nav').getByRole('link', { name: 'Login', exact: true })).toBeVisible()
+  await expect(page.locator('nav').getByRole('link', { name: 'Register', exact: true })).toBeVisible()
 
   const dimensions = await page.evaluate(() => ({
     viewport: window.innerWidth,
