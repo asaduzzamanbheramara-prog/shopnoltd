@@ -87,11 +87,11 @@ The account-registry and blog-draft workflows are activated by GitOps but fail c
 
 **Blog draft intake is wired to n8n** at `POST /webhook/shopnoltd/blog/draft`. It requires `x-shopnoltd-webhook-secret`, accepts title/content metadata, and always creates a draft using the separate `SHOPNOLTD_N8N_BLOG_DRAFT_TOKEN`. That token is allowed to create drafts only; it cannot publish, edit, delete, manage accounts, or queue actions. Human review is required before publication.
 
-The action/account webhook endpoints must also have caller authentication configured in the n8n credential store before production activation. Workflow JSON must not contain credentials or tokens. The action queue deliberately has no API Authorization header until its approved normal-user/service-account credential is wired; unauthenticated calls should be rejected by the API. Never restore `SHOPNOLTD_INTERNAL_AUTOMATION_TOKEN` on the action endpoint. A successful workflow import alone is not a readiness check.
+The action/account webhook endpoints must also have caller authentication configured in the n8n credential store before production activation. Workflow JSON must not contain credentials or tokens. The action queue deliberately has no API Authorization header until its approved normal-user/service-account credential is wired; unauthenticated calls should be rejected by the API. Never restore `SHOPNOLTD_INTERNAL_AUTOMATION_TOKEN` on the action endpoint. A successful workflow import alone is not a readiness check. The social-service executor now has narrowly-scoped provider adapters for Gmail send, Outlook send, X posts, and LinkedIn member posts. All require a connected account, a non-expired encrypted OAuth token, the exact granted scope, and explicit human approval recorded by the API; automation identities cannot approve. Unsupported provider/action combinations fail closed. A timeout or provider 5xx is recorded as `unknown` and is never automatically replayed, because the original request may already have caused a side effect; only provider HTTP 429 receives bounded retries.
 
 ## n8n
 
-The account-registry and blog-draft workflows are imported active with a fail-closed shared-header check. The action queue remains imported inactive until the action executor and its provider-backed end-to-end tests pass.
+The account-registry and blog-draft workflows are imported active with a fail-closed shared-header check. The action queue remains imported inactive until the action executor is enabled explicitly after provider credentials and sandbox end-to-end tests pass. `OMNICHANNEL_EXECUTOR_ENABLED` defaults to `false` in production. The initial executor supports Gmail `send_message`, Outlook `send_message`, X `create_post`, and LinkedIn member `create_post`; other actions remain unsupported until a provider adapter is added and tested.
 
 Recommended workflow groups:
 
@@ -138,7 +138,7 @@ Do not publish/activate the workflows merely because they import successfully. R
 3. PostgreSQL contract queries succeed.
 4. Provider webhook verification and inbound/outbound tests pass for enabled providers.
 5. At least one account-connect test succeeds for every provider enabled in production.
-6. Provider-backed action execution is implemented, idempotent, and records provider IDs.
+6. Provider-backed action execution is implemented for the explicitly supported adapters, requires human approval, and records provider IDs. Ambiguous outcomes are not replayed; provider-side idempotency guarantees remain provider-dependent.
 7. Unsupported actions return a structured non-success result instead of attempting browser automation.
 8. GitHub Actions -> GHCR -> ArgoCD/k3s completes successfully.
 9. Public endpoint smoke tests pass.
