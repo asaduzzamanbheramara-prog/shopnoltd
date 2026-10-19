@@ -1,0 +1,74 @@
+name: Production cluster read-only migration audit
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-cluster-readonly-audit
+  cancel-in-progress: true
+
+jobs:
+  inventory:
+    name: Read-only Kubernetes inventory
+    runs-on: [self-hosted, linux]
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository manifests
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: false
+
+      - name: Verify runner and cluster connectivity
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v kubectl
+          command -v jq
+          echo "Runner: $(hostname)"
+          echo "Kubernetes client:"
+          kubectl version --client
+          connected=0
+          for attempt in {1..6}; do
+            if kubectl --request-timeout=10s get --raw=/readyz >/dev/null 2>&1; then
+              connected=1
+              break
+            fi
+            echo "API readiness attempt $attempt/6 failed; retrying in 5 seconds."
+            sleep 5
+          done
+          if [ "$connected" -ne 1 ]; then
+            echo "BLOCKED: runner cannot reach a ready Kubernetes API."
+            exit 1
+          fi
+          echo "PASS: Kubernetes API is reachable."
+
+      - name: Report cluster capacity and workload state
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "=== NODES (no node details beyond status/resources) ==="
+          kubectl get nodes -o wide
+          echo "=== DEPLOYMENTS ACROSS ALL NAMESPACES ==="
+          kubectl get deployments -A -o custom-columns='NAMESPACE:.metadata.namespace,NAME:.metadata.name,DESIRED:.spec.replicas,READY:.status.readyReplicas,AVAILABLE:.status.availableReplicas'
+          echo "=== STATEFULSETS ACROSS ALL NAMESPACES ==="
+          kubectl get statefulsets -A -o custom-columns='NAMESPACE:.metadata.namespace,NAME:.metadata.name,DESIRED:.spec.replicas,READY:.status.readyReplicas'
+          echo "=== PVC STATUS (NO DATA CONTENTS) ==="
+          kubectl get pvc -A -o custom-columns='NAMESPACE:.metadata.namespace,NAME:.metadata.name,STATUS:.status.phase,ACCESS:.spec.accessModes,CAPACITY:.status.capacity.storage,STORAGECLASS:.spec.storageClassName'
+          echo "=== INGRESS HOSTS AND ADDRESS ==="
+          kubectl get ingress -A -o custom-columns='NAMESPACE:.metadata.namespace,NAME:.metadata.name,HOSTS:.spec.rules[*].host,ADDRESS:.status.loadBalancer.ingress[*].hostname'
+          echo "=== SERVICES ==="
+          kubectl get services -A -o custom-columns='NAMESPACE:.metadata.namespace,NAME:.metadata.name,TYPE:.spec.type,CLUSTER-IP:.spec.clusterIP,PORTS:.spec.ports[*].port'
+          echo "=== ARGO CD APPLICATION SUMMARY (IF INSTALLED) ==="
+          if kubectl -n argocd get application shopnoltd -o json >/tmp/shopnoltd-argo.json 2>/dev/null; then
+            jq -r '"name=" + .metadata.name + "\nhealth=" + (.status.health.status // "unknown") + "\nsync=" + (.status.sync.status // "unknown") + "\nrevision=" + (.status.sync.revision // "unknown") + "\noperation=" + (.status.operationState.phase // "none")' /tmp/shopnoltd-argo.json
+          else
+            echo "NOTE: Argo CD application not readable in namespace argocd."
+          fi
+          echo "=== REPOSITORY ZERO-REPLICA DEPLOYMENT MANIFESTS ==="
+          grep -R -nE 'replicas:[[:space:]]*0' k8s/services --include='deployment.yaml' || true
+          echo "=== AUDIT SAFETY ==="
+          echo "Read-only inventory only: no scale, apply, delete, rollout, secret values, or database contents were requested."
