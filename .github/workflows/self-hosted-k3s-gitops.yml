@@ -622,7 +622,38 @@ jobs:
           rollout_status_with_diagnostics kobotoolbox-worker
           rollout_status_with_diagnostics kobotoolbox-beat
           echo 'Applying Kobo django_celery_beat migrations before Argo rollout.'
-          kubectl exec -n shopno-apps deployment/kobotoolbox-worker -- env KPI_DATABASE_URL="$kpi_database_url" KC_DATABASE_URL="$kobocat_database_url" DATABASE_URL="$kobocat_database_url" python /srv/src/kpi/manage.py migrate django_celery_beat --noinput
+          # A Deployment-targeted exec can time out while kubectl resolves a replacement
+          # pod even after rollout status reports success. Resolve a Ready worker pod
+          # explicitly, then retry only this idempotent Django migration if the pod is
+          # replaced between readiness and exec.
+          worker_selector="$(kubectl -n shopno-apps get deployment kobotoolbox-worker -o json | jq -r '.spec.selector.matchLabels | to_entries | map("\(.key)=\(.value)") | join(",")')"
+          if [ -z "$worker_selector" ]; then
+            echo 'ERROR: could not derive the Kobo worker pod selector from its Deployment.'
+            exit 1
+          fi
+          migration_applied=0
+          for attempt in {1..4}; do
+            kubectl --request-timeout=20s -n shopno-apps wait --for=condition=ready pod -l "$worker_selector" --timeout=180s || true
+            worker_pod="$(kubectl --request-timeout=20s -n shopno-apps get pods -l "$worker_selector" -o json | jq -r '[.items[] | select(.status.phase == "Running") | select(any(.status.conditions[]?; .type == "Ready" and .status == "True")) | .metadata.name] | first // ""')"
+            if [ -z "$worker_pod" ]; then
+              echo "Kobo worker Ready pod not found on migration attempt $attempt/4."
+              sleep 5
+              continue
+            fi
+            if kubectl --request-timeout=30s -n shopno-apps exec "$worker_pod" -- env KPI_DATABASE_URL="$kpi_database_url" KC_DATABASE_URL="$kobocat_database_url" DATABASE_URL="$kobocat_database_url" python /srv/src/kpi/manage.py migrate django_celery_beat --noinput; then
+              migration_applied=1
+              break
+            fi
+            echo "Kobo migration exec failed on attempt $attempt/4; rechecking worker readiness before retry."
+            sleep 5
+          done
+          if [ "$migration_applied" -ne 1 ]; then
+            echo 'ERROR: Kobo django_celery_beat migration did not complete after four Ready-pod attempts.'
+            kubectl -n shopno-apps get deployment kobotoolbox-worker -o wide || true
+            kubectl -n shopno-apps get pods -l "$worker_selector" -o wide || true
+            kubectl -n shopno-apps get events --sort-by=.lastTimestamp | tail -n 60 || true
+            exit 1
+          fi
 
       - name: Recreate only unbound disabled-service PVCs after storage migration
         shell: bash
