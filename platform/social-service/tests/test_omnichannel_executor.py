@@ -12,6 +12,7 @@ from app.workers.omnichannel_executor import (
 def test_human_approval_is_required_and_service_identities_cannot_approve():
     assert _approval_is_valid({
         "request_payload": {
+            "_requested_by": "user-123",
             "approval": {
                 "approved": True,
                 "approved_by": "user-123",
@@ -20,8 +21,10 @@ def test_human_approval_is_required_and_service_identities_cannot_approve():
         }
     })
     assert not _approval_is_valid({"request_payload": {"approval": {"approved": False}}})
+    assert not _approval_is_valid({"request_payload": {"_requested_by": "user-456", "approval": {"approved": True, "approved_by": "user-123", "approved_at": "now"}}})
     assert not _approval_is_valid({
         "request_payload": {
+            "_requested_by": "n8n-action-queue",
             "approval": {
                 "approved": True,
                 "approved_by": "n8n-action-queue",
