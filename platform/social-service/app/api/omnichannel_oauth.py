@@ -208,7 +208,15 @@ async def callback(code: str | None = None, state: str | None = None, error: str
 
     async with SessionLocal() as s:
         connection_id = str(uuid4())
-        scopes = _scopes(provider, platform)
+        requested_scopes = _scopes(provider, platform)
+        returned_scopes = tokens.get("scope")
+        if isinstance(returned_scopes, str):
+            scopes = returned_scopes.split()
+        elif isinstance(returned_scopes, list):
+            scopes = [str(scope) for scope in returned_scopes]
+        else:
+            # OAuth 2.0 permits omitting "scope" when the grant equals the request.
+            scopes = requested_scopes
         row = (await s.execute(text(
             """INSERT INTO social_connections
                (id, tenant_id, platform, account_type, platform_account_id, username,

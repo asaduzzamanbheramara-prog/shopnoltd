@@ -19,6 +19,8 @@ class Settings(BaseSettings):
     provider_oauth_state_secret: str | None = None
     provider_oauth_redirect_uri: str = "https://shopnoltd.dpdns.org/connections/oauth/callback"
     provider_oauth_success_redirect_uri: str = "https://shopnoltd.dpdns.org/connections"
+    # Disabled by default. Enable only after provider credentials and sandbox E2E tests pass.
+    omnichannel_executor_enabled: bool = False
     google_client_id: str | None = None
     google_client_secret: str | None = None
     microsoft_client_id: str | None = None

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hmac
 import os
+from datetime import datetime, timezone
 from typing import Any
 from uuid import uuid4
 
@@ -99,6 +100,7 @@ class ActionIn(BaseModel):
     target_id: str | None = None
     idempotency_key: str | None = None
     payload: dict[str, Any] = Field(default_factory=dict)
+    approved: bool = False
 
 
 @router.get("/providers")
@@ -224,6 +226,7 @@ async def delete_connection(connection_id: str, user=Depends(current_user), s: A
 @router.post("/connections", status_code=201)
 async def add_connection(body: ConnectionIn, user=Depends(registration_user), s: AsyncSession = Depends(db)):
     platform = body.platform.lower().strip()
+    action = body.action.lower().strip()
     if platform not in PLATFORMS:
         raise HTTPException(400, f"unsupported platform: {platform}")
     tenant_id = user.get("tenant_id", "default")
@@ -288,18 +291,66 @@ async def queue_action(body: ActionIn, user=Depends(action_user), s: AsyncSessio
     tenant_id = user.get("tenant_id", "default")
     capability = (await s.execute(text(
         "SELECT availability FROM platform_capabilities WHERE platform=:platform AND action=:action"
-    ), {"platform": platform, "action": body.action})).scalar_one_or_none()
+    ), {"platform": platform, "action": action})).scalar_one_or_none()
     if capability is None:
-        raise HTTPException(400, f"unsupported action for platform: {platform}/{body.action}")
+        raise HTTPException(400, f"unsupported action for platform: {platform}/{action}")
+
+    supported_provider_actions = {
+        ("gmail", "send_message"), ("outlook", "send_message"),
+        ("x", "create_post"), ("linkedin", "create_post"),
+    }
+    if (platform, action) in supported_provider_actions and not body.connection_id:
+        raise HTTPException(422, "connection_id is required for this provider action")
+    if (platform, action) in supported_provider_actions and not (body.idempotency_key or "").strip():
+        raise HTTPException(422, "idempotency_key is required for this provider action")
 
     if body.connection_id:
         connection = (await s.execute(text(
-            "SELECT platform FROM social_connections WHERE tenant_id=:tenant AND id=:id"
-        ), {"tenant": tenant_id, "id": body.connection_id})).scalar_one_or_none()
+            "SELECT platform, status FROM social_connections WHERE tenant_id=:tenant AND id=:id"
+        ), {"tenant": tenant_id, "id": body.connection_id})).mappings().one_or_none()
         if connection is None:
             raise HTTPException(404, "connection not found")
-        if connection != platform:
+        if connection["platform"] != platform:
             raise HTTPException(409, "connection platform does not match action platform")
+        if (platform, action) in supported_provider_actions and connection["status"] != "connected":
+            raise HTTPException(409, "provider connection is not connected")
+        if (platform, action) in supported_provider_actions:
+            owned = (await s.execute(text("""
+                SELECT 1
+                FROM social_connections c
+                JOIN omnichannel_oauth_tokens t
+                  ON t.tenant_id=c.tenant_id
+                 AND t.platform=c.platform
+                 AND t.provider_account_id=c.platform_account_id
+                WHERE c.tenant_id=:tenant AND c.id=:id
+                  AND c.platform=:platform
+                  AND t.user_id=:user AND t.status='connected'
+            """), {
+                "tenant": tenant_id, "id": body.connection_id,
+                "platform": platform, "user": str(user.get("sub") or user.get("user_id") or ""),
+            })).scalar_one_or_none()
+            if not owned:
+                raise HTTPException(404, "connected account not found for this user")
+
+    # Any action with external side effects requires an explicit approval from an
+    # authenticated human. The n8n/service tokens are intentionally not approvers.
+    side_effect_actions = {
+        "send_message", "send_email", "create_post", "schedule_post", "comment",
+        "reply", "like", "reaction", "share", "follow", "unfollow",
+        "friend_request", "live", "call",
+    }
+    payload = dict(body.payload)
+    if action in side_effect_actions:
+        if not body.approved:
+            raise HTTPException(403, "explicit human approval is required for provider actions")
+        if user.get("automation") or str(user.get("sub") or "").startswith(("n8n-", "automation-")):
+            raise HTTPException(403, "automation identities cannot approve provider actions")
+        payload["_requested_by"] = str(user.get("sub") or user.get("user_id") or "")
+        payload["approval"] = {
+            "approved": True,
+            "approved_by": str(user.get("sub") or user.get("user_id") or ""),
+            "approved_at": datetime.now(timezone.utc).isoformat(),
+        }
 
     action_id = str(uuid4())
     row = (await s.execute(text(
@@ -312,10 +363,10 @@ async def queue_action(body: ActionIn, user=Depends(action_user), s: AsyncSessio
         RETURNING id, status, platform, action, created_at"""
     ), {
         "id": action_id, "tenant": tenant_id, "connection_id": body.connection_id or "",
-        "client": body.client_id, "platform": platform, "action": body.action,
+        "client": body.client_id, "platform": platform, "action": action,
         "target_type": body.target_type, "target_id": body.target_id,
         "idem": body.idempotency_key or action_id,
-        "payload": __import__("json").dumps(body.payload),
+        "payload": __import__("json").dumps(payload),
     })).mappings().one()
     await s.commit()
     return {**dict(row), "capability": capability}

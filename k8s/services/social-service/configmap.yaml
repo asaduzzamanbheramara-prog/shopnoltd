@@ -14,3 +14,5 @@ data:
   KEYCLOAK_AUDIENCE: "api-service"
   STORAGE_SERVICE_URL: "http://storage-service.shopno-platform.svc.cluster.local:80"
   CORS_ORIGINS: "https://*.shopnoltd.dpdns.org"
+  # Keep provider side effects disabled until sandbox E2E and credentials are verified.
+  OMNICHANNEL_EXECUTOR_ENABLED: "false"

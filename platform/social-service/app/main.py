@@ -1,5 +1,6 @@
 """Shopnoltd Social Service."""
 
+import asyncio
 from contextlib import asynccontextmanager
 
 import structlog
@@ -18,14 +19,37 @@ log = structlog.get_logger()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    executor_stop: asyncio.Event | None = None
+    executor_task: asyncio.Task | None = None
+
     async def _check_database():
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
     await wait_for_dependencies("social-service", _check_database, redis_client)
+    if settings.omnichannel_executor_enabled:
+        from app.workers.omnichannel_executor import run_executor
+        executor_stop = asyncio.Event()
+        executor_task = asyncio.create_task(run_executor(executor_stop), name="omnichannel-action-executor")
+        log.warning("social-service.omnichannel_executor_enabled")
+    else:
+        log.info("social-service.omnichannel_executor_disabled")
     log.info("social-service.started", env=settings.env)
-    yield
-    await engine.dispose()
-    await redis_client.aclose()
+    try:
+        yield
+    finally:
+        if executor_stop is not None:
+            executor_stop.set()
+        if executor_task is not None:
+            try:
+                await asyncio.wait_for(executor_task, timeout=30)
+            except asyncio.TimeoutError:
+                executor_task.cancel()
+                try:
+                    await executor_task
+                except asyncio.CancelledError:
+                    pass
+        await engine.dispose()
+        await redis_client.aclose()
 
 
 app = FastAPI(title="Shopnoltd Social Service", version="0.6.0", lifespan=lifespan)
