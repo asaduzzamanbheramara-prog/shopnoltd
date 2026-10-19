@@ -867,6 +867,7 @@ jobs:
             fi
 
             operation_phase="$(jq -r '.status.operationState.phase // ""' <<<"$state")"
+            live_operation="$(jq -r 'if .operation == null then "false" else "true" end' <<<"$state")"
             operation_revision="$(jq -r '.operation.sync.revision // ""' <<<"$state")"
             status_operation_revision="$(jq -r '.status.operationState.operation.sync.revision // ""' <<<"$state")"
             sync_revision="$(jq -r '.status.sync.revision // ""' <<<"$state")"
@@ -897,7 +898,7 @@ jobs:
             # target before this run could observe its own operation history, the live
             # revision plus Synced/Healthy state is authoritative. Argo can retain an
             # older status.operationState revision after an automated sync.
-            if [ -z "$operation_revision" ] &&
+            if [ "$live_operation" = "false" ] &&
               [ "$operation_phase" = "Succeeded" ] &&
               [ "$sync_revision" = "$GIT_REVISION" ] &&
               [ "$sync_status" = "Synced" ] &&
