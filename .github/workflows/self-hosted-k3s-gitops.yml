@@ -387,10 +387,33 @@ jobs:
                 # status subresource consistently. Try it first, then the ordinary resource
                 # endpoint only if that request fails; in either case verify the persisted result.
                 if ! timeout 30s kubectl --request-timeout=20s -n "$ARGOCD_NAMESPACE" patch application "$ARGOCD_APP" --subresource=status --type=merge -p "$status_patch"; then
-                  echo 'Status-subresource patch endpoint failed; attempting ordinary Application patch as a compatibility fallback.'
-                  timeout 30s kubectl --request-timeout=20s -n "$ARGOCD_NAMESPACE" patch application "$ARGOCD_APP" --type=merge -p "$status_patch"
+                  echo 'Status-subresource patch endpoint failed; checking whether the root Application still exists.'
+                  if timeout 15s kubectl --request-timeout=10s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o json >/dev/null 2>&1; then
+                    echo 'Application exists; attempting ordinary Application patch as a compatibility fallback.'
+                    timeout 30s kubectl --request-timeout=20s -n "$ARGOCD_NAMESPACE" patch application "$ARGOCD_APP" --type=merge -p "$status_patch"
+                  else
+                    echo 'Root Application disappeared during stale-operation recovery; restoring only the repository-defined root Application manifest.'
+                    test -s k8s/argocd/shopnoltd-root.yaml
+                    timeout 45s kubectl --request-timeout=30s apply -f k8s/argocd/shopnoltd-root.yaml
+                    restored=0
+                    for _ in {1..12}; do
+                      restored_json="$(timeout 15s kubectl --request-timeout=10s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o json 2>/dev/null || true)"
+                      if jq -e --arg repo_url "https://github.com/asaduzzamanbheramara-prog/shopnoltd.git" '.metadata.name == "shopnoltd" and .metadata.namespace == "argocd" and .spec.source.repoURL == $repo_url and .spec.source.path == "k8s"' <<<"$restored_json" >/dev/null 2>&1; then
+                        restored=1
+                        break
+                      fi
+                      sleep 5
+                    done
+                    if [ "$restored" -ne 1 ]; then
+                      echo 'ERROR: repository-defined root Application did not become readable with the expected source after apply.'
+                      exit 1
+                    fi
+                    echo 'Repository-defined root Application is restored and its source was verified; the new object has no stale operation record.'
+                    operation_stopped=1
+                  fi
                 fi
-                verify_state="$(timeout 20s kubectl --request-timeout=15s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o json)"
+                if [ "$operation_stopped" -ne 1 ]; then
+                  verify_state="$(timeout 20s kubectl --request-timeout=15s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o json)"
                 verify_phase="$(jq -r '.status.operationState.phase // ""' <<<"$verify_state")"
                 verify_live_operation="$(jq -r 'if .operation == null then "false" else "true" end' <<<"$verify_state")"
                 if [ "$verify_live_operation" = "false" ] && [ "$verify_phase" != "Running" ] && [ "$verify_phase" != "Terminating" ]; then
