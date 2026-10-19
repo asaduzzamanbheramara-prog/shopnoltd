@@ -1,0 +1,41 @@
+name: Public frontend browser smoke
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'platform/web-portal/**'
+      - 'tests/browser-role/public-frontend.spec.js'
+      - 'tests/browser-role/playwright.config.js'
+      - 'tests/browser-role/package.json'
+      - '.github/workflows/public-frontend-browser-smoke.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: public-frontend-browser-smoke
+  cancel-in-progress: false
+
+jobs:
+  public-browser:
+    name: Public frontend browser checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SHOPNOLTD_BASE_URL: https://shopnoltd.dpdns.org
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install isolated Playwright test dependencies
+        working-directory: tests/browser-role
+        run: npm install --no-audit --no-fund
+      - name: Install Chromium
+        working-directory: tests/browser-role
+        run: npx playwright install --with-deps chromium
+      - name: Exercise public pages in Chromium
+        working-directory: tests/browser-role
+        run: npx playwright test public-frontend.spec.js
