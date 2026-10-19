@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hmac
 import os
+from datetime import datetime, timezone
 from typing import Any
 from uuid import uuid4
 
@@ -99,6 +100,7 @@ class ActionIn(BaseModel):
     target_id: str | None = None
     idempotency_key: str | None = None
     payload: dict[str, Any] = Field(default_factory=dict)
+    approved: bool = False
 
 
 @router.get("/providers")
@@ -301,6 +303,25 @@ async def queue_action(body: ActionIn, user=Depends(action_user), s: AsyncSessio
         if connection != platform:
             raise HTTPException(409, "connection platform does not match action platform")
 
+    # Any action with external side effects requires an explicit approval from an
+    # authenticated human. The n8n/service tokens are intentionally not approvers.
+    side_effect_actions = {
+        "send_message", "send_email", "create_post", "schedule_post", "comment",
+        "reply", "like", "reaction", "share", "follow", "unfollow",
+        "friend_request", "live", "call",
+    }
+    payload = dict(body.payload)
+    if body.action in side_effect_actions:
+        if not body.approved:
+            raise HTTPException(403, "explicit human approval is required for provider actions")
+        if user.get("automation") or str(user.get("sub") or "").startswith(("n8n-", "automation-")):
+            raise HTTPException(403, "automation identities cannot approve provider actions")
+        payload["approval"] = {
+            "approved": True,
+            "approved_by": str(user.get("sub") or user.get("user_id") or ""),
+            "approved_at": datetime.now(timezone.utc).isoformat(),
+        }
+
     action_id = str(uuid4())
     row = (await s.execute(text(
         """INSERT INTO platform_actions
@@ -315,7 +336,7 @@ async def queue_action(body: ActionIn, user=Depends(action_user), s: AsyncSessio
         "client": body.client_id, "platform": platform, "action": body.action,
         "target_type": body.target_type, "target_id": body.target_id,
         "idem": body.idempotency_key or action_id,
-        "payload": __import__("json").dumps(body.payload),
+        "payload": __import__("json").dumps(payload),
     })).mappings().one()
     await s.commit()
     return {**dict(row), "capability": capability}
