@@ -916,6 +916,53 @@ jobs:
               exit 0
             fi
 
+            # A stale operationState can reappear after a controller restart even when
+            # the live operation has ended. Recover only when the exact requested revision
+            # is live Synced/Healthy, the stale hook signature matches, the hook Job is
+            # absent, and the PostgreSQL prerequisite migration is Complete. Keep the
+            # operation history Failed (never falsely Succeeded), then verify live state.
+            if [ "$live_operation" = "false" ] &&
+              { [ "$operation_phase" = "Running" ] || [ "$operation_phase" = "Terminating" ]; } &&
+              [ "$status_operation_revision" = "$GIT_REVISION" ] &&
+              [ "$sync_revision" = "$GIT_REVISION" ] &&
+              [ "$sync_status" = "Synced" ] &&
+              [ "$health_status" = "Healthy" ] &&
+              [ "$started_epoch" -ge "$request_epoch" ]; then
+              status_message="$(jq -r '.status.operationState.message // ""' <<<"$state")"
+              stale_hook_name="$(sed -n 's/.*waiting for \(completion\|deletion\) of hook batch\/Job\/\([^ /]*\).*/\2/p' <<<"$status_message")"
+              if [ -n "$stale_hook_name" ] &&
+                { [[ "$status_message" == *"waiting for completion of hook batch/Job/"* ]] || [[ "$status_message" == *"waiting for deletion of hook batch/Job/"* ]]; }; then
+                jobs_json="$(timeout 20s kubectl --request-timeout=15s get jobs -A -o json 2>/dev/null || true)"
+                migration_json="$(timeout 20s kubectl --request-timeout=15s -n "$MIGRATION_NAMESPACE" get job "$MIGRATION_JOB" -o json 2>/dev/null || true)"
+                if jq -e '.items | type == "array"' <<<"$jobs_json" >/dev/null 2>&1 &&
+                  [ "$(jq -r --arg name "$stale_hook_name" '[.items[] | select(.metadata.name == $name)] | length' <<<"$jobs_json")" = "0" ] &&
+                  jq -e 'any(.status.conditions[]?; .type == "Complete" and .status == "True") and (any(.status.conditions[]?; .type == "Failed" and .status == "True") | not)' <<<"$migration_json" >/dev/null 2>&1; then
+                  echo "Confirmed post-restart stale operation history for absent hook $stale_hook_name at exact Synced/Healthy revision; marking history Failed, not Succeeded."
+                  finished_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+                  terminal_message="$status_message [recovery: no live operation; exact requested revision Synced/Healthy; referenced hook absent; PostgreSQL prerequisite migration Complete]"
+                  status_patch="$(jq -cn --arg finished "$finished_at" --arg msg "$terminal_message" '{status:{operationState:{phase:"Failed",finishedAt:$finished,message:$msg}}}')"
+                  if timeout 30s kubectl --request-timeout=20s -n "$ARGOCD_NAMESPACE" patch application "$ARGOCD_APP" --subresource=status --type=merge -p "$status_patch"; then
+                    verify_state="$(timeout 20s kubectl --request-timeout=15s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o json 2>/dev/null || true)"
+                    verify_phase="$(jq -r '.status.operationState.phase // ""' <<<"$verify_state")"
+                    verify_live_operation="$(jq -r 'if .operation == null then "false" else "true" end' <<<"$verify_state")"
+                    verify_revision="$(jq -r '.status.sync.revision // ""' <<<"$verify_state")"
+                    verify_sync="$(jq -r '.status.sync.status // ""' <<<"$verify_state")"
+                    verify_health="$(jq -r '.status.health.status // ""' <<<"$verify_state")"
+                    if [ "$verify_live_operation" = "false" ] &&
+                      [ "$verify_phase" != "Running" ] && [ "$verify_phase" != "Terminating" ] &&
+                      [ "$verify_revision" = "$GIT_REVISION" ] &&
+                      [ "$verify_sync" = "Synced" ] && [ "$verify_health" = "Healthy" ]; then
+                      echo "Verified stale operation history is terminal ($verify_phase); exact requested revision remains Synced/Healthy with no live operation."
+                      exit 0
+                    fi
+                    echo "Stale-operation fallback did not verify (phase=$verify_phase liveOperation=$verify_live_operation revision=$verify_revision sync=$verify_sync health=$verify_health); continuing bounded wait."
+                  else
+                    echo 'Stale-operation status patch failed; continuing bounded wait without claiming success.'
+                  fi
+                fi
+              fi
+            fi
+
             sleep 10
           done
 
@@ -1055,5 +1102,13 @@ jobs:
           diagnostic 'MIGRATION JOB' -n "$MIGRATION_NAMESPACE" get job "$MIGRATION_JOB" -o yaml
           diagnostic 'MIGRATION PODS' -n "$MIGRATION_NAMESPACE" get pods -l job-name="$MIGRATION_JOB" -o wide
           diagnostic 'MIGRATION LOGS' -n "$MIGRATION_NAMESPACE" logs job/"$MIGRATION_JOB" --all-containers=true --tail=300
+          diagnostic 'POSTGRES DEPLOYMENT' -n shopno-data get deployment postgres -o yaml
+          diagnostic 'POSTGRES PODS' -n shopno-data get pods -l app.kubernetes.io/name=postgres -o wide
+          diagnostic 'POSTGRES PVC' -n shopno-data get pvc postgres-data -o yaml
+          diagnostic 'POSTGRES EVENTS' -n shopno-data get events --sort-by=.lastTimestamp
+          for pod in $(kubectl --request-timeout=20s -n shopno-data get pods -l app.kubernetes.io/name=postgres -o name 2>/dev/null); do
+            diagnostic "POSTGRES POD DETAILS $pod" -n shopno-data describe "$pod"
+            diagnostic "POSTGRES POD LOGS $pod" -n shopno-data logs "$pod" --all-containers=true --tail=200
+          done
           diagnostic 'PLATFORM PODS' -n "$PLATFORM_NAMESPACE" get pods -o wide
           diagnostic 'CLOUDFLARED PODS' -n "$CLOUDFLARED_NAMESPACE" get pods -o wide
