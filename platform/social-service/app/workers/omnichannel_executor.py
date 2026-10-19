@@ -290,7 +290,8 @@ async def process_action(action: dict[str, Any], *, client: httpx.AsyncClient | 
             data = response.json()
         except ValueError:
             data = {}
-        provider_id = data.get("id") or data.get("message", {}).get("id") or response.headers.get("x-restli-id")
+        nested_data = data.get("data") if isinstance(data, dict) else {}
+        provider_id = (data.get("id") if isinstance(data, dict) else None) or (nested_data.get("id") if isinstance(nested_data, dict) else None) or response.headers.get("x-restli-id")
         await _finish(action_id, "succeeded", result={
             "provider": TOKEN_PROVIDER[platform],
             "provider_id": str(provider_id) if provider_id else None,
