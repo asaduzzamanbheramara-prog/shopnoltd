@@ -1,0 +1,73 @@
+name: Shopnoltd Read-only Live K3s Inventory
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: read-only-k3s-inventory
+  cancel-in-progress: false
+
+jobs:
+  inventory:
+    name: Collect live workload inventory (read-only)
+    runs-on: [self-hosted, linux]
+    timeout-minutes: 10
+    steps:
+      - name: Verify Kubernetes access
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v kubectl
+          kubectl --request-timeout=15s config current-context
+          kubectl --request-timeout=20s get nodes -o wide
+
+      - name: Collect read-only workload inventory
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p inventory
+          {
+            echo "Generated UTC: $(date -u +%FT%TZ)"
+            echo "Git revision: ${GITHUB_SHA}"
+            echo
+            echo "=== Nodes ==="
+            kubectl --request-timeout=20s get nodes -o wide
+            echo
+            echo "=== Root Argo CD application ==="
+            kubectl --request-timeout=20s -n argocd get application shopnoltd -o wide
+            echo
+            echo "=== Deployments: desired / ready / available / updated ==="
+            kubectl --request-timeout=30s get deployments -A -o custom-columns='NAMESPACE:.metadata.namespace,NAME:.metadata.name,DESIRED:.spec.replicas,READY:.status.readyReplicas,AVAILABLE:.status.availableReplicas,UPDATED:.status.updatedReplicas'
+            echo
+            echo "=== StatefulSets ==="
+            kubectl --request-timeout=30s get statefulsets -A -o wide
+            echo
+            echo "=== DaemonSets ==="
+            kubectl --request-timeout=30s get daemonsets -A -o wide
+            echo
+            echo "=== PVCs (metadata/status only) ==="
+            kubectl --request-timeout=30s get pvc -A -o wide
+            echo
+            echo "=== Ingress ==="
+            kubectl --request-timeout=30s get ingress -A -o wide
+            echo
+            echo "=== Pods not Running or Succeeded ==="
+            kubectl --request-timeout=30s get pods -A --field-selector=status.phase!=Running,status.phase!=Succeeded -o wide || true
+            echo
+            echo "=== Node resource usage (if metrics-server is available) ==="
+            kubectl --request-timeout=20s top nodes || true
+            echo
+            echo "=== Pod resource usage (if metrics-server is available) ==="
+            kubectl --request-timeout=30s top pods -A || true
+          } | tee inventory/live-k3s-inventory.txt
+
+      - name: Upload sanitized inventory artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: shopnoltd-live-k3s-inventory
+          path: inventory/live-k3s-inventory.txt
+          if-no-files-found: error
+          retention-days: 7
