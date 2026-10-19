@@ -1,0 +1,164 @@
+name: Codespaces zero-replica service preflight
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'platform/interior-service/**'
+      - 'platform/license-service/**'
+      - 'platform/training-service/**'
+      - 'shared/libraries/python/shopno_core/**'
+      - 'k8s/services/interior-service/**'
+      - 'k8s/services/license-service/**'
+      - 'k8s/services/training-service/**'
+      - '.github/workflows/codespaces-zero-replica-preflight.yml'
+      - 'docs/codespaces-zero-replica-preflight.md'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codespaces-zero-replica-preflight-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  manifest-and-build:
+    name: Validate ${{ matrix.service }} image and manifest
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: shopno_test
+          POSTGRES_PASSWORD: shopno_test
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U shopno_test -d postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: interior-service
+            dockerfile: platform/interior-service/Dockerfile
+            manifest: k8s/services/interior-service/deployment.yaml
+          - service: license-service
+            dockerfile: platform/license-service/Dockerfile
+            manifest: k8s/services/license-service/deployment.yaml
+          - service: training-service
+            dockerfile: platform/training-service/Dockerfile
+            manifest: k8s/services/training-service/deployment.yaml
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Check manifest and dependency-safety invariants
+        env:
+          SERVICE: ${{ matrix.service }}
+          MANIFEST: ${{ matrix.manifest }}
+        run: |
+          set -euo pipefail
+          test -f "$MANIFEST"
+          test -f "platform/$SERVICE/Dockerfile"
+          test -f "platform/$SERVICE/requirements.txt"
+          test -f "platform/$SERVICE/app/main.py"
+          python3 - "$MANIFEST" "$SERVICE" <<'PY'
+          import pathlib
+          import re
+          import sys
+
+          path = pathlib.Path(sys.argv[1])
+          service = sys.argv[2]
+          text = path.read_text()
+          if not re.search(r"(?m)^kind:\s*Deployment\s*$", text):
+              raise SystemExit(f"FAIL: {path} is not a Deployment manifest")
+          if not re.search(r"(?m)^\s*replicas:\s*0\s*(?:#.*)?$", text):
+              raise SystemExit(
+                  f"BLOCKED: expected source manifest for {service} to remain at replicas: 0; "
+                  "do not change production replica counts as part of this preflight"
+              )
+          if not re.search(r"(?m)^\s*name:\s*" + re.escape(service) + r"\s*$", text):
+              raise SystemExit(f"FAIL: {path} does not name {service}")
+          print(f"PASS: {service} manifest exists and remains intentionally at replicas: 0")
+          print("NOTE: this checks repository source only, not the effective live cluster state.")
+          PY
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build test image without publishing
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: false
+          load: true
+          tags: shopnoltd-preflight/${{ matrix.service }}:${{ github.sha }}
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
+
+      - name: Run isolated container health checks
+        env:
+          SERVICE: ${{ matrix.service }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          db_name="${SERVICE//-/_}_test"
+          export PGPASSWORD=shopno_test
+          for attempt in $(seq 1 30); do
+            if psql -h 127.0.0.1 -U shopno_test -d postgres -c "SELECT 1" >/dev/null 2>&1; then
+              break
+            fi
+            sleep 2
+          done
+          psql -h 127.0.0.1 -U shopno_test -d postgres -v ON_ERROR_STOP=1 \
+            -c "CREATE DATABASE \"$db_name\";"
+          image="shopnoltd-preflight/$SERVICE:${GITHUB_SHA}"
+          docker run -d --name "$SERVICE-preflight" \
+            --add-host=host.docker.internal:host-gateway \
+            -p 127.0.0.1:18080:8080 \
+            -e ENV=testing \
+            -e DATABASE_URL="postgresql+asyncpg://shopno_test:shopno_test@host.docker.internal:5432/$db_name" \
+            -e REDIS_HOST=host.docker.internal \
+            -e REDIS_PORT=6379 \
+            "$image"
+          cleanup() {
+            docker logs "$SERVICE-preflight" || true
+            docker rm -f "$SERVICE-preflight" >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+          healthy=0
+          for attempt in $(seq 1 45); do
+            if curl --fail --silent http://127.0.0.1:18080/healthz >/dev/null; then
+              healthy=1
+              break
+            fi
+            if ! docker inspect -f '{{.State.Running}}' "$SERVICE-preflight" 2>/dev/null | grep -qx true; then
+              echo "FAIL: container exited before /healthz became available"
+              exit 1
+            fi
+            sleep 2
+          done
+          test "$healthy" = 1 || { echo "FAIL: /healthz timeout"; exit 1; }
+          curl --fail --silent --show-error http://127.0.0.1:18080/readyz
+          echo
+          echo "PASS: $SERVICE started with disposable PostgreSQL and Redis and passed /healthz and /readyz."
+
+      - name: Confirm this job did not publish or deploy
+        run: |
+          echo "PASS: image build requested with push=false; only the isolated test container was started."
+          echo "No registry push, cluster credentials, production database, production secrets, deployment, replica change, or production traffic change is used."
