@@ -185,7 +185,8 @@ async def process_action(action: dict[str, Any], *, client: httpx.AsyncClient | 
     async with SessionLocal() as session:
         row = (await session.execute(text("""
             SELECT c.status AS connection_status, c.platform_account_id, c.scopes,
-                   c.token_expires_at, t.provider, t.encrypted_access_token, t.status AS token_status
+                   COALESCE(t.token_expires_at, c.token_expires_at) AS token_expires_at,
+                   t.provider, t.encrypted_access_token, t.status AS token_status
             FROM social_connections c
             LEFT JOIN omnichannel_oauth_tokens t
               ON t.tenant_id=c.tenant_id
