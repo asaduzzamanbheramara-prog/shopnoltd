@@ -143,6 +143,48 @@ jobs:
           - name: website-builder
             url: https://shopnoltd.dpdns.org/create-website?type=hr
             mode: web
+          - name: pricing-page
+            url: https://shopnoltd.dpdns.org/pricing
+            mode: web
+          - name: about-page
+            url: https://shopnoltd.dpdns.org/about
+            mode: web
+          - name: contact-page
+            url: https://shopnoltd.dpdns.org/contact
+            mode: web
+          - name: blog-page
+            url: https://shopnoltd.dpdns.org/blog
+            mode: web
+          - name: plugins-page
+            url: https://shopnoltd.dpdns.org/plugins
+            mode: web
+          - name: login-page
+            url: https://shopnoltd.dpdns.org/login
+            mode: web
+          - name: register-page
+            url: https://shopnoltd.dpdns.org/register
+            mode: web
+          - name: domain-registration-page
+            url: https://shopnoltd.dpdns.org/domain-registration
+            mode: web
+          - name: downloads-page
+            url: https://shopnoltd.dpdns.org/downloads
+            mode: web
+          - name: profiles-page
+            url: https://shopnoltd.dpdns.org/profiles
+            mode: web
+          - name: privacy-page
+            url: https://shopnoltd.dpdns.org/privacy
+            mode: web
+          - name: terms-page
+            url: https://shopnoltd.dpdns.org/terms
+            mode: web
+          - name: discover-page
+            url: https://shopnoltd.dpdns.org/discover
+            mode: web
+          - name: social-feed-page
+            url: https://shopnoltd.dpdns.org/feed
+            mode: web
           - name: api
             url: https://api.shopnoltd.dpdns.org/healthz
             mode: health
