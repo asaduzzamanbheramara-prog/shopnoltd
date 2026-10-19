@@ -128,10 +128,12 @@ jobs:
           psql -h 127.0.0.1 -U shopno_test -d postgres -v ON_ERROR_STOP=1 \
             -c "CREATE DATABASE \"$db_name\";"
           image="shopnoltd-preflight/$SERVICE:${GITHUB_SHA}"
-          docker run -d --name "$SERVICE-preflight" --network host \
+          docker run -d --name "$SERVICE-preflight" \
+            --add-host=host.docker.internal:host-gateway \
+            -p 127.0.0.1:18080:8080 \
             -e ENV=testing \
-            -e DATABASE_URL="postgresql+asyncpg://shopno_test:shopno_test@127.0.0.1:5432/$db_name" \
-            -e REDIS_URL="redis://127.0.0.1:6379/0" \
+            -e DATABASE_URL="postgresql+asyncpg://shopno_test:shopno_test@host.docker.internal:5432/$db_name" \
+            -e REDIS_URL="redis://host.docker.internal:6379/0" \
             "$image"
           cleanup() {
             docker logs "$SERVICE-preflight" || true
@@ -140,7 +142,7 @@ jobs:
           trap cleanup EXIT
           healthy=0
           for attempt in $(seq 1 45); do
-            if curl --fail --silent http://127.0.0.1:8080/healthz >/dev/null; then
+            if curl --fail --silent http://127.0.0.1:18080/healthz >/dev/null; then
               healthy=1
               break
             fi
@@ -151,7 +153,7 @@ jobs:
             sleep 2
           done
           test "$healthy" = 1 || { echo "FAIL: /healthz timeout"; exit 1; }
-          curl --fail --silent --show-error http://127.0.0.1:8080/readyz
+          curl --fail --silent --show-error http://127.0.0.1:18080/readyz
           echo
           echo "PASS: $SERVICE started with disposable PostgreSQL and Redis and passed /healthz and /readyz."
 
