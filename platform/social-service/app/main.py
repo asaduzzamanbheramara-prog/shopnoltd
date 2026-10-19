@@ -21,6 +21,7 @@ log = structlog.get_logger()
 async def lifespan(app: FastAPI):
     executor_stop: asyncio.Event | None = None
     executor_task: asyncio.Task | None = None
+
     async def _check_database():
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
@@ -48,7 +49,7 @@ async def lifespan(app: FastAPI):
                 except asyncio.CancelledError:
                     pass
         await engine.dispose()
-    await redis_client.aclose()
+        await redis_client.aclose()
 
 
 app = FastAPI(title="Shopnoltd Social Service", version="0.6.0", lifespan=lifespan)
