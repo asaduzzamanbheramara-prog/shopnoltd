@@ -471,6 +471,7 @@ jobs:
                   else
                     echo "ERROR: abandoned-hook history did not become terminal (phase=$verify_phase liveOperation=$verify_live_operation)."
                   fi
+                  fi
                 else
                   echo "Refusing stale-hook recovery: active/unknown pods remain for $hook_namespace/$stale_hook_name or the pod API response was invalid."
                 fi
