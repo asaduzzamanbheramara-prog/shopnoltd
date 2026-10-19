@@ -232,9 +232,7 @@ jobs:
             cat "$get_error" || true
             exit 1
           fi
-          app_json=''
-          if ! jq -e --arg repo_url "$expected_repo" '.metadata.name == "shopnoltd" and .metadata.namespace == "argocd" and .spec.source.repoURL == $repo_url and .spec.source.path == "k8s"' <<<"$app_json" >/dev/null 2>&1; then
-            echo 'Root Argo CD Application is confirmed absent; restoring the repository-owned root manifest before any workflow step depends on it.'
+          echo 'Root Argo CD Application is confirmed absent; restoring the repository-owned root manifest before any workflow step depends on it.'
             test -s k8s/argocd/shopnoltd-root.yaml
             timeout 45s kubectl --request-timeout=30s apply -f k8s/argocd/shopnoltd-root.yaml
             restored=0
@@ -250,10 +248,7 @@ jobs:
               echo 'ERROR: root Application was not readable with the expected source after restoration.'
               exit 1
             fi
-            echo 'Root Application restoration verified; the workflow will treat this as a fresh reconciliation and require all downstream gates.'
-          else
-            echo 'Root Application exists and its repository/source identity matches the trusted manifest.'
-          fi
+          echo 'Root Application restoration verified; the workflow will treat this as a fresh reconciliation and require all downstream gates.'
 
       - name: Repair migration prerequisite and terminate stale Argo CD operation
         shell: bash
