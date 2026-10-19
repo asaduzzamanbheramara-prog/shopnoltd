@@ -133,7 +133,8 @@ jobs:
             -p 127.0.0.1:18080:8080 \
             -e ENV=testing \
             -e DATABASE_URL="postgresql+asyncpg://shopno_test:shopno_test@host.docker.internal:5432/$db_name" \
-            -e REDIS_URL="redis://host.docker.internal:6379/0" \
+            -e REDIS_HOST=host.docker.internal \
+            -e REDIS_PORT=6379 \
             "$image"
           cleanup() {
             docker logs "$SERVICE-preflight" || true
