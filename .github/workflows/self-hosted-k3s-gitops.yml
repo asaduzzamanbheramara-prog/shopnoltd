@@ -902,7 +902,11 @@ jobs:
           done
 
           echo 'Argo CD full sync verification timed out.'
-          kubectl -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o yaml
+          # Keep diagnostics bounded so an unavailable API server cannot strand the
+          # self-hosted runner and block the next serialized reconciliation.
+          if ! timeout 30s kubectl --request-timeout=20s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o yaml; then
+            echo 'Bounded Argo CD Application diagnostic failed; continuing to fail the verification step.'
+          fi
           exit 1
 
       - name: Verify n8n is healthy before trigger reload
