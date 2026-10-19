@@ -121,5 +121,21 @@ jobs:
           check_object secret shopno-platform ghcr-pull-secret
           check_service shopno-apps onlyoffice onlyoffice-data onlyoffice-config onlyoffice-secret onlyoffice
           check_object secret shopno-apps onlyoffice-tls
+          echo "=== INTERIOR SERVICE POST-DEPLOYMENT VERIFICATION ==="
+          kubectl -n shopno-platform get deployment interior-service -o custom-columns='NAME:.metadata.name,DESIRED:.spec.replicas,READY:.status.readyReplicas,AVAILABLE:.status.availableReplicas,UPDATED:.status.updatedReplicas'
+          kubectl -n shopno-platform get pods -l app.kubernetes.io/name=interior-service -o wide
+          kubectl -n shopno-platform get endpoints interior-service -o wide
+          if kubectl -n shopno-platform rollout status deployment/interior-service --timeout=120s; then
+            echo "PASS: interior-service rollout is complete."
+          else
+            echo "BLOCKED: interior-service rollout is not complete; showing pod status and recent events."
+            kubectl -n shopno-platform describe deployment interior-service || true
+            kubectl -n shopno-platform get events --sort-by=.lastTimestamp | tail -n 40 || true
+          fi
+          echo "=== PUBLIC INTERIOR HEALTH ENDPOINTS ==="
+          for path in healthz readyz; do
+            code="$(curl -k -sS --connect-timeout 8 --max-time 15 -o /dev/null -w '%{http_code}' "https://interior.shopnoltd.dpdns.org/$path" 2>/dev/null || true)"
+            echo "https://interior.shopnoltd.dpdns.org/$path -> HTTP ${code:-no-response}"
+          done
           echo "=== AUDIT SAFETY ==="
           echo "Read-only inventory only: no scale, apply, delete, rollout, secret values, or database contents were requested."
