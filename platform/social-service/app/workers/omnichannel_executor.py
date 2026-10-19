@@ -57,6 +57,7 @@ def _approval_is_valid(action: dict[str, Any]) -> bool:
     return (
         approval.get("approved") is True
         and bool(str(approval.get("approved_by") or "").strip())
+        and not str(approval.get("approved_by") or "").startswith(("n8n-", "automation-"))
         and bool(str(approval.get("approved_at") or "").strip())
     )
 
