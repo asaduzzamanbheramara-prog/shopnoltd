@@ -914,13 +914,19 @@ jobs:
               if [ -n "$stale_hook_name" ] &&
                 { [[ "$status_message" == *"waiting for completion of hook batch/Job/"* ]] || [[ "$status_message" == *"waiting for deletion of hook batch/Job/"* ]]; }; then
                 jobs_json="$(timeout 20s kubectl --request-timeout=15s get jobs -A -o json 2>/dev/null || true)"
-                migration_json="$(timeout 20s kubectl --request-timeout=15s -n "$MIGRATION_NAMESPACE" get job "$MIGRATION_JOB" -o json 2>/dev/null || true)"
+                hook_namespace="$(jq -r --arg name "$stale_hook_name" '[.status.operationState.syncResult.resources[]? | select(.kind == "Job" and .name == $name) | .namespace][0] // ""' <<<"$state")"
+                hook_succeeded="$(jq -r --arg name "$stale_hook_name" 'any(.status.operationState.syncResult.resources[]?; .kind == "Job" and .name == $name and .hookPhase == "Succeeded")' <<<"$state")"
                 if jq -e '.items | type == "array"' <<<"$jobs_json" >/dev/null 2>&1 &&
                   [ "$(jq -r --arg name "$stale_hook_name" '[.items[] | select(.metadata.name == $name)] | length' <<<"$jobs_json")" = "0" ] &&
-                  jq -e 'any(.status.conditions[]?; .type == "Complete" and .status == "True") and (any(.status.conditions[]?; .type == "Failed" and .status == "True") | not)' <<<"$migration_json" >/dev/null 2>&1; then
-                  echo "Confirmed post-restart stale operation history for absent hook $stale_hook_name at exact Synced/Healthy revision; marking history Failed, not Succeeded."
-                  finished_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-                  terminal_message="$status_message [recovery: no live operation; exact requested revision Synced/Healthy; referenced hook absent; PostgreSQL prerequisite migration Complete]"
+                  [ "$hook_succeeded" = "true" ] && [ -n "$hook_namespace" ]; then
+                  hook_pods_json="$(timeout 20s kubectl --request-timeout=15s -n "$hook_namespace" get pods -l "job-name=$stale_hook_name" -o json 2>/dev/null || true)"
+                  if ! jq -e '.items | type == "array"' <<<"$hook_pods_json" >/dev/null 2>&1 ||
+                    [ "$(jq -r '[.items[]? | select(.status.phase == "Running" or .status.phase == "Pending" or .status.phase == "Unknown")] | length' <<<"$hook_pods_json")" != "0" ]; then
+                    echo "Stale-operation success fallback refused: hook pod state for $hook_namespace/$stale_hook_name is active or unknown."
+                  else
+                    echo "Confirmed Argo recorded hook $hook_namespace/$stale_hook_name Succeeded, the Job is absent, no active hook pod remains, and the exact revision is Synced/Healthy; marking only stale history Failed."
+                    finished_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+                    terminal_message="$status_message [recovery: Argo syncResult records hook Succeeded; no live operation; exact requested revision Synced/Healthy; hook Job absent and no active pod]"
                   status_patch="$(jq -cn --arg finished "$finished_at" --arg msg "$terminal_message" '{status:{operationState:{phase:"Failed",finishedAt:$finished,message:$msg}}}')"
                   if timeout 30s kubectl --request-timeout=20s -n "$ARGOCD_NAMESPACE" patch application "$ARGOCD_APP" --subresource=status --type=merge -p "$status_patch"; then
                     verify_state="$(timeout 20s kubectl --request-timeout=15s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o json 2>/dev/null || true)"
@@ -939,6 +945,7 @@ jobs:
                     echo "Stale-operation fallback did not verify (phase=$verify_phase liveOperation=$verify_live_operation revision=$verify_revision sync=$verify_sync health=$verify_health); continuing bounded wait."
                   else
                     echo 'Stale-operation status patch failed; continuing bounded wait without claiming success.'
+                  fi
                   fi
                 fi
               fi
