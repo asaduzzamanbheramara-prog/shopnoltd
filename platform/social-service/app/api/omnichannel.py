@@ -306,12 +306,14 @@ async def queue_action(body: ActionIn, user=Depends(action_user), s: AsyncSessio
 
     if body.connection_id:
         connection = (await s.execute(text(
-            "SELECT platform FROM social_connections WHERE tenant_id=:tenant AND id=:id"
-        ), {"tenant": tenant_id, "id": body.connection_id})).scalar_one_or_none()
+            "SELECT platform, status FROM social_connections WHERE tenant_id=:tenant AND id=:id"
+        ), {"tenant": tenant_id, "id": body.connection_id})).mappings().one_or_none()
         if connection is None:
             raise HTTPException(404, "connection not found")
-        if connection != platform:
+        if connection["platform"] != platform:
             raise HTTPException(409, "connection platform does not match action platform")
+        if (platform, action) in supported_provider_actions and connection["status"] != "connected":
+            raise HTTPException(409, "provider connection is not connected")
         if (platform, action) in supported_provider_actions:
             owned = (await s.execute(text("""
                 SELECT 1
