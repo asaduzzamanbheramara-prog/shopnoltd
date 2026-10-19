@@ -25,6 +25,29 @@ jobs:
   manifest-and-build:
     name: Validate ${{ matrix.service }} image and manifest
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: shopno_test
+          POSTGRES_PASSWORD: shopno_test
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U shopno_test -d postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
     strategy:
       fail-fast: false
       matrix:
@@ -83,11 +106,56 @@ jobs:
           context: .
           file: ${{ matrix.dockerfile }}
           push: false
+          load: true
           tags: shopnoltd-preflight/${{ matrix.service }}:${{ github.sha }}
           cache-from: type=gha,scope=${{ matrix.service }}
           cache-to: type=gha,mode=max,scope=${{ matrix.service }}
 
+      - name: Run isolated container health checks
+        env:
+          SERVICE: ${{ matrix.service }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          db_name="${SERVICE//-/_}_test"
+          export PGPASSWORD=shopno_test
+          for attempt in $(seq 1 30); do
+            if psql -h 127.0.0.1 -U shopno_test -d postgres -c "SELECT 1" >/dev/null 2>&1; then
+              break
+            fi
+            sleep 2
+          done
+          psql -h 127.0.0.1 -U shopno_test -d postgres -v ON_ERROR_STOP=1 \
+            -c "CREATE DATABASE \"$db_name\";"
+          image="shopnoltd-preflight/$SERVICE:${GITHUB_SHA}"
+          docker run -d --name "$SERVICE-preflight" --network host \
+            -e ENV=testing \
+            -e DATABASE_URL="postgresql+asyncpg://shopno_test:shopno_test@127.0.0.1:5432/$db_name" \
+            -e REDIS_URL="redis://127.0.0.1:6379/0" \
+            "$image"
+          cleanup() {
+            docker logs "$SERVICE-preflight" || true
+            docker rm -f "$SERVICE-preflight" >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+          healthy=0
+          for attempt in $(seq 1 45); do
+            if curl --fail --silent http://127.0.0.1:8080/healthz >/dev/null; then
+              healthy=1
+              break
+            fi
+            if ! docker inspect -f '{{.State.Running}}' "$SERVICE-preflight" 2>/dev/null | grep -qx true; then
+              echo "FAIL: container exited before /healthz became available"
+              exit 1
+            fi
+            sleep 2
+          done
+          test "$healthy" = 1 || { echo "FAIL: /healthz timeout"; exit 1; }
+          curl --fail --silent --show-error http://127.0.0.1:8080/readyz
+          echo
+          echo "PASS: $SERVICE started with disposable PostgreSQL and Redis and passed /healthz and /readyz."
+
       - name: Confirm this job did not publish or deploy
         run: |
-          echo "PASS: image build requested with push=false."
-          echo "No registry push, cluster credentials, deployment, replica change, or production traffic change is performed by this workflow."
+          echo "PASS: image build requested with push=false; only the isolated test container was started."
+          echo "No registry push, cluster credentials, production database, production secrets, deployment, replica change, or production traffic change is used."
