@@ -10,23 +10,23 @@ Use GitHub-hosted CI to establish whether the three Python services below can be
 - `license-service`
 - `training-service`
 
-The workflow `.github/workflows/codespaces-zero-replica-preflight.yml` verifies each service's source files, confirms the corresponding checked-in Deployment manifest still declares `replicas: 0`, and builds the image without publishing it.
+The workflow `.github/workflows/codespaces-zero-replica-preflight.yml` verifies each service's source files, confirms the corresponding checked-in Deployment manifest still declares `replicas: 0`, builds the image without publishing it, then starts it against disposable PostgreSQL and Redis service containers and checks `/healthz` and `/readyz`.
 
 ## What a PASS proves
 
 - The selected Docker build completes from the checked-out commit.
 - Required source files exist.
 - The source manifest still declares zero replicas at the tested commit.
+- The image starts in an isolated GitHub Actions runner with disposable PostgreSQL and Redis and passes `/healthz` and `/readyz`.
 
 ## What a PASS does not prove
 
 - The live cluster has zero replicas or matches the repository manifest.
-- A container can start and become ready.
-- PostgreSQL, Redis, PVCs, secrets, queues, ingress, or provider dependencies are available.
+- Production PostgreSQL, Redis, PVCs, secrets, queues, ingress, or provider dependencies are available. The smoke test uses only disposable PostgreSQL/Redis and test-only credentials.
 - A service has been deployed to a Codespace, or that it can remain running when the Codespace stops.
 - Production traffic has moved away from the PC-hosted K3s cluster.
 
-Each service's application startup calls dependency checks for PostgreSQL and Redis and runs SQLAlchemy metadata creation. Do not start these services against production dependencies for a smoke test. A separate isolated test stack with disposable PostgreSQL and Redis, test-only credentials, and explicit cleanup is required before runtime testing.
+Each service's application startup calls dependency checks for PostgreSQL and Redis and runs SQLAlchemy metadata creation. The workflow provides disposable PostgreSQL and Redis, test-only credentials, and cleanup. A successful smoke test is only a container-level check, not a production deployment.
 
 ## Safety and rollout rules
 
@@ -40,7 +40,7 @@ Each service's application startup calls dependency checks for PostgreSQL and Re
 ## Acceptance gates
 
 - [ ] Workflow passes for all three service builds.
-- [ ] A dedicated isolated PostgreSQL + Redis test environment starts each service and passes `/healthz` and `/readyz`.
+- [ ] The workflow's isolated PostgreSQL + Redis runtime smoke test passes for all three services.
 - [ ] No production secrets/data are used in test.
 - [ ] All remaining zero-replica workloads are classified individually; stateful, scheduled, worker, and cluster-dependent workloads are not bulk-enabled.
 - [ ] Durable runtime, persistent data, DNS/ingress, TLS, observability, and rollback are proven before production cutover.
