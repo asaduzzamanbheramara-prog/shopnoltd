@@ -54,6 +54,37 @@ jobs:
             echo "=== Ingress ==="
             kubectl --request-timeout=30s get ingress -A -o wide
             echo
+            echo "=== Services and EndpointSlices for zero-replica deployments ==="
+            # Read-only diagnostic: never scales workloads or prints Secret values.
+            while IFS=            echo "=== Pods not Running or Succeeded ==="
+            kubectl --request-timeout=30s get pods -A --field-selector=status.phase!=Running,status.phase!=Succeeded -o wide || true
+            echo
+            echo "=== Node resource usage (if metrics-server is available) ==="
+            kubectl --request-timeout=20s top nodes || true
+            echo
+            echo "=== Pod resource usage (if metrics-server is available) ==="
+            kubectl --request-timeout=30s top pods -A || true
+          } | tee inventory/live-k3s-inventory.txt
+
+      - name: Upload sanitized inventory artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: shopnoltd-live-k3s-inventory
+          path: inventory/live-k3s-inventory.txt
+          if-no-files-found: error
+          retention-days: 7
+\t' read -r ns name replicas; do
+              [ -n "${ns:-}" ] || continue
+              [ "${replicas:-}" = "0" ] || continue
+              echo "--- Deployment $ns/$name (desired replicas: 0) ---"
+              kubectl --request-timeout=15s -n "$ns" get deployment "$name" -o wide
+              kubectl --request-timeout=15s -n "$ns" get deployment "$name" -o jsonpath='image={.spec.template.spec.containers[*].image}{"\\n"}'
+              echo "Matching Services:"
+              kubectl --request-timeout=15s -n "$ns" get services -o wide
+              echo "EndpointSlices in namespace (addresses only; no Secret data):"
+              kubectl --request-timeout=15s -n "$ns" get endpointslices.discovery.k8s.io -o custom-columns='NAME:.metadata.name,SERVICE:.metadata.labels.kubernetes\\.io/service-name,READY:.endpoints[*].conditions.ready,ADDRESSES:.endpoints[*].addresses[*]' || true
+            done < <(kubectl --request-timeout=30s get deployments -A -o custom-columns='NAMESPACE:.metadata.namespace,NAME:.metadata.name,REPLICAS:.spec.replicas' --no-headers)
+            echo
             echo "=== Pods not Running or Succeeded ==="
             kubectl --request-timeout=30s get pods -A --field-selector=status.phase!=Running,status.phase!=Succeeded -o wide || true
             echo
