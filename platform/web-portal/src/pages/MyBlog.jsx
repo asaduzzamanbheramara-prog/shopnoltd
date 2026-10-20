@@ -111,6 +111,65 @@ export default function MyBlog() {
     setForm(EMPTY)
   }
 
+  async function importEditorialDrafts() {
+    const articles = [
+      'choose-a-domain-name.md',
+      'domain-registration-checklist.md',
+      'choosing-the-right-plan.md',
+      'data-management-basics.md',
+      'shared-workspace-for-small-business.md',
+    ]
+    setBusy(true)
+    setMessage('Importing repository articles as drafts…')
+    let imported = 0
+    let skipped = 0
+    try {
+      const existing = new Set(posts.map(post => post.slug))
+      for (const filename of articles) {
+        const url = 'https://raw.githubusercontent.com/asaduzzamanbheramara-prog/shopnoltd/main/docs/blog/' + filename
+        const response = await fetch(url)
+        if (!response.ok) throw new Error('Could not fetch ' + filename + ' (' + response.status + ')')
+        const markdown = await response.text()
+        const match = markdown.match(/^---\s*\n([\s\S]*?)\n---\s*\n?/)
+        const frontmatter = match?.[1] || ''
+        const field = (name) => {
+          const line = frontmatter.split('\n').find(item => item.trimStart().startsWith(name + ':'))
+          if (!line) return ''
+          const value = line.slice(line.indexOf(':') + 1).trim()
+          return value.replace(/^(['"])(.*)\1$/, '$2').trim()
+        }
+        const title = field('title') || filename.replace(/\.md$/, '').replaceAll('-', ' ')
+        const slug = field('slug') || filename.replace(/\.md$/, '')
+        const excerpt = field('meta_description')
+        if (existing.has(slug)) {
+          skipped += 1
+          continue
+        }
+        let body = markdown.replace(/^---\s*\n[\s\S]*?\n---\s*\n?/, '')
+        body = body
+          .replace(/^#{1,6}\s+/gm, '')
+          .replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1')
+          .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1 ($2)')
+          .replace(/\*\*(.*?)\*\*/g, '$1')
+          .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '$1')
+          .replace(/^-\s+/gm, '• ')
+          .replace(/^\d+\.\s+/gm, '• ')
+          .trim()
+        await platformApi.createBlogPost({ title, slug, excerpt, content: body, cover_image: null, status: 'draft' })
+        existing.add(slug)
+        imported += 1
+      }
+      await load()
+      setForm(EMPTY)
+      setMessage('Imported ' + imported + ' draft(s); skipped ' + skipped + ' existing article(s). Review each draft before publishing.')
+    } catch (e) {
+      await load()
+      setMessage('Import stopped after ' + imported + ' draft(s): ' + (e?.message || 'request failed') + '. Refresh and retry; existing slugs will be skipped.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   return (
     <main style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 20px 80px', fontFamily: 'system-ui, sans-serif' }}>
       <h1>My Blog</h1>
@@ -119,6 +178,7 @@ export default function MyBlog() {
       <div style={{ marginBottom: 16, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <button onClick={newPost} disabled={busy || uploading}>New post</button>
         <button onClick={load} disabled={busy || uploading || loading}>{loading ? 'Loading…' : 'Refresh'}</button>
+        <button onClick={importEditorialDrafts} disabled={busy || uploading || loading}>Import 5 GitHub drafts</button>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(260px,.8fr) minmax(420px,1.4fr)', gap: 24 }}>
         <section>
