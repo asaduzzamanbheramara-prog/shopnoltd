@@ -53,12 +53,15 @@ jobs:
       matrix:
         include:
           - service: interior-service
+            expected_replicas: 1
             dockerfile: platform/interior-service/Dockerfile
             manifest: k8s/services/interior-service/deployment.yaml
           - service: license-service
+            expected_replicas: 0
             dockerfile: platform/license-service/Dockerfile
             manifest: k8s/services/license-service/deployment.yaml
           - service: training-service
+            expected_replicas: 0
             dockerfile: platform/training-service/Dockerfile
             manifest: k8s/services/training-service/deployment.yaml
 
@@ -70,30 +73,37 @@ jobs:
         env:
           SERVICE: ${{ matrix.service }}
           MANIFEST: ${{ matrix.manifest }}
+          EXPECTED_REPLICAS: ${{ matrix.expected_replicas }}
         run: |
           set -euo pipefail
           test -f "$MANIFEST"
           test -f "platform/$SERVICE/Dockerfile"
           test -f "platform/$SERVICE/requirements.txt"
           test -f "platform/$SERVICE/app/main.py"
-          python3 - "$MANIFEST" "$SERVICE" <<'PY'
+          python3 - "$MANIFEST" "$SERVICE" "$EXPECTED_REPLICAS" <<'PY'
           import pathlib
           import re
           import sys
 
           path = pathlib.Path(sys.argv[1])
           service = sys.argv[2]
+          expected_replicas = int(sys.argv[3])
           text = path.read_text()
           if not re.search(r"(?m)^kind:\s*Deployment\s*$", text):
               raise SystemExit(f"FAIL: {path} is not a Deployment manifest")
-          if not re.search(r"(?m)^\s*replicas:\s*0\s*(?:#.*)?$", text):
+          replica_match = re.search(r"(?m)^\s*replicas:\s*(\d+)\s*(?:#.*)?$", text)
+          if not replica_match:
+              raise SystemExit(f"FAIL: {path} has no explicit numeric Deployment replica count")
+          actual_replicas = int(replica_match.group(1))
+          if actual_replicas != expected_replicas:
               raise SystemExit(
-                  f"BLOCKED: expected source manifest for {service} to remain at replicas: 0; "
-                  "do not change production replica counts as part of this preflight"
+                  f"BLOCKED: {service} source manifest declares replicas: {actual_replicas}; "
+                  f"preflight expects the reviewed value {expected_replicas}. "
+                  "Do not change production replica counts to make this check pass."
               )
           if not re.search(r"(?m)^\s*name:\s*" + re.escape(service) + r"\s*$", text):
               raise SystemExit(f"FAIL: {path} does not name {service}")
-          print(f"PASS: {service} manifest exists and remains intentionally at replicas: 0")
+          print(f"PASS: {service} manifest declares the reviewed replicas: {expected_replicas}")
           print("NOTE: this checks repository source only, not the effective live cluster state.")
           PY
 
