@@ -126,136 +126,29 @@ export default function MyBlog() {
     try {
       const existing = new Set(posts.map(post => post.slug))
       for (const filename of articles) {
-        const response = await fetch(`https://raw.githubusercontent.com/asaduzzamanbheramara-prog/shopnoltd/main/docs/blog/${filename}`)
-        if (!response.ok) throw new Error(`Could not fetch ${filename} (${response.status})`)
+        const url = 'https://raw.githubusercontent.com/asaduzzamanbheramara-prog/shopnoltd/main/docs/blog/' + filename
+        const response = await fetch(url)
+        if (!response.ok) throw new Error('Could not fetch ' + filename + ' (' + response.status + ')')
         const markdown = await response.text()
-        const match = markdown.match(/^---\\s*\\n([\\s\\S]*?)\\n---\\s*\\n?/)
+        const match = markdown.match(/^---\s*\n([\s\S]*?)\n---\s*\n?/)
         const frontmatter = match?.[1] || ''
-        const field = (name) => frontmatter.match(new RegExp(`^\\\\s*${name}:\\\\s*["']?([^\\\\n"']+)["']?\\\\s*import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { platformApi } from '../lib/platformApi'
-
-const EMPTY = { id: null, title: '', slug: '', excerpt: '', content: '', cover_image: '', status: 'draft' }
-
-export default function MyBlog() {
-  const [posts, setPosts] = useState([])
-  const [form, setForm] = useState(EMPTY)
-  const [message, setMessage] = useState('')
-  const [busy, setBusy] = useState(false)
-  const [uploading, setUploading] = useState(false)
-  const [loading, setLoading] = useState(true)
-  const fileRef = useRef(null)
-
-  const load = useCallback(async () => {
-    setLoading(true)
-    try {
-      const data = await platformApi.myBlog()
-      setPosts(Array.isArray(data) ? data : [])
-      setMessage('')
-    } catch (e) {
-      setPosts([])
-      setMessage(`Unable to load My Blog: ${e?.message || 'request failed'}`)
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => { load() }, [load])
-
-  function editPost(post) {
-    setMessage('')
-    setForm({ ...EMPTY, ...post })
-  }
-
-  async function uploadCover(event) {
-    const file = event.target.files?.[0]
-    event.target.value = ''
-    if (!file) return
-    setUploading(true)
-    setMessage('')
-    try {
-      const result = await platformApi.uploadBlogCover(file)
-      setForm(prev => ({ ...prev, cover_image: result.url }))
-      setMessage('Cover image uploaded. Save the post to keep it.')
-    } catch (e) {
-      setMessage(e?.message || 'Cover image upload failed.')
-    } finally {
-      setUploading(false)
-    }
-  }
-
-  async function save(publish = false) {
-    if (!form.title.trim() || !form.content.trim()) {
-      setMessage('Title and content are required.')
-      return
-    }
-    setBusy(true)
-    setMessage('')
-    const oldCover = form.id ? posts.find(p => p.id === form.id)?.cover_image : null
-    try {
-      const body = {
-        title: form.title.trim(),
-        slug: form.slug.trim() || null,
-        excerpt: form.excerpt?.trim() || null,
-        content: form.content,
-        cover_image: form.cover_image || null,
-        status: publish ? 'published' : 'draft',
-      }
-      const data = form.id
-        ? await platformApi.updateBlogPost(form.id, body)
-        : await platformApi.createBlogPost(body)
-      setForm(data)
-      await load()
-      if (oldCover && oldCover !== data.cover_image) {
-        await platformApi.deleteBlogCover(oldCover).catch(() => {})
-      }
-      setMessage(publish ? 'Published.' : 'Draft saved.')
-    } catch (e) {
-      setMessage(e?.message || 'Unable to save the post.')
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  async function togglePublish() {
-    if (!form.id) return save(true)
-    await save(form.status !== 'published')
-  }
-
-  async function remove(id) {
-    const post = posts.find(p => p.id === id)
-    if (!window.confirm('Delete this post permanently?')) return
-    setBusy(true)
-    setMessage('')
-    try {
-      await platformApi.deleteBlogPost(id)
-      if (post?.cover_image) await platformApi.deleteBlogCover(post.cover_image).catch(() => {})
-      setForm(EMPTY)
-      await load()
-      setMessage('Post deleted.')
-    } catch (e) {
-      setMessage(e?.message || 'Unable to delete the post.')
-    } finally {
-      setBusy(false)
-    }
-  }
-
-, 'm'))?.[1]?.trim() || ''
-        const title = field('title') || filename.replace(/\\.md$/, '').replaceAll('-', ' ')
-        const slug = field('slug') || filename.replace(/\\.md$/, '')
+        const field = (name) => frontmatter.match(new RegExp('^\\s*' + name + ':\\s*["\\x27]?([^\\n"\\x27]+)["\\x27]?\\s*$', 'm'))?.[1]?.trim() || ''
+        const title = field('title') || filename.replace(/\.md$/, '').replaceAll('-', ' ')
+        const slug = field('slug') || filename.replace(/\.md$/, '')
         const excerpt = field('meta_description')
         if (existing.has(slug)) {
           skipped += 1
           continue
         }
-        let body = markdown.replace(/^---\\s*\\n[\\s\\S]*?\\n---\\s*\\n?/, '')
+        let body = markdown.replace(/^---\s*\n[\s\S]*?\n---\s*\n?/, '')
         body = body
-          .replace(/^#{1,6}\\s+/gm, '')
-          .replace(/!\\[([^\\]]*)\\]\\([^)]*\\)/g, '$1')
-          .replace(/\\[([^\\]]+)\\]\\(([^)]+)\\)/g, '$1 ($2)')
-          .replace(/\\*\\*(.*?)\\*\\*/g, '$1')
-          .replace(/(?<!\\*)\\*([^*]+)\\*(?!\\*)/g, '$1')
-          .replace(/^\\-\\s+/gm, '• ')
-          .replace(/^\\d+\\.\\s+/gm, '• ')
+          .replace(/^#{1,6}\s+/gm, '')
+          .replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1')
+          .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1 ($2)')
+          .replace(/\*\*(.*?)\*\*/g, '$1')
+          .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '$1')
+          .replace(/^-\s+/gm, '• ')
+          .replace(/^\d+\.\s+/gm, '• ')
           .trim()
         await platformApi.createBlogPost({ title, slug, excerpt, content: body, cover_image: null, status: 'draft' })
         existing.add(slug)
@@ -263,10 +156,10 @@ export default function MyBlog() {
       }
       await load()
       setForm(EMPTY)
-      setMessage(`Imported ${imported} draft(s); skipped ${skipped} existing article(s). Review each draft before publishing.`)
+      setMessage('Imported ' + imported + ' draft(s); skipped ' + skipped + ' existing article(s). Review each draft before publishing.')
     } catch (e) {
       await load()
-      setMessage(`Import stopped after ${imported} draft(s): ${e?.message || 'request failed'}. Refresh and retry; existing slugs will be skipped.`)
+      setMessage('Import stopped after ' + imported + ' draft(s): ' + (e?.message || 'request failed') + '. Refresh and retry; existing slugs will be skipped.')
     } finally {
       setBusy(false)
     }
