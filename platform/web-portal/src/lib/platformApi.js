@@ -93,8 +93,9 @@ export const platformApi = {
   follow: (userId) => request(`/api/v2/social/users/${encodeURIComponent(userId)}/follow`, { method: 'POST' }), unfollow: (userId) => request(`/api/v2/social/users/${encodeURIComponent(userId)}/follow`, { method: 'DELETE' }), following: () => request('/api/v2/social/following'), followers: () => request('/api/v2/social/followers'), notifications: () => request('/api/v1/notifications'),
   blog: () => request('/api/v2/blog'), blogPost: (slug) => request(`/api/v2/blog/${encodeURIComponent(slug)}`), myBlog: () => request('/api/v2/blog/mine'), adminBlog: () => request('/api/v2/blog/admin'), createBlogPost: (body) => request('/api/v2/blog', { method: 'POST', body: JSON.stringify(body) }), updateBlogPost: (id, body) => request(`/api/v2/blog/${id}`, { method: 'PUT', body: JSON.stringify(body) }), deleteBlogPost: (id) => request(`/api/v2/blog/${id}`, { method: 'DELETE' }),
   uploadBlogCover: async (file) => {
-    if (!file || !file.type.startsWith('image/')) throw new Error('Please choose an image file')
-    if (file.size > 8 * 1024 * 1024) throw new Error('Cover image must be 8 MB or smaller')
+    const allowedImageTypes = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
+    if (!file || !allowedImageTypes.has(file.type)) throw new Error('Please choose a JPEG, PNG, WebP, or GIF image')
+    if (file.size > 8 * 1024 * 1024) throw new Error('Image must be 8 MB or smaller')
     const token = localStorage.getItem('shopno_token'); if (!token) throw new Error('Authentication required')
     const extension = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg'
     const user = await request('/api/v1/users/me'); const owner = encodeURIComponent(user?.id || user?.sub || 'user'); const key = `blog/${owner}/${crypto.randomUUID()}.${extension}`

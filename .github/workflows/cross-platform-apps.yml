@@ -198,7 +198,20 @@ jobs:
         run: npm run sync:web
       - name: Build Android debug APK
         working-directory: apps/mobile-shell/android
-        run: bash ./gradlew assembleDebug
+        shell: bash
+        run: |
+          set -euo pipefail
+          for attempt in 1 2 3; do
+            if bash ./gradlew --no-daemon --refresh-dependencies assembleDebug; then
+              exit 0
+            fi
+            if [ "$attempt" -lt 3 ]; then
+              echo "Gradle build failed on attempt $attempt; retrying dependency resolution in 15 seconds..."
+              sleep 15
+            fi
+          done
+          echo "Android build failed after 3 attempts"
+          exit 1
       - name: Locate generated Android APK
         id: android-apk
         shell: bash
