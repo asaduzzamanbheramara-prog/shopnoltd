@@ -56,7 +56,7 @@ jobs:
             echo
             echo "=== Services and EndpointSlices for zero-replica deployments ==="
             # Read-only diagnostic: never scales workloads or prints Secret values.
-            while IFS=$'\t' read -r ns name replicas; do
+            while read -r ns name replicas; do
               [ -n "${ns:-}" ] || continue
               [ "${replicas:-}" = "0" ] || continue
               echo "--- Deployment $ns/$name (desired replicas: 0) ---"
