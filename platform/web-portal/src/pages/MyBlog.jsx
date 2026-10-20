@@ -186,7 +186,7 @@ export default function MyBlog() {
         let body = markdown.replace(/^---\s*\n[\s\S]*?\n---\s*\n?/, '')
         body = body
           .replace(/^#{1,6}\s+/gm, '')
-          .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1 ($2)')
+          .replace(/(?<!!)\[([^\]]+)\]\(([^)]+)\)/g, '$1 ($2)')
           .replace(/\*\*(.*?)\*\*/g, '$1')
           .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '$1')
           .replace(/^-\s+/gm, '• ')
