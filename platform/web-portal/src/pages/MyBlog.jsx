@@ -10,6 +10,7 @@ export default function MyBlog() {
   const [busy, setBusy] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [videoUrl, setVideoUrl] = useState('')
   const fileRef = useRef(null)
 
   const load = useCallback(async () => {
@@ -31,6 +32,43 @@ export default function MyBlog() {
   function editPost(post) {
     setMessage('')
     setForm({ ...EMPTY, ...post })
+  }
+
+  function insertContentSnippet(snippet) {
+    setForm(prev => ({ ...prev, content: prev.content ? prev.content.trimEnd() + '\n\n' + snippet : snippet }))
+  }
+
+  async function uploadInlineImage(event) {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+    const alt = window.prompt('Describe this image for accessibility (alt text):', file.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' '))
+    if (alt === null) return
+    setUploading(true)
+    setMessage('')
+    try {
+      const result = await platformApi.uploadBlogCover(file)
+      insertContentSnippet(`![${alt.replace(/\]/g, '')}](${result.url})`)
+      setMessage('Inline image uploaded and added to the article. Save the post to keep it.')
+    } catch (e) {
+      setMessage(e?.message || 'Inline image upload failed.')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  function insertVideo() {
+    let parsed
+    try { parsed = new URL(videoUrl.trim()) } catch { setMessage('Enter a valid YouTube video URL.'); return }
+    const host = parsed.hostname.toLowerCase().replace(/^www\./, '')
+    if (!['youtube.com', 'm.youtube.com', 'youtu.be', 'youtube-nocookie.com'].includes(host)) {
+      setMessage('For now, video embeds support YouTube URLs only.')
+      return
+    }
+    if (parsed.protocol !== 'https:') { setMessage('Video URLs must use HTTPS.'); return }
+    insertContentSnippet(`[VIDEO: ${parsed.toString()}]`)
+    setVideoUrl('')
+    setMessage('YouTube video added to the article. Save the post to keep it.')
   }
 
   async function uploadCover(event) {
@@ -148,7 +186,6 @@ export default function MyBlog() {
         let body = markdown.replace(/^---\s*\n[\s\S]*?\n---\s*\n?/, '')
         body = body
           .replace(/^#{1,6}\s+/gm, '')
-          .replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1')
           .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1 ($2)')
           .replace(/\*\*(.*?)\*\*/g, '$1')
           .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '$1')
@@ -215,6 +252,20 @@ export default function MyBlog() {
             <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={uploadCover} disabled={uploading || busy} />
             <div style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>JPEG, PNG, WebP or GIF · maximum 8 MB</div>
             {form.cover_image && <button type="button" disabled={busy || uploading} onClick={() => setForm({ ...form, cover_image: '' })} style={{ marginTop: 8 }}>Remove cover</button>}
+          </div>
+          <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, padding: 12, marginBottom: 12 }}>
+            <strong>Article media</strong>
+            <p style={{ color: '#64748b', fontSize: 12, margin: '4px 0 10px' }}>Upload an inline image or insert a YouTube video. Media is inserted into the article content at the end.</p>
+            <label style={{ display: 'block', marginBottom: 10 }}>
+              <span style={{ display: 'block', marginBottom: 4 }}>Add inline image</span>
+              <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={uploadInlineImage} disabled={uploading || busy} />
+              <span style={{ display: 'block', fontSize: 12, color: '#64748b' }}>JPEG, PNG, WebP or GIF · maximum 8 MB</span>
+            </label>
+            <label style={{ display: 'block', marginBottom: 8 }}>
+              <span style={{ display: 'block', marginBottom: 4 }}>YouTube video URL</span>
+              <input value={videoUrl} onChange={e => setVideoUrl(e.target.value)} placeholder="https://www.youtube.com/watch?v=..." style={{ width: '100%', boxSizing: 'border-box', padding: 8 }} />
+            </label>
+            <button type="button" onClick={insertVideo} disabled={busy || uploading || !videoUrl.trim()}>Insert video</button>
           </div>
           <label style={{ display: 'block', marginBottom: 12 }}>
             <div style={{ marginBottom: 4 }}>Content</div>
