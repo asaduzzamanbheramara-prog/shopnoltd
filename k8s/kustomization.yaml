@@ -60,7 +60,6 @@ resources:
 - services/code-server
 - services/remote-device
 - services/enketo
-- services/argocd/public-ingress.yaml
 - services/kobotoolbox
 - shopno-apps/kobo-worker.yaml
 - shopno-apps/kobo-beat.yaml
@@ -72,6 +71,7 @@ resources:
 - services/mail-server
 - services/chatwoot
 - ingress/cloudflared
+- services/argocd/public-ingress.yaml
 
 patches:
 - path: tls/wildcard-tls.json
@@ -80,5 +80,5 @@ patches:
     version: v1
     kind: Ingress
     name: .*
-    namespace: ^shopno-(apps|data|identity|mail|monitoring|payments|platform|tools)$
+    namespace: ^shopno-(apps|data|identity|mail|monitoring|payments|tools)$
     annotationSelector: cert-manager.io/cluster-issuer=letsencrypt-prod
