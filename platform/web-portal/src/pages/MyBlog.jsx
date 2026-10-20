@@ -132,7 +132,12 @@ export default function MyBlog() {
         const markdown = await response.text()
         const match = markdown.match(/^---\s*\n([\s\S]*?)\n---\s*\n?/)
         const frontmatter = match?.[1] || ''
-        const field = (name) => frontmatter.match(new RegExp('^\\s*' + name + ':\\s*["\\x27]?([^\\n"\\x27]+)["\\x27]?\\s*$', 'm'))?.[1]?.trim() || ''
+        const field = (name) => {
+          const line = frontmatter.split('\n').find(item => item.trimStart().startsWith(name + ':'))
+          if (!line) return ''
+          const value = line.slice(line.indexOf(':') + 1).trim()
+          return value.replace(/^(['"])(.*)\1$/, '$2').trim()
+        }
         const title = field('title') || filename.replace(/\.md$/, '').replaceAll('-', ' ')
         const slug = field('slug') || filename.replace(/\.md$/, '')
         const excerpt = field('meta_description')
