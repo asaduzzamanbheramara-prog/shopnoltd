@@ -66,6 +66,14 @@ export default function MyBlog() {
       return
     }
     if (parsed.protocol !== 'https:') { setMessage('Video URLs must use HTTPS.'); return }
+    let videoId = ''
+    if (host === 'youtu.be') videoId = parsed.pathname.split('/').filter(Boolean)[0] || ''
+    else if (parsed.pathname === '/watch') videoId = parsed.searchParams.get('v') || ''
+    else if (/^\/(embed|shorts)\//.test(parsed.pathname)) videoId = parsed.pathname.split('/')[2] || ''
+    if (!/^[A-Za-z0-9_-]{11}$/.test(videoId)) {
+      setMessage('Enter a YouTube video link with a valid video ID.')
+      return
+    }
     insertContentSnippet(`[VIDEO: ${parsed.toString()}]`)
     setVideoUrl('')
     setMessage('YouTube video added to the article. Save the post to keep it.')
