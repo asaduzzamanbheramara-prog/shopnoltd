@@ -19,6 +19,13 @@ on:
       - 'shared/**'
       - '.github/workflows/build-platform.yml'
   workflow_dispatch:
+    inputs:
+      service:
+        description: "Platform service to build and promote"
+        required: true
+        type: choice
+        options:
+          - web-portal
 
 permissions:
   contents: write
@@ -51,6 +58,7 @@ jobs:
           BEFORE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
           SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           EVENT_NAME: ${{ github.event_name }}
+          SERVICE: ${{ inputs.service || '' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -109,7 +117,13 @@ jobs:
           event_name = os.environ['EVENT_NAME']
 
           if event_name == 'workflow_dispatch':
-              changed = ['ALL']
+              selected = os.environ.get('SERVICE', '').strip()
+              if selected not in services:
+                  raise SystemExit(
+                      f'ERROR: unsupported service selection: {selected!r}'
+                  )
+              dockerfile, _ = services[selected]
+              changed = [dockerfile.rsplit('/Dockerfile', 1)[0]]
           elif not before or set(before) == {'0'}:
               changed = ['ALL']
           else:
@@ -238,7 +252,7 @@ jobs:
 
   promote:
     name: Promote built images to GitOps manifests
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.detect-changes.outputs.has_services == 'true'
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main' && needs.detect-changes.outputs.has_services == 'true'
     needs: [detect-changes, build]
     runs-on: ubuntu-latest
 
