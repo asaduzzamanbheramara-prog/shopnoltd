@@ -74,3 +74,33 @@ async def update_blog_post(post_id: str, body: dict, auth=Depends(current_user))
 async def delete_blog_post(post_id: str, auth=Depends(current_user)):
     creds, _ = auth
     return await call("DELETE", f"/api/v1/blog/{post_id}", creds.credentials)
+
+@router.get("/blog/{slug}/likes")
+async def blog_like_status(slug: str):
+    """Public like count and optional signed-in user's like state."""
+    return await call("GET", f"/api/v1/blog/{slug}/likes")
+
+
+@router.post("/blog/{slug}/like", status_code=201)
+async def like_blog_post(slug: str, auth=Depends(current_user)):
+    creds, _ = auth
+    return await call("POST", f"/api/v1/blog/{slug}/like", creds.credentials)
+
+
+@router.delete("/blog/{slug}/like")
+async def unlike_blog_post(slug: str, auth=Depends(current_user)):
+    creds, _ = auth
+    return await call("DELETE", f"/api/v1/blog/{slug}/like", creds.credentials)
+
+
+@router.get("/blog/{slug}/comments")
+async def list_blog_comments(slug: str):
+    """Public comments list for a published article."""
+    return await call("GET", f"/api/v1/blog/{slug}/comments")
+
+
+@router.post("/blog/{slug}/comments", status_code=201)
+async def add_blog_comment(slug: str, body: dict, auth=Depends(current_user)):
+    creds, _ = auth
+    return await call("POST", f"/api/v1/blog/{slug}/comments", creds.credentials, json=body)
+
