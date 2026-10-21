@@ -7,6 +7,10 @@ status: "editorial-draft"
 
 # How to Set Up a Shared Workspace for a Small Business
 
+![A shared office workspace with desks and collaboration areas](https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=1600&q=85)
+
+[VIDEO: https://www.youtube.com/watch?v=nn3QzxWHYuI]
+
 A shared workspace can help a small business keep documents, project information and team resources in one organized place. But simply creating a shared folder is not enough. Without clear ownership and access rules, teams can end up with duplicated files, confusing versions and information shared too widely.
 
 The goal is to create a workspace people can understand and maintain—not the most complicated folder system possible.
