@@ -157,6 +157,52 @@ export default function MyBlog() {
     setForm(EMPTY)
   }
 
+  async function syncSharedWorkspaceArticle() {
+    const slug = 'shared-workspace-for-small-business'
+    const existing = posts.find(post => post.slug === slug)
+    if (!existing) {
+      setMessage('No existing shared-workspace article found. Import the GitHub drafts first.')
+      return
+    }
+    setBusy(true)
+    setMessage('Loading the reviewed article source…')
+    try {
+      const response = await fetch('https://raw.githubusercontent.com/asaduzzamanbheramara-prog/shopnoltd/main/docs/blog/shared-workspace-for-small-business.md')
+      if (!response.ok) throw new Error('Article source request failed (' + response.status + ')')
+      const markdown = await response.text()
+      const fm = markdown.match(/^---\s*\n([\s\S]*?)\n---\s*\n?/)?.[1] || ''
+      const field = name => {
+        const line = fm.split('\n').find(item => item.trimStart().startsWith(name + ':'))
+        if (!line) return ''
+        return line.slice(line.indexOf(':') + 1).trim().replace(/^(['"])(.*)\1$/, '$2')
+      }
+      let body = markdown.replace(/^---\s*\n[\s\S]*?\n---\s*\n?/, '')
+      body = body
+        .replace(/^#{1,6}\s+/gm, '')
+        .replace(/(?<!!)\[([^\]]+)\]\(([^)]+)\)/g, '$1 ($2)')
+        .replace(/\*\*(.*?)\*\*/g, '$1')
+        .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '$1')
+        .replace(/^-\s+/gm, '• ')
+        .replace(/^\d+\.\s+/gm, '• ')
+        .trim()
+      const updated = await platformApi.updateBlogPost(existing.id, {
+        title: field('title') || existing.title,
+        slug,
+        excerpt: field('meta_description') || existing.excerpt || null,
+        content: body,
+        cover_image: existing.cover_image || null,
+        status: existing.status || 'published',
+      })
+      await load()
+      setForm(updated)
+      setMessage('Article updated from GitHub. Existing publish status preserved. Verify the public page for media.')
+    } catch (e) {
+      setMessage('Could not update article: ' + (e?.message || 'request failed'))
+    } finally {
+      setBusy(false)
+    }
+  }
+
   async function importEditorialDrafts() {
     const articles = [
       'choose-a-domain-name.md',
@@ -224,6 +270,7 @@ export default function MyBlog() {
         <button onClick={newPost} disabled={busy || uploading}>New post</button>
         <button onClick={load} disabled={busy || uploading || loading}>{loading ? 'Loading…' : 'Refresh'}</button>
         <button onClick={importEditorialDrafts} disabled={busy || uploading || loading}>Import 5 GitHub drafts</button>
+        <button onClick={syncSharedWorkspaceArticle} disabled={busy || uploading || loading}>Update shared-workspace article from GitHub</button>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(260px,.8fr) minmax(420px,1.4fr)', gap: 24 }}>
         <section>
