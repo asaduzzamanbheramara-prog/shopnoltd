@@ -41,6 +41,24 @@ class BlogPost(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
 
+class BlogLike(Base):
+    __tablename__ = "blog_likes"
+    id = Column(String(64), primary_key=True, default=lambda: str(uuid.uuid4()))
+    blog_post_id = Column(String(64), ForeignKey("blog_posts.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(String(64), nullable=False, index=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    __table_args__ = (Index("ix_blog_like_post_user", "blog_post_id", "user_id", unique=True),)
+
+
+class BlogComment(Base):
+    __tablename__ = "blog_comments"
+    id = Column(String(64), primary_key=True, default=lambda: str(uuid.uuid4()))
+    blog_post_id = Column(String(64), ForeignKey("blog_posts.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(String(64), nullable=False, index=True)
+    body = Column(Text, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+
+
 class Like(Base):
     __tablename__ = "likes"
     id = Column(String(64), primary_key=True, default=lambda: str(uuid.uuid4()))
