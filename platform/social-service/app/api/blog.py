@@ -6,12 +6,12 @@ import re
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, Field
-from sqlalchemy import desc, select
+from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import SessionLocal
 from app.core.security import verify_token
-from app.models.models import BlogPost
+from app.models.models import BlogComment, BlogLike, BlogPost
 
 router = APIRouter()
 bearer = HTTPBearer(auto_error=False)
@@ -138,6 +138,84 @@ async def get_blog_post(slug: str, s: AsyncSession = Depends(db)):
     if not p:
         raise HTTPException(404, "blog post not found")
     return out(p)
+
+
+class BlogCommentIn(BaseModel):
+    body: str = Field(min_length=1, max_length=2000)
+
+
+@router.get("/{slug}/likes")
+async def blog_like_status(slug: str, creds: HTTPAuthorizationCredentials | None = Depends(bearer), s: AsyncSession = Depends(db)):
+    post = (await s.execute(select(BlogPost).where(BlogPost.slug == slug, BlogPost.status == "published"))).scalar_one_or_none()
+    if not post:
+        raise HTTPException(404, "blog post not found")
+    count = (await s.execute(select(func.count(BlogLike.id)).where(BlogLike.blog_post_id == post.id))).scalar_one()
+    liked = False
+    if creds is not None:
+        try:
+            user = await verify_token(creds.credentials)
+            liked = (await s.execute(select(BlogLike.id).where(
+                BlogLike.blog_post_id == post.id, BlogLike.user_id == user["sub"]
+            ))).scalar_one_or_none() is not None
+        except Exception:
+            liked = False
+    return {"count": count, "liked": liked}
+
+
+@router.post("/{slug}/like", status_code=201)
+async def like_blog_post(slug: str, user=Depends(current_user), s: AsyncSession = Depends(db)):
+    post = (await s.execute(select(BlogPost).where(BlogPost.slug == slug, BlogPost.status == "published"))).scalar_one_or_none()
+    if not post:
+        raise HTTPException(404, "blog post not found")
+    existing = (await s.execute(select(BlogLike).where(
+        BlogLike.blog_post_id == post.id, BlogLike.user_id == user["sub"]
+    ))).scalar_one_or_none()
+    if existing is None:
+        s.add(BlogLike(blog_post_id=post.id, user_id=user["sub"]))
+        await s.commit()
+    count = (await s.execute(select(func.count(BlogLike.id)).where(BlogLike.blog_post_id == post.id))).scalar_one()
+    return {"liked": True, "count": count}
+
+
+@router.delete("/{slug}/like")
+async def unlike_blog_post(slug: str, user=Depends(current_user), s: AsyncSession = Depends(db)):
+    post = (await s.execute(select(BlogPost).where(BlogPost.slug == slug, BlogPost.status == "published"))).scalar_one_or_none()
+    if not post:
+        raise HTTPException(404, "blog post not found")
+    existing = (await s.execute(select(BlogLike).where(
+        BlogLike.blog_post_id == post.id, BlogLike.user_id == user["sub"]
+    ))).scalar_one_or_none()
+    if existing is not None:
+        await s.delete(existing)
+        await s.commit()
+    count = (await s.execute(select(func.count(BlogLike.id)).where(BlogLike.blog_post_id == post.id))).scalar_one()
+    return {"liked": False, "count": count}
+
+
+@router.get("/{slug}/comments")
+async def list_blog_comments(slug: str, s: AsyncSession = Depends(db)):
+    post = (await s.execute(select(BlogPost).where(BlogPost.slug == slug, BlogPost.status == "published"))).scalar_one_or_none()
+    if not post:
+        raise HTTPException(404, "blog post not found")
+    rows = (await s.execute(select(BlogComment).where(
+        BlogComment.blog_post_id == post.id
+    ).order_by(BlogComment.created_at.asc()))).scalars().all()
+    return [{"id": c.id, "user_id": c.user_id, "body": c.body, "created_at": c.created_at.isoformat()} for c in rows]
+
+
+@router.post("/{slug}/comments", status_code=201)
+async def add_blog_comment(slug: str, body: BlogCommentIn, user=Depends(current_user), s: AsyncSession = Depends(db)):
+    post = (await s.execute(select(BlogPost).where(BlogPost.slug == slug, BlogPost.status == "published"))).scalar_one_or_none()
+    if not post:
+        raise HTTPException(404, "blog post not found")
+    text = body.body.strip()
+    if not text:
+        raise HTTPException(422, "Comment cannot be empty")
+    comment = BlogComment(blog_post_id=post.id, user_id=user["sub"], body=text)
+    s.add(comment)
+    await s.commit()
+    await s.refresh(comment)
+    return {"id": comment.id, "user_id": comment.user_id, "body": comment.body, "created_at": comment.created_at.isoformat()}
 
 
 @router.post("", response_model=BlogPostOut, status_code=201)
