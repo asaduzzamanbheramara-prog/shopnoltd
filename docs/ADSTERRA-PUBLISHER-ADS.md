@@ -2,44 +2,46 @@
 
 ## Current integration
 
-The public Shopnoltd homepage loads one Adsterra 300x250 display zone through
-`src/components/AdsterraBanner.jsx`. The zone is inserted after the homepage hero.
-The component creates the script after mount and removes the inserted script on
-unmount to avoid duplicate loads during client-side navigation.
+The public Shopnoltd homepage integrates the ten publisher units supplied for
+website `shopnoltd.dpdns.org`:
 
-The integration uses the publisher-provided zone key and script URL. Before
-production release, verify the full snippet and domain in the official Adsterra
-publisher dashboard. The supplied script host is `bicea.org`; this is different
-from the Adsterra marketing domain, so confirm it is an authorized delivery host
-for this exact zone. Do not substitute or rewrite the host without confirmation
-from Adsterra.
-
-## Other zones not enabled
-
-The following formats are intentionally not loaded by default:
-
-- 160x300, 160x600, 468x60, 728x90
-- 320x50 mobile banner
-- Native Banner
+- 300x250 display banner
+- Responsive display banner: 320x50 on narrow screens, 468x60 on medium screens,
+  and 728x90 on wide screens (one of these loads per viewport)
+- 160x300 and 160x600 display banners
+- Native banner
 - Popunder
-- Smartlink
-- SocialBar
+- Social Bar
+- Smartlink, displayed as an explicitly labelled sponsored link
 
-Start with a single display placement and check page layout, browser console,
-network requests, mobile behavior, and Adsterra reporting before adding more
-zones. Popunder and SocialBar are more intrusive; enable them only after reviewing
-visitor experience and applicable policies. A Smartlink should be a deliberate
-user-facing link, not an automatic redirect.
+The standard display snippets share the global `window.atOptions` variable.
+`src/components/AdsterraAds.jsx` serializes their script loading so a zone's
+configuration is not overwritten by another zone before its script executes.
+The existing `AdsterraBanner.jsx` component retains the original homepage
+300x250 placement and delegates to this loader.
 
-## Verification checklist
+Popunder and Social Bar scripts are loaded from the homepage. They can affect
+visitor experience; monitor frequency, mobile behavior, browser console, and
+Adsterra's policy requirements. The Smartlink is a deliberate user action and
+is not an automatic redirect.
 
-1. Confirm the website is approved and the zone is active in Adsterra.
-2. Verify the exact script URL and zone key against the dashboard.
-3. Build the web portal and check for JSX/build errors.
-4. Open the homepage on desktop and mobile and inspect the ad container.
-5. Check DevTools Network and Console for script failures or unexpected redirects.
-6. Confirm privacy disclosures and consent behavior are appropriate for the site's
-   visitors and applicable requirements.
+## Publisher-provided hosts and keys
+
+The supplied code uses `afders.org`, `arwf.org`, and `bicea.org`. These are
+the exact hosts supplied in the publisher snippets. Confirm in the official
+Adsterra dashboard that each host and key matches the intended active unit
+before release. Do not substitute hosts or keys without publisher confirmation.
+
+## Release verification
+
+1. Confirm the website is approved and each zone is active in Adsterra.
+2. Confirm all keys and URLs match the publisher dashboard.
+3. Run the web portal production build and public-route prerender.
+4. Check desktop and mobile layouts, including the responsive banner selection.
+5. In DevTools, verify each expected request and check Console for errors.
+6. Review privacy disclosures and consent requirements for the visitors served.
 7. Confirm impressions and revenue in Adsterra reporting after legitimate traffic.
 
-Do not click your own ads or generate artificial traffic to test revenue.
+An active unit or successful script request does not guarantee an ad impression
+or revenue. Do not click your own ads or generate artificial traffic to test
+earnings.
