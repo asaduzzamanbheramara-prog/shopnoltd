@@ -4,6 +4,7 @@ import { SERVICES, BUSINESS_SERVICES, CONNECTED_PLATFORMS, ADMIN_SERVICES } from
 import DomainSearch from '../components/DomainSearch'
 import { isPlatformAdmin } from '../lib/jwt'
 import AdsterraBanner from '../components/AdsterraBanner'
+import { AdsterraGlobalFormats, AdsterraNativeBanner, AdsterraResponsiveBanner, AdsterraSmartlink, AdsterraTallBannerPair } from '../components/AdsterraAds'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'https://api.shopnoltd.dpdns.org'
 
@@ -78,10 +79,13 @@ export default function Home() {
   return <main style={{ maxWidth: 1180, margin: '0 auto', padding: 'clamp(24px,6vw,52px) clamp(14px,4vw,24px) 80px', boxSizing: 'border-box', fontFamily: 'system-ui,sans-serif' }}>
     <DomainSearch />
     <section style={{ margin: '24px 0 44px', padding: 'clamp(28px,6vw,56px)', borderRadius: 24, background: 'linear-gradient(135deg,#0ea5e9,#0369a1)', color: 'white' }}><div style={{ maxWidth: 800 }}><div style={{ fontSize: 44 }}>🌐</div><h1 style={{ fontSize: 'clamp(38px,7vw,68px)', lineHeight: 1.02, margin: '10px 0 18px' }}>All your tools. One platform.</h1><p style={{ fontSize: 'clamp(17px,2.2vw,21px)', lineHeight: 1.7, opacity: .96 }}>Domains, data collection, business applications, communication, calling, social, live media, billing, payments, exchange, AI and developer tools in one Shopnoltd workspace.</p><div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 24 }}><Link to="/services" style={{ padding: '12px 18px', borderRadius: 10, background: 'white', color: '#0369a1', fontWeight: 800, textDecoration: 'none' }}>Explore services</Link><Link to="/domain-registration" style={{ padding: '12px 18px', borderRadius: 10, border: '1px solid rgba(255,255,255,.65)', color: 'white', fontWeight: 800, textDecoration: 'none' }}>Register a domain</Link></div></div></section>
+    <AdsterraGlobalFormats />
     <AdsterraBanner />
+    <AdsterraResponsiveBanner />
     <PreviewSection title="Core services" description="Start with services managed inside your Shopnoltd workspace, including messaging, calls, notifications and live media." items={SERVICES} />
     <PreviewSection title="Cloud devices" description="Launch browser-accessible Shopnoltd device workspaces." items={SERVICES.filter(service => service.category === 'Cloud Devices')} limit={6} href="/android-cloud" />
     <PreviewSection title="Downloads" description="Install the official Shopnoltd applications on Windows, Linux, macOS or Android." items={SERVICES.filter(service => service.category === 'Downloads')} limit={3} href="/downloads" />
+    <AdsterraNativeBanner />
     <PreviewSection title="Business applications" description="Create HR, POS, POS Billing System or ERP applications through the existing website and domain workflow." items={BUSINESS_SERVICES} limit={4} href="/services" />
     <PreviewSection title="Connected platforms" description="Connect supported external platforms through authorized integrations. External availability depends on the provider/API connection." items={CONNECTED_PLATFORMS} limit={6} />
     <section style={{ marginTop: 52 }}>
@@ -91,6 +95,8 @@ export default function Home() {
         <article style={{ padding: 22, background: 'white', border: '1px solid #e2e8f0', borderRadius: 16, boxShadow: '0 3px 12px rgba(15,23,42,.06)' }}><div style={{ fontSize: 34 }}>🏠</div><h3>Business & Interior Design</h3><p style={{ color: '#64748b', lineHeight: 1.55 }}>Shopno Interior Design & Decoration services for residential, corporate, retail and commercial spaces.</p><Link to="/profile/interior-business" style={{ color: '#0369a1', fontWeight: 800 }}>View profile & portfolio →</Link></article>
       </div>
     </section>
+    <AdsterraTallBannerPair />
+    <AdsterraSmartlink />
     <PaymentAccounts />
     {isAdmin && <PreviewSection title="Administration" description="Privileged controls for authorized platform administrators." items={ADMIN_SERVICES} limit={6} admin />}
   </main>
