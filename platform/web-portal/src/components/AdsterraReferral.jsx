@@ -6,9 +6,13 @@ export default function AdsterraReferral() {
       aria-labelledby="adsterra-referral-title"
       style={{
         boxSizing: 'border-box',
+        width: '100%',
         maxWidth: 760,
+        minWidth: 0,
         margin: '24px auto',
-        padding: '22px',
+        padding: 'clamp(14px, 4vw, 22px)',
+        boxSizing: 'border-box',
+        overflowWrap: 'anywhere',
         border: '1px solid #bfdbfe',
         borderRadius: 16,
         background: 'linear-gradient(135deg, #eff6ff, #f8fafc)',
@@ -18,13 +22,13 @@ export default function AdsterraReferral() {
       <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '.08em', textTransform: 'uppercase', color: '#1d4ed8' }}>
         Publisher referral · Sponsored promotion
       </div>
-      <h2 id="adsterra-referral-title" style={{ margin: '8px 0', fontSize: 22 }}>
+      <h2 id="adsterra-referral-title" style={{ margin: '8px 0', fontSize: 'clamp(20px, 4vw, 22px)', lineHeight: 1.3 }}>
         Monetize your website with Adsterra
       </h2>
       <p style={{ margin: '0 0 16px', color: '#475569', lineHeight: 1.65 }}>
         Have a website or online project? Explore Adsterra’s publisher program and review its requirements, formats, and payment terms before signing up.
       </p>
-      <div style={{ margin: '0 0 16px' }}>
+      <div style={{ margin: '0 0 16px', maxWidth: '100%' }}>
         <a
           href={REFERRAL_URL}
           target="_blank"
@@ -37,6 +41,7 @@ export default function AdsterraReferral() {
             width="120"
             height="60"
             loading="lazy"
+            style={{ display: 'block', maxWidth: '100%', height: 'auto' }}
           />
         </a>
       </div>
@@ -46,6 +51,9 @@ export default function AdsterraReferral() {
         rel="sponsored noopener noreferrer"
         style={{
           display: 'inline-flex',
+          maxWidth: '100%',
+          boxSizing: 'border-box',
+          flexWrap: 'wrap',
           alignItems: 'center',
           gap: 8,
           padding: '10px 15px',
