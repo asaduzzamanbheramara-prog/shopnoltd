@@ -36,7 +36,7 @@ export default function Discover() {
     {posts.length > 0 && <AdsterraResponsiveBanner />}
     <section>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}><h2>Open work</h2><Link to="/work">Browse all work →</Link></div>
-      {works.length === 0 ? <div style={card}>No open work is currently available.</div> : works.map(work => <article key={work.id} style={card}><div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}><b>{work.title}</b><b>{work.reward_amount} {work.currency}</b></div><p>{work.description}</p><small>{work.max_workers} worker slot(s) · {work.deadline ? new Date(work.deadline).toLocaleString() : 'No deadline'}</small></article>)}
+      {works.length === 0 ? <div style={card}>No open work is currently available.</div> : works.map(work => <article key={work.id} style={card}><div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}><b>{work.title}</b><b>{work.reward_amount} {work.currency}</b></div><p>{work.description}</p><small>{work.max_workers} worker slot(s) · {work.deadline ? new Date(work.deadline).toLocaleString() : 'No deadline'}</small></article>)}
     </section>
   </main>
 }
