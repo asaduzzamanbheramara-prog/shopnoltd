@@ -1,0 +1,12 @@
+[
+  {
+    "op": "replace",
+    "path": "/spec/tls/0/secretName",
+    "value": "license-service-tls"
+  },
+  {
+    "op": "add",
+    "path": "/metadata/annotations/cert-manager.io~1cluster-issuer",
+    "value": "letsencrypt-prod"
+  }
+]
