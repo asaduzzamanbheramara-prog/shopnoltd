@@ -24,6 +24,22 @@ export default function AdsterraReferral() {
       <p style={{ margin: '0 0 16px', color: '#475569', lineHeight: 1.65 }}>
         Have a website or online project? Explore Adsterra’s publisher program and review its requirements, formats, and payment terms before signing up.
       </p>
+      <div style={{ margin: '0 0 16px' }}>
+        <a
+          href={REFERRAL_URL}
+          target="_blank"
+          rel="nofollow noopener noreferrer"
+          aria-label="Join Adsterra using referral link"
+        >
+          <img
+            alt="Adsterra referral banner"
+            src="https://landings-cdn.adsterratech.com/referralBanners/gif/120x60_adsterra_reff.gif"
+            width="120"
+            height="60"
+            loading="lazy"
+          />
+        </a>
+      </div>
       <a
         href={REFERRAL_URL}
         target="_blank"
