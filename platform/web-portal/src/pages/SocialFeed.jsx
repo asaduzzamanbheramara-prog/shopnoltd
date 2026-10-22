@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { platformApi } from '../lib/platformApi'
+import { AdsterraResponsiveBanner } from '../components/AdsterraAds'
 
-const shell = { maxWidth: 900, margin: '0 auto', padding: '28px 16px 80px', fontFamily: 'system-ui, sans-serif' }
-const card = { background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14, padding: 18, marginBottom: 14 }
+const shell = { width: '100%', maxWidth: 900, minWidth: 0, boxSizing: 'border-box', margin: '0 auto', padding: '28px clamp(12px,4vw,16px) 80px', overflowWrap: 'anywhere', fontFamily: 'system-ui, sans-serif' }
+const card = { minWidth: 0, boxSizing: 'border-box', background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14, padding: 18, marginBottom: 14, overflowWrap: 'anywhere' }
 
 function PostCard({ post, refresh, following, toggleFollow }) {
   const navigate = useNavigate()
@@ -59,7 +60,7 @@ function PostCard({ post, refresh, following, toggleFollow }) {
         <button onClick={() => navigator.clipboard?.writeText(direct)}>🔗 Copy link</button>
         <button onClick={() => navigate(`/post/${post.id}`)}>Open</button>
       </div>
-      <form onSubmit={addComment} style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+      <form onSubmit={addComment} style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 14 }}>
         <input value={comment} onChange={e => setComment(e.target.value)} placeholder="Write a comment…" style={{ flex: 1, padding: 9, border: '1px solid #cbd5e1', borderRadius: 8 }} />
         <button type="submit">Comment</button>
       </form>
@@ -143,5 +144,6 @@ export default function SocialFeed() {
     {error && <div role="alert" style={{ ...card, color: '#b91c1c' }}>{error} <button onClick={load} style={{ marginLeft: 8 }}>Retry</button></div>}
     {!loading && !error && posts.length === 0 && <div style={card}>No posts yet. Be the first to publish.</div>}
     {posts.map(post => <PostCard key={post.id} post={post} refresh={refresh} following={following} toggleFollow={toggleFollow} />)}
+    {!loading && posts.length > 0 && <AdsterraResponsiveBanner />}
   </div>
 }
