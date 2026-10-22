@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class ZoneIn(BaseModel):
@@ -33,7 +33,7 @@ class ContactIn(BaseModel):
 
 class RegisterDomainIn(BaseModel):
     domain: str
-    years: int = 1
+    years: int = Field(default=1, ge=1, le=10)
     contact: ContactIn
 
 

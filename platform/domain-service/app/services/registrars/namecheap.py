@@ -88,10 +88,12 @@ class NamecheapAdapter(RegistrarAdapter):
                 price_node = price
                 break
         if price_node is None:
-            # Fall back to the first available duration if an exact match isn't found
-            price_node = root.find(".//nc:Product/nc:Price", NS)
-        if price_node is None:
-            raise RuntimeError(f"Namecheap get_pricing: no pricing returned for .{tld}")
+            # Never substitute another duration's price: doing so can undercharge
+            # multi-year registrations or renewals. Fail closed until the registrar
+            # returns an exact quote for the requested duration.
+            raise RuntimeError(
+                f"Namecheap get_pricing: no {years}-year price returned for .{tld}"
+            )
         return {
             "tld": tld,
             "years": years,
