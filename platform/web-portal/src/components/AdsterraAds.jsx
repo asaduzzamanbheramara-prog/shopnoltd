@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 
 const ZONES = {
   '468x60': { key: '7747061d0c5ae776f68405dbeeab89fd', width: 468, height: 60, scriptUrl: 'https://bicea.org/22/7747061d0c5ae776f68405dbeeab89fd' },
@@ -151,5 +151,28 @@ export function AdsterraSmartlink() {
     <AdLabel />
     <p style={{ margin: 0, color: '#475569', lineHeight: 1.5 }}>Sponsored link. Opening it takes you to an external advertiser destination.</p>
     <a href="https://arwf.org/4/e15a69f3ca91af71dfca281a544d18e9" target="_blank" rel="sponsored noopener noreferrer" style={{ display: 'inline-block', padding: '9px 14px', borderRadius: 8, background: '#0369a1', color: '#fff', fontWeight: 700, textDecoration: 'none' }}>Visit sponsored link ↗</a>
+  </section>
+}
+
+
+export function AdsterraResponsiveBanner() {
+  const [zoneName, setZoneName] = useState('320x50')
+  useEffect(() => {
+    const choose = () => {
+      if (window.matchMedia('(min-width: 1000px)').matches) setZoneName('728x90')
+      else if (window.matchMedia('(min-width: 560px)').matches) setZoneName('468x60')
+      else setZoneName('320x50')
+    }
+    choose()
+    window.addEventListener('resize', choose)
+    return () => window.removeEventListener('resize', choose)
+  }, [])
+  return <AdsterraBannerZone name={zoneName} maxWidth={760} />
+}
+
+export function AdsterraTallBannerPair() {
+  return <section aria-label="Additional advertisements" style={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-start', gap: 24, flexWrap: 'wrap', margin: '32px auto', maxWidth: 520 }}>
+    <AdsterraBannerZone name="160x300" maxWidth={190} />
+    <AdsterraBannerZone name="160x600" maxWidth={190} />
   </section>
 }
