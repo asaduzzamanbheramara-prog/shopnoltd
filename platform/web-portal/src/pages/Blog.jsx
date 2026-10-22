@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { platformApi } from '../lib/platformApi'
+import { AdsterraResponsiveBanner } from '../components/AdsterraAds'
 
 export default function Blog() {
   const [posts, setPosts] = useState([])
@@ -46,6 +47,7 @@ export default function Blog() {
       <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search articles…" style={{ flex: '1 1 260px', padding: 11, border: '1px solid #cbd5e1', borderRadius: 9 }} />
       <select value={category} onChange={e => setCategory(e.target.value)} style={{ padding: 11, border: '1px solid #cbd5e1', borderRadius: 9 }}>{categories.map(c => <option key={c}>{c}</option>)}</select>
     </div>
-    {loading ? <div style={{ padding: 30, border: '1px solid #e2e8f0', borderRadius: 12, color: '#64748b' }}>Loading published articles…</div> : filtered.length === 0 ? <div style={{ padding: 30, border: '1px solid #e2e8f0', borderRadius: 12, color: '#64748b' }}>{error ? 'The blog could not be loaded.' : 'No published articles match your search.'}</div> : <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 18 }}>{filtered.map(p => <article key={p.id} style={{ border: '1px solid #e2e8f0', borderRadius: 14, overflow: 'hidden' }}>{p.cover_image && <img src={p.cover_image} alt="" loading="lazy" style={{ width: '100%', height: 180, objectFit: 'cover' }} />}<div style={{ padding: 20 }}><div style={{ color: '#64748b', fontSize: 13 }}>{p.published_at ? new Date(p.published_at).toLocaleDateString() : ''}</div><h2>{p.title}</h2><p style={{ color: '#475569', lineHeight: 1.6 }}>{p.excerpt || p.content?.slice(0, 180)}</p><Link to={`/blog/${p.slug}`}>Read more →</Link></div></article>)}</section>}
+    {loading ? <div style={{ padding: 30, border: '1px solid #e2e8f0', borderRadius: 12, color: '#64748b' }}>Loading published articles…</div> : filtered.length === 0 ? <div style={{ padding: 30, border: '1px solid #e2e8f0', borderRadius: 12, color: '#64748b' }}>{error ? 'The blog could not be loaded.' : 'No published articles match your search.'}</div> : <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,280px),1fr))', gap: 18 }}>{filtered.map(p => <article key={p.id} style={{ minWidth: 0, border: '1px solid #e2e8f0', borderRadius: 14, overflow: 'hidden' }}>{p.cover_image && <img src={p.cover_image} alt="" loading="lazy" style={{ display: 'block', width: '100%', height: 180, objectFit: 'cover' }} />}<div style={{ padding: 20 }}><div style={{ color: '#64748b', fontSize: 13 }}>{p.published_at ? new Date(p.published_at).toLocaleDateString() : ''}</div><h2 style={{ overflowWrap: 'anywhere' }}>{p.title}</h2><p style={{ color: '#475569', lineHeight: 1.6 }}>{p.excerpt || p.content?.slice(0, 180)}</p><Link to={`/blog/${p.slug}`}>Read more →</Link></div></article>)}</section>}
+    {!loading && filtered.length > 0 && <AdsterraResponsiveBanner />}
   </main>
 }
