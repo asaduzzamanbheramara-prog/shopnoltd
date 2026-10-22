@@ -1,12 +1,16 @@
 from __future__ import annotations
 
+import asyncio
 import hashlib
+import logging
 import os
 import re
 import secrets
 import tempfile
+import threading
 import time
 import urllib.request
+from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -62,7 +66,7 @@ except Exception:
 core = client.CoreV1Api()
 networking = client.NetworkingV1Api()
 jwks_client = jwt.PyJWKClient(KEYCLOAK_JWKS_URL)
-app = FastAPI(title="Shopnoltd Android Cloud", version="2.0.0")
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -73,9 +77,11 @@ class Session:
     gateway_name: str
     created_at: float
     last_seen: float
+    ttl_seconds: int
 
 
 sessions: dict[str, Session] = {}
+sessions_lock = threading.RLock()
 
 
 class CreateSessionIn(BaseModel):
@@ -272,13 +278,42 @@ def delete_resources(session: Session) -> None:
 
 
 def cleanup_expired() -> None:
+    """Delete expired sessions; retain failed deletions so the next sweep can retry."""
     now = time.time()
-    for session_id, session in list(sessions.items()):
-        if now - session.last_seen > SESSION_TTL_SECONDS:
+    with sessions_lock:
+        for session_id, session in list(sessions.items()):
+            if now - session.last_seen <= session.ttl_seconds:
+                continue
             try:
                 delete_resources(session)
-            finally:
-                sessions.pop(session_id, None)
+            except Exception:
+                logger.exception("Failed to clean up expired Android Cloud session %s", session_id)
+                continue
+            sessions.pop(session_id, None)
+
+
+async def session_cleanup_loop() -> None:
+    """Periodically reclaim abandoned emulator resources without waiting for new requests."""
+    interval = max(5, min(60, SESSION_TTL_SECONDS // 4))
+    while True:
+        await asyncio.sleep(interval)
+        await asyncio.to_thread(cleanup_expired)
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    task = asyncio.create_task(session_cleanup_loop())
+    try:
+        yield
+    finally:
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
+
+
+app = FastAPI(title="Shopnoltd Android Cloud", version="2.0.0", lifespan=lifespan)
 
 
 def response_for(session: Session) -> dict[str, Any]:
@@ -286,7 +321,7 @@ def response_for(session: Session) -> dict[str, Any]:
         "session_id": session.session_id,
         "status": "starting",
         "gateway_url": f"{PUBLIC_GATEWAY_BASE}/{session.session_id}",
-        "expires_at": int(session.created_at + SESSION_TTL_SECONDS),
+        "expires_at": int(session.last_seen + session.ttl_seconds),
         "turn": {
             "urls": TURN_URLS,
             "username": TURN_USERNAME,
@@ -298,11 +333,12 @@ def response_for(session: Session) -> dict[str, Any]:
 
 
 def get_session_for_user(session_id: str, user_id: str) -> Session:
-    session = sessions.get(session_id)
-    if not session or session.user_id != user_id:
-        raise HTTPException(status_code=404, detail="session_not_found")
-    session.last_seen = time.time()
-    return session
+    with sessions_lock:
+        session = sessions.get(session_id)
+        if not session or session.user_id != user_id:
+            raise HTTPException(status_code=404, detail="session_not_found")
+        session.last_seen = time.time()
+        return session
 
 
 def exec_emulator(session: Session, command: list[str], stdin_bytes: bytes | None = None) -> str:
@@ -588,29 +624,32 @@ async def uninstall_app(body: PackageIn, session_id: str, user_id: str = Depends
 
 @app.post("/api/v1/android-cloud/sessions")
 async def create_session(body: CreateSessionIn, user_id: str = Depends(current_user)) -> dict[str, Any]:
-    del body
     cleanup_expired()
-    existing = next((item for item in sessions.values() if item.user_id == user_id), None)
-    if existing:
-        existing.last_seen = time.time()
-        return response_for(existing)
-    if len(sessions) >= MAX_SESSIONS:
-        raise HTTPException(status_code=429, detail="android_cloud_capacity_exhausted")
-    session_id = secrets.token_urlsafe(24).replace("-", "").replace("_", "")
-    session = Session(
-        session_id=session_id,
-        user_id=user_id,
-        emulator_name=name_for("aemu", session_id),
-        gateway_name=name_for("agw", session_id),
-        created_at=time.time(),
-        last_seen=time.time(),
-    )
-    try:
-        create_resources(session)
-    except ApiException as exc:
-        raise HTTPException(status_code=503, detail=f"android_cloud_provision_failed:{exc.reason}") from exc
-    sessions[session_id] = session
-    return response_for(session)
+    with sessions_lock:
+        existing = next((item for item in sessions.values() if item.user_id == user_id), None)
+        if existing:
+            existing.ttl_seconds = body.ttl_seconds
+            existing.last_seen = time.time()
+            return response_for(existing)
+        if len(sessions) >= MAX_SESSIONS:
+            raise HTTPException(status_code=429, detail="android_cloud_capacity_exhausted")
+        now = time.time()
+        session_id = secrets.token_urlsafe(24).replace("-", "").replace("_", "")
+        session = Session(
+            session_id=session_id,
+            user_id=user_id,
+            emulator_name=name_for("aemu", session_id),
+            gateway_name=name_for("agw", session_id),
+            created_at=now,
+            last_seen=now,
+            ttl_seconds=body.ttl_seconds,
+        )
+        try:
+            create_resources(session)
+        except ApiException as exc:
+            raise HTTPException(status_code=503, detail=f"android_cloud_provision_failed:{exc.reason}") from exc
+        sessions[session_id] = session
+        return response_for(session)
 
 
 @app.get("/api/v1/android-cloud/sessions/{session_id}")
@@ -621,7 +660,8 @@ async def get_session(session_id: str, user_id: str = Depends(current_user)) -> 
 
 @app.delete("/api/v1/android-cloud/sessions/{session_id}")
 async def stop_session(session_id: str, user_id: str = Depends(current_user)) -> dict[str, str]:
-    session = get_session_for_user(session_id, user_id)
-    delete_resources(session)
-    sessions.pop(session_id, None)
+    with sessions_lock:
+        session = get_session_for_user(session_id, user_id)
+        delete_resources(session)
+        sessions.pop(session_id, None)
     return {"status": "stopped", "session_id": session_id}
