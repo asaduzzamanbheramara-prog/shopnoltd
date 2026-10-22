@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { platformApi } from '../lib/platformApi'
+import { AdsterraResponsiveBanner } from '../components/AdsterraAds'
 
-const shell = { maxWidth: 1000, margin: '0 auto', padding: '32px 16px 80px', fontFamily: 'system-ui, sans-serif' }
-const card = { background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14, padding: 18, marginBottom: 14 }
+const shell = { width: '100%', maxWidth: 1000, minWidth: 0, boxSizing: 'border-box', margin: '0 auto', padding: '32px clamp(12px,4vw,16px) 80px', overflowWrap: 'anywhere', fontFamily: 'system-ui, sans-serif' }
+const card = { minWidth: 0, boxSizing: 'border-box', background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14, padding: 18, marginBottom: 14, overflowWrap: 'anywhere' }
 
 export default function Discover() {
   const [posts, setPosts] = useState([])
@@ -32,6 +33,7 @@ export default function Discover() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}><h2>Community</h2><Link to="/feed">Open Feed →</Link></div>
       {posts.length === 0 ? <div style={card}>No public posts yet.</div> : posts.map(post => <article key={post.id} style={card}><b>{post.user_id}</b><p style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{post.content}</p><Link to={`/post/${post.id}`}>Open post →</Link></article>)}
     </section>
+    {posts.length > 0 && <AdsterraResponsiveBanner />}
     <section>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}><h2>Open work</h2><Link to="/work">Browse all work →</Link></div>
       {works.length === 0 ? <div style={card}>No open work is currently available.</div> : works.map(work => <article key={work.id} style={card}><div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}><b>{work.title}</b><b>{work.reward_amount} {work.currency}</b></div><p>{work.description}</p><small>{work.max_workers} worker slot(s) · {work.deadline ? new Date(work.deadline).toLocaleString() : 'No deadline'}</small></article>)}
