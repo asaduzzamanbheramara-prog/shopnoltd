@@ -126,8 +126,10 @@ export function AdsterraNativeBanner() {
 
 export function AdsterraGlobalFormats() {
   useEffect(() => {
+    // Google AdSense is loaded site-wide. Do not enable Adsterra Popunder here:
+    // Google's publisher policies prohibit AdSense on sites that contain or trigger pop-unders.
+    // Keep the non-popunder Social Bar format; only add formats after policy compatibility is verified.
     const scripts = [
-      { key: 'popunder', src: 'https://afders.org/1/09836d27bc58347743587df99b0dfe7f' },
       { key: 'socialbar', src: 'https://bicea.org/14/6709e7550b64cb74dbb906dc2ebb08e0' },
     ]
     const added = []
