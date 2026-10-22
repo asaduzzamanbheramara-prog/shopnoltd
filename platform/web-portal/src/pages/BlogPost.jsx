@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { platformApi } from '../lib/platformApi'
+import { AdsterraResponsiveBanner } from '../components/AdsterraAds'
 
 const buttonStyle = { border: '1px solid #cbd5e1', background: '#fff', color: '#0f172a', borderRadius: 8, padding: '9px 14px', cursor: 'pointer', fontSize: 14 }
 
@@ -115,16 +116,16 @@ export default function BlogPost() {
     .replace(/\s*(!\[[^\]]*\]\(https:\/\/[^)\s]+\))/g, '\n\n$1\n\n')
   const blocks = normalizedContent.split(/\n\s*\n/).map(block => block.trim()).filter(Boolean)
 
-  return <main style={{ maxWidth: 900, margin: '0 auto', padding: '42px 20px 80px', fontFamily: 'system-ui, sans-serif' }}>
+  return <main style={{ width: '100%', maxWidth: 900, minWidth: 0, boxSizing: 'border-box', margin: '0 auto', padding: 'clamp(24px,5vw,42px) clamp(14px,4vw,20px) 80px', overflowWrap: 'anywhere', fontFamily: 'system-ui, sans-serif' }}>
     <Link to="/blog">← Back to Blog</Link>
     <article style={{ marginTop: 24 }}>
-      {post.cover_image && <img src={post.cover_image} alt="" style={{ display: 'block', width: '100%', maxHeight: 430, objectFit: 'cover', borderRadius: 16 }} />}
+      {post.cover_image && <img src={post.cover_image} alt="" style={{ display: 'block', width: '100%', maxWidth: '100%', height: 'auto', maxHeight: 430, objectFit: 'cover', borderRadius: 16 }} />}
       <div style={{ marginTop: 28 }}>
         <div style={{ color: '#0284c7', fontWeight: 700 }}>Shopnoltd Blog</div>
         <h1 style={{ fontSize: 'clamp(32px,5vw,52px)', lineHeight: 1.15, margin: '8px 0 12px', color: '#0f172a' }}>{post.title}</h1>
         <div style={{ color: '#64748b', marginBottom: 30 }}>{post.published_at ? new Date(post.published_at).toLocaleDateString() : ''}</div>
         {post.excerpt && <p style={{ fontSize: 19, lineHeight: 1.8, color: '#334155', fontWeight: 600, marginBottom: 28 }}>{post.excerpt}</p>}
-        {blocks.map(renderContentBlock)}
+        {blocks.map((block, index) => <React.Fragment key={index}>{renderContentBlock(block, index)}{index === 3 && blocks.length > 5 && <AdsterraResponsiveBanner />}</React.Fragment>)}
       </div>
       <section aria-label="Article actions" style={{ borderTop: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0', padding: '18px 0', marginTop: 34, display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
         <button type="button" style={{ ...buttonStyle, background: like.liked ? '#e0f2fe' : '#fff', borderColor: like.liked ? '#0284c7' : '#cbd5e1' }} onClick={toggleLike} disabled={interactionBusy}>{like.liked ? '♥ Liked' : '♡ Like'} · {like.count}</button>
