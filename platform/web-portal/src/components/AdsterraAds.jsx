@@ -62,7 +62,10 @@ function enqueueZoneLoad(job) {
 const shellStyle = {
   boxSizing: 'border-box',
   margin: '24px auto',
-  padding: '10px',
+  padding: '4px',
+  width: '100%',
+  maxWidth: '100%',
+  minWidth: 0,
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
@@ -157,8 +160,10 @@ export function AdsterraSmartlink() {
 
 export function AdsterraResponsiveBanner() {
   const [zoneName, setZoneName] = useState('320x50')
+  const [tooNarrow, setTooNarrow] = useState(false)
   useEffect(() => {
     const choose = () => {
+      setTooNarrow(window.matchMedia('(max-width: 359px)').matches)
       if (window.matchMedia('(min-width: 1000px)').matches) setZoneName('728x90')
       else if (window.matchMedia('(min-width: 560px)').matches) setZoneName('468x60')
       else setZoneName('320x50')
@@ -167,6 +172,9 @@ export function AdsterraResponsiveBanner() {
     window.addEventListener('resize', choose)
     return () => window.removeEventListener('resize', choose)
   }, [])
+  // A fixed 320px iframe cannot fit in the narrowest 320px viewport once page gutters are applied.
+  // Prefer a clean layout over rendering a clipped banner on those screens.
+  if (tooNarrow) return null
   return <AdsterraBannerZone name={zoneName} maxWidth={760} />
 }
 
