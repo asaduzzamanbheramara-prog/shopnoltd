@@ -79,23 +79,118 @@ const PUBLIC_LINKS = [['About', '/about'], ['Services', '/services'], ['Pricing'
 const STANDALONE_APP_PATHS = new Set(['/android-cloud'])
 
 function Nav() {
-  const navigate = useNavigate(); const location = useLocation(); const token = localStorage.getItem('shopno_token'); const loggedIn = !!token; const isAdmin = loggedIn && isPlatformAdmin()
-  function handleLogout() { localStorage.removeItem('shopno_token'); localStorage.removeItem('shopno_refresh_token'); sessionStorage.removeItem('shopno_profile_provisioned'); navigate('/') }
+  const navigate = useNavigate()
+  const location = useLocation()
+  const token = localStorage.getItem('shopno_token')
+  const loggedIn = !!token
+  const isAdmin = loggedIn && isPlatformAdmin()
+  const [isMobile, setIsMobile] = React.useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 760px)').matches)
+  const [menuOpen, setMenuOpen] = React.useState(false)
+
+  React.useEffect(() => {
+    const media = window.matchMedia('(max-width: 760px)')
+    const update = () => {
+      setIsMobile(media.matches)
+      if (!media.matches) setMenuOpen(false)
+    }
+    update()
+    media.addEventListener?.('change', update)
+    return () => media.removeEventListener?.('change', update)
+  }, [])
+
+  React.useEffect(() => { setMenuOpen(false) }, [location.pathname])
+
+  function handleLogout() {
+    localStorage.removeItem('shopno_token')
+    localStorage.removeItem('shopno_refresh_token')
+    sessionStorage.removeItem('shopno_profile_provisioned')
+    navigate('/')
+    setMenuOpen(false)
+  }
+
   function renderPublicLink(label, path) {
-    const style = { color: 'white', textDecoration: 'none', padding: '6px 2px', whiteSpace: 'nowrap', fontWeight: location.pathname === path ? 700 : 400 }
+    const style = {
+      display: isMobile ? 'block' : 'inline-flex',
+      color: 'white',
+      textDecoration: 'none',
+      padding: isMobile ? '9px 4px' : '6px 2px',
+      whiteSpace: 'normal',
+      overflowWrap: 'anywhere',
+      fontWeight: location.pathname === path ? 700 : 400,
+      borderBottom: isMobile ? '1px solid rgba(255,255,255,.18)' : 'none',
+    }
     return STANDALONE_APP_PATHS.has(path)
       ? <a key={path} href={path} style={style}>{label}</a>
       : <Link key={path} to={path} style={style}>{label}</Link>
   }
-  return <nav style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 12, padding: '12px clamp(14px, 3vw, 24px)', background: '#0ea5e9', color: 'white', boxSizing: 'border-box' }}>
-    <Link to="/" style={{ color: 'white', display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: 20, textDecoration: 'none', whiteSpace: 'nowrap', marginRight: 'auto' }}><img src="/logo.svg" alt="Shopnoltd" style={{ height: 28, width: 28, objectFit: 'contain' }} />Shopnoltd</Link>
-    <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'flex-end', gap: '8px 16px', minWidth: 0 }}>
+
+  return <nav aria-label="Main navigation" style={{
+    display: 'flex',
+    flexDirection: isMobile ? 'column' : 'row',
+    alignItems: isMobile ? 'stretch' : 'center',
+    flexWrap: 'nowrap',
+    gap: 10,
+    padding: '12px clamp(14px, 3vw, 24px)',
+    background: '#0ea5e9',
+    color: 'white',
+    boxSizing: 'border-box',
+    width: '100%',
+    minWidth: 0,
+  }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, minWidth: 0 }}>
+      <Link to="/" style={{ color: 'white', display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: 20, textDecoration: 'none', whiteSpace: 'nowrap', minWidth: 0 }}>
+        <img src="/logo.svg" alt="Shopnoltd" style={{ height: 28, width: 28, objectFit: 'contain', flexShrink: 0 }} />Shopnoltd
+      </Link>
+      {isMobile && <button type="button" aria-label={menuOpen ? 'Close navigation menu' : 'Open navigation menu'} aria-expanded={menuOpen} onClick={() => setMenuOpen(open => !open)} style={{ color: 'white', background: 'rgba(255,255,255,.12)', border: '1px solid rgba(255,255,255,.55)', borderRadius: 8, padding: '8px 12px', font: 'inherit', fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}>{menuOpen ? 'Close ✕' : 'Menu ☰'}</button>}
+    </div>
+    <div style={{
+      display: isMobile && !menuOpen ? 'none' : 'flex',
+      flexDirection: isMobile ? 'column' : 'row',
+      flexWrap: isMobile ? 'nowrap' : 'wrap',
+      alignItems: isMobile ? 'stretch' : 'center',
+      justifyContent: 'flex-end',
+      gap: isMobile ? 2 : '8px 16px',
+      minWidth: 0,
+      width: isMobile ? '100%' : 'auto',
+      maxHeight: isMobile ? 'min(70vh, 620px)' : 'none',
+      overflowY: isMobile ? 'auto' : 'visible',
+      overscrollBehavior: 'contain',
+    }}>
       {PUBLIC_LINKS.map(([label, path]) => renderPublicLink(label, path))}
       <InstallPrompt />
-      {!loggedIn && <><Link to="/login" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px' }}>Login</Link><Link to="/register" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px' }}>Register</Link></>}
-      {loggedIn && <><Link to="/dashboard" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px' }}>Dashboard</Link><Link to="/connections" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px' }}>Platform Accounts</Link><Link to="/create-work" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px' }}>Create Work</Link><Link to="/my-created-work" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px' }}>My Created Work</Link><Link to="/referrals" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px' }}>Refer & Earn</Link><Link to="/wallet" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px' }}>Wallet</Link><Link to="/transactions" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px' }}>Transactions</Link><Link to="/exchange" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px' }}>Exchange</Link><Link to="/notifications" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px' }}>Notifications</Link><Link to="/account" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px' }}>Account</Link><Link to="/domain-management" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px' }}>My Domains</Link><Link to="/my-active-work" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px' }}>My Active Works</Link><Link to="/my-submission" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px' }}>My Submission</Link><Link to="/work-review" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px' }}>Work Review</Link><Link to="/my-blog" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px' }}>My Blog</Link>
-        {loggedIn && <Link to="/ads" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px', fontWeight: location.pathname === '/ads' ? 700 : 400 }}>Ads Network</Link>}{isAdmin && <><Link to="/admin" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px', fontWeight: 700 }}>Admin</Link><Link to="/admin/analytics" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px' }}>Analytics</Link><Link to="/admin/payment-accounts" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px' }}>Payment Accounts</Link><Link to="/admin/database" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px' }}>Database</Link><Link to="/admin/task-rates" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px' }}>Task Rates</Link><Link to="/admin/referrals" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px' }}>Referral Rewards</Link><Link to="/admin/infrastructure" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px' }}>Infrastructure</Link><Link to="/admin/profile-videos" style={{ color: 'white', textDecoration: 'none', padding: '6px 2px' }}>Profile Videos</Link></>}
-        <button onClick={handleLogout} style={{ color: 'white', background: 'transparent', border: '1px solid rgba(255,255,255,0.5)', borderRadius: 6, padding: '5px 12px', cursor: 'pointer' }}>Logout</button></>}
+      {!loggedIn && <>
+        <Link to="/login" style={{ color: 'white', textDecoration: 'none', padding: '8px 4px' }}>Login</Link>
+        <Link to="/register" style={{ color: 'white', textDecoration: 'none', padding: '8px 4px' }}>Register</Link>
+      </>}
+      {loggedIn && <>
+        <Link to="/dashboard" style={{ color: 'white', textDecoration: 'none', padding: '8px 4px' }}>Dashboard</Link>
+        <Link to="/connections" style={{ color: 'white', textDecoration: 'none', padding: '8px 4px' }}>Platform Accounts</Link>
+        <Link to="/create-work" style={{ color: 'white', textDecoration: 'none', padding: '8px 4px' }}>Create Work</Link>
+        <Link to="/my-created-work" style={{ color: 'white', textDecoration: 'none', padding: '8px 4px' }}>My Created Work</Link>
+        <Link to="/referrals" style={{ color: 'white', textDecoration: 'none', padding: '8px 4px' }}>Refer & Earn</Link>
+        <Link to="/wallet" style={{ color: 'white', textDecoration: 'none', padding: '8px 4px' }}>Wallet</Link>
+        <Link to="/transactions" style={{ color: 'white', textDecoration: 'none', padding: '8px 4px' }}>Transactions</Link>
+        <Link to="/exchange" style={{ color: 'white', textDecoration: 'none', padding: '8px 4px' }}>Exchange</Link>
+        <Link to="/notifications" style={{ color: 'white', textDecoration: 'none', padding: '8px 4px' }}>Notifications</Link>
+        <Link to="/account" style={{ color: 'white', textDecoration: 'none', padding: '8px 4px' }}>Account</Link>
+        <Link to="/domain-management" style={{ color: 'white', textDecoration: 'none', padding: '8px 4px' }}>My Domains</Link>
+        <Link to="/my-active-work" style={{ color: 'white', textDecoration: 'none', padding: '8px 4px' }}>My Active Works</Link>
+        <Link to="/my-submission" style={{ color: 'white', textDecoration: 'none', padding: '8px 4px' }}>My Submission</Link>
+        <Link to="/work-review" style={{ color: 'white', textDecoration: 'none', padding: '8px 4px' }}>Work Review</Link>
+        <Link to="/my-blog" style={{ color: 'white', textDecoration: 'none', padding: '8px 4px' }}>My Blog</Link>
+        <Link to="/ads" style={{ color: 'white', textDecoration: 'none', padding: '8px 4px', fontWeight: location.pathname === '/ads' ? 700 : 400 }}>Ads Network</Link>
+        {isAdmin && <>
+          <Link to="/admin" style={{ color: 'white', textDecoration: 'none', padding: '8px 4px', fontWeight: 700 }}>Admin</Link>
+          <Link to="/admin/analytics" style={{ color: 'white', textDecoration: 'none', padding: '8px 4px' }}>Analytics</Link>
+          <Link to="/admin/payment-accounts" style={{ color: 'white', textDecoration: 'none', padding: '8px 4px' }}>Payment Accounts</Link>
+          <Link to="/admin/database" style={{ color: 'white', textDecoration: 'none', padding: '8px 4px' }}>Database</Link>
+          <Link to="/admin/task-rates" style={{ color: 'white', textDecoration: 'none', padding: '8px 4px' }}>Task Rates</Link>
+          <Link to="/admin/referrals" style={{ color: 'white', textDecoration: 'none', padding: '8px 4px' }}>Referral Rewards</Link>
+          <Link to="/admin/infrastructure" style={{ color: 'white', textDecoration: 'none', padding: '8px 4px' }}>Infrastructure</Link>
+          <Link to="/admin/profile-videos" style={{ color: 'white', textDecoration: 'none', padding: '8px 4px' }}>Profile Videos</Link>
+        </>}
+        <button onClick={handleLogout} style={{ alignSelf: isMobile ? 'flex-start' : 'auto', color: 'white', background: 'transparent', border: '1px solid rgba(255,255,255,0.5)', borderRadius: 6, padding: '8px 12px', cursor: 'pointer' }}>Logout</button>
+      </>}
     </div>
   </nav>
 }
