@@ -4,6 +4,7 @@ import { SERVICES, BUSINESS_SERVICES, CONNECTED_PLATFORMS, ADMIN_SERVICES } from
 import DomainSearch from '../components/DomainSearch'
 import { isPlatformAdmin } from '../lib/jwt'
 import AdsterraBanner from '../components/AdsterraBanner'
+import AdsterraReferral from '../components/AdsterraReferral'
 import { AdsterraGlobalFormats, AdsterraNativeBanner, AdsterraResponsiveBanner, AdsterraSmartlink, AdsterraTallBannerPair } from '../components/AdsterraAds'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'https://api.shopnoltd.dpdns.org'
@@ -97,6 +98,7 @@ export default function Home() {
     </section>
     <AdsterraTallBannerPair />
     <AdsterraSmartlink />
+    <AdsterraReferral />
     <PaymentAccounts />
     {isAdmin && <PreviewSection title="Administration" description="Privileged controls for authorized platform administrators." items={ADMIN_SERVICES} limit={6} admin />}
   </main>
