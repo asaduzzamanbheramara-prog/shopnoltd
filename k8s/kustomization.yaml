@@ -80,5 +80,19 @@ patches:
     version: v1
     kind: Ingress
     name: .*
-    namespace: ^shopno-(apps|data|identity|mail|monitoring|payments|tools)$
+    namespace: ^shopno-(apps|data|identity|mail|monitoring|payments|platform|tools)$
     annotationSelector: cert-manager.io/cluster-issuer=letsencrypt-prod
+- path: tls/license-service-tls-exception.json
+  target:
+    group: networking.k8s.io
+    version: v1
+    kind: Ingress
+    name: license-service
+    namespace: ^shopno-platform$
+- path: tls/training-service-tls-exception.json
+  target:
+    group: networking.k8s.io
+    version: v1
+    kind: Ingress
+    name: training-service
+    namespace: ^shopno-platform$
