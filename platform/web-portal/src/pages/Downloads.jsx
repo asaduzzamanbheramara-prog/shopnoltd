@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { AdsterraResponsiveBanner } from '../components/AdsterraAds'
 
 const GITHUB = 'https://github.com/asaduzzamanbheramara-prog/shopnoltd/releases/download/shopnoltd-desktop-latest'
 const ANDROID = 'https://github.com/asaduzzamanbheramara-prog/shopnoltd/releases/download/shopnoltd-mobile-latest'
@@ -20,7 +21,7 @@ const mobile = [
 function Card({ icon, name, href, file, note }) {
   const target = href || (GITHUB + '/' + file)
   return (
-    <article style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: 16, padding: 20, boxShadow: '0 3px 12px rgba(15,23,42,.06)', display: 'flex', flexDirection: 'column', minHeight: 180 }}>
+    <article style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: 16, padding: 20, boxShadow: '0 3px 12px rgba(15,23,42,.06)', display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: 180 }}>
       <div style={{ fontSize: 34 }}>{icon}</div>
       <h2 style={{ margin: '10px 0 7px', fontSize: 20 }}>{name}</h2>
       <p style={{ color: '#64748b', lineHeight: 1.5, margin: 0, flex: 1 }}>{note}</p>
@@ -45,7 +46,7 @@ export default function Downloads() {
           <div><h2 style={{ marginBottom: 6 }}>Windows, Linux & macOS</h2><p style={{ color: '#64748b', marginTop: 0 }}>Shopnoltd desktop shell installers for the live Shopnoltd workspace.</p></div>
           <a href="https://github.com/asaduzzamanbheramara-prog/shopnoltd/releases/tag/shopnoltd-desktop-latest" target="_blank" rel="noopener noreferrer" style={{ color: '#0369a1', fontWeight: 800 }}>View desktop release →</a>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(245px,1fr))', gap: 18 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,245px),1fr))', gap: 18 }}>
           {desktop.map(item => <Card key={item.name} {...item} />)}
         </div>
       </section>
@@ -59,6 +60,8 @@ export default function Downloads() {
           {mobile.map(item => <Card key={item.name} {...item} />)}
         </div>
       </section>
+
+      <AdsterraResponsiveBanner />
 
       <section style={{ marginTop: 42, padding: 20, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 16 }}>
         <h2 style={{ marginTop: 0 }}>Integrity and release status</h2>
