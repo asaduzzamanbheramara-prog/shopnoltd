@@ -67,22 +67,21 @@ async def approve(tx_id: str, user=Depends(require_admin), s: AsyncSession = Dep
     if not w:
         raise HTTPException(409, "transaction wallet missing")
 
-    amount = Decimal(str(tx.amount))
-    balance = Decimal(str(w.balance))
-    frozen = Decimal(str(w.frozen))
+    # Approval is authorization, not proof that an external payout or deposit
+    # has settled. Do not mutate wallet balances or mark a withdrawal completed
+    # here; this service does not yet have a durable, idempotent payout dispatcher.
     if tx.type == TxType.withdrawal:
-        if frozen < amount or balance < amount:
-            raise HTTPException(409, "withdrawal reservation or balance is inconsistent")
-        w.balance = balance - amount
-        w.frozen = frozen - amount
-    elif tx.type == TxType.deposit:
-        w.balance = balance + amount
+        raise HTTPException(
+            503,
+            "withdrawal approval is temporarily blocked until an idempotent payout dispatcher is configured",
+        )
+    if tx.type != TxType.deposit:
+        raise HTTPException(400, "this transaction type cannot be approved here")
 
-    tx.status = TxStatus.completed
-    tx.completed_at = datetime.utcnow()
     tx.approved_by = user["sub"]
+    tx.status = TxStatus.processing
     await s.commit()
-    return {"ok": True}
+    return {"ok": True, "status": "processing"}
 
 
 @router.post("/reject/{tx_id}")
