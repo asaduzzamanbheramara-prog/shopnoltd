@@ -151,6 +151,9 @@ async def webhook(provider: str, request: Request):
                 return {"received": True, "status": "pending", "verification": verified}
 
         event_amount = data.get("amount") or data.get("order_amount") or event.get("amount") or stripe_object.get("amount")
+        # A success callback must carry enough financial detail to be reconciled.
+        if status in SUCCESS_STATUSES and event_amount is None:
+            raise HTTPException(400, "webhook amount is required")
         if event_amount is not None:
             provider_amount = Decimal(str(event_amount))
             if method == PaymentMethod.stripe:
@@ -159,15 +162,28 @@ async def webhook(provider: str, request: Request):
                 raise HTTPException(400, "webhook amount does not match transaction")
 
         event_currency = data.get("currency") or event.get("currency")
+        if status in SUCCESS_STATUSES and not event_currency:
+            raise HTTPException(400, "webhook currency is required")
         if event_currency and str(event_currency).upper() != str(tx.currency).upper():
             raise HTTPException(400, "webhook currency does not match transaction")
 
         if status in SUCCESS_STATUSES:
-            tx.status = TxStatus.completed
-            tx.completed_at = datetime.utcnow()
             wr = await s.execute(select(Wallet).where(Wallet.id == tx.wallet_id).with_for_update())
             w = wr.scalar_one()
-            w.balance = Decimal(str(w.balance)) + Decimal(str(tx.amount)) - Decimal(str(tx.fee))
+            if tx.type.value == "withdrawal":
+                # A provider success settles a withdrawal; it must not credit the wallet.
+                amount = Decimal(str(tx.amount))
+                frozen = Decimal(str(w.frozen))
+                if frozen < amount or Decimal(str(w.balance)) < amount:
+                    raise HTTPException(409, "withdrawal reservation or balance is inconsistent")
+                w.balance = Decimal(str(w.balance)) - amount
+                w.frozen = frozen - amount
+            elif tx.type.value == "deposit":
+                w.balance = Decimal(str(w.balance)) + Decimal(str(tx.amount)) - Decimal(str(tx.fee))
+            else:
+                raise HTTPException(400, "webhook success is unsupported for this transaction type")
+            tx.status = TxStatus.completed
+            tx.completed_at = datetime.utcnow()
         elif status in FAILED_STATUSES:
             tx.status = TxStatus.cancelled if status in {"CANCELED", "CANCELLED"} else TxStatus.failed
             tx.completed_at = datetime.utcnow()
