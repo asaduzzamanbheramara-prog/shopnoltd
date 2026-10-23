@@ -55,7 +55,7 @@ def test_outbox_model_enforces_valid_resource_status_and_attempt_count():
 
 
 def test_provisioning_retry_predicate_enforces_backoff_window():
-    from datetime import datetime, timedelta, timezone
+    from datetime import datetime, timedelta
 
     from sqlalchemy.dialects import postgresql
 
@@ -71,4 +71,5 @@ def test_provisioning_retry_predicate_enforces_backoff_window():
     assert "account_provisioning_jobs.updated_at <" in sql
     assert "account_provisioning_jobs.attempts <" in sql
     assert "account_provisioning_jobs.status IN" in sql
+    assert "2026-10-23 11:59:30" in sql
     assert now - timedelta(seconds=RETRY_DELAY_SECONDS) == datetime(2026, 10, 23, 11, 59, 30)
