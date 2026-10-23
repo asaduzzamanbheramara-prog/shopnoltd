@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Shopnoltd Software & OS Center: official downloads, installation guidance, and recovery options.">
+<title>Software & OS Center | Shopnoltd</title>
+<style>
+:root{color-scheme:light dark;--bg:#0b1220;--panel:#121d30;--line:#293851;--ink:#edf4ff;--muted:#a9b8ce;--accent:#70a5ff;--good:#8fe0b0;--warn:#ffd18b}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 system-ui,-apple-system,Segoe UI,sans-serif}a{color:var(--accent)}header,main,footer{max-width:1080px;margin:auto;padding:22px}header{display:flex;justify-content:space-between;align-items:center;gap:16px;border-bottom:1px solid var(--line)}.brand{font-weight:800;font-size:1.2rem;text-decoration:none;color:var(--ink)}.pill{border:1px solid var(--line);border-radius:999px;padding:5px 11px;color:var(--muted);font-size:.82rem}.hero{padding:42px 0 24px}.hero h1{font-size:clamp(2rem,5vw,3.2rem);line-height:1.1;margin:12px 0}.hero p,.muted{color:var(--muted)}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(245px,1fr));gap:16px}.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px}.card h2,.card h3{margin-top:0}.btn{display:inline-block;border:1px solid var(--accent);border-radius:9px;padding:9px 13px;text-decoration:none;font-weight:650;margin:5px 5px 0 0}.primary{background:var(--accent);color:#071326}.search{width:100%;padding:12px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font:inherit;margin:12px 0 18px}.notice{border-left:4px solid var(--warn);padding:12px 15px;background:#332819;border-radius:6px;margin:16px 0}.ok{color:var(--good)}.list{padding-left:20px}.section{margin:30px 0}footer{color:var(--muted);border-top:1px solid var(--line);font-size:.9rem}.small{font-size:.9rem}.hidden{display:none!important}
+</style>
+</head>
+<body>
+<header><a class="brand" href="/">Shopnoltd</a><span class="pill">Preview · Catalogue foundation</span></header>
+<main>
+<section class="hero">
+<span class="pill">SOFTWARE · OPERATING SYSTEMS · RECOVERY</span>
+<h1>Software &amp; OS Center</h1>
+<p>Find software and operating systems for supported computers, phones, tablets, servers, TVs, embedded devices, browsers and recovery environments. Filter by platform, device class, CPU architecture and package format.</p>
+<div class="notice"><strong>PC won't boot?</strong> A website cannot run on a computer that cannot start. Use another working computer to create bootable recovery media, or use network boot only if your device and network are already configured for it.</div>
+</section>
+<section class="section">
+<h2>Browse catalogue</h2>
+<label for="search">Search software, OS, APKs, drivers, package formats and devices</label>
+<input class="search" id="search" type="search" placeholder="Try Windows, Ubuntu, Android APK, iOS, MSI, APK, ISO, phone…" autocomplete="off">
+<div class="grid" id="catalogue">
+<article class="card" data-search="ubuntu linux operating system desktop iso install recovery">
+<h3>Ubuntu Desktop</h3><p class="muted small">Linux · OS · x86-64 (review current requirements)</p><p>Choose a supported release and verify the downloaded image using Ubuntu's official instructions.</p><p class="ok small">Official source · Metadata example, not yet release-verified</p><a class="btn primary" href="https://ubuntu.com/download/desktop" rel="noopener noreferrer" target="_blank">Official download</a><a class="btn" href="https://ubuntu.com/tutorials/how-to-verify-ubuntu" rel="noopener noreferrer" target="_blank">Verify image</a>
+</article>
+<article class="card" data-search="windows operating system microsoft installation media recovery">
+<h3>Windows</h3><p class="muted small">Windows · OS · Vendor-provided media</p><p>Use Microsoft's official download and installation-media instructions. Edition, licence and device compatibility apply.</p><p class="small">Official source · Review release requirements</p><a class="btn primary" href="https://www.microsoft.com/software-download/" rel="noopener noreferrer" target="_blank">Microsoft downloads</a>
+</article>
+<article class="card" data-search="linux mint linux operating system desktop iso">
+<h3>Linux Mint</h3><p class="muted small">Linux · OS · Community distribution</p><p>Use the official project site and its verification instructions; check the current release and hardware requirements.</p><p class="small">Official source · Review release metadata</p><a class="btn primary" href="https://linuxmint.com/download.php" rel="noopener noreferrer" target="_blank">Official download</a>
+</article>
+<article class="card" data-search="ventoy bootable usb recovery media tool">
+<h3>Bootable USB guidance</h3><p class="muted small">Recovery · External tool</p><p>For a non-bootable PC, prepare recovery media on another working computer. Writing an image can erase the selected USB drive.</p><a class="btn" href="https://www.ventoy.net/en/index.html" rel="noopener noreferrer" target="_blank">Ventoy official site</a>
+</article>
+</div><p id="empty" class="muted hidden">No catalogue entry matches that search.</p>
+</section>
+<section class="section grid">
+<article class="card"><h2>1. Online mode</h2><p>When your OS is running, use official software downloads, installation guides, driver resources and compatibility information. A future signed Shopnoltd helper may support approved local tasks.</p><p class="small muted">No system-level changes are performed by this catalogue page.</p></article>
+<article class="card"><h2>2. Offline recovery</h2><ol class="list"><li>Use another working computer.</li><li>Download the OS/recovery image from its official source.</li><li>Verify its signature or publisher checksum.</li><li>Create bootable media using a trusted tool.</li><li>Boot the target PC and choose diagnostics or installation.</li></ol></article>
+<article class="card"><h2>Safety first</h2><ul class="list"><li>Back up important files before recovery.</li><li>Confirm the target disk before formatting or installing.</li><li>Never share passwords, licence keys or recovery keys.</li><li>Use official sources and respect each software licence.</li></ul></article>
+</section>
+<section class="section card" id="recovery-guide">
+<h2>Guided recovery planner · Preview</h2>
+<p class="muted">Choose the target device and goal to get a safer, device-specific checklist. This page does not download images, inspect connected drives, or write a pendrive.</p>
+<div class="grid">
+<div><label for="recovery-device">Device family</label><select class="search" id="recovery-device"><option value="pc">PC / laptop / workstation</option><option value="android">Android phone / tablet</option><option value="apple-mobile">iPhone / iPad</option><option value="tv">TV / streaming device</option><option value="router">Router / embedded device</option><option value="other">Other device</option></select></div>
+<div><label for="recovery-os">Target OS / platform</label><select class="search" id="recovery-os"><option value="windows">Windows</option><option value="linux">Linux</option><option value="android">Android</option><option value="ios">iOS / iPadOS</option><option value="vendor">Vendor-specific / unknown</option></select></div>
+<div><label for="recovery-goal">Recovery goal</label><select class="search" id="recovery-goal"><option value="repair">Repair startup / system</option><option value="rescue">Rescue files / back up data</option><option value="reinstall">Reinstall OS / factory recovery</option></select></div>
+<div><label for="recovery-firmware">PC firmware (PC only)</label><select class="search" id="recovery-firmware"><option value="unknown">Unknown / not checked</option><option value="uefi">UEFI</option><option value="legacy">Legacy BIOS</option></select></div>
+</div>
+<button class="btn primary" id="build-recovery-guide" type="button">Generate recovery checklist</button>
+<div id="recovery-result" class="notice" role="status" aria-live="polite"><strong>Before you begin:</strong> identify the exact device model and back up data where possible.</div>
+<p class="small muted">Important: PC bootable USB is not a universal phone, TV, router, or embedded-device recovery method. For those devices, use only documented vendor recovery steps.</p>
+</section>
+<section class="section card"><h2>Payments and paid features</h2><p>Paid Shopnoltd features must be enabled only after server-side verification through the existing billing system. This preview does not process payments or unlock paid downloads.</p><p class="muted small">No payment form, credential collection, or entitlement bypass is included.</p></section>
+</main>
+<footer><p>Shopnoltd Software &amp; OS Center · Catalogue preview. This page does not guarantee compatibility or repair success and does not host operating-system images.</p><p><a href="/">Back to Shopnoltd</a></p></footer>
+<script>
+(function(){
+  const input=document.getElementById('search');
+  const catalogue=document.getElementById('catalogue');
+  const empty=document.getElementById('empty');
+  function refreshSearch(){
+    const q=input.value.trim().toLowerCase();
+    const cards=[...catalogue.querySelectorAll('[data-search]')];
+    let visible=0;
+    cards.forEach(card=>{
+      const show=(card.dataset.search+' '+card.textContent).toLowerCase().includes(q);
+      card.classList.toggle('hidden',!show);
+      if(show)visible++;
+    });
+    empty.classList.toggle('hidden',visible!==0);
+  }
+  input.addEventListener('input',refreshSearch);
+  const recoveryDevice=document.getElementById('recovery-device');
+  const recoveryOS=document.getElementById('recovery-os');
+  const recoveryGoal=document.getElementById('recovery-goal');
+  const recoveryFirmware=document.getElementById('recovery-firmware');
+  const recoveryResult=document.getElementById('recovery-result');
+  document.getElementById('build-recovery-guide').addEventListener('click',function(){
+    const device=recoveryDevice.value, os=recoveryOS.value, goal=recoveryGoal.value;
+    const lines=[];
+    if(device==='pc'){
+      lines.push('Use a separate working computer if the target PC cannot boot.');
+      lines.push(os==='windows'?'Start with Microsoft’s official Windows recovery/installation instructions.':'Start with the selected Linux distribution’s official live/recovery image and verification instructions.');
+      lines.push('Confirm CPU architecture, image requirements, '+(recoveryFirmware.value==='unknown'?'UEFI versus Legacy BIOS':'firmware mode '+recoveryFirmware.value)+', and Secure Boot compatibility.');
+      lines.push('Verify the image using a publisher-provided signature or checksum from a trusted official source.');
+      lines.push('Before any USB writer is used, identify the physical USB by model and capacity; confirm separately because writing usually erases that USB.');
+    }else{
+      lines.push('Do not assume a generic PC bootable USB can recover this device.');
+      lines.push('Identify the exact manufacturer, model, region/variant, and current firmware version.');
+      lines.push('Use only the manufacturer’s documented recovery, restore, or service procedure for this device family.');
+      if(device==='android'||os==='android')lines.push('Android recovery may require the vendor recovery menu or vendor-supported tools; USB OTG support does not imply OS reinstall support.');
+      if(device==='apple-mobile'||os==='ios')lines.push('For iPhone/iPad, use Apple’s documented recovery/update workflow and a supported Mac or Windows computer.');
+      if(device==='tv'||device==='router')lines.push('Check exact model and firmware package compatibility; do not flash firmware from a similar-looking model.');
+    }
+    if(goal==='rescue')lines.push('Prefer a data-preserving or read-only rescue path first; avoid factory reset, reinstall, or formatting until data is backed up.');
+    if(goal==='repair')lines.push('Try documented non-destructive diagnostics before reinstalling; stop if the next step may erase data.');
+    if(goal==='reinstall')lines.push('Reinstall/factory recovery can erase data. Confirm backups, device identity, correct image, and licence/vendor instructions first.');
+    lines.push('This preview only generates guidance. It does not download, verify, install, or write any image.');
+    recoveryResult.replaceChildren();
+    const title=document.createElement('strong');title.textContent=device==='pc'?'PC recovery checklist':'Device-specific recovery checklist';recoveryResult.append(title);
+    const list=document.createElement('ol');list.className='list';
+    lines.forEach(line=>{const item=document.createElement('li');item.textContent=line;list.append(item);});
+    recoveryResult.append(list);
+  });
+
+
+  function makeText(tag, text, className){
+    const node=document.createElement(tag);
+    node.textContent=String(text || '');
+    if(className)node.className=className;
+    return node;
+  }
+  function renderEntry(entry){
+    const card=document.createElement('article');
+    card.className='card';
+    card.dataset.search=[entry.name,entry.kind,...(entry.platforms||[]),...(entry.architectures||[]),...(entry.device_types||[]),...(entry.package_formats||[]),entry.description].join(' ');
+    card.append(makeText('h3',entry.name));
+    card.append(makeText('p',(entry.platforms||[]).join(' · ')+' · '+entry.kind+' · '+((entry.architectures||[]).join(', ')||'architecture not specified'),'muted small'));
+    if((entry.device_types||[]).length)card.append(makeText('p','Devices: '+entry.device_types.join(', '),'small'));
+    if((entry.package_formats||[]).length)card.append(makeText('p','Package formats: '+entry.package_formats.join(', '),'small'));
+    card.append(makeText('p',entry.description));
+    const status=(entry.verification&&entry.verification.status)||'needs-review';
+    card.append(makeText('p','Catalogue status: '+status+' · '+((entry.source&&entry.source.publisher)||'Publisher not specified'),'small'));
+    const url=entry.source&&entry.source.url;
+    if(typeof url==='string' && url.startsWith('https://')){
+      const link=document.createElement('a');
+      link.className='btn primary';
+      link.href=url;
+      link.target='_blank';
+      link.rel='noopener noreferrer';
+      link.textContent='Official source';
+      card.append(link);
+    }
+    return card;
+  }
+  fetch('/catalogue.json',{cache:'no-cache'})
+    .then(response=>{if(!response.ok)throw new Error('Catalogue unavailable');return response.json();})
+    .then(entries=>{
+      if(!Array.isArray(entries))throw new Error('Invalid catalogue payload');
+      const current=[...catalogue.querySelectorAll('article.card')];
+      const usb=current.find(card=>card.textContent.includes('Bootable USB guidance'));
+      catalogue.replaceChildren();
+      entries.filter(entry=>entry&&typeof entry.name==='string'&&typeof entry.kind==='string').forEach(entry=>catalogue.append(renderEntry(entry)));
+      if(usb)catalogue.append(usb);
+      refreshSearch();
+    })
+    .catch(()=>{ /* Keep the safe, official-link fallback cards if the JSON catalogue is unavailable. */ });
+})();
+</script>
+</body>
+</html>

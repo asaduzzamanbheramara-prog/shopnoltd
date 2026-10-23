@@ -1,13 +1,20 @@
 const { app, BrowserWindow, shell, Menu } = require('electron');
 const path = require('path');
+const { isTrustedPortalUrl, isSafeExternalUrl } = require('./navigation-policy');
 
 // Which site this build of the shell points at. `configs/active.json` is
-// written by the `prebuild:web` / `prebuild:admin` npm script before
-// packaging -- baked in at build time, not read from an env var at runtime,
-// since a double-clicked packaged app won't have SHOPNO_TARGET set.
+// written by the `select-config.js` script before packaging -- baked in at
+// build time, not read from an env var at runtime.
 const config = require(path.join(__dirname, 'configs', 'active.json'));
 
 let mainWindow;
+
+function openSafeExternalUrl(url) {
+  if (isSafeExternalUrl(url, config.url)) {
+    // Electron's external opener is only reached for HTTPS URLs.
+    void shell.openExternal(url).catch(() => {});
+  }
+}
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -16,8 +23,8 @@ function createWindow() {
     icon: path.join(__dirname, '..', 'build', 'icon.png'),
     title: config.title,
     webPreferences: {
-      nodeIntegration: false,      // never expose Node APIs to the loaded site
-      contextIsolation: true,       // required alongside nodeIntegration:false
+      nodeIntegration: false,
+      contextIsolation: true,
       sandbox: true,
       preload: path.join(__dirname, 'preload.js'),
     },
@@ -25,20 +32,20 @@ function createWindow() {
 
   mainWindow.loadURL(config.url);
 
-  // Anything that isn't your own domain opens in the system browser instead
-  // of inside the app -- avoids the app silently becoming a general-purpose
-  // browser for arbitrary sites.
+  // Trust only the exact HTTPS origin selected for this build. Do not accept
+  // arbitrary sibling subdomains based on hostname suffix matching.
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    if (new URL(url).hostname.endsWith(config.allowedHostSuffix)) {
+    if (isTrustedPortalUrl(url, config.url)) {
       return { action: 'allow' };
     }
-    shell.openExternal(url);
+    openSafeExternalUrl(url);
     return { action: 'deny' };
   });
+
   mainWindow.webContents.on('will-navigate', (event, url) => {
-    if (!new URL(url).hostname.endsWith(config.allowedHostSuffix)) {
+    if (!isTrustedPortalUrl(url, config.url)) {
       event.preventDefault();
-      shell.openExternal(url);
+      openSafeExternalUrl(url);
     }
   });
 

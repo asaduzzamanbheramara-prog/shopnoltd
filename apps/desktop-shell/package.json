@@ -13,7 +13,8 @@
     "start": "node scripts/select-config.js web-portal && electron .",
     "start:admin": "node scripts/select-config.js admin-portal && electron .",
     "build:web": "node scripts/select-config.js web-portal && electron-builder --config electron-builder.web.json",
-    "build:admin": "node scripts/select-config.js admin-portal && electron-builder --config electron-builder.admin.json"
+    "build:admin": "node scripts/select-config.js admin-portal && electron-builder --config electron-builder.admin.json",
+    "test": "node --test"
   },
   "devDependencies": {
     "electron": "^31.0.0",

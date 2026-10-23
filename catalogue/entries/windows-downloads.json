@@ -1,0 +1,31 @@
+{
+  "id": "windows-downloads",
+  "name": "Windows installation media",
+  "kind": "operating-system",
+  "description": "Official Microsoft page for Windows download and installation-media options. Confirm edition, current release, device compatibility, and licence requirements on the publisher site.",
+  "platforms": [
+    "windows"
+  ],
+  "architectures": [
+    "x86_64",
+    "arm64"
+  ],
+  "source": {
+    "type": "official-download-page",
+    "url": "https://www.microsoft.com/software-download/",
+    "publisher": "Microsoft"
+  },
+  "license_note": "Windows activation, edition eligibility, and redistribution are governed by Microsoft's terms. Shopnoltd does not host or redistribute Windows images.",
+  "verification": {
+    "method": "source-only-not-yet-verified",
+    "status": "needs-review",
+    "evidence_url": "https://www.microsoft.com/software-download/"
+  },
+  "pricing": {
+    "model": "external-vendor-license"
+  },
+  "notes": [
+    "Metadata points to the official download page, not a direct ISO URL.",
+    "Check the target PC's architecture and back up data before installing."
+  ]
+}
