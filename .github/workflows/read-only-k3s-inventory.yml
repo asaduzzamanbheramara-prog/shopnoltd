@@ -24,6 +24,21 @@ jobs:
           kubectl --request-timeout=15s config current-context
           kubectl --request-timeout=20s get nodes -o wide
 
+      - name: Audit PostgreSQL database names and sizes
+        shell: bash
+        run: |
+          set -euo pipefail
+          kubectl --request-timeout=20s -n shopno-data exec deployment/postgres -- sh -c '
+            set -eu
+            printf "Configured POSTGRES_DB: %s\\n" "${POSTGRES_DB:-unset}"
+            psql -X -U "$POSTGRES_USER" -d postgres -v ON_ERROR_STOP=1 -At -F "|" -c "
+              SELECT datname, pg_size_pretty(pg_database_size(datname))
+              FROM pg_database
+              WHERE datistemplate = false
+              ORDER BY datname;
+            "
+          '
+
       - name: Collect read-only workload inventory
         shell: bash
         run: |
