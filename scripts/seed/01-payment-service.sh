@@ -575,10 +575,9 @@ H "$ROOT/platform/payment-service/app/api/webhooks.py" 'import json
 from decimal import Decimal
 from datetime import datetime
 from fastapi import APIRouter, Request, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.core.db import SessionLocal
-from app.models.models import Transaction, TxStatus, Wallet, PaymentMethod
+from app.models.models import Transaction, TxStatus, TxType, Wallet, PaymentMethod
 from app.providers.registry import get_provider
 router = APIRouter()
 @router.post("/{provider}")
@@ -590,20 +589,40 @@ async def webhook(provider: str, request: Request):
     try: event = await p.verify_webhook(body, headers)
     except Exception as e: raise HTTPException(400, f"signature: {e}")
     async with SessionLocal() as s:
-        external = event.get("external_id") or event.get("paymentID") or event.get("prepayId") or (event.get("data") or {}).get("prepayId")
-        if not external: return {"received": True}
-        res = await s.execute(select(Transaction).where(Transaction.external_id == str(external)))
+        data = event.get("data") or {}
+        external = event.get("external_id") or event.get("paymentID") or event.get("prepayId") or data.get("prepayId") or data.get("transaction_id")
+        if not external: return {"received": True, "warning": "missing transaction identity"}
+        res = await s.execute(select(Transaction).where(Transaction.method == method, Transaction.external_id == str(external)).with_for_update())
         tx = res.scalar_one_or_none()
-        if not tx: return {"received": True, "warning":"tx not found"}
-        status = (event.get("status") or (event.get("data") or {}).get("status") or event.get("transactionStatus") or "").upper()
-        wr = await s.execute(select(Wallet).where(Wallet.id == tx.wallet_id)); w = wr.scalar_one()
-        if status in ("COMPLETED","SUCCESS","PAID","CAPTURED","TRADE_SUCCESS"):
+        if not tx: return {"received": True, "warning": "tx not found"}
+        status = (event.get("status") or data.get("status") or event.get("transactionStatus") or "").upper()
+        if status in ("COMPLETED", "SUCCESS", "PAID", "CAPTURED", "TRADE_SUCCESS"):
+            event_amount = data.get("amount") or data.get("order_amount") or event.get("amount")
+            event_currency = data.get("currency") or event.get("currency")
+            if event_amount is None or not event_currency: raise HTTPException(400, "webhook amount and currency are required")
+            amount = Decimal(str(event_amount))
+            if method == PaymentMethod.stripe: amount /= Decimal("100")
+            if amount != Decimal(str(tx.amount)): raise HTTPException(400, "webhook amount does not match transaction")
+            if str(event_currency).upper() != str(tx.currency).upper(): raise HTTPException(400, "webhook currency does not match transaction")
+            if tx.status in (TxStatus.completed, TxStatus.failed, TxStatus.cancelled): return {"received": True, "idempotent": True}
+            wr = await s.execute(select(Wallet).where(Wallet.id == tx.wallet_id).with_for_update()); w = wr.scalar_one()
+            if tx.type == TxType.withdrawal:
+                amount = Decimal(str(tx.amount)); frozen = Decimal(str(w.frozen))
+                if frozen < amount or Decimal(str(w.balance)) < amount: raise HTTPException(409, "withdrawal reservation or balance is inconsistent")
+                w.balance = Decimal(str(w.balance)) - amount; w.frozen = frozen - amount
+            elif tx.type == TxType.deposit:
+                w.balance = Decimal(str(w.balance)) + Decimal(str(tx.amount)) - Decimal(str(tx.fee))
+            else: raise HTTPException(400, "webhook success is unsupported for this transaction type")
             tx.status = TxStatus.completed; tx.completed_at = datetime.utcnow()
-            w.balance = Decimal(str(w.balance)) + Decimal(str(tx.amount)) - Decimal(str(tx.fee))
-        elif status in ("FAILED","EXPIRED","CANCELED","CANCELLED"):
-            tx.status = TxStatus.failed; tx.completed_at = datetime.utcnow()
-            if tx.type.value == "withdrawal":
-                w.frozen = Decimal(str(w.frozen)) - Decimal(str(tx.amount))
+        elif status in ("FAILED", "EXPIRED", "CANCELED", "CANCELLED"):
+            if tx.status in (TxStatus.completed, TxStatus.failed, TxStatus.cancelled): return {"received": True, "idempotent": True}
+            tx.status = TxStatus.cancelled if status in ("CANCELED", "CANCELLED") else TxStatus.failed
+            tx.completed_at = datetime.utcnow()
+            if tx.type == TxType.withdrawal:
+                wr = await s.execute(select(Wallet).where(Wallet.id == tx.wallet_id).with_for_update()); w = wr.scalar_one()
+                amount = Decimal(str(tx.amount)); frozen = Decimal(str(w.frozen))
+                if frozen < amount: raise HTTPException(409, "withdrawal reservation is inconsistent")
+                w.frozen = frozen - amount
         await s.commit()
     return {"received": True}
 '
