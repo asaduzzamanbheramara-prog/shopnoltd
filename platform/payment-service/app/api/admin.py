@@ -4,7 +4,7 @@ from decimal import Decimal
 
 from app.core.db import SessionLocal
 from app.core.security import verify_token
-from app.models.models import Transaction, TxStatus, Wallet
+from app.models.models import Transaction, TxStatus, TxType, Wallet
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
@@ -70,12 +70,12 @@ async def approve(tx_id: str, user=Depends(require_admin), s: AsyncSession = Dep
     amount = Decimal(str(tx.amount))
     balance = Decimal(str(w.balance))
     frozen = Decimal(str(w.frozen))
-    if tx.type == tx.type.withdrawal:
+    if tx.type == TxType.withdrawal:
         if frozen < amount or balance < amount:
             raise HTTPException(409, "withdrawal reservation or balance is inconsistent")
         w.balance = balance - amount
         w.frozen = frozen - amount
-    elif tx.type == tx.type.deposit:
+    elif tx.type == TxType.deposit:
         w.balance = balance + amount
 
     tx.status = TxStatus.completed
