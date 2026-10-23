@@ -12,9 +12,9 @@ This document records the source audit and implementation safety gates. It does 
 
 ## Source audit findings
 
-- `platform/freedomain-service/app/api/domains.py` contains `provision_for_user`, which can idempotently provision a free subdomain, and `GET /me` calls it lazily. The OAuth outbox now records subdomain work, but no worker currently invokes the FreeDomain service for those jobs.
+- `platform/freedomain-service/app/api/domains.py` contains `provision_for_user`, which can idempotently provision a free subdomain, and `GET /me` calls it lazily. `platform/oauth-service/app/core/provisioning_worker.py` now invokes the internal FreeDomain endpoint for subdomain jobs, but the worker is disabled by default and requires a shared high-entropy internal key configured through Kubernetes secret management.
 - `platform/freedomain-service/app/backfill_existing_users.py` exists for existing Keycloak users, but it is an operational backfill and must not be run as part of an unreviewed code change.
-- `platform/oauth-service/app/api/users.py` now enqueues unique `subdomain` and `mailbox` outbox jobs for user mirrors and administrator-created accounts. The database model constrains resource/status values and non-negative attempt counts. No worker/reconciler consumes the jobs yet, so enqueueing does not mean the resources exist.
+- `platform/oauth-service/app/api/users.py` enqueues unique `subdomain` and `mailbox` outbox jobs for user mirrors and administrator-created accounts. The database model constrains resource/status values and non-negative attempt counts. The background worker processes only subdomain jobs; mailbox jobs remain pending until a safe activation/reset flow and verified mail provider are available. Enqueueing never proves that a provider resource exists.
 - `platform/mail-service/app/api/mailboxes.py` now generates a cryptographically random provider password, never returns it, checks Mailcow's application-level JSON result, rolls back the local session on provider errors, and only marks the local mailbox active after provider success. Focused mocked tests cover these paths. The endpoint still requires administrator authorization and is not a complete self-service activation flow.
 - `platform/mail-service/app/core/config.py` defaults to a Mailcow API URL and placeholder API key. The Kubernetes mail-service ConfigMap currently configures Brevo SMTP relay only.
 - The checked-in mail-server manifest uses `mailu/postfix:2.0`, while Roundcube expects an IMAP server on 993 and SMTP submission on 587. The source manifest does not demonstrate a complete, correctly wired IMAP mailbox backend. The mail-server manifest is also in a separate legacy path/namespace from `k8s/services/mail`.
@@ -48,19 +48,19 @@ This document records the source audit and implementation safety gates. It does 
 
 - Confirm the actual live mail stack, namespace/service endpoints, TLS, storage, DNS MX/SPF/DKIM/DMARC, and inbound port 25 reachability.
 - Confirm the mail provider API and provision a proper secret using the cluster's secret-management process; do not commit API keys.
-- Implement and test a worker/reconciler with bounded retry/backoff, safe job claiming, provider idempotency, and sanitized status/error reporting before considering the requirement complete.
+- Verify and test the existing subdomain worker's retry/backoff behavior, safe job claiming, provider idempotency, and sanitized status/error reporting; configure its internal secret through the approved secret-management process before enabling it.
 - Design a verified mailbox activation/password-reset path; the random provider password is intentionally not returned to the caller.
 - Verify the configured Mailcow response contract and configure real provider credentials through secret management. The checked-in API key remains a placeholder.
 - Add end-to-end account-to-domain/mailbox tests, including actual IMAP persistence and SMTP/inbound delivery, before claiming full provisioning.
 - No migrations, backfills, merge, or deployment are authorized by this change.
 
 
-## Current branch implementation status (Oct 14, 2026)
+## Current implementation status (Oct 23, 2026)
 
 - Implemented and unit-tested: idempotent outbox enqueue for normal mirrored users and administrator-created accounts; unique resource constraint; constrained outbox state values; secure provider password generation; Mailcow JSON success validation; rollback/sanitized failures; focused CI regression tests.
 - Implemented: authenticated `GET /api/v1/users/me/provisioning` returns the caller's own queued job states and sanitized failure messaging; it does not trigger provider operations or expose raw provider errors.
-- Not implemented: outbox worker, retry/reconciliation loop, user-triggered retry endpoint, verified credential activation flow, real provider configuration, verified full mailbox server, DNS/mail delivery integration tests.
-- All of the above tests are mock/unit-level. Keep this PR Draft and do not run backfills or deploy as part of these changes.
+- Implemented after the initial outbox foundation: a bounded-attempt subdomain reconciliation loop, internal provisioning endpoint, and per-user provisioning status endpoint. The worker is disabled by default and only processes subdomain jobs. Still not implemented/verified: retry backoff, user-triggered retry endpoint, mailbox job processing, verified credential activation/reset flow, live provider configuration, verified full mailbox server, and DNS/mail delivery integration tests.
+- The available provisioning tests are mock/unit-level; they do not establish live provider connectivity. Do not run backfills or enable the worker until secret wiring, provider reachability, retry behavior, and release checks have been verified.
 
 ## Mail-domain provider result hardening (Oct 15, 2026)
 
@@ -70,7 +70,7 @@ This document records the source audit and implementation safety gates. It does 
 - This fixes a false-success path in the admin domain API. It does not implement the outbox worker, create a self-service mailbox activation flow, or establish that the configured Mailcow provider is live and working.
 
 
-## Follow-up worker implementation (Oct 15, 2026)
+## Follow-up worker implementation (Oct 15, 2026; status rechecked Oct 23, 2026)
 
 - Added an OAuth background reconciler for **subdomain jobs only**. It claims work using PostgreSQL row locks with `SKIP LOCKED`, reclaims stale processing leases, increments attempts, caps attempts at eight, and only marks a job active after an explicit successful response from the FreeDomain service. Provider/network details and response bodies are not stored in job errors.
 - Added `POST /api/v1/domains/internal/provision` as an internal-only endpoint guarded by a dedicated `X-Account-Provisioning-Key` secret with constant-time comparison. It fails closed if the key is unset and delegates to the existing idempotent domain provisioner.
