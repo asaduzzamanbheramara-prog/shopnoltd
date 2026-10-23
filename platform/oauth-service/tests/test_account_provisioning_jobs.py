@@ -51,3 +51,24 @@ def test_outbox_model_enforces_valid_resource_status_and_attempt_count():
     assert "ck_account_provisioning_resource_type" in constraint_names
     assert "ck_account_provisioning_status" in constraint_names
     assert "ck_account_provisioning_attempts_nonnegative" in constraint_names
+
+
+
+def test_provisioning_retry_predicate_enforces_backoff_window():
+    from datetime import datetime, timedelta, timezone
+
+    from sqlalchemy.dialects import postgresql
+
+    from app.core.provisioning_worker import RETRY_DELAY_SECONDS, retry_due_predicate
+
+    now = datetime(2026, 10, 23, 12, 0, 0)
+    compiled = retry_due_predicate(now).compile(
+        dialect=postgresql.dialect(), compile_kwargs={"literal_binds": True}
+    )
+    sql = str(compiled)
+
+    assert RETRY_DELAY_SECONDS == 30
+    assert "account_provisioning_jobs.updated_at <" in sql
+    assert "account_provisioning_jobs.attempts <" in sql
+    assert "account_provisioning_jobs.status IN" in sql
+    assert now - timedelta(seconds=RETRY_DELAY_SECONDS) == datetime(2026, 10, 23, 11, 59, 30)
