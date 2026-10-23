@@ -153,8 +153,11 @@ function Nav() {
       minWidth: 0,
       width: isMobile ? '100%' : 'auto',
       maxHeight: isMobile ? 'min(70vh, 620px)' : 'none',
+      minHeight: 0,
       overflowY: isMobile ? 'auto' : 'visible',
-      overscrollBehavior: 'contain',
+      WebkitOverflowScrolling: isMobile ? 'touch' : 'auto',
+      touchAction: isMobile ? 'pan-y' : 'auto',
+      overscrollBehaviorY: 'contain',
     }}>
       {PUBLIC_LINKS.map(([label, path]) => renderPublicLink(label, path))}
       <InstallPrompt />

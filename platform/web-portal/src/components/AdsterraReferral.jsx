@@ -11,7 +11,6 @@ export default function AdsterraReferral() {
         minWidth: 0,
         margin: '24px auto',
         padding: 'clamp(14px, 4vw, 22px)',
-        boxSizing: 'border-box',
         overflowWrap: 'anywhere',
         border: '1px solid #bfdbfe',
         borderRadius: 16,
