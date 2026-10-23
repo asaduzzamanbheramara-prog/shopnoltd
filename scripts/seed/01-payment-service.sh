@@ -616,7 +616,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.core.db import SessionLocal
 from app.core.security import verify_token
-from app.models.models import Transaction, TxStatus, Wallet
+from app.models.models import Transaction, TxStatus, TxType, Wallet
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 router = APIRouter(); bearer = HTTPBearer()
 async def db():
@@ -641,11 +641,11 @@ async def approve(tx_id: str, user = Depends(require_admin), s: AsyncSession = D
     w = wr.scalar_one_or_none()
     if not w: raise HTTPException(409, "transaction wallet missing")
     amount = Decimal(str(tx.amount)); balance = Decimal(str(w.balance)); frozen = Decimal(str(w.frozen))
-    if tx.type.value == "withdrawal":
+    if tx.type == TxType.withdrawal:
         if frozen < amount or balance < amount: raise HTTPException(409, "withdrawal reservation or balance is inconsistent")
         w.balance = balance - amount
         w.frozen = frozen - amount
-    elif tx.type.value == "deposit":
+    elif tx.type == TxType.deposit:
         w.balance = balance + amount
     tx.status = TxStatus.completed; tx.completed_at = datetime.utcnow(); tx.approved_by = user["sub"]
     await s.commit(); return {"ok": True}
