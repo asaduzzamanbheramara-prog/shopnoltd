@@ -18,7 +18,8 @@ _PLATFORM_HOSTS = (
     "openai owncast live payment-service postgres redis remote remote-engine "
     "report-service sessions shopnoltdandroid social social-service "
     "storage-service tenant-router training vpn webmail web-portal "
-    "worker-service "
+    "worker-service alertmanager cursor jitsi-jicofo jitsi-jvb jitsi-prosody "
+    "jitsi-web kf loki onlyoffice scheduler-service shopnoltdpc "
     "mail-server mail-service roundcube smtp imap pop pop3 autoconfig "
     "autodiscover mta-sts ns dns"
 )
