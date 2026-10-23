@@ -10,6 +10,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
+from app.core.reserved import RESERVED
 from app.core.db import SessionLocal
 from app.core.security import verify_token
 from app.models.models import FreeDomain
@@ -19,9 +20,6 @@ router = APIRouter()
 bearer = HTTPBearer()
 
 NAME_RE = re.compile(r"^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$")
-RESERVED = {
-    "www", "mail", "api", "admin", "shopno", "shopnoltd", "ns1", "ns2", "mx", "ftp", "static", "cdn",
-}
 PUBLIC_DOMAIN_RE = re.compile(
     r"^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$",
     re.IGNORECASE,

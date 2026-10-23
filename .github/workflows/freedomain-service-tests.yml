@@ -1,0 +1,41 @@
+name: Freedomain Reserved Label Tests
+
+on:
+  pull_request:
+    paths:
+      - "platform/freedomain-service/**"
+      - "k8s/**"
+      - ".github/workflows/freedomain-service-tests.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "platform/freedomain-service/**"
+      - "k8s/**"
+      - ".github/workflows/freedomain-service-tests.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  reserved-label-tests:
+    name: Reserved subdomain label tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      PYTHONPATH: shared/libraries/python
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: platform/freedomain-service/requirements.txt
+      - name: Install freedomain-service dependencies and pytest
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r platform/freedomain-service/requirements.txt pytest==8.4.1
+      - name: Run reserved label tests
+        run: python -m pytest -q platform/freedomain-service/tests/test_reserved_labels.py
