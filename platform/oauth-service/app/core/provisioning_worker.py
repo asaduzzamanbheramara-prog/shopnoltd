@@ -18,7 +18,17 @@ from app.models.models import AccountProvisioningJob, UserMirror
 log = structlog.get_logger()
 POLL_SECONDS = 10
 MAX_ATTEMPTS = 8
+RETRY_DELAY_SECONDS = 30
 LEASE_MINUTES = 5
+
+
+def retry_due_predicate(now: datetime):
+    """Return retryable jobs whose fixed backoff window has elapsed."""
+    return (
+        (AccountProvisioningJob.attempts < MAX_ATTEMPTS)
+        & AccountProvisioningJob.status.in_(("pending", "failed"))
+        & (AccountProvisioningJob.updated_at < now - timedelta(seconds=RETRY_DELAY_SECONDS))
+    )
 
 
 def domain_confirmation_is_valid(body: object) -> bool:
@@ -37,8 +47,7 @@ async def process_one_subdomain_job() -> bool:
                     .where(
                         AccountProvisioningJob.resource_type == "subdomain",
                         or_(
-                            (AccountProvisioningJob.attempts < MAX_ATTEMPTS)
-                            & AccountProvisioningJob.status.in_(("pending", "failed")),
+                            retry_due_predicate(now),
                             (AccountProvisioningJob.status == "processing")
                             & (AccountProvisioningJob.updated_at < now - timedelta(minutes=LEASE_MINUTES)),
                         ),
