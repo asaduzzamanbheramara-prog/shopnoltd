@@ -1,3 +1,4 @@
+import './devShim.js'
 import React, { useEffect } from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter, Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom'
@@ -139,7 +140,7 @@ function Nav() {
   }}>
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, minWidth: 0 }}>
       <Link to="/" style={{ color: 'white', display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: 20, textDecoration: 'none', whiteSpace: 'nowrap', minWidth: 0 }}>
-        <img src="/logo.svg" alt="Shopnoltd" style={{ height: 28, width: 28, objectFit: 'contain', flexShrink: 0 }} />Shopnoltd
+        <img src={`${import.meta.env.BASE_URL}logo.svg`} alt="Shopnoltd" style={{ height: 28, width: 28, objectFit: 'contain', flexShrink: 0 }} />Shopnoltd
       </Link>
       {isMobile && <button type="button" aria-label={menuOpen ? 'Close navigation menu' : 'Open navigation menu'} aria-expanded={menuOpen} onClick={() => setMenuOpen(open => !open)} style={{ color: 'white', background: 'rgba(255,255,255,.12)', border: '1px solid rgba(255,255,255,.55)', borderRadius: 8, padding: '8px 12px', font: 'inherit', fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}>{menuOpen ? 'Close ✕' : 'Menu ☰'}</button>}
     </div>
@@ -154,6 +155,7 @@ function Nav() {
       width: isMobile ? '100%' : 'auto',
       ...(isMobile ? { position: 'fixed', top: 64, left: 0, right: 0, bottom: 0, zIndex: 1000, background: '#0ea5e9', padding: '8px 16px 24px', boxSizing: 'border-box', width: 'auto', maxHeight: 'none' } : { maxHeight: 'none' }),
       minHeight: 0,
+      ...(isMobile && menuOpen ? { display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', alignContent: 'start' } : {}),
       overflowY: isMobile ? 'auto' : 'visible',
       WebkitOverflowScrolling: isMobile ? 'touch' : 'auto',
       touchAction: isMobile ? 'pan-y' : 'auto',
@@ -326,7 +328,7 @@ function RouteMetadata() {
 }
 
 function App() {
-  return <BrowserRouter><AnalyticsTracker /><RouteMetadata /><Nav /><SubdomainRedirect /><Routes>
+  return <BrowserRouter basename={import.meta.env.BASE_URL}><AnalyticsTracker /><RouteMetadata /><Nav /><SubdomainRedirect /><Routes>
     <Route path="/" element={<Home />} /><Route path="/pricing" element={<Pricing />} /><Route path="/privacy" element={<Privacy />} /><Route path="/about" element={<About />} /><Route path="/contact" element={<Contact />} /><Route path="/terms" element={<Terms />} /><Route path="/create-website" element={<ProtectedRoute><WebsiteBuilder /></ProtectedRoute>} /><Route path="/discover" element={<ProtectedRoute><Discover /></ProtectedRoute>} /><Route path="/feed" element={<ProtectedRoute><SocialFeed /></ProtectedRoute>} /><Route path="/post/:id" element={<ProtectedRoute><PostDetail /></ProtectedRoute>} />
     <Route path="/work" element={<ProtectedRoute><WorkHub /></ProtectedRoute>} /><Route path="/referrals" element={<ProtectedRoute><ReferralHub /></ProtectedRoute>} /><Route path="/work/:id" element={<ProtectedRoute><WorkDetail /></ProtectedRoute>} /><Route path="/create-work" element={<ProtectedRoute><WorkHub /></ProtectedRoute>} /><Route path="/my-created-work" element={<ProtectedRoute><WorkHub /></ProtectedRoute>} /><Route path="/my-active-work" element={<ProtectedRoute><WorkHub /></ProtectedRoute>} /><Route path="/my-submission" element={<ProtectedRoute><WorkHub /></ProtectedRoute>} /><Route path="/work-review" element={<ProtectedRoute><WorkHub /></ProtectedRoute>} />
     <Route path="/account" element={<ProtectedRoute><AccountHub /></ProtectedRoute>} /><Route path="/notifications" element={<ProtectedRoute><AccountHub /></ProtectedRoute>} />
