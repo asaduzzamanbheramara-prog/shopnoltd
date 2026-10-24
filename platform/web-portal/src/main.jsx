@@ -100,13 +100,6 @@ function Nav() {
 
   React.useEffect(() => { setMenuOpen(false) }, [location.pathname])
 
-  React.useEffect(() => {
-    if (!(isMobile && menuOpen)) return
-    const prev = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => { document.body.style.overflow = prev }
-  }, [isMobile, menuOpen])
-
   function handleLogout() {
     localStorage.removeItem('shopno_token')
     localStorage.removeItem('shopno_refresh_token')
@@ -159,7 +152,7 @@ function Nav() {
       gap: isMobile ? 2 : '8px 16px',
       minWidth: 0,
       width: isMobile ? '100%' : 'auto',
-      maxHeight: isMobile ? 'calc(100dvh - 90px)' : 'none',
+      ...(isMobile ? { position: 'fixed', top: 64, left: 0, right: 0, bottom: 0, zIndex: 1000, background: '#0ea5e9', padding: '8px 16px 24px', boxSizing: 'border-box', width: 'auto', maxHeight: 'none' } : { maxHeight: 'none' }),
       minHeight: 0,
       overflowY: isMobile ? 'auto' : 'visible',
       WebkitOverflowScrolling: isMobile ? 'touch' : 'auto',
