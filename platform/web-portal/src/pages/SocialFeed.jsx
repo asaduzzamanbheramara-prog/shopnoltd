@@ -166,7 +166,10 @@ export default function SocialFeed() {
   return <div style={shell}>
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
       <div><h1 style={{ marginBottom: 4 }}>Shopnoltd Feed</h1><p style={{ color: '#64748b', marginTop: 0 }}>Create, watch, like, comment, share and follow with direct post links.</p></div>
-      <Link to="/work" style={{ padding: '9px 13px', background: '#0ea5e9', color: '#fff', borderRadius: 8, textDecoration: 'none', fontWeight: 700 }}>Find Work</Link>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <Link to="/saved-posts" style={{ padding: '9px 13px', border: '1px solid #cbd5e1', borderRadius: 8, textDecoration: 'none', color: '#0f172a', fontWeight: 700 }}>🔖 Saved posts</Link>
+        <Link to="/work" style={{ padding: '9px 13px', background: '#0ea5e9', color: '#fff', borderRadius: 8, textDecoration: 'none', fontWeight: 700 }}>Find Work</Link>
+      </div>
     </div>
     <section style={card}>
       <textarea value={content} onChange={e => setContent(e.target.value)} rows={4} placeholder="What do you want to share?" style={{ width: '100%', boxSizing: 'border-box', padding: 12, borderRadius: 10, border: '1px solid #cbd5e1', resize: 'vertical' }} />
