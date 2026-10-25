@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { SERVICES, ADMIN_SERVICES } from '../data/serviceCatalog'
-import { isPlatformAdmin } from '../lib/jwt'
+import { getRoles, isPlatformAdmin } from '../lib/jwt'
 import { authenticatedRequest, getTransactions, getWallet } from '../lib/financialApi'
 import { platformApi } from '../lib/platformApi'
 
@@ -139,6 +139,12 @@ export default function Dashboard() {
   }
 
   const isAdmin = isPlatformAdmin()
+  // Show application roles from the validated login token when present; the
+  // backend mirror is refreshed on /users/me, but older rows may be stale.
+  const tokenAppRoles = getRoles().filter((role) =>
+    ['platform_admin', 'admin', 'tenant_owner', 'customer'].includes(role),
+  )
+  const displayRoles = tokenAppRoles.length ? tokenAppRoles : (me.roles || [])
   const activeDomains = domains.filter((domain) => String(domain.status || '').toLowerCase() === 'active').length
   const unreadNotifications = notifications.filter((notification) => !notification.read && !notification.read_at).length
   const connectedPlatforms = new Set(platformConnections.map((connection) => connection.platform)).size
@@ -148,7 +154,7 @@ export default function Dashboard() {
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
         <div>
           <h1 style={{ marginBottom: 8 }}>Welcome, {me.email || me.id}</h1>
-          <p style={{ color: '#64748b', marginTop: 0 }}>Tenant: {me.tenant_id || 'default'} · Roles: {(me.roles || []).join(', ') || 'customer'}</p>
+          <p style={{ color: '#64748b', marginTop: 0 }}>Tenant: {me.tenant_id || 'default'} · Roles: {displayRoles.join(', ') || 'No application role in token/profile'}</p>
         </div>
         <button type="button" onClick={loadDashboard} disabled={refreshing}>{refreshing ? 'Refreshing…' : 'Refresh dashboard'}</button>
       </div>
