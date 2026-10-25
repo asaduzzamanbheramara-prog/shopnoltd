@@ -1,3 +1,5 @@
+import json
+
 from fastapi import APIRouter, Depends, Query
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import desc, select
@@ -21,6 +23,18 @@ async def current_user(creds: HTTPAuthorizationCredentials = Depends(bearer)):
     return await verify_token(creds.credentials)
 
 
+def media_list(value) -> list:
+    if isinstance(value, list):
+        return value
+    if isinstance(value, str):
+        try:
+            parsed = json.loads(value)
+            return parsed if isinstance(parsed, list) else []
+        except (TypeError, ValueError):
+            return []
+    return []
+
+
 @router.get("/global", response_model=list[PostOut])
 async def global_feed(
     s: AsyncSession = Depends(db), limit: int = Query(50, le=200), offset: int = 0
@@ -37,7 +51,7 @@ async def global_feed(
             id=p.id,
             user_id=p.user_id,
             content=p.content,
-            media=p.media or [],
+            media=media_list(p.media),
             visibility=p.visibility,
             published_at=p.published_at.isoformat(),
             like_count=p.like_count,
