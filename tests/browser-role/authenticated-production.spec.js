@@ -50,7 +50,8 @@ async function login(page, username, password, totpSecret, roleLabel) {
   await page.getByRole('button', { name: /Sign In|Log In/i }).click()
 
   const otpField = page.getByRole('textbox', { name: /One-time code|Authenticator code|Verification code/i })
-  if (await otpField.isVisible({ timeout: 5000 }).catch(() => false)) {
+  const otpRequired = await otpField.waitFor({ state: 'visible', timeout: 5000 }).then(() => true).catch(() => false)
+  if (otpRequired) {
     if (!totpSecret) {
       throw new Error(`${roleLabel} account requires MFA. Add SHOPNOLTD_${roleLabel.toUpperCase()}_TOTP_SECRET as a GitHub Actions secret containing its Base32 authenticator secret; do not disable MFA.`)
     }
