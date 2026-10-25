@@ -55,8 +55,28 @@ async function login(page, username, password, totpSecret, roleLabel) {
     if (!totpSecret) {
       throw new Error(`${roleLabel} account requires MFA. Add SHOPNOLTD_${roleLabel.toUpperCase()}_TOTP_SECRET as a GitHub Actions secret containing its Base32 authenticator secret; do not disable MFA.`)
     }
-    await otpField.fill(generateTotp(totpSecret))
-    await page.getByRole('button', { name: /Sign In|Log In|Verify/i }).click()
+    // Try the current TOTP window and adjacent windows to tolerate small clock skew.
+    // Never log or expose the generated codes.
+    const invalidOtpMessage = page.getByText(/Invalid authenticator code|Invalid one-time code|Invalid code/i)
+    let verified = false
+    for (const offset of [0, -1, 1]) {
+      await otpField.fill(generateTotp(totpSecret, Date.now() + offset * 30_000))
+      await page.getByRole('button', { name: /Sign In|Log In|Verify/i }).click()
+      try {
+        await page.waitForURL(url => new URL(url).pathname === '/dashboard', { timeout: 3000 })
+        verified = true
+        break
+      } catch {
+        const rejected = await invalidOtpMessage.isVisible().catch(() => false)
+        if (!rejected) break
+      }
+    }
+    if (!verified) {
+      const rejected = await invalidOtpMessage.isVisible().catch(() => false)
+      if (rejected) {
+        throw new Error('The Admin TOTP code was rejected in the current and adjacent 30-second windows. Verify that SHOPNOLTD_ADMIN_TOTP_SECRET matches the active Keycloak authenticator; do not paste the secret into logs.')
+      }
+    }
   }
 
   await page.waitForURL(url => new URL(url).pathname === '/dashboard', { timeout: 30000 })
@@ -137,7 +157,9 @@ test('payments page renders without creating a charge', async ({ page }) => {
   await page.goto(`${baseURL}/payments`, { waitUntil: 'domcontentloaded' })
   await expect(page.getByRole('heading', { name: 'Payments' })).toBeVisible()
   await expect(page.getByRole('link', { name: 'Checkout' })).toBeVisible()
-  await expect(page.getByRole('link', { name: 'Transactions' })).toBeVisible()
+  // The global navigation and Payments content both link to Transactions.
+  // Scope to main content to avoid Playwright strict-mode ambiguity.
+  await expect(page.getByRole('main').getByRole('link', { name: 'Transactions' })).toBeVisible()
 })
 
 test('authenticated wallet read succeeds without changing balance', async ({ page }) => {
