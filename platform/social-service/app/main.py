@@ -65,6 +65,7 @@ app.include_router(__import__("app.api.blog", fromlist=["router"]).router, prefi
 app.include_router(__import__("app.api.admin_data", fromlist=["router"]).router, prefix="/api/v1/admin/blog-data", tags=["blog-admin-data"])
 app.include_router(__import__("app.api.feed", fromlist=["router"]).router, prefix="/api/v1/feed", tags=["feed"])
 app.include_router(__import__("app.api.likes", fromlist=["router"]).router, prefix="/api/v1/likes", tags=["likes"])
+app.include_router(__import__("app.api.saved_posts", fromlist=["router"]).router, prefix="/api/v1/saved-posts", tags=["saved-posts"])
 app.include_router(__import__("app.api.shares", fromlist=["router"]).router, prefix="/api/v1/shares", tags=["shares"])
 app.include_router(__import__("app.api.follows", fromlist=["router"]).router, prefix="/api/v1/follows", tags=["follows"])
 app.include_router(__import__("app.api.post_views", fromlist=["router"]).router, prefix="/api/v1/views", tags=["views"])
