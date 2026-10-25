@@ -6,6 +6,17 @@ import { AdsterraResponsiveBanner } from '../components/AdsterraAds'
 const shell = { width: '100%', maxWidth: 900, minWidth: 0, boxSizing: 'border-box', margin: '0 auto', padding: '28px clamp(12px,4vw,16px) 80px', overflowWrap: 'anywhere', fontFamily: 'system-ui, sans-serif' }
 const card = { minWidth: 0, boxSizing: 'border-box', background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14, padding: 18, marginBottom: 14, overflowWrap: 'anywhere' }
 
+function normalizeMedia(value) {
+  if (Array.isArray(value)) return value
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value)
+      return Array.isArray(parsed) ? parsed : []
+    } catch { return [] }
+  }
+  return []
+}
+
 function PostCard({ post, refresh, following, toggleFollow }) {
   const navigate = useNavigate()
   const [liked, setLiked] = useState(false)
@@ -14,6 +25,10 @@ function PostCard({ post, refresh, following, toggleFollow }) {
   const [comment, setComment] = useState('')
   const [busy, setBusy] = useState(false)
   const isFollowing = following.has(String(post.user_id))
+  const mediaItems = normalizeMedia(post.media).map((item) => {
+    const url = typeof item === 'string' ? item : (item?.url || item?.src || '')
+    return { url, type: typeof item === 'object' ? item?.type : '' }
+  }).filter(item => /^https?:\/\//i.test(item.url))
 
   useEffect(() => {
     platformApi.view(post.id).catch(() => {})
@@ -80,6 +95,11 @@ function PostCard({ post, refresh, following, toggleFollow }) {
         · {post.published_at ? new Date(post.published_at).toLocaleString() : ''}
       </div>
       <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{post.content}</div>
+      {mediaItems.length > 0 && <div style={{ display: 'grid', gap: 10, marginTop: 12 }}>
+        {mediaItems.map((item, index) => /video|\.(mp4|webm|ogg)(?:$|\?)/i.test(`${item.type} ${item.url}`)
+          ? <video key={item.url + index} src={item.url} controls preload="metadata" style={{ width: '100%', maxHeight: 520, borderRadius: 10, background: '#0f172a' }} />
+          : <img key={item.url + index} src={item.url} alt="" loading="lazy" style={{ width: '100%', maxHeight: 520, objectFit: 'contain', borderRadius: 10, background: '#f8fafc' }} />)}
+      </div>}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 16 }}>
         <button disabled={busy} onClick={toggleLike}>{liked ? '♥ Liked' : '♡ Like'} · {post.like_count || 0}</button>
         <button onClick={doShare}>↗ Share · {post.share_count || 0}</button>
@@ -89,7 +109,7 @@ function PostCard({ post, refresh, following, toggleFollow }) {
       </div>
       <form onSubmit={addComment} style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 14 }}>
         <input value={comment} onChange={e => setComment(e.target.value)} placeholder="Write a comment…" style={{ flex: 1, padding: 9, border: '1px solid #cbd5e1', borderRadius: 8 }} />
-        <button type="submit">Comment</button>
+        <button type="submit">Comment · {post.comment_count || comments.length}</button>
       </form>
       {comments.length > 0 && <div style={{ marginTop: 12, borderTop: '1px solid #e2e8f0', paddingTop: 10 }}>
         {comments.slice(-5).map(c => <div key={c.id} style={{ padding: '7px 0', fontSize: 14 }}><b>{c.user_id}</b>: {c.body}</div>)}
