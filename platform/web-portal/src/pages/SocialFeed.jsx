@@ -121,6 +121,7 @@ function PostCard({ post, refresh, following, toggleFollow }) {
 export default function SocialFeed() {
   const [posts, setPosts] = useState([])
   const [content, setContent] = useState('')
+  const [mediaUrl, setMediaUrl] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [following, setFollowing] = useState(new Set())
@@ -153,10 +154,22 @@ export default function SocialFeed() {
   useEffect(() => { load() }, [])
 
   async function create() {
-    if (!content.trim()) return
+    const text = content.trim()
+    const media = mediaUrl.trim()
+    if (!text && !media) return
+    if (media) {
+      try {
+        const parsed = new URL(media)
+        if (!['https:', 'http:'].includes(parsed.protocol)) throw new Error('Use an http(s) media URL.')
+      } catch (e) {
+        setError(e.message || 'Enter a valid image or video URL.')
+        return
+      }
+    }
     try {
-      await platformApi.createPost(content.trim())
+      await platformApi.createPost(text || ' ', 'public', media ? [media] : [])
       setContent('')
+      setMediaUrl('')
       await load()
     } catch (e) { setError(`Post could not be published: ${e.message}`) }
   }
@@ -193,6 +206,7 @@ export default function SocialFeed() {
     </div>
     <section style={card}>
       <textarea value={content} onChange={e => setContent(e.target.value)} rows={4} placeholder="What do you want to share?" style={{ width: '100%', boxSizing: 'border-box', padding: 12, borderRadius: 10, border: '1px solid #cbd5e1', resize: 'vertical' }} />
+      <input type="url" value={mediaUrl} onChange={e => setMediaUrl(e.target.value)} placeholder="Optional public image/video URL (https://…)" aria-label="Image or video URL" style={{ width: '100%', boxSizing: 'border-box', padding: 10, marginTop: 10, borderRadius: 8, border: '1px solid #cbd5e1' }} />
       <button onClick={create} style={{ marginTop: 10, padding: '9px 15px', border: 0, borderRadius: 8, background: '#0ea5e9', color: '#fff', fontWeight: 700 }}>Publish</button>
     </section>
     {loading && <p>Loading feed…</p>}
