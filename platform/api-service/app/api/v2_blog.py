@@ -41,6 +41,12 @@ async def public_blog():
     return await call("GET", "/api/v1/blog")
 
 
+@router.get("/blog/saved")
+async def saved_blog_posts(auth=Depends(current_user)):
+    creds, _ = auth
+    return await call("GET", "/api/v1/blog/saved", creds.credentials)
+
+
 @router.get("/blog/{slug}")
 async def get_blog_post(slug: str):
     return await call("GET", f"/api/v1/blog/{slug}")
@@ -74,6 +80,34 @@ async def update_blog_post(post_id: str, body: dict, auth=Depends(current_user))
 async def delete_blog_post(post_id: str, auth=Depends(current_user)):
     creds, _ = auth
     return await call("DELETE", f"/api/v1/blog/{post_id}", creds.credentials)
+
+@router.get("/blog/{slug}/shares")
+async def blog_share_count(slug: str):
+    return await call("GET", f"/api/v1/blog/{slug}/shares")
+
+
+@router.post("/blog/{slug}/share", status_code=201)
+async def share_blog_post(slug: str, auth=Depends(current_user)):
+    creds, _ = auth
+    return await call("POST", f"/api/v1/blog/{slug}/share", creds.credentials)
+
+
+@router.get("/blog/{slug}/saved")
+async def blog_saved_state(slug: str, creds: HTTPAuthorizationCredentials | None = Depends(bearer)):
+    return await call("GET", f"/api/v1/blog/{slug}/saved", creds.credentials if creds else None)
+
+
+@router.put("/blog/{slug}/saved")
+async def save_blog_post(slug: str, auth=Depends(current_user)):
+    creds, _ = auth
+    return await call("PUT", f"/api/v1/blog/{slug}/saved", creds.credentials)
+
+
+@router.delete("/blog/{slug}/saved")
+async def unsave_blog_post(slug: str, auth=Depends(current_user)):
+    creds, _ = auth
+    return await call("DELETE", f"/api/v1/blog/{slug}/saved", creds.credentials)
+
 
 @router.get("/blog/{slug}/likes")
 async def blog_like_status(slug: str):
