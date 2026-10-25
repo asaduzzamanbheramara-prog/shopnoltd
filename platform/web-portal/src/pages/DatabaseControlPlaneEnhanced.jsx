@@ -21,7 +21,37 @@ const MODES = [['add', 'Add'], ['update', 'Update'], ['upsert', 'Upsert'], ['mer
 
 function headers(extra = {}) { const t = localStorage.getItem('shopno_token'); return { Accept: 'application/json', ...(t ? { Authorization: `Bearer ${t}` } : {}), ...extra } }
 async function api(path, options = {}) { const r = await fetch(`${API}${path}`, { ...options, headers: headers(options.headers || {}) }); const text = await r.text(); let data = null; try { data = text ? JSON.parse(text) : null } catch { data = text }; if (!r.ok) throw new Error(data?.detail || data?.message || text || `HTTP ${r.status}`); return data }
-function downloadBlob(blob, filename) { const u = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = u; a.download = filename; a.click(); setTimeout(() => URL.revokeObjectURL(u), 0) }
+function responseFilename(response, fallback) {
+  const disposition = response.headers.get('content-disposition') || ''
+  const utf8 = disposition.match(/filename\\*=UTF-8''([^;]+)/i)
+  const plain = disposition.match(/filename=(?:"([^"]+)"|([^;]+))/i)
+  const raw = utf8?.[1] || plain?.[1] || plain?.[2]
+  if (!raw) return fallback
+  try { return decodeURIComponent(raw.trim().replace(/^["']|["']$/g, '')) || fallback } catch { return fallback }
+}
+async function downloadResponse(response, fallbackFilename) {
+  if (!response.ok) {
+    const body = await response.text()
+    let detail = body
+    try { const parsed = JSON.parse(body); detail = parsed?.detail || parsed?.message || body } catch {}
+    throw new Error(detail || `HTTP ${response.status}`)
+  }
+  const contentType = (response.headers.get('content-type') || '').toLowerCase()
+  if (contentType.includes('text/html')) throw new Error('The server returned an HTML page instead of a downloadable file. Check login/session and API routing.')
+  const blob = await response.blob()
+  if (!blob.size) throw new Error('The server returned an empty file.')
+  const filename = responseFilename(response, fallbackFilename)
+  const url = URL.createObjectURL(blob)
+  const anchor = document.createElement('a')
+  anchor.href = url
+  anchor.download = filename
+  anchor.style.display = 'none'
+  document.body.appendChild(anchor)
+  anchor.click()
+  anchor.remove()
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000)
+  return { filename, bytes: blob.size, contentType }
+}
 function beep() { try { const AudioContext = window.AudioContext || window.webkitAudioContext; if (!AudioContext) return; const ctx = window.__shopnoltdAdminBeep || (window.__shopnoltdAdminBeep = new AudioContext()); if (ctx.state === 'suspended') ctx.resume().catch(() => {}); const o = ctx.createOscillator(); const g = ctx.createGain(); o.frequency.value = 880; g.gain.setValueAtTime(0.0001, ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.1, ctx.currentTime + 0.005); g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.07); o.connect(g); g.connect(ctx.destination); o.start(); o.stop(ctx.currentTime + 0.075) } catch {} }
 
 export default function DatabaseControlPlaneEnhanced() {
@@ -44,11 +74,11 @@ export default function DatabaseControlPlaneEnhanced() {
   async function inspectPaymentTable(name = table) { if (!name) return; setBusy(true); setTable(name); try { const q = new URLSearchParams({ limit: PAGE_SIZE, offset: 0 }); if (query) q.set('search', query); const d = await api(`/api/v1/admin/tables/${encodeURIComponent(name)}?${q}`); setRows(d?.rows || []); setAnalysis(await api(`/api/v1/admin/tables/${encodeURIComponent(name)}/analysis`)) } catch (e) { setMessage(`Entity inspection failed: ${e.message}`) } finally { setBusy(false) } }
   async function inspectReadonly() { const target = currentCatalog?.tables?.find(t => t.name === 'users') || currentCatalog?.tables?.[0]; if (!target) return; setTables(currentCatalog.tables || []); await inspectReadonlyTable(target.name) }
   async function inspectReadonlyTable(name = table) { if (!name || !currentCatalog) return; setBusy(true); setTable(name); try { const schemaName = currentCatalog.schemas?.[0] || 'public'; const d = await api(`/api/v1/admin/database/tables/${encodeURIComponent(currentCatalog.database)}/${encodeURIComponent(schemaName)}/${encodeURIComponent(name)}/rows?limit=${PAGE_SIZE}&offset=0`); setRows(d?.rows || []); setAnalysis({ rows: (d?.rows || []).length, columns: d?.columns?.length || 0, capability: d?.capability || null }) } catch (e) { setMessage(`Read-only entity inspection failed: ${e.message}`) } finally { setBusy(false) } }
-  async function exportReadonly() { if (!table || !currentCatalog) return; setBusy(true); try { const schemaName = currentCatalog.schemas?.[0] || 'public'; const response = await fetch(`/api/v1/admin/database/tables/${encodeURIComponent(currentCatalog.database)}/${encodeURIComponent(schemaName)}/${encodeURIComponent(table)}/export?limit=10000`, { headers: headers() }); if (!response.ok) throw new Error(`HTTP ${response.status}`); downloadBlob(await response.blob(), `${currentCatalog.database}-${table}.json`) } catch (e) { setMessage(`Read-only export failed: ${e.message}`) } finally { setBusy(false) } }
+  async function exportReadonly() { if (!table || !currentCatalog || busy) return; setBusy(true); setMessage(''); try { const schemaName = currentCatalog.schemas?.[0] || 'public'; const response = await fetch(`/api/v1/admin/database/tables/${encodeURIComponent(currentCatalog.database)}/${encodeURIComponent(schemaName)}/${encodeURIComponent(table)}/export?limit=10000`, { headers: headers() }); const result = await downloadResponse(response, `${currentCatalog.database}-${table}.json`); setMessage(`Downloaded ${result.filename} (${result.bytes.toLocaleString()} bytes).`) } catch (e) { setMessage(`Read-only export failed: ${e.message}`) } finally { setBusy(false) } }
   async function inspectBlog() { setBusy(true); try { const [a, r, s] = await Promise.all([api('/api/v1/admin/blog-data/analysis'), api('/api/v1/admin/blog-data/rows'), api('/api/v1/admin/blog-data/schema')]); setAnalysis(a); setRows(Array.isArray(r) ? r : (r?.items || [])); setSchema(s) } catch (e) { setMessage(`Blog inspection failed: ${e.message}`) } finally { setBusy(false) } }
 
-  async function exportData(format) { setBusy(true); try { const path = blog ? `/api/v1/admin/blog-data/export?format=${format}` : `/api/v1/admin/tables/${encodeURIComponent(table)}/export?format=${format}`; const r = await fetch(path, { headers: headers() }); if (!r.ok) throw new Error(`HTTP ${r.status}`); downloadBlob(await r.blob(), `${blog ? 'blog_posts' : table}.${format}`) } catch (e) { setMessage(`Export failed: ${e.message}`) } finally { setBusy(false) } }
-  async function report() { if (!table) return; setBusy(true); try { const r = await fetch(`/api/v1/admin/data-reports/${encodeURIComponent(table)}/pdf`, { headers: headers() }); if (!r.ok) throw new Error(`HTTP ${r.status}`); downloadBlob(await r.blob(), `${table}.pdf`) } catch (e) { setMessage(`Report failed: ${e.message}`) } finally { setBusy(false) } }
+  async function exportData(format) { if (busy || (!blog && !table)) return; setBusy(true); setMessage(''); try { const path = blog ? `/api/v1/admin/blog-data/export?format=${encodeURIComponent(format)}` : `/api/v1/admin/tables/${encodeURIComponent(table)}/export?format=${encodeURIComponent(format)}`; const r = await fetch(path, { headers: headers() }); const result = await downloadResponse(r, `${blog ? 'blog_posts' : table}.${format}`); setMessage(`Downloaded ${result.filename} (${result.bytes.toLocaleString()} bytes).`) } catch (e) { setMessage(`Export failed: ${e.message}`) } finally { setBusy(false) } }
+  async function report() { if (!table || busy) return; setBusy(true); setMessage(''); try { const r = await fetch(`/api/v1/admin/data-reports/${encodeURIComponent(table)}/pdf`, { headers: headers() }); const result = await downloadResponse(r, `${table}.pdf`); setMessage(`Downloaded report ${result.filename} (${result.bytes.toLocaleString()} bytes).`) } catch (e) { setMessage(`Report failed: ${e.message}`) } finally { setBusy(false) } }
 
   async function previewImport(e) { const f = e.target.files?.[0]; setFile(f || null); setPreview(null); if (!f || !blog) return; setBusy(true); try { const form = new FormData(); form.append('file', f); setPreview(await api(`/api/v1/admin/blog-data/import/preview?operation=${encodeURIComponent(mode)}`, { method: 'POST', body: form })) } catch (x) { setMessage(`Import validation failed: ${x.message}`) } finally { setBusy(false) } }
   async function commitImport() { if (!file || !preview || !blog) return; if (mode === 'delete' || mode === 'replace_rows') { if (!window.confirm(`Confirm destructive ${mode} operation?`)) return } setBusy(true); try { const form = new FormData(); form.append('file', file); const suffix = mode === 'delete' || mode === 'replace_rows' ? '&confirm=true' : ''; const r = await api(`/api/v1/admin/blog-data/import?operation=${encodeURIComponent(mode)}${suffix}`, { method: 'POST', body: form }); setMessage(`Import committed: ${JSON.stringify(r)}`); setFile(null); setPreview(null); await inspectBlog() } catch (e) { setMessage(`Import failed and was rolled back: ${e.message}`) } finally { setBusy(false) } }
