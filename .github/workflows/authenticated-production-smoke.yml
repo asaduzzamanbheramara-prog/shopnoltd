@@ -61,6 +61,9 @@ jobs:
           SHOPNOLTD_OWNER_PASSWORD: ${{ secrets.SHOPNOLTD_OWNER_PASSWORD }}
           SHOPNOLTD_USER_USERNAME: ${{ secrets.SHOPNOLTD_USER_USERNAME }}
           SHOPNOLTD_USER_PASSWORD: ${{ secrets.SHOPNOLTD_USER_PASSWORD }}
+          SHOPNOLTD_ADMIN_TOTP_SECRET: ${{ secrets.SHOPNOLTD_ADMIN_TOTP_SECRET }}
+          SHOPNOLTD_OWNER_TOTP_SECRET: ${{ secrets.SHOPNOLTD_OWNER_TOTP_SECRET }}
+          SHOPNOLTD_USER_TOTP_SECRET: ${{ secrets.SHOPNOLTD_USER_TOTP_SECRET }}
           PLAYWRIGHT_HTML_OPEN: never
         run: npx playwright test --config=playwright.config.js --reporter=line,html --workers=1 authenticated-production.spec.js
       - name: Upload browser report and traces
