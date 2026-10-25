@@ -123,6 +123,11 @@ async def social_create_post(body: dict, creds: HTTPAuthorizationCredentials = D
 async def social_post(post_id: str):
     return await social_call("GET", f"/api/v1/posts/{post_id}", "")
 
+@router.get("/social/posts/{post_id}/like")
+async def social_like_state(post_id: str, creds: HTTPAuthorizationCredentials = Depends(bearer)):
+    return await social_call("GET", f"/api/v1/likes/{post_id}/me", creds.credentials)
+
+
 @router.post("/social/posts/{post_id}/like")
 async def social_like(post_id: str, creds: HTTPAuthorizationCredentials = Depends(bearer)):
     return await social_call("POST", f"/api/v1/likes/{post_id}", creds.credentials)
