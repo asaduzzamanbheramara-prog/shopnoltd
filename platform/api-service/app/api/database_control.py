@@ -7,6 +7,7 @@ from __future__ import annotations
 import csv
 import io
 import json
+import logging
 import re
 
 import asyncpg
@@ -20,6 +21,7 @@ from app.core.security import verify_token
 from app.database_control_plane.access import resolve_table_capability
 from app.database_control_plane.discovery import _connect, discover_postgres
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/admin/database", tags=["admin-database"])
 bearer = HTTPBearer(auto_error=True)
 _IDENTIFIER = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
@@ -371,11 +373,22 @@ async def import_rows(
 @router.get("/live-catalog")
 async def live_catalog(_: dict = Depends(require_admin)):
     """Live catalog with effective per-table capabilities."""
-    result = await discover_postgres()
-    for database in result["databases"]:
-        for table in database.get("tables", []):
-            table["capability"] = resolve_table_capability(database["database"], table["name"], table.get("schema"))
-    return result
+    try:
+        result = await discover_postgres()
+        for database in result["databases"]:
+            for table in database.get("tables", []):
+                table["capability"] = resolve_table_capability(
+                    database["database"], table["name"], table.get("schema")
+                )
+        return result
+    except HTTPException:
+        raise
+    except Exception as exc:
+        # Keep database connection/configuration details in server logs, not in
+        # the HTTP response. Return a service-unavailable status rather than an
+        # opaque 500 when the live PostgreSQL control plane cannot be reached.
+        logger.exception("database.live_catalog_discovery_failed")
+        raise HTTPException(503, "live database discovery unavailable") from exc
 
 
 @router.post("/sql")
