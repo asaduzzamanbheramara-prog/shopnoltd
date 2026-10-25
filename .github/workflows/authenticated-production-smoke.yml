@@ -2,6 +2,8 @@ name: Authenticated production smoke
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: '30 2 * * *' # Daily at 02:30 UTC (08:30 Bangladesh time)
   push:
     branches: [main]
     paths:
@@ -17,50 +19,57 @@ concurrency:
 
 jobs:
   authenticated-smoke:
-    name: Read-only authenticated browser checks
+    name: Read-only three-role browser checks
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Require dedicated test-account secrets
+      - name: Require all three dedicated test-account secrets
         shell: bash
         env:
           ADMIN_USERNAME: ${{ secrets.SHOPNOLTD_ADMIN_USERNAME }}
           ADMIN_PASSWORD: ${{ secrets.SHOPNOLTD_ADMIN_PASSWORD }}
+          OWNER_USERNAME: ${{ secrets.SHOPNOLTD_OWNER_USERNAME }}
+          OWNER_PASSWORD: ${{ secrets.SHOPNOLTD_OWNER_PASSWORD }}
           USER_USERNAME: ${{ secrets.SHOPNOLTD_USER_USERNAME }}
           USER_PASSWORD: ${{ secrets.SHOPNOLTD_USER_PASSWORD }}
         run: |
           set -euo pipefail
-          for name in ADMIN_USERNAME ADMIN_PASSWORD USER_USERNAME USER_PASSWORD; do
+          missing=0
+          for name in ADMIN_USERNAME ADMIN_PASSWORD OWNER_USERNAME OWNER_PASSWORD USER_USERNAME USER_PASSWORD; do
             if [ -z "${!name}" ]; then
-              echo "::error::Missing GitHub Actions secret for ${name}. Configure dedicated, least-privilege production test accounts; do not commit credentials."
-              exit 1
+              echo "::error::Missing required GitHub Actions secret for ${name}. Add dedicated test-account credentials in repository Settings > Secrets and variables > Actions. Never commit credentials."
+              missing=1
             fi
           done
+          if [ "$missing" -ne 0 ]; then exit 1; fi
       - name: Install Playwright dependencies
         working-directory: tests/browser-role
         run: |
           npm install --no-audit --no-fund
           npx playwright install --with-deps chromium
-      - name: Run authenticated read-only smoke tests
+      - name: Run authenticated read-only role and service checks
         working-directory: tests/browser-role
         env:
           SHOPNOLTD_BASE_URL: https://shopnoltd.dpdns.org
           SHOPNOLTD_ADMIN_USERNAME: ${{ secrets.SHOPNOLTD_ADMIN_USERNAME }}
           SHOPNOLTD_ADMIN_PASSWORD: ${{ secrets.SHOPNOLTD_ADMIN_PASSWORD }}
-          SHOPNOLTD_USER_USERNAME: ${{ secrets.SHOPNOLTD_USER_USERNAME }}
-          SHOPNOLTD_USER_PASSWORD: ${{ secrets.SHOPNOLTD_USER_PASSWORD }}
           SHOPNOLTD_OWNER_USERNAME: ${{ secrets.SHOPNOLTD_OWNER_USERNAME }}
           SHOPNOLTD_OWNER_PASSWORD: ${{ secrets.SHOPNOLTD_OWNER_PASSWORD }}
-        run: npx playwright test --config=playwright.config.js --reporter=line --workers=1 authenticated-production.spec.js
-      - name: Upload Playwright traces on failure
-        if: failure()
+          SHOPNOLTD_USER_USERNAME: ${{ secrets.SHOPNOLTD_USER_USERNAME }}
+          SHOPNOLTD_USER_PASSWORD: ${{ secrets.SHOPNOLTD_USER_PASSWORD }}
+          PLAYWRIGHT_HTML_OPEN: never
+        run: npx playwright test --config=playwright.config.js --reporter=line,html --workers=1 authenticated-production.spec.js
+      - name: Upload browser report and traces
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: authenticated-production-playwright-traces
-          path: tests/browser-role/test-results/
+          name: shopnoltd-three-role-authenticated-report
+          path: |
+            tests/browser-role/playwright-report/
+            tests/browser-role/test-results/
           if-no-files-found: ignore
-          retention-days: 7
+          retention-days: 14

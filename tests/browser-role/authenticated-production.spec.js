@@ -168,3 +168,19 @@ test('admin can inspect the live PostgreSQL database inventory', async ({ page }
     }
   }
 })
+
+
+test('tenant owner is denied platform-admin database route', async ({ page }) => {
+  test.skip(!ownerUser || !ownerPassword, 'Tenant owner credentials are required by the authenticated production workflow.')
+  await login(page, ownerUser, ownerPassword)
+  await page.goto(`${baseURL}/admin/database`, { waitUntil: 'domcontentloaded' })
+  await expect(page).toHaveURL(/\/dashboard(?:\?|$)/, { timeout: 15000 })
+  await expect(page).not.toHaveURL(/\/admin\/database(?:\?|$)/)
+})
+
+test('customer is denied platform-admin control plane', async ({ page }) => {
+  await login(page, userUser, userPassword)
+  await page.goto(`${baseURL}/admin`, { waitUntil: 'domcontentloaded' })
+  await expect(page).toHaveURL(/\/dashboard(?:\?|$)/, { timeout: 15000 })
+  await expect(page).not.toHaveURL(/\/admin(?:\?|$)/)
+})
