@@ -86,7 +86,7 @@ export const platformApi = {
   deleteOmnichannelConnection: (id) => request(`/api/v1/omnichannel/connections/${encodeURIComponent(id)}`, { method: 'DELETE' }),
   currencies: () => request('/api/v2/currencies'),
   feed: () => request('/api/v2/social/feed'), globalFeed: () => request('/api/v2/social/global'),
-  createPost: (content, visibility = 'public') => request('/api/v2/social/posts', { method: 'POST', body: JSON.stringify({ content, visibility, media: [] }) }),
+  createPost: (content, visibility = 'public', media = []) => request('/api/v2/social/posts', { method: 'POST', body: JSON.stringify({ content, visibility, media }) }),
   post: (id) => request(`/api/v2/social/posts/${id}`), isLiked: (id) => request(`/api/v2/social/posts/${id}/like`), like: (id) => request(`/api/v2/social/posts/${id}/like`, { method: 'POST' }), unlike: (id) => request(`/api/v2/social/posts/${id}/like`, { method: 'DELETE' }),
   isSaved: (id) => request(`/api/v2/social/posts/${id}/saved`), savePost: (id) => request(`/api/v2/social/posts/${id}/saved`, { method: 'PUT' }), unsavePost: (id) => request(`/api/v2/social/posts/${id}/saved`, { method: 'DELETE' }), savedPosts: () => request('/api/v2/social/saved-posts'),
   share: (id, target = 'internal') => request(`/api/v2/social/posts/${id}/share`, { method: 'POST', body: JSON.stringify({ target }) }), view: (id) => request(`/api/v2/social/posts/${id}/view`, { method: 'POST' }), views: (id) => request(`/api/v2/social/posts/${id}/views`),
