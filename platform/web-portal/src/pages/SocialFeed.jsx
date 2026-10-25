@@ -16,6 +16,7 @@ function PostCard({ post, refresh, following, toggleFollow }) {
 
   useEffect(() => {
     platformApi.view(post.id).catch(() => {})
+    platformApi.isLiked(post.id).then((result) => setLiked(Boolean(result?.liked))).catch(() => {})
     platformApi.comments(post.id).then(setComments).catch(() => {})
   }, [post.id])
 
@@ -29,7 +30,22 @@ function PostCard({ post, refresh, following, toggleFollow }) {
   }
 
   async function doShare() {
-    try { await platformApi.share(post.id); alert('Shared to your Shopnoltd feed.') } catch (e) { alert(e.message) }
+    const url = `${window.location.origin}/post/${post.id}`
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: 'Shopnoltd post', text: post.content?.slice(0, 180) || '', url })
+        const result = await platformApi.share(post.id, 'copy')
+        refresh(post.id, undefined, undefined, result?.share_count)
+        return
+      }
+      if (!navigator.clipboard?.writeText) throw new Error('Sharing is not available in this browser')
+      await navigator.clipboard.writeText(url)
+      const result = await platformApi.share(post.id, 'copy')
+      refresh(post.id, undefined, undefined, result?.share_count)
+      alert('Post link copied.')
+    } catch (e) {
+      if (e?.name !== 'AbortError') alert(e.message || 'Unable to share this post.')
+    }
   }
 
   async function addComment(e) {
@@ -127,8 +143,13 @@ export default function SocialFeed() {
     } catch (e) { setError(e.message) }
   }
 
-  function refresh(id, likeCount, commentCount) {
-    setPosts(current => current.map(p => p.id === id ? { ...p, ...(likeCount !== undefined ? { like_count: likeCount } : {}), ...(commentCount !== undefined ? { comment_count: commentCount } : {}) } : p))
+  function refresh(id, likeCount, commentCount, shareCount) {
+    setPosts(current => current.map(p => p.id === id ? {
+      ...p,
+      ...(likeCount !== undefined ? { like_count: likeCount } : {}),
+      ...(commentCount !== undefined ? { comment_count: commentCount } : {}),
+      ...(shareCount !== undefined ? { share_count: shareCount } : {}),
+    } : p))
   }
 
   return <div style={shell}>
