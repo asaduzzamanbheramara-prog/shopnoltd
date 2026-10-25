@@ -9,6 +9,7 @@ const card = { minWidth: 0, boxSizing: 'border-box', background: '#fff', border:
 function PostCard({ post, refresh, following, toggleFollow }) {
   const navigate = useNavigate()
   const [liked, setLiked] = useState(false)
+  const [saved, setSaved] = useState(false)
   const [comments, setComments] = useState([])
   const [comment, setComment] = useState('')
   const [busy, setBusy] = useState(false)
@@ -17,6 +18,7 @@ function PostCard({ post, refresh, following, toggleFollow }) {
   useEffect(() => {
     platformApi.view(post.id).catch(() => {})
     platformApi.isLiked(post.id).then((result) => setLiked(Boolean(result?.liked))).catch(() => {})
+    platformApi.isSaved(post.id).then((result) => setSaved(Boolean(result?.saved))).catch(() => {})
     platformApi.comments(post.id).then(setComments).catch(() => {})
   }, [post.id])
 
@@ -26,6 +28,14 @@ function PostCard({ post, refresh, following, toggleFollow }) {
       const data = liked ? await platformApi.unlike(post.id) : await platformApi.like(post.id)
       setLiked(!liked)
       refresh(post.id, data?.like_count)
+    } catch (e) { alert(e.message) } finally { setBusy(false) }
+  }
+
+  async function toggleSave() {
+    setBusy(true)
+    try {
+      const result = saved ? await platformApi.unsavePost(post.id) : await platformApi.savePost(post.id)
+      setSaved(Boolean(result?.saved))
     } catch (e) { alert(e.message) } finally { setBusy(false) }
   }
 
@@ -73,6 +83,7 @@ function PostCard({ post, refresh, following, toggleFollow }) {
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 16 }}>
         <button disabled={busy} onClick={toggleLike}>{liked ? '♥ Liked' : '♡ Like'} · {post.like_count || 0}</button>
         <button onClick={doShare}>↗ Share · {post.share_count || 0}</button>
+        <button disabled={busy} onClick={toggleSave}>{saved ? '🔖 Saved' : '🔖 Save'}</button>
         <button onClick={() => navigator.clipboard?.writeText(direct)}>🔗 Copy link</button>
         <button onClick={() => navigate(`/post/${post.id}`)}>Open</button>
       </div>
