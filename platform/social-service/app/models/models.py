@@ -68,6 +68,15 @@ class Like(Base):
     __table_args__ = (Index("ix_like_post_user", "post_id", "user_id", unique=True),)
 
 
+class SavedPost(Base):
+    __tablename__ = "saved_posts"
+    id = Column(String(64), primary_key=True, default=lambda: str(uuid.uuid4()))
+    post_id = Column(String(64), ForeignKey("posts.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(String(64), nullable=False, index=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    __table_args__ = (Index("ix_saved_post_user_post", "user_id", "post_id", unique=True),)
+
+
 class Reaction(Base):
     __tablename__ = "reactions"
     id = Column(String(64), primary_key=True, default=lambda: str(uuid.uuid4()))
