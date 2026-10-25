@@ -49,6 +49,17 @@ async def unlike(post_id: str, user=Depends(current_user), s: AsyncSession = Dep
     return {"unliked": True, "like_count": p.like_count}
 
 
+@router.get("/{post_id}/me")
+async def my_like(post_id: str, user=Depends(current_user), s: AsyncSession = Depends(db)):
+    post = (await s.execute(select(Post).where(Post.id == post_id))).scalar_one_or_none()
+    if not post:
+        raise HTTPException(404, "post not found")
+    result = await s.execute(
+        select(Like.id).where(Like.post_id == post_id, Like.user_id == user["sub"])
+    )
+    return {"liked": result.scalar_one_or_none() is not None}
+
+
 @router.get("/{post_id}")
 async def likers(post_id: str, s: AsyncSession = Depends(db)):
     res = await s.execute(select(Like).where(Like.post_id == post_id))
