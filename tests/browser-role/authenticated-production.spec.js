@@ -95,7 +95,7 @@ test('admin can inspect the database inventory and read one table without mutati
 })
 
 test('platform admin dashboard displays the authoritative platform_admin role', async ({ page }) => {
-  await login(page, adminUser, adminPassword)
+  await login(page, adminUser, adminPassword, adminTotpSecret, 'admin')
   await page.goto(`${baseURL}/dashboard`, { waitUntil: 'domcontentloaded' })
   const roleLine = page.locator('p').filter({ hasText: 'Tenant:' }).first()
   await expect(roleLine).toContainText('platform_admin')
@@ -120,7 +120,7 @@ test('customer dashboard displays the customer role', async ({ page }) => {
 })
 
 test('authenticated AI model catalog request succeeds', async ({ page }) => {
-  await login(page, userUser, userPassword)
+  await login(page, userUser, userPassword, userTotpSecret, 'user')
   const modelResponse = page.waitForResponse(r =>
     r.url().includes('/api/v1/ai/inference/models') && r.request().method() === 'GET',
     { timeout: 30000 },
@@ -140,7 +140,7 @@ test('payments page renders without creating a charge', async ({ page }) => {
 })
 
 test('authenticated wallet read succeeds without changing balance', async ({ page }) => {
-  await login(page, userUser, userPassword)
+  await login(page, userUser, userPassword, userTotpSecret, 'user')
   const walletResponse = page.waitForResponse(r =>
     /\/api\/v1\/wallets\//.test(new URL(r.url()).pathname) && r.request().method() === 'GET',
     { timeout: 30000 },
@@ -152,14 +152,14 @@ test('authenticated wallet read succeeds without changing balance', async ({ pag
 })
 
 test('normal user is denied the admin database route', async ({ page }) => {
-  await login(page, userUser, userPassword)
+  await login(page, userUser, userPassword, userTotpSecret, 'user')
   await page.goto(`${baseURL}/admin/database`, { waitUntil: 'domcontentloaded' })
   await expect(page).toHaveURL(/\/dashboard(?:\?|$)/, { timeout: 15000 })
   await expect(page).not.toHaveURL(/\/admin\/database(?:\?|$)/)
 })
 
 test('admin can inspect the live PostgreSQL database inventory', async ({ page }) => {
-  await login(page, adminUser, adminPassword)
+  await login(page, adminUser, adminPassword, adminTotpSecret, 'admin')
   const catalogResponse = page.waitForResponse(r =>
     r.url().includes('/api/v1/admin/database/catalog') && r.request().method() === 'GET',
     { timeout: 30000 },
@@ -201,14 +201,14 @@ test('admin can inspect the live PostgreSQL database inventory', async ({ page }
 
 test('tenant owner is denied platform-admin database route', async ({ page }) => {
   test.skip(!ownerUser || !ownerPassword, 'Tenant owner credentials are required by the authenticated production workflow.')
-  await login(page, ownerUser, ownerPassword)
+  await login(page, ownerUser, ownerPassword, ownerTotpSecret, 'owner')
   await page.goto(`${baseURL}/admin/database`, { waitUntil: 'domcontentloaded' })
   await expect(page).toHaveURL(/\/dashboard(?:\?|$)/, { timeout: 15000 })
   await expect(page).not.toHaveURL(/\/admin\/database(?:\?|$)/)
 })
 
 test('customer is denied platform-admin control plane', async ({ page }) => {
-  await login(page, userUser, userPassword)
+  await login(page, userUser, userPassword, userTotpSecret, 'user')
   await page.goto(`${baseURL}/admin`, { waitUntil: 'domcontentloaded' })
   await expect(page).toHaveURL(/\/dashboard(?:\?|$)/, { timeout: 15000 })
   await expect(page).not.toHaveURL(/\/admin(?:\?|$)/)
