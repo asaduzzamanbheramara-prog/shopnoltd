@@ -123,6 +123,11 @@ async def social_create_post(body: dict, creds: HTTPAuthorizationCredentials = D
 async def social_post(post_id: str):
     return await social_call("GET", f"/api/v1/posts/{post_id}", "")
 
+@router.get("/social/posts/{post_id}/like")
+async def social_like_state(post_id: str, creds: HTTPAuthorizationCredentials = Depends(bearer)):
+    return await social_call("GET", f"/api/v1/likes/{post_id}/me", creds.credentials)
+
+
 @router.post("/social/posts/{post_id}/like")
 async def social_like(post_id: str, creds: HTTPAuthorizationCredentials = Depends(bearer)):
     return await social_call("POST", f"/api/v1/likes/{post_id}", creds.credentials)
@@ -130,6 +135,26 @@ async def social_like(post_id: str, creds: HTTPAuthorizationCredentials = Depend
 @router.delete("/social/posts/{post_id}/like")
 async def social_unlike(post_id: str, creds: HTTPAuthorizationCredentials = Depends(bearer)):
     return await social_call("DELETE", f"/api/v1/likes/{post_id}", creds.credentials)
+
+@router.get("/social/saved-posts")
+async def social_saved_posts(creds: HTTPAuthorizationCredentials = Depends(bearer)):
+    return await social_call("GET", "/api/v1/saved-posts", creds.credentials)
+
+
+@router.get("/social/posts/{post_id}/saved")
+async def social_saved_state(post_id: str, creds: HTTPAuthorizationCredentials = Depends(bearer)):
+    return await social_call("GET", f"/api/v1/saved-posts/{post_id}", creds.credentials)
+
+
+@router.put("/social/posts/{post_id}/saved")
+async def social_save_post(post_id: str, creds: HTTPAuthorizationCredentials = Depends(bearer)):
+    return await social_call("PUT", f"/api/v1/saved-posts/{post_id}", creds.credentials)
+
+
+@router.delete("/social/posts/{post_id}/saved")
+async def social_unsave_post(post_id: str, creds: HTTPAuthorizationCredentials = Depends(bearer)):
+    return await social_call("DELETE", f"/api/v1/saved-posts/{post_id}", creds.credentials)
+
 
 @router.post("/social/posts/{post_id}/share")
 async def social_share(post_id: str, body: dict | None = None, creds: HTTPAuthorizationCredentials = Depends(bearer)):
@@ -358,7 +383,14 @@ async def active_works(s: AsyncSession = Depends(db), user=Depends(current_user)
     result = await s.execute(select(Work, WorkAssignment).join(WorkAssignment, WorkAssignment.work_id == Work.id)
                              .where(WorkAssignment.worker_id == user["sub"], WorkAssignment.status == "active")
                              .order_by(desc(WorkAssignment.accepted_at)))
-    return [{"work": await enriched_work(s, w), "assignment_id": a.id, "accepted_at": a.accepted_at.isoformat()} for w, a in result.all()]
+    return [
+        {
+            "work": await enriched_work(s, w),
+            "assignment_id": a.id,
+            "accepted_at": a.accepted_at.isoformat() if a.accepted_at else None,
+        }
+        for w, a in result.all()
+    ]
 
 
 @router.post("/works/{work_id}/submit", status_code=201)

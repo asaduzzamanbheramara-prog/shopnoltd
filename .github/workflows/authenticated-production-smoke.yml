@@ -53,6 +53,8 @@ jobs:
           SHOPNOLTD_ADMIN_PASSWORD: ${{ secrets.SHOPNOLTD_ADMIN_PASSWORD }}
           SHOPNOLTD_USER_USERNAME: ${{ secrets.SHOPNOLTD_USER_USERNAME }}
           SHOPNOLTD_USER_PASSWORD: ${{ secrets.SHOPNOLTD_USER_PASSWORD }}
+          SHOPNOLTD_OWNER_USERNAME: ${{ secrets.SHOPNOLTD_OWNER_USERNAME }}
+          SHOPNOLTD_OWNER_PASSWORD: ${{ secrets.SHOPNOLTD_OWNER_PASSWORD }}
         run: npx playwright test --config=playwright.config.js --reporter=line --workers=1 authenticated-production.spec.js
       - name: Upload Playwright traces on failure
         if: failure()

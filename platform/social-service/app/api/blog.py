@@ -7,11 +7,12 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, Field
 from sqlalchemy import desc, func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import SessionLocal
 from app.core.security import verify_token
-from app.models.models import BlogComment, BlogLike, BlogPost
+from app.models.models import BlogComment, BlogLike, BlogPost, BlogSavedPost, BlogShare
 
 router = APIRouter()
 bearer = HTTPBearer(auto_error=False)
@@ -131,6 +132,20 @@ async def admin_blog(user=Depends(current_user), s: AsyncSession = Depends(db)):
     return [out(p) for p in res.scalars().all()]
 
 
+@router.get("/saved")
+async def saved_blog_posts(user=Depends(current_user), s: AsyncSession = Depends(db)):
+    result = await s.execute(
+        select(BlogSavedPost, BlogPost)
+        .join(BlogPost, BlogPost.id == BlogSavedPost.blog_post_id)
+        .where(BlogSavedPost.user_id == user["sub"], BlogPost.status == "published")
+        .order_by(desc(BlogSavedPost.created_at))
+    )
+    return [
+        {**out(post).model_dump(), "saved_at": saved.created_at.isoformat() if saved.created_at else None}
+        for saved, post in result.all()
+    ]
+
+
 @router.get("/{slug}", response_model=BlogPostOut)
 async def get_blog_post(slug: str, s: AsyncSession = Depends(db)):
     res = await s.execute(select(BlogPost).where(BlogPost.slug == slug, BlogPost.status == "published"))
@@ -190,6 +205,98 @@ async def unlike_blog_post(slug: str, user=Depends(current_user), s: AsyncSessio
         await s.commit()
     count = (await s.execute(select(func.count(BlogLike.id)).where(BlogLike.blog_post_id == post.id))).scalar_one()
     return {"liked": False, "count": count}
+
+
+@router.get("/{slug}/shares")
+async def blog_share_count(slug: str, s: AsyncSession = Depends(db)):
+    post = (await s.execute(select(BlogPost).where(
+        BlogPost.slug == slug, BlogPost.status == "published"
+    ))).scalar_one_or_none()
+    if not post:
+        raise HTTPException(404, "blog post not found")
+    count = (await s.execute(select(func.count(BlogShare.id)).where(
+        BlogShare.blog_post_id == post.id
+    ))).scalar_one()
+    return {"count": int(count or 0)}
+
+
+@router.post("/{slug}/share", status_code=201)
+async def share_blog_post(slug: str, user=Depends(current_user), s: AsyncSession = Depends(db)):
+    post = (await s.execute(select(BlogPost).where(
+        BlogPost.slug == slug, BlogPost.status == "published"
+    ))).scalar_one_or_none()
+    if not post:
+        raise HTTPException(404, "blog post not found")
+    s.add(BlogShare(blog_post_id=post.id, user_id=user["sub"], target="copy"))
+    await s.commit()
+    count = (await s.execute(select(func.count(BlogShare.id)).where(
+        BlogShare.blog_post_id == post.id
+    ))).scalar_one()
+    return {"shared": True, "count": int(count or 0)}
+
+
+@router.get("/{slug}/saved")
+async def blog_saved_state(
+    slug: str,
+    creds: HTTPAuthorizationCredentials | None = Depends(bearer),
+    s: AsyncSession = Depends(db),
+):
+    post = (await s.execute(select(BlogPost).where(
+        BlogPost.slug == slug, BlogPost.status == "published"
+    ))).scalar_one_or_none()
+    if not post:
+        raise HTTPException(404, "blog post not found")
+    if creds is None:
+        return {"saved": False}
+    try:
+        user = await verify_token(creds.credentials)
+    except Exception as exc:
+        raise HTTPException(401, "Invalid authentication token") from exc
+    result = await s.execute(select(BlogSavedPost.id).where(
+        BlogSavedPost.blog_post_id == post.id, BlogSavedPost.user_id == user["sub"]
+    ))
+    return {"saved": result.scalar_one_or_none() is not None}
+
+
+@router.put("/{slug}/saved")
+async def save_blog_post(slug: str, user=Depends(current_user), s: AsyncSession = Depends(db)):
+    post = (await s.execute(select(BlogPost).where(
+        BlogPost.slug == slug, BlogPost.status == "published"
+    ))).scalar_one_or_none()
+    if not post:
+        raise HTTPException(404, "blog post not found")
+    existing = await s.execute(select(BlogSavedPost.id).where(
+        BlogSavedPost.blog_post_id == post.id, BlogSavedPost.user_id == user["sub"]
+    ))
+    if existing.scalar_one_or_none() is None:
+        s.add(BlogSavedPost(blog_post_id=post.id, user_id=user["sub"]))
+        try:
+            await s.commit()
+        except IntegrityError:
+            await s.rollback()
+            existing = await s.execute(select(BlogSavedPost.id).where(
+                BlogSavedPost.blog_post_id == post.id, BlogSavedPost.user_id == user["sub"]
+            ))
+            if existing.scalar_one_or_none() is None:
+                raise
+    return {"saved": True}
+
+
+@router.delete("/{slug}/saved")
+async def unsave_blog_post(slug: str, user=Depends(current_user), s: AsyncSession = Depends(db)):
+    post = (await s.execute(select(BlogPost).where(
+        BlogPost.slug == slug, BlogPost.status == "published"
+    ))).scalar_one_or_none()
+    if not post:
+        raise HTTPException(404, "blog post not found")
+    result = await s.execute(select(BlogSavedPost).where(
+        BlogSavedPost.blog_post_id == post.id, BlogSavedPost.user_id == user["sub"]
+    ))
+    saved = result.scalar_one_or_none()
+    if saved is not None:
+        await s.delete(saved)
+        await s.commit()
+    return {"saved": False}
 
 
 @router.get("/{slug}/comments")

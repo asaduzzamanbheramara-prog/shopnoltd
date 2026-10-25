@@ -6,6 +6,9 @@ metadata:
     app.kubernetes.io/name: admin-infrastructure
     app.kubernetes.io/part-of: shopnoltd
 rules:
+  # Readiness probes call the non-resource Kubernetes API endpoint.
+  - nonResourceURLs: ["/version"]
+    verbs: ["get"]
   - apiGroups: [""]
     resources: ["nodes", "namespaces", "pods", "services", "persistentvolumeclaims", "secrets"]
     verbs: ["get", "list", "watch"]

@@ -93,6 +93,19 @@ async def ensure_user_mirror(payload: dict, s: AsyncSession) -> UserMirror:
         await s.execute(select(UserMirror).where(UserMirror.keycloak_id == keycloak_id))
     ).scalar_one_or_none()
     if existing:
+        # Keycloak is authoritative for identity roles. Refresh the mirror from
+        # the already-validated token so first-login defaults cannot leave an
+        # administrator mislabeled as a customer in the portal.
+        token_roles = sorted(set(payload.get("roles") or []))
+        if sorted(set(existing.roles or [])) != token_roles:
+            existing.roles = token_roles
+
+        # Only replace tenant scope when the signed token explicitly provides it.
+        # Never infer or assign a tenant from client-supplied request data.
+        token_tenant_id = payload.get("tenant_id")
+        if token_tenant_id and existing.tenant_id != token_tenant_id:
+            existing.tenant_id = token_tenant_id
+
         profile = (
             await s.execute(select(UserProfile).where(UserProfile.user_id == existing.id))
         ).scalar_one_or_none()

@@ -49,6 +49,8 @@ export default function BlogPost() {
   const [post, setPost] = useState(null)
   const [error, setError] = useState('')
   const [like, setLike] = useState({ count: 0, liked: false })
+  const [shareCount, setShareCount] = useState(0)
+  const [saved, setSaved] = useState(false)
   const [comments, setComments] = useState([])
   const [commentText, setCommentText] = useState('')
   const [interactionMessage, setInteractionMessage] = useState('')
@@ -57,8 +59,15 @@ export default function BlogPost() {
   const loadInteractions = useCallback(async () => {
     if (!slug) return
     try {
-      const [likes, rows] = await Promise.all([platformApi.blogLikes(slug), platformApi.blogComments(slug)])
+      const [likes, rows, shares, savedState] = await Promise.all([
+        platformApi.blogLikes(slug),
+        platformApi.blogComments(slug),
+        platformApi.blogShares(slug),
+        platformApi.blogSaved(slug),
+      ])
       setLike({ count: Number(likes?.count || 0), liked: Boolean(likes?.liked) })
+      setShareCount(Number(shares?.count || 0))
+      setSaved(Boolean(savedState?.saved))
       setComments(Array.isArray(rows) ? rows : [])
     } catch (e) {
       setInteractionMessage(e?.message || 'Could not load article interactions.')
@@ -97,14 +106,43 @@ export default function BlogPost() {
     } finally { setInteractionBusy(false) }
   }
 
+  const toggleSave = async () => {
+    setInteractionBusy(true); setInteractionMessage('')
+    try {
+      const result = saved ? await platformApi.unsaveBlog(slug) : await platformApi.saveBlog(slug)
+      setSaved(Boolean(result?.saved))
+      setInteractionMessage(result?.saved ? 'Article saved.' : 'Article removed from saved items.')
+    } catch (e) {
+      setInteractionMessage(e?.message || 'Please sign in to save this article.')
+    } finally { setInteractionBusy(false) }
+  }
+
   const shareArticle = async () => {
     const url = window.location.href
     try {
-      if (navigator.share) await navigator.share({ title: post.title, text: post.excerpt || post.title, url })
-      else if (navigator.clipboard?.writeText) { await navigator.clipboard.writeText(url); setInteractionMessage('Article link copied.') }
-      else { window.prompt('Copy this article link:', url); return }
+      if (navigator.share) {
+        await navigator.share({ title: post.title, text: post.excerpt || post.title, url })
+      } else if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(url)
+      } else {
+        window.prompt('Copy this article link:', url)
+        return
+      }
     } catch (e) {
       if (e?.name !== 'AbortError') setInteractionMessage('Unable to share this article from this browser.')
+      return
+    }
+
+    if (localStorage.getItem('shopno_token')) {
+      try {
+        const result = await platformApi.shareBlog(slug)
+        setShareCount(Number(result?.count ?? shareCount))
+        setInteractionMessage('Article shared.')
+      } catch {
+        setInteractionMessage('Article shared, but the share count could not be recorded.')
+      }
+    } else {
+      setInteractionMessage('Article link shared. Sign in to record the share count.')
     }
   }
 
@@ -130,7 +168,8 @@ export default function BlogPost() {
       <section aria-label="Article actions" style={{ borderTop: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0', padding: '18px 0', marginTop: 34, display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
         <button type="button" style={{ ...buttonStyle, background: like.liked ? '#e0f2fe' : '#fff', borderColor: like.liked ? '#0284c7' : '#cbd5e1' }} onClick={toggleLike} disabled={interactionBusy}>{like.liked ? '♥ Liked' : '♡ Like'} · {like.count}</button>
         <button type="button" style={buttonStyle} onClick={() => document.getElementById('blog-comments')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>Comment · {comments.length}</button>
-        <button type="button" style={buttonStyle} onClick={shareArticle}>Share</button>
+        <button type="button" style={buttonStyle} onClick={shareArticle}>Share · {shareCount}</button>
+        <button type="button" style={{ ...buttonStyle, background: saved ? '#e0f2fe' : '#fff', borderColor: saved ? '#0284c7' : '#cbd5e1' }} onClick={toggleSave} disabled={interactionBusy}>{saved ? '🔖 Saved' : '🔖 Save'}</button>
       </section>
       {interactionMessage && <p role="status" style={{ color: '#475569', fontSize: 14, margin: '12px 0' }}>{interactionMessage}</p>}
       <section id="blog-comments" style={{ marginTop: 34 }}>

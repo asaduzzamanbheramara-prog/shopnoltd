@@ -1,4 +1,5 @@
 from datetime import datetime
+import json
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -23,8 +24,20 @@ async def current_user(creds: HTTPAuthorizationCredentials = Depends(bearer)):
     return await verify_token(creds.credentials)
 
 
+def media_list(value) -> list:
+    if isinstance(value, list):
+        return value
+    if isinstance(value, str):
+        try:
+            parsed = json.loads(value)
+            return parsed if isinstance(parsed, list) else []
+        except (TypeError, ValueError):
+            return []
+    return []
+
+
 def post_out(p: Post) -> PostOut:
-    return PostOut(id=p.id, user_id=p.user_id, content=p.content, media=p.media or [],
+    return PostOut(id=p.id, user_id=p.user_id, content=p.content, media=media_list(p.media),
                    visibility=p.visibility, published_at=p.published_at.isoformat(),
                    like_count=p.like_count or 0, share_count=p.share_count or 0,
                    comment_count=p.comment_count or 0)
@@ -33,7 +46,7 @@ def post_out(p: Post) -> PostOut:
 @router.post("", response_model=PostOut, status_code=201)
 async def create_post(body: PostIn, user=Depends(current_user), s: AsyncSession = Depends(db)):
     p = Post(tenant_id=user.get("tenant_id", "default"), user_id=user["sub"],
-             content=body.content.strip(), media=body.media, visibility=body.visibility)
+             content=body.content.strip(), media=json.dumps(body.media or []), visibility=body.visibility)
     if body.scheduled_at:
         p.scheduled_at = datetime.fromisoformat(body.scheduled_at)
         p.published_at = p.scheduled_at
@@ -58,7 +71,7 @@ async def edit_post(post_id: str, body: PostIn, user=Depends(current_user), s: A
         raise HTTPException(404, "post not found")
     if p.user_id != user["sub"]:
         raise HTTPException(403, "not your post")
-    p.content, p.media, p.visibility = body.content.strip(), body.media, body.visibility
+    p.content, p.media, p.visibility = body.content.strip(), json.dumps(body.media or []), body.visibility
     if body.scheduled_at:
         p.scheduled_at = datetime.fromisoformat(body.scheduled_at)
         p.published_at = p.scheduled_at

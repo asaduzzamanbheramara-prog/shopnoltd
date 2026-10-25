@@ -5,6 +5,8 @@ const adminUser = process.env.SHOPNOLTD_ADMIN_USERNAME
 const adminPassword = process.env.SHOPNOLTD_ADMIN_PASSWORD
 const userUser = process.env.SHOPNOLTD_USER_USERNAME
 const userPassword = process.env.SHOPNOLTD_USER_PASSWORD
+const ownerUser = process.env.SHOPNOLTD_OWNER_USERNAME
+const ownerPassword = process.env.SHOPNOLTD_OWNER_PASSWORD
 
 test.beforeAll(() => {
   for (const [name, value] of Object.entries({
@@ -30,20 +32,58 @@ async function login(page, username, password) {
   ).toBe(true)
 }
 
-test('admin can inspect the live database control-plane adapter without mutating data', async ({ page }) => {
+test('admin can inspect the database inventory and read one table without mutating data', async ({ page }) => {
   await login(page, adminUser, adminPassword)
-  const tablesResponse = page.waitForResponse(r =>
-    r.url().includes('/api/v1/admin/tables') && r.request().method() === 'GET',
+  const catalogResponse = page.waitForResponse(r =>
+    r.url().includes('/api/v1/admin/database/live-catalog') && r.request().method() === 'GET',
     { timeout: 30000 },
   )
   await page.goto(`${baseURL}/admin/database`, { waitUntil: 'domcontentloaded' })
   await expect(page.getByRole('heading', { name: /database/i }).first()).toBeVisible()
-  const response = await tablesResponse
-  expect(response.status(), 'database table inventory GET must succeed').toBeGreaterThanOrEqual(200)
-  expect(response.status(), 'database table inventory GET must not return an error').toBeLessThan(300)
+  const response = await catalogResponse
+  expect(response.status(), 'live database inventory must not return an error').toBeLessThan(300)
   const payload = await response.json()
-  expect(Array.isArray(payload), 'database inventory response must be an array').toBe(true)
-  expect(payload.length, 'database adapter must expose at least one table').toBeGreaterThan(0)
+  expect(Array.isArray(payload.databases), 'live inventory must return database results').toBe(true)
+  const database = payload.databases.find(item =>
+    item.classification === 'application' && item.reachable === true &&
+    Array.isArray(item.tables) && item.tables.some(table => table.capability?.readable),
+  )
+  expect(database, 'at least one readable application database/table must be available').toBeTruthy()
+  const table = database.tables.find(item => item.capability?.readable)
+  const token = await page.evaluate(() => localStorage.getItem('shopno_token'))
+  const rowsResponse = await page.request.get(
+    `${baseURL}/api/v1/admin/database/tables/${encodeURIComponent(database.database)}/${encodeURIComponent(table.schema || 'public')}/${encodeURIComponent(table.name)}/rows?limit=1`,
+    { headers: { Authorization: `Bearer ${token}` } },
+  )
+  expect(rowsResponse.status(), 'read-only table rows request must succeed').toBeLessThan(300)
+  const rowsPayload = await rowsResponse.json()
+  expect(Array.isArray(rowsPayload.columns), 'table rows response must contain column metadata').toBe(true)
+  expect(Array.isArray(rowsPayload.rows), 'table rows response must contain a rows array').toBe(true)
+})
+
+test('platform admin dashboard displays the authoritative platform_admin role', async ({ page }) => {
+  await login(page, adminUser, adminPassword)
+  await page.goto(`${baseURL}/dashboard`, { waitUntil: 'domcontentloaded' })
+  const roleLine = page.locator('p').filter({ hasText: 'Tenant:' }).first()
+  await expect(roleLine).toContainText('platform_admin')
+  await expect(roleLine).not.toContainText('Roles: customer')
+})
+
+test('tenant owner dashboard displays tenant_owner and a non-default tenant', async ({ page }) => {
+  test.skip(!ownerUser || !ownerPassword, 'Configure SHOPNOLTD_OWNER_USERNAME and SHOPNOLTD_OWNER_PASSWORD as GitHub Actions secrets.')
+  await login(page, ownerUser, ownerPassword)
+  await page.goto(`${baseURL}/dashboard`, { waitUntil: 'domcontentloaded' })
+  const roleLine = page.locator('p').filter({ hasText: 'Tenant:' }).first()
+  await expect(roleLine).toContainText('tenant_owner')
+  const text = await roleLine.innerText()
+  expect(text).not.toMatch(/Tenant:\s*default\b/i)
+})
+
+test('customer dashboard displays the customer role', async ({ page }) => {
+  await login(page, userUser, userPassword)
+  await page.goto(`${baseURL}/dashboard`, { waitUntil: 'domcontentloaded' })
+  const roleLine = page.locator('p').filter({ hasText: 'Tenant:' }).first()
+  await expect(roleLine).toContainText('customer')
 })
 
 test('authenticated AI model catalog request succeeds', async ({ page }) => {
