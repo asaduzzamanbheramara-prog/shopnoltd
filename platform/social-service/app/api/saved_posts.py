@@ -1,4 +1,5 @@
 """Authenticated saved-post collection and bookmark state."""
+import json
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import desc, select
@@ -22,12 +23,24 @@ async def current_user(creds: HTTPAuthorizationCredentials = Depends(bearer)):
     return await verify_token(creds.credentials)
 
 
+def media_list(value) -> list:
+    if isinstance(value, list):
+        return value
+    if isinstance(value, str):
+        try:
+            parsed = json.loads(value)
+            return parsed if isinstance(parsed, list) else []
+        except (TypeError, ValueError):
+            return []
+    return []
+
+
 def post_out(post: Post) -> dict:
     return {
         "id": post.id,
         "user_id": post.user_id,
         "content": post.content,
-        "media": post.media or [],
+        "media": media_list(post.media),
         "visibility": post.visibility,
         "published_at": post.published_at.isoformat() if post.published_at else None,
         "like_count": post.like_count or 0,
