@@ -23,7 +23,7 @@ function headers(extra = {}) { const t = localStorage.getItem('shopno_token'); r
 async function api(path, options = {}) { const r = await fetch(`${API}${path}`, { ...options, headers: headers(options.headers || {}) }); const text = await r.text(); let data = null; try { data = text ? JSON.parse(text) : null } catch { data = text }; if (!r.ok) throw new Error(data?.detail || data?.message || text || `HTTP ${r.status}`); return data }
 function responseFilename(response, fallback) {
   const disposition = response.headers.get('content-disposition') || ''
-  const utf8 = disposition.match(/filename\\*=UTF-8''([^;]+)/i)
+  const utf8 = disposition.match(/filename\*=UTF-8''([^;]+)/i)
   const plain = disposition.match(/filename=(?:"([^"]+)"|([^;]+))/i)
   const raw = utf8?.[1] || plain?.[1] || plain?.[2]
   if (!raw) return fallback
