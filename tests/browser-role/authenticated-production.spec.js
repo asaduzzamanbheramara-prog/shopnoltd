@@ -76,7 +76,7 @@ test('tenant owner dashboard displays tenant_owner and a non-default tenant', as
   const roleLine = page.locator('p').filter({ hasText: 'Tenant:' }).first()
   await expect(roleLine).toContainText('tenant_owner')
   const text = await roleLine.innerText()
-  expect(text).not.toMatch(/Tenant:\\s*default\\b/i)
+  expect(text).not.toMatch(/Tenant:\s*default\b/i)
 })
 
 test('customer dashboard displays the customer role', async ({ page }) => {
