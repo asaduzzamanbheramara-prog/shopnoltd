@@ -383,7 +383,14 @@ async def active_works(s: AsyncSession = Depends(db), user=Depends(current_user)
     result = await s.execute(select(Work, WorkAssignment).join(WorkAssignment, WorkAssignment.work_id == Work.id)
                              .where(WorkAssignment.worker_id == user["sub"], WorkAssignment.status == "active")
                              .order_by(desc(WorkAssignment.accepted_at)))
-    return [{"work": await enriched_work(s, w), "assignment_id": a.id, "accepted_at": a.accepted_at.isoformat()} for w, a in result.all()]
+    return [
+        {
+            "work": await enriched_work(s, w),
+            "assignment_id": a.id,
+            "accepted_at": a.accepted_at.isoformat() if a.accepted_at else None,
+        }
+        for w, a in result.all()
+    ]
 
 
 @router.post("/works/{work_id}/submit", status_code=201)
