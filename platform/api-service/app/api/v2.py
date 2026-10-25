@@ -136,6 +136,26 @@ async def social_like(post_id: str, creds: HTTPAuthorizationCredentials = Depend
 async def social_unlike(post_id: str, creds: HTTPAuthorizationCredentials = Depends(bearer)):
     return await social_call("DELETE", f"/api/v1/likes/{post_id}", creds.credentials)
 
+@router.get("/social/saved-posts")
+async def social_saved_posts(creds: HTTPAuthorizationCredentials = Depends(bearer)):
+    return await social_call("GET", "/api/v1/saved-posts", creds.credentials)
+
+
+@router.get("/social/posts/{post_id}/saved")
+async def social_saved_state(post_id: str, creds: HTTPAuthorizationCredentials = Depends(bearer)):
+    return await social_call("GET", f"/api/v1/saved-posts/{post_id}", creds.credentials)
+
+
+@router.put("/social/posts/{post_id}/saved")
+async def social_save_post(post_id: str, creds: HTTPAuthorizationCredentials = Depends(bearer)):
+    return await social_call("PUT", f"/api/v1/saved-posts/{post_id}", creds.credentials)
+
+
+@router.delete("/social/posts/{post_id}/saved")
+async def social_unsave_post(post_id: str, creds: HTTPAuthorizationCredentials = Depends(bearer)):
+    return await social_call("DELETE", f"/api/v1/saved-posts/{post_id}", creds.credentials)
+
+
 @router.post("/social/posts/{post_id}/share")
 async def social_share(post_id: str, body: dict | None = None, creds: HTTPAuthorizationCredentials = Depends(bearer)):
     return await social_call("POST", f"/api/v1/shares/{post_id}", creds.credentials, json=body or {})
