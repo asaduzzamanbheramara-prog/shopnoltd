@@ -57,11 +57,11 @@ jobs:
             dockerfile: platform/interior-service/Dockerfile
             manifest: k8s/services/interior-service/deployment.yaml
           - service: license-service
-            expected_replicas: 0
+            expected_replicas: 1
             dockerfile: platform/license-service/Dockerfile
             manifest: k8s/services/license-service/deployment.yaml
           - service: training-service
-            expected_replicas: 0
+            expected_replicas: 1
             dockerfile: platform/training-service/Dockerfile
             manifest: k8s/services/training-service/deployment.yaml
 
