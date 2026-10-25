@@ -51,8 +51,6 @@ spec:
               valueFrom: { fieldRef: { fieldPath: metadata.name } }
             - name: POD_NAMESPACE
               valueFrom: { fieldRef: { fieldPath: metadata.namespace } }
-            - name: DATA_DIRECTORY
-              value: /var/lib/owncast
           resources:
             requests:
               cpu: 100m
@@ -87,7 +85,7 @@ spec:
             failureThreshold: 30
           volumeMounts:
             - name: data
-              mountPath: /var/lib/owncast
+              mountPath: /app/data
             - name: tmp
               mountPath: /tmp
           securityContext:
