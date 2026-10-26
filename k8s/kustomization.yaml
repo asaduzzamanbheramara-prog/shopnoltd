@@ -80,7 +80,7 @@ patches:
     version: v1
     kind: Ingress
     name: .*
-    namespace: ^shopno-(apps|data|identity|mail|monitoring|payments|platform|tools)$
+    namespace: ^shopno-(apps|data|identity|mail|monitoring|payments|tools)$
     annotationSelector: cert-manager.io/cluster-issuer=letsencrypt-prod
 - path: tls/license-service-tls-exception.json
   target:
