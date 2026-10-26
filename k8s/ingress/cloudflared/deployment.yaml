@@ -6,10 +6,9 @@ metadata:
   labels:
     app.kubernetes.io/name: cloudflared
 spec:
-  # The k3s target is a single-node control plane. With hostNetwork enabled,
-  # multiple replicas would contend for the fixed metrics/readiness port 2000
-  # on the same node. Keep one connector here so the tunnel remains deterministic
-  # and the readiness/liveness probes cannot collide.
+  # This single-node k3s deployment uses hostNetwork and binds metrics/readiness
+  # to port 2000. A second replica on the same node would contend for that port.
+  # Keep one replica until a separately validated multi-node/port design exists.
   replicas: 1
   strategy:
     type: Recreate
@@ -32,7 +31,8 @@ spec:
         runAsUser: 65532
       containers:
         - name: cloudflared
-          image: cloudflare/cloudflared:2026.8.3@sha256:51c9cefcb4569df44e1ad403ab1d3d8065aa8e84339bcfc6aee75502e1140339
+          # Security advisory remediation: use the patched Cloudflare release.
+          image: cloudflare/cloudflared:2026.10.3
           imagePullPolicy: IfNotPresent
           # Let cloudflared choose QUIC or HTTP/2 based on the node's actual
           # outbound connectivity. Forcing HTTP/2 can break the tunnel when
