@@ -38,6 +38,7 @@ resources:
 - services/meet-service
 - services/live-service
 - services/report-service
+- services/scheduler-service
 - services/analytics-service
 - services/worker-service
 - services/training-service
