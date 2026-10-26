@@ -53,7 +53,7 @@ jobs:
       matrix:
         include:
           - service: interior-service
-            expected_replicas: 1
+            expected_replicas: 0
             dockerfile: platform/interior-service/Dockerfile
             manifest: k8s/services/interior-service/deployment.yaml
           - service: license-service
@@ -61,7 +61,7 @@ jobs:
             dockerfile: platform/license-service/Dockerfile
             manifest: k8s/services/license-service/deployment.yaml
           - service: training-service
-            expected_replicas: 1
+            expected_replicas: 0
             dockerfile: platform/training-service/Dockerfile
             manifest: k8s/services/training-service/deployment.yaml
 
