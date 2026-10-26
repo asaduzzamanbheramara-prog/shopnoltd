@@ -17,6 +17,7 @@ import json
 import os
 import sys
 import urllib.error
+import urllib.parse
 import urllib.request
 
 KEYCLOAK_URL = os.environ.get("KEYCLOAK_URL", "https://auth.shopnoltd.dpdns.org").rstrip("/")
@@ -127,6 +128,74 @@ def main():
             f"[{'OK' if code in (201,) else 'FAIL'}] create 'flat-roles' mapper (HTTP {code})"
             + ("" if code == 201 else f": {resp}")
         )
+
+    # Expose the tenant_id user attribute as a top-level JWT claim. The
+    # dashboard and tenant-scoped APIs read user.get("tenant_id"), so a role
+    # alone is not enough to assign a tenant owner to a tenant.
+    tenant_mapper = {
+        "name": "tenant-id",
+        "protocol": "openid-connect",
+        "protocolMapper": "oidc-usermodel-attribute-mapper",
+        "config": {
+            "user.attribute": "tenant_id",
+            "claim.name": "tenant_id",
+            "jsonType.label": "String",
+            "multivalued": "false",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true",
+        },
+    }
+    if any(m.get("name") == "tenant-id" for m in (mappers or [])):
+        print("[SKIP] 'tenant-id' mapper already exists")
+    else:
+        code, resp = http(
+            "POST",
+            f"/admin/realms/{REALM}/client-scopes/{scope_id}/protocol-mappers/models",
+            token,
+            tenant_mapper,
+        )
+        print(
+            f"[{'OK' if code == 201 else 'FAIL'}] create 'tenant-id' mapper (HTTP {code})"
+            + ("" if code == 201 else f": {resp}")
+        )
+
+    # Optional, explicit assignment for a dedicated test tenant-owner account.
+    # This is intentionally opt-in; never guess a tenant ID or change users
+    # unless both environment variables are provided by the operator.
+    tenant_owner_username = os.environ.get("KEYCLOAK_TENANT_OWNER_USERNAME")
+    tenant_id = os.environ.get("KEYCLOAK_TENANT_ID")
+    if tenant_owner_username or tenant_id:
+        if not tenant_owner_username or not tenant_id:
+            sys.exit(
+                "Set both KEYCLOAK_TENANT_OWNER_USERNAME and KEYCLOAK_TENANT_ID "
+                "to assign a tenant; no user attributes were changed."
+            )
+        code, users = http(
+            "GET",
+            f"/admin/realms/{REALM}/users?username={urllib.parse.quote(tenant_owner_username)}&exact=true",
+            token,
+        )
+        if code != 200 or not isinstance(users, list):
+            sys.exit(f"Could not look up the requested tenant-owner account (HTTP {code}); no user attributes were changed.")
+        matches = [u for u in users if u.get("username") == tenant_owner_username]
+        if len(matches) != 1:
+            sys.exit(
+                f"Expected exactly one Keycloak user named {tenant_owner_username!r}; "
+                f"found {len(matches)}. No user attributes were changed."
+            )
+        user = matches[0]
+        attributes = user.get("attributes") or {}
+        attributes["tenant_id"] = [tenant_id]
+        code, resp = http(
+            "PUT",
+            f"/admin/realms/{REALM}/users/{user['id']}",
+            token,
+            {"attributes": attributes},
+        )
+        if code not in (200, 204):
+            sys.exit(f"Failed to assign tenant_id to the selected user (HTTP {code}): {resp}")
+        print(f"[OK] set tenant_id for the explicitly selected tenant-owner account {tenant_owner_username!r}")
 
     print("\nDone. Assign roles to users with:")
     print(
