@@ -1,0 +1,175 @@
+name: All-user Keycloak readiness audit
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "15 3 * * *" # Daily at 03:15 UTC
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/all-user-keycloak-readiness.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: all-user-keycloak-readiness
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    name: Read-only audit of every Keycloak account
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check required audit configuration
+        shell: bash
+        env:
+          AUDIT_CLIENT_ID: ${{ secrets.KEYCLOAK_AUDIT_CLIENT_ID }}
+          AUDIT_CLIENT_SECRET: ${{ secrets.KEYCLOAK_AUDIT_CLIENT_SECRET }}
+        run: |
+          set -euo pipefail
+          if [[ -z "$AUDIT_CLIENT_ID" || -z "$AUDIT_CLIENT_SECRET" ]]; then
+            echo "::error::Configure KEYCLOAK_AUDIT_CLIENT_ID and KEYCLOAK_AUDIT_CLIENT_SECRET in repository Settings > Secrets and variables > Actions. Use a dedicated Keycloak service account with read-only view-users and view-realm permissions; do not use an administrator's personal password."
+            exit 1
+          fi
+
+      - name: Audit all users without changing accounts
+        env:
+          KEYCLOAK_BASE_URL: ${{ vars.KEYCLOAK_BASE_URL || 'https://auth.shopnoltd.dpdns.org' }}
+          KEYCLOAK_REALM: ${{ vars.KEYCLOAK_REALM || 'shopnoltd' }}
+          KEYCLOAK_AUDIT_CLIENT_ID: ${{ secrets.KEYCLOAK_AUDIT_CLIENT_ID }}
+          KEYCLOAK_AUDIT_CLIENT_SECRET: ${{ secrets.KEYCLOAK_AUDIT_CLIENT_SECRET }}
+        run: |
+          python3 - <<'PY'
+          import csv, hashlib, json, os, sys, urllib.error, urllib.parse, urllib.request
+          from collections import Counter
+
+          base = os.environ["KEYCLOAK_BASE_URL"].rstrip("/")
+          realm = os.environ.get("KEYCLOAK_REALM", "shopnoltd")
+          client_id = os.environ["KEYCLOAK_AUDIT_CLIENT_ID"]
+          client_secret = os.environ["KEYCLOAK_AUDIT_CLIENT_SECRET"]
+          token_url = f"{base}/realms/{urllib.parse.quote(realm, safe='')}/protocol/openid-connect/token"
+          admin_url = f"{base}/admin/realms/{urllib.parse.quote(realm, safe='')}"
+
+          def request(url, data=None, token=None):
+              headers = {"Accept": "application/json"}
+              if data is not None:
+                  headers["Content-Type"] = "application/x-www-form-urlencoded"
+              if token:
+                  headers["Authorization"] = "Bearer " + token
+              req = urllib.request.Request(url, data=data, headers=headers)
+              try:
+                  with urllib.request.urlopen(req, timeout=30) as resp:
+                      raw = resp.read()
+                      return json.loads(raw) if raw else None
+              except urllib.error.HTTPError as e:
+                  detail = e.read(512).decode("utf-8", "replace")
+                  # Do not print response bodies: they can contain account details.
+                  raise RuntimeError(f"Keycloak API returned HTTP {e.code} for {urllib.parse.urlsplit(url).path}") from None
+              except Exception as e:
+                  raise RuntimeError(f"Request failed for {urllib.parse.urlsplit(url).path}: {type(e).__name__}") from None
+
+          form = urllib.parse.urlencode({
+              "grant_type": "client_credentials",
+              "client_id": client_id,
+              "client_secret": client_secret,
+          }).encode()
+          try:
+              token_data = request(token_url, data=form)
+              token = token_data["access_token"]
+              users = []
+              first = 0
+              page_size = 100
+              while True:
+                  page = request(f"{admin_url}/users?first={first}&max={page_size}", token=token)
+                  if not isinstance(page, list):
+                      raise RuntimeError("Unexpected users API response")
+                  users.extend(page)
+                  if len(page) < page_size:
+                      break
+                  first += len(page)
+
+              counts = Counter()
+              rows = []
+              for user in users:
+                  user_id = user.get("id")
+                  if not user_id:
+                      raise RuntimeError("A user record had no ID; refusing to report incomplete results")
+                  # Stable pseudonymous reference; never include names, usernames, or email addresses.
+                  user_ref = hashlib.sha256(user_id.encode()).hexdigest()[:16]
+                  credentials = request(f"{admin_url}/users/{urllib.parse.quote(user_id, safe='')}/credentials", token=token)
+                  if not isinstance(credentials, list):
+                      raise RuntimeError("Unexpected credentials API response")
+                  types = {c.get("type") for c in credentials}
+                  actions = sorted(user.get("requiredActions") or [])
+                  enabled = bool(user.get("enabled"))
+                  has_password = "password" in types
+                  has_otp = "otp" in types
+                  has_federated = bool(user.get("federatedIdentities"))
+                  status = "ready_review" if enabled and has_password and not actions else "needs_attention"
+                  if not enabled:
+                      status = "disabled"
+                  counts["total"] += 1
+                  counts["enabled" if enabled else "disabled"] += 1
+                  counts["email_verified" if user.get("emailVerified") else "email_unverified"] += 1
+                  counts["has_password" if has_password else "no_password"] += 1
+                  counts["has_otp" if has_otp else "no_otp"] += 1
+                  counts["has_required_actions" if actions else "no_required_actions"] += 1
+                  counts["federated_link_present" if has_federated else "no_federated_link_in_user_record"] += 1
+                  counts[status] += 1
+                  rows.append({
+                      "user_ref": user_ref,
+                      "enabled": str(enabled).lower(),
+                      "email_verified": str(bool(user.get("emailVerified"))).lower(),
+                      "has_password_credential": str(has_password).lower(),
+                      "has_otp_credential": str(has_otp).lower(),
+                      "required_actions": ",".join(actions),
+                      "federated_link_present": str(has_federated).lower(),
+                      "readiness": status,
+                  })
+
+              if len(rows) != len(users):
+                  raise RuntimeError("Audit row count did not match user count")
+              with open("keycloak-readiness.csv", "w", newline="", encoding="utf-8") as f:
+                  writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()) if rows else [
+                      "user_ref","enabled","email_verified","has_password_credential",
+                      "has_otp_credential","required_actions","federated_link_present","readiness"
+                  ])
+                  writer.writeheader()
+                  writer.writerows(rows)
+
+              summary = [
+                  "# Shopnoltd all-user Keycloak readiness audit",
+                  "",
+                  f"- Realm: `{realm}`",
+                  f"- Accounts audited: **{counts['total']}**",
+                  f"- Enabled: **{counts['enabled']}**; disabled: **{counts['disabled']}**",
+                  f"- Password credential present: **{counts['has_password']}**; missing: **{counts['no_password']}**",
+                  f"- OTP credential present: **{counts['has_otp']}**; missing: **{counts['no_otp']}**",
+                  f"- Required actions present: **{counts['has_required_actions']}**; none: **{counts['no_required_actions']}**",
+                  f"- Email verified: **{counts['email_verified']}**; unverified: **{counts['email_unverified']}**",
+                  f"- Enabled with password and no required actions (readiness indicator only): **{counts['ready_review']}**",
+                  f"- Needs attention by readiness rules: **{counts['needs_attention']}**",
+                  "",
+                  "This is a credential/readiness inventory, NOT a successful login test. It never attempts login as real users, resets passwords, or changes account settings. Email verification and OTP requirements depend on the configured realm policy. Review the CSV using pseudonymous references only; no names, usernames, or email addresses are included.",
+                  "",
+                  "New accounts are included automatically on the next scheduled or manually triggered run.",
+              ]
+              with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as f:
+                  f.write("\n".join(summary) + "\n")
+              print(f"Audited {counts['total']} accounts; readiness summary written to GitHub Actions job summary.")
+          except Exception as e:
+              print(f"::error::{e}")
+              sys.exit(1)
+          PY
+
+      - name: Upload pseudonymous per-account report
+        if: always() && hashFiles('keycloak-readiness.csv') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: shopnoltd-keycloak-readiness
+          path: keycloak-readiness.csv
+          retention-days: 14
