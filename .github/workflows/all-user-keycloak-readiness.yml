@@ -117,7 +117,10 @@ jobs:
                   counts["has_password" if has_password else "no_password"] += 1
                   counts["has_otp" if has_otp else "no_otp"] += 1
                   counts["has_required_actions" if actions else "no_required_actions"] += 1
-                  counts[status] += 1
+                  if status == "disabled":
+                      counts["disabled_readiness"] += 1
+                  else:
+                      counts[status] += 1
                   rows.append({
                       "user_ref": user_ref,
                       "enabled": str(enabled).lower(),
