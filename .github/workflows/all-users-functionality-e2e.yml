@@ -1,0 +1,57 @@
+name: All-users login + functionality E2E (impersonation)
+
+on:
+  workflow_dispatch:
+    inputs:
+      limit_users:
+        description: "Limit to first N users (blank = all)"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    name: Run impersonation-based E2E against every Keycloak user
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.55.0-noble
+    timeout-minutes: 90
+    defaults:
+      run:
+        working-directory: tests/browser-role
+    env:
+      SHOPNOLTD_BASE_URL: https://shopnoltd.dpdns.org
+      KEYCLOAK_BASE_URL: https://auth.shopnoltd.dpdns.org
+      KEYCLOAK_REALM: shopnoltd
+      AUTH_ROUTES: /dashboard,/profiles,/feed
+      ADMIN_ROLE: admin
+
+      LIMIT_USERS: ${{ github.event.inputs.limit_users }}
+      KEYCLOAK_E2E_CLIENT_ID: ${{ secrets.KEYCLOAK_E2E_CLIENT_ID }}
+      KEYCLOAK_E2E_CLIENT_SECRET: ${{ secrets.KEYCLOAK_E2E_CLIENT_SECRET }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check required secrets
+        run: |
+          set -euo pipefail
+          if [[ -z "${KEYCLOAK_E2E_CLIENT_ID:-}" || -z "${KEYCLOAK_E2E_CLIENT_SECRET:-}" ]]; then
+            echo "::error::Configure KEYCLOAK_E2E_CLIENT_ID and KEYCLOAK_E2E_CLIENT_SECRET in repository secrets."
+            exit 1
+          fi
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run all-users E2E
+        run: npx playwright test all-users-e2e.spec.js --workers=1
+
+      - name: Upload report
+        if: always() && hashFiles('tests/browser-role/reports/all-users-e2e.csv') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: all-users-e2e-report
+          path: tests/browser-role/reports/all-users-e2e.csv
+          retention-days: 14
