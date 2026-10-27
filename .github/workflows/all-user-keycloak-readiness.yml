@@ -44,7 +44,7 @@ jobs:
           KEYCLOAK_AUDIT_CLIENT_SECRET: ${{ secrets.KEYCLOAK_AUDIT_CLIENT_SECRET }}
         run: |
           python3 - <<'PY'
-          import csv, hashlib, json, os, sys, urllib.error, urllib.parse, urllib.request
+          import csv, hashlib, json, os, re, sys, urllib.error, urllib.parse, urllib.request
           from collections import Counter
 
           base = os.environ["KEYCLOAK_BASE_URL"].rstrip("/")
@@ -66,9 +66,21 @@ jobs:
                       raw = resp.read()
                       return json.loads(raw) if raw else None
               except urllib.error.HTTPError as e:
-                  detail = e.read(512).decode("utf-8", "replace")
-                  # Do not print response bodies: they can contain account details.
-                  raise RuntimeError(f"Keycloak API returned HTTP {e.code} for {urllib.parse.urlsplit(url).path}") from None
+                  # Extract only a safe machine-readable error code and response-server hints.
+                  # Never print the response body, client ID, secret, token, or account data.
+                  try:
+                      payload = json.loads(e.read(512).decode("utf-8", "replace"))
+                  except Exception:
+                      payload = {}
+                  raw_error = payload.get("error", "") if isinstance(payload, dict) else ""
+                  error_code = re.sub(r"[^A-Za-z0-9_-]", "", str(raw_error))[:64] or "unavailable"
+                  raw_server = e.headers.get("Server", "unknown")
+                  server = re.sub(r"[^A-Za-z0-9_.-]", "", raw_server)[:32] or "unknown"
+                  cf_ray = "yes" if e.headers.get("CF-Ray") else "no"
+                  raise RuntimeError(
+                      f"Keycloak API returned HTTP {e.code} for {urllib.parse.urlsplit(url).path} "
+                      f"(error_code={error_code}, server={server}, cf_ray_present={cf_ray})"
+                  ) from None
               except Exception as e:
                   raise RuntimeError(f"Request failed for {urllib.parse.urlsplit(url).path}: {type(e).__name__}") from None
 
