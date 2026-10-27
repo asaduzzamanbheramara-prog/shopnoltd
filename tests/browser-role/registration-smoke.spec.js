@@ -5,10 +5,20 @@ const authPattern = 'https://auth.shopnoltd.dpdns.org/**'
 
 async function captureAuthHandoff(page, buttonName, expectedPath, query = '') {
   const requests = []
+  const capturedStorage = {}
   await page.route(authPattern, async route => {
     requests.push(route.request().url())
+    // Read the app-origin sessionStorage before aborting the cross-origin navigation.
+    // Once navigation begins, the page may have an opaque origin and storage is inaccessible.
+    try {
+      Object.assign(capturedStorage, await page.evaluate(() => ({
+        referralCode: sessionStorage.getItem('pending_referral_code'),
+        referralCategory: sessionStorage.getItem('pending_referral_category'),
+      })))
+    } catch {
+      // The assertions below will fail clearly if the app state could not be captured.
+    }
     // Never submit credentials or complete registration in production smoke.
-    // Abort external navigation after capturing the handoff URL.
     await route.abort()
   })
   await page.goto(baseURL + '/register' + query, { waitUntil: 'domcontentloaded' })
@@ -25,7 +35,7 @@ async function captureAuthHandoff(page, buttonName, expectedPath, query = '') {
   expect(url.searchParams.get('state') || '').toMatch(/^[A-Za-z0-9_-]{32}$/)
   expect(url.searchParams.get('code_challenge') || '').not.toBe('')
   expect(url.searchParams.get('code_challenge_method')).toBe('S256')
-  return url
+  return { url, storage: capturedStorage }
 }
 
 test('registration page exposes local signup and supported social signup choices', async ({ page }) => {
@@ -39,7 +49,7 @@ test('registration page exposes local signup and supported social signup choices
 })
 
 test('local signup hands off to the configured Keycloak registration endpoint with PKCE', async ({ page }) => {
-  const url = await captureAuthHandoff(
+  const { url } = await captureAuthHandoff(
     page,
     'Register with Shopnoltd',
     '/realms/shopnoltd/protocol/openid-connect/registrations',
@@ -50,14 +60,14 @@ test('local signup hands off to the configured Keycloak registration endpoint wi
 for (const provider of ['google', 'facebook', 'github']) {
   const labels = { google: 'Sign up with Google', facebook: 'Sign up with Facebook', github: 'Sign up with GitHub' }
   test(provider + ' signup hands off with provider hint and PKCE', async ({ page }) => {
-    const url = await captureAuthHandoff(
+    const { url, storage } = await captureAuthHandoff(
       page,
       labels[provider],
       '/realms/shopnoltd/protocol/openid-connect/auth',
       '?ref=SMOKE123&category=business',
     )
     expect(url.searchParams.get('kc_idp_hint')).toBe(provider)
-    await expect.poll(() => page.evaluate(() => sessionStorage.getItem('pending_referral_code'))).toBe('SMOKE123')
-    await expect.poll(() => page.evaluate(() => sessionStorage.getItem('pending_referral_category'))).toBe('business')
+    expect(storage.referralCode).toBe('SMOKE123')
+    expect(storage.referralCategory).toBe('business')
   })
 }
