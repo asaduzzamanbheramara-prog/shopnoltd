@@ -74,12 +74,27 @@ async function login(page, username, password, totpSecret, roleLabel) {
     if (!verified) {
       const rejected = await invalidOtpMessage.isVisible().catch(() => false)
       if (rejected) {
-        throw new Error('The Admin TOTP code was rejected in the current and adjacent 30-second windows. Verify that SHOPNOLTD_ADMIN_TOTP_SECRET matches the active Keycloak authenticator; do not paste the secret into logs.')
+        throw new Error(`The ${roleLabel} TOTP code was rejected in the current and adjacent 30-second windows. Verify that SHOPNOLTD_${roleLabel.toUpperCase()}_TOTP_SECRET matches that account's active Keycloak authenticator; do not paste the secret into logs.`)
       }
     }
   }
 
-  await page.waitForURL(url => new URL(url).pathname === '/dashboard', { timeout: 30000 })
+  try {
+    await page.waitForURL(url => new URL(url).pathname === '/dashboard', { timeout: 30000 })
+  } catch (error) {
+    const safeMessages = await page.locator('body').innerText().catch(() => '')
+    const knownErrors = safeMessages.split('\n')
+      .map(line => line.trim())
+      .filter(line => /invalid username|invalid password|account disabled|account is disabled|invalid authenticator|invalid one-time|verify your email|temporarily disabled|too many attempts/i.test(line))
+      .slice(0, 3)
+    const pathname = new URL(page.url()).pathname
+    throw new Error(
+      `The ${roleLabel} login did not reach /dashboard (current path: ${pathname}). ` +
+      (knownErrors.length ? `Visible authentication message: ${knownErrors.join(' | ')}. ` : 'No recognized authentication error was visible. ') +
+      'Check that this dedicated test account is enabled, its password is current, required MFA secret is configured, and the OIDC callback/session completes. ' +
+      'No password, token, or OTP is included in this diagnostic.'
+    )
+  }
   await expect.poll(
     () => page.evaluate(() => Boolean(localStorage.getItem('shopno_token'))),
     { timeout: 10000 },
