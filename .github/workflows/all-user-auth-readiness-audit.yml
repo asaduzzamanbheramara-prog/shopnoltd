@@ -1,0 +1,46 @@
+name: All-user authentication readiness audit
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: all-user-auth-readiness-audit
+  cancel-in-progress: false
+
+jobs:
+  readiness:
+    name: Read-only Keycloak account inventory
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install audit dependency
+        run: python -m pip install --disable-pip-version-check requests
+      - name: Audit all realm accounts without exposing personal data
+        env:
+          KEYCLOAK_BASE_URL: https://auth.shopnoltd.dpdns.org
+          KEYCLOAK_REALM: shopnoltd
+          KEYCLOAK_ADMIN_CLIENT_ID: ${{ secrets.SHOPNOLTD_AUDIT_CLIENT_ID }}
+          KEYCLOAK_ADMIN_CLIENT_SECRET: ${{ secrets.SHOPNOLTD_AUDIT_CLIENT_SECRET }}
+          REPORT_PATH: auth-readiness.csv
+        run: |
+          set -euo pipefail
+          if [ -z "$KEYCLOAK_ADMIN_CLIENT_ID" ] || [ -z "$KEYCLOAK_ADMIN_CLIENT_SECRET" ]; then
+            echo "::error::Add SHOPNOLTD_AUDIT_CLIENT_ID and SHOPNOLTD_AUDIT_CLIENT_SECRET as GitHub Actions secrets for a dedicated read-only Keycloak service account."
+            exit 1
+          fi
+          python scripts/keycloak-auth-readiness-audit.py
+      - name: Upload privacy-preserving readiness report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: shopnoltd-all-user-auth-readiness
+          path: auth-readiness.csv
+          if-no-files-found: warn
+          retention-days: 7
