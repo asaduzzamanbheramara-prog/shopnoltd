@@ -47,27 +47,50 @@ export default function Callback() {
         if (!response.ok || !data.access_token) throw new Error(data.error_description || data.error || 'Authentication failed.')
         return data
       })
-       .then(async (data) => {
+      .then((data) => {
+        // Persist the verified OIDC tokens before any optional API work. A slow or
+        // unavailable profile/referral endpoint must never strand the user on
+        // "Completing sign in…" after Keycloak has successfully authenticated them.
         localStorage.setItem('shopno_token', data.access_token)
         if (data.refresh_token) localStorage.setItem('shopno_refresh_token', data.refresh_token)
-        try { await platformApi.me(); sessionStorage.setItem('shopno_profile_provisioned', '1') } catch (error) { console.warn('Shopnoltd profile provisioning check failed after login:', error) }
 
         const pendingReferral = sessionStorage.getItem('pending_referral_code')
         const pendingReferralCategory = sessionStorage.getItem('pending_referral_category')
-        if (pendingReferral) {
-          try { await platformApi.claimReferral(pendingReferral, pendingReferralCategory) } catch (error) { console.warn('Referral attribution could not be claimed:', error) }
-        }
-        // If no direct referral was supplied, the API preserves legacy/direct attribution or binds Admin Office as the fallback.
-        try { await platformApi.referralMe() } catch (error) { console.warn('Referral attribution initialization skipped:', error) }
-
         const pendingDomain = sessionStorage.getItem('pending_domain')
         const next = sessionStorage.getItem('post_login_next')
+
         sessionStorage.removeItem('pkce_verifier')
         sessionStorage.removeItem('oidc_state')
         sessionStorage.removeItem('pending_domain')
         sessionStorage.removeItem('pending_referral_code')
         sessionStorage.removeItem('pending_referral_category')
         sessionStorage.removeItem('post_login_next')
+
+        // Profile and referral initialization are ancillary to OIDC token exchange.
+        // Run them in the background so network/API latency cannot block navigation.
+        void (async () => {
+          try {
+            await platformApi.me()
+            sessionStorage.setItem('shopno_profile_provisioned', '1')
+          } catch (profileError) {
+            console.warn('Shopnoltd profile provisioning check failed after login:', profileError)
+          }
+
+          if (pendingReferral) {
+            try {
+              await platformApi.claimReferral(pendingReferral, pendingReferralCategory)
+            } catch (referralError) {
+              console.warn('Referral attribution could not be claimed:', referralError)
+            }
+          }
+
+          // If no direct referral was supplied, the API preserves legacy/direct attribution or binds Admin Office as the fallback.
+          try {
+            await platformApi.referralMe()
+          } catch (referralError) {
+            console.warn('Referral attribution initialization skipped:', referralError)
+          }
+        })()
 
         if (pendingDomain) {
           navigate(`/?domain=${encodeURIComponent(pendingDomain)}`, { replace: true })
