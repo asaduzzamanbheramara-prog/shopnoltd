@@ -1,0 +1,51 @@
+name: Public and registration health
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 */6 * * *' # Every six hours, including overnight
+  push:
+    branches: [main]
+    paths:
+      - 'tests/browser-role/public-frontend.spec.js'
+      - 'tests/browser-role/registration-smoke.spec.js'
+      - '.github/workflows/public-registration-health.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: public-registration-health
+  cancel-in-progress: false
+
+jobs:
+  public-and-registration-smoke:
+    name: Public pages and signup handoff (read-only)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Playwright dependencies
+        working-directory: tests/browser-role
+        run: |
+          npm install --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Check public pages and registration handoff
+        working-directory: tests/browser-role
+        env:
+          SHOPNOLTD_BASE_URL: https://shopnoltd.dpdns.org
+          PLAYWRIGHT_HTML_OPEN: never
+        run: npx playwright test --config=playwright.config.js --reporter=line,html public-frontend.spec.js registration-smoke.spec.js
+      - name: Upload public and registration report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: shopnoltd-public-registration-report
+          path: |
+            tests/browser-role/playwright-report/
+            tests/browser-role/test-results/
+          if-no-files-found: ignore
+          retention-days: 14
