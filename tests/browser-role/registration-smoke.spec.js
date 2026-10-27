@@ -6,19 +6,30 @@ const authPattern = 'https://auth.shopnoltd.dpdns.org/**'
 async function captureAuthHandoff(page, buttonName, expectedPath, query = '') {
   const requests = []
   const capturedStorage = {}
+  const storageMarker = '__SHOPNOLTD_E2E_STORAGE__'
+  page.on('console', message => {
+    if (!message.text().startsWith(storageMarker)) return
+    try {
+      const item = JSON.parse(message.text().slice(storageMarker.length))
+      capturedStorage[item.key] = item.value
+    } catch {
+      // Ignore malformed test instrumentation messages.
+    }
+  })
+  await page.addInitScript(marker => {
+    const originalSetItem = Storage.prototype.setItem
+    Storage.prototype.setItem = function (key, value) {
+      const result = originalSetItem.call(this, key, value)
+      if (key === 'pending_referral_code' || key === 'pending_referral_category') {
+        console.info(marker + JSON.stringify({ key, value }))
+      }
+      return result
+    }
+  }, storageMarker)
   await page.route(authPattern, async route => {
     requests.push(route.request().url())
-    // Read the app-origin sessionStorage before aborting the cross-origin navigation.
-    // Once navigation begins, the page may have an opaque origin and storage is inaccessible.
-    try {
-      Object.assign(capturedStorage, await page.evaluate(() => ({
-        referralCode: sessionStorage.getItem('pending_referral_code'),
-        referralCategory: sessionStorage.getItem('pending_referral_category'),
-      })))
-    } catch {
-      // The assertions below will fail clearly if the app state could not be captured.
-    }
     // Never submit credentials or complete registration in production smoke.
+    // Abort external navigation after capturing the OIDC handoff URL.
     await route.abort()
   })
   await page.goto(baseURL + '/register' + query, { waitUntil: 'domcontentloaded' })
@@ -67,7 +78,7 @@ for (const provider of ['google', 'facebook', 'github']) {
       '?ref=SMOKE123&category=business',
     )
     expect(url.searchParams.get('kc_idp_hint')).toBe(provider)
-    expect(storage.referralCode).toBe('SMOKE123')
-    expect(storage.referralCategory).toBe('business')
+    expect(storage.pending_referral_code).toBe('SMOKE123')
+    expect(storage.pending_referral_category).toBe('business')
   })
 }
