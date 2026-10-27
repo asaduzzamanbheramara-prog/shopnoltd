@@ -35,8 +35,8 @@ Repository Actions secrets for the read-only inventory:
 
 Use a dedicated Keycloak confidential client with service-account authentication and only the required read-only realm-management permissions. Do not use an administrator's personal password.
 
-Optional repository Actions variables:
-- `KEYCLOAK_BASE_URL=https://auth.shopnoltd.dpdns.org`
-- `KEYCLOAK_REALM=shopnoltd`
+Optional repository Actions variable: `KEYCLOAK_REALM=shopnoltd`.
+
+The scheduled audit runs on the trusted self-hosted Linux runner and reaches Keycloak through a temporary localhost port-forward to the in-cluster Service. This avoids depending on Cloudflare allowing GitHub-hosted runner traffic to the OIDC token endpoint.
 
 The current all-user workflow is an inventory/readiness audit, not a claim that every real account has completed a successful login. The existing authenticated browser workflow tests dedicated admin/owner/user accounts only.
