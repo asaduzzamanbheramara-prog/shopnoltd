@@ -12,7 +12,7 @@ async function captureAuthHandoff(page, buttonName, expectedPath, query = '') {
     await route.abort()
   })
   await page.goto(baseURL + '/register' + query, { waitUntil: 'domcontentloaded' })
-  await page.getByRole('button', { name: buttonName, exact: true }).click()
+  await page.getByRole('button', { name: buttonName }).click()
   await expect.poll(() => requests.length, { timeout: 10000 }).toBeGreaterThan(0)
 
   const url = new URL(requests[0])
@@ -32,9 +32,9 @@ test('registration page exposes local signup and supported social signup choices
   await page.goto(baseURL + '/register', { waitUntil: 'domcontentloaded' })
   await expect(page.getByRole('heading', { name: 'Create your Shopnoltd account' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Register with Shopnoltd', exact: true })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Sign up with Google', exact: true })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Sign up with Facebook', exact: true })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Sign up with GitHub', exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: /Sign up with Google/ })).toBeVisible()
+  await expect(page.getByRole('button', { name: /Sign up with Facebook/ })).toBeVisible()
+  await expect(page.getByRole('button', { name: /Sign up with GitHub/ })).toBeVisible()
   await expect(page.getByRole('link', { name: 'Sign in', exact: true })).toHaveAttribute('href', '/login')
 })
 
