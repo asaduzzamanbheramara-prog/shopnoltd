@@ -108,7 +108,6 @@ jobs:
                   enabled = bool(user.get("enabled"))
                   has_password = "password" in types
                   has_otp = "otp" in types
-                  has_federated = bool(user.get("federatedIdentities"))
                   status = "ready_review" if enabled and has_password and not actions else "needs_attention"
                   if not enabled:
                       status = "disabled"
@@ -118,7 +117,6 @@ jobs:
                   counts["has_password" if has_password else "no_password"] += 1
                   counts["has_otp" if has_otp else "no_otp"] += 1
                   counts["has_required_actions" if actions else "no_required_actions"] += 1
-                  counts["federated_link_present" if has_federated else "no_federated_link_in_user_record"] += 1
                   counts[status] += 1
                   rows.append({
                       "user_ref": user_ref,
@@ -127,7 +125,6 @@ jobs:
                       "has_password_credential": str(has_password).lower(),
                       "has_otp_credential": str(has_otp).lower(),
                       "required_actions": ",".join(actions),
-                      "federated_link_present": str(has_federated).lower(),
                       "readiness": status,
                   })
 
@@ -136,7 +133,7 @@ jobs:
               with open("keycloak-readiness.csv", "w", newline="", encoding="utf-8") as f:
                   writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()) if rows else [
                       "user_ref","enabled","email_verified","has_password_credential",
-                      "has_otp_credential","required_actions","federated_link_present","readiness"
+                      "has_otp_credential","required_actions","readiness"
                   ])
                   writer.writeheader()
                   writer.writerows(rows)
