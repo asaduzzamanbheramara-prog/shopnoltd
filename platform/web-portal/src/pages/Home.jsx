@@ -80,12 +80,6 @@ export default function Home() {
   return <main style={{ maxWidth: 1180, margin: '0 auto', padding: 'clamp(24px,6vw,52px) clamp(14px,4vw,24px) 80px', boxSizing: 'border-box', fontFamily: 'system-ui,sans-serif' }}>
     <DomainSearch />
     <section style={{ margin: '24px 0 44px', padding: 'clamp(28px,6vw,56px)', borderRadius: 24, background: 'linear-gradient(135deg,#0ea5e9,#0369a1)', color: 'white' }}><div style={{ maxWidth: 800 }}><div style={{ fontSize: 44 }}>🌐</div><h1 style={{ fontSize: 'clamp(38px,7vw,68px)', lineHeight: 1.02, margin: '10px 0 18px' }}>All your tools. One platform.</h1><p style={{ fontSize: 'clamp(17px,2.2vw,21px)', lineHeight: 1.7, opacity: .96 }}>Domains, data collection, business applications, communication, calling, social, live media, billing, payments, exchange, AI and developer tools in one Shopnoltd workspace.</p><div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 24 }}><Link to="/services" style={{ padding: '12px 18px', borderRadius: 10, background: 'white', color: '#0369a1', fontWeight: 800, textDecoration: 'none' }}>Explore services</Link><Link to="/domain-registration" style={{ padding: '12px 18px', borderRadius: 10, border: '1px solid rgba(255,255,255,.65)', color: 'white', fontWeight: 800, textDecoration: 'none' }}>Register a domain</Link></div></div></section>
-    <section aria-label="Sponsored link" style={{ margin: '0 0 28px', padding: '18px 20px', border: '1px solid #cbd5e1', borderRadius: 14, background: '#f8fafc' }}>
-      <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', color: '#64748b' }}>Sponsored link</div>
-      <h2 style={{ margin: '6px 0 8px', fontSize: 20, color: '#0f172a' }}>Explore a partner offer</h2>
-      <p style={{ margin: '0 0 14px', color: '#475569', lineHeight: 1.55 }}>This optional external link supports website monetization. It opens only when you choose to follow it.</p>
-      <a href="https://uplcm.com/4/12129974" target="_blank" rel="noopener noreferrer sponsored" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 15px', borderRadius: 9, background: '#0369a1', color: 'white', fontWeight: 800, textDecoration: 'none' }}>View sponsored offer ↗</a>
-    </section>
     <AdsterraGlobalFormats />
     <AdsterraBanner />
     <AdsterraResponsiveBanner />
