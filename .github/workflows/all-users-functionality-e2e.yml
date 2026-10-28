@@ -15,6 +15,8 @@ jobs:
   e2e:
     name: Run impersonation-based E2E against every Keycloak user
     runs-on: [self-hosted, Linux, X64]
+    container:
+      image: mcr.microsoft.com/playwright:v1.55.0-noble
     timeout-minutes: 90
     defaults:
       run:
@@ -43,11 +45,6 @@ jobs:
 
       - name: Install dependencies
         run: npm install
-
-      - name: Install Playwright browser
-        env:
-          PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS: "1"
-        run: npx playwright install chromium
 
       - name: Run all-users E2E
         run: npx playwright test all-users-e2e.spec.js --workers=1
