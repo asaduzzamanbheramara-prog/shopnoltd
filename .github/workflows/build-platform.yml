@@ -368,7 +368,7 @@ jobs:
 
           for root, _, files in os.walk('k8s'):
               for name in files:
-                  if not name.endswith(('.yaml', '.yml')):
+                  if not name.endswith(('.yaml', '.yml', '.env')):
                       continue
 
                   path = os.path.join(root, name)
@@ -463,7 +463,7 @@ jobs:
 
               for root, _, files in os.walk('k8s'):
                   for name in files:
-                      if not name.endswith(('.yaml', '.yml')):
+                      if not name.endswith(('.yaml', '.yml', '.env')):
                           continue
 
                       path = os.path.join(root, name)
