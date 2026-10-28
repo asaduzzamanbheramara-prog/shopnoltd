@@ -131,7 +131,10 @@ def make_emulator_pod(session: Session) -> client.V1Pod:
             requests={"cpu": "2", "memory": "1536Mi", "ephemeral-storage": "4Gi"},
             limits={"cpu": "4", "memory": "3Gi", "ephemeral-storage": "8Gi"},
         ),
-        volume_mounts=[client.V1VolumeMount(name="android-data", mount_path="/data")],
+        volume_mounts=[
+            client.V1VolumeMount(name="android-data", mount_path="/data"),
+            client.V1VolumeMount(name="kvm", mount_path="/dev/kvm"),
+        ],
         security_context=client.V1SecurityContext(privileged=True, allow_privilege_escalation=True),
     )
     return client.V1Pod(
@@ -145,7 +148,13 @@ def make_emulator_pod(session: Session) -> client.V1Pod:
             automount_service_account_token=False,
             containers=[container],
             image_pull_secrets=[client.V1LocalObjectReference(name="ghcr-pull-secret")],
-            volumes=[client.V1Volume(name="android-data", empty_dir=client.V1EmptyDirVolumeSource(size_limit="6Gi"))],
+            volumes=[
+                client.V1Volume(name="android-data", empty_dir=client.V1EmptyDirVolumeSource(size_limit="6Gi")),
+                client.V1Volume(
+                    name="kvm",
+                    host_path=client.V1HostPathVolumeSource(path="/dev/kvm", type="CharDevice"),
+                ),
+            ],
         ),
     )
 

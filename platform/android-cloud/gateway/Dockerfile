@@ -10,7 +10,15 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     BAZEL_ROOT=/opt/aemu
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends git ca-certificates \
+    && apt-get install -y --no-install-recommends \
+        git \
+        ca-certificates \
+        build-essential \
+        python3-dev \
+        pkg-config \
+        protobuf-compiler \
+        libssl-dev \
+        libffi-dev \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /opt/aemu
@@ -26,7 +34,8 @@ RUN git clone --filter=blob:none --no-checkout "${AEMU_REPO}" . \
     && test -f hardware/google/aemu/protos/services/webrtc/rtc_service_v2.proto \
     && test -f hardware/google/aemu/protos/services/webrtc/ice_config.proto \
     && sed -i 's/emulator_address = f"localhost:{emulator_port}"/emulator_address = os.getenv("EMULATOR_HOST", f"localhost:{emulator_port}")/' gateway/src/videobridge_gateway/gateway_server.py \
-    && pip install --no-cache-dir -e ./gateway
+    && python -m pip install --upgrade pip setuptools wheel \
+    && pip install --no-cache-dir --no-build-isolation -e ./gateway
 
 COPY entrypoint.sh /usr/local/bin/android-cloud-gateway
 RUN chmod 0755 /usr/local/bin/android-cloud-gateway \
