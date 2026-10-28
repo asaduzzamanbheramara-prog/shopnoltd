@@ -72,6 +72,24 @@ test('every real user: login via impersonation + read-only functionality checks'
       step = 'login'
       await page.goto(`${app}/login`, { waitUntil: 'domcontentloaded' })
       await page.getByRole('button', { name: 'Continue with Shopnoltd' }).click()
+
+      if ((u.requiredActions || []).includes('UPDATE_PASSWORD') || (u.requiredActions || []).includes('VERIFY_EMAIL')) {
+        // Keycloak stops at its own required-action page instead of completing
+        // the callback to /dashboard. That's expected, not a site bug: this
+        // account cannot finish a real login until the user sets a password
+        // (or verifies email), so there is nothing our app can be tested for yet.
+        await page.waitForURL(
+          url => !new URL(url).hostname.startsWith(new URL(app).hostname) || new URL(url).pathname.includes('/login-actions/'),
+          { timeout: 15000 },
+        ).catch(() => {})
+        row.status = 'NOT_TESTABLE'
+        row.failed_step = ''
+        row.detail = 'blocked_by_required_action:' + (u.requiredActions || []).join('|')
+        await ctx.close()
+        await new Promise(r => setTimeout(r, 500))
+        continue
+      }
+
       await page.waitForURL(url => new URL(url).pathname === '/dashboard', { timeout: 30000 })
       await expect.poll(
         () => page.evaluate(() => Boolean(localStorage.getItem('shopno_token'))),
@@ -126,7 +144,7 @@ test('every real user: login via impersonation + read-only functionality checks'
   fs.writeFileSync('reports/all-users-e2e.csv', csv.join('\n') + '\n')
 
   const count = s => rows.filter(r => r.status === s).length
-  console.log(`Total: ${rows.length} | PASS: ${count('PASS')} | FAIL: ${count('FAIL')} | SKIPPED_DISABLED: ${count('SKIPPED_DISABLED')}`)
+  console.log(`Total: ${rows.length} | PASS: ${count('PASS')} | FAIL: ${count('FAIL')} | SKIPPED_DISABLED: ${count('SKIPPED_DISABLED')} | NOT_TESTABLE: ${count('NOT_TESTABLE')}`)
 
   expect(rows.filter(r => r.status === 'FAIL').map(r => r.user_ref), 'users that failed').toEqual([])
 })
