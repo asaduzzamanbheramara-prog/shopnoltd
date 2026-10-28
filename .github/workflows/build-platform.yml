@@ -26,6 +26,8 @@ on:
         type: choice
         options:
           - web-portal
+          - android-cloud-controller
+          - android-cloud-gateway
 
 permissions:
   contents: write
