@@ -14,9 +14,7 @@ permissions:
 jobs:
   e2e:
     name: Run impersonation-based E2E against every Keycloak user
-    runs-on: ubuntu-latest
-    container:
-      image: mcr.microsoft.com/playwright:v1.55.0-noble
+    runs-on: [self-hosted, Linux, X64]
     timeout-minutes: 90
     defaults:
       run:
@@ -35,6 +33,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Check required secrets
+        shell: bash
         run: |
           set -euo pipefail
           if [[ -z "${KEYCLOAK_E2E_CLIENT_ID:-}" || -z "${KEYCLOAK_E2E_CLIENT_SECRET:-}" ]]; then
@@ -44,6 +43,11 @@ jobs:
 
       - name: Install dependencies
         run: npm install
+
+      - name: Install Playwright browser
+        env:
+          PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS: "1"
+        run: npx playwright install chromium
 
       - name: Run all-users E2E
         run: npx playwright test all-users-e2e.spec.js --workers=1
