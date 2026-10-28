@@ -246,7 +246,26 @@ async def _create_keycloak_user(client, token, row, email_value):
     return {"id": user_id, "email": email_value, "enabled": True}, True, reset_sent
 
 
-async def run(path, apply):
+async def _request_password_reset(client, token, user_id):
+    """Request a short-lived Keycloak password update email for an existing identity."""
+    url = (
+        f"{settings.keycloak_url.rstrip('/')}/admin/realms/"
+        f"{settings.keycloak_realm}/users/{user_id}/execute-actions-email"
+    )
+    response = await client.put(
+        url,
+        params={
+            "lifespan": 1800,
+            "client_id": "shopnoltd-web",
+            "redirect_uri": "https://shopnoltd.dpdns.org/",
+        },
+        headers={"Authorization": f"Bearer {token}"},
+        json=["UPDATE_PASSWORD"],
+    )
+    return response.status_code in (200, 204)
+
+
+async def run(path, apply, send_reset_emails=False):
     rows = parse_dump(path)
     report = {
         "source_rows": len(rows),
@@ -264,6 +283,9 @@ async def run(path, apply):
         "passwords_imported": 0,
         "reset_emails_sent": 0,
         "reset_email_failures": 0,
+        "existing_reset_requested": 0,
+        "existing_reset_failures": 0,
+        "send_reset_emails": bool(send_reset_emails),
         "mode": "apply" if apply else "dry-run",
     }
 
@@ -312,6 +334,15 @@ async def run(path, apply):
                         report["reset_email_failures"] += 1
                 else:
                     report["keycloak_matched"] += 1
+                    if send_reset_emails:
+                        try:
+                            sent = await _request_password_reset(client, token, kc["id"])
+                            if sent:
+                                report["existing_reset_requested"] += 1
+                            else:
+                                report["existing_reset_failures"] += 1
+                        except httpx.HTTPError:
+                            report["existing_reset_failures"] += 1
 
                 keycloak_id = kc["id"]
                 u = (await s.execute(select(UserMirror).where(UserMirror.email == e))).scalar_one_or_none()
@@ -396,5 +427,12 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("dump")
     ap.add_argument("--apply", action="store_true")
+    ap.add_argument(
+        "--send-reset-emails",
+        action="store_true",
+        help="With --apply, request 30-minute password-reset emails for matched existing Keycloak users too",
+    )
     a = ap.parse_args()
-    asyncio.run(run(a.dump, a.apply))
+    if a.send_reset_emails and not a.apply:
+        ap.error("--send-reset-emails requires --apply")
+    asyncio.run(run(a.dump, a.apply, a.send_reset_emails))
