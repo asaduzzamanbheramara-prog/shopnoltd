@@ -389,7 +389,18 @@ jobs:
                         operation_stopped=1
                         break
                       else
-                        echo "ERROR: current-revision operation did not become terminal after cancellation; preserving hook resources and failing safely."
+                        # If cancellation cleared the live .operation field but
+                        # Argo still reports Running, continue through the bounded
+                        # stale-hook recovery below. It only restarts the
+                        # application controller after verifying no live operation
+                        # remains and the referenced hook Job is absent.
+                        app_state="$(timeout 15s kubectl --request-timeout=10s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o json 2>/dev/null || true)"
+                        live_operation="$(jq -r 'if .operation == null then "false" else "true" end' <<<"$app_state")"
+                        if [ "$live_operation" = "false" ]; then
+                          echo "Cancellation cleared the live operation but status is not terminal; continuing bounded stale-hook recovery without patching operation history."
+                          continue
+                        fi
+                        echo "ERROR: current-revision operation did not become terminal after cancellation; a live operation remains, so preserving hook resources and failing safely."
                         exit 1
                       fi
                     else
