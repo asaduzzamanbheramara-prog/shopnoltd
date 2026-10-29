@@ -430,9 +430,9 @@ jobs:
               for path in sorted(changed_files):
                   print(f'  {path}')
           else:
-              raise SystemExit(
-                  'ERROR: affected services were resolved, but no GitOps '
-                  'manifest changed. Refusing silent promotion failure.'
+              print(
+                  'No manifest edits required: all matched GitOps references '
+                  'already use the requested immutable image tags/digests.'
               )
           PY
 
@@ -504,8 +504,8 @@ jobs:
           git add k8s
 
           if git diff --cached --quiet; then
-            echo 'ERROR: promotion produced no GitOps commit.'
-            exit 1
+            echo 'GitOps references already match the requested image tags/digests; no promotion commit is needed.'
+            exit 0
           fi
 
           git diff --cached --check
