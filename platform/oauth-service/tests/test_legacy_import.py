@@ -64,3 +64,39 @@ def test_reset_email_helper_uses_short_lifespan():
             return Response()
 
     assert asyncio.run(_request_password_reset(FakeClient(), "test-token", "kc-user-123")) is True
+
+def test_creating_legacy_identity_does_not_send_email_without_opt_in(monkeypatch):
+    import asyncio
+    from app.scripts.import_legacy_users import _create_keycloak_user
+
+    class Response:
+        status_code = 201
+        headers = {"Location": "https://keycloak.example/admin/realms/shopnoltd/users/kc-new-user"}
+
+        def raise_for_status(self):
+            return None
+
+    class FakeClient:
+        def __init__(self):
+            self.posts = []
+            self.puts = []
+
+        async def post(self, url, **kwargs):
+            self.posts.append((url, kwargs))
+            return Response()
+
+        async def put(self, url, **kwargs):
+            self.puts.append((url, kwargs))
+            raise AssertionError("identity creation must not send reset email")
+
+    client = FakeClient()
+    user, created, reset_sent = asyncio.run(
+        _create_keycloak_user(client, "admin-token", {"first_name": "Test"}, "new@example.com")
+    )
+
+    assert user["id"] == "kc-new-user"
+    assert created is True
+    assert reset_sent is False
+    assert len(client.posts) == 1
+    assert client.puts == []
+
