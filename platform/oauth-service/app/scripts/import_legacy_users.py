@@ -5,7 +5,7 @@ Default is dry-run. --apply performs an idempotent reconciliation:
 * existing Keycloak identities keep their real Keycloak UUID;
 * missing Keycloak identities are created without importing legacy passwords;
 * new identities receive a temporary random password and UPDATE_PASSWORD
-  action, and a reset email is requested;
+  action; reset emails are sent only when --send-reset-emails is explicitly set;
 * legacy balances/passwords/tokens/secrets are never imported;
 * unmatched records are never represented by synthetic identities.
 """
@@ -432,7 +432,7 @@ if __name__ == "__main__":
     ap.add_argument(
         "--send-reset-emails",
         action="store_true",
-        help="With --apply, request 30-minute password-reset emails for matched existing Keycloak users too",
+        help="With --apply, explicitly request 30-minute password-reset emails for newly created and matched Keycloak users",
     )
     a = ap.parse_args()
     if a.send_reset_emails and not a.apply:
