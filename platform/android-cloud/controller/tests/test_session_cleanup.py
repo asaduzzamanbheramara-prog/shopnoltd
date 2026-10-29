@@ -200,3 +200,30 @@ def test_recovery_queues_services_without_emulator_pods(monkeypatch) -> None:
     assert len(deleted) == 1
     assert deleted[0].session_id == session_id
 
+def test_stop_session_deletes_resources_without_holding_session_lock(monkeypatch) -> None:
+    session = make_session(last_seen=900)
+    main.sessions[session.session_id] = session
+    deleted = []
+    async def find_session(session_id, user_id):
+        assert session_id == session.session_id
+        assert user_id == "user-test"
+        return session
+    monkeypatch.setattr(main, "get_session_for_user", find_session)
+    monkeypatch.setattr(main, "delete_resources", lambda item: deleted.append(item))
+
+    result = asyncio.run(main.stop_session(session.session_id, user_id="user-test"))
+
+    assert result == {"status": "stopped", "session_id": session.session_id}
+    assert deleted == [session]
+    assert session.session_id not in main.sessions
+    assert session.session_id not in main.stopping_sessions
+
+
+def test_readyz_checks_kubernetes_without_blocking_async_handler(monkeypatch) -> None:
+    monkeypatch.setattr(main.core, "list_namespaced_pod", lambda *a, **k: object())
+
+    response = asyncio.run(main.readyz())
+
+    assert response.status_code == 200
+    assert response.body == b'{"status":"ready","capacity":1,"kvm_required":true}'
+
