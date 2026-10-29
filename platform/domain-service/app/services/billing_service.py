@@ -10,6 +10,10 @@ import hashlib
 import httpx
 
 
+class InsufficientFundsError(RuntimeError):
+    """The payment service rejected a transfer for insufficient available funds."""
+
+
 class BillingService:
     def __init__(self, payment_service_url: str, platform_wallet_user_id: str, timeout: int = 10):
         self.payment_service_url = payment_service_url.rstrip("/")
@@ -17,18 +21,8 @@ class BillingService:
         self.timeout = timeout
 
     @staticmethod
-    def _idempotency_key(
-        user_id: str,
-        operation: str,
-        request_key: str,
-        domain: str,
-        years: int,
-        currency: str,
-        amount: Decimal,
-    ) -> str:
-        """Scope retries to one user's explicit operation and exact order payload."""
-        # The request key identifies the attempt. Payload consistency is enforced
-        # by payment-service so a reused key cannot silently charge a changed order.
+    def _idempotency_key(user_id: str, operation: str, request_key: str) -> str:
+        """Scope retries to one user's explicit operation key."""
         raw = f"domain:{user_id}:{operation}:{request_key.strip()}"
         return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
@@ -56,21 +50,31 @@ class BillingService:
         operation: str,
         request_key: str,
     ) -> dict:
-        key = self._idempotency_key(
-            user_id, operation, request_key, domain, years, currency, amount
-        )
-        async with httpx.AsyncClient(timeout=self.timeout) as c:
-            resp = await c.post(
-                f"{self.payment_service_url}/api/v1/transfers",
-                headers={"Authorization": f"Bearer {user_token}"},
-                json={
-                    "to_user_id": self.platform_wallet_user_id,
-                    "currency": currency.upper(),
-                    "amount": str(amount),
-                    "note": f"Domain registration: {domain} ({years}yr)",
-                    "idempotency_key": key,
-                },
-            )
-            if resp.status_code not in (200, 201):
-                raise RuntimeError(f"Domain charge failed: {resp.text}")
-            return resp.json()
+        key = self._idempotency_key(user_id, operation, request_key)
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as c:
+                resp = await c.post(
+                    f"{self.payment_service_url}/api/v1/transfers",
+                    headers={"Authorization": f"Bearer {user_token}"},
+                    json={
+                        "to_user_id": self.platform_wallet_user_id,
+                        "currency": currency.upper(),
+                        "amount": str(amount),
+                        "note": f"Domain {operation}: {domain} ({years}yr)",
+                        "idempotency_key": key,
+                    },
+                )
+        except httpx.HTTPError as exc:
+            raise RuntimeError(
+                "Payment service response was not confirmed; retry with the same idempotency key"
+            ) from exc
+        if resp.status_code == 400:
+            try:
+                detail = resp.json().get("detail")
+            except (ValueError, AttributeError):
+                detail = None
+            if detail == "insufficient available funds":
+                raise InsufficientFundsError() 
+        if resp.status_code not in (200, 201):
+            raise RuntimeError("Payment service could not confirm the domain charge")
+        return resp.json()
