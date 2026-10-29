@@ -235,6 +235,8 @@ async def renew_domain_user(
         )
     except InsufficientFundsError as e:
         raise HTTPException(402, "Insufficient available wallet funds") from e
+    except IdempotencyConflictError as e:
+        raise HTTPException(409, "Idempotency-Key was already used for a different paid-domain request") from e
     except RuntimeError as e:
         raise HTTPException(502, "Payment charge could not be confirmed; retry with the same Idempotency-Key") from e
 
