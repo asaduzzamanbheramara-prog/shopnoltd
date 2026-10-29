@@ -42,3 +42,19 @@ def test_tenant_mismatch_is_not_visible_even_if_owner_claim_matches():
 @pytest.mark.parametrize("role", ["admin", "platform_admin"])
 def test_platform_admin_can_manage_unassigned_legacy_mailboxes(role):
     ensure_mailbox_access(mailbox(), {"sub": "admin-1", "realm_access": {"roles": [role]}})
+
+def test_unrelated_client_admin_role_does_not_grant_mailbox_access():
+    with pytest.raises(HTTPException) as caught:
+        ensure_mailbox_access(
+            mailbox(),
+            {"sub": "user-1", "resource_access": {"unrelated-client": {"roles": ["admin"]}}},
+        )
+    assert caught.value.status_code == 404
+
+
+def test_mail_service_admin_role_can_access_mailbox():
+    ensure_mailbox_access(
+        mailbox(),
+        {"sub": "admin-1", "resource_access": {"mail-service": {"roles": ["platform_admin"]}}},
+    )
+
