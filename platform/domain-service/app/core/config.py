@@ -20,6 +20,8 @@ class Settings(BaseSettings):
     freedomain_internal_key: str = ""
 
     billing_engine_url: str = "http://billing-engine.shopno-payments.svc.cluster.local:5000"
+    # payment-service Kubernetes Service exposes HTTP on port 80.
+    payment_service_url: str = "http://payment-service.shopno-payments.svc.cluster.local:80"
     billing_internal_key: str = ""
     billing_currency: str = "USD"
 
