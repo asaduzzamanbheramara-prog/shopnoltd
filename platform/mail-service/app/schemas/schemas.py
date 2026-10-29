@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class DomainIn(BaseModel):
@@ -12,4 +12,4 @@ class MailboxIn(BaseModel):
 
 
 class MailboxOwnerIn(BaseModel):
-    owner_user_id: str
+    owner_user_id: str = Field(min_length=1, max_length=128)
