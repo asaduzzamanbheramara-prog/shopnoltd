@@ -14,6 +14,10 @@ class InsufficientFundsError(RuntimeError):
     """The payment service rejected a transfer for insufficient available funds."""
 
 
+class IdempotencyConflictError(RuntimeError):
+    """The same idempotency key was reused with a different transfer payload."""
+
+
 class BillingService:
     def __init__(self, payment_service_url: str, platform_wallet_user_id: str, timeout: int = 10):
         self.payment_service_url = payment_service_url.rstrip("/")
@@ -74,7 +78,9 @@ class BillingService:
             except (ValueError, AttributeError):
                 detail = None
             if detail == "insufficient available funds":
-                raise InsufficientFundsError() 
+                raise InsufficientFundsError()
+        if resp.status_code == 409:
+            raise IdempotencyConflictError()
         if resp.status_code not in (200, 201):
             raise RuntimeError("Payment service could not confirm the domain charge")
         return resp.json()
