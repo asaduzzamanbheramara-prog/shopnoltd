@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, Column, DateTime, Integer, Numeric, String, Text
+from sqlalchemy import Boolean, Column, DateTime, Integer, Numeric, String, Text, UniqueConstraint
 
 from app.core.db import Base
 
@@ -66,7 +66,7 @@ class DomainOrder(Base):
 
     __tablename__ = "domain_orders"
     __table_args__ = (
-        __import__("sqlalchemy").UniqueConstraint(
+        UniqueConstraint(
             "user_id", "operation", "idempotency_key_hash",
             name="uq_domain_order_user_operation_key",
         ),
