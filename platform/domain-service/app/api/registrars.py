@@ -226,12 +226,6 @@ async def renew_domain_user(
     currency = pricing["currency"]
 
     billing = _billing()
-    balance = await billing.check_wallet_balance(token, currency, price)
-    if not balance["sufficient"]:
-        raise HTTPException(
-            402,
-            f"Insufficient {currency} wallet balance: need {price}, have {balance['balance']}",
-        )
     try:
         charge = await billing.charge_for_domain(
             token, currency, price, domain, years,
