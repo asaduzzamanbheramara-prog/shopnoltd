@@ -24,6 +24,9 @@ spec:
             name: mail-service-config
         - secretRef:
             name: mail-service-secret
+        - secretRef:
+            name: mail-service-smtp
+            optional: true
         resources:
           requests:
             cpu: 50m
