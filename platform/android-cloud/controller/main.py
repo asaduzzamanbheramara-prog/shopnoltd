@@ -180,7 +180,12 @@ def make_emulator_pod(session: Session) -> client.V1Pod:
         metadata=client.V1ObjectMeta(
             name=session.emulator_name,
             namespace=NAMESPACE,
-            labels={"app.kubernetes.io/name": "android-emulator", "shopnoltd.dev/session": session.session_id},
+            labels={
+                "app.kubernetes.io/name": "android-emulator",
+                "app.kubernetes.io/component": "android-cloud",
+                "app.kubernetes.io/part-of": "shopnoltd",
+                "shopnoltd.dev/session": session.session_id,
+            },
             annotations=session_annotations(session),
         ),
         spec=client.V1PodSpec(
@@ -220,7 +225,12 @@ def make_gateway_pod(session: Session) -> client.V1Pod:
         metadata=client.V1ObjectMeta(
             name=session.gateway_name,
             namespace=NAMESPACE,
-            labels={"app.kubernetes.io/name": "android-cloud-gateway", "shopnoltd.dev/session": session.session_id},
+            labels={
+                "app.kubernetes.io/name": "android-cloud-gateway",
+                "app.kubernetes.io/component": "android-cloud",
+                "app.kubernetes.io/part-of": "shopnoltd",
+                "shopnoltd.dev/session": session.session_id,
+            },
             annotations=session_annotations(session),
         ),
         spec=client.V1PodSpec(
