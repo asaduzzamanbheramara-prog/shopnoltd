@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import SessionLocal
 from app.core.mailcow import call_mailcow
-from app.core.security import verify_token_admin
+from app.core.security import verify_token, verify_token_admin
 from app.models.models import Domain, Mailbox
 from app.schemas.schemas import MailboxIn
 
@@ -23,6 +23,22 @@ async def db():
 
 async def admin(creds: HTTPAuthorizationCredentials = Depends(bearer)):
     return await verify_token_admin(creds.credentials)
+
+
+async def current_user(creds: HTTPAuthorizationCredentials = Depends(bearer)):
+    return await verify_token(creds.credentials)
+
+
+@router.get("/mine")
+async def list_mine(user=Depends(current_user), s: AsyncSession = Depends(db)):
+    user_id = str(user.get("sub", "")).strip()
+    if not user_id:
+        raise HTTPException(401, "invalid user identity")
+    res = await s.execute(select(Mailbox).where(Mailbox.owner_user_id == user_id))
+    return [
+        {"id": m.id, "address": m.full_address, "quota_mb": m.quota_mb, "active": m.active}
+        for m in res.scalars().all()
+    ]
 
 
 def _require_mailcow_success(response: object) -> None:
@@ -46,6 +62,7 @@ async def add(domain_id: str, body: MailboxIn, user=Depends(admin), s: AsyncSess
     full = f"{body.local_part}@{d.name}"
     mailbox = Mailbox(
         tenant_id=user.get("tenant_id", "default"),
+        owner_user_id=body.owner_user_id,
         domain_id=d.id,
         local_part=body.local_part,
         full_address=full,
