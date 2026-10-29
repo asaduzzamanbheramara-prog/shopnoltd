@@ -60,3 +60,32 @@ class Domain(Base):
     charge_transaction_id = Column(String(128))
     expires_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+class DomainOrder(Base):
+    """Durable idempotency and reconciliation state for paid registrar operations."""
+
+    __tablename__ = "domain_orders"
+    __table_args__ = (
+        __import__("sqlalchemy").UniqueConstraint(
+            "user_id", "operation", "idempotency_key_hash",
+            name="uq_domain_order_user_operation_key",
+        ),
+    )
+
+    id = Column(String(64), primary_key=True, default=lambda: str(uuid.uuid4()))
+    tenant_id = Column(String(64), nullable=False, index=True)
+    user_id = Column(String(128), nullable=False, index=True)
+    operation = Column(String(16), nullable=False)
+    idempotency_key_hash = Column(String(64), nullable=False)
+    request_fingerprint = Column(String(64), nullable=False)
+    domain = Column(String(256), nullable=False, index=True)
+    years = Column(Integer, nullable=False, default=1)
+    price = Column(Numeric(12, 2), nullable=False)
+    currency = Column(String(8), nullable=False, default="USD")
+    status = Column(String(32), nullable=False, default="pending_charge", index=True)
+    charge_transaction_id = Column(String(128), nullable=True)
+    registrar_order_id = Column(String(128), nullable=True)
+    failure_code = Column(String(64), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
