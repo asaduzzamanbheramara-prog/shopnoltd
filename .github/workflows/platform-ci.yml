@@ -146,7 +146,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt pytest
       - name: Test guarded SQL table references
-        run: pytest -q tests/test_database_control_sql_guard.py
+        run: pytest -q tests/test_database_control_sql_guard.py tests/test_database_control_mutation_authz.py
 
 
   service-contract-tests:
