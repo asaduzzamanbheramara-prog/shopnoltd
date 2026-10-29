@@ -27,10 +27,9 @@ class BillingService:
         amount: Decimal,
     ) -> str:
         """Scope retries to one user's explicit operation and exact order payload."""
-        raw = (
-            f"domain:{user_id}:{operation}:{request_key.strip()}:"
-            f"{domain.strip().lower()}:{int(years)}:{currency.upper()}:{amount}"
-        )
+        # The request key identifies the attempt. Payload consistency is enforced
+        # by payment-service so a reused key cannot silently charge a changed order.
+        raw = f"domain:{user_id}:{operation}:{request_key.strip()}"
         return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
     async def check_wallet_balance(self, user_token: str, currency: str, required_amount: Decimal) -> dict:
