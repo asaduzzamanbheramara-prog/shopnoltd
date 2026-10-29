@@ -599,7 +599,7 @@ def install_apk_file(session: Session, source_file: Path, original_name: str) ->
                 for chunk in iter(lambda: digest_file.read(1024 * 1024), b""):
                     digest.update(chunk)
 
-            raw = await run_adb_async(
+            raw = run_adb(
                 session,
                 f"adb -e install -r -t {apk_path} 2>&1; "
                 f'rc=$?; rm -f {apk_path}; printf "\\n__SHOPNO_RC__%s\\n" "$rc"',
