@@ -186,6 +186,7 @@ def test_recovery_queues_services_without_emulator_pods(monkeypatch) -> None:
     session_id = "session-orphan-123456789"
     resource = type("Resource", (), {})()
     resource.metadata = type("Metadata", (), {})()
+    resource.metadata.name = main.name_for("agw", session_id)
     resource.metadata.labels = {"shopnoltd.dev/session": session_id}
     service = resource
     ingress = resource
@@ -248,3 +249,35 @@ def test_cleanup_does_not_hold_session_lock_during_kubernetes_delete(monkeypatch
     assert lock_checks == [True]
     assert session.session_id not in main.sessions
 
+
+
+def test_recovery_queues_gateway_pods_without_emulator_pods(monkeypatch) -> None:
+    session_id = "session-orphan-gateway-123456"
+    gateway = type("Pod", (), {})()
+    gateway.metadata = type("Metadata", (), {})()
+    gateway.metadata.name = main.name_for("agw", session_id)
+    gateway.metadata.labels = {
+        "app.kubernetes.io/name": "android-cloud-gateway",
+        "shopnoltd.dev/session": session_id,
+    }
+    gateway.metadata.annotations = {}
+    deleted = []
+
+    def list_pods(_namespace, label_selector=None, **_kwargs):
+        if label_selector == "app.kubernetes.io/name=android-emulator":
+            return type("Pods", (), {"items": []})()
+        if label_selector == "app.kubernetes.io/name=android-cloud-gateway":
+            return type("Pods", (), {"items": [gateway]})()
+        return type("Pods", (), {"items": []})()
+
+    monkeypatch.setattr(main.core, "list_namespaced_pod", list_pods)
+    monkeypatch.setattr(main.core, "list_namespaced_service", lambda *a, **k: type("Services", (), {"items": []})())
+    monkeypatch.setattr(main.networking, "list_namespaced_ingress", lambda *a, **k: type("Ingresses", (), {"items": []})())
+    monkeypatch.setattr(main, "delete_resources", lambda item: deleted.append(item))
+    monkeypatch.setattr(main.time, "time", lambda: 1000)
+
+    main.recover_sessions()
+
+    assert session_id not in main.sessions
+    assert len(deleted) == 1
+    assert deleted[0].gateway_name == gateway.metadata.name
