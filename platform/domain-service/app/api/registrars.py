@@ -17,7 +17,7 @@ from app.models.models import Domain, Registrar
 from app.schemas.schemas import DomainOut, RegisterDomainIn
 from app.services.billing_service import BillingService
 from app.services.registrar_factory import get_adapter
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -123,6 +123,7 @@ async def check_availability(domain: str, years: int = 1, s: AsyncSession = Depe
 @router.post("/domains/register", response_model=DomainOut, status_code=201)
 async def register_domain_user(
     body: RegisterDomainIn,
+    idempotency_key: str = Header(..., alias="Idempotency-Key", min_length=8, max_length=128),
     user_and_token=Depends(current_user),
     s: AsyncSession = Depends(db),
 ):
@@ -158,7 +159,10 @@ async def register_domain_user(
             f"Insufficient {currency} wallet balance: need {price}, have {balance['balance']}",
         )
 
-    charge = await billing.charge_for_domain(token, currency, price, domain, body.years)
+    charge = await billing.charge_for_domain(
+        token, currency, price, domain, body.years,
+        user_id=str(user["sub"]), operation="register", request_key=idempotency_key,
+    )
 
     try:
         result = await adapter.register(domain, body.years, body.contact.model_dump())
@@ -199,6 +203,7 @@ async def register_domain_user(
 async def renew_domain_user(
     domain: str,
     years: int = 1,
+    idempotency_key: str = Header(..., alias="Idempotency-Key", min_length=8, max_length=128),
     user_and_token=Depends(current_user),
     s: AsyncSession = Depends(db),
 ):
@@ -229,7 +234,10 @@ async def renew_domain_user(
             402,
             f"Insufficient {currency} wallet balance: need {price}, have {balance['balance']}",
         )
-    charge = await billing.charge_for_domain(token, currency, price, domain, years)
+    charge = await billing.charge_for_domain(
+        token, currency, price, domain, years,
+        user_id=str(user["sub"]), operation="renew", request_key=idempotency_key,
+    )
 
     try:
         await adapter.renew(domain, years)
