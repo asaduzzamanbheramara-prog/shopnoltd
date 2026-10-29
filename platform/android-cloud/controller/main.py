@@ -616,9 +616,8 @@ def install_apk_file(session: Session, source_file: Path, original_name: str) ->
                     digest.update(chunk)
             return install_output, digest.hexdigest(), source_file.stat().st_size
 
-        raw, file_digest, file_size = asyncio.run(transfer_and_install()) if False else ("", "", 0)
-        # This function is always called by install_apk_file_async in a worker
-        # thread, so use the synchronous streaming path here.
+        # This function is called by install_apk_file_async in a worker thread,
+        # keeping Kubernetes streaming and ADB installation off the event loop.
         raw, file_digest, file_size = transfer_and_install()
         ok, detail = adb_result(raw)
         if not ok:
