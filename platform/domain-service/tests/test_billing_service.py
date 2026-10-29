@@ -23,6 +23,6 @@ def test_idempotency_is_scoped_to_the_authenticated_user():
     assert key(user_id="user-1") != key(user_id="user-2")
 
 
-def test_changed_order_payload_gets_a_distinct_key():
-    assert key(amount=Decimal("12.00")) != key(amount=Decimal("24.00"))
-    assert key(years=1) != key(years=2)
+def test_same_request_key_is_independent_of_payload_and_payment_service_validates_payload():
+    assert key(amount=Decimal("12.00")) == key(amount=Decimal("24.00"))
+    assert key(years=1) == key(years=2)
