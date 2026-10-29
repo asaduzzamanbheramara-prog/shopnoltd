@@ -21,7 +21,7 @@ data:
   KEYCLOAK_AUDIENCE: "api-service"
   KEYCLOAK_CLIENT_ID: "domain-service"
   BILLING_ENGINE_URL: "http://billing-engine.shopno-payments.svc.cluster.local:80"
-  PAYMENT_SERVICE_URL: "http://payment-service.shopno-payments.svc.cluster.local:8080"
+  PAYMENT_SERVICE_URL: "http://payment-service.shopno-payments.svc.cluster.local:80"
   NAMECHEAP_SANDBOX: "true"
   DOMAIN_RENEWAL_CHECK_INTERVAL: "86400"
   DOMAIN_EXPIRY_WARNING_DAYS: "30"

@@ -9,6 +9,7 @@ from prometheus_client import generate_latest
 from shopno_core.database.redis import redis_client
 from shopno_core.database.dependencies import wait_for_dependencies
 from starlette.responses import Response
+from sqlalchemy import text
 
 from app.core.config import settings
 from app.core.db import Base, engine
@@ -21,6 +22,11 @@ async def lifespan(app: FastAPI):
     async def _check_database():
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
+            # create_all does not add columns to an existing table; this
+            # idempotent compatibility migration preserves existing mailboxes
+            # as unassigned until an administrator explicitly maps ownership.
+            await conn.execute(text("ALTER TABLE mailboxes ADD COLUMN IF NOT EXISTS owner_user_id VARCHAR(128) NULL"))
+            await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_mailboxes_owner_user_id ON mailboxes (owner_user_id)"))
     await wait_for_dependencies("mail-service", _check_database, redis_client)
     log.info("mail-service.started", env=settings.env)
     yield

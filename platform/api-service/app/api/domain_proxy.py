@@ -25,6 +25,8 @@ async def proxy(request: Request, path: str, raw_token: str | None = None):
         headers["Authorization"] = f"Bearer {raw_token}"
     if request.headers.get("content-type"):
         headers["Content-Type"] = request.headers["content-type"]
+    if request.headers.get("idempotency-key"):
+        headers["Idempotency-Key"] = request.headers["idempotency-key"]
     try:
         async with httpx.AsyncClient(timeout=30) as client:
             upstream = await client.request(

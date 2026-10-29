@@ -39,7 +39,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r platform/mail-service/requirements.txt pytest==8.4.1
       - name: Run mailbox security tests
-        run: python -m pytest -q platform/mail-service/tests/test_mailboxes_security.py platform/mail-service/tests/test_mail_domains_provisioning.py
+        run: python -m pytest -q platform/mail-service/tests/test_mailboxes_security.py platform/mail-service/tests/test_mail_domains_provisioning.py platform/mail-service/tests/test_messages_access.py
 
   oauth-provisioning-tests:
     name: OAuth provisioning outbox and PostgreSQL migration tests

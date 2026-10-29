@@ -11,6 +11,12 @@ class Settings(BaseSettings):
     cors_origins: str = "https://*.shopnoltd.dpdns.org"
     mailcow_api_url: str = "https://mail.shopnoltd.dpdns.org/api/v1"
     mailcow_api_key: str = "CHANGE_ME_MAILCOW_KEY"
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_username: str = ""
+    smtp_password: str = ""
+    smtp_envelope_from: str = ""
+    smtp_timeout_seconds: int = 15
     keycloak_issuer: str = "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
     keycloak_audience: str = "mail-service"
 

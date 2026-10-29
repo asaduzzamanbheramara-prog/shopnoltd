@@ -32,6 +32,7 @@ export default function DomainManagement() {
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [renewalKeys, setRenewalKeys] = useState({})
   const activeDomains = useMemo(
     () => domains.filter(d => String(d.status).toLowerCase() === 'active'),
     [domains],
@@ -66,7 +67,11 @@ export default function DomainManagement() {
     if (!Number.isInteger(years) || years < 1 || years > 10) return
     setBusy(true); setMessage(''); setError('')
     try {
-      await request(`/domains/${encodeURIComponent(name)}/renew?years=${years}`, { method: 'POST' })
+      const attemptKey = `${name}:${years}`
+      const requestKey = renewalKeys[attemptKey] || crypto.randomUUID()
+      if (!renewalKeys[attemptKey]) setRenewalKeys(prev => ({ ...prev, [attemptKey]: requestKey }))
+      await request(`/domains/${encodeURIComponent(name)}/renew?years=${years}`, { method: 'POST', headers: { 'Idempotency-Key': requestKey } })
+      setRenewalKeys(prev => { const next = { ...prev }; delete next[attemptKey]; return next })
       setMessage(`${name} renewal completed.`)
       await load()
     } catch (e) {

@@ -35,7 +35,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: domain-service
-          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/domain-service:37797e4a84bd94fcee26f7e70f89f1d251c01090
+          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/domain-service:02894f8b8b432fca3ce19184ebade5ddd7691516
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
