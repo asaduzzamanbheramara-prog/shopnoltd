@@ -126,6 +126,15 @@ jobs:
           check_service shopno-platform training-service training-service-data training-service-config training-service-secret training-service
           check_service shopno-platform android-cloud-controller "" android-cloud-controller-config android-cloud-turn-secret ""
           check_object secret shopno-platform ghcr-pull-secret
+          echo "=== ANDROID CLOUD DEPLOYMENTS AND CONTROLLER RESTARTS (METADATA ONLY) ==="
+          kubectl -n shopno-platform get deployments android-cloud-controller android-cloud-web -o custom-columns='NAME:.metadata.name,DESIRED:.spec.replicas,READY:.status.readyReplicas,AVAILABLE:.status.availableReplicas,UPDATED:.status.updatedReplicas' || true
+          kubectl -n shopno-platform get pods -l app.kubernetes.io/name=android-cloud-controller -o custom-columns='NAME:.metadata.name,READY:.status.containerStatuses[0].ready,RESTARTS:.status.containerStatuses[0].restartCount,PHASE:.status.phase,NODE:.spec.nodeName' || true
+          kubectl -n shopno-platform get pods -l app.kubernetes.io/name=android-cloud-controller -o json 2>/dev/null | jq -r '.items[]? as $pod | $pod.status.containerStatuses[]? | [$pod.metadata.name, .name, (.restartCount|tostring), (.lastState.terminated.reason // "none"), ((.lastState.terminated.exitCode // -1)|tostring)] | @tsv' || true
+          echo "=== ANDROID CLOUD SESSION RESOURCES AND EVENTS (NO LOGS OR SECRET VALUES) ==="
+          kubectl -n shopno-android get pods,services,ingresses -o wide 2>&1 || true
+          kubectl -n shopno-android get events --sort-by=.lastTimestamp 2>&1 | tail -n 40 || true
+          kubectl -n shopno-platform get events --sort-by=.lastTimestamp 2>&1 | grep -Ei 'android-cloud|android-emulator|aemu-|agw-' | tail -n 40 || true
+          kubectl -n shopno-android top pods --sort-by=memory 2>&1 || true
           check_service shopno-apps onlyoffice onlyoffice-data onlyoffice-config onlyoffice-secret onlyoffice
           check_object secret shopno-apps onlyoffice-tls
           echo "=== INTERIOR SERVICE POST-DEPLOYMENT VERIFICATION ==="
