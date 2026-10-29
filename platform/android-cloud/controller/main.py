@@ -572,64 +572,69 @@ def install_apk_file(session: Session, source_file: Path, original_name: str) ->
         raise HTTPException(status_code=413, detail="apk_file_too_large")
 
     with source_file.open("rb") as handle:
-        header = handle.read(4)
-        if header != b"PK\x03\x04":
+        if handle.read(4) != b"PK\\x03\\x04":
             raise HTTPException(status_code=400, detail="invalid_apk_file")
 
-        apk_path = f"/data/shopnoltd-upload-{secrets.token_hex(12)}.apk"
-        upload_command = ["/bin/sh", "-c", f"cat > {apk_path}"]
-        try:
-            exec_stream = stream(
-                core.connect_get_namespaced_pod_exec,
-                session.emulator_name,
-                NAMESPACE,
-                command=upload_command,
-                container="emulator",
-                stderr=True,
-                stdin=True,
-                stdout=True,
-                tty=False,
-                _preload_content=False,
-                binary=True,
-            )
+    apk_path = f"/data/shopnoltd-upload-{secrets.token_hex(12)}.apk"
+    try:
+        def transfer_and_install() -> tuple[str, str, int]:
+            exec_stream = None
             try:
-                while exec_stream.is_open():
-                    exec_stream.update(timeout=2)
-                    chunk = handle.read(1024 * 1024)
-                    if chunk:
-                        exec_stream.write_stdin(chunk)
-                    else:
-                        break
-                exec_stream.close()
+                exec_stream = stream(
+                    core.connect_get_namespaced_pod_exec,
+                    session.emulator_name,
+                    NAMESPACE,
+                    command=["/bin/sh", "-c", f"cat > {apk_path}"],
+                    container="emulator",
+                    stderr=True,
+                    stdin=True,
+                    stdout=True,
+                    tty=False,
+                    _preload_content=False,
+                    binary=True,
+                )
+                with source_file.open("rb") as handle:
+                    while True:
+                        exec_stream.update(timeout=2)
+                        chunk = handle.read(1024 * 1024)
+                        if chunk:
+                            exec_stream.write_stdin(chunk)
+                        else:
+                            break
             finally:
-                if exec_stream.is_open():
+                if exec_stream is not None:
                     exec_stream.close()
 
-            digest = hashlib.sha256()
-            with source_file.open("rb") as digest_file:
-                for chunk in iter(lambda: digest_file.read(1024 * 1024), b""):
-                    digest.update(chunk)
-
-            raw = run_adb(
+            install_output = run_adb(
                 session,
                 f"adb -e install -r -t {apk_path} 2>&1; "
                 f'rc=$?; rm -f {apk_path}; printf "\\n__SHOPNO_RC__%s\\n" "$rc"',
             )
-            ok, detail = adb_result(raw)
-            if not ok:
-                raise HTTPException(status_code=400, detail=f"apk_install_failed:{detail[-1500:]}")
-            return {
-                "status": "installed",
-                "filename": original_name,
-                "size": source_file.stat().st_size,
-                "sha256": digest.hexdigest(),
-                "output": detail[-1500:],
-            }
-        finally:
-            try:
-                exec_emulator(session, ["/bin/sh", "-c", f"rm -f {apk_path}"])
-            except Exception:
-                pass
+            digest = hashlib.sha256()
+            with source_file.open("rb") as digest_file:
+                for chunk in iter(lambda: digest_file.read(1024 * 1024), b""):
+                    digest.update(chunk)
+            return install_output, digest.hexdigest(), source_file.stat().st_size
+
+        raw, file_digest, file_size = asyncio.run(transfer_and_install()) if False else ("", "", 0)
+        # This function is always called by install_apk_file_async in a worker
+        # thread, so use the synchronous streaming path here.
+        raw, file_digest, file_size = transfer_and_install()
+        ok, detail = adb_result(raw)
+        if not ok:
+            raise HTTPException(status_code=400, detail=f"apk_install_failed:{detail[-1500:]}")
+        return {
+            "status": "installed",
+            "filename": original_name,
+            "size": file_size,
+            "sha256": file_digest,
+            "output": detail[-1500:],
+        }
+    finally:
+        try:
+            exec_emulator(session, ["/bin/sh", "-c", f"rm -f {apk_path}"])
+        except Exception:
+            logger.warning("Failed to remove temporary APK from emulator session %s", session.session_id)
 
 
 async def install_apk_file_async(session: Session, source_file: Path, original_name: str) -> dict[str, Any]:
