@@ -317,24 +317,75 @@ jobs:
                 echo "Hook Job $hook_name is absent from the API listing; requesting a hard Argo CD refresh and continuing to wait."
                 timeout 45s kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" annotate application "$ARGOCD_APP" argocd.argoproj.io/refresh=hard --overwrite || true
               elif [ "$hook_state" = "complete" ]; then
-                echo "Argo CD is blocked on completed hook $hook_namespace/$hook_name; requesting cleanup."
-                timeout 30s kubectl --request-timeout=30s -n "$hook_namespace" delete job "$hook_name" --ignore-not-found --wait=false || true
+                hook_pods_json="$(timeout 20s kubectl --request-timeout=15s -n "$hook_namespace" get pods -l "job-name=$hook_name" -o json 2>/dev/null || true)"
+                if ! jq -e '.items | type == "array"' <<<"$hook_pods_json" >/dev/null 2>&1; then
+                  echo "Hook pod query for $hook_namespace/$hook_name was invalid; preserving the completed job."
+                elif [ "$(jq -r '[.items[]? | select(.status.phase == "Running" or .status.phase == "Pending" or .status.phase == "Unknown")] | length' <<<"$hook_pods_json")" != "0" ]; then
+                  echo "Hook $hook_namespace/$hook_name has active or unknown pods; preserving it."
+                else
+                  app_state="$(timeout 20s kubectl --request-timeout=15s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o json 2>/dev/null || true)"
+                  live_operation="$(jq -r 'if .operation == null then "false" else "true" end' <<<"$app_state")"
+                  operation_revision="$(jq -r '.operation.sync.revision // ""' <<<"$app_state")"
+                  case "$hook_name" in
+                    litellm-migrations|postgres-platform-migration|chatwoot-rails-migration) known_retryable_migration=1 ;;
+                    *) known_retryable_migration=0 ;;
+                  esac
 
-                for _ in {1..8}; do
-                  hook_json="$(timeout 15s kubectl --request-timeout=15s -n "$hook_namespace" get job "$hook_name" -o json 2>/dev/null || true)"
-                  if [ -z "$hook_json" ]; then
-                    echo "Completed hook $hook_namespace/$hook_name removed."
-                    break
-                  fi
+                  if [ "$live_operation" = "true" ]; then
+                    if [ "$known_retryable_migration" = "1" ] && [ "$operation_revision" = "$GIT_REVISION" ]; then
+                      echo "Completed migration hook $hook_namespace/$hook_name has no active pods but the current-revision sync is still live; cancelling only this verified operation before deleting the hook."
+                      timeout 30s kubectl --request-timeout=20s -n "$ARGOCD_NAMESPACE" patch application "$ARGOCD_APP" --type=merge -p='{"operation":null}'
+                      timeout 30s kubectl --request-timeout=20s -n "$ARGOCD_NAMESPACE" annotate application "$ARGOCD_APP" argocd.argoproj.io/refresh=hard --overwrite || true
 
-                  deletion_timestamp="$(jq -r '.metadata.deletionTimestamp // ""' <<<"$hook_json")"
-                  finalizers="$(jq -r '.metadata.finalizers // [] | join(",")' <<<"$hook_json")"
-                  if [ -n "$deletion_timestamp" ] && [[ "$finalizers" == *"argocd.argoproj.io/hook-finalizer"* ]]; then
-                    echo "Completed hook $hook_namespace/$hook_name is deletion-blocked by its Argo hook finalizer; clearing that finalizer after deletion was requested."
-                    timeout 30s kubectl --request-timeout=30s -n "$hook_namespace" patch job "$hook_name" --type=json -p='[{"op":"remove","path":"/metadata/finalizers"}]' || true
+                      operation_stopped=0
+                      for _ in {1..24}; do
+                        app_state="$(timeout 15s kubectl --request-timeout=10s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o json 2>/dev/null || true)"
+                        phase="$(jq -r '.status.operationState.phase // ""' <<<"$app_state")"
+                        live_operation="$(jq -r 'if .operation == null then "false" else "true" end' <<<"$app_state")"
+                        if [ "$live_operation" = "false" ] && [ -n "$phase" ] && [ "$phase" != "Running" ] && [ "$phase" != "Terminating" ]; then
+                          operation_stopped=1
+                          echo "Verified Argo CD operation reached terminal phase $phase."
+                          break
+                        fi
+                        sleep 5
+                      done
+
+                      if [ "$operation_stopped" = "1" ]; then
+                        timeout 30s kubectl --request-timeout=20s -n "$hook_namespace" delete job "$hook_name" --ignore-not-found --wait=false || true
+                        for _ in {1..8}; do
+                          hook_json="$(timeout 15s kubectl --request-timeout=15s -n "$hook_namespace" get job "$hook_name" -o json 2>/dev/null || true)"
+                          if [ -z "$hook_json" ]; then break; fi
+                          deletion_timestamp="$(jq -r '.metadata.deletionTimestamp // ""' <<<"$hook_json")"
+                          finalizers="$(jq -r '.metadata.finalizers // [] | join(",")' <<<"$hook_json")"
+                          if [ -n "$deletion_timestamp" ] && [[ "$finalizers" == *"argocd.argoproj.io/hook-finalizer"* ]]; then
+                            timeout 30s kubectl --request-timeout=30s -n "$hook_namespace" patch job "$hook_name" --type=json -p='[{"op":"remove","path":"/metadata/finalizers"}]' || true
+                          fi
+                          sleep 5
+                        done
+                        operation_stopped=1
+                        break
+                      else
+                        echo "ERROR: current-revision operation did not become terminal after cancellation; preserving hook resources and failing safely."
+                        exit 1
+                      fi
+                    else
+                      echo "A live operation exists for a non-allowlisted hook or a different revision; preserving $hook_namespace/$hook_name."
+                    fi
+                  else
+                    echo "No live Argo operation remains; requesting cleanup of completed hook $hook_namespace/$hook_name."
+                    timeout 30s kubectl --request-timeout=30s -n "$hook_namespace" delete job "$hook_name" --ignore-not-found --wait=false || true
+                    for _ in {1..8}; do
+                      hook_json="$(timeout 15s kubectl --request-timeout=15s -n "$hook_namespace" get job "$hook_name" -o json 2>/dev/null || true)"
+                      if [ -z "$hook_json" ]; then break; fi
+                      deletion_timestamp="$(jq -r '.metadata.deletionTimestamp // ""' <<<"$hook_json")"
+                      finalizers="$(jq -r '.metadata.finalizers // [] | join(",")' <<<"$hook_json")"
+                      if [ -n "$deletion_timestamp" ] && [[ "$finalizers" == *"argocd.argoproj.io/hook-finalizer"* ]]; then
+                        timeout 30s kubectl --request-timeout=30s -n "$hook_namespace" patch job "$hook_name" --type=json -p='[{"op":"remove","path":"/metadata/finalizers"}]' || true
+                      fi
+                      sleep 5
+                    done
                   fi
-                  sleep 5
-                done
+                fi
               else
                 echo "Hook Job $hook_namespace/$hook_name is not confirmed Complete; preserving it and continuing to wait."
               fi
@@ -408,7 +459,7 @@ jobs:
             stale_hook_name="$(sed -n 's/.*waiting for \(completion\|deletion\) of hook batch\/Job\/\([^ /]*\).*/\2/p' <<<"$message")"
             known_migration_hook=0
             case "$stale_hook_name" in
-              litellm-migrations|chatwoot-rails-migration) known_migration_hook=1 ;;
+              litellm-migrations|postgres-platform-migration|chatwoot-rails-migration) known_migration_hook=1 ;;
             esac
             hook_namespace="$(jq -r --arg name "$stale_hook_name" '[.status.operationState.syncResult.resources[]? | select(.kind == "Job" and .name == $name) | .namespace][0] // ""' <<<"$app_state")"
             if [ "$phase" = "Running" ] &&
