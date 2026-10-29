@@ -10,7 +10,7 @@ from app.core.db import SessionLocal
 from app.core.mailcow import call_mailcow
 from app.core.security import verify_token, verify_token_admin
 from app.models.models import Domain, Mailbox
-from app.schemas.schemas import MailboxIn
+from app.schemas.schemas import MailboxIn, MailboxOwnerIn
 
 router = APIRouter()
 bearer = HTTPBearer()
@@ -102,6 +102,27 @@ async def add(domain_id: str, body: MailboxIn, user=Depends(admin), s: AsyncSess
         raise HTTPException(502, "mailbox provider provisioning failed") from exc
 
     return {"id": mailbox.id, "address": full, "active": mailbox.active}
+
+
+@router.patch("/{mailbox_id}/owner")
+async def assign_owner(
+    mailbox_id: str,
+    body: MailboxOwnerIn,
+    user=Depends(admin),
+    s: AsyncSession = Depends(db),
+):
+    owner_user_id = body.owner_user_id.strip()
+    if not owner_user_id:
+        raise HTTPException(422, "owner_user_id is required")
+    mailbox = (
+        await s.execute(select(Mailbox).where(Mailbox.id == mailbox_id))
+    ).scalar_one_or_none()
+    if not mailbox:
+        raise HTTPException(404, "mailbox not found")
+    mailbox.owner_user_id = owner_user_id
+    await s.commit()
+    await s.refresh(mailbox)
+    return {"id": mailbox.id, "address": mailbox.full_address, "owner_user_id": mailbox.owner_user_id}
 
 
 @router.get("/{domain_id}")
