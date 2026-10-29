@@ -1,4 +1,5 @@
 """Authorization regression tests for generic database mutation endpoints."""
+import asyncio
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
@@ -8,31 +9,29 @@ from fastapi import HTTPException
 from app.api import database_control
 
 
-@pytest.mark.asyncio
-async def test_admin_role_cannot_use_platform_admin_guard(monkeypatch):
+def test_admin_role_cannot_use_platform_admin_guard(monkeypatch):
     monkeypatch.setattr(
         database_control,
         "verify_token",
         AsyncMock(return_value={"roles": ["admin"]}),
     )
     with pytest.raises(HTTPException) as exc:
-        await database_control.require_platform_admin(
+        asyncio.run(database_control.require_platform_admin(
             SimpleNamespace(credentials="placeholder")
-        )
+        ))
     assert exc.value.status_code == 403
 
 
-@pytest.mark.asyncio
-async def test_platform_admin_passes_platform_admin_guard(monkeypatch):
+def test_platform_admin_passes_platform_admin_guard(monkeypatch):
     token = {"sub": "platform-admin-test", "roles": ["platform_admin"]}
     monkeypatch.setattr(
         database_control,
         "verify_token",
         AsyncMock(return_value=token),
     )
-    result = await database_control.require_platform_admin(
+    result = asyncio.run(database_control.require_platform_admin(
         SimpleNamespace(credentials="placeholder")
-    )
+    ))
     assert result is token
 
 
