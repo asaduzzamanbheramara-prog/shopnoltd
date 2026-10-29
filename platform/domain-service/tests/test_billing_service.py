@@ -21,7 +21,23 @@ def test_idempotency_is_scoped_to_the_authenticated_user():
     assert key(user_id="user-1") != key(user_id="user-2")
 
 def test_payment_service_endpoint_is_configured():
-    from app.core.config import settings
+    import ast
+    from pathlib import Path
 
-    assert settings.payment_service_url.rstrip("/").endswith(":80")
+    config_path = Path(__file__).parents[1] / "app" / "core" / "config.py"
+    tree = ast.parse(config_path.read_text(encoding="utf-8"))
+    settings_class = next(
+        node for node in tree.body
+        if isinstance(node, ast.ClassDef) and node.name == "Settings"
+    )
+    fields = {
+        node.target.id: ast.literal_eval(node.value)
+        for node in settings_class.body
+        if isinstance(node, ast.AnnAssign)
+        and isinstance(node.target, ast.Name)
+        and node.value is not None
+    }
+    assert fields["payment_service_url"] == (
+        "http://payment-service.shopno-payments.svc.cluster.local:80"
+    )
 
