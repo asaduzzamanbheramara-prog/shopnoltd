@@ -153,6 +153,8 @@ async def send(
         raise HTTPException(status_code=409, detail="mailbox is inactive")
     if len(subject) > 512 or len(body) > 1_000_000:
         raise HTTPException(status_code=413, detail="message content exceeds limits")
+    if "\\r" in subject or "\\n" in subject:
+        raise HTTPException(status_code=422, detail="invalid subject")
     try:
         await asyncio.to_thread(_send_smtp_message, mailbox.full_address, to.strip(), subject, body)
     except ValueError as exc:
