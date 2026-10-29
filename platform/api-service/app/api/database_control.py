@@ -34,6 +34,14 @@ async def require_admin(credentials: HTTPAuthorizationCredentials = Depends(bear
     return token
 
 
+async def require_platform_admin(credentials: HTTPAuthorizationCredentials = Depends(bearer)):
+    """Restrict generic database mutations to the dedicated platform-admin role."""
+    token = await verify_token(credentials.credentials)
+    if "platform_admin" not in set(token.get("roles", [])):
+        raise HTTPException(403, "platform_admin privileges required")
+    return token
+
+
 def _ident(value: str) -> str:
     if not _IDENTIFIER.fullmatch(value):
         raise HTTPException(400, "invalid database identifier")
@@ -225,7 +233,7 @@ async def table_analysis(database: str, schema: str, table: str, _: dict = Depen
 
 
 @router.post("/tables/{database}/{schema}/{table}/rows", status_code=201)
-async def insert_row(database: str, schema: str, table: str, values: dict[str, Any] = Body(...), _: dict = Depends(require_admin)):
+async def insert_row(database: str, schema: str, table: str, values: dict[str, Any] = Body(...), _: dict = Depends(require_platform_admin)):
     capability = resolve_table_capability(database, table, schema)
     if not capability["writable"]:
         raise HTTPException(403, capability.get("protected_reason") or "insert disabled")
@@ -250,7 +258,7 @@ async def insert_row(database: str, schema: str, table: str, values: dict[str, A
 
 
 @router.patch("/tables/{database}/{schema}/{table}/rows")
-async def update_row(database: str, schema: str, table: str, payload: dict[str, Any] = Body(...), _: dict = Depends(require_admin)):
+async def update_row(database: str, schema: str, table: str, payload: dict[str, Any] = Body(...), _: dict = Depends(require_platform_admin)):
     capability = resolve_table_capability(database, table, schema)
     if not capability["writable"]:
         raise HTTPException(403, capability.get("protected_reason") or "update disabled")
@@ -333,7 +341,7 @@ async def import_rows(
     schema: str,
     table: str,
     payload: dict[str, Any] = Body(...),
-    _: dict = Depends(require_admin),
+    _: dict = Depends(require_platform_admin),
 ):
     """Transactional JSON import for explicitly importable writable tables."""
     capability = resolve_table_capability(database, table, schema)
