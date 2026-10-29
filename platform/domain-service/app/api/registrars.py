@@ -15,7 +15,7 @@ from app.core.db import SessionLocal
 from app.core.security import verify_token
 from app.models.models import Domain, Registrar
 from app.schemas.schemas import DomainOut, RegisterDomainIn
-from app.services.billing_service import BillingService, InsufficientFundsError
+from app.services.billing_service import BillingService, IdempotencyConflictError, InsufficientFundsError
 from app.services.registrar_factory import get_adapter
 from fastapi import APIRouter, Depends, Header, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -159,6 +159,8 @@ async def register_domain_user(
         )
     except InsufficientFundsError as e:
         raise HTTPException(402, "Insufficient available wallet funds") from e
+    except IdempotencyConflictError as e:
+        raise HTTPException(409, "Idempotency-Key was already used for a different paid-domain request") from e
     except RuntimeError as e:
         raise HTTPException(502, "Payment charge could not be confirmed; retry with the same Idempotency-Key") from e
 
