@@ -167,6 +167,27 @@ jobs:
       - name: Test domain order idempotency keys
         run: pytest -q tests/test_billing_service.py
 
+  payment-transfer-idempotency-tests:
+    name: Payment transfer idempotency tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: platform/payment-service
+    env:
+      DATABASE_URL: postgresql+asyncpg://test:test@localhost/postgres
+      PYTHONPATH: .:../../shared/libraries/python
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install payment-service test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pytest
+      - name: Test idempotent transfer payload validation
+        run: pytest -q tests/test_transfer_idempotency.py
+
   service-contract-tests:
     name: "${{ matrix.service }} isolated ASGI contract tests"
     runs-on: ubuntu-latest
