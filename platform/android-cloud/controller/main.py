@@ -371,16 +371,21 @@ def recover_sessions() -> None:
             for pod in pods
             if (pod.metadata.labels or {}).get("shopnoltd.dev/session")
         }
-        active_resource_names = {
-            name
-            for session_id in active_session_ids
-            for name in (name_for("aemu", session_id), name_for("agw", session_id))
-        }
         gateway_pods = core.list_namespaced_pod(
             NAMESPACE,
             label_selector="app.kubernetes.io/name=android-cloud-gateway",
             _request_timeout=10,
         ).items
+        tracked_session_ids = active_session_ids | {
+            (gateway_pod.metadata.labels or {}).get("shopnoltd.dev/session")
+            for gateway_pod in gateway_pods
+            if (gateway_pod.metadata.labels or {}).get("shopnoltd.dev/session")
+        }
+        active_resource_names = {
+            name
+            for session_id in tracked_session_ids
+            for name in (name_for("aemu", session_id), name_for("agw", session_id))
+        }
         for gateway_pod in gateway_pods:
             gateway_labels = gateway_pod.metadata.labels or {}
             gateway_session_id = gateway_labels.get("shopnoltd.dev/session")
