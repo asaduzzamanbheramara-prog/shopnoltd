@@ -20,7 +20,7 @@ async function request(path, options = {}) {
 }
 
 export default function DomainRegistration() {
-  const [domain, setDomain] = useState(""); const [years, setYears] = useState(1); const [result, setResult] = useState(null); const [loading, setLoading] = useState(false); const [contact, setContact] = useState(EMPTY_CONTACT); const [showContactForm, setShowContactForm] = useState(false); const [registered, setRegistered] = useState(null);
+  const [domain, setDomain] = useState(""); const [years, setYears] = useState(1); const [result, setResult] = useState(null); const [loading, setLoading] = useState(false); const [contact, setContact] = useState(EMPTY_CONTACT); const [showContactForm, setShowContactForm] = useState(false); const [registered, setRegistered] = useState(null); const [registrationKey, setRegistrationKey] = useState(null);
 
   async function checkAvailability(e) {
     e.preventDefault();
@@ -44,8 +44,10 @@ export default function DomainRegistration() {
     if (!getToken()) { window.location.href = `/login?next=${encodeURIComponent(`/domain-registration?domain=${domain}`)}`; return; }
     setLoading(true); setRegistered(null);
     try {
-      const data = await request("/domains/register", { method: "POST", body: JSON.stringify({ domain, years, contact }) });
-      setRegistered({ type: "success", data }); setShowContactForm(false);
+      const key = registrationKey || crypto.randomUUID();
+      if (!registrationKey) setRegistrationKey(key);
+      const data = await request("/domains/register", { method: "POST", headers: { "Idempotency-Key": key }, body: JSON.stringify({ domain, years, contact }) });
+      setRegistered({ type: "success", data }); setShowContactForm(false); setRegistrationKey(null);
     } catch (err) { setRegistered({ type: "error", message: err.message || "Registration failed. Please try again." }); }
     finally { setLoading(false); }
   }
