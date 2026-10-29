@@ -17,6 +17,37 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
+  gitops-recovery-script-syntax:
+    name: GitOps recovery script syntax and guard checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install YAML parser
+        run: python -m pip install pyyaml
+      - name: Validate guarded Argo recovery script
+        run: |
+          python - <<'PY'
+          import subprocess
+          import yaml
+          from pathlib import Path
+
+          workflow = yaml.safe_load(Path('.github/workflows/self-hosted-k3s-gitops.yml').read_text())
+          jobs = workflow['jobs']
+          step = next(
+              step for job in jobs.values() for step in job.get('steps', [])
+              if step.get('name') == 'Repair migration prerequisite and terminate stale Argo CD operation'
+          )
+          script = step['run']
+          subprocess.run(['bash', '-n'], input=script, text=True, check=True)
+          assert 'operation_revision" = "$GIT_REVISION"' in script
+          assert 'known_retryable_migration' in script
+          assert 'active or unknown pods' in script
+          print('GitOps recovery script parses and contains revision, migration allowlist, and active-pod guards.')
+          PY
+
   python-syntax:
     name: Python syntax validation
     runs-on: ubuntu-latest
