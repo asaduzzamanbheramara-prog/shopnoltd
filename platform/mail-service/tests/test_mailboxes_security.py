@@ -189,3 +189,35 @@ def test_mailbox_listing_requires_admin_authentication():
     parameter = inspect.signature(mailboxes.list_mb).parameters["user"]
     assert isinstance(parameter.default, Depends)
     assert parameter.default.dependency is mailboxes.admin
+
+
+def test_admin_can_assign_existing_mailbox_owner(monkeypatch):
+    from types import SimpleNamespace
+    from app.schemas.schemas import MailboxOwnerIn
+
+    mailbox = SimpleNamespace(
+        id="mailbox-1",
+        full_address="alice@example.test",
+        owner_user_id=None,
+    )
+    session = FakeSession(mailbox)
+    result = run(
+        mailboxes.assign_owner(
+            "mailbox-1",
+            MailboxOwnerIn(owner_user_id="keycloak-subject-1"),
+            user={"tenant_id": "tenant-1"},
+            s=session,
+        )
+    )
+    assert mailbox.owner_user_id == "keycloak-subject-1"
+    assert result["owner_user_id"] == "keycloak-subject-1"
+    assert session.committed is True
+
+
+def test_mailbox_owner_assignment_requires_admin_dependency():
+    import inspect
+    from fastapi.params import Depends
+
+    parameter = inspect.signature(mailboxes.assign_owner).parameters["user"]
+    assert isinstance(parameter.default, Depends)
+    assert parameter.default.dependency is mailboxes.admin

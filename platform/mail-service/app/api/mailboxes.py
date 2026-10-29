@@ -8,9 +8,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import SessionLocal
 from app.core.mailcow import call_mailcow
-from app.core.security import verify_token_admin
+from app.core.security import verify_token, verify_token_admin
 from app.models.models import Domain, Mailbox
-from app.schemas.schemas import MailboxIn
+from app.schemas.schemas import MailboxIn, MailboxOwnerIn
 
 router = APIRouter()
 bearer = HTTPBearer()
@@ -23,6 +23,22 @@ async def db():
 
 async def admin(creds: HTTPAuthorizationCredentials = Depends(bearer)):
     return await verify_token_admin(creds.credentials)
+
+
+async def current_user(creds: HTTPAuthorizationCredentials = Depends(bearer)):
+    return await verify_token(creds.credentials)
+
+
+@router.get("/mine")
+async def list_mine(user=Depends(current_user), s: AsyncSession = Depends(db)):
+    user_id = str(user.get("sub", "")).strip()
+    if not user_id:
+        raise HTTPException(401, "invalid user identity")
+    res = await s.execute(select(Mailbox).where(Mailbox.owner_user_id == user_id))
+    return [
+        {"id": m.id, "address": m.full_address, "quota_mb": m.quota_mb, "active": m.active}
+        for m in res.scalars().all()
+    ]
 
 
 def _require_mailcow_success(response: object) -> None:
@@ -46,6 +62,7 @@ async def add(domain_id: str, body: MailboxIn, user=Depends(admin), s: AsyncSess
     full = f"{body.local_part}@{d.name}"
     mailbox = Mailbox(
         tenant_id=user.get("tenant_id", "default"),
+        owner_user_id=body.owner_user_id,
         domain_id=d.id,
         local_part=body.local_part,
         full_address=full,
@@ -85,6 +102,27 @@ async def add(domain_id: str, body: MailboxIn, user=Depends(admin), s: AsyncSess
         raise HTTPException(502, "mailbox provider provisioning failed") from exc
 
     return {"id": mailbox.id, "address": full, "active": mailbox.active}
+
+
+@router.patch("/{mailbox_id}/owner")
+async def assign_owner(
+    mailbox_id: str,
+    body: MailboxOwnerIn,
+    user=Depends(admin),
+    s: AsyncSession = Depends(db),
+):
+    owner_user_id = body.owner_user_id.strip()
+    if not owner_user_id:
+        raise HTTPException(422, "owner_user_id is required")
+    mailbox = (
+        await s.execute(select(Mailbox).where(Mailbox.id == mailbox_id))
+    ).scalar_one_or_none()
+    if not mailbox:
+        raise HTTPException(404, "mailbox not found")
+    mailbox.owner_user_id = owner_user_id
+    await s.commit()
+    await s.refresh(mailbox)
+    return {"id": mailbox.id, "address": mailbox.full_address, "owner_user_id": mailbox.owner_user_id}
 
 
 @router.get("/{domain_id}")

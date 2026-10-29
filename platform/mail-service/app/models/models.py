@@ -19,6 +19,7 @@ class Mailbox(Base):
     __tablename__ = "mailboxes"
     id = Column(String(64), primary_key=True, default=lambda: str(uuid.uuid4()))
     tenant_id = Column(String(64), nullable=False, index=True)
+    owner_user_id = Column(String(128), nullable=True, index=True)
     domain_id = Column(String(64), nullable=False, index=True)
     local_part = Column(String(64), nullable=False)
     full_address = Column(String(256), unique=True, nullable=False)
