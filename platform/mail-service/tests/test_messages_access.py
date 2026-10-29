@@ -155,3 +155,24 @@ def test_send_endpoint_uses_smtp_after_owner_authorization(monkeypatch):
     assert result == {"ok": True, "from": "alice@example.test", "to": "bob@example.test"}
     assert calls == [("alice@example.test", "bob@example.test", "Test", "Hello")]
 
+def test_send_endpoint_rejects_subject_header_injection(monkeypatch):
+    import asyncio
+    from fastapi import HTTPException
+    from app.api import messages
+
+    mailbox = SimpleNamespace(
+        id="mailbox-1", tenant_id="tenant-1", owner_user_id="user-1",
+        full_address="alice@example.test", active=True,
+    )
+    async def accessible(_mailbox_id, user, _session):
+        messages.ensure_mailbox_access(mailbox, user)
+        return mailbox
+    monkeypatch.setattr(messages, "accessible_mailbox", accessible)
+    with pytest.raises(HTTPException) as caught:
+        asyncio.run(messages.send(
+            from_mailbox_id="mailbox-1", to="bob@example.test",
+            subject="Hello\\r\\nBcc: evil@example.test", body="Hi",
+            user={"sub": "user-1", "tenant_id": "tenant-1"}, s=object(),
+        ))
+    assert caught.value.status_code == 422
+
