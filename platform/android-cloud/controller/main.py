@@ -149,6 +149,7 @@ def persist_session_heartbeat(session: Session) -> None:
                     }
                 }
             },
+            _request_timeout=5,
         )
     except Exception as exc:
         logger.exception("Failed to persist Android Cloud session heartbeat %s", session.session_id)
