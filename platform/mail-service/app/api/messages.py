@@ -21,10 +21,12 @@ async def current_user(creds: HTTPAuthorizationCredentials = Depends(bearer)):
 
 
 def _is_platform_admin(user: dict) -> bool:
-    roles = set(user.get("realm_access", {}).get("roles", []))
-    resource_access = user.get("resource_access", {})
+    realm_access = user.get("realm_access") or {}
+    roles = set(realm_access.get("roles") or [])
+    resource_access = user.get("resource_access") or {}
     for client_roles in resource_access.values():
-        roles.update(client_roles.get("roles", []))
+        if isinstance(client_roles, dict):
+            roles.update(client_roles.get("roles") or [])
     return bool(roles.intersection({"admin", "platform_admin"}))
 
 
