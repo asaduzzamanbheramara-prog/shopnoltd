@@ -8,3 +8,4 @@ class DomainIn(BaseModel):
 class MailboxIn(BaseModel):
     local_part: str
     quota_mb: int = 1024
+    owner_user_id: str | None = None
