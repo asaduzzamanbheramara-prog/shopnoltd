@@ -141,3 +141,33 @@ def test_recover_sessions_queues_old_pods_without_metadata_for_cleanup(monkeypat
     assert len(deleted) == 1
     assert deleted[0].session_id == session_id
 
+def test_session_access_persists_heartbeat(monkeypatch) -> None:
+    session = make_session(last_seen=800)
+    main.sessions[session.session_id] = session
+    monkeypatch.setattr(main.time, "time", lambda: 1000)
+    persisted = []
+    monkeypatch.setattr(main, "persist_session_heartbeat", lambda item: persisted.append((item.session_id, item.last_seen)))
+
+    found = main.get_session_for_user(session.session_id, "user-test")
+
+    assert found is session
+    assert session.last_seen == 1000
+    assert persisted == [(session.session_id, 1000)]
+
+
+def test_session_access_rejects_other_user_without_touching_session(monkeypatch) -> None:
+    session = make_session(last_seen=800)
+    main.sessions[session.session_id] = session
+    persisted = []
+    monkeypatch.setattr(main, "persist_session_heartbeat", lambda item: persisted.append(item))
+
+    from fastapi import HTTPException
+    import pytest
+
+    with pytest.raises(HTTPException) as exc:
+        main.get_session_for_user(session.session_id, "different-user")
+
+    assert exc.value.status_code == 404
+    assert session.last_seen == 800
+    assert persisted == []
+
