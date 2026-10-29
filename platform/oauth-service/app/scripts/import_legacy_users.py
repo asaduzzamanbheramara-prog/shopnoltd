@@ -246,7 +246,26 @@ async def _create_keycloak_user(client, token, row, email_value):
     return {"id": user_id, "email": email_value, "enabled": True}, True, reset_sent
 
 
-async def run(path, apply):
+async def _request_password_reset(client, token, user_id):
+    """Request a short-lived Keycloak password update email for an existing identity."""
+    url = (
+        f"{settings.keycloak_url.rstrip('/')}/admin/realms/"
+        f"{settings.keycloak_realm}/users/{user_id}/execute-actions-email"
+    )
+    response = await client.put(
+        url,
+        params={
+            "lifespan": 1800,
+            "client_id": "shopnoltd-web",
+            "redirect_uri": "https://shopnoltd.dpdns.org/",
+        },
+        headers={"Authorization": f"Bearer {token}"},
+        json=["UPDATE_PASSWORD"],
+    )
+    return response.status_code in (200, 204)
+
+
+async def run(path, apply, send_reset_emails=False):
     rows = parse_dump(path)
     report = {
         "source_rows": len(rows),
@@ -264,6 +283,9 @@ async def run(path, apply):
         "passwords_imported": 0,
         "reset_emails_sent": 0,
         "reset_email_failures": 0,
+        "existing_reset_requested": 0,
+        "existing_reset_failures": 0,
+        "send_reset_emails": bool(send_reset_emails),
         "mode": "apply" if apply else "dry-run",
     }
 
@@ -291,6 +313,7 @@ async def run(path, apply):
         async with engine.begin() as c:
             await c.run_sync(Base.metadata.create_all)
 
+        reset_candidates = []
         async with SessionLocal() as s:
             for r in rows:
                 e = email(r)
@@ -321,6 +344,8 @@ async def run(path, apply):
                     raise RuntimeError(f"identity conflict for {e}: email maps to {u.keycloak_id}, Keycloak maps to {keycloak_id}")
                 if by_kc and by_kc.email != e:
                     raise RuntimeError(f"identity conflict for {e}: Keycloak identity already belongs to {by_kc.email}")
+                if send_reset_emails and not created_kc:
+                    reset_candidates.append((e, keycloak_id))
 
                 if not u:
                     u = UserMirror(
@@ -388,6 +413,18 @@ async def run(path, apply):
 
             await s.commit()
 
+        # Only request resets after identity reconciliation has committed.
+        # A reset failure is reported per account and does not expose credentials.
+        for email_value, keycloak_id in reset_candidates:
+            try:
+                sent = await _request_password_reset(client, token, keycloak_id)
+                if sent:
+                    report["existing_reset_requested"] += 1
+                else:
+                    report["existing_reset_failures"] += 1
+            except httpx.HTTPError:
+                report["existing_reset_failures"] += 1
+
     print(json.dumps(report, indent=2))
     return report
 
@@ -396,5 +433,12 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("dump")
     ap.add_argument("--apply", action="store_true")
+    ap.add_argument(
+        "--send-reset-emails",
+        action="store_true",
+        help="With --apply, request 30-minute password-reset emails for matched existing Keycloak users too",
+    )
     a = ap.parse_args()
-    asyncio.run(run(a.dump, a.apply))
+    if a.send_reset_emails and not a.apply:
+        ap.error("--send-reset-emails requires --apply")
+    asyncio.run(run(a.dump, a.apply, a.send_reset_emails))

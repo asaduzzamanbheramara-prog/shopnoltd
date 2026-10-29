@@ -27,3 +27,40 @@ def test_safe_meta_excludes_credentials_and_kyc():
     }
     meta = safe_meta(row)
     assert meta == {"display_name": "Legacy", "phone": "+8801000000000"}
+
+
+
+def test_reset_email_requires_explicit_apply_flag():
+    # Guard is enforced by the CLI before run() can access Keycloak or a database.
+    import ast
+    from pathlib import Path
+
+    source = Path(__file__).parents[1] / "app" / "scripts" / "import_legacy_users.py"
+    tree = ast.parse(source.read_text())
+    calls = [
+        node for node in ast.walk(tree)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+        and node.func.attr == "error"
+        and node.args
+        and isinstance(node.args[0], ast.Constant)
+        and node.args[0].value == "--send-reset-emails requires --apply"
+    ]
+    assert len(calls) == 1
+
+
+def test_reset_email_helper_uses_short_lifespan():
+    import asyncio
+    from app.scripts.import_legacy_users import _request_password_reset
+
+    class Response:
+        status_code = 204
+
+    class FakeClient:
+        async def put(self, url, **kwargs):
+            assert url.endswith("/users/kc-user-123/execute-actions-email")
+            assert kwargs["params"]["lifespan"] == 1800
+            assert kwargs["json"] == ["UPDATE_PASSWORD"]
+            return Response()
+
+    assert asyncio.run(_request_password_reset(FakeClient(), "test-token", "kc-user-123")) is True
