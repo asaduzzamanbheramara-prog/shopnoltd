@@ -291,7 +291,7 @@ async def update_row(database: str, schema: str, table: str, payload: dict[str, 
 
 
 @router.delete("/tables/{database}/{schema}/{table}/rows")
-async def delete_row(database: str, schema: str, table: str, payload: dict[str, Any] = Body(...), _: dict = Depends(require_admin)):
+async def delete_row(database: str, schema: str, table: str, payload: dict[str, Any] = Body(...), _: dict = Depends(require_platform_admin)):
     capability = resolve_table_capability(database, table, schema)
     if not capability["destructive"]:
         raise HTTPException(403, capability.get("protected_reason") or "delete disabled")
