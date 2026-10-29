@@ -233,7 +233,7 @@ def make_gateway_pod(session: Session) -> client.V1Pod:
 
 def make_service(name: str, selector: dict[str, str], port: int, target: int) -> client.V1Service:
     return client.V1Service(
-        metadata=client.V1ObjectMeta(name=name, namespace=NAMESPACE),
+        metadata=client.V1ObjectMeta(name=name, namespace=NAMESPACE, labels=dict(selector)),
         spec=client.V1ServiceSpec(
             selector=selector,
             ports=[client.V1ServicePort(name="http", port=port, target_port=target)],
@@ -260,6 +260,7 @@ def make_gateway_ingress(session: Session) -> client.V1Ingress:
         metadata=client.V1ObjectMeta(
             name=session.gateway_name,
             namespace=NAMESPACE,
+            labels={"app.kubernetes.io/name": "android-cloud-gateway", "shopnoltd.dev/session": session.session_id},
             annotations={
                 "nginx.ingress.kubernetes.io/use-regex": "true",
                 "nginx.ingress.kubernetes.io/rewrite-target": "/$2",
@@ -370,6 +371,38 @@ def recover_sessions() -> None:
             for pod in pods
             if (pod.metadata.labels or {}).get("shopnoltd.dev/session")
         }
+        gateway_pods = core.list_namespaced_pod(
+            NAMESPACE,
+            label_selector="app.kubernetes.io/name=android-cloud-gateway",
+            _request_timeout=10,
+        ).items
+        tracked_session_ids = active_session_ids | {
+            (gateway_pod.metadata.labels or {}).get("shopnoltd.dev/session")
+            for gateway_pod in gateway_pods
+            if (gateway_pod.metadata.labels or {}).get("shopnoltd.dev/session")
+        }
+        active_resource_names = {
+            name
+            for session_id in tracked_session_ids
+            for name in (name_for("aemu", session_id), name_for("agw", session_id))
+        }
+        for gateway_pod in gateway_pods:
+            gateway_labels = gateway_pod.metadata.labels or {}
+            gateway_session_id = gateway_labels.get("shopnoltd.dev/session")
+            if gateway_session_id and gateway_session_id not in active_session_ids:
+                logger.warning("Queueing orphan Android Cloud gateway Pod %s for cleanup", gateway_pod.metadata.name)
+                sessions.setdefault(
+                    gateway_session_id,
+                    Session(
+                        session_id=gateway_session_id,
+                        user_id="",
+                        emulator_name=name_for("aemu", gateway_session_id),
+                        gateway_name=gateway_pod.metadata.name,
+                        created_at=0,
+                        last_seen=0,
+                        ttl_seconds=0,
+                    ),
+                )
         for pod in pods:
             metadata = pod.metadata
             labels = metadata.labels or {}
@@ -419,16 +452,22 @@ def recover_sessions() -> None:
         # A controller crash can leave Services/Ingresses behind after their
         # emulator Pods have already disappeared. Reconcile only resources
         # explicitly labelled as Android Cloud session resources.
-        services = core.list_namespaced_service(
-            NAMESPACE, label_selector="shopnoltd.dev/session", _request_timeout=10
-        ).items
-        ingresses = networking.list_namespaced_ingress(
-            NAMESPACE, label_selector="shopnoltd.dev/session", _request_timeout=10
-        ).items
+        services = core.list_namespaced_service(NAMESPACE, _request_timeout=10).items
+        ingresses = networking.list_namespaced_ingress(NAMESPACE, _request_timeout=10).items
         for resource in [*services, *ingresses]:
             labels = resource.metadata.labels or {}
             session_id = labels.get("shopnoltd.dev/session")
-            if not session_id or session_id in active_session_ids:
+            resource_name = resource.metadata.name or ""
+            if not session_id:
+                # Older session Services/Ingresses predate labels. Their generated
+                # names use aemu-/agw- plus the session ID prefix.
+                if resource_name in active_resource_names:
+                    continue
+                if resource_name.startswith(("aemu-", "agw-")):
+                    session_id = resource_name.split("-", 1)[1]
+                else:
+                    continue
+            if session_id in active_session_ids:
                 continue
             sessions.setdefault(
                 session_id,
@@ -572,68 +611,64 @@ def install_apk_file(session: Session, source_file: Path, original_name: str) ->
         raise HTTPException(status_code=413, detail="apk_file_too_large")
 
     with source_file.open("rb") as handle:
-        if handle.read(4) != b"PK\\x03\\x04":
+        header = handle.read(4)
+        if header != b"PK\x03\x04":
             raise HTTPException(status_code=400, detail="invalid_apk_file")
 
-    apk_path = f"/data/shopnoltd-upload-{secrets.token_hex(12)}.apk"
-    try:
-        def transfer_and_install() -> tuple[str, str, int]:
-            exec_stream = None
+        apk_path = f"/data/shopnoltd-upload-{secrets.token_hex(12)}.apk"
+        upload_command = ["/bin/sh", "-c", f"cat > {apk_path}"]
+        try:
+            exec_stream = stream(
+                core.connect_get_namespaced_pod_exec,
+                session.emulator_name,
+                NAMESPACE,
+                command=upload_command,
+                container="emulator",
+                stderr=True,
+                stdin=True,
+                stdout=True,
+                tty=False,
+                _preload_content=False,
+                binary=True,
+            )
             try:
-                exec_stream = stream(
-                    core.connect_get_namespaced_pod_exec,
-                    session.emulator_name,
-                    NAMESPACE,
-                    command=["/bin/sh", "-c", f"cat > {apk_path}"],
-                    container="emulator",
-                    stderr=True,
-                    stdin=True,
-                    stdout=True,
-                    tty=False,
-                    _preload_content=False,
-                    binary=True,
-                )
-                with source_file.open("rb") as handle:
-                    while True:
-                        exec_stream.update(timeout=2)
-                        chunk = handle.read(1024 * 1024)
-                        if chunk:
-                            exec_stream.write_stdin(chunk)
-                        else:
-                            break
+                while exec_stream.is_open():
+                    exec_stream.update(timeout=2)
+                    chunk = handle.read(1024 * 1024)
+                    if chunk:
+                        exec_stream.write_stdin(chunk)
+                    else:
+                        break
+                exec_stream.close()
             finally:
-                if exec_stream is not None:
+                if exec_stream.is_open():
                     exec_stream.close()
 
-            install_output = run_adb(
-                session,
-                f"adb -e install -r -t {apk_path} 2>&1; "
-                f'rc=$?; rm -f {apk_path}; printf "\\n__SHOPNO_RC__%s\\n" "$rc"',
-            )
             digest = hashlib.sha256()
             with source_file.open("rb") as digest_file:
                 for chunk in iter(lambda: digest_file.read(1024 * 1024), b""):
                     digest.update(chunk)
-            return install_output, digest.hexdigest(), source_file.stat().st_size
 
-        # This function is called by install_apk_file_async in a worker thread,
-        # keeping Kubernetes streaming and ADB installation off the event loop.
-        raw, file_digest, file_size = transfer_and_install()
-        ok, detail = adb_result(raw)
-        if not ok:
-            raise HTTPException(status_code=400, detail=f"apk_install_failed:{detail[-1500:]}")
-        return {
-            "status": "installed",
-            "filename": original_name,
-            "size": file_size,
-            "sha256": file_digest,
-            "output": detail[-1500:],
-        }
-    finally:
-        try:
-            exec_emulator(session, ["/bin/sh", "-c", f"rm -f {apk_path}"])
-        except Exception:
-            logger.warning("Failed to remove temporary APK from emulator session %s", session.session_id)
+            raw = run_adb(
+                session,
+                f"adb -e install -r -t {apk_path} 2>&1; "
+                f'rc=$?; rm -f {apk_path}; printf "\\n__SHOPNO_RC__%s\\n" "$rc"',
+            )
+            ok, detail = adb_result(raw)
+            if not ok:
+                raise HTTPException(status_code=400, detail=f"apk_install_failed:{detail[-1500:]}")
+            return {
+                "status": "installed",
+                "filename": original_name,
+                "size": source_file.stat().st_size,
+                "sha256": digest.hexdigest(),
+                "output": detail[-1500:],
+            }
+        finally:
+            try:
+                exec_emulator(session, ["/bin/sh", "-c", f"rm -f {apk_path}"])
+            except Exception:
+                pass
 
 
 async def install_apk_file_async(session: Session, source_file: Path, original_name: str) -> dict[str, Any]:
