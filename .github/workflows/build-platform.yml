@@ -513,4 +513,22 @@ jobs:
           git commit \
             -m "chore(gitops): promote affected images for ${GITHUB_SHA}"
 
-          git push origin HEAD:main
+          # Image promotions may race with another CI run or an operator's
+          # main-branch commit. Rebase only when the remote advanced; never
+          # force-push or resolve manifest conflicts automatically.
+          for attempt in 1 2 3; do
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+
+            echo "Promotion push failed (attempt ${attempt}/3); fetching current main and rebasing."
+            git fetch origin main
+            if ! git rebase origin/main; then
+              git rebase --abort || true
+              echo "ERROR: promotion conflicts with newer main; refusing to overwrite GitOps changes."
+              exit 1
+            fi
+          done
+
+          echo "ERROR: could not push image promotion after three safe attempts."
+          exit 1
