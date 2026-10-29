@@ -123,6 +123,29 @@ def name_for(prefix: str, session_id: str) -> str:
     return f"{prefix}-{session_id[:16].lower()}"
 
 
+def session_annotations(session: Session) -> dict[str, str]:
+    """Persist enough non-secret session state to recover after controller restart."""
+    return {
+        "shopnoltd.dev/user-id": session.user_id,
+        "shopnoltd.dev/created-at": str(session.created_at),
+        "shopnoltd.dev/last-seen": str(session.last_seen),
+        "shopnoltd.dev/ttl-seconds": str(session.ttl_seconds),
+    }
+
+
+def persist_session_heartbeat(session: Session) -> None:
+    """Persist last activity so a controller restart cannot reset or lose the TTL."""
+    try:
+        core.patch_namespaced_pod(
+            session.emulator_name,
+            NAMESPACE,
+            {"metadata": {"annotations": {"shopnoltd.dev/last-seen": str(session.last_seen)}}},
+        )
+    except ApiException as exc:
+        logger.exception("Failed to persist Android Cloud session heartbeat %s", session.session_id)
+        raise HTTPException(status_code=503, detail="android_session_state_unavailable") from exc
+
+
 def make_emulator_pod(session: Session) -> client.V1Pod:
     container = client.V1Container(
         name="emulator",
@@ -148,12 +171,12 @@ def make_emulator_pod(session: Session) -> client.V1Pod:
             name=session.emulator_name,
             namespace=NAMESPACE,
             labels={"app.kubernetes.io/name": "android-emulator", "shopnoltd.dev/session": session.session_id},
+            annotations=session_annotations(session),
         ),
         spec=client.V1PodSpec(
             restart_policy="Never",
             automount_service_account_token=False,
             containers=[container],
-            image_pull_secrets=[client.V1LocalObjectReference(name="ghcr-pull-secret")],
             volumes=[
                 client.V1Volume(name="android-data", empty_dir=client.V1EmptyDirVolumeSource(size_limit="6Gi")),
                 client.V1Volume(
@@ -188,12 +211,12 @@ def make_gateway_pod(session: Session) -> client.V1Pod:
             name=session.gateway_name,
             namespace=NAMESPACE,
             labels={"app.kubernetes.io/name": "android-cloud-gateway", "shopnoltd.dev/session": session.session_id},
+            annotations=session_annotations(session),
         ),
         spec=client.V1PodSpec(
             restart_policy="Always",
             automount_service_account_token=False,
             containers=[container],
-            image_pull_secrets=[client.V1LocalObjectReference(name="ghcr-pull-secret")],
         ),
     )
 
@@ -309,8 +332,72 @@ async def session_cleanup_loop() -> None:
         await asyncio.to_thread(cleanup_expired)
 
 
+def recover_sessions() -> None:
+    """Rebuild in-memory ownership/TTL state from emulator Pod metadata.
+
+    Old Pods without recoverable metadata are treated as orphaned and queued
+    for cleanup; their sessions were already inaccessible after a controller
+    restart because the old controller kept state only in memory.
+    """
+    with sessions_lock:
+        pods = core.list_namespaced_pod(
+            NAMESPACE,
+            label_selector="app.kubernetes.io/name=android-emulator",
+        ).items
+        for pod in pods:
+            metadata = pod.metadata
+            labels = metadata.labels or {}
+            session_id = labels.get("shopnoltd.dev/session")
+            if not session_id:
+                continue
+            annotations = metadata.annotations or {}
+            try:
+                user_id = annotations["shopnoltd.dev/user-id"]
+                created_at = float(annotations["shopnoltd.dev/created-at"])
+                last_seen = float(annotations["shopnoltd.dev/last-seen"])
+                ttl_seconds = int(annotations["shopnoltd.dev/ttl-seconds"])
+                if not user_id or ttl_seconds < 1:
+                    raise ValueError("invalid persisted session metadata")
+            except (KeyError, TypeError, ValueError):
+                logger.warning("Queueing unrecoverable Android Cloud session %s for cleanup", session_id)
+                sessions[session_id] = Session(
+                    session_id=session_id,
+                    user_id="",
+                    emulator_name=metadata.name,
+                    gateway_name=name_for("agw", session_id),
+                    created_at=0,
+                    last_seen=0,
+                    ttl_seconds=0,
+                )
+                continue
+
+            session = Session(
+                session_id=session_id,
+                user_id=user_id,
+                emulator_name=metadata.name,
+                gateway_name=name_for("agw", session_id),
+                created_at=created_at,
+                last_seen=last_seen,
+                ttl_seconds=ttl_seconds,
+            )
+            try:
+                core.read_namespaced_pod(session.gateway_name, NAMESPACE)
+                core.read_namespaced_service(session.gateway_name, NAMESPACE)
+                networking.read_namespaced_ingress(session.gateway_name, NAMESPACE)
+            except ApiException:
+                logger.warning("Queueing incomplete Android Cloud session %s for cleanup", session_id)
+                session.last_seen = 0
+                session.ttl_seconds = 0
+            sessions[session_id] = session
+
+    # Expired and incomplete resources are cleaned now; failed deletions remain
+    # in the session map so the periodic sweep can retry them.
+    cleanup_expired()
+
+
 @asynccontextmanager
 async def lifespan(_: FastAPI):
+    await asyncio.to_thread(recover_sessions)
     task = asyncio.create_task(session_cleanup_loop())
     try:
         yield
@@ -346,7 +433,13 @@ def get_session_for_user(session_id: str, user_id: str) -> Session:
         session = sessions.get(session_id)
         if not session or session.user_id != user_id:
             raise HTTPException(status_code=404, detail="session_not_found")
+        previous_last_seen = session.last_seen
         session.last_seen = time.time()
+        try:
+            persist_session_heartbeat(session)
+        except HTTPException:
+            session.last_seen = previous_last_seen
+            raise
         return session
 
 
@@ -639,6 +732,7 @@ async def create_session(body: CreateSessionIn, user_id: str = Depends(current_u
         if existing:
             existing.ttl_seconds = body.ttl_seconds
             existing.last_seen = time.time()
+            persist_session_heartbeat(existing)
             return response_for(existing)
         if len(sessions) >= MAX_SESSIONS:
             raise HTTPException(status_code=429, detail="android_cloud_capacity_exhausted")
