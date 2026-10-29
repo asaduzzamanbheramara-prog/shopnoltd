@@ -14,6 +14,19 @@ router = APIRouter()
 bearer = HTTPBearer()
 
 
+def _validate_existing_transfer(existing, body: "TransferIn", currency: str, amount: Decimal) -> None:
+    """Reject reuse of one idempotency key for a different transfer payload."""
+    meta = existing.meta or {}
+    existing_amount = abs(Decimal(str(existing.amount)))
+    if (
+        meta.get("to") != body.to_user_id
+        or str(existing.currency).upper() != currency
+        or existing_amount != amount
+        or meta.get("note") != body.note
+    ):
+        raise HTTPException(409, "Idempotency key was already used for a different transfer")
+
+
 async def db():
     async with SessionLocal() as s:
         yield s
@@ -45,6 +58,7 @@ async def internal_transfer(body: TransferIn, user=Depends(current_user), s: Asy
         )
     )
     if existing:
+        _validate_existing_transfer(existing, body, currency, amount)
         return TxOut(
             id=str(existing.id), type=existing.type, method=existing.method, status=existing.status,
             amount=float(existing.amount), fee=float(existing.fee), currency=existing.currency,
@@ -82,6 +96,7 @@ async def internal_transfer(body: TransferIn, user=Depends(current_user), s: Asy
         )
     )
     if existing:
+        _validate_existing_transfer(existing, body, currency, amount)
         await s.rollback()
         return TxOut(
             id=str(existing.id), type=existing.type, method=existing.method, status=existing.status,
@@ -125,6 +140,7 @@ async def internal_transfer(body: TransferIn, user=Depends(current_user), s: Asy
         )
         if not existing:
             raise
+        _validate_existing_transfer(existing, body, currency, amount)
         return TxOut(
             id=str(existing.id), type=existing.type, method=existing.method, status=existing.status,
             amount=float(existing.amount), fee=float(existing.fee), currency=existing.currency,
