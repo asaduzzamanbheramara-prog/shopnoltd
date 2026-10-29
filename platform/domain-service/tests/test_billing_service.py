@@ -1,10 +1,8 @@
-from decimal import Decimal
-
 from app.services.billing_service import BillingService
 
 
-def key(user_id="user-1", operation="renew", request_key="request-0001", domain="example.com", years=1, currency="USD", amount=Decimal("12.00")):
-    return BillingService._idempotency_key(user_id, operation, request_key, domain, years, currency, amount)
+def key(user_id="user-1", operation="renew", request_key="request-0001"):
+    return BillingService._idempotency_key(user_id, operation, request_key)
 
 
 def test_same_request_reuses_same_charge_key():
@@ -21,8 +19,3 @@ def test_registration_and_renewal_are_separate_operations():
 
 def test_idempotency_is_scoped_to_the_authenticated_user():
     assert key(user_id="user-1") != key(user_id="user-2")
-
-
-def test_same_request_key_is_independent_of_payload_and_payment_service_validates_payload():
-    assert key(amount=Decimal("12.00")) == key(amount=Decimal("24.00"))
-    assert key(years=1) == key(years=2)
