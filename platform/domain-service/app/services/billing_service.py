@@ -17,8 +17,20 @@ class BillingService:
         self.timeout = timeout
 
     @staticmethod
-    def _idempotency_key(domain: str, years: int, currency: str, amount: Decimal) -> str:
-        raw = f"domain:{domain.strip().lower()}:{int(years)}:{currency.upper()}:{amount}"
+    def _idempotency_key(
+        user_id: str,
+        operation: str,
+        request_key: str,
+        domain: str,
+        years: int,
+        currency: str,
+        amount: Decimal,
+    ) -> str:
+        """Scope retries to one user's explicit operation and exact order payload."""
+        raw = (
+            f"domain:{user_id}:{operation}:{request_key.strip()}:"
+            f"{domain.strip().lower()}:{int(years)}:{currency.upper()}:{amount}"
+        )
         return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
     async def check_wallet_balance(self, user_token: str, currency: str, required_amount: Decimal) -> dict:
@@ -34,9 +46,20 @@ class BillingService:
             return {"balance": balance, "sufficient": balance >= required_amount}
 
     async def charge_for_domain(
-        self, user_token: str, currency: str, amount: Decimal, domain: str, years: int
+        self,
+        user_token: str,
+        currency: str,
+        amount: Decimal,
+        domain: str,
+        years: int,
+        *,
+        user_id: str,
+        operation: str,
+        request_key: str,
     ) -> dict:
-        key = self._idempotency_key(domain, years, currency, amount)
+        key = self._idempotency_key(
+            user_id, operation, request_key, domain, years, currency, amount
+        )
         async with httpx.AsyncClient(timeout=self.timeout) as c:
             resp = await c.post(
                 f"{self.payment_service_url}/api/v1/transfers",
