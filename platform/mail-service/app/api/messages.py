@@ -1,8 +1,15 @@
+import asyncio
+import smtplib
+import ssl
+from email.message import EmailMessage
+from email.utils import parseaddr
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.db import SessionLocal
 from app.core.security import verify_token
 from app.models.models import Mailbox, Message
@@ -102,6 +109,36 @@ async def get(msg_id: str, user=Depends(current_user), s: AsyncSession = Depends
     }
 
 
+def _send_smtp_message(from_addr: str, to_addr: str, subject: str, body: str) -> None:
+    """Send one message using configured authenticated SMTP; fail closed if incomplete."""
+    host = settings.smtp_host.strip()
+    envelope_from = settings.smtp_envelope_from.strip()
+    username = settings.smtp_username.strip()
+    password = settings.smtp_password
+    if not host or not envelope_from:
+        raise RuntimeError("SMTP delivery is not configured")
+    if bool(username) != bool(password):
+        raise RuntimeError("SMTP credentials are incomplete")
+    if parseaddr(envelope_from)[1] != envelope_from or "@" not in envelope_from:
+        raise RuntimeError("SMTP envelope sender is invalid")
+    if parseaddr(to_addr)[1] != to_addr or "@" not in to_addr or any(ch in to_addr for ch in "\\r\\n,;"):
+        raise ValueError("recipient address is invalid")
+
+    message = EmailMessage()
+    message["From"] = from_addr
+    message["To"] = to_addr
+    message["Subject"] = subject
+    message.set_content(body)
+
+    with smtplib.SMTP(host, settings.smtp_port, timeout=settings.smtp_timeout_seconds) as client:
+        client.ehlo()
+        client.starttls(context=ssl.create_default_context())
+        client.ehlo()
+        if username:
+            client.login(username, password)
+        client.send_message(message, from_addr=envelope_from, to_addrs=[to_addr])
+
+
 @router.post("/send")
 async def send(
     from_mailbox_id: str,
@@ -114,15 +151,15 @@ async def send(
     mailbox = await accessible_mailbox(from_mailbox_id, user, s)
     if not mailbox.active:
         raise HTTPException(status_code=409, detail="mailbox is inactive")
-    from app.core.mailcow import call_mailcow
-
+    if len(subject) > 512 or len(body) > 1_000_000:
+        raise HTTPException(status_code=413, detail="message content exceeds limits")
+    if "\\r" in subject or "\\n" in subject:
+        raise HTTPException(status_code=422, detail="invalid subject")
     try:
-        await call_mailcow(
-            "add/message",
-            {"from": mailbox.full_address, "to": to, "subject": subject, "plain": body},
-        )
+        await asyncio.to_thread(_send_smtp_message, mailbox.full_address, to.strip(), subject, body)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail="invalid recipient address") from exc
     except Exception as exc:
-        # Provider responses may contain internal addresses or configuration;
-        # never forward them to an untrusted caller.
-        raise HTTPException(status_code=502, detail="mail provider send failed") from exc
-    return {"ok": True, "from": mailbox.full_address, "to": to}
+        # Provider exceptions can contain credentials, relay details, or addresses.
+        raise HTTPException(status_code=502, detail="SMTP delivery failed") from exc
+    return {"ok": True, "from": mailbox.full_address, "to": to.strip()}
