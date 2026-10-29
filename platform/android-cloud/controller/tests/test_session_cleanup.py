@@ -74,9 +74,11 @@ def test_cleanup_retains_session_when_resource_deletion_fails(monkeypatch) -> No
 
     main.cleanup_expired()
     assert main.sessions[session.session_id] is session
+    assert session.session_id not in main.stopping_sessions
 
     main.cleanup_expired()
     assert session.session_id not in main.sessions
+    assert session.session_id not in main.stopping_sessions
     assert attempts == [session, session]
 
 
@@ -226,4 +228,23 @@ def test_readyz_checks_kubernetes_without_blocking_async_handler(monkeypatch) ->
 
     assert response.status_code == 200
     assert response.body == b'{"status":"ready","capacity":1,"kvm_required":true}'
+
+def test_cleanup_does_not_hold_session_lock_during_kubernetes_delete(monkeypatch) -> None:
+    session = make_session(last_seen=600)
+    main.sessions[session.session_id] = session
+    monkeypatch.setattr(main.time, "time", lambda: 1000)
+    lock_checks = []
+
+    def check_lock_is_available(item):
+        acquired = main.sessions_lock.acquire(blocking=False)
+        lock_checks.append(acquired)
+        if acquired:
+            main.sessions_lock.release()
+
+    monkeypatch.setattr(main, "delete_resources", check_lock_is_available)
+
+    main.cleanup_expired()
+
+    assert lock_checks == [True]
+    assert session.session_id not in main.sessions
 
