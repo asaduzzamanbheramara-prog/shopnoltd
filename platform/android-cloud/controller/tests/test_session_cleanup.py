@@ -89,3 +89,13 @@ def test_create_session_honors_requested_ttl(monkeypatch) -> None:
     session = main.sessions[result["session_id"]]
     assert session.ttl_seconds == 600
     assert result["expires_at"] == 1600
+
+
+def test_dynamic_session_pods_do_not_reference_namespace_pull_secret() -> None:
+    session = make_session(last_seen=1000)
+
+    emulator = main.make_emulator_pod(session)
+    gateway = main.make_gateway_pod(session)
+
+    assert emulator.spec.image_pull_secrets in (None, [])
+    assert gateway.spec.image_pull_secrets in (None, [])
