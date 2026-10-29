@@ -186,6 +186,7 @@ def test_recovery_queues_services_without_emulator_pods(monkeypatch) -> None:
     session_id = "session-orphan-123456789"
     resource = type("Resource", (), {})()
     resource.metadata = type("Metadata", (), {})()
+    resource.metadata.name = main.name_for("agw", session_id)
     resource.metadata.labels = {"shopnoltd.dev/session": session_id}
     service = resource
     ingress = resource
