@@ -320,18 +320,28 @@ def delete_resources(session: Session) -> None:
 
 
 def cleanup_expired() -> None:
-    """Delete expired sessions; retain failed deletions so the next sweep can retry."""
+    """Delete expired sessions without holding the shared lock during API calls."""
     now = time.time()
     with sessions_lock:
+        candidates = []
         for session_id, session in list(sessions.items()):
-            if now - session.last_seen <= session.ttl_seconds:
+            if now - session.last_seen <= session.ttl_seconds or session_id in stopping_sessions:
                 continue
-            try:
-                delete_resources(session)
-            except Exception:
-                logger.exception("Failed to clean up expired Android Cloud session %s", session_id)
-                continue
-            sessions.pop(session_id, None)
+            stopping_sessions.add(session_id)
+            candidates.append((session_id, session))
+
+    for session_id, session in candidates:
+        try:
+            delete_resources(session)
+        except Exception:
+            logger.exception("Failed to clean up expired Android Cloud session %s", session_id)
+            with sessions_lock:
+                stopping_sessions.discard(session_id)
+            continue
+        with sessions_lock:
+            if sessions.get(session_id) is session:
+                sessions.pop(session_id, None)
+            stopping_sessions.discard(session_id)
 
 
 async def session_cleanup_loop() -> None:
