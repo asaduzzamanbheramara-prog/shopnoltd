@@ -9,17 +9,20 @@ any money; list/get claimed to "query the zones table" against a model
 
 from datetime import datetime, timedelta
 from decimal import Decimal
+import hashlib
+import json
 
 from app.core.config import settings
 from app.core.db import SessionLocal
 from app.core.security import verify_token
-from app.models.models import Domain, Registrar
+from app.models.models import Domain, DomainOrder, Registrar
 from app.schemas.schemas import DomainOut, RegisterDomainIn
 from app.services.billing_service import BillingService, IdempotencyConflictError, InsufficientFundsError
 from app.services.registrar_factory import get_adapter
 from fastapi import APIRouter, Depends, Header, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter()
@@ -64,6 +67,88 @@ async def _get_registrar(s: AsyncSession) -> Registrar:
 
 def _tld_of(domain: str) -> str:
     return domain.rsplit(".", 1)[-1]
+
+
+
+def _request_fingerprint(payload: dict) -> str:
+    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def _idempotency_key_hash(key: str) -> str:
+    return hashlib.sha256(key.strip().encode("utf-8")).hexdigest()
+
+
+async def _load_order(
+    s: AsyncSession, *, user_id: str, operation: str, key: str, fingerprint: str
+) -> DomainOrder | None:
+    order = await s.scalar(
+        select(DomainOrder).where(
+            DomainOrder.user_id == user_id,
+            DomainOrder.operation == operation,
+            DomainOrder.idempotency_key_hash == _idempotency_key_hash(key),
+        )
+    )
+    if order and order.request_fingerprint != fingerprint:
+        raise HTTPException(409, "Idempotency-Key was already used for a different domain request")
+    return order
+
+
+async def _create_order(
+    s: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str,
+    operation: str,
+    key: str,
+    fingerprint: str,
+    domain: str,
+    years: int,
+    price: Decimal,
+    currency: str,
+) -> DomainOrder:
+    order = DomainOrder(
+        tenant_id=tenant_id,
+        user_id=user_id,
+        operation=operation,
+        idempotency_key_hash=_idempotency_key_hash(key),
+        request_fingerprint=fingerprint,
+        domain=domain,
+        years=years,
+        price=price,
+        currency=currency,
+        status="pending_charge",
+    )
+    s.add(order)
+    try:
+        await s.commit()
+        await s.refresh(order)
+        return order
+    except IntegrityError:
+        await s.rollback()
+        existing = await _load_order(
+            s, user_id=user_id, operation=operation, key=key, fingerprint=fingerprint
+        )
+        if existing:
+            return existing
+        raise
+
+
+def _raise_order_reconciliation(order: DomainOrder) -> None:
+    raise HTTPException(
+        409,
+        f"Domain order {order.id} requires reconciliation (status={order.status}); "
+        "no additional charge or registrar mutation was attempted.",
+    )
+
+
+async def _completed_domain(s: AsyncSession, order: DomainOrder) -> Domain | None:
+    if order.status != "completed":
+        return None
+    return await s.scalar(
+        select(Domain).where(Domain.user_id == order.user_id, Domain.name == order.domain)
+    )
+
 
 
 def _domain_out(d: Domain) -> DomainOut:
@@ -132,24 +217,51 @@ async def register_domain_user(
     if "." not in domain:
         raise HTTPException(400, "Enter a full domain, e.g. example.com")
 
+    fingerprint = _request_fingerprint({
+        "domain": domain,
+        "years": body.years,
+        "contact": body.contact.model_dump(),
+    })
+    order = await _load_order(
+        s, user_id=str(user["sub"]), operation="register",
+        key=idempotency_key, fingerprint=fingerprint,
+    )
+    if order:
+        completed = await _completed_domain(s, order)
+        if completed:
+            return _domain_out(completed)
+        if order.status in {"charged", "registrar_in_progress", "reconciliation_required"}:
+            _raise_order_reconciliation(order)
+
     registrar = await _get_registrar(s)
     adapter = get_adapter(registrar)
 
-    # Re-check availability server-side right before charging — never trust
-    # a client-supplied "it was available a minute ago".
-    try:
-        avail = await adapter.check_availability(domain)
-    except (RuntimeError, ValueError) as e:
-        raise HTTPException(502, f"Registrar check failed: {e}") from e
-    if not avail["available"]:
-        raise HTTPException(409, f"{domain} is no longer available")
-
-    try:
-        pricing = await adapter.get_pricing(_tld_of(domain), years=body.years)
-    except (RuntimeError, ValueError) as e:
-        raise HTTPException(502, f"Registrar pricing lookup failed: {e}") from e
-    price = Decimal(str(avail.get("premium_price") or pricing["price"]))
-    currency = pricing["currency"]
+    if order is None:
+        try:
+            avail = await adapter.check_availability(domain)
+        except (RuntimeError, ValueError) as e:
+            raise HTTPException(502, "Registrar availability check failed") from e
+        if not avail["available"]:
+            raise HTTPException(409, f"{domain} is no longer available")
+        try:
+            pricing = await adapter.get_pricing(_tld_of(domain), years=body.years)
+        except (RuntimeError, ValueError) as e:
+            raise HTTPException(502, "Registrar pricing lookup failed") from e
+        price = Decimal(str(avail.get("premium_price") or pricing["price"]))
+        currency = pricing["currency"]
+        order = await _create_order(
+            s, tenant_id=user.get("tenant_id", "default"), user_id=str(user["sub"]),
+            operation="register", key=idempotency_key, fingerprint=fingerprint,
+            domain=domain, years=body.years, price=price, currency=currency,
+        )
+        completed = await _completed_domain(s, order)
+        if completed:
+            return _domain_out(completed)
+        if order.status != "pending_charge":
+            _raise_order_reconciliation(order)
+    else:
+        price = Decimal(str(order.price))
+        currency = order.currency
 
     billing = _billing()
     try:
@@ -160,24 +272,38 @@ async def register_domain_user(
     except InsufficientFundsError as e:
         raise HTTPException(402, "Insufficient available wallet funds") from e
     except IdempotencyConflictError as e:
-        raise HTTPException(409, "Idempotency-Key was already used for a different paid-domain request") from e
+        raise HTTPException(409, "Idempotency-Key conflicts with a different payment request") from e
     except RuntimeError as e:
-        raise HTTPException(502, "Payment charge could not be confirmed; retry with the same Idempotency-Key") from e
+        # Leave pending_charge so the same key can safely reconcile an ambiguous
+        # payment response through the payment service's own idempotency record.
+        raise HTTPException(502, f"Payment status is unconfirmed for order {order.id}; retry with the same Idempotency-Key") from e
 
+    order.charge_transaction_id = str(charge.get("id") or "")
+    order.status = "charged"
+    order.failure_code = None
+    await s.commit()
+
+    # Mark the external side effect as in progress before calling the registrar.
+    # If the process dies during the call, retries are blocked for reconciliation
+    # rather than risking a second registration or a second charge.
+    order.status = "registrar_in_progress"
+    await s.commit()
     try:
+        avail_now = await adapter.check_availability(domain)
+        if not avail_now["available"]:
+            order.status = "reconciliation_required"
+            order.failure_code = "domain_unavailable_after_charge"
+            await s.commit()
+            _raise_order_reconciliation(order)
         result = await adapter.register(domain, body.years, body.contact.model_dump())
+    except HTTPException:
+        raise
     except (RuntimeError, ValueError) as e:
-        # Money has already left the user's wallet at this point and the
-        # registrar call failed. This MUST be refunded — there is currently
-        # no automated compensating-transfer path here (payment-service's
-        # /transfers is caller-authenticated, and this service has no
-        # credential for the platform wallet to transfer back from). Until
-        # that's built, this needs a manual admin refund. Failing loudly
-        # rather than silently eating the charge.
+        order.status = "reconciliation_required"
+        order.failure_code = "registrar_call_failed"
+        await s.commit()
         raise HTTPException(
-            502,
-            f"Registration failed AFTER payment was charged (tx {charge.get('id')}). "
-            f"This requires a manual refund — registrar error: {e}",
+            502, f"Registration outcome for order {order.id} requires reconciliation; no retry charge was made."
         ) from e
 
     record = Domain(
@@ -190,74 +316,19 @@ async def register_domain_user(
         currency=currency,
         status="active",
         order_id=result.get("order_id"),
-        charge_transaction_id=charge.get("id"),
+        charge_transaction_id=order.charge_transaction_id,
         expires_at=datetime.utcnow() + timedelta(days=365 * body.years),
     )
+    order.registrar_order_id = str(result.get("order_id") or "")
+    order.status = "completed"
+    order.failure_code = None
     s.add(record)
     await s.commit()
     await s.refresh(record)
     return _domain_out(record)
 
 
-@router.post("/domains/{domain}/renew", response_model=DomainOut)
-async def renew_domain_user(
-    domain: str,
-    years: int = 1,
-    idempotency_key: str = Header(..., alias="Idempotency-Key", min_length=8, max_length=128),
-    user_and_token=Depends(current_user),
-    s: AsyncSession = Depends(db),
-):
-    user, token = user_and_token
-    domain = domain.strip().lower()
-
-    res = await s.execute(
-        select(Domain).where(Domain.name == domain, Domain.user_id == user["sub"])
-    )
-    record = res.scalar_one_or_none()
-    if not record:
-        raise HTTPException(404, "Domain not found in your account")
-
-    registrar = await _get_registrar(s)
-    adapter = get_adapter(registrar)
-
-    try:
-        pricing = await adapter.get_pricing(_tld_of(domain), years=years)
-    except (RuntimeError, ValueError) as e:
-        raise HTTPException(502, f"Registrar pricing lookup failed: {e}") from e
-    price = Decimal(str(pricing["price"]))
-    currency = pricing["currency"]
-
-    billing = _billing()
-    try:
-        charge = await billing.charge_for_domain(
-            token, currency, price, domain, years,
-            user_id=str(user["sub"]), operation="renew", request_key=idempotency_key,
-        )
-    except InsufficientFundsError as e:
-        raise HTTPException(402, "Insufficient available wallet funds") from e
-    except IdempotencyConflictError as e:
-        raise HTTPException(409, "Idempotency-Key was already used for a different paid-domain request") from e
-    except RuntimeError as e:
-        raise HTTPException(502, "Payment charge could not be confirmed; retry with the same Idempotency-Key") from e
-
-    try:
-        await adapter.renew(domain, years)
-    except (RuntimeError, ValueError) as e:
-        raise HTTPException(
-            502,
-            f"Renewal failed AFTER payment was charged (tx {charge.get('id')}). "
-            f"This requires a manual refund — registrar error: {e}",
-        ) from e
-
-    record.years += years
-    record.expires_at = (record.expires_at or datetime.utcnow()) + timedelta(days=365 * years)
-    record.status = "active"
-    await s.commit()
-    await s.refresh(record)
-    return _domain_out(record)
-
-
-@router.get("/domains", response_model=list[DomainOut])
+9987@router.get("/domains", response_model=list[DomainOut])
 async def list_user_domains(user_and_token=Depends(current_user), s: AsyncSession = Depends(db)):
     user, _ = user_and_token
     res = await s.execute(select(Domain).where(Domain.user_id == user["sub"]))
