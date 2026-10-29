@@ -150,7 +150,7 @@ def persist_session_heartbeat(session: Session) -> None:
                 }
             },
         )
-    except ApiException as exc:
+    except Exception as exc:
         logger.exception("Failed to persist Android Cloud session heartbeat %s", session.session_id)
         raise HTTPException(status_code=503, detail="android_session_state_unavailable") from exc
 
