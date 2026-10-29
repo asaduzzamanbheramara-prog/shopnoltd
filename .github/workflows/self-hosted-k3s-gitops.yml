@@ -213,6 +213,30 @@ jobs:
               --dry-run=client -o yaml | kubectl -n shopno-mail apply -f -
           fi
 
+      - name: Provision optional mail SMTP relay credentials
+        shell: bash
+        env:
+          MAIL_SMTP_USERNAME: ${{ secrets.MAIL_SMTP_USERNAME }}
+          MAIL_SMTP_PASSWORD: ${{ secrets.MAIL_SMTP_PASSWORD }}
+          MAIL_SMTP_ENVELOPE_FROM: ${{ secrets.MAIL_SMTP_ENVELOPE_FROM }}
+        run: |
+          set -euo pipefail
+          if [ -z "${MAIL_SMTP_ENVELOPE_FROM:-}" ]; then
+            echo 'MAIL_SMTP_ENVELOPE_FROM is not configured; preserving any existing SMTP secret and keeping outbound mail fail-closed.'
+            exit 0
+          fi
+          if [ -n "${MAIL_SMTP_USERNAME:-}" ] && [ -z "${MAIL_SMTP_PASSWORD:-}" ] ||
+             [ -z "${MAIL_SMTP_USERNAME:-}" ] && [ -n "${MAIL_SMTP_PASSWORD:-}" ]; then
+            echo 'ERROR: MAIL_SMTP_USERNAME and MAIL_SMTP_PASSWORD must either both be set or both be empty.'
+            exit 1
+          fi
+          kubectl -n shopno-mail create secret generic mail-service-smtp \
+            --from-literal=SMTP_USERNAME="${MAIL_SMTP_USERNAME:-}" \
+            --from-literal=SMTP_PASSWORD="${MAIL_SMTP_PASSWORD:-}" \
+            --from-literal=SMTP_ENVELOPE_FROM="$MAIL_SMTP_ENVELOPE_FROM" \
+            --dry-run=client -o yaml | kubectl -n shopno-mail apply -f -
+          echo 'Mail SMTP secret reconciled without printing secret values.'
+
       - name: Verify or restore repository-defined root Argo CD Application
         shell: bash
         run: |
