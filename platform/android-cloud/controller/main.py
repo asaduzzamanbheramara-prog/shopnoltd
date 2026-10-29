@@ -139,7 +139,14 @@ def persist_session_heartbeat(session: Session) -> None:
         core.patch_namespaced_pod(
             session.emulator_name,
             NAMESPACE,
-            {"metadata": {"annotations": {"shopnoltd.dev/last-seen": str(session.last_seen)}}},
+            {
+                "metadata": {
+                    "annotations": {
+                        "shopnoltd.dev/last-seen": str(session.last_seen),
+                        "shopnoltd.dev/ttl-seconds": str(session.ttl_seconds),
+                    }
+                }
+            },
         )
     except ApiException as exc:
         logger.exception("Failed to persist Android Cloud session heartbeat %s", session.session_id)
@@ -730,9 +737,16 @@ async def create_session(body: CreateSessionIn, user_id: str = Depends(current_u
     with sessions_lock:
         existing = next((item for item in sessions.values() if item.user_id == user_id), None)
         if existing:
+            previous_ttl = existing.ttl_seconds
+            previous_last_seen = existing.last_seen
             existing.ttl_seconds = body.ttl_seconds
             existing.last_seen = time.time()
-            persist_session_heartbeat(existing)
+            try:
+                persist_session_heartbeat(existing)
+            except HTTPException:
+                existing.ttl_seconds = previous_ttl
+                existing.last_seen = previous_last_seen
+                raise
             return response_for(existing)
         if len(sessions) >= MAX_SESSIONS:
             raise HTTPException(status_code=429, detail="android_cloud_capacity_exhausted")
