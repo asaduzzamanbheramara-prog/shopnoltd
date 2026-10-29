@@ -15,7 +15,7 @@ from app.core.db import SessionLocal
 from app.core.security import verify_token
 from app.models.models import Domain, Registrar
 from app.schemas.schemas import DomainOut, RegisterDomainIn
-from app.services.billing_service import BillingService
+from app.services.billing_service import BillingService, InsufficientFundsError
 from app.services.registrar_factory import get_adapter
 from fastapi import APIRouter, Depends, Header, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -152,17 +152,15 @@ async def register_domain_user(
     currency = pricing["currency"]
 
     billing = _billing()
-    balance = await billing.check_wallet_balance(token, currency, price)
-    if not balance["sufficient"]:
-        raise HTTPException(
-            402,
-            f"Insufficient {currency} wallet balance: need {price}, have {balance['balance']}",
+    try:
+        charge = await billing.charge_for_domain(
+            token, currency, price, domain, body.years,
+            user_id=str(user["sub"]), operation="register", request_key=idempotency_key,
         )
-
-    charge = await billing.charge_for_domain(
-        token, currency, price, domain, body.years,
-        user_id=str(user["sub"]), operation="register", request_key=idempotency_key,
-    )
+    except InsufficientFundsError as e:
+        raise HTTPException(402, "Insufficient available wallet funds") from e
+    except RuntimeError as e:
+        raise HTTPException(502, "Payment charge could not be confirmed; retry with the same Idempotency-Key") from e
 
     try:
         result = await adapter.register(domain, body.years, body.contact.model_dump())
@@ -234,10 +232,15 @@ async def renew_domain_user(
             402,
             f"Insufficient {currency} wallet balance: need {price}, have {balance['balance']}",
         )
-    charge = await billing.charge_for_domain(
-        token, currency, price, domain, years,
-        user_id=str(user["sub"]), operation="renew", request_key=idempotency_key,
-    )
+    try:
+        charge = await billing.charge_for_domain(
+            token, currency, price, domain, years,
+            user_id=str(user["sub"]), operation="renew", request_key=idempotency_key,
+        )
+    except InsufficientFundsError as e:
+        raise HTTPException(402, "Insufficient available wallet funds") from e
+    except RuntimeError as e:
+        raise HTTPException(502, "Payment charge could not be confirmed; retry with the same Idempotency-Key") from e
 
     try:
         await adapter.renew(domain, years)
