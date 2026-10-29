@@ -5,7 +5,7 @@ Default is dry-run. --apply performs an idempotent reconciliation:
 * existing Keycloak identities keep their real Keycloak UUID;
 * missing Keycloak identities are created without importing legacy passwords;
 * new identities receive a temporary random password and UPDATE_PASSWORD
-  action, and a reset email is requested;
+  action; reset emails are sent only when --send-reset-emails is explicitly set;
 * legacy balances/passwords/tokens/secrets are never imported;
 * unmatched records are never represented by synthetic identities.
 """
@@ -204,6 +204,7 @@ async def _find_keycloak_user(client, token, email_value):
 
 
 async def _create_keycloak_user(client, token, row, email_value):
+    """Create an identity without sending email; reset delivery is explicit opt-in."""
     url = f"{settings.keycloak_url.rstrip('/')}/admin/realms/{settings.keycloak_realm}/users"
     first_name = first(row, {"first_name", "firstname", "given_name"}) or ""
     last_name = first(row, {"last_name", "lastname", "family_name"}) or ""
@@ -234,16 +235,7 @@ async def _create_keycloak_user(client, token, row, email_value):
             raise RuntimeError(f"Keycloak created {email_value} but returned no identity")
         user_id = existing["id"]
 
-    reset_sent = False
-    reset = await client.put(
-        f"{url}/{user_id}/execute-actions-email",
-        params={"lifespan": 86400, "client_id": "shopnoltd-web", "redirect_uri": "https://shopnoltd.dpdns.org/"},
-        headers={"Authorization": f"Bearer {token}"},
-        json=["UPDATE_PASSWORD"],
-    )
-    if reset.status_code in (204, 200):
-        reset_sent = True
-    return {"id": user_id, "email": email_value, "enabled": True}, True, reset_sent
+    return {"id": user_id, "email": email_value, "enabled": True}, True, False
 
 
 async def _request_password_reset(client, token, user_id):
@@ -329,10 +321,8 @@ async def run(path, apply, send_reset_emails=False):
                     kc, created_kc, reset_sent = await _create_keycloak_user(client, token, r, e)
                     if created_kc:
                         report["keycloak_created"] += 1
-                    if reset_sent:
-                        report["reset_emails_sent"] += 1
-                    else:
-                        report["reset_email_failures"] += 1
+                    # Sending reset emails is deferred until identity/profile
+                    # reconciliation commits and only happens with explicit opt-in.
                 else:
                     report["keycloak_matched"] += 1
 
@@ -344,8 +334,8 @@ async def run(path, apply, send_reset_emails=False):
                     raise RuntimeError(f"identity conflict for {e}: email maps to {u.keycloak_id}, Keycloak maps to {keycloak_id}")
                 if by_kc and by_kc.email != e:
                     raise RuntimeError(f"identity conflict for {e}: Keycloak identity already belongs to {by_kc.email}")
-                if send_reset_emails and not created_kc:
-                    reset_candidates.append((e, keycloak_id))
+                if send_reset_emails:
+                    reset_candidates.append((e, keycloak_id, created_kc))
 
                 if not u:
                     u = UserMirror(
@@ -415,15 +405,21 @@ async def run(path, apply, send_reset_emails=False):
 
         # Only request resets after identity reconciliation has committed.
         # A reset failure is reported per account and does not expose credentials.
-        for email_value, keycloak_id in reset_candidates:
+        for email_value, keycloak_id, created_kc in reset_candidates:
             try:
                 sent = await _request_password_reset(client, token, keycloak_id)
+            except httpx.HTTPError:
+                sent = False
+            if created_kc:
+                if sent:
+                    report["reset_emails_sent"] += 1
+                else:
+                    report["reset_email_failures"] += 1
+            else:
                 if sent:
                     report["existing_reset_requested"] += 1
                 else:
                     report["existing_reset_failures"] += 1
-            except httpx.HTTPError:
-                report["existing_reset_failures"] += 1
 
     print(json.dumps(report, indent=2))
     return report
@@ -436,7 +432,7 @@ if __name__ == "__main__":
     ap.add_argument(
         "--send-reset-emails",
         action="store_true",
-        help="With --apply, request 30-minute password-reset emails for matched existing Keycloak users too",
+        help="With --apply, explicitly request 30-minute password-reset emails for newly created and matched Keycloak users",
     )
     a = ap.parse_args()
     if a.send_reset_emails and not a.apply:
