@@ -23,10 +23,14 @@ def make_session(*, last_seen: float, ttl_seconds: int = 300) -> main.Session:
 
 def setup_function() -> None:
     main.sessions.clear()
+    main.provisioning_users.clear()
+    main.stopping_sessions.clear()
 
 
 def teardown_function() -> None:
     main.sessions.clear()
+    main.provisioning_users.clear()
+    main.stopping_sessions.clear()
 
 
 def test_cleanup_keeps_sessions_inside_their_ttl(monkeypatch) -> None:
@@ -107,6 +111,8 @@ def test_recover_sessions_restores_unexpired_session(monkeypatch) -> None:
         "shopnoltd.dev/ttl-seconds": "300",
     }
     monkeypatch.setattr(main.core, "list_namespaced_pod", lambda *a, **k: type("Pods", (), {"items": [pod]})())
+    monkeypatch.setattr(main.core, "list_namespaced_service", lambda *a, **k: type("Services", (), {"items": []})())
+    monkeypatch.setattr(main.networking, "list_namespaced_ingress", lambda *a, **k: type("Ingresses", (), {"items": []})())
     monkeypatch.setattr(main.core, "read_namespaced_pod", lambda *a, **k: object())
     monkeypatch.setattr(main.core, "read_namespaced_service", lambda *a, **k: object())
     monkeypatch.setattr(main.networking, "read_namespaced_ingress", lambda *a, **k: object())
@@ -131,6 +137,8 @@ def test_recover_sessions_queues_old_pods_without_metadata_for_cleanup(monkeypat
     pod.metadata.labels = {"shopnoltd.dev/session": session_id}
     pod.metadata.annotations = {}
     monkeypatch.setattr(main.core, "list_namespaced_pod", lambda *a, **k: type("Pods", (), {"items": [pod]})())
+    monkeypatch.setattr(main.core, "list_namespaced_service", lambda *a, **k: type("Services", (), {"items": []})())
+    monkeypatch.setattr(main.networking, "list_namespaced_ingress", lambda *a, **k: type("Ingresses", (), {"items": []})())
     deleted = []
     monkeypatch.setattr(main, "delete_resources", lambda item: deleted.append(item))
     monkeypatch.setattr(main.time, "time", lambda: 1000)
@@ -148,7 +156,7 @@ def test_session_access_persists_heartbeat(monkeypatch) -> None:
     persisted = []
     monkeypatch.setattr(main, "persist_session_heartbeat", lambda item: persisted.append((item.session_id, item.last_seen)))
 
-    found = main.get_session_for_user(session.session_id, "user-test")
+    found = asyncio.run(main.get_session_for_user(session.session_id, "user-test"))
 
     assert found is session
     assert session.last_seen == 1000
@@ -165,9 +173,30 @@ def test_session_access_rejects_other_user_without_touching_session(monkeypatch)
     import pytest
 
     with pytest.raises(HTTPException) as exc:
-        main.get_session_for_user(session.session_id, "different-user")
+        asyncio.run(main.get_session_for_user(session.session_id, "different-user"))
 
     assert exc.value.status_code == 404
     assert session.last_seen == 800
     assert persisted == []
+
+
+def test_recovery_queues_services_without_emulator_pods(monkeypatch) -> None:
+    session_id = "session-orphan-123456789"
+    resource = type("Resource", (), {})()
+    resource.metadata = type("Metadata", (), {})()
+    resource.metadata.labels = {"shopnoltd.dev/session": session_id}
+    service = resource
+    ingress = resource
+    monkeypatch.setattr(main.core, "list_namespaced_pod", lambda *a, **k: type("Pods", (), {"items": []})())
+    monkeypatch.setattr(main.core, "list_namespaced_service", lambda *a, **k: type("Services", (), {"items": [service]})())
+    monkeypatch.setattr(main.networking, "list_namespaced_ingress", lambda *a, **k: type("Ingresses", (), {"items": [ingress]})())
+    deleted = []
+    monkeypatch.setattr(main, "delete_resources", lambda item: deleted.append(item))
+    monkeypatch.setattr(main.time, "time", lambda: 1000)
+
+    main.recover_sessions()
+
+    assert session_id not in main.sessions
+    assert len(deleted) == 1
+    assert deleted[0].session_id == session_id
 
