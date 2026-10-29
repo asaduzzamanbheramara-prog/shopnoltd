@@ -19,3 +19,9 @@ def test_registration_and_renewal_are_separate_operations():
 
 def test_idempotency_is_scoped_to_the_authenticated_user():
     assert key(user_id="user-1") != key(user_id="user-2")
+
+def test_payment_service_endpoint_is_configured():
+    from app.core.config import settings
+
+    assert settings.payment_service_url.rstrip("/").endswith(":80")
+
