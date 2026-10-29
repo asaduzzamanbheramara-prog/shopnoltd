@@ -21,12 +21,13 @@ async def current_user(creds: HTTPAuthorizationCredentials = Depends(bearer)):
 
 
 def _is_platform_admin(user: dict) -> bool:
+    # Only realm roles and this service's own client roles are authoritative;
+    # an unrelated client's role named "admin" must not grant mailbox access.
     realm_access = user.get("realm_access") or {}
     roles = set(realm_access.get("roles") or [])
     resource_access = user.get("resource_access") or {}
-    for client_roles in resource_access.values():
-        if isinstance(client_roles, dict):
-            roles.update(client_roles.get("roles") or [])
+    client_access = resource_access.get("mail-service") or {}
+    roles.update(client_access.get("roles") or [])
     return bool(roles.intersection({"admin", "platform_admin"}))
 
 
