@@ -79,6 +79,29 @@ The phone performs Android app execution and device-side video encoding. The PC 
 
 ### Phase 0 — compatibility and safety (no production changes)
 
+#### Verified local test results (2026-10-31)
+
+The first Windows-to-Realme connectivity check has been completed:
+
+- Device: Realme RMX3511 / RE87BAL1, Android 13.
+- Wireless ADB pairing and direct TCP connection succeeded on the private LAN.
+- `adb devices -l` showed both a direct TCP serial and an ADB mDNS alias for the same physical phone; these are not two devices.
+- scrcpy 5.0.1 installed successfully on the Windows host.
+- Local screen mirroring and mouse/keyboard input both work.
+- The default full-resolution stream was usable but noticeably laggy.
+- A reduced stream using `--max-size=1024 --max-fps=30 --video-bit-rate=4M` improved responsiveness, but was not fully smooth. The scrcpy log reported a 464x1024 encoded texture after downscaling.
+- The scrcpy log reported Direct3D 11 rendering and D3D11 video decoding on the Windows host.
+
+This validates only local ADB + scrcpy compatibility. It does **not** validate a persistent bridge agent, browser streaming, WebRTC transport, multi-user leasing, session cleanup, or production readiness. The phone's dynamic LAN address and ADB pairing material must not be committed to repository documentation.
+
+Remaining Phase 0 checks:
+
+- Compare Wi-Fi performance with a USB-connected baseline.
+- Measure latency, dropped frames, phone CPU/RAM, battery temperature, and host resource use during a representative app workload.
+- Test reconnect after Wi-Fi interruption and after host/phone restart.
+- Confirm stable operation while charging and under normal thermal conditions.
+- Keep the ADB endpoint private; never expose it through router port forwarding or public ingress.
+
 - Confirm the Windows ADB connection can reconnect after phone/PC restart without exposing ADB beyond the private LAN.
 - Confirm the phone remains reachable while charging, screen locked/unlocked, and under normal thermal conditions.
 - Measure idle and active phone RAM, CPU, battery temperature, and network latency.
