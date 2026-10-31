@@ -103,6 +103,14 @@ jobs:
           assert.doesNotMatch(pricing, /<link rel="canonical" href="https:\/\/shopnoltd\.dpdns\.org\/"\s*\/>/)
           console.log('SEO HTML checks passed for homepage and pricing route.')
           NODE
+      - name: Upload Android staging static-site artifact
+        if: github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: shopnoltd-web-portal-dist-${{ github.sha }}
+          path: platform/web-portal/dist/
+          if-no-files-found: error
+          retention-days: 3
 
   migration-shape:
     name: Payment migration validation
