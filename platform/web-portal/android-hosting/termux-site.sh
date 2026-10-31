@@ -57,11 +57,9 @@ deploy() {
   test -s "$target/index.html"
   local temporary_link="$SITE_DIR/.current-$release"
   ln -s "$target" "$temporary_link"
-  if [[ -e "$SITE_DIR/current" || -L "$SITE_DIR/current" ]]; then
-    mv -Tf "$temporary_link" "$SITE_DIR/current"
-  else
-    mv "$temporary_link" "$SITE_DIR/current"
-  fi
+  # ln -sfn replaces the old symlink without requiring GNU mv -T on Android.
+  ln -sfn "$target" "$SITE_DIR/current"
+  rm -f "$temporary_link"
 
   require_nginx
   nginx -t -c "$NGINX_CONF" -p "$STATE_DIR/"
