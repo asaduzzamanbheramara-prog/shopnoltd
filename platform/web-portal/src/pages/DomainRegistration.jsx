@@ -2,7 +2,8 @@ import { useState } from "react";
 
 // All browser domain traffic stays on the unified API origin. The API service
 // forwards to the owning domain-service and preserves its authorization rules.
-const API_BASE = import.meta.env.VITE_API_URL || "https://api.shopnoltd.dpdns.org/api/v1";
+const API_ORIGIN = (import.meta.env.VITE_API_URL || "https://api.shopnoltd.dpdns.org").replace(/\/+$/, "").replace(/\/api\/v1$/, "");
+const API_BASE = `${API_ORIGIN}/api/v1`;
 const COUNTRIES = ["US", "BD", "GB", "CA", "AU", "DE", "FR", "IN", "SG", "AE"];
 const EMPTY_CONTACT = { first_name: "", last_name: "", address1: "", city: "", state: "", postal_code: "", country: "US", phone: "", email: "" };
 
@@ -24,7 +25,7 @@ export default function DomainRegistration() {
 
   async function checkAvailability(e) {
     e.preventDefault();
-    const value = domain.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\/.*$/, "");
+    const value = domain.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\/.*$/, "").replace(/[^a-z0-9.-]/g, "");
     if (!value || !value.includes(".")) { setResult({ type: "error", message: "Enter a valid domain, for example example.com" }); return; }
     setDomain(value); setLoading(true); setResult(null); setShowContactForm(false); setRegistered(null);
     try {
