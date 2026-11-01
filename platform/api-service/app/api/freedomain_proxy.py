@@ -8,7 +8,7 @@ from app.core.security import verify_token
 
 router = APIRouter()
 bearer = HTTPBearer()
-FREE_DOMAIN = "http://freedomain-service.shopno-platform.svc.cluster.local:8080"
+FREE_DOMAIN = "http://freedomain-service.shopno-platform.svc.cluster.local:80"
 
 
 async def token(creds: HTTPAuthorizationCredentials = Depends(bearer)) -> str:
