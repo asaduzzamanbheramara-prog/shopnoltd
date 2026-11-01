@@ -8,7 +8,7 @@ from app.core.security import verify_token
 
 router = APIRouter()
 bearer = HTTPBearer()
-FREE_DOMAIN = "http://freedomain-service.shopno-platform.svc.cluster.local:8080"
+FREE_DOMAIN = "http://freedomain-service.shopno-platform.svc.cluster.local:80"
 
 
 async def token(creds: HTTPAuthorizationCredentials = Depends(bearer)) -> str:
@@ -19,8 +19,10 @@ async def token(creds: HTTPAuthorizationCredentials = Depends(bearer)) -> str:
     return creds.credentials
 
 
-async def proxy(request: Request, path: str, raw_token: str):
-    headers = {"Accept": "application/json", "Authorization": f"Bearer {raw_token}"}
+async def proxy(request: Request, path: str, raw_token: str | None = None):
+    headers = {"Accept": "application/json"}
+    if raw_token:
+        headers["Authorization"] = f"Bearer {raw_token}"
     if request.headers.get("content-type"):
         headers["Content-Type"] = request.headers["content-type"]
     try:
@@ -48,8 +50,9 @@ async def mine(request: Request, raw_token: str = Depends(token)):
 
 
 @router.api_route("/free-domains/check-availability", methods=["GET"])
-async def availability(request: Request, raw_token: str = Depends(token)):
-    return await proxy(request, "/api/v1/domains/check-availability", raw_token)
+async def availability(request: Request):
+    # Public, like the paid-domain availability checker.
+    return await proxy(request, "/api/v1/domains/check-availability")
 
 
 @router.api_route("/free-domains/{dom_id}", methods=["DELETE"])

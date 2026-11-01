@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 
-const API_BASE = import.meta.env.VITE_API_URL || 'https://api.shopnoltd.dpdns.org/api/v1'
+const API_ORIGIN = (import.meta.env.VITE_API_URL || "https://api.shopnoltd.dpdns.org").replace(/\/+$/, "").replace(/\/api\/v1$/, "");
+const API_BASE = `${API_ORIGIN}/api/v1`;
 
 function token() { return localStorage.getItem('shopno_token') }
 async function request(path, options = {}) {

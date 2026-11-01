@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 
 const DOMAIN_API =
   import.meta.env.VITE_DOMAIN_API_URL ||
-  '/api/v1/domains'
+  '/api/v1/free-domains'
 
 const DOMAIN_SUFFIX = '.shopnoltd.dpdns.org'
 const MAX_LABEL_LENGTH = 63
