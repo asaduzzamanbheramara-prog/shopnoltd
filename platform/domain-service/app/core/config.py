@@ -32,6 +32,11 @@ class Settings(BaseSettings):
     namecheap_client_ip: str = ""
     namecheap_sandbox: bool = True
 
+    # Registrar row (registrars.name) used for paid domain operations.
+    default_registrar_name: str = "namecheap"
+    # Wallet that receives domain purchase payments. Set via env/Secret.
+    platform_wallet_user_id: str = ""
+
     @property
     def cors_origins_list(self):
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
