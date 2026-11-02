@@ -49,7 +49,7 @@ jobs:
           (( age >= 0 && age <= 172800 )) || { echo "::error::Backup is future-dated or older than 48 hours."; exit 1; }
           echo "PASS: backup timestamp is fresh ($((age / 3600)) hours old)."
 
-      - name: Verify checksums and decrypt all recovery files
+      - name: Verify checksums and decrypt database and Kubernetes Secrets
         shell: bash
         env:
           BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
@@ -59,7 +59,7 @@ jobs:
           cd backup-source/backup
           umask 077
           echo "::add-mask::$BACKUP_ENCRYPTION_KEY"
-          for file in latest.dump.enc latest.kubernetes-secrets.json.enc;
+          for file in latest.dump.enc latest.kubernetes-secrets.json.enc; do
             expected="$(awk 'NR==1 {print $1}' "$file.sha256")"
             actual="$(sha256sum "$file" | awk '{print $1}')"
             [[ "$expected" =~ ^[[:xdigit:]]{64}$ && "$expected" == "$actual" ]] || { echo "::error::Checksum mismatch: $file"; exit 1; }
