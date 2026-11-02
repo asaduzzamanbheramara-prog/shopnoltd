@@ -1,4 +1,4 @@
-name: PostgreSQL and Kubernetes secrets encrypted backup
+name: Shopnoltd encrypted disaster-recovery backup
 
 on:
   schedule:
@@ -9,51 +9,45 @@ permissions:
   contents: write
 
 concurrency:
-  group: postgres-backup
+  group: shopnoltd-disaster-recovery-backup
   cancel-in-progress: false
 
 env:
   POSTGRES_NAMESPACE: shopno-data
   POSTGRES_DEPLOYMENT: postgres
   BACKUP_BRANCH: database-backups
-  BACKUP_WORKDIR: /tmp/shopnoltd-postgres-backup
-  MAX_USED_PERCENT: '80'
+  BACKUP_WORKDIR: /tmp/shopnoltd-dr-backup
   K3S_STATE_ARCHIVE: /mnt/c/Users/asadu/k3s-state-backup.tgz
   CLOUDFLARED_DIR: /mnt/c/Users/asadu/.cloudflared
 
 jobs:
   backup:
-    name: Dump, encrypt, verify and store database plus Kubernetes secrets
+    name: Create, encrypt, verify and publish recovery snapshots
     runs-on: [self-hosted, linux]
-    timeout-minutes: 40
+    timeout-minutes: 60
     steps:
-      - name: Checkout main source
+      - name: Checkout source
         uses: actions/checkout@v4
         with:
           fetch-depth: 1
 
-      - name: Verify backup environment
+      - name: Check runner and cluster access
         shell: bash
         env:
           BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
         run: |
           set -euo pipefail
-          command -v kubectl >/dev/null
-          command -v openssl >/dev/null
-          command -v sha256sum >/dev/null
-          command -v git >/dev/null
-          command -v python3 >/dev/null
-          test -n "${BACKUP_ENCRYPTION_KEY:-}" || { echo 'BACKUP_ENCRYPTION_KEY GitHub secret is required'; exit 1; }
-          test -f "${KUBECONFIG:-$HOME/.kube/config}" || { echo 'KUBECONFIG is not configured on the runner'; exit 1; }
+          umask 077
+          for cmd in kubectl openssl sha256sum python3 tar git; do command -v "$cmd" >/dev/null; done
+          test -n "${BACKUP_ENCRYPTION_KEY:-}" || { echo "::error::BACKUP_ENCRYPTION_KEY is missing."; exit 1; }
+          test -f "${KUBECONFIG:-$HOME/.kube/config}" || { echo "::error::KUBECONFIG is missing."; exit 1; }
           kubectl cluster-info >/dev/null
           kubectl -n "$POSTGRES_NAMESPACE" get deployment "$POSTGRES_DEPLOYMENT" >/dev/null
           kubectl auth can-i list secrets --all-namespaces | grep -qx yes
+          bash ./ops/backup/check-postgres-storage.sh
+          echo "::add-mask::$BACKUP_ENCRYPTION_KEY"
 
-      - name: Check PostgreSQL storage capacity before dump
-        shell: bash
-        run: bash ./ops/backup/check-postgres-storage.sh
-
-      - name: Dump database and export Kubernetes secrets
+      - name: Export PostgreSQL and Kubernetes Secrets
         shell: bash
         env:
           BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
@@ -62,47 +56,38 @@ jobs:
           umask 077
           rm -rf "$BACKUP_WORKDIR"
           mkdir -p "$BACKUP_WORKDIR"
-          echo "::add-mask::$BACKUP_ENCRYPTION_KEY"
-
           timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
-          raw_db="$BACKUP_WORKDIR/shopnoltd-${timestamp}.dump"
-          encrypted_db="$BACKUP_WORKDIR/latest.dump.enc"
-          raw_secrets="$BACKUP_WORKDIR/kubernetes-secrets-${timestamp}.json"
-          encrypted_secrets="$BACKUP_WORKDIR/latest.kubernetes-secrets.json.enc"
+          raw_db="$BACKUP_WORKDIR/database.dump"
+          raw_secrets="$BACKUP_WORKDIR/kubernetes-secrets.json"
 
           kubectl -n "$POSTGRES_NAMESPACE" exec "deployment/$POSTGRES_DEPLOYMENT" -- \
             sh -c 'export PGPASSWORD="$POSTGRES_PASSWORD"; pg_dump --format=custom --no-owner --no-acl --username="$POSTGRES_USER" --dbname="$POSTGRES_DB"' \
             > "$raw_db"
           test -s "$raw_db"
 
-          # Export every Kubernetes Secret object in every namespace.
-          # This includes base64-encoded secret data; plaintext exists only in
-          # this mode-600 temporary file and is encrypted immediately.
           kubectl get secrets --all-namespaces -o json > "$raw_secrets"
-          test -s "$raw_secrets"
           python3 - "$raw_secrets" <<'PY'
           import json, sys
           with open(sys.argv[1], encoding="utf-8") as f:
-              doc = json.load(f)
-          items = doc.get("items", [])
-          if doc.get("kind") != "List" or not items:
+              data = json.load(f)
+          items = data.get("items", [])
+          if data.get("kind") != "List" or not items:
               raise SystemExit("Kubernetes Secret export is empty or malformed")
-          print(f"Exported {len(items)} Kubernetes Secret objects across namespaces.")
+          print(f"Exported {len(items)} Kubernetes Secret objects.")
           PY
 
-          openssl enc -aes-256-cbc -pbkdf2 -iter 600000 -salt \
-            -in "$raw_db" -out "$encrypted_db" -pass env:BACKUP_ENCRYPTION_KEY
-          openssl enc -aes-256-cbc -pbkdf2 -iter 600000 -salt \
-            -in "$raw_secrets" -out "$encrypted_secrets" -pass env:BACKUP_ENCRYPTION_KEY
+          openssl enc -aes-256-cbc -pbkdf2 -iter 600000 -salt -in "$raw_db" \
+            -out "$BACKUP_WORKDIR/latest.dump.enc" -pass env:BACKUP_ENCRYPTION_KEY
+          openssl enc -aes-256-cbc -pbkdf2 -iter 600000 -salt -in "$raw_secrets" \
+            -out "$BACKUP_WORKDIR/latest.kubernetes-secrets.json.enc" -pass env:BACKUP_ENCRYPTION_KEY
           rm -f "$raw_db" "$raw_secrets"
+          cd "$BACKUP_WORKDIR"
+          sha256sum latest.dump.enc > latest.dump.enc.sha256
+          sha256sum latest.kubernetes-secrets.json.enc > latest.kubernetes-secrets.json.enc.sha256
+          printf '%s\n' "$timestamp" > timestamp.txt
+          printf '%s\n' "$GITHUB_SHA" > source-revision.txt
 
-          (cd "$BACKUP_WORKDIR" && sha256sum latest.dump.enc > latest.dump.enc.sha256)
-          (cd "$BACKUP_WORKDIR" && sha256sum latest.kubernetes-secrets.json.enc > latest.kubernetes-secrets.json.enc.sha256)
-          printf '%s\n' "$timestamp" > "$BACKUP_WORKDIR/timestamp.txt"
-          printf '%s\n' "$GITHUB_SHA" > "$BACKUP_WORKDIR/source-revision.txt"
-
-
-      - name: Package K3s and Windows Cloudflare recovery material
+      - name: Package K3s and Cloudflare recovery credentials
         shell: bash
         env:
           BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
@@ -110,82 +95,75 @@ jobs:
           set -euo pipefail
           umask 077
           stage="$BACKUP_WORKDIR/recovery-material"
-          mkdir -p "$stage"
-          status="$BACKUP_WORKDIR/recovery-material-status.txt"
+          mkdir -p "$stage/cloudflared"
 
-          if [[ -f "$K3S_STATE_ARCHIVE" && -s "$K3S_STATE_ARCHIVE" ]]; then
-            install -m 600 "$K3S_STATE_ARCHIVE" "$stage/k3s-state-backup.tgz"
-            echo 'K3S_STATE_ARCHIVE=present' >> "$status"
-          else
-            echo 'K3S_STATE_ARCHIVE=missing' >> "$status"
-            echo "::error::K3s recovery archive was not found at the configured Windows-mounted path."
+          if [[ ! -s "$K3S_STATE_ARCHIVE" ]]; then
+            echo "::error::K3s recovery archive not found at configured path: $K3S_STATE_ARCHIVE"
             exit 1
           fi
+          install -m 600 "$K3S_STATE_ARCHIVE" "$stage/k3s-state-backup.tgz"
+          tar -tzf "$stage/k3s-state-backup.tgz" > "$BACKUP_WORKDIR/k3s-archive-list.txt"
+          grep -Eq '(^|/)token$' "$BACKUP_WORKDIR/k3s-archive-list.txt" || { echo "::error::K3s archive lacks server token."; exit 1; }
+          grep -Eq '(^|/)db/state.db$' "$BACKUP_WORKDIR/k3s-archive-list.txt" || { echo "::error::K3s archive lacks state DB."; exit 1; }
 
-          if [[ -d "$CLOUDFLARED_DIR" ]]; then
-            mkdir -p "$stage/cloudflared"
-            # Copy credential/config files without printing names or contents.
-            find "$CLOUDFLARED_DIR" -maxdepth 1 -type f -exec install -m 600 {} "$stage/cloudflared/" \;
-            if find "$stage/cloudflared" -maxdepth 1 -type f -print -quit | grep -q .; then
-              echo 'CLOUDFLARED=present' >> "$status"
-            else
-              echo 'CLOUDFLARED=empty' >> "$status"
-              echo "::error::Cloudflare credential directory is empty; refusing to publish an incomplete credential backup."
-              exit 1
-            fi
-          else
-            echo 'CLOUDFLARED=missing' >> "$status"
-            echo "::error::Cloudflare credential directory was not found; refusing to publish an incomplete credential backup."
+          if [[ ! -d "$CLOUDFLARED_DIR" ]]; then
+            echo "::error::Cloudflare credentials directory not found: $CLOUDFLARED_DIR"
             exit 1
           fi
+          find "$CLOUDFLARED_DIR" -maxdepth 1 -type f -exec install -m 600 {} "$stage/cloudflared/" \;
+          find "$stage/cloudflared" -maxdepth 1 -type f -print -quit | grep -q . || {
+            echo "::error::Cloudflare credentials directory is empty."
+            exit 1
+          }
 
-          test -s "$status"
+          printf '%s\n' 'K3S_STATE_ARCHIVE=present' 'CLOUDFLARED=present' > "$BACKUP_WORKDIR/recovery-material-status.txt"
           tar -czf - -C "$stage" . | openssl enc -aes-256-cbc -pbkdf2 -iter 600000 -salt \
-            -pass env:BACKUP_ENCRYPTION_KEY > "$BACKUP_WORKDIR/latest.recovery-material.tar.gz.enc"
+            -out "$BACKUP_WORKDIR/latest.recovery-material.tar.gz.enc" -pass env:BACKUP_ENCRYPTION_KEY
           test -s "$BACKUP_WORKDIR/latest.recovery-material.tar.gz.enc"
           (cd "$BACKUP_WORKDIR" && sha256sum latest.recovery-material.tar.gz.enc > latest.recovery-material.tar.gz.enc.sha256)
-          cp "$status" "$BACKUP_WORKDIR/recovery-material-status.txt"
           rm -rf "$stage"
 
-      - name: Verify all encrypted recovery files
+      - name: Decrypt and validate all recovery snapshots
         shell: bash
         env:
           BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
         run: |
           set -euo pipefail
+          umask 077
           echo "::add-mask::$BACKUP_ENCRYPTION_KEY"
           cd "$BACKUP_WORKDIR"
           sha256sum -c latest.dump.enc.sha256
           sha256sum -c latest.kubernetes-secrets.json.enc.sha256
           sha256sum -c latest.recovery-material.tar.gz.enc.sha256
 
-          openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 \
-            -in latest.dump.enc -out /tmp/shopnoltd-restore-test.dump \
-            -pass env:BACKUP_ENCRYPTION_KEY
-          openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 \
-            -in latest.kubernetes-secrets.json.enc -out /tmp/shopnoltd-secrets-restore-test.json \
-            -pass env:BACKUP_ENCRYPTION_KEY
-          openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 \
-            -in latest.recovery-material.tar.gz.enc -out /tmp/shopnoltd-recovery-material.tar.gz \
-            -pass env:BACKUP_ENCRYPTION_KEY
-          test -s /tmp/shopnoltd-restore-test.dump
-          tar -tzf /tmp/shopnoltd-recovery-material.tar.gz > /tmp/shopnoltd-recovery-material-list.txt
-          grep -q 'k3s-state-backup.tgz' /tmp/shopnoltd-recovery-material-list.txt || { echo 'K3s state archive missing from recovery bundle'; exit 1; }
-          tar -xOf /tmp/shopnoltd-recovery-material.tar.gz ./k3s-state-backup.tgz > /tmp/shopnoltd-k3s-state-check.tgz
-          tar -tzf /tmp/shopnoltd-k3s-state-check.tgz > /tmp/shopnoltd-k3s-state-check-list.txt
-          grep -Eq '(^|/)token
-          python3 - /tmp/shopnoltd-secrets-restore-test.json <<'PY'
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 -in latest.dump.enc \
+            -out database-restore-check.dump -pass env:BACKUP_ENCRYPTION_KEY
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 -in latest.kubernetes-secrets.json.enc \
+            -out secrets-restore-check.json -pass env:BACKUP_ENCRYPTION_KEY
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 -in latest.recovery-material.tar.gz.enc \
+            -out recovery-restore-check.tar.gz -pass env:BACKUP_ENCRYPTION_KEY
+
+          python3 - secrets-restore-check.json <<'PY'
           import json, sys
           with open(sys.argv[1], encoding="utf-8") as f:
-              doc = json.load(f)
-          items = doc.get("items", [])
-          if doc.get("kind") != "List" or not items:
-              raise SystemExit("Decrypted Kubernetes Secret export is empty or malformed")
-          print(f"PASS: decrypted Kubernetes Secret export contains {len(items)} objects.")
+              data = json.load(f)
+          items = data.get("items", [])
+          if data.get("kind") != "List" or not items:
+              raise SystemExit("Decrypted Kubernetes Secret export is invalid")
+          print(f"PASS: {len(items)} Kubernetes Secret objects decrypted and parsed.")
           PY
-          rm -f /tmp/shopnoltd-restore-test.dump /tmp/shopnoltd-secrets-restore-test.json /tmp/shopnoltd-recovery-material.tar.gz /tmp/shopnoltd-recovery-material-list.txt /tmp/shopnoltd-k3s-state-check.tgz /tmp/shopnoltd-k3s-state-check-list.txt
+          tar -tzf recovery-restore-check.tar.gz > recovery-archive-list.txt
+          grep -q 'k3s-state-backup.tgz' recovery-archive-list.txt
+          grep -q 'cloudflared/' recovery-archive-list.txt
+          tar -xOf recovery-restore-check.tar.gz ./k3s-state-backup.tgz > nested-k3s-check.tgz
+          tar -tzf nested-k3s-check.tgz > nested-k3s-list.txt
+          grep -Eq '(^|/)token$' nested-k3s-list.txt
+          grep -Eq '(^|/)db/state.db$' nested-k3s-list.txt
+          test -s database-restore-check.dump
+          echo "PASS: encrypted PostgreSQL, Kubernetes Secrets, K3s archive/token/state DB and Cloudflare bundle validated."
+          rm -f database-restore-check.dump secrets-restore-check.json recovery-restore-check.tar.gz recovery-archive-list.txt nested-k3s-check.tgz nested-k3s-list.txt k3s-archive-list.txt
 
-      - name: Publish encrypted recovery files to GitHub backup branch
+      - name: Publish encrypted recovery snapshots
         shell: bash
         run: |
           set -euo pipefail
@@ -196,174 +174,33 @@ jobs:
           git rm -rf . >/dev/null 2>&1 || true
           git clean -fdx >/dev/null 2>&1 || true
           mkdir -p backup
-          cp "$BACKUP_WORKDIR/latest.dump.enc" backup/latest.dump.enc
-          cp "$BACKUP_WORKDIR/latest.dump.enc.sha256" backup/latest.dump.enc.sha256
-          cp "$BACKUP_WORKDIR/latest.kubernetes-secrets.json.enc" backup/latest.kubernetes-secrets.json.enc
-          cp "$BACKUP_WORKDIR/latest.kubernetes-secrets.json.enc.sha256" backup/latest.kubernetes-secrets.json.enc.sha256
-          cp "$BACKUP_WORKDIR/latest.recovery-material.tar.gz.enc" backup/latest.recovery-material.tar.gz.enc
-          cp "$BACKUP_WORKDIR/latest.recovery-material.tar.gz.enc.sha256" backup/latest.recovery-material.tar.gz.enc.sha256
-          cp "$BACKUP_WORKDIR/recovery-material-status.txt" backup/recovery-material-status.txt
-          cp "$BACKUP_WORKDIR/timestamp.txt" backup/timestamp.txt
-          cp "$BACKUP_WORKDIR/source-revision.txt" backup/source-revision.txt
+          cp "$BACKUP_WORKDIR/latest.dump.enc" backup/
+          cp "$BACKUP_WORKDIR/latest.dump.enc.sha256" backup/
+          cp "$BACKUP_WORKDIR/latest.kubernetes-secrets.json.enc" backup/
+          cp "$BACKUP_WORKDIR/latest.kubernetes-secrets.json.enc.sha256" backup/
+          cp "$BACKUP_WORKDIR/latest.recovery-material.tar.gz.enc" backup/
+          cp "$BACKUP_WORKDIR/latest.recovery-material.tar.gz.enc.sha256" backup/
+          cp "$BACKUP_WORKDIR/recovery-material-status.txt" backup/
+          cp "$BACKUP_WORKDIR/timestamp.txt" backup/
+          cp "$BACKUP_WORKDIR/source-revision.txt" backup/
           cat > backup/README.md <<'EOF'
-          # Shopnoltd encrypted recovery backups
+          # Shopnoltd encrypted disaster-recovery snapshots
 
-          This branch contains the latest encrypted PostgreSQL custom-format dump and
-          the latest encrypted export of Kubernetes Secret objects from all namespaces, and an encrypted recovery-material bundle containing the existing K3s state archive plus Windows Cloudflare credential files when that directory is present.
+          This branch contains encrypted PostgreSQL, all-namespace Kubernetes Secret,
+          K3s host-state, and Cloudflare credential snapshots. The encryption key is
+          supplied at runtime through BACKUP_ENCRYPTION_KEY and is never stored here.
 
-          Both files use AES-256-CBC with PBKDF2 (600,000 iterations). The key is
-          supplied only at runtime through the GitHub Actions secret
-          BACKUP_ENCRYPTION_KEY and is never stored in this branch.
-
-          Kubernetes Secret export includes sensitive credentials and certificates.
-          Never publish, attach, or upload a decrypted copy. Restore is a manual,
-          reviewed disaster-recovery operation; do not blindly apply an old export
-          to a live cluster.
-
-          The recovery-material status file records whether the expected K3s archive and
-          Windows Cloudflare directory were found. A missing Cloudflare directory means
-          this is not a complete credentials backup. GitHub repository/environment
-          secret values cannot be exported through this workflow and must be preserved
-          separately in a secure password manager or re-created from their source.
+          Never publish or apply decrypted files casually. Restore is a manual,
+          reviewed disaster-recovery operation. GitHub Actions secret values cannot
+          be exported; preserve them separately in a secure password manager.
           EOF
           git add backup
-          git commit -m "backup: encrypted PostgreSQL and Kubernetes secrets"
+          git commit -m "backup: encrypted full disaster-recovery snapshot"
           git push --force origin "$BACKUP_BRANCH"
 
-      - name: Cleanup local backup material
+      - name: Remove temporary plaintext and staging files
         if: always()
         shell: bash
         run: |
           set +e
-          rm -rf "$BACKUP_WORKDIR" /tmp/shopnoltd-restore-test.dump /tmp/shopnoltd-secrets-restore-test.json /tmp/shopnoltd-recovery-material.tar.gz /tmp/shopnoltd-recovery-material-list.txt
- /tmp/shopnoltd-k3s-state-check-list.txt
-          grep -Eq '(^|/)db/state.db
-          python3 - /tmp/shopnoltd-secrets-restore-test.json <<'PY'
-          import json, sys
-          with open(sys.argv[1], encoding="utf-8") as f:
-              doc = json.load(f)
-          items = doc.get("items", [])
-          if doc.get("kind") != "List" or not items:
-              raise SystemExit("Decrypted Kubernetes Secret export is empty or malformed")
-          print(f"PASS: decrypted Kubernetes Secret export contains {len(items)} objects.")
-          PY
-          rm -f /tmp/shopnoltd-restore-test.dump /tmp/shopnoltd-secrets-restore-test.json /tmp/shopnoltd-recovery-material.tar.gz /tmp/shopnoltd-recovery-material-list.txt
-
-      - name: Publish encrypted recovery files to GitHub backup branch
-        shell: bash
-        run: |
-          set -euo pipefail
-          git config user.name 'shopnoltd-backup-bot'
-          git config user.email 'shopnoltd-backup-bot@users.noreply.github.com'
-          git fetch origin "$BACKUP_BRANCH" || true
-          git switch --orphan "$BACKUP_BRANCH"
-          git rm -rf . >/dev/null 2>&1 || true
-          git clean -fdx >/dev/null 2>&1 || true
-          mkdir -p backup
-          cp "$BACKUP_WORKDIR/latest.dump.enc" backup/latest.dump.enc
-          cp "$BACKUP_WORKDIR/latest.dump.enc.sha256" backup/latest.dump.enc.sha256
-          cp "$BACKUP_WORKDIR/latest.kubernetes-secrets.json.enc" backup/latest.kubernetes-secrets.json.enc
-          cp "$BACKUP_WORKDIR/latest.kubernetes-secrets.json.enc.sha256" backup/latest.kubernetes-secrets.json.enc.sha256
-          cp "$BACKUP_WORKDIR/latest.recovery-material.tar.gz.enc" backup/latest.recovery-material.tar.gz.enc
-          cp "$BACKUP_WORKDIR/latest.recovery-material.tar.gz.enc.sha256" backup/latest.recovery-material.tar.gz.enc.sha256
-          cp "$BACKUP_WORKDIR/recovery-material-status.txt" backup/recovery-material-status.txt
-          cp "$BACKUP_WORKDIR/timestamp.txt" backup/timestamp.txt
-          cp "$BACKUP_WORKDIR/source-revision.txt" backup/source-revision.txt
-          cat > backup/README.md <<'EOF'
-          # Shopnoltd encrypted recovery backups
-
-          This branch contains the latest encrypted PostgreSQL custom-format dump and
-          the latest encrypted export of Kubernetes Secret objects from all namespaces, and an encrypted recovery-material bundle containing the existing K3s state archive plus Windows Cloudflare credential files when that directory is present.
-
-          Both files use AES-256-CBC with PBKDF2 (600,000 iterations). The key is
-          supplied only at runtime through the GitHub Actions secret
-          BACKUP_ENCRYPTION_KEY and is never stored in this branch.
-
-          Kubernetes Secret export includes sensitive credentials and certificates.
-          Never publish, attach, or upload a decrypted copy. Restore is a manual,
-          reviewed disaster-recovery operation; do not blindly apply an old export
-          to a live cluster.
-
-          The recovery-material status file records whether the expected K3s archive and
-          Windows Cloudflare directory were found. A missing Cloudflare directory means
-          this is not a complete credentials backup. GitHub repository/environment
-          secret values cannot be exported through this workflow and must be preserved
-          separately in a secure password manager or re-created from their source.
-          EOF
-          git add backup
-          git commit -m "backup: encrypted PostgreSQL and Kubernetes secrets"
-          git push --force origin "$BACKUP_BRANCH"
-
-      - name: Cleanup local backup material
-        if: always()
-        shell: bash
-        run: |
-          set +e
-          rm -rf "$BACKUP_WORKDIR" /tmp/shopnoltd-restore-test.dump /tmp/shopnoltd-secrets-restore-test.json /tmp/shopnoltd-recovery-material.tar.gz /tmp/shopnoltd-recovery-material-list.txt
- /tmp/shopnoltd-k3s-state-check-list.txt
-          grep -qx 'K3S_STATE_ARCHIVE=present' "$BACKUP_WORKDIR/recovery-material-status.txt"
-          grep -qx 'CLOUDFLARED=present' "$BACKUP_WORKDIR/recovery-material-status.txt"
-          echo 'PASS: encrypted recovery bundle, nested K3s archive, token and state DB entries validated.'
-          cat "$BACKUP_WORKDIR/recovery-material-status.txt"
-          python3 - /tmp/shopnoltd-secrets-restore-test.json <<'PY'
-          import json, sys
-          with open(sys.argv[1], encoding="utf-8") as f:
-              doc = json.load(f)
-          items = doc.get("items", [])
-          if doc.get("kind") != "List" or not items:
-              raise SystemExit("Decrypted Kubernetes Secret export is empty or malformed")
-          print(f"PASS: decrypted Kubernetes Secret export contains {len(items)} objects.")
-          PY
-          rm -f /tmp/shopnoltd-restore-test.dump /tmp/shopnoltd-secrets-restore-test.json /tmp/shopnoltd-recovery-material.tar.gz /tmp/shopnoltd-recovery-material-list.txt
-
-      - name: Publish encrypted recovery files to GitHub backup branch
-        shell: bash
-        run: |
-          set -euo pipefail
-          git config user.name 'shopnoltd-backup-bot'
-          git config user.email 'shopnoltd-backup-bot@users.noreply.github.com'
-          git fetch origin "$BACKUP_BRANCH" || true
-          git switch --orphan "$BACKUP_BRANCH"
-          git rm -rf . >/dev/null 2>&1 || true
-          git clean -fdx >/dev/null 2>&1 || true
-          mkdir -p backup
-          cp "$BACKUP_WORKDIR/latest.dump.enc" backup/latest.dump.enc
-          cp "$BACKUP_WORKDIR/latest.dump.enc.sha256" backup/latest.dump.enc.sha256
-          cp "$BACKUP_WORKDIR/latest.kubernetes-secrets.json.enc" backup/latest.kubernetes-secrets.json.enc
-          cp "$BACKUP_WORKDIR/latest.kubernetes-secrets.json.enc.sha256" backup/latest.kubernetes-secrets.json.enc.sha256
-          cp "$BACKUP_WORKDIR/latest.recovery-material.tar.gz.enc" backup/latest.recovery-material.tar.gz.enc
-          cp "$BACKUP_WORKDIR/latest.recovery-material.tar.gz.enc.sha256" backup/latest.recovery-material.tar.gz.enc.sha256
-          cp "$BACKUP_WORKDIR/recovery-material-status.txt" backup/recovery-material-status.txt
-          cp "$BACKUP_WORKDIR/timestamp.txt" backup/timestamp.txt
-          cp "$BACKUP_WORKDIR/source-revision.txt" backup/source-revision.txt
-          cat > backup/README.md <<'EOF'
-          # Shopnoltd encrypted recovery backups
-
-          This branch contains the latest encrypted PostgreSQL custom-format dump and
-          the latest encrypted export of Kubernetes Secret objects from all namespaces, and an encrypted recovery-material bundle containing the existing K3s state archive plus Windows Cloudflare credential files when that directory is present.
-
-          Both files use AES-256-CBC with PBKDF2 (600,000 iterations). The key is
-          supplied only at runtime through the GitHub Actions secret
-          BACKUP_ENCRYPTION_KEY and is never stored in this branch.
-
-          Kubernetes Secret export includes sensitive credentials and certificates.
-          Never publish, attach, or upload a decrypted copy. Restore is a manual,
-          reviewed disaster-recovery operation; do not blindly apply an old export
-          to a live cluster.
-
-          The recovery-material status file records whether the expected K3s archive and
-          Windows Cloudflare directory were found. A missing Cloudflare directory means
-          this is not a complete credentials backup. GitHub repository/environment
-          secret values cannot be exported through this workflow and must be preserved
-          separately in a secure password manager or re-created from their source.
-          EOF
-          git add backup
-          git commit -m "backup: encrypted PostgreSQL and Kubernetes secrets"
-          git push --force origin "$BACKUP_BRANCH"
-
-      - name: Cleanup local backup material
-        if: always()
-        shell: bash
-        run: |
-          set +e
-          rm -rf "$BACKUP_WORKDIR" /tmp/shopnoltd-restore-test.dump /tmp/shopnoltd-secrets-restore-test.json /tmp/shopnoltd-recovery-material.tar.gz /tmp/shopnoltd-recovery-material-list.txt
+          rm -rf "$BACKUP_WORKDIR"
