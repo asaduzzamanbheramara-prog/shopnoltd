@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     keycloak_issuer: str = "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
     keycloak_jwks_url: str | None = None
     keycloak_audience: str = "api-service"
-    storage_service_url: str = "http://storage-service.shopno-platform.svc.cluster.local:8080"
+    storage_service_url: str = "http://storage-service.shopno-platform.svc.cluster.local:80"
     # Provider OAuth configuration is injected from the runtime secret manager.
     # Never commit client secrets or user access/refresh tokens to Git.
     provider_oauth_encryption_key: str | None = None

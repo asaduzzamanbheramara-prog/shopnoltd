@@ -106,7 +106,7 @@ async def set_status(
     if is_live:
         async with httpx.AsyncClient() as c:
             await c.post(
-                "http://notification-service.shopno-platform.svc.cluster.local:8080/api/v1/notifications/broadcast",
+                "http://notification-service.shopno-platform.svc.cluster.local:80/api/v1/notifications/broadcast",
                 json={
                     "channel": "push",
                     "title": f"🔴 {st.title} is live",
