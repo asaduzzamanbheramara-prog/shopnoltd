@@ -2,6 +2,11 @@ name: Verify encrypted Shopnoltd disaster-recovery backups
 
 on:
   workflow_dispatch:
+  workflow_run:
+    workflows:
+      - Shopnoltd encrypted disaster-recovery backup
+    types:
+      - completed
   schedule:
     - cron: '0 19 * * *'
 
@@ -14,6 +19,7 @@ concurrency:
 
 jobs:
   verify:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     name: Verify encrypted database, secrets and host recovery material
     runs-on: ubuntu-latest
     timeout-minutes: 20
