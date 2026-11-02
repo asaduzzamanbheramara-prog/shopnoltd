@@ -1,9 +1,8 @@
-name: Verify encrypted PostgreSQL and Kubernetes secrets backups
+name: Verify encrypted Shopnoltd disaster-recovery backups
 
 on:
   workflow_dispatch:
   schedule:
-    # Independent GitHub-hosted verification, not dependent on the production PC.
     - cron: '0 19 * * *'
 
 permissions:
@@ -15,17 +14,10 @@ concurrency:
 
 jobs:
   verify:
-    name: Verify freshness, checksums, decryption and backup structure
+    name: Verify encrypted database, secrets and host recovery material
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - name: Checkout workflow source
-        uses: actions/checkout@v4
-        with:
-          ref: main
-          path: source
-          persist-credentials: false
-
       - name: Checkout encrypted backup branch
         uses: actions/checkout@v4
         with:
@@ -34,98 +26,62 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
 
-      - name: Validate backup timestamp freshness
+      - name: Validate timestamp and required files
         shell: bash
         run: |
           set -euo pipefail
-          timestamp_file="backup-source/backup/timestamp.txt"
-          test -s "$timestamp_file"
-          timestamp="$(tr -d '\r\n' < "$timestamp_file")"
-          if [[ ! "$timestamp" =~ ^[0-9]{8}T[0-9]{6}Z$ ]]; then
-            echo "::error::Backup timestamp is missing or has an unexpected format."
-            exit 1
-          fi
-          timestamp_iso="${timestamp:0:4}-${timestamp:4:2}-${timestamp:6:2}T${timestamp:9:2}:${timestamp:11:2}:${timestamp:13:2}Z"
-          backup_epoch="$(date -u -d "$timestamp_iso" +%s)"
-          now_epoch="$(date -u +%s)"
-          age_seconds="$((now_epoch - backup_epoch))"
-          max_age_seconds="$((48 * 60 * 60))"
-          if (( age_seconds < 0 || age_seconds > max_age_seconds )); then
-            echo "::error::Latest backup timestamp is invalid or older than 48 hours."
-            echo "Backup timestamp (UTC): $timestamp"
-            echo "Backup age (hours): $((age_seconds / 3600))"
-            exit 1
-          fi
-          echo "PASS: latest backups are $((age_seconds / 3600)) hours old (limit: 48 hours)."
-          echo "Backup timestamp (UTC): $timestamp"
+          cd backup-source/backup
+          for file in timestamp.txt latest.dump.enc latest.dump.enc.sha256 latest.kubernetes-secrets.json.enc latest.kubernetes-secrets.json.enc.sha256 latest.recovery-material.tar.gz.enc latest.recovery-material.tar.gz.enc.sha256 recovery-material-status.txt; do
+            test -s "$file" || { echo "::error::Required backup file missing: $file"; exit 1; }
+          done
+          timestamp="$(tr -d '\r\n' < timestamp.txt)"
+          [[ "$timestamp" =~ ^[0-9]{8}T[0-9]{6}Z$ ]] || { echo "::error::Invalid backup timestamp."; exit 1; }
+          iso="${timestamp:0:4}-${timestamp:4:2}-${timestamp:6:2}T${timestamp:9:2}:${timestamp:11:2}:${timestamp:13:2}Z"
+          epoch="$(date -u -d "$iso" +%s)"
+          now="$(date -u +%s)"
+          age=$((now - epoch))
+          (( age >= 0 && age <= 172800 )) || { echo "::error::Backup is future-dated or older than 48 hours."; exit 1; }
+          echo "PASS: backup timestamp is fresh ($((age / 3600)) hours old)."
 
-      - name: Validate checksums and decrypt both backups
+      - name: Verify checksums and decrypt all recovery files
         shell: bash
         env:
           BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
         run: |
           set -euo pipefail
-          test -n "${BACKUP_ENCRYPTION_KEY:-}" || {
-            echo "::error::Repository secret BACKUP_ENCRYPTION_KEY is missing."
-            exit 1
-          }
+          test -n "${BACKUP_ENCRYPTION_KEY:-}" || { echo "::error::BACKUP_ENCRYPTION_KEY secret is missing."; exit 1; }
           cd backup-source/backup
-          for file in latest.dump.enc latest.kubernetes-secrets.json.enc latest.recovery-material.tar.gz.enc; do
-            test -s "$file"
-            test -s "$file.sha256"
-            expected="$(awk 'NR==1 {print $1}' "$file.sha256")"
-            actual="$(sha256sum "$file" | awk '{print $1}')"
-            if [[ ! "$expected" =~ ^[[:xdigit:]]{64}$ ]] || [[ "$expected" != "$actual" ]]; then
-              echo "::error::SHA-256 mismatch for $file"
-              exit 1
-            fi
-            echo "PASS: $file SHA-256 matches."
-          done
-
           umask 077
           echo "::add-mask::$BACKUP_ENCRYPTION_KEY"
-          openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 \
-            -in latest.dump.enc -out "$RUNNER_TEMP/shopnoltd-restore-test.dump" \
-            -pass env:BACKUP_ENCRYPTION_KEY
-          openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 \
-            -in latest.kubernetes-secrets.json.enc -out "$RUNNER_TEMP/shopnoltd-secrets-test.json" \
-            -pass env:BACKUP_ENCRYPTION_KEY
-          test -s "$RUNNER_TEMP/shopnoltd-restore-test.dump"
-
-          openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 \
-            -in latest.recovery-material.tar.gz.enc -out "$RUNNER_TEMP/shopnoltd-recovery-material.tar.gz" \
-            -pass env:BACKUP_ENCRYPTION_KEY
-          tar -tzf "$RUNNER_TEMP/shopnoltd-recovery-material.tar.gz" > "$RUNNER_TEMP/shopnoltd-recovery-material-list.txt"
-          grep -q 'k3s-state-backup.tgz' "$RUNNER_TEMP/shopnoltd-recovery-material-list.txt" || {
-            echo "::error::K3s state archive is missing from the recovery bundle."
-            exit 1
-          }
-          mkdir -p "$RUNNER_TEMP/shopnoltd-k3s-check"
-          tar -xOf "$RUNNER_TEMP/shopnoltd-recovery-material.tar.gz" ./k3s-state-backup.tgz > "$RUNNER_TEMP/shopnoltd-k3s-check/k3s-state-backup.tgz"
-          tar -tzf "$RUNNER_TEMP/shopnoltd-k3s-check/k3s-state-backup.tgz" > "$RUNNER_TEMP/shopnoltd-k3s-check/archive-list.txt"
-          grep -Eq '(^|/)token
-          if [[ ! -s recovery-material-status.txt ]]; then
-            echo "::error::Recovery material status file is missing."
-            exit 1
-          fi
-          cat recovery-material-status.txt
-          grep -qx 'K3S_STATE_ARCHIVE=present' recovery-material-status.txt || {
-            echo "::error::K3s state archive source was not present during backup."
-            exit 1
-          }
-          if ! grep -qx 'CLOUDFLARED=present' recovery-material-status.txt; then
-            echo "::warning::Cloudflare credential directory was not captured; recovery coverage is incomplete."
-          fi
-          python3 - "$RUNNER_TEMP/shopnoltd-secrets-test.json" <<'PY'
+          for file in latest.dump.enc latest.kubernetes-secrets.json.enc latest.recovery-material.tar.gz.enc; do
+            expected="$(awk 'NR==1 {print $1}' "$file.sha256")"
+            actual="$(sha256sum "$file" | awk '{print $1}')"
+            [[ "$expected" =~ ^[[:xdigit:]]{64}$ && "$expected" == "$actual" ]] || { echo "::error::Checksum mismatch: $file"; exit 1; }
+          done
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 -in latest.dump.enc -out "$RUNNER_TEMP/shopnoltd.dump" -pass env:BACKUP_ENCRYPTION_KEY
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 -in latest.kubernetes-secrets.json.enc -out "$RUNNER_TEMP/shopnoltd-secrets.json" -pass env:BACKUP_ENCRYPTION_KEY
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 -in latest.recovery-material.tar.gz.enc -out "$RUNNER_TEMP/shopnoltd-recovery.tar.gz" -pass env:BACKUP_ENCRYPTION_KEY
+          test -s "$RUNNER_TEMP/shopnoltd.dump"
+          python3 - "$RUNNER_TEMP/shopnoltd-secrets.json" <<'PY'
           import json, sys
           with open(sys.argv[1], encoding="utf-8") as f:
-              doc = json.load(f)
-          items = doc.get("items", [])
-          if doc.get("kind") != "List" or not items:
+              data = json.load(f)
+          items = data.get("items", [])
+          if data.get("kind") != "List" or not items:
               raise SystemExit("Kubernetes Secret export is empty or malformed")
-          namespaces = {item.get("metadata", {}).get("namespace", "") for item in items}
-          print(f"PASS: Kubernetes Secret export decrypts and parses ({len(items)} objects, {len(namespaces)} namespaces).")
+          namespaces = {x.get("metadata", {}).get("namespace", "") for x in items}
+          print(f"PASS: Kubernetes Secret export parsed ({len(items)} objects, {len(namespaces)} namespaces).")
           PY
+          tar -tzf "$RUNNER_TEMP/shopnoltd-recovery.tar.gz" > "$RUNNER_TEMP/shopnoltd-recovery-list.txt"
+          grep -q 'k3s-state-backup.tgz' "$RUNNER_TEMP/shopnoltd-recovery-list.txt"
+          tar -xOf "$RUNNER_TEMP/shopnoltd-recovery.tar.gz" ./k3s-state-backup.tgz > "$RUNNER_TEMP/k3s-state-backup.tgz"
+          tar -tzf "$RUNNER_TEMP/k3s-state-backup.tgz" > "$RUNNER_TEMP/k3s-state-list.txt"
+          grep -Eq '(^|/)token$' "$RUNNER_TEMP/k3s-state-list.txt"
+          grep -Eq '(^|/)db/state.db$' "$RUNNER_TEMP/k3s-state-list.txt"
+          grep -qx 'K3S_STATE_ARCHIVE=present' recovery-material-status.txt
+          grep -qx 'CLOUDFLARED=present' recovery-material-status.txt
+          grep -q 'cloudflared/' "$RUNNER_TEMP/shopnoltd-recovery-list.txt"
+          echo "PASS: recovery bundle contains K3s token/state archive and Cloudflare files."
 
       - name: Validate PostgreSQL custom-format archive
         shell: bash
@@ -133,25 +89,14 @@ jobs:
           set -euo pipefail
           sudo apt-get update -qq
           sudo apt-get install -y -qq postgresql-client
-          pg_restore --list "$RUNNER_TEMP/shopnoltd-restore-test.dump" \
-            > "$RUNNER_TEMP/shopnoltd-archive-list.txt"
-          test -s "$RUNNER_TEMP/shopnoltd-archive-list.txt"
-          entries="$(grep -cE '^[0-9]+; ' "$RUNNER_TEMP/shopnoltd-archive-list.txt" || true)"
-          if [[ ! "$entries" =~ ^[0-9]+$ ]] || (( entries < 1 )); then
-            echo "::error::PostgreSQL archive has no recognizable entries."
-            exit 1
-          fi
-          echo "PASS: pg_restore recognizes the custom-format archive."
-          echo "Archive entry count: $entries"
-          echo "NOTE: this is archive validation, not a full isolated restore test."
+          pg_restore --list "$RUNNER_TEMP/shopnoltd.dump" > "$RUNNER_TEMP/shopnoltd-pg-restore-list.txt"
+          entries="$(grep -cE '^[0-9]+; ' "$RUNNER_TEMP/shopnoltd-pg-restore-list.txt" || true)"
+          [[ "$entries" =~ ^[0-9]+$ ]] && (( entries > 0 )) || { echo "::error::PostgreSQL archive has no recognizable entries."; exit 1; }
+          echo "PASS: PostgreSQL custom-format archive is readable ($entries entries)."
+          echo "NOTE: This validates archive readability, not a full isolated database restore."
 
-      - name: Remove decrypted test artifacts
+      - name: Remove decrypted artifacts
         if: always()
         shell: bash
         run: |
-          rm -rf "$RUNNER_TEMP/shopnoltd-restore-test.dump" \
-            "$RUNNER_TEMP/shopnoltd-secrets-test.json" \
-            "$RUNNER_TEMP/shopnoltd-archive-list.txt" \
-            "$RUNNER_TEMP/shopnoltd-recovery-material.tar.gz" \
-            "$RUNNER_TEMP/shopnoltd-recovery-material-list.txt" \
-            "$RUNNER_TEMP/shopnoltd-k3s-check"
+          rm -f "$RUNNER_TEMP/shopnoltd.dump" "$RUNNER_TEMP/shopnoltd-secrets.json" "$RUNNER_TEMP/shopnoltd-recovery.tar.gz" "$RUNNER_TEMP/shopnoltd-recovery-list.txt" "$RUNNER_TEMP/k3s-state-backup.tgz" "$RUNNER_TEMP/k3s-state-list.txt" "$RUNNER_TEMP/shopnoltd-pg-restore-list.txt"
