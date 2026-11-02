@@ -121,7 +121,7 @@ jobs:
           echo "PASS: encrypted PostgreSQL database and Kubernetes Secrets decrypted and validated."
           rm -f database-restore-check.dump secrets-restore-check.json
 
-      - name: Publish encrypted recovery snapshots
+      - name: Publish encrypted database and Kubernetes Secrets snapshots
         shell: bash
         run: |
           set -euo pipefail
