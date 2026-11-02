@@ -104,6 +104,8 @@ jobs:
 
       - name: Package K3s and Windows Cloudflare recovery material
         shell: bash
+        env:
+          BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
         run: |
           set -euo pipefail
           umask 077
@@ -141,7 +143,7 @@ jobs:
           cp "$status" "$BACKUP_WORKDIR/recovery-material-status.txt"
           rm -rf "$stage"
 
-      - name: Verify both encrypted recovery files
+      - name: Verify all encrypted recovery files
         shell: bash
         env:
           BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
@@ -176,7 +178,7 @@ jobs:
               raise SystemExit("Decrypted Kubernetes Secret export is empty or malformed")
           print(f"PASS: decrypted Kubernetes Secret export contains {len(items)} objects.")
           PY
-          rm -f /tmp/shopnoltd-restore-test.dump /tmp/shopnoltd-secrets-restore-test.json
+          rm -f /tmp/shopnoltd-restore-test.dump /tmp/shopnoltd-secrets-restore-test.json /tmp/shopnoltd-recovery-material.tar.gz /tmp/shopnoltd-recovery-material-list.txt
 
       - name: Publish encrypted recovery files to GitHub backup branch
         shell: bash
