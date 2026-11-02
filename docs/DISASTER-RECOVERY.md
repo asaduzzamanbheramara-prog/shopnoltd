@@ -40,6 +40,14 @@ A local environment can follow `ops/backup/backup.env.example`, but the real `.e
 
 The backup branch is deliberately single-snapshot to prevent unbounded Git history growth. For longer historical retention, use an external object-storage backup in addition to this GitHub recovery copy. The encrypted GitHub copy is a recovery layer, not a replacement for capacity planning or an independent backup target.
 
+## Kubernetes secrets backup
+
+The same nightly self-hosted workflow exports Kubernetes Secret objects from every namespace using `kubectl get secrets --all-namespaces -o json`. It encrypts the export with the same `BACKUP_ENCRYPTION_KEY`, publishes only the encrypted file and checksum to the `database-backups` branch, and removes the plaintext temporary export. The independent GitHub-hosted verifier checks the checksum, decrypts the file, and validates its JSON structure and non-empty object list.
+
+This covers Kubernetes Secret objects only. It does not include Windows user-profile credentials, Cloudflare tunnel credentials stored on Windows, GitHub repository/environment secrets, or the complete K3s server data directory and server token. Keep those in a separately encrypted recovery copy. Never commit or upload decrypted secret exports.
+
+A Kubernetes Secret export is not a complete cluster restore image. Restore must be a deliberate, reviewed operation after namespaces and dependent resources are prepared; do not blindly apply an old export to a running production cluster.
+
 ## Manual restore
 
 Do not restore automatically during boot. A database restore is destructive and must be explicitly started.
