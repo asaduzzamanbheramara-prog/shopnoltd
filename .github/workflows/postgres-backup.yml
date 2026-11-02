@@ -1,6 +1,12 @@
 name: Shopnoltd encrypted disaster-recovery backup
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/postgres-backup.yml'
+      - 'ops/backup/check-postgres-storage.sh'
   schedule:
     - cron: '17 18 * * *'
   workflow_dispatch:
