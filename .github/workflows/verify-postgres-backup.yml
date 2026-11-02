@@ -75,7 +75,7 @@ jobs:
             exit 1
           }
           cd backup-source/backup
-          for file in latest.dump.enc latest.kubernetes-secrets.json.enc; do
+          for file in latest.dump.enc latest.kubernetes-secrets.json.enc latest.recovery-material.tar.gz.enc; do
             test -s "$file"
             test -s "$file.sha256"
             expected="$(awk 'NR==1 {print $1}' "$file.sha256")"
@@ -96,6 +96,17 @@ jobs:
             -in latest.kubernetes-secrets.json.enc -out "$RUNNER_TEMP/shopnoltd-secrets-test.json" \
             -pass env:BACKUP_ENCRYPTION_KEY
           test -s "$RUNNER_TEMP/shopnoltd-restore-test.dump"
+
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 \
+            -in latest.recovery-material.tar.gz.enc -out "$RUNNER_TEMP/shopnoltd-recovery-material.tar.gz" \
+            -pass env:BACKUP_ENCRYPTION_KEY
+          tar -tzf "$RUNNER_TEMP/shopnoltd-recovery-material.tar.gz" > "$RUNNER_TEMP/shopnoltd-recovery-material-list.txt"
+          grep -q 'k3s-state-backup.tgz' "$RUNNER_TEMP/shopnoltd-recovery-material-list.txt" || {
+            echo "::error::K3s state archive is missing from the recovery bundle."
+            exit 1
+          }
+          echo "PASS: recovery-material archive decrypts and includes the K3s state archive."
+          if [[ -f backup-source/backup/recovery-material-status.txt ]]; then cat backup-source/backup/recovery-material-status.txt; fi
           python3 - "$RUNNER_TEMP/shopnoltd-secrets-test.json" <<'PY'
           import json, sys
           with open(sys.argv[1], encoding="utf-8") as f:
@@ -131,4 +142,6 @@ jobs:
         run: |
           rm -f "$RUNNER_TEMP/shopnoltd-restore-test.dump" \
             "$RUNNER_TEMP/shopnoltd-secrets-test.json" \
-            "$RUNNER_TEMP/shopnoltd-archive-list.txt"
+            "$RUNNER_TEMP/shopnoltd-archive-list.txt" \\
+            "$RUNNER_TEMP/shopnoltd-recovery-material.tar.gz" \\
+            "$RUNNER_TEMP/shopnoltd-recovery-material-list.txt"
