@@ -106,7 +106,18 @@ jobs:
             exit 1
           }
           echo "PASS: recovery-material archive decrypts and includes the K3s state archive."
-          if [[ -f backup-source/backup/recovery-material-status.txt ]]; then cat backup-source/backup/recovery-material-status.txt; fi
+          if [[ ! -s recovery-material-status.txt ]]; then
+            echo "::error::Recovery material status file is missing."
+            exit 1
+          fi
+          cat recovery-material-status.txt
+          grep -qx 'K3S_STATE_ARCHIVE=present' recovery-material-status.txt || {
+            echo "::error::K3s state archive source was not present during backup."
+            exit 1
+          }
+          if ! grep -qx 'CLOUDFLARED=present' recovery-material-status.txt; then
+            echo "::warning::Cloudflare credential directory was not captured; recovery coverage is incomplete."
+          fi
           python3 - "$RUNNER_TEMP/shopnoltd-secrets-test.json" <<'PY'
           import json, sys
           with open(sys.argv[1], encoding="utf-8") as f:
