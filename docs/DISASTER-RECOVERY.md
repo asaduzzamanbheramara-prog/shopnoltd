@@ -2,7 +2,7 @@
 
 ## Database model
 
-Production PostgreSQL data remains on the k3s PostgreSQL PVC. GitHub is the source of truth for application code, Kubernetes manifests and migrations. The `database-backups` branch is a separate recovery copy containing only the latest **encrypted** PostgreSQL custom-format dump.
+Production PostgreSQL data remains on the k3s PostgreSQL PVC. GitHub is the source of truth for application code, Kubernetes manifests and migrations. The `database-backups` branch is a separate recovery copy containing encrypted PostgreSQL, Kubernetes Secret, and host recovery-material snapshots.
 
 The live database is never committed to `main`, and plaintext SQL/dump files are excluded by `.gitignore`.
 
@@ -44,7 +44,7 @@ The backup branch is deliberately single-snapshot to prevent unbounded Git histo
 
 The same nightly self-hosted workflow exports Kubernetes Secret objects from every namespace using `kubectl get secrets --all-namespaces -o json`. It encrypts the export with the same `BACKUP_ENCRYPTION_KEY`, publishes only the encrypted file and checksum to the `database-backups` branch, and removes the plaintext temporary export. The independent GitHub-hosted verifier checks the checksum, decrypts the file, and validates its JSON structure and non-empty object list.
 
-This covers Kubernetes Secret objects only. It does not include Windows user-profile credentials, Cloudflare tunnel credentials stored on Windows, GitHub repository/environment secrets, or the complete K3s server data directory and server token. Keep those in a separately encrypted recovery copy. Never commit or upload decrypted secret exports.
+The workflow also attempts to package the existing Windows-mounted `k3s-state-backup.tgz` and files from `C:\\Users\\asadu\\.cloudflared` into a separately encrypted recovery-material archive. The plaintext status file records whether each source was found; a missing Cloudflare directory means recovery is still incomplete. The archive is a snapshot, not a live K3s backup, and its age/integrity/restoreability must be checked separately. GitHub Actions/repository/environment secret values are not retrievable through the workflow or GitHub API; keep their values in a separate encrypted password manager or re-create them from their original source. Never commit or upload decrypted secret exports.
 
 A Kubernetes Secret export is not a complete cluster restore image. Restore must be a deliberate, reviewed operation after namespaces and dependent resources are prepared; do not blindly apply an old export to a running production cluster.
 
@@ -105,3 +105,8 @@ bash ops/backup/check-postgres-storage.sh
 ```
 
 Then run the normal public smoke/release gates. A successful backup workflow alone does not prove that the public website is healthy.
+
+
+## Repository visibility and credential handling
+
+The `shopnoltd` repository is currently **public**. Encrypted backups on `database-backups` are therefore publicly downloadable ciphertext. Do not rely on repository privacy as encryption: use a strong random `BACKUP_ENCRYPTION_KEY` stored outside Git, and consider moving backups to private object storage or making the repository private after reviewing deployment/integration impact. No credential values are stored in source control. GitHub Actions secret values cannot be read back once saved; inventory names only and preserve/reissue values separately. Never paste tokens, private keys, Cloudflare JSON credentials, or encryption keys into chat or workflow logs.
