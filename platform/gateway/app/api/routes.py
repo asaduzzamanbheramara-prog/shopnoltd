@@ -49,7 +49,7 @@ async def traefik_config():
         http_services[rid] = {"loadBalancer": {"servers": [{"url": url}]}}
         http_middlewares[f"{rid}-auth"] = {
             "forwardauth": {
-                "address": "http://oauth-service.shopno-identity.svc.cluster.local:8080/api/v1/verify"
+                "address": "http://oauth-service.shopno-identity.svc.cluster.local:80/api/v1/verify"
             }
         }
     return {

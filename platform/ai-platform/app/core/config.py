@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     inference_timeout_seconds: int = 120
     model_sync_interval_hours: float = 6.0
     ai_key_encryption_key: str | None = None
-    storage_service_url: str = "http://storage-service.shopno-platform.svc.cluster.local:8080"
+    storage_service_url: str = "http://storage-service.shopno-platform.svc.cluster.local:80"
     media_service_url: str = "http://media-service.shopno-platform.svc.cluster.local"
     media_service_token: str | None = None
     media_service_timeout_seconds: int = 120

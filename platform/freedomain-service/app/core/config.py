@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     )
     redis_url: str = "redis://redis.shopno-data.svc.cluster.local:6379/0"
     cors_origins: str = "https://shopnoltd.dpdns.org"
-    domain_service_url: str = "http://domain-service.shopno-platform.svc.cluster.local:8080"
+    domain_service_url: str = "http://domain-service.shopno-platform.svc.cluster.local:80"
     freedomain_internal_key: str = ""
     # Separate credential for OAuth-service provisioning calls; never reuse the DNS provider key.
     account_provisioning_internal_key: str = ""

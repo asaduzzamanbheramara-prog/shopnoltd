@@ -28,22 +28,22 @@ async def current_user(creds: HTTPAuthorizationCredentials = Depends(bearer)):
 KNOWN = {
     "send_email": lambda args: (
         "POST",
-        "http://notification-service.shopno-platform.svc.cluster.local:8080/api/v1/notifications/send",
+        "http://notification-service.shopno-platform.svc.cluster.local:80/api/v1/notifications/send",
         args,
     ),
     "convert_fx": lambda args: (
         "POST",
-        "http://exchange-service.shopno-payments.svc.cluster.local:8080/api/v1/convert",
+        "http://exchange-service.shopno-payments.svc.cluster.local:80/api/v1/convert",
         args,
     ),
     "send_push": lambda args: (
         "POST",
-        "http://notification-service.shopno-platform.svc.cluster.local:8080/api/v1/push/notify",
+        "http://notification-service.shopno-platform.svc.cluster.local:80/api/v1/push/notify",
         args,
     ),
     "log_event": lambda args: (
         "POST",
-        "http://analytics-service.shopno-platform.svc.cluster.local:8080/api/v1/events",
+        "http://analytics-service.shopno-platform.svc.cluster.local:80/api/v1/events",
         args,
     ),
 }

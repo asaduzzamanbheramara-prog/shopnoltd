@@ -15,7 +15,7 @@ class Settings(BaseSettings):
 
     # Keycloak base URL. Do NOT include /realms/<realm> here.
     # Use internal Kubernetes service DNS to avoid ingress/TLS issues.
-    keycloak_url: str = "http://keycloak.shopno-identity.svc.cluster.local:8080"
+    keycloak_url: str = "http://keycloak.shopno-identity.svc.cluster.local:80"
 
     keycloak_realm: str = "shopnoltd"
 

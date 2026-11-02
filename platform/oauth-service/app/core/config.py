@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     # proxies authenticated requests to this service, so OAuth must validate
     # the same audience rather than its own service name.
     keycloak_audience: str = "api-service"
-    freedomain_service_url: str = "http://freedomain-service.shopno-platform.svc.cluster.local:8080"
+    freedomain_service_url: str = "http://freedomain-service.shopno-platform.svc.cluster.local:80"
     account_provisioning_internal_key: str = ""
     account_provisioning_worker_enabled: bool = False
 

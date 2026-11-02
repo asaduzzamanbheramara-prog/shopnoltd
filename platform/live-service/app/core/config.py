@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     cors_origins: str = "https://*.shopnoltd.dpdns.org"
     owncast_admin_url: str = "https://live.shopnoltd.dpdns.org"
     owncast_api_key: str = "CHANGE_ME_OWNCAST_KEY"
-    storage_service_url: str = "http://storage-service.shopno-platform.svc.cluster.local:8080"
+    storage_service_url: str = "http://storage-service.shopno-platform.svc.cluster.local:80"
     keycloak_issuer: str = "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
     keycloak_audience: str = "live-service"
 
