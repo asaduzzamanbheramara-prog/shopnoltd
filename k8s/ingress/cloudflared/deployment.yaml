@@ -21,11 +21,15 @@ spec:
         app.kubernetes.io/name: cloudflared
     spec:
       serviceAccountName: cloudflared
-      # Run the tunnel connector on the node network so Cloudflare egress is
-      # independent of the pod overlay/CNI datapath. Cluster DNS remains
-      # available for the origin service through ClusterFirstWithHostNet.
+      # Use the WSL host resolver for Cloudflare egress. In this hostNetwork
+      # pod, queries to the cluster DNS Service fail with EPERM; keep the
+      # ingress origin resolvable through its current ClusterIP below.
       hostNetwork: true
-      dnsPolicy: ClusterFirstWithHostNet
+      dnsPolicy: Default
+      hostAliases:
+        - ip: 10.43.174.50
+          hostnames:
+            - ingress-nginx-controller.ingress-nginx.svc.cluster.local
       securityContext:
         runAsNonRoot: true
         runAsUser: 65532
