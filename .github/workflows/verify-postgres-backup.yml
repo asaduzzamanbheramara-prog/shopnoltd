@@ -1,9 +1,9 @@
-name: Verify encrypted PostgreSQL recovery backup
+name: Verify encrypted PostgreSQL and Kubernetes secrets backups
 
 on:
   workflow_dispatch:
   schedule:
-    # Run on GitHub-hosted infrastructure, independent of the production PC.
+    # Independent GitHub-hosted verification, not dependent on the production PC.
     - cron: '0 19 * * *'
   push:
     branches:
@@ -20,9 +20,9 @@ concurrency:
 
 jobs:
   verify:
-    name: Verify backup freshness, checksum, decryption and PostgreSQL archive
+    name: Verify freshness, checksums, decryption and backup structure
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - name: Checkout workflow source
         uses: actions/checkout@v4
@@ -55,20 +55,16 @@ jobs:
           now_epoch="$(date -u +%s)"
           age_seconds="$((now_epoch - backup_epoch))"
           max_age_seconds="$((48 * 60 * 60))"
-          if (( age_seconds < 0 )); then
-            echo "::error::Backup timestamp is in the future; check the backup producer clock."
-            exit 1
-          fi
-          if (( age_seconds > max_age_seconds )); then
-            echo "::error::Latest PostgreSQL backup is older than 48 hours. The self-hosted backup producer may be unavailable."
+          if (( age_seconds < 0 || age_seconds > max_age_seconds )); then
+            echo "::error::Latest backup timestamp is invalid or older than 48 hours."
             echo "Backup timestamp (UTC): $timestamp"
             echo "Backup age (hours): $((age_seconds / 3600))"
             exit 1
           fi
-          echo "PASS: latest PostgreSQL backup is $((age_seconds / 3600)) hours old (limit: 48 hours)."
+          echo "PASS: latest backups are $((age_seconds / 3600)) hours old (limit: 48 hours)."
           echo "Backup timestamp (UTC): $timestamp"
 
-      - name: Validate checksum and decrypt backup
+      - name: Validate checksums and decrypt both backups
         shell: bash
         env:
           BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
@@ -78,26 +74,38 @@ jobs:
             echo "::error::Repository secret BACKUP_ENCRYPTION_KEY is missing."
             exit 1
           }
-          encrypted="backup-source/backup/latest.dump.enc"
-          checksum_file="backup-source/backup/latest.dump.enc.sha256"
-          test -s "$encrypted"
-          test -s "$checksum_file"
-          test -s "backup-source/backup/source-revision.txt"
-
-          expected="$(awk 'NR==1 {print $1}' "$checksum_file")"
-          actual="$(sha256sum "$encrypted" | awk '{print $1}')"
-          if [[ ! "$expected" =~ ^[[:xdigit:]]{64}$ ]] || [[ "$expected" != "$actual" ]]; then
-            echo "::error::Encrypted backup checksum does not match the recorded SHA-256."
-            exit 1
-          fi
-          echo "PASS: encrypted backup SHA-256 matches."
+          cd backup-source/backup
+          for file in latest.dump.enc latest.kubernetes-secrets.json.enc; do
+            test -s "$file"
+            test -s "$file.sha256"
+            expected="$(awk 'NR==1 {print $1}' "$file.sha256")"
+            actual="$(sha256sum "$file" | awk '{print $1}')"
+            if [[ ! "$expected" =~ ^[[:xdigit:]]{64}$ ]] || [[ "$expected" != "$actual" ]]; then
+              echo "::error::SHA-256 mismatch for $file"
+              exit 1
+            fi
+            echo "PASS: $file SHA-256 matches."
+          done
 
           umask 077
+          echo "::add-mask::$BACKUP_ENCRYPTION_KEY"
           openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 \
-            -in "$encrypted" -out "$RUNNER_TEMP/shopnoltd-restore-test.dump" \
+            -in latest.dump.enc -out "$RUNNER_TEMP/shopnoltd-restore-test.dump" \
+            -pass env:BACKUP_ENCRYPTION_KEY
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 \
+            -in latest.kubernetes-secrets.json.enc -out "$RUNNER_TEMP/shopnoltd-secrets-test.json" \
             -pass env:BACKUP_ENCRYPTION_KEY
           test -s "$RUNNER_TEMP/shopnoltd-restore-test.dump"
-          echo "PASS: encrypted backup decrypts with the configured key."
+          python3 - "$RUNNER_TEMP/shopnoltd-secrets-test.json" <<'PY'
+          import json, sys
+          with open(sys.argv[1], encoding="utf-8") as f:
+              doc = json.load(f)
+          items = doc.get("items", [])
+          if doc.get("kind") != "List" or not items:
+              raise SystemExit("Kubernetes Secret export is empty or malformed")
+          namespaces = {item.get("metadata", {}).get("namespace", "") for item in items}
+          print(f"PASS: Kubernetes Secret export decrypts and parses ({len(items)} objects, {len(namespaces)} namespaces).")
+          PY
 
       - name: Validate PostgreSQL custom-format archive
         shell: bash
@@ -115,12 +123,12 @@ jobs:
           fi
           echo "PASS: pg_restore recognizes the custom-format archive."
           echo "Archive entry count: $entries"
-          echo "Backup timestamp: $(cat backup-source/backup/timestamp.txt)"
-          echo "Source revision: $(cat backup-source/backup/source-revision.txt)"
-          echo "NOTE: archive validation is not a full restore test and does not prove all platform data is backed up."
+          echo "NOTE: this is archive validation, not a full isolated restore test."
 
-      - name: Remove decrypted test artifact
+      - name: Remove decrypted test artifacts
         if: always()
         shell: bash
         run: |
-          rm -f "$RUNNER_TEMP/shopnoltd-restore-test.dump" "$RUNNER_TEMP/shopnoltd-archive-list.txt"
+          rm -f "$RUNNER_TEMP/shopnoltd-restore-test.dump" \
+            "$RUNNER_TEMP/shopnoltd-secrets-test.json" \
+            "$RUNNER_TEMP/shopnoltd-archive-list.txt"
