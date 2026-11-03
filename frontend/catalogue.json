@@ -40,6 +40,54 @@
     ]
   },
   {
+    "id": "blender-3d-suite",
+    "name": "Blender 3D creation suite",
+    "kind": "application",
+    "description": "Official Blender 3D creation suite downloads for supported Windows, macOS and Linux computers, including Intel and ARM device options where offered.",
+    "platforms": [
+      "windows",
+      "macos",
+      "linux"
+    ],
+    "architectures": [
+      "x86_64",
+      "arm64",
+      "universal"
+    ],
+    "device_types": [
+      "desktop",
+      "laptop",
+      "workstation"
+    ],
+    "package_formats": [
+      "exe",
+      "zip",
+      "dmg",
+      "tar",
+      "snap"
+    ],
+    "source": {
+      "type": "official-download-page",
+      "url": "https://www.blender.org/download/",
+      "publisher": "Blender Foundation"
+    },
+    "license_note": "Blender is free and open source; assets, add-ons and third-party content may have separate licences.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://www.blender.org/download/"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "installation_guide": "https://docs.blender.org/manual/en/latest/getting_started/installing/index.html",
+    "notes": [
+      "Choose the build for Windows, macOS or Linux and the correct CPU architecture.",
+      "Use stable releases for production work; experimental builds may be unstable.",
+      "Check GPU and memory requirements for rendering workloads."
+    ]
+  },
+  {
     "id": "chromeos-recovery",
     "name": "Chromebook / ChromeOS recovery",
     "kind": "recovery-tool",
@@ -203,6 +251,58 @@
     ]
   },
   {
+    "id": "firefox-browser",
+    "name": "Mozilla Firefox",
+    "kind": "application",
+    "description": "Official Mozilla web browser for supported Windows, macOS, Linux, Android and iOS devices. Select the matching publisher download or app-store route for the target platform.",
+    "platforms": [
+      "windows",
+      "macos",
+      "linux",
+      "android",
+      "ios"
+    ],
+    "architectures": [
+      "x86_64",
+      "arm64",
+      "arm64-v8a",
+      "armeabi-v7a"
+    ],
+    "device_types": [
+      "desktop",
+      "laptop",
+      "phone",
+      "tablet"
+    ],
+    "package_formats": [
+      "exe",
+      "dmg",
+      "tar",
+      "apk",
+      "ipa"
+    ],
+    "source": {
+      "type": "official-download-page",
+      "url": "https://www.mozilla.org/firefox/browsers/",
+      "publisher": "Mozilla"
+    },
+    "license_note": "Firefox source is open source; branded builds and mobile distribution are subject to Mozilla and platform store terms. Review the current licence and supported OS on Mozilla's site.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://www.mozilla.org/firefox/browsers/"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "installation_guide": "https://support.mozilla.org/products/firefox",
+    "notes": [
+      "Shopnoltd links to Mozilla and official app stores; it does not repackage the browser.",
+      "Check the exact OS version and CPU architecture before installing.",
+      "Use the publisher's signature or checksum instructions when provided."
+    ]
+  },
+  {
     "id": "freebsd",
     "name": "FreeBSD",
     "kind": "operating-system",
@@ -242,6 +342,56 @@
     "notes": [
       "Choose a release and architecture supported by the target hardware.",
       "Use the correct installation image for the target platform."
+    ]
+  },
+  {
+    "id": "git-version-control",
+    "name": "Git",
+    "kind": "application",
+    "description": "Official Git version-control tools and installation guidance for Windows, macOS and Linux development environments.",
+    "platforms": [
+      "windows",
+      "macos",
+      "linux"
+    ],
+    "architectures": [
+      "x86_64",
+      "x86",
+      "arm64",
+      "arm"
+    ],
+    "device_types": [
+      "desktop",
+      "laptop",
+      "workstation",
+      "server"
+    ],
+    "package_formats": [
+      "exe",
+      "dmg",
+      "deb",
+      "rpm",
+      "tar"
+    ],
+    "source": {
+      "type": "official-download-page",
+      "url": "https://git-scm.com/downloads",
+      "publisher": "Git Project"
+    },
+    "license_note": "Git is free software distributed under its published open-source licence. Platform package maintainers may provide additional packaging.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://git-scm.com/downloads"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "installation_guide": "https://git-scm.com/book/en/v2/Getting-Started-Installing-Git",
+    "notes": [
+      "Use the package for the target operating system and architecture.",
+      "On Linux, the distribution package manager may provide the recommended build.",
+      "Do not place access tokens or private keys in Git remotes or repository files."
     ]
   },
   {
@@ -400,6 +550,56 @@
       "Use Finder on Mac or Apple Devices on Windows.",
       "Restore erases device content; create and verify a backup first.",
       "Activation Lock and Apple Account requirements still apply."
+    ]
+  },
+  {
+    "id": "libreoffice-suite",
+    "name": "LibreOffice",
+    "kind": "application",
+    "description": "Official LibreOffice productivity suite for supported Windows, macOS and Linux computers, including word processing, spreadsheets and presentations.",
+    "platforms": [
+      "windows",
+      "macos",
+      "linux"
+    ],
+    "architectures": [
+      "x86_64",
+      "x86",
+      "arm64"
+    ],
+    "device_types": [
+      "desktop",
+      "laptop",
+      "workstation"
+    ],
+    "package_formats": [
+      "exe",
+      "msi",
+      "dmg",
+      "deb",
+      "rpm",
+      "flatpak",
+      "tar"
+    ],
+    "source": {
+      "type": "official-download-page",
+      "url": "https://www.libreoffice.org/download/download-libreoffice/",
+      "publisher": "The Document Foundation"
+    },
+    "license_note": "LibreOffice is free and open source under its published licence notices. Extensions and bundled components may have separate terms.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://www.libreoffice.org/download/download-libreoffice/"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "installation_guide": "https://www.libreoffice.org/get-help/install-howto/",
+    "notes": [
+      "Select the correct operating system, architecture and language.",
+      "Use the official download and installation instructions.",
+      "Check release notes before upgrading documents used in production workflows."
     ]
   },
   {
@@ -598,6 +798,105 @@
     ]
   },
   {
+    "id": "nodejs-runtime",
+    "name": "Node.js",
+    "kind": "application",
+    "description": "Official Node.js JavaScript runtime downloads for supported Windows, macOS and Linux systems, including current and long-term-support release channels.",
+    "platforms": [
+      "windows",
+      "macos",
+      "linux"
+    ],
+    "architectures": [
+      "x86_64",
+      "x86",
+      "arm64",
+      "arm"
+    ],
+    "device_types": [
+      "desktop",
+      "laptop",
+      "workstation",
+      "server"
+    ],
+    "package_formats": [
+      "exe",
+      "msi",
+      "pkg",
+      "tar",
+      "source"
+    ],
+    "source": {
+      "type": "official-download-page",
+      "url": "https://nodejs.org/en/download",
+      "publisher": "OpenJS Foundation"
+    },
+    "license_note": "Node.js is open source; bundled dependencies and npm packages may have separate licences. Review official release and licence notices.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://nodejs.org/en/download"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "installation_guide": "https://nodejs.org/en/learn/getting-started/how-to-install-nodejs",
+    "notes": [
+      "Prefer an active LTS release for production applications unless a project requires another supported version.",
+      "Choose the correct CPU architecture and installer format.",
+      "Review package scripts before running npm install or npx commands from unknown projects."
+    ]
+  },
+  {
+    "id": "python-runtime",
+    "name": "Python",
+    "kind": "application",
+    "description": "Official Python programming language runtime and installer downloads for supported Windows, macOS and Linux environments.",
+    "platforms": [
+      "windows",
+      "macos",
+      "linux"
+    ],
+    "architectures": [
+      "x86_64",
+      "x86",
+      "arm64",
+      "arm"
+    ],
+    "device_types": [
+      "desktop",
+      "laptop",
+      "workstation",
+      "server"
+    ],
+    "package_formats": [
+      "exe",
+      "pkg",
+      "tar",
+      "source"
+    ],
+    "source": {
+      "type": "official-download-page",
+      "url": "https://www.python.org/downloads/",
+      "publisher": "Python Software Foundation"
+    },
+    "license_note": "Python is open source under the Python Software Foundation licence. Third-party packages installed through Python may have separate licences.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://www.python.org/downloads/"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "installation_guide": "https://docs.python.org/3/using/index.html",
+    "notes": [
+      "Choose a supported Python release and matching architecture.",
+      "On Linux, prefer the distribution's supported package manager when appropriate.",
+      "Use virtual environments for project dependencies and review packages before installing."
+    ]
+  },
+  {
     "id": "raspberry-pi-os",
     "name": "Raspberry Pi OS and boot media",
     "kind": "operating-system",
@@ -682,6 +981,51 @@
     ]
   },
   {
+    "id": "seven-zip",
+    "name": "7-Zip",
+    "kind": "application",
+    "description": "Official 7-Zip file archiver for supported Windows versions, including x64, x86 and ARM64 builds.",
+    "platforms": [
+      "windows"
+    ],
+    "architectures": [
+      "x86_64",
+      "x86",
+      "arm64"
+    ],
+    "device_types": [
+      "desktop",
+      "laptop",
+      "workstation",
+      "server"
+    ],
+    "package_formats": [
+      "exe",
+      "msi",
+      "zip"
+    ],
+    "source": {
+      "type": "official-download-page",
+      "url": "https://www.7-zip.org/",
+      "publisher": "Igor Pavlov / 7-Zip"
+    },
+    "license_note": "7-Zip is distributed under its published open-source licence; review the exact component and package terms on the official site.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://www.7-zip.org/"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "installation_guide": "https://www.7-zip.org/",
+    "notes": [
+      "Select the x64, x86 or ARM64 package that matches Windows.",
+      "Avoid unofficial repackaged installers.",
+      "Encrypted archives do not replace a verified backup."
+    ]
+  },
+  {
     "id": "ubuntu-desktop",
     "name": "Ubuntu Desktop",
     "kind": "operating-system",
@@ -712,6 +1056,116 @@
       "This is metadata only; no ISO is hosted here.",
       "Confirm current release, hardware compatibility, and published signature/checksum before use.",
       "Installing an OS can erase data; back up first."
+    ]
+  },
+  {
+    "id": "visual-studio-code",
+    "name": "Visual Studio Code",
+    "kind": "application",
+    "description": "Microsoft's free source-code editor for supported Windows, macOS and Linux systems, with architecture-specific installers and package options.",
+    "platforms": [
+      "windows",
+      "macos",
+      "linux"
+    ],
+    "architectures": [
+      "x86_64",
+      "arm64",
+      "arm"
+    ],
+    "device_types": [
+      "desktop",
+      "laptop",
+      "workstation"
+    ],
+    "package_formats": [
+      "exe",
+      "zip",
+      "dmg",
+      "deb",
+      "rpm",
+      "tar",
+      "snap"
+    ],
+    "source": {
+      "type": "official-download-page",
+      "url": "https://code.visualstudio.com/download",
+      "publisher": "Microsoft"
+    },
+    "license_note": "The VS Code product is distributed under Microsoft's product licence; source components and extensions may have separate licences and terms.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://code.visualstudio.com/download"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "installation_guide": "https://code.visualstudio.com/docs/setup/setup-overview",
+    "notes": [
+      "Choose x64 or ARM64 as appropriate for the device.",
+      "The Insiders build is a separate pre-release channel and may be less stable.",
+      "Review extension publisher identity and permissions before installing extensions."
+    ]
+  },
+  {
+    "id": "vlc-media-player",
+    "name": "VLC media player",
+    "kind": "application",
+    "description": "Official VideoLAN media player for Windows, macOS, Linux, Android, iOS and other supported systems. Use the platform-specific download route from VideoLAN.",
+    "platforms": [
+      "windows",
+      "macos",
+      "linux",
+      "android",
+      "ios",
+      "ipados",
+      "chromeos",
+      "bsd"
+    ],
+    "architectures": [
+      "x86_64",
+      "x86",
+      "arm64",
+      "arm",
+      "arm64-v8a",
+      "armeabi-v7a"
+    ],
+    "device_types": [
+      "desktop",
+      "laptop",
+      "phone",
+      "tablet",
+      "tv"
+    ],
+    "package_formats": [
+      "exe",
+      "dmg",
+      "deb",
+      "rpm",
+      "apk",
+      "ipa",
+      "zip"
+    ],
+    "source": {
+      "type": "official-download-page",
+      "url": "https://www.videolan.org/vlc/",
+      "publisher": "VideoLAN"
+    },
+    "license_note": "VLC is free and open source; bundled codecs and third-party components may have separate licence terms. Review VideoLAN's notices.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://www.videolan.org/vlc/"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "installation_guide": "https://www.videolan.org/vlc/",
+    "notes": [
+      "Choose the correct Windows, macOS, Linux, Android or Apple-platform download.",
+      "On phones and tablets, prefer the official app store listing linked by VideoLAN.",
+      "Do not download repackaged installers from third-party download portals."
     ]
   },
   {
