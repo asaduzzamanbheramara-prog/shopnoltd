@@ -39,5 +39,32 @@
     "USB cable is used for supported computer-assisted tools; the phone does not boot a generic Windows/Linux pendrive.",
     "Back up user data and verify WhatsApp Business backup separately before any reset, wipe or firmware operation.",
     "Exact Bangladesh-region firmware package and current supported update path must be confirmed by realme before flashing."
+  ],
+  "tutorials": [
+    {
+      "title": "About Recovery Mode in realme phones",
+      "type": "article",
+      "url": "https://www.realme.com/global/support/troubleshooting",
+      "publisher": "realme",
+      "scope": "Official general recovery-mode instructions. The exact RMX3511 regional firmware package and menu behaviour still require confirmation.",
+      "status": "model-specific-not-verified",
+      "notes": [
+        "The article documents Power + Volume Down to enter Recovery Mode and storage-based updates when a compatible official package is available.",
+        "Back up data and keep the phone powered during updates.",
+        "No verified official realme C35 RMX3511 recovery video was identified; do not substitute a third-party firmware video."
+      ]
+    },
+    {
+      "title": "realme software update instructions",
+      "type": "article",
+      "url": "https://www.realme.com/bd/support/software-update",
+      "publisher": "realme Bangladesh",
+      "scope": "Official Bangladesh support update guidance; confirm the page lists the exact RMX3511 variant and build before using any package.",
+      "status": "official-reference",
+      "notes": [
+        "Do not use a package intended for another region or model.",
+        "Do not interrupt the update process."
+      ]
+    }
   ]
 }
