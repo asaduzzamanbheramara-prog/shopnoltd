@@ -129,6 +129,69 @@
     ]
   },
   {
+    "id": "balena-etcher-usb-image-writer",
+    "name": "balenaEtcher image writer",
+    "kind": "recovery-tool",
+    "description": "Official cross-platform utility for writing supported OS images to USB drives and SD cards from Windows, macOS or Linux. Image and target-device compatibility must be checked separately.",
+    "platforms": [
+      "windows",
+      "macos",
+      "linux"
+    ],
+    "architectures": [
+      "x86_64",
+      "arm64",
+      "universal"
+    ],
+    "device_types": [
+      "desktop",
+      "laptop",
+      "workstation"
+    ],
+    "package_formats": [
+      "exe",
+      "dmg",
+      "deb",
+      "rpm",
+      "zip"
+    ],
+    "source": {
+      "type": "official-download-page",
+      "url": "https://etcher.balena.io/",
+      "publisher": "balena"
+    },
+    "license_note": "balenaEtcher is open source under its published licence. The OS images written with it have separate publisher licences and verification requirements.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://github.com/balena-io/etcher/releases"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "installation_guide": "https://etcher-docs.balena.io/",
+    "tutorials": [
+      {
+        "title": "balenaEtcher official documentation",
+        "type": "article",
+        "url": "https://etcher-docs.balena.io/",
+        "publisher": "balena",
+        "scope": "Official documentation for selecting an image, selecting removable media and flashing.",
+        "status": "official-reference",
+        "notes": [
+          "Writing an image overwrites the selected target drive.",
+          "Not every Windows installer ISO is supported as a directly bootable image; follow the OS publisher's recommended tool."
+        ]
+      }
+    ],
+    "notes": [
+      "Available for Windows, macOS and Linux; check the release architecture.",
+      "Verify the image from the OS publisher before writing.",
+      "Double-check the target device and capacity; never select the system disk.",
+      "Not a phone firmware flashing tool."
+    ]
+  },
+  {
     "id": "blender-3d-suite",
     "name": "Blender 3D creation suite",
     "kind": "application",
@@ -1440,6 +1503,64 @@
     ]
   },
   {
+    "id": "rufus-bootable-usb-writer",
+    "name": "Rufus bootable USB writer",
+    "kind": "recovery-tool",
+    "description": "Official Rufus utility for creating bootable USB media from supported Windows, Linux and UEFI ISO images on a Windows working computer. It is not a universal phone/tablet recovery tool.",
+    "platforms": [
+      "windows"
+    ],
+    "architectures": [
+      "x86_64",
+      "x86",
+      "arm64"
+    ],
+    "device_types": [
+      "desktop",
+      "laptop"
+    ],
+    "package_formats": [
+      "exe",
+      "zip"
+    ],
+    "source": {
+      "type": "official-download-page",
+      "url": "https://rufus.ie/",
+      "publisher": "Rufus / Akeo Consulting"
+    },
+    "license_note": "Rufus is free and open source. Download only from the official Rufus site or its linked official release source.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://rufus.ie/"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "installation_guide": "https://rufus.ie/",
+    "tutorials": [
+      {
+        "title": "Rufus official usage and supported ISO guide",
+        "type": "article",
+        "url": "https://rufus.ie/",
+        "publisher": "Rufus Project",
+        "scope": "Official overview of creating bootable USB media from supported ISO images.",
+        "status": "official-reference",
+        "notes": [
+          "The selected USB is formatted and its data may be erased.",
+          "Verify the OS image and confirm the exact USB model and capacity before starting."
+        ]
+      }
+    ],
+    "notes": [
+      "Windows-only USB writer; run on a separate working Windows PC.",
+      "Select the USB by physical drive identity and capacity; do not select the system disk.",
+      "Creating boot media erases the selected USB in common workflows.",
+      "A Windows ISO may require Rufus-specific options; use Microsoft's Media Creation Tool when appropriate.",
+      "Do not use Rufus to flash Android firmware or arbitrary device firmware."
+    ]
+  },
+  {
     "id": "seven-zip",
     "name": "7-Zip",
     "kind": "application",
@@ -1558,6 +1679,69 @@
       "This is metadata only; no ISO is hosted here.",
       "Confirm current release, hardware compatibility, and published signature/checksum before use.",
       "Installing an OS can erase data; back up first."
+    ]
+  },
+  {
+    "id": "ventoy-multiboot-usb",
+    "name": "Ventoy multi-boot USB",
+    "kind": "recovery-tool",
+    "description": "Official multi-boot USB solution for supported ISO/WIM/IMG/VHD(x)/EFI images. Install Ventoy once on a selected USB, then copy supported image files to its data partition; compatibility varies by image and firmware.",
+    "platforms": [
+      "windows",
+      "linux"
+    ],
+    "architectures": [
+      "x86_64",
+      "x86",
+      "arm64",
+      "arm"
+    ],
+    "device_types": [
+      "desktop",
+      "laptop",
+      "workstation",
+      "server"
+    ],
+    "package_formats": [
+      "zip",
+      "tar",
+      "iso",
+      "img"
+    ],
+    "source": {
+      "type": "official-download-page",
+      "url": "https://www.ventoy.net/en/index.html",
+      "publisher": "Ventoy Project"
+    },
+    "license_note": "Ventoy is open source under its published licence. Each bootable OS image remains subject to its own licence and verification rules.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://www.ventoy.net/en/doc_start.html"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "installation_guide": "https://www.ventoy.net/en/doc_start.html",
+    "tutorials": [
+      {
+        "title": "Ventoy official getting-started guide",
+        "type": "article",
+        "url": "https://www.ventoy.net/en/doc_start.html",
+        "publisher": "Ventoy Project",
+        "scope": "Official instructions for installing Ventoy to USB, copying image files and booting from the menu.",
+        "status": "official-reference",
+        "notes": [
+          "Initial Ventoy installation formats the selected USB and deletes its data.",
+          "Use Update rather than Install when updating an existing Ventoy drive, and verify the target before confirming."
+        ]
+      }
+    ],
+    "notes": [
+      "The initial Install operation formats the selected USB; it is not safe for a drive containing files you need.",
+      "After Ventoy is installed, copying additional ISO files normally does not require reformatting the data partition.",
+      "Check the official tested-image list and release notes; some OS images need special handling.",
+      "Never select the existing E2B USB unless you explicitly intend to replace its layout; Shopnoltd recovery instructions must preserve it by default."
     ]
   },
   {
@@ -1699,6 +1883,63 @@
     "notes": [
       "Metadata points to the official download page, not a direct ISO URL.",
       "Check the target PC's architecture and back up data before installing."
+    ]
+  },
+  {
+    "id": "windows-media-creation-tool",
+    "name": "Microsoft Windows installation media",
+    "kind": "recovery-tool",
+    "description": "Microsoft's official Windows 11/10 Media Creation Tool and installation-media guidance for creating Windows USB installation media on a supported working PC.",
+    "platforms": [
+      "windows"
+    ],
+    "architectures": [
+      "x86_64"
+    ],
+    "device_types": [
+      "desktop",
+      "laptop",
+      "workstation"
+    ],
+    "package_formats": [
+      "exe",
+      "iso"
+    ],
+    "source": {
+      "type": "official-download-page",
+      "url": "https://www.microsoft.com/software-download/windows11",
+      "publisher": "Microsoft"
+    },
+    "license_note": "Windows installation and activation are governed by Microsoft's licence terms. Edition, hardware compatibility and product-key/digital-licence conditions apply.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://support.microsoft.com/en-us/windows/deployment/install-upgrade/create-installation-media-for-windows"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "installation_guide": "https://support.microsoft.com/en-us/windows/deployment/install-upgrade/create-installation-media-for-windows",
+    "tutorials": [
+      {
+        "title": "Create installation media for Windows",
+        "type": "article",
+        "url": "https://support.microsoft.com/en-us/windows/deployment/install-upgrade/create-installation-media-for-windows",
+        "publisher": "Microsoft Support",
+        "scope": "Official instructions for Windows installation USB creation and reinstall media.",
+        "status": "official-reference",
+        "notes": [
+          "Microsoft requires a blank USB of at least 8 GB for the media creation workflow.",
+          "Creating installation media deletes existing content on the selected USB.",
+          "Back up the target PC before a clean install; clean installation can remove personal files and applications."
+        ]
+      }
+    ],
+    "notes": [
+      "Microsoft's current Media Creation Tool for Windows 11 supports x64, not ARM-based PCs; check the official page for current ARM media options.",
+      "Use another working Windows PC to create media if the target PC cannot boot.",
+      "The selected USB will be erased; inspect its exact model and capacity before proceeding.",
+      "This tool does not install Windows on Android phones, iPhones, TVs or routers."
     ]
   },
   {
