@@ -305,6 +305,7 @@ async def complete_upload(upload_id: str, user=Depends(authenticated), s: AsyncS
     upload = await s.get(ProfileVideoUpload, upload_id)
     if not upload or upload.created_by != user.get("sub"):
         raise HTTPException(404, "Upload not found")
+    await _require_profile_access(s, upload.profile_slug, user)
     if datetime.utcnow() - upload.created_at > UPLOAD_TTL:
         raise HTTPException(410, "Upload expired")
     parts, total = [], 0
@@ -352,6 +353,7 @@ async def abort_upload(upload_id: str, user=Depends(authenticated), s: AsyncSess
     upload = await s.get(ProfileVideoUpload, upload_id)
     if not upload or upload.created_by != user.get("sub"):
         raise HTTPException(404, "Upload not found")
+    await _require_profile_access(s, upload.profile_slug, user)
     for n in range(1, upload.total_parts + 1):
         try: client.remove_object(BUCKET, _part_key(upload_id, n))
         except Exception: pass
