@@ -134,5 +134,586 @@
       "Metadata points to the official download page, not a direct ISO URL.",
       "Check the target PC's architecture and back up data before installing."
     ]
+  },
+  {
+    "id": "macos-bootable-installer",
+    "name": "macOS bootable installer (Mac)",
+    "kind": "operating-system",
+    "description": "Apple's supported macOS bootable installer workflow for compatible Intel and Apple silicon Mac models. Create the installer from a working Mac using Apple's tools; the installer is not a universal image for every Mac.",
+    "platforms": [
+      "macos"
+    ],
+    "architectures": [
+      "x86_64",
+      "arm64"
+    ],
+    "device_types": [
+      "mac",
+      "desktop",
+      "laptop"
+    ],
+    "package_formats": [
+      "app",
+      "usb-installer"
+    ],
+    "source": {
+      "type": "official-installation-guide",
+      "url": "https://support.apple.com/101578",
+      "publisher": "Apple"
+    },
+    "license_note": "Use Apple's macOS installer and licence terms. Hardware and macOS-version compatibility are model-specific.",
+    "verification": {
+      "method": "official-documentation",
+      "status": "documented-method-not-image-verified",
+      "evidence_url": "https://support.apple.com/101578"
+    },
+    "pricing": {
+      "model": "included-with-supported-mac"
+    },
+    "notes": [
+      "A bootable USB installer can be used on supported Macs; it does not make macOS installable on arbitrary PCs.",
+      "Apple silicon and Intel Macs use different startup procedures.",
+      "Some firmware and model-specific components may still require internet access."
+    ]
+  },
+  {
+    "id": "macos-recovery",
+    "name": "macOS Recovery",
+    "kind": "system-recovery",
+    "description": "Built-in Apple recovery environment for supported Macs. Use it to repair storage, restore from Time Machine, or reinstall a compatible macOS version; internet access is generally required for reinstall.",
+    "platforms": [
+      "macos"
+    ],
+    "architectures": [
+      "x86_64",
+      "arm64"
+    ],
+    "device_types": [
+      "mac",
+      "desktop",
+      "laptop"
+    ],
+    "package_formats": [
+      "built-in-recovery",
+      "network-reinstall"
+    ],
+    "source": {
+      "type": "official-support-guide",
+      "url": "https://support.apple.com/guide/mac-help/macos-recovery-a-mac-apple-silicon-mchl82829c17/mac",
+      "publisher": "Apple"
+    },
+    "license_note": "Use the recovery version and procedures supported by the exact Mac model.",
+    "verification": {
+      "method": "official-documentation",
+      "status": "documented-method-not-image-verified",
+      "evidence_url": "https://support.apple.com/guide/mac-help/macos-recovery-a-mac-apple-silicon-mchl82829c17/mac"
+    },
+    "pricing": {
+      "model": "included-with-supported-mac"
+    },
+    "notes": [
+      "Recovery is not the same as a generic PC USB installer.",
+      "Apple silicon and Intel recovery startup steps differ.",
+      "Back up before erase/reinstall."
+    ]
+  },
+  {
+    "id": "iphone-ipad-computer-restore",
+    "name": "iPhone and iPad restore",
+    "kind": "device-recovery",
+    "description": "Restore or update supported iPhone/iPad devices using Finder on Mac or Apple Devices on Windows. This is a computer-assisted cable workflow, not a bootable PC pendrive installer.",
+    "platforms": [
+      "ios",
+      "ipados"
+    ],
+    "architectures": [
+      "device-specific"
+    ],
+    "device_types": [
+      "iphone",
+      "ipad"
+    ],
+    "package_formats": [
+      "ipsw-via-supported-restore-workflow"
+    ],
+    "source": {
+      "type": "official-support-guide",
+      "url": "https://support.apple.com/en-la/118107",
+      "publisher": "Apple"
+    },
+    "license_note": "Apple firmware and restore procedures are governed by Apple's terms and device eligibility.",
+    "verification": {
+      "method": "official-documentation",
+      "status": "documented-method-not-image-verified",
+      "evidence_url": "https://support.apple.com/en-la/118107"
+    },
+    "pricing": {
+      "model": "included-with-supported-device"
+    },
+    "notes": [
+      "Use Finder on Mac or Apple Devices on Windows.",
+      "Restore erases device content; create and verify a backup first.",
+      "Activation Lock and Apple Account requirements still apply."
+    ]
+  },
+  {
+    "id": "android-adb-sideload",
+    "name": "Android recovery ADB sideload",
+    "kind": "device-recovery",
+    "description": "For Android devices whose recovery explicitly supports Apply update from ADB, send a device-compatible signed update package from a connected computer over USB. Support depends on the device build and manufacturer.",
+    "platforms": [
+      "android"
+    ],
+    "architectures": [
+      "arm64-v8a",
+      "armeabi-v7a",
+      "x86_64"
+    ],
+    "device_types": [
+      "phone",
+      "tablet"
+    ],
+    "package_formats": [
+      "signed-ota-zip"
+    ],
+    "source": {
+      "type": "official-platform-documentation",
+      "url": "https://source.android.com/docs/core/ota/nonab/device_code",
+      "publisher": "Android Open Source Project"
+    },
+    "license_note": "Only use firmware packages authorized for the exact device model, region, and build.",
+    "verification": {
+      "method": "official-documentation",
+      "status": "documented-method-device-dependent",
+      "evidence_url": "https://source.android.com/docs/core/ota/nonab/device_code"
+    },
+    "pricing": {
+      "model": "varies-by-vendor"
+    },
+    "notes": [
+      "ADB sideload is not a universal Android OS installer.",
+      "Only the sideload command is supported while recovery is in sideload mode.",
+      "Never flash a package for a similar-looking but different model."
+    ]
+  },
+  {
+    "id": "google-pixel-factory-images",
+    "name": "Google Pixel factory images",
+    "kind": "device-recovery",
+    "description": "Official factory images for supported Google Pixel models. Manual flashing can restore factory firmware but can erase all user data and may require bootloader unlocking.",
+    "platforms": [
+      "android"
+    ],
+    "architectures": [
+      "arm64-v8a"
+    ],
+    "device_types": [
+      "phone",
+      "tablet"
+    ],
+    "package_formats": [
+      "factory-image-zip",
+      "flash-script"
+    ],
+    "source": {
+      "type": "official-device-firmware",
+      "url": "https://developers.google.com/android/images",
+      "publisher": "Google"
+    },
+    "license_note": "Google device software terms and model-specific restrictions apply.",
+    "verification": {
+      "method": "publisher-provided-image-and-digest",
+      "status": "official-source-check-required-at-download",
+      "evidence_url": "https://developers.google.com/android/images"
+    },
+    "pricing": {
+      "model": "included-with-supported-device"
+    },
+    "notes": [
+      "Select the exact Pixel model and build.",
+      "Factory image flashing erases user data; back up first.",
+      "Google recommends considering the full OTA package where appropriate."
+    ]
+  },
+  {
+    "id": "google-pixel-full-ota",
+    "name": "Google Pixel full OTA packages",
+    "kind": "device-recovery",
+    "description": "Official full OTA packages for supported Pixel and Nexus devices. These can restore/update supported firmware without the factory-image workflow's required wipe or bootloader unlock in documented cases.",
+    "platforms": [
+      "android"
+    ],
+    "architectures": [
+      "arm64-v8a"
+    ],
+    "device_types": [
+      "phone",
+      "tablet"
+    ],
+    "package_formats": [
+      "ota-zip"
+    ],
+    "source": {
+      "type": "official-device-firmware",
+      "url": "https://developers.google.com/android/ota",
+      "publisher": "Google"
+    },
+    "license_note": "Personal-use and device compatibility restrictions apply; use the exact model and build.",
+    "verification": {
+      "method": "official-source-and-signature",
+      "status": "official-source-check-required-at-download",
+      "evidence_url": "https://developers.google.com/android/ota"
+    },
+    "pricing": {
+      "model": "included-with-supported-device"
+    },
+    "notes": [
+      "OTA sideload support depends on the exact device and recovery build.",
+      "Do not assume every Android vendor supports Pixel OTA packages."
+    ]
+  },
+  {
+    "id": "chromeos-recovery",
+    "name": "Chromebook / ChromeOS recovery",
+    "kind": "device-recovery",
+    "description": "Recover supported Chromebooks using built-in internet recovery or a USB recovery drive prepared with Google's Chromebook Recovery process.",
+    "platforms": [
+      "chromeos"
+    ],
+    "architectures": [
+      "arm64",
+      "x86_64"
+    ],
+    "device_types": [
+      "chromebook",
+      "laptop"
+    ],
+    "package_formats": [
+      "usb-recovery-media"
+    ],
+    "source": {
+      "type": "official-recovery-guide",
+      "url": "https://support.google.com/chromebook/answer/1080595?hl=en",
+      "publisher": "Google"
+    },
+    "license_note": "Recovery image and device support are controlled by Google and the Chromebook manufacturer.",
+    "verification": {
+      "method": "official-recovery-workflow",
+      "status": "documented-method-device-dependent",
+      "evidence_url": "https://support.google.com/chromebook/answer/1080595?hl=en"
+    },
+    "pricing": {
+      "model": "included-with-supported-device"
+    },
+    "notes": [
+      "USB recovery erases local Chromebook storage.",
+      "Some newer Chromebooks support internet recovery instead.",
+      "Use the recovery media for the exact Chromebook model."
+    ]
+  },
+  {
+    "id": "raspberry-pi-os-imager",
+    "name": "Raspberry Pi OS and boot media",
+    "kind": "operating-system",
+    "description": "Use Raspberry Pi Imager on Windows, macOS, or Linux to download and write Raspberry Pi OS or supported third-party images to microSD or compatible USB storage.",
+    "platforms": [
+      "linux",
+      "raspberry-pi-os"
+    ],
+    "architectures": [
+      "arm64",
+      "armhf"
+    ],
+    "device_types": [
+      "single-board-computer",
+      "embedded",
+      "raspberry-pi"
+    ],
+    "package_formats": [
+      "img",
+      "xz",
+      "micro-sd",
+      "usb-storage"
+    ],
+    "source": {
+      "type": "official-installation-documentation",
+      "url": "https://www.raspberrypi.com/documentation/computers/getting-started.html",
+      "publisher": "Raspberry Pi"
+    },
+    "license_note": "Review the OS image and third-party distribution licences individually.",
+    "verification": {
+      "method": "imager-write-and-verify",
+      "status": "documented-method-device-dependent",
+      "evidence_url": "https://www.raspberrypi.com/documentation/computers/getting-started.html"
+    },
+    "pricing": {
+      "model": "free-tool-hardware-required"
+    },
+    "notes": [
+      "Most Raspberry Pi models use microSD; some models also support USB/NVMe boot.",
+      "Raspberry Pi Imager verifies the written media.",
+      "Selecting a storage target and writing overwrites that target."
+    ]
+  },
+  {
+    "id": "fedora-workstation",
+    "name": "Fedora Workstation",
+    "kind": "operating-system",
+    "description": "Official Fedora Linux desktop image and installation documentation for supported x86_64 and ARM64 systems.",
+    "platforms": [
+      "linux"
+    ],
+    "architectures": [
+      "x86_64",
+      "arm64"
+    ],
+    "device_types": [
+      "desktop",
+      "laptop",
+      "workstation"
+    ],
+    "package_formats": [
+      "iso",
+      "live-usb"
+    ],
+    "source": {
+      "type": "official-download-page",
+      "url": "https://fedoraproject.org/workstation/download",
+      "publisher": "Fedora Project"
+    },
+    "license_note": "Review Fedora and bundled component licences; do not redistribute modified images without checking terms.",
+    "verification": {
+      "method": "publisher-checksum-and-signature",
+      "status": "official-source-check-required-at-download",
+      "evidence_url": "https://fedoraproject.org/security"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "notes": [
+      "Check current hardware requirements and architecture.",
+      "Verify downloaded media using Fedora's official instructions."
+    ]
+  },
+  {
+    "id": "debian",
+    "name": "Debian",
+    "kind": "operating-system",
+    "description": "Official Debian installation images and installation documentation for supported architectures and device classes.",
+    "platforms": [
+      "linux"
+    ],
+    "architectures": [
+      "amd64",
+      "arm64",
+      "armhf",
+      "i386"
+    ],
+    "device_types": [
+      "desktop",
+      "laptop",
+      "server",
+      "embedded"
+    ],
+    "package_formats": [
+      "iso",
+      "netinst",
+      "live-image"
+    ],
+    "source": {
+      "type": "official-download-page",
+      "url": "https://www.debian.org/distrib/",
+      "publisher": "Debian Project"
+    },
+    "license_note": "Debian consists of packages with individual licences; consult the official Debian Free Software Guidelines and package notices.",
+    "verification": {
+      "method": "publisher-checksum-and-signature",
+      "status": "official-source-check-required-at-download",
+      "evidence_url": "https://www.debian.org/CD/verify"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "notes": [
+      "Select the correct architecture and installer type.",
+      "Some installer variants require network access to fetch packages."
+    ]
+  },
+  {
+    "id": "freebsd",
+    "name": "FreeBSD",
+    "kind": "operating-system",
+    "description": "Official FreeBSD installation images for supported server, workstation, and embedded use cases.",
+    "platforms": [
+      "freebsd"
+    ],
+    "architectures": [
+      "amd64",
+      "arm64",
+      "arm"
+    ],
+    "device_types": [
+      "server",
+      "desktop",
+      "workstation",
+      "embedded"
+    ],
+    "package_formats": [
+      "iso",
+      "memstick-img"
+    ],
+    "source": {
+      "type": "official-download-page",
+      "url": "https://www.freebsd.org/where/",
+      "publisher": "FreeBSD Project"
+    },
+    "license_note": "FreeBSD and included third-party components have their own licence terms.",
+    "verification": {
+      "method": "publisher-checksum-and-signature",
+      "status": "official-source-check-required-at-download",
+      "evidence_url": "https://www.freebsd.org/releases/"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "notes": [
+      "Choose a release and architecture supported by the target hardware.",
+      "Memstick images are intended for supported USB installation workflows."
+    ]
+  },
+  {
+    "id": "windows-software-package-manager",
+    "name": "Windows software installation sources",
+    "kind": "software-source",
+    "description": "Use Microsoft Store, Windows Package Manager (winget), or each software publisher's official download page for Windows applications, drivers, and utilities. Availability and silent/offline installation options vary by publisher.",
+    "platforms": [
+      "windows"
+    ],
+    "architectures": [
+      "x86_64",
+      "arm64"
+    ],
+    "device_types": [
+      "desktop",
+      "laptop",
+      "workstation",
+      "server"
+    ],
+    "package_formats": [
+      "msix",
+      "msi",
+      "exe",
+      "appx",
+      "msixbundle"
+    ],
+    "source": {
+      "type": "official-platform-documentation",
+      "url": "https://learn.microsoft.com/en-us/windows/package-manager/winget/",
+      "publisher": "Microsoft"
+    },
+    "license_note": "Each application has its own publisher, licence, and redistribution restrictions. Do not bundle installers without permission.",
+    "verification": {
+      "method": "publisher-signature-and-hash-where-provided",
+      "status": "source-guidance-not-each-app-verified",
+      "evidence_url": "https://learn.microsoft.com/en-us/windows/package-manager/winget/"
+    },
+    "pricing": {
+      "model": "varies-by-application"
+    },
+    "notes": [
+      "Prefer Microsoft Store or publisher-signed installers.",
+      "Offline installer availability is application-specific.",
+      "Drivers and firmware must match exact hardware IDs and model."
+    ]
+  },
+  {
+    "id": "linux-software-package-formats",
+    "name": "Linux software installation methods",
+    "kind": "software-source",
+    "description": "Guidance for supported Linux package ecosystems: APT/DEB, DNF/RPM, Flatpak, Snap, and AppImage. Use the distribution repository or the application's official publisher source.",
+    "platforms": [
+      "linux"
+    ],
+    "architectures": [
+      "x86_64",
+      "arm64",
+      "armhf"
+    ],
+    "device_types": [
+      "desktop",
+      "laptop",
+      "server",
+      "single-board-computer"
+    ],
+    "package_formats": [
+      "deb",
+      "rpm",
+      "flatpak",
+      "snap",
+      "appimage",
+      "tar.gz"
+    ],
+    "source": {
+      "type": "official-platform-documentation",
+      "url": "https://flatpak.org/setup/",
+      "publisher": "Flatpak and distribution maintainers"
+    },
+    "license_note": "Package licences and redistribution rules vary by application and distribution.",
+    "verification": {
+      "method": "repository-signature-or-publisher-signature",
+      "status": "source-guidance-not-each-app-verified",
+      "evidence_url": "https://flatpak.org/setup/"
+    },
+    "pricing": {
+      "model": "varies-by-application"
+    },
+    "notes": [
+      "Use the package manager supported by the installed distribution.",
+      "Avoid random third-party mirrors and unverified scripts.",
+      "Offline installation requires matching dependencies and architecture."
+    ]
+  },
+  {
+    "id": "macos-software-installation",
+    "name": "macOS software installation sources",
+    "kind": "software-source",
+    "description": "Install Mac applications through the Mac App Store or the software publisher's official notarized/signature-verified distribution. Common package types include .pkg and .dmg; USB can carry installers but does not bypass Gatekeeper or licensing.",
+    "platforms": [
+      "macos"
+    ],
+    "architectures": [
+      "x86_64",
+      "arm64"
+    ],
+    "device_types": [
+      "mac",
+      "desktop",
+      "laptop"
+    ],
+    "package_formats": [
+      "pkg",
+      "dmg",
+      "app",
+      "zip"
+    ],
+    "source": {
+      "type": "official-platform-support",
+      "url": "https://support.apple.com/guide/mac-help/install-and-uninstall-apps-mh35835/mac",
+      "publisher": "Apple"
+    },
+    "license_note": "Applications remain subject to each developer's licence and distribution terms.",
+    "verification": {
+      "method": "publisher-signature-and-notarization-where-applicable",
+      "status": "source-guidance-not-each-app-verified",
+      "evidence_url": "https://support.apple.com/guide/mac-help/install-and-uninstall-apps-mh35835/mac"
+    },
+    "pricing": {
+      "model": "varies-by-application"
+    },
+    "notes": [
+      "Prefer Mac App Store or the developer's official website.",
+      "Check Intel versus Apple silicon compatibility.",
+      "A USB copy of an app installer does not guarantee offline activation or dependencies."
+    ]
   }
 ]
