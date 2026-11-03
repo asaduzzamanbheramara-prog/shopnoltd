@@ -1,0 +1,42 @@
+{
+  "id": "google-play-store",
+  "name": "Google Play Store app installation",
+  "kind": "documentation",
+  "description": "Official Google Play Store route for finding and installing Android apps on supported, certified devices. Availability depends on device certification, region, Android version and app requirements.",
+  "platforms": [
+    "android"
+  ],
+  "architectures": [
+    "arm64-v8a",
+    "armeabi-v7a",
+    "x86_64"
+  ],
+  "device_types": [
+    "phone",
+    "tablet",
+    "tv"
+  ],
+  "package_formats": [
+    "apk"
+  ],
+  "source": {
+    "type": "documentation",
+    "url": "https://play.google.com/store/apps",
+    "publisher": "Google"
+  },
+  "license_note": "Apps distributed through Google Play have individual publisher licences, permissions and data practices. Shopnoltd does not mirror or re-sign Play Store APKs.",
+  "verification": {
+    "method": "source-only-not-yet-verified",
+    "status": "needs-review",
+    "evidence_url": "https://support.google.com/googleplay/answer/113412?hl=en"
+  },
+  "pricing": {
+    "model": "free"
+  },
+  "installation_guide": "https://support.google.com/googleplay/answer/113412?hl=en",
+  "notes": [
+    "Use Play Store on supported certified Android devices; do not sideload an APK just because an app is missing.",
+    "Check publisher, permissions, compatibility and regional availability.",
+    "Some Android devices do not include Google Play services."
+  ]
+}
