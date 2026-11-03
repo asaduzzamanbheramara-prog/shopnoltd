@@ -1,0 +1,44 @@
+{
+  "id": "windows-software-installation",
+  "name": "Windows software installation sources",
+  "kind": "documentation",
+  "description": "Use Microsoft Store, Windows Package Manager (winget), or each software publisher's official download page for Windows applications, drivers, and utilities. Offline installation availability varies by publisher.",
+  "platforms": [
+    "windows"
+  ],
+  "architectures": [
+    "x86_64",
+    "arm64"
+  ],
+  "device_types": [
+    "desktop",
+    "laptop",
+    "workstation",
+    "server"
+  ],
+  "package_formats": [
+    "msix",
+    "appx",
+    "msi",
+    "exe"
+  ],
+  "source": {
+    "type": "documentation",
+    "url": "https://learn.microsoft.com/en-us/windows/package-manager/winget/",
+    "publisher": "Microsoft"
+  },
+  "license_note": "Each application has its own publisher, licence, and redistribution restrictions. Do not bundle installers without permission.",
+  "verification": {
+    "method": "source-only-not-yet-verified",
+    "status": "needs-review",
+    "evidence_url": "https://learn.microsoft.com/en-us/windows/package-manager/winget/"
+  },
+  "pricing": {
+    "model": "free"
+  },
+  "notes": [
+    "Prefer Microsoft Store or publisher-signed installers.",
+    "Offline installer availability is application-specific.",
+    "Drivers and firmware must match exact hardware IDs and model."
+  ]
+}
