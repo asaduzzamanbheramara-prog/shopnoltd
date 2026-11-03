@@ -1,0 +1,48 @@
+{
+  "id": "audacity-audio-editor",
+  "name": "Audacity audio editor",
+  "kind": "application",
+  "description": "Official Audacity audio recording and editing application for supported Windows, macOS and Linux systems.",
+  "platforms": [
+    "windows",
+    "macos",
+    "linux"
+  ],
+  "architectures": [
+    "x86_64",
+    "arm64",
+    "universal"
+  ],
+  "device_types": [
+    "desktop",
+    "laptop",
+    "workstation"
+  ],
+  "package_formats": [
+    "exe",
+    "dmg",
+    "appimage",
+    "flatpak",
+    "tar"
+  ],
+  "source": {
+    "type": "official-download-page",
+    "url": "https://www.audacityteam.org/download/",
+    "publisher": "Audacity Team"
+  },
+  "license_note": "Audacity is open source; review current privacy notices, bundled components, plugins and licence terms on the official project site.",
+  "verification": {
+    "method": "source-only-not-yet-verified",
+    "status": "needs-review",
+    "evidence_url": "https://www.audacityteam.org/download/"
+  },
+  "pricing": {
+    "model": "free"
+  },
+  "installation_guide": "https://support.audacityteam.org/",
+  "notes": [
+    "Download only from the official Audacity project page.",
+    "Check current OS support and optional plugin requirements.",
+    "Review the privacy and telemetry settings presented by the current release."
+  ]
+}
