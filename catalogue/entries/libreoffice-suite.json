@@ -29,19 +29,19 @@
   ],
   "source": {
     "type": "official-download-page",
-    "url": "https://www.libreoffice.org/download/download-libreoffice/",
+    "url": "https://www.libreoffice.org/download/",
     "publisher": "The Document Foundation"
   },
   "license_note": "LibreOffice is free and open source under its published licence notices. Extensions and bundled components may have separate terms.",
   "verification": {
     "method": "source-only-not-yet-verified",
     "status": "needs-review",
-    "evidence_url": "https://www.libreoffice.org/download/download-libreoffice/"
+    "evidence_url": "https://www.libreoffice.org/download/"
   },
   "pricing": {
     "model": "free"
   },
-  "installation_guide": "https://www.libreoffice.org/get-help/install-howto/",
+  "installation_guide": "https://www.libreoffice.org/installation-instructions/",
   "notes": [
     "Select the correct operating system, architecture and language.",
     "Use the official download and installation instructions.",
