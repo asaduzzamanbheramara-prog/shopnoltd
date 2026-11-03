@@ -1,0 +1,40 @@
+{
+  "id": "iphone-ipad-computer-restore",
+  "name": "iPhone and iPad computer restore",
+  "kind": "recovery-tool",
+  "description": "Restore or update supported iPhone and iPad devices using Finder on Mac or Apple Devices on Windows. This is a computer-assisted cable workflow, not a bootable pendrive installer.",
+  "platforms": [
+    "ios",
+    "ipados"
+  ],
+  "architectures": [
+    "arm64"
+  ],
+  "device_types": [
+    "phone",
+    "tablet"
+  ],
+  "package_formats": [
+    "zip",
+    "other"
+  ],
+  "source": {
+    "type": "documentation",
+    "url": "https://support.apple.com/en-la/118107",
+    "publisher": "Apple"
+  },
+  "license_note": "Apple firmware and restore procedures are governed by Apple's terms and device eligibility.",
+  "verification": {
+    "method": "source-only-not-yet-verified",
+    "status": "needs-review",
+    "evidence_url": "https://support.apple.com/en-la/118107"
+  },
+  "pricing": {
+    "model": "free"
+  },
+  "notes": [
+    "Use Finder on Mac or Apple Devices on Windows.",
+    "Restore erases device content; create and verify a backup first.",
+    "Activation Lock and Apple Account requirements still apply."
+  ]
+}
