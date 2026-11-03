@@ -54,6 +54,19 @@
       ]
     },
     {
+      "title": "Creating and Using a Microsoft Recovery USB Drive | HP Computers",
+      "type": "video",
+      "url": "https://www.youtube.com/watch?v=U52z0IQB2ro",
+      "publisher": "HP Support",
+      "scope": "General Windows recovery USB walkthrough from HP Support. It does not validate the exact inspected HP 14s-cf2xxx product number or replace its model-specific recovery check.",
+      "status": "official-reference",
+      "notes": [
+        "The video is published by the verified HP Support YouTube channel.",
+        "Creating the recovery USB removes data from the selected USB; use a separate blank drive.",
+        "Back up the target PC before using recovery media."
+      ]
+    },
+    {
       "title": "HP PCs — Software recovery options (Windows)",
       "type": "article",
       "url": "https://support.hp.com/us-en/document/ish_5787612-5787757-16",
