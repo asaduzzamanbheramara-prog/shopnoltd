@@ -28,7 +28,7 @@ const EDUCATION = [
 ]
 
 export default function DataManagementProfile() {
-  const profileUrl = window.location.origin + '/profile/data-management'
+  const profileUrl = window.location.origin + '/profile-share/data-management'
   useEffect(() => { document.title = 'Md. Asaduzzaman — Data Management Profile — Shopnoltd' }, [])
 
   return (
