@@ -1,0 +1,50 @@
+{
+  "id": "nodejs-runtime",
+  "name": "Node.js",
+  "kind": "application",
+  "description": "Official Node.js JavaScript runtime downloads for supported Windows, macOS and Linux systems, including current and long-term-support release channels.",
+  "platforms": [
+    "windows",
+    "macos",
+    "linux"
+  ],
+  "architectures": [
+    "x86_64",
+    "x86",
+    "arm64",
+    "arm"
+  ],
+  "device_types": [
+    "desktop",
+    "laptop",
+    "workstation",
+    "server"
+  ],
+  "package_formats": [
+    "exe",
+    "msi",
+    "pkg",
+    "tar",
+    "source"
+  ],
+  "source": {
+    "type": "official-download-page",
+    "url": "https://nodejs.org/en/download",
+    "publisher": "OpenJS Foundation"
+  },
+  "license_note": "Node.js is open source; bundled dependencies and npm packages may have separate licences. Review official release and licence notices.",
+  "verification": {
+    "method": "source-only-not-yet-verified",
+    "status": "needs-review",
+    "evidence_url": "https://nodejs.org/en/download"
+  },
+  "pricing": {
+    "model": "free"
+  },
+  "installation_guide": "https://nodejs.org/en/learn/getting-started/how-to-install-nodejs",
+  "notes": [
+    "Prefer an active LTS release for production applications unless a project requires another supported version.",
+    "Choose the correct CPU architecture and installer format.",
+    "Review package scripts before running npm install or npx commands from unknown projects."
+  ]
+}
