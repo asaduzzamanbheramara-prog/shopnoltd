@@ -1,0 +1,40 @@
+{
+  "id": "android-adb-sideload",
+  "name": "Android recovery ADB sideload",
+  "kind": "recovery-tool",
+  "description": "For Android devices whose recovery explicitly supports Apply update from ADB, send a device-compatible signed update package from a connected computer over USB. Support depends on the device build and manufacturer.",
+  "platforms": [
+    "android"
+  ],
+  "architectures": [
+    "arm64-v8a",
+    "armeabi-v7a",
+    "x86_64"
+  ],
+  "device_types": [
+    "phone",
+    "tablet"
+  ],
+  "package_formats": [
+    "zip"
+  ],
+  "source": {
+    "type": "documentation",
+    "url": "https://source.android.com/docs/core/ota/nonab/device_code",
+    "publisher": "Android Open Source Project"
+  },
+  "license_note": "Only use firmware packages authorized for the exact device model, region, and build.",
+  "verification": {
+    "method": "source-only-not-yet-verified",
+    "status": "needs-review",
+    "evidence_url": "https://source.android.com/docs/core/ota/nonab/device_code"
+  },
+  "pricing": {
+    "model": "free"
+  },
+  "notes": [
+    "ADB sideload is not a universal Android OS installer.",
+    "Only the sideload command works while recovery is in sideload mode.",
+    "Never flash a package for a similar-looking but different model."
+  ]
+}
