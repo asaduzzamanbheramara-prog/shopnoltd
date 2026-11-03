@@ -74,7 +74,7 @@ export default function Profiles() {
             {profile.summary && <p style={{ color: '#64748b', lineHeight: 1.6 }}>{profile.summary.slice(0, 240)}{profile.summary.length > 240 ? '…' : ''}</p>}
             {profile.location && <small style={{ color: '#64748b' }}>{profile.location}</small>}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 14 }}>
-              <Link to={'/profile/' + profile.slug} style={{ padding: '9px 12px', borderRadius: 8, background: '#0284c7', color: 'white', textDecoration: 'none', fontWeight: 700 }}>View profile & videos</Link>
+              <Link to={'/profile-view/' + profile.slug} style={{ padding: '9px 12px', borderRadius: 8, background: '#0284c7', color: 'white', textDecoration: 'none', fontWeight: 700 }}>View profile & videos</Link>
               <button type="button" onClick={() => shareProfile(url, profile.display_name)} style={{ padding: '9px 12px', borderRadius: 8, border: '1px solid #0284c7', background: 'white', color: '#0369a1', fontWeight: 700, cursor: 'pointer' }}>Share</button>
             </div>
           </article>
