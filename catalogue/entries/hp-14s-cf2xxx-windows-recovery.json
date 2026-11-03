@@ -38,5 +38,32 @@
     "Windows installation USB can boot compatible PCs; creating it erases the selected USB unless using a compatible multiboot workflow.",
     "Exact HP product number and driver set still need to be collected before claiming full model-specific support.",
     "Existing 120 GB E2B USB must be preserved; do not format or repartition it."
+  ],
+  "tutorials": [
+    {
+      "title": "How to Use the HP Cloud Recovery Tool in Windows 11",
+      "type": "video",
+      "url": "https://www.youtube.com/watch?v=xmtXOU40vxk",
+      "publisher": "HP Support",
+      "scope": "General HP Windows 11 Cloud Recovery Tool walkthrough. HP model eligibility and the exact product number must be checked; this is not proof that the inspected 14s-cf2xxx is supported.",
+      "status": "official-reference",
+      "notes": [
+        "The video is published by the verified HP Support YouTube channel.",
+        "Use HP Cloud Recovery only if the exact HP product number is eligible.",
+        "Creating recovery media can erase the selected USB; preserve existing E2B media."
+      ]
+    },
+    {
+      "title": "HP PCs — Software recovery options (Windows)",
+      "type": "article",
+      "url": "https://support.hp.com/us-en/document/ish_5787612-5787757-16",
+      "publisher": "HP Support",
+      "scope": "Official overview of HP Windows recovery options and the distinction between recovery methods.",
+      "status": "official-reference",
+      "notes": [
+        "Review the model's exact support page before choosing a recovery image.",
+        "Back up files before factory recovery or reinstall."
+      ]
+    }
   ]
 }
