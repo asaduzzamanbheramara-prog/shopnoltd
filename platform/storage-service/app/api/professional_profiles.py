@@ -246,9 +246,10 @@ async def share_profile(slug: str, s: AsyncSession = Depends(db)):
         '</main></body></html>'
     )
     robots = "noindex, nofollow" if visibility == "unlisted" else "index, follow"
+    cache_control = "private, no-store" if visibility == "unlisted" else "public, max-age=60"
     return HTMLResponse(
         content=html,
-        headers={"Cache-Control": "public, max-age=60", "X-Robots-Tag": robots},
+        headers={"Cache-Control": cache_control, "X-Robots-Tag": robots},
     )
 
 
