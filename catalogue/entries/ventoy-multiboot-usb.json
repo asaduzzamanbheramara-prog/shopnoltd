@@ -1,0 +1,63 @@
+{
+  "id": "ventoy-multiboot-usb",
+  "name": "Ventoy multi-boot USB",
+  "kind": "recovery-tool",
+  "description": "Official multi-boot USB solution for supported ISO/WIM/IMG/VHD(x)/EFI images. Install Ventoy once on a selected USB, then copy supported image files to its data partition; compatibility varies by image and firmware.",
+  "platforms": [
+    "windows",
+    "linux"
+  ],
+  "architectures": [
+    "x86_64",
+    "x86",
+    "arm64",
+    "arm"
+  ],
+  "device_types": [
+    "desktop",
+    "laptop",
+    "workstation",
+    "server"
+  ],
+  "package_formats": [
+    "zip",
+    "tar",
+    "iso",
+    "img"
+  ],
+  "source": {
+    "type": "official-download-page",
+    "url": "https://www.ventoy.net/en/index.html",
+    "publisher": "Ventoy Project"
+  },
+  "license_note": "Ventoy is open source under its published licence. Each bootable OS image remains subject to its own licence and verification rules.",
+  "verification": {
+    "method": "source-only-not-yet-verified",
+    "status": "needs-review",
+    "evidence_url": "https://www.ventoy.net/en/doc_start.html"
+  },
+  "pricing": {
+    "model": "free"
+  },
+  "installation_guide": "https://www.ventoy.net/en/doc_start.html",
+  "tutorials": [
+    {
+      "title": "Ventoy official getting-started guide",
+      "type": "article",
+      "url": "https://www.ventoy.net/en/doc_start.html",
+      "publisher": "Ventoy Project",
+      "scope": "Official instructions for installing Ventoy to USB, copying image files and booting from the menu.",
+      "status": "official-reference",
+      "notes": [
+        "Initial Ventoy installation formats the selected USB and deletes its data.",
+        "Use Update rather than Install when updating an existing Ventoy drive, and verify the target before confirming."
+      ]
+    }
+  ],
+  "notes": [
+    "The initial Install operation formats the selected USB; it is not safe for a drive containing files you need.",
+    "After Ventoy is installed, copying additional ISO files normally does not require reformatting the data partition.",
+    "Check the official tested-image list and release notes; some OS images need special handling.",
+    "Never select the existing E2B USB unless you explicitly intend to replace its layout; Shopnoltd recovery instructions must preserve it by default."
+  ]
+}
