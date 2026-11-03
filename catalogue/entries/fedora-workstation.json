@@ -1,0 +1,39 @@
+{
+  "id": "fedora-workstation",
+  "name": "Fedora Workstation",
+  "kind": "operating-system",
+  "description": "Official Fedora Linux desktop image and installation documentation for supported x86_64 and ARM64 systems.",
+  "platforms": [
+    "linux"
+  ],
+  "architectures": [
+    "x86_64",
+    "arm64"
+  ],
+  "device_types": [
+    "desktop",
+    "laptop",
+    "workstation"
+  ],
+  "package_formats": [
+    "iso"
+  ],
+  "source": {
+    "type": "official-download-page",
+    "url": "https://fedoraproject.org/workstation/download",
+    "publisher": "Fedora Project"
+  },
+  "license_note": "Review Fedora and bundled component licences; do not redistribute modified images without checking terms.",
+  "verification": {
+    "method": "source-only-not-yet-verified",
+    "status": "needs-review",
+    "evidence_url": "https://fedoraproject.org/security"
+  },
+  "pricing": {
+    "model": "free"
+  },
+  "notes": [
+    "Check current hardware requirements and architecture.",
+    "Verify downloaded media using Fedora's official instructions."
+  ]
+}
