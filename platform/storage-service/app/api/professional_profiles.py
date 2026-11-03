@@ -84,6 +84,17 @@ def _bounded_list(payload: dict, key: str, current: list):
     return clean
 
 
+@router.get("/directory")
+async def public_directory(s: AsyncSession = Depends(db)):
+    result = await s.execute(
+        select(ProfessionalProfile)
+        .where(ProfessionalProfile.visibility == "public")
+        .order_by(ProfessionalProfile.updated_at.desc())
+        .limit(100)
+    )
+    return [_serialize(profile, owner=False) for profile in result.scalars().all()]
+
+
 @router.get("/me")
 async def get_my_profile(user=Depends(current_user), s: AsyncSession = Depends(db)):
     subject = user["sub"]
