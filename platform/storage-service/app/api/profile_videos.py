@@ -14,12 +14,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.db import SessionLocal
 from app.core.minio_client import client
 from app.core.security import verify_token
-from app.models.models import ProfileVideo, ProfileVideoUpload
+from app.models.models import ProfessionalProfile, ProfileVideo, ProfileVideoUpload
 
 router = APIRouter()
 bearer = HTTPBearer()
 BUCKET = "shopno-profile-videos"
-PROFILES = {"data-management", "interior-business"}
+LEGACY_PUBLIC_PROFILES = {"data-management", "interior-business"}
 CHUNK_SIZE = 8 * 1024 * 1024
 MAX_BYTES = 500 * 1024 * 1024
 MAX_PARTS = (MAX_BYTES + CHUNK_SIZE - 1) // CHUNK_SIZE
@@ -29,7 +29,7 @@ RANGE_RE = re.compile(r"^bytes=(\d*)-(\d*)$")
 
 
 def _profile(slug: str) -> str:
-    if slug not in PROFILES:
+    if not isinstance(slug, str) or not re.fullmatch(r"[a-z0-9][a-z0-9-]{1,63}", slug):
         raise HTTPException(404, "Profile not found")
     return slug
 
@@ -53,6 +53,34 @@ async def admin(creds: HTTPAuthorizationCredentials = Depends(bearer)):
 async def db():
     async with SessionLocal() as s:
         yield s
+
+
+async def authenticated(creds: HTTPAuthorizationCredentials = Depends(bearer)):
+    try:
+        user = await verify_token(creds.credentials)
+    except Exception as exc:
+        raise HTTPException(401, "Invalid authentication token") from exc
+    if not user.get("sub"):
+        raise HTTPException(401, "Authenticated account has no subject identifier")
+    return user
+
+
+async def _require_profile_access(s: AsyncSession, profile_slug: str, user: dict):
+    if _admin_roles(user):
+        return
+    result = await s.execute(select(ProfessionalProfile).where(ProfessionalProfile.slug == profile_slug))
+    profile = result.scalar_one_or_none()
+    if not profile or profile.owner_sub != user.get("sub"):
+        raise HTTPException(404, "Profile not found")
+
+
+async def _require_public_profile(s: AsyncSession, profile_slug: str):
+    if profile_slug in LEGACY_PUBLIC_PROFILES:
+        return
+    result = await s.execute(select(ProfessionalProfile).where(ProfessionalProfile.slug == profile_slug))
+    profile = result.scalar_one_or_none()
+    if not profile or profile.visibility == "private":
+        raise HTTPException(404, "Profile not found")
 
 
 def _check_magic(content_type: str, data: bytes) -> bool:
@@ -129,6 +157,7 @@ def _video_key(profile_slug: str, video_id: str, suffix: str) -> str:
 @router.get("/public/{profile_slug}")
 async def public_list(profile_slug: str, s: AsyncSession = Depends(db)):
     _profile(profile_slug)
+    await _require_public_profile(s, profile_slug)
     res = await s.execute(select(ProfileVideo).where(ProfileVideo.profile_slug == profile_slug, ProfileVideo.published.is_(True)).order_by(ProfileVideo.sort_order, ProfileVideo.created_at))
     return [{"id": v.id, "title": v.title, "description": v.description, "source_type": v.source_type, "embed_provider": v.embed_provider, "embed_ref": v.embed_ref, "stream_url": f"/api/v1/profile-videos/stream/{v.id}" if v.source_type == "upload" else None, "download_url": f"/api/v1/profile-videos/download/{v.id}" if v.source_type == "upload" else None, "content_type": v.content_type, "size": v.size} for v in res.scalars().all()]
 
@@ -138,6 +167,7 @@ async def download(video_id: str, request: Request, s: AsyncSession = Depends(db
     v = await s.get(ProfileVideo, video_id)
     if not v or not v.published or v.source_type != "upload" or not v.object_key:
         raise HTTPException(404, "Video not found")
+    await _require_public_profile(s, v.profile_slug)
     try:
         stat = client.stat_object(BUCKET, v.object_key)
         size = stat.size
@@ -209,8 +239,9 @@ async def admin_list(profile_slug: str, user=Depends(admin), s: AsyncSession = D
 
 
 @router.post("/uploads", status_code=201)
-async def start_upload(payload: dict, user=Depends(admin), s: AsyncSession = Depends(db)):
+async def start_upload(payload: dict, user=Depends(authenticated), s: AsyncSession = Depends(db)):
     profile = _profile(payload.get("profile_slug", ""))
+    await _require_profile_access(s, profile, user)
     title, filename = str(payload.get("title", "")).strip(), str(payload.get("filename", "")).strip()
     content_type = str(payload.get("content_type", "")).lower()
     try:
@@ -241,10 +272,11 @@ async def start_upload(payload: dict, user=Depends(admin), s: AsyncSession = Dep
 
 
 @router.put("/uploads/{upload_id}/parts/{part_number}")
-async def upload_part(upload_id: str, part_number: int, request: Request, user=Depends(admin), s: AsyncSession = Depends(db)):
+async def upload_part(upload_id: str, part_number: int, request: Request, user=Depends(authenticated), s: AsyncSession = Depends(db)):
     upload = await s.get(ProfileVideoUpload, upload_id)
     if not upload or upload.created_by != user.get("sub"):
         raise HTTPException(404, "Upload not found")
+    await _require_profile_access(s, upload.profile_slug, user)
     if datetime.utcnow() - upload.created_at > UPLOAD_TTL:
         raise HTTPException(410, "Upload expired")
     if part_number < 1 or part_number > upload.total_parts or part_number > MAX_PARTS:
@@ -260,7 +292,7 @@ async def upload_part(upload_id: str, part_number: int, request: Request, user=D
 
 
 @router.post("/uploads/{upload_id}/complete", status_code=201)
-async def complete_upload(upload_id: str, user=Depends(admin), s: AsyncSession = Depends(db)):
+async def complete_upload(upload_id: str, user=Depends(authenticated), s: AsyncSession = Depends(db)):
     upload = await s.get(ProfileVideoUpload, upload_id)
     if not upload or upload.created_by != user.get("sub"):
         raise HTTPException(404, "Upload not found")
@@ -307,7 +339,7 @@ async def complete_upload(upload_id: str, user=Depends(admin), s: AsyncSession =
 
 
 @router.delete("/uploads/{upload_id}")
-async def abort_upload(upload_id: str, user=Depends(admin), s: AsyncSession = Depends(db)):
+async def abort_upload(upload_id: str, user=Depends(authenticated), s: AsyncSession = Depends(db)):
     upload = await s.get(ProfileVideoUpload, upload_id)
     if not upload or upload.created_by != user.get("sub"):
         raise HTTPException(404, "Upload not found")
@@ -320,8 +352,9 @@ async def abort_upload(upload_id: str, user=Depends(admin), s: AsyncSession = De
 
 
 @router.post("/embeds", status_code=201)
-async def add_embed(payload: dict, user=Depends(admin), s: AsyncSession = Depends(db)):
+async def add_embed(payload: dict, user=Depends(authenticated), s: AsyncSession = Depends(db)):
     profile = _profile(payload.get("profile_slug", ""))
+    await _require_profile_access(s, profile, user)
     title = str(payload.get("title", "")).strip()
     if not title or len(title) > 200:
         raise HTTPException(400, "Valid title is required")
@@ -333,10 +366,11 @@ async def add_embed(payload: dict, user=Depends(admin), s: AsyncSession = Depend
 
 
 @router.patch("/items/{video_id}")
-async def update_item(video_id: str, payload: dict, user=Depends(admin), s: AsyncSession = Depends(db)):
+async def update_item(video_id: str, payload: dict, user=Depends(authenticated), s: AsyncSession = Depends(db)):
     v = await s.get(ProfileVideo, video_id)
-    if not v or v.profile_slug not in PROFILES:
+    if not v:
         raise HTTPException(404, "Video not found")
+    await _require_profile_access(s, v.profile_slug, user)
     if "title" in payload:
         v.title = str(payload["title"]).strip()
         if not v.title or len(v.title) > 200: raise HTTPException(400, "Invalid title")
@@ -348,10 +382,11 @@ async def update_item(video_id: str, payload: dict, user=Depends(admin), s: Asyn
 
 
 @router.delete("/items/{video_id}")
-async def delete_item(video_id: str, user=Depends(admin), s: AsyncSession = Depends(db)):
+async def delete_item(video_id: str, user=Depends(authenticated), s: AsyncSession = Depends(db)):
     v = await s.get(ProfileVideo, video_id)
-    if not v or v.profile_slug not in PROFILES:
+    if not v:
         raise HTTPException(404, "Video not found")
+    await _require_profile_access(s, v.profile_slug, user)
     object_key = v.object_key
     await s.delete(v)
     await s.commit()
@@ -362,8 +397,9 @@ async def delete_item(video_id: str, user=Depends(admin), s: AsyncSession = Depe
 
 
 @router.post("/reorder")
-async def reorder(payload: dict, user=Depends(admin), s: AsyncSession = Depends(db)):
+async def reorder(payload: dict, user=Depends(authenticated), s: AsyncSession = Depends(db)):
     profile = _profile(payload.get("profile_slug", ""))
+    await _require_profile_access(s, profile, user)
     ids = payload.get("ids", [])
     if not isinstance(ids, list) or len(ids) > 100:
         raise HTTPException(400, "Invalid video order")
