@@ -160,7 +160,24 @@ async def update_my_profile(payload: dict, user=Depends(current_user), s: AsyncS
 async def share_profile(slug: str, s: AsyncSession = Depends(db)):
     result = await s.execute(select(ProfessionalProfile).where(ProfessionalProfile.slug == slug))
     profile = result.scalar_one_or_none()
-    if profile is None or profile.visibility == "private":
+    if profile is not None:
+        if profile.visibility == "private":
+            raise HTTPException(404, "Professional profile not found")
+        title_text = profile.display_name + ((" — " + profile.headline) if profile.headline else "") + " | Shopnoltd"
+        description_text = (profile.summary or profile.headline or "Professional profile on Shopnoltd.")[:300]
+        destination = "/profile-view/" + profile.slug
+        visibility = profile.visibility
+    elif slug == "data-management":
+        title_text = "Md. Asaduzzaman — Data Management & Research | Shopnoltd"
+        description_text = "Professional profile covering statistics, database development, data management, survey systems, ETL, research, analysis and reporting."
+        destination = "/profile/data-management"
+        visibility = "public"
+    elif slug == "interior-business":
+        title_text = "Shopno Interior Design & Decoration | Shopnoltd"
+        description_text = "Shopno business profile for residential, workplace, retail and commercial interior design, decoration, renovation and fit-out services."
+        destination = "/profile/interior-business"
+        visibility = "public"
+    else:
         raise HTTPException(404, "Professional profile not found")
 
     videos_result = await s.execute(
@@ -170,10 +187,7 @@ async def share_profile(slug: str, s: AsyncSession = Depends(db)):
         .limit(1)
     )
     video = videos_result.scalar_one_or_none()
-    title_text = profile.display_name + ((" — " + profile.headline) if profile.headline else "") + " | Shopnoltd"
-    description_text = (profile.summary or profile.headline or "Professional profile on Shopnoltd.")[:300]
-    canonical = "https://shopnoltd.dpdns.org/profile/" + profile.slug
-    destination = "/profile-view/" + profile.slug
+    canonical = "https://shopnoltd.dpdns.org/profile/" + slug
     image_url = "https://shopnoltd.dpdns.org/logo.svg"
     video_url = ""
     video_type = ""
@@ -231,7 +245,7 @@ async def share_profile(slug: str, s: AsyncSession = Depends(db)):
         '<script>window.location.replace(' + repr(destination) + ')</script>'
         '</main></body></html>'
     )
-    robots = "noindex, nofollow" if profile.visibility == "unlisted" else "index, follow"
+    robots = "noindex, nofollow" if visibility == "unlisted" else "index, follow"
     return HTMLResponse(
         content=html,
         headers={"Cache-Control": "public, max-age=60", "X-Robots-Tag": robots},
