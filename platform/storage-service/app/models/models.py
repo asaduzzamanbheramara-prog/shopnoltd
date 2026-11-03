@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import BigInteger, Boolean, Column, DateTime, Integer, String
+from sqlalchemy import BigInteger, Boolean, Column, DateTime, Integer, JSON, String
 
 from app.core.db import Base
 
@@ -70,7 +70,7 @@ class ProfessionalProfile(Base):
     summary = Column(String(3000), nullable=False, default="")
     location = Column(String(160), nullable=False, default="")
     website = Column(String(512), nullable=False, default="")
-    skills = Column(__import__("sqlalchemy").JSON, nullable=False, default=list)
+    skills = Column(JSON, nullable=False, default=list)
     experience = Column(__import__("sqlalchemy").JSON, nullable=False, default=list)
     education = Column(__import__("sqlalchemy").JSON, nullable=False, default=list)
     portfolio = Column(__import__("sqlalchemy").JSON, nullable=False, default=list)
