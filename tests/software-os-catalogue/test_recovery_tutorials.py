@@ -37,6 +37,18 @@ class RecoveryTutorialTests(unittest.TestCase):
         self.assertTrue(all(urlparse(item["url"]).scheme == "https" for item in tutorials))
         self.assertTrue(any("no verified official" in note.lower() for note in entry["notes"] + tutorials[0].get("notes", [])))
 
+    def test_usb_media_tools_have_official_sources_and_destructive_warnings(self):
+        for filename in (
+            "rufus-bootable-usb-writer.json",
+            "balena-etcher-usb-image-writer.json",
+            "ventoy-multiboot-usb.json",
+            "windows-media-creation-tool.json",
+        ):
+            entry = self.load_entry(filename)
+            self.assertEqual(list(VALIDATOR.iter_errors(entry)), [], filename)
+            self.assertTrue(entry["source"]["url"].startswith("https://"))
+            self.assertTrue(any("usb" in note.lower() and ("erase" in note.lower() or "format" in note.lower() or "delete" in note.lower()) for note in entry.get("notes", [])), filename)
+
     def test_recovery_page_renders_video_and_missing_video_notice(self):
         page = (ROOT / "frontend/software-os-center.html").read_text(encoding="utf-8")
         self.assertIn("youtube-nocookie.com/embed/", page)
