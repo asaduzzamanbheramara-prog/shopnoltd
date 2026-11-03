@@ -1,0 +1,41 @@
+{
+  "id": "macos-software-installation",
+  "name": "macOS software installation sources",
+  "kind": "documentation",
+  "description": "Install Mac applications through the Mac App Store or the software publisher's official signed/notarized distribution. Common package types include PKG and DMG; USB storage does not bypass Gatekeeper or licensing.",
+  "platforms": [
+    "macos"
+  ],
+  "architectures": [
+    "x86_64",
+    "arm64"
+  ],
+  "device_types": [
+    "desktop",
+    "laptop"
+  ],
+  "package_formats": [
+    "pkg",
+    "dmg",
+    "zip"
+  ],
+  "source": {
+    "type": "documentation",
+    "url": "https://support.apple.com/guide/mac-help/install-and-uninstall-apps-mh35835/mac",
+    "publisher": "Apple"
+  },
+  "license_note": "Applications remain subject to each developer's licence and distribution terms.",
+  "verification": {
+    "method": "source-only-not-yet-verified",
+    "status": "needs-review",
+    "evidence_url": "https://support.apple.com/guide/mac-help/install-and-uninstall-apps-mh35835/mac"
+  },
+  "pricing": {
+    "model": "free"
+  },
+  "notes": [
+    "Prefer Mac App Store or the developer's official website.",
+    "Check Intel versus Apple silicon compatibility.",
+    "A USB copy does not guarantee offline activation or dependencies."
+  ]
+}

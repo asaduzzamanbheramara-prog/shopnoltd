@@ -1,0 +1,36 @@
+{
+  "id": "macos-recovery",
+  "name": "macOS Recovery",
+  "kind": "recovery-tool",
+  "description": "Built-in Apple recovery environment for supported Macs. Use it to repair storage, restore from Time Machine, or reinstall a compatible macOS version; internet access is generally required for reinstall.",
+  "platforms": [
+    "macos"
+  ],
+  "architectures": [
+    "x86_64",
+    "arm64"
+  ],
+  "device_types": [
+    "desktop",
+    "laptop"
+  ],
+  "source": {
+    "type": "documentation",
+    "url": "https://support.apple.com/guide/mac-help/macos-recovery-a-mac-apple-silicon-mchl82829c17/mac",
+    "publisher": "Apple"
+  },
+  "license_note": "Use only the recovery version and procedure supported by the exact Mac model.",
+  "verification": {
+    "method": "source-only-not-yet-verified",
+    "status": "needs-review",
+    "evidence_url": "https://support.apple.com/guide/mac-help/macos-recovery-a-mac-apple-silicon-mchl82829c17/mac"
+  },
+  "pricing": {
+    "model": "free"
+  },
+  "notes": [
+    "Not the same as a generic PC USB installer.",
+    "Apple silicon and Intel recovery startup steps differ.",
+    "Back up before erase or reinstall."
+  ]
+}

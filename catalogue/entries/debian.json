@@ -1,0 +1,43 @@
+{
+  "id": "debian",
+  "name": "Debian",
+  "kind": "operating-system",
+  "description": "Official Debian installation images and installation documentation for supported architectures and device classes.",
+  "platforms": [
+    "linux"
+  ],
+  "architectures": [
+    "x86_64",
+    "arm64",
+    "arm",
+    "x86"
+  ],
+  "device_types": [
+    "desktop",
+    "laptop",
+    "server",
+    "embedded"
+  ],
+  "package_formats": [
+    "iso",
+    "img"
+  ],
+  "source": {
+    "type": "official-download-page",
+    "url": "https://www.debian.org/distrib/",
+    "publisher": "Debian Project"
+  },
+  "license_note": "Debian packages have individual licences; consult the official Debian Free Software Guidelines and package notices.",
+  "verification": {
+    "method": "source-only-not-yet-verified",
+    "status": "needs-review",
+    "evidence_url": "https://www.debian.org/CD/verify"
+  },
+  "pricing": {
+    "model": "free"
+  },
+  "notes": [
+    "Select the correct architecture and installer type.",
+    "Some installer variants require network access to fetch packages."
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "id": "google-pixel-factory-images",
+  "name": "Google Pixel factory images",
+  "kind": "recovery-tool",
+  "description": "Official factory images for supported Google Pixel models. Manual flashing can restore factory firmware but can erase all user data and may require bootloader unlocking.",
+  "platforms": [
+    "android"
+  ],
+  "architectures": [
+    "arm64-v8a"
+  ],
+  "device_types": [
+    "phone",
+    "tablet"
+  ],
+  "package_formats": [
+    "zip",
+    "firmware"
+  ],
+  "source": {
+    "type": "official-release",
+    "url": "https://developers.google.com/android/images",
+    "publisher": "Google"
+  },
+  "license_note": "Google device software terms and model-specific restrictions apply.",
+  "verification": {
+    "method": "source-only-not-yet-verified",
+    "status": "needs-review",
+    "evidence_url": "https://developers.google.com/android/images"
+  },
+  "pricing": {
+    "model": "free"
+  },
+  "notes": [
+    "Select the exact Pixel model and build.",
+    "Factory image flashing erases user data; back up first.",
+    "Consider the full OTA package where appropriate."
+  ]
+}

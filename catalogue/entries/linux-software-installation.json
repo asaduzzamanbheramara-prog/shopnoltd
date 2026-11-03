@@ -1,0 +1,46 @@
+{
+  "id": "linux-software-installation",
+  "name": "Linux software installation methods",
+  "kind": "documentation",
+  "description": "Guidance for Linux package ecosystems including APT/DEB, DNF/RPM, Flatpak, Snap, and AppImage. Use the distribution repository or application's official publisher source.",
+  "platforms": [
+    "linux"
+  ],
+  "architectures": [
+    "x86_64",
+    "arm64",
+    "arm"
+  ],
+  "device_types": [
+    "desktop",
+    "laptop",
+    "server",
+    "single-board-computer"
+  ],
+  "package_formats": [
+    "deb",
+    "rpm",
+    "flatpak",
+    "snap",
+    "appimage"
+  ],
+  "source": {
+    "type": "documentation",
+    "url": "https://flatpak.org/setup/",
+    "publisher": "Flatpak and distribution maintainers"
+  },
+  "license_note": "Package licences and redistribution rules vary by application and distribution.",
+  "verification": {
+    "method": "source-only-not-yet-verified",
+    "status": "needs-review",
+    "evidence_url": "https://flatpak.org/setup/"
+  },
+  "pricing": {
+    "model": "free"
+  },
+  "notes": [
+    "Use the package manager supported by the installed distribution.",
+    "Avoid random third-party mirrors and unverified scripts.",
+    "Offline installation requires matching dependencies and architecture."
+  ]
+}

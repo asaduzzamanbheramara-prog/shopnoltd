@@ -1,0 +1,39 @@
+{
+  "id": "chromeos-recovery",
+  "name": "Chromebook / ChromeOS recovery",
+  "kind": "recovery-tool",
+  "description": "Recover supported Chromebooks using built-in internet recovery or Google USB recovery media prepared for the exact Chromebook model.",
+  "platforms": [
+    "chromeos"
+  ],
+  "architectures": [
+    "arm64",
+    "x86_64"
+  ],
+  "device_types": [
+    "laptop"
+  ],
+  "package_formats": [
+    "zip",
+    "img"
+  ],
+  "source": {
+    "type": "documentation",
+    "url": "https://support.google.com/chromebook/answer/1080595?hl=en",
+    "publisher": "Google"
+  },
+  "license_note": "Recovery image and device support are controlled by Google and the Chromebook manufacturer.",
+  "verification": {
+    "method": "source-only-not-yet-verified",
+    "status": "needs-review",
+    "evidence_url": "https://support.google.com/chromebook/answer/1080595?hl=en"
+  },
+  "pricing": {
+    "model": "free"
+  },
+  "notes": [
+    "USB recovery erases local Chromebook storage.",
+    "Some newer Chromebooks support internet recovery instead.",
+    "Use recovery media for the exact Chromebook model."
+  ]
+}
