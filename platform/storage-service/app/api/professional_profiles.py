@@ -3,13 +3,14 @@ import uuid
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import HTMLResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import SessionLocal
 from app.core.security import verify_token
-from app.models.models import ProfessionalProfile
+from app.models.models import ProfessionalProfile, ProfileVideo
 
 router = APIRouter()
 bearer = HTTPBearer(auto_error=False)
@@ -153,6 +154,87 @@ async def update_my_profile(payload: dict, user=Depends(current_user), s: AsyncS
     await s.commit()
     await s.refresh(profile)
     return _serialize(profile, owner=True)
+
+
+@router.get("/share/{slug}", response_class=HTMLResponse)
+async def share_profile(slug: str, s: AsyncSession = Depends(db)):
+    result = await s.execute(select(ProfessionalProfile).where(ProfessionalProfile.slug == slug))
+    profile = result.scalar_one_or_none()
+    if profile is None or profile.visibility == "private":
+        raise HTTPException(404, "Professional profile not found")
+
+    videos_result = await s.execute(
+        select(ProfileVideo)
+        .where(ProfileVideo.profile_slug == slug, ProfileVideo.published.is_(True))
+        .order_by(ProfileVideo.sort_order, ProfileVideo.created_at)
+        .limit(1)
+    )
+    video = videos_result.scalar_one_or_none()
+    title_text = profile.display_name + ((" — " + profile.headline) if profile.headline else "") + " | Shopnoltd"
+    description_text = (profile.summary or profile.headline or "Professional profile on Shopnoltd.")[:300]
+    canonical = "https://shopnoltd.dpdns.org/profile/" + profile.slug
+    destination = "/profile-view/" + profile.slug
+    image_url = "https://shopnoltd.dpdns.org/logo.svg"
+    video_url = ""
+    video_type = ""
+    if video:
+        if video.source_type == "upload":
+            video_url = "https://storage-service.shopnoltd.dpdns.org/api/v1/profile-videos/stream/" + video.id
+            video_type = video.content_type or ""
+        elif video.embed_provider == "youtube":
+            video_url = "https://www.youtube.com/embed/" + video.embed_ref
+        elif video.embed_provider == "vimeo":
+            video_url = "https://player.vimeo.com/video/" + video.embed_ref
+        elif video.embed_provider == "direct":
+            video_url = video.embed_ref or ""
+            video_type = "video/mp4" if video_url.lower().split("?", 1)[0].endswith(".mp4") else "video/webm"
+
+    from html import escape
+    title = escape(title_text, quote=True)
+    description = escape(description_text, quote=True)
+    canonical_html = escape(canonical, quote=True)
+    image_html = escape(image_url, quote=True)
+    video_html = escape(video_url, quote=True)
+    video_tags = ""
+    twitter_card = "summary_large_image"
+    if video_url:
+        twitter_card = "player"
+        video_tags = (
+            '<meta property="og:video" content="' + video_html + '">'
+            '<meta property="og:video:secure_url" content="' + video_html + '">'
+            '<meta property="og:video:type" content="' + escape(video_type or "text/html", quote=True) + '">'
+            '<meta property="og:video:width" content="1280">'
+            '<meta property="og:video:height" content="720">'
+            '<meta name="twitter:player" content="' + video_html + '">'
+            '<meta name="twitter:player:width" content="1280">'
+            '<meta name="twitter:player:height" content="720">'
+        )
+    html = (
+        '<!doctype html><html lang="en"><head><meta charset="utf-8">'
+        '<meta name="viewport" content="width=device-width, initial-scale=1">'
+        '<title>' + title + '</title>'
+        '<meta name="description" content="' + description + '">'
+        '<link rel="canonical" href="' + canonical_html + '">'
+        '<meta property="og:type" content="profile">'
+        '<meta property="og:url" content="' + canonical_html + '">'
+        '<meta property="og:title" content="' + title + '">'
+        '<meta property="og:description" content="' + description + '">'
+        '<meta property="og:image" content="' + image_html + '">'
+        '<meta name="twitter:card" content="' + twitter_card + '">'
+        '<meta name="twitter:title" content="' + title + '">'
+        '<meta name="twitter:description" content="' + description + '">'
+        '<meta name="twitter:image" content="' + image_html + '">'
+        + video_tags +
+        '<meta http-equiv="refresh" content="0;url=' + escape(destination, quote=True) + '">'
+        '</head><body><main><h1>' + title + '</h1><p>' + description + '</p>'
+        '<p><a href="' + escape(destination, quote=True) + '">Open complete professional profile and videos</a></p>'
+        '<script>window.location.replace(' + repr(destination) + ')</script>'
+        '</main></body></html>'
+    )
+    return HTMLResponse(
+        content=html,
+        headers={"Cache-Control": "public, max-age=60", "X-Robots-Tag": "noindex"},
+    )
 
 
 @router.get("/{slug}")
