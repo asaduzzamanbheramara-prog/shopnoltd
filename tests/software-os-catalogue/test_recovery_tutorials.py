@@ -49,6 +49,16 @@ class RecoveryTutorialTests(unittest.TestCase):
             self.assertTrue(entry["source"]["url"].startswith("https://"))
             self.assertTrue(any("usb" in note.lower() and ("erase" in note.lower() or "format" in note.lower() or "delete" in note.lower()) for note in entry.get("notes", [])), filename)
 
+    def test_offline_recovery_guide_is_packaged_and_linked(self):
+        page = (ROOT / "frontend/software-os-center.html").read_text(encoding="utf-8")
+        dockerfile = (ROOT / "frontend/Dockerfile").read_text(encoding="utf-8")
+        guide = (ROOT / "frontend/offline-recovery-guide.html").read_text(encoding="utf-8")
+        self.assertIn("/offline-recovery-guide.html", page)
+        self.assertIn("offline-recovery-guide.html", dockerfile)
+        self.assertIn("Preserve existing recovery media", guide)
+        self.assertIn("realme", guide.lower())
+        self.assertIn("iPhone", guide)
+
     def test_recovery_page_renders_video_and_missing_video_notice(self):
         page = (ROOT / "frontend/software-os-center.html").read_text(encoding="utf-8")
         self.assertIn("youtube-nocookie.com/embed/", page)
