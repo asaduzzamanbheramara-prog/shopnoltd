@@ -155,6 +155,9 @@
       evidence.textContent='Verification instructions';
       card.append(evidence);
     }
+    if(entry.kind==='recovery-tool' && !(entry.tutorials||[]).some(tutorial=>tutorial.type==='video')){
+      card.append(makeText('p','No verified official recovery video is listed yet. Follow the written official guide; do not substitute an unverified firmware video.','small muted'));
+    }
     (entry.tutorials||[]).forEach(tutorial=>{
       const section=document.createElement('section');
       section.className='tutorial';
