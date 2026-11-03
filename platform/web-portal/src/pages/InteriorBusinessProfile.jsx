@@ -17,7 +17,7 @@ const TEAM = [
 ]
 
 export default function InteriorBusinessProfile() {
-  const profileUrl = window.location.origin + '/profile/interior-business'
+  const profileUrl = window.location.origin + '/profile-share/interior-business'
   useEffect(() => { document.title = 'Shopno Interior Design & Decoration — Shopnoltd' }, [])
 
   return (
