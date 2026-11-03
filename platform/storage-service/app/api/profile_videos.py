@@ -205,6 +205,7 @@ async def stream(video_id: str, request: Request, s: AsyncSession = Depends(db))
     v = await s.get(ProfileVideo, video_id)
     if not v or not v.published or v.source_type != "upload" or not v.object_key:
         raise HTTPException(404, "Video not found")
+    await _require_public_profile(s, v.profile_slug)
     try:
         stat = client.stat_object(BUCKET, v.object_key)
         size = stat.size
@@ -229,6 +230,14 @@ async def stream(video_id: str, request: Request, s: AsyncSession = Depends(db))
     if partial:
         headers["Content-Range"] = f"bytes {start}-{end}/{size}"
     return StreamingResponse(body(), status_code=206 if partial else 200, media_type=v.content_type or "application/octet-stream", headers=headers)
+
+
+@router.get("/mine/{profile_slug}")
+async def owner_list(profile_slug: str, user=Depends(authenticated), s: AsyncSession = Depends(db)):
+    _profile(profile_slug)
+    await _require_profile_access(s, profile_slug, user)
+    res = await s.execute(select(ProfileVideo).where(ProfileVideo.profile_slug == profile_slug).order_by(ProfileVideo.sort_order, ProfileVideo.created_at))
+    return [{"id": v.id, "title": v.title, "description": v.description, "source_type": v.source_type, "embed_provider": v.embed_provider, "embed_ref": v.embed_ref, "content_type": v.content_type, "size": v.size, "published": v.published, "sort_order": v.sort_order} for v in res.scalars().all()]
 
 
 @router.get("/admin/{profile_slug}")
