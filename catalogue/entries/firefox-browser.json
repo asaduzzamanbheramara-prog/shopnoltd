@@ -1,0 +1,52 @@
+{
+  "id": "firefox-browser",
+  "name": "Mozilla Firefox",
+  "kind": "application",
+  "description": "Official Mozilla web browser for supported Windows, macOS, Linux, Android and iOS devices. Select the matching publisher download or app-store route for the target platform.",
+  "platforms": [
+    "windows",
+    "macos",
+    "linux",
+    "android",
+    "ios"
+  ],
+  "architectures": [
+    "x86_64",
+    "arm64",
+    "arm64-v8a",
+    "armeabi-v7a"
+  ],
+  "device_types": [
+    "desktop",
+    "laptop",
+    "phone",
+    "tablet"
+  ],
+  "package_formats": [
+    "exe",
+    "dmg",
+    "tar",
+    "apk",
+    "ipa"
+  ],
+  "source": {
+    "type": "official-download-page",
+    "url": "https://www.mozilla.org/firefox/browsers/",
+    "publisher": "Mozilla"
+  },
+  "license_note": "Firefox source is open source; branded builds and mobile distribution are subject to Mozilla and platform store terms. Review the current licence and supported OS on Mozilla's site.",
+  "verification": {
+    "method": "source-only-not-yet-verified",
+    "status": "needs-review",
+    "evidence_url": "https://www.mozilla.org/firefox/browsers/"
+  },
+  "pricing": {
+    "model": "free"
+  },
+  "installation_guide": "https://support.mozilla.org/products/firefox",
+  "notes": [
+    "Shopnoltd links to Mozilla and official app stores; it does not repackage the browser.",
+    "Check the exact OS version and CPU architecture before installing.",
+    "Use the publisher's signature or checksum instructions when provided."
+  ]
+}
