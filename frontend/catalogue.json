@@ -40,6 +40,95 @@
     ]
   },
   {
+    "id": "apple-app-store",
+    "name": "Apple App Store installation",
+    "kind": "documentation",
+    "description": "Official Apple App Store channel for installing supported apps on iPhone, iPad, Apple TV and Apple Watch.",
+    "platforms": [
+      "ios",
+      "ipados",
+      "tvos",
+      "watchos"
+    ],
+    "device_types": [
+      "phone",
+      "tablet",
+      "tv",
+      "wearable"
+    ],
+    "package_formats": [
+      "ipa"
+    ],
+    "source": {
+      "type": "documentation",
+      "url": "https://www.apple.com/app-store/",
+      "publisher": "Apple"
+    },
+    "license_note": "Apps have individual publisher terms and App Store conditions. Shopnoltd does not distribute or re-sign iOS application packages.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://support.apple.com/guide/iphone/get-apps-iph3dfd91de/ios"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "installation_guide": "https://support.apple.com/guide/iphone/get-apps-iph3dfd91de/ios",
+    "notes": [
+      "Install apps through the App Store on supported devices.",
+      "Check region, OS compatibility, age rating, privacy details and in-app purchases.",
+      "A generic PC bootable USB is not an iPhone or iPad app installer."
+    ]
+  },
+  {
+    "id": "audacity-audio-editor",
+    "name": "Audacity audio editor",
+    "kind": "application",
+    "description": "Official Audacity audio recording and editing application for supported Windows, macOS and Linux systems.",
+    "platforms": [
+      "windows",
+      "macos",
+      "linux"
+    ],
+    "architectures": [
+      "x86_64",
+      "arm64",
+      "universal"
+    ],
+    "device_types": [
+      "desktop",
+      "laptop",
+      "workstation"
+    ],
+    "package_formats": [
+      "exe",
+      "dmg",
+      "appimage",
+      "flatpak",
+      "tar"
+    ],
+    "source": {
+      "type": "official-download-page",
+      "url": "https://www.audacityteam.org/download/",
+      "publisher": "Audacity Team"
+    },
+    "license_note": "Audacity is open source; review current privacy notices, bundled components, plugins and licence terms on the official project site.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://www.audacityteam.org/download/"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "installation_guide": "https://support.audacityteam.org/",
+    "notes": [
+      "Download only from the official Audacity project page.",
+      "Check current OS support and optional plugin requirements.",
+      "Review the privacy and telemetry settings presented by the current release."
+    ]
+  },
+  {
     "id": "blender-3d-suite",
     "name": "Blender 3D creation suite",
     "kind": "application",
@@ -303,6 +392,47 @@
     ]
   },
   {
+    "id": "flathub-linux-apps",
+    "name": "Flathub Linux application catalogue",
+    "kind": "documentation",
+    "description": "Official Flathub catalogue for discovering Flatpak applications on supported Linux distributions and desktop environments.",
+    "platforms": [
+      "linux"
+    ],
+    "architectures": [
+      "x86_64",
+      "arm64"
+    ],
+    "device_types": [
+      "desktop",
+      "laptop",
+      "workstation"
+    ],
+    "package_formats": [
+      "flatpak"
+    ],
+    "source": {
+      "type": "documentation",
+      "url": "https://flathub.org/",
+      "publisher": "Flathub"
+    },
+    "license_note": "Each Flatpak application has its own licence, publisher and sandbox permissions. Review the app listing and permissions before installation.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://flatpak.org/setup/"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "installation_guide": "https://flatpak.org/setup/",
+    "notes": [
+      "Install Flatpak using the official setup instructions for the Linux distribution.",
+      "Review application publisher identity, permissions and source details.",
+      "A Flatpak package is not interchangeable with a Windows EXE or macOS DMG."
+    ]
+  },
+  {
     "id": "freebsd",
     "name": "FreeBSD",
     "kind": "operating-system",
@@ -342,6 +472,55 @@
     "notes": [
       "Choose a release and architecture supported by the target hardware.",
       "Use the correct installation image for the target platform."
+    ]
+  },
+  {
+    "id": "gimp-image-editor",
+    "name": "GIMP image editor",
+    "kind": "application",
+    "description": "Official GIMP image editor downloads for supported Windows, macOS and Linux systems, including publisher-provided installers and Linux package options.",
+    "platforms": [
+      "windows",
+      "macos",
+      "linux"
+    ],
+    "architectures": [
+      "x86_64",
+      "arm64",
+      "universal"
+    ],
+    "device_types": [
+      "desktop",
+      "laptop",
+      "workstation"
+    ],
+    "package_formats": [
+      "exe",
+      "dmg",
+      "appimage",
+      "flatpak",
+      "snap",
+      "tar"
+    ],
+    "source": {
+      "type": "official-download-page",
+      "url": "https://www.gimp.org/downloads/",
+      "publisher": "GIMP Project"
+    },
+    "license_note": "GIMP is free and open source. Plugins, brushes, fonts and other downloaded assets may carry separate licence terms.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://www.gimp.org/downloads/"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "installation_guide": "https://www.gimp.org/tutorials/",
+    "notes": [
+      "Use the official GIMP downloads page for current supported packages.",
+      "The publisher provides SHA-256 values for some release files; verify against the same release page.",
+      "Check OS minimum versions before installing."
     ]
   },
   {
@@ -471,6 +650,92 @@
     ]
   },
   {
+    "id": "google-play-store",
+    "name": "Google Play Store app installation",
+    "kind": "documentation",
+    "description": "Official Google Play Store route for finding and installing Android apps on supported, certified devices. Availability depends on device certification, region, Android version and app requirements.",
+    "platforms": [
+      "android"
+    ],
+    "architectures": [
+      "arm64-v8a",
+      "armeabi-v7a",
+      "x86_64"
+    ],
+    "device_types": [
+      "phone",
+      "tablet",
+      "tv"
+    ],
+    "package_formats": [
+      "apk"
+    ],
+    "source": {
+      "type": "documentation",
+      "url": "https://play.google.com/store/apps",
+      "publisher": "Google"
+    },
+    "license_note": "Apps distributed through Google Play have individual publisher licences, permissions and data practices. Shopnoltd does not mirror or re-sign Play Store APKs.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://support.google.com/googleplay/answer/113412?hl=en"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "installation_guide": "https://support.google.com/googleplay/answer/113412?hl=en",
+    "notes": [
+      "Use Play Store on supported certified Android devices; do not sideload an APK just because an app is missing.",
+      "Check publisher, permissions, compatibility and regional availability.",
+      "Some Android devices do not include Google Play services."
+    ]
+  },
+  {
+    "id": "homebrew-macos-packages",
+    "name": "Homebrew macOS package manager",
+    "kind": "documentation",
+    "description": "Official Homebrew package manager for installing command-line tools and supported applications on macOS; Linux support is also documented by the project.",
+    "platforms": [
+      "macos",
+      "linux"
+    ],
+    "architectures": [
+      "x86_64",
+      "arm64"
+    ],
+    "device_types": [
+      "desktop",
+      "laptop",
+      "workstation",
+      "server"
+    ],
+    "package_formats": [
+      "tar",
+      "source"
+    ],
+    "source": {
+      "type": "documentation",
+      "url": "https://brew.sh/",
+      "publisher": "Homebrew Project"
+    },
+    "license_note": "Homebrew itself is open source; individual formulae and casks have their own licences and publisher sources.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://docs.brew.sh/Installation"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "installation_guide": "https://docs.brew.sh/Installation",
+    "notes": [
+      "Follow the official installation steps and review commands before running them.",
+      "Check formula/cask publisher source and licence before installing packages.",
+      "Do not use package-manager commands from untrusted catalogue entries."
+    ]
+  },
+  {
     "id": "hp-14s-cf2xxx-windows-recovery",
     "name": "HP Laptop 14s-cf2xxx · Windows 11 recovery profile",
     "kind": "recovery-tool",
@@ -513,6 +778,55 @@
     ]
   },
   {
+    "id": "inkscape-vector-editor",
+    "name": "Inkscape vector graphics editor",
+    "kind": "application",
+    "description": "Official Inkscape vector graphics editor for supported Windows, macOS and Linux computers.",
+    "platforms": [
+      "windows",
+      "macos",
+      "linux"
+    ],
+    "architectures": [
+      "x86_64",
+      "arm64",
+      "universal"
+    ],
+    "device_types": [
+      "desktop",
+      "laptop",
+      "workstation"
+    ],
+    "package_formats": [
+      "exe",
+      "msi",
+      "dmg",
+      "appimage",
+      "flatpak",
+      "snap"
+    ],
+    "source": {
+      "type": "official-download-page",
+      "url": "https://inkscape.org/release/",
+      "publisher": "Inkscape Project"
+    },
+    "license_note": "Inkscape is free and open source. Extensions, fonts and imported assets may have separate licence terms.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://inkscape.org/release/"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "installation_guide": "https://inkscape.org/learn/",
+    "notes": [
+      "Select the stable release and correct operating system package.",
+      "Review the release notes and system requirements.",
+      "Install extensions only from sources you trust."
+    ]
+  },
+  {
     "id": "iphone-ipad-computer-restore",
     "name": "iPhone and iPad computer restore",
     "kind": "recovery-tool",
@@ -550,6 +864,55 @@
       "Use Finder on Mac or Apple Devices on Windows.",
       "Restore erases device content; create and verify a backup first.",
       "Activation Lock and Apple Account requirements still apply."
+    ]
+  },
+  {
+    "id": "keepassxc-password-manager",
+    "name": "KeePassXC password manager",
+    "kind": "application",
+    "description": "Official KeePassXC local password manager for supported Windows, macOS and Linux desktop systems.",
+    "platforms": [
+      "windows",
+      "macos",
+      "linux"
+    ],
+    "architectures": [
+      "x86_64",
+      "arm64",
+      "universal"
+    ],
+    "device_types": [
+      "desktop",
+      "laptop",
+      "workstation"
+    ],
+    "package_formats": [
+      "exe",
+      "msi",
+      "dmg",
+      "appimage",
+      "flatpak",
+      "snap"
+    ],
+    "source": {
+      "type": "official-download-page",
+      "url": "https://keepassxc.org/download/",
+      "publisher": "KeePassXC Project"
+    },
+    "license_note": "KeePassXC is free and open source. Keep database backups encrypted and protect the database key separately.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://keepassxc.org/download/"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "installation_guide": "https://keepassxc.org/docs/",
+    "notes": [
+      "Use the official release for your OS and architecture.",
+      "Verify release signatures or checksums when the project publishes them.",
+      "Never upload an unencrypted password database to a public repository."
     ]
   },
   {
@@ -798,6 +1161,48 @@
     ]
   },
   {
+    "id": "microsoft-store",
+    "name": "Microsoft Store app installation",
+    "kind": "documentation",
+    "description": "Official Microsoft Store channel for installing supported Windows applications and games on compatible Windows devices.",
+    "platforms": [
+      "windows"
+    ],
+    "architectures": [
+      "x86_64",
+      "arm64"
+    ],
+    "device_types": [
+      "desktop",
+      "laptop",
+      "workstation"
+    ],
+    "package_formats": [
+      "msix",
+      "appx"
+    ],
+    "source": {
+      "type": "documentation",
+      "url": "https://apps.microsoft.com/",
+      "publisher": "Microsoft"
+    },
+    "license_note": "Each Store app has its own licence and publisher terms. Review the app's permissions, publisher identity and subscription conditions.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://support.microsoft.com/en-us/account-billing/get-apps-from-microsoft-store-on-your-windows-pc-9c9e7c4c-4b1d-4a4c-9b89-2c6b1e0c5f4c"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "installation_guide": "https://apps.microsoft.com/",
+    "notes": [
+      "Use Microsoft Store on supported Windows devices for Store-distributed apps.",
+      "Some apps are paid or require subscriptions; check the listing before installing.",
+      "For Win32 software, use the software publisher's official installer or trusted Windows package manager."
+    ]
+  },
+  {
     "id": "nodejs-runtime",
     "name": "Node.js",
     "kind": "application",
@@ -1023,6 +1428,49 @@
       "Select the x64, x86 or ARM64 package that matches Windows.",
       "Avoid unofficial repackaged installers.",
       "Encrypted archives do not replace a verified backup."
+    ]
+  },
+  {
+    "id": "snap-store-linux-apps",
+    "name": "Snap Store Linux application catalogue",
+    "kind": "documentation",
+    "description": "Official Snap Store catalogue and installation guidance for Linux distributions that support Snap packages.",
+    "platforms": [
+      "linux"
+    ],
+    "architectures": [
+      "x86_64",
+      "arm64",
+      "arm"
+    ],
+    "device_types": [
+      "desktop",
+      "laptop",
+      "workstation",
+      "server"
+    ],
+    "package_formats": [
+      "snap"
+    ],
+    "source": {
+      "type": "documentation",
+      "url": "https://snapcraft.io/store",
+      "publisher": "Canonical"
+    },
+    "license_note": "Snaps have individual publishers, licences and permissions. Review the package publisher and confinement information before installation.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://snapcraft.io/docs/installing-snapd"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "installation_guide": "https://snapcraft.io/docs/installing-snapd",
+    "notes": [
+      "Install snapd only using instructions for the target distribution.",
+      "Check publisher and permissions for each Snap.",
+      "Snap packages are not interchangeable with DEB, RPM, Flatpak or Windows installers."
     ]
   },
   {
