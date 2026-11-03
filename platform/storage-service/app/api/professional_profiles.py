@@ -1,5 +1,5 @@
-import hashlib
 import re
+import uuid
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -36,7 +36,7 @@ async def db():
 
 def _slug_for(subject: str) -> str:
     # Stable, non-identifying URL; never expose an email address or raw identity claim.
-    return "member-" + hashlib.sha256(subject.encode("utf-8")).hexdigest()[:16]
+    return "member-" + uuid.uuid4().hex[:16]
 
 
 def _serialize(profile: ProfessionalProfile, owner: bool = False):
