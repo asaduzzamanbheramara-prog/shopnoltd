@@ -51,7 +51,7 @@ export default function Profiles() {
     </section>
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: 20, marginTop: 24 }}>
       {cards.map(card => {
-        const url = window.location.origin + card.path
+        const url = window.location.origin + '/profile-share/' + card.path.split('/').pop()
         return <article key={card.path} style={{ padding: 24, border: '1px solid #e2e8f0', borderRadius: 18, background: 'white', boxShadow: '0 3px 12px rgba(15,23,42,.06)' }}>
           <div style={{ fontSize: 38 }}>{card.icon}</div><h2>{card.title}</h2><p style={{ color: '#64748b', lineHeight: 1.65 }}>{card.text}</p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 9, marginTop: 18 }}><Link to={card.path} style={{ padding: '10px 14px', borderRadius: 9, background: '#0284c7', color: 'white', textDecoration: 'none', fontWeight: 800 }}>Open profile</Link><a href={card.pdf} download style={{ padding: '10px 14px', borderRadius: 9, border: '1px solid #0284c7', color: '#0369a1', textDecoration: 'none', fontWeight: 800 }}>Download PDF</a><button type="button" onClick={() => shareProfile(url, card.title)} style={{ padding: '10px 14px', borderRadius: 9, border: '1px solid #0284c7', background: 'white', color: '#0369a1', fontWeight: 800, cursor: 'pointer' }}>↗ Share</button></div>
