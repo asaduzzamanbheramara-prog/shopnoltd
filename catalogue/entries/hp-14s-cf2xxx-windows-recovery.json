@@ -1,0 +1,42 @@
+{
+  "id": "hp-14s-cf2xxx-windows-recovery",
+  "name": "HP Laptop 14s-cf2xxx · Windows 11 recovery profile",
+  "kind": "recovery-tool",
+  "description": "Device-specific recovery guidance for the inspected HP Laptop 14s-cf2xxx running 64-bit Windows 11 on a 256 GB NVMe GPT system disk. Windows Recovery Environment is enabled. Use Microsoft installation/recovery media and HP support for the exact product number; this record is a profile, not a tested recovery image.",
+  "platforms": [
+    "windows"
+  ],
+  "architectures": [
+    "x86_64"
+  ],
+  "device_types": [
+    "laptop"
+  ],
+  "package_formats": [
+    "iso",
+    "exe"
+  ],
+  "source": {
+    "type": "documentation",
+    "url": "https://support.hp.com/us-en",
+    "publisher": "HP"
+  },
+  "license_note": "Windows installation media and activation are governed by Microsoft's licence terms. HP drivers and firmware must match the exact product number and hardware revision.",
+  "verification": {
+    "method": "source-only-not-yet-verified",
+    "status": "needs-review",
+    "evidence_url": "https://support.microsoft.com/en-us/windows/recovery-options-in-windows-31ce2444-7de3-818c-d626-e3b5a3024da5"
+  },
+  "pricing": {
+    "model": "free"
+  },
+  "notes": [
+    "Inspected host: HP Laptop 14s-cf2xxx; Windows 11 Home Single Language, build 26200, 64-bit.",
+    "Inspected internal disk: WD 256 GB NVMe, GPT. Windows Recovery Environment is enabled.",
+    "BitLocker status at inspection: C: fully decrypted; no BitLocker recovery key was reported.",
+    "Use Windows Startup Repair and other non-destructive WinRE options before reinstalling.",
+    "Windows installation USB can boot compatible PCs; creating it erases the selected USB unless using a compatible multiboot workflow.",
+    "Exact HP product number and driver set still need to be collected before claiming full model-specific support.",
+    "Existing 120 GB E2B USB must be preserved; do not format or repartition it."
+  ]
+}

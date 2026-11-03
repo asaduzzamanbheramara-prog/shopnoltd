@@ -1,0 +1,43 @@
+{
+  "id": "realme-c35-rmx3511-recovery",
+  "name": "realme C35 RMX3511 · Android 13 recovery profile",
+  "kind": "recovery-tool",
+  "description": "Recovery guidance for the inspected realme RMX3511 / RE87BAL1 (realme C35) running Android 13 build RMX3511PU_13.F.89. Use realme's documented Recovery Mode and official regional support channels. Firmware availability, region compatibility and any flash procedure require confirmation by realme; this entry is not a downloadable ROM or a universal USB installer.",
+  "platforms": [
+    "android"
+  ],
+  "architectures": [
+    "arm64-v8a",
+    "armeabi-v7a"
+  ],
+  "device_types": [
+    "phone"
+  ],
+  "package_formats": [
+    "zip"
+  ],
+  "source": {
+    "type": "documentation",
+    "url": "https://www.realme.com/global/support/troubleshooting",
+    "publisher": "realme"
+  },
+  "license_note": "Use only firmware and service procedures authorized by realme for the exact RMX3511 regional variant and current build. Do not redistribute proprietary firmware or use third-party flash packages.",
+  "verification": {
+    "method": "source-only-not-yet-verified",
+    "status": "needs-review",
+    "evidence_url": "https://www.realme.com/bd/support"
+  },
+  "pricing": {
+    "model": "free"
+  },
+  "notes": [
+    "Inspected device: realme RMX3511, codename RE87BAL1, board ums9230_nico.",
+    "Inspected OS: Android 13 / API 33; build RMX3511PU_13.F.89; security patch 2025-05-01.",
+    "ADB reports boot slot _a, flash locked (ro.boot.flash.locked=1), verified boot state green.",
+    "realme documents Recovery Mode using Power + Volume Down after power-off, and storage-based firmware installation when a compatible official package is available.",
+    "Do not assume generic Android ADB sideload or a PC bootable pendrive can reinstall this phone.",
+    "USB cable is used for supported computer-assisted tools; the phone does not boot a generic Windows/Linux pendrive.",
+    "Back up user data and verify WhatsApp Business backup separately before any reset, wipe or firmware operation.",
+    "Exact Bangladesh-region firmware package and current supported update path must be confirmed by realme before flashing."
+  ]
+}
