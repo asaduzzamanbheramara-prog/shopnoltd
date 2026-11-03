@@ -1,0 +1,41 @@
+{
+  "id": "flathub-linux-apps",
+  "name": "Flathub Linux application catalogue",
+  "kind": "documentation",
+  "description": "Official Flathub catalogue for discovering Flatpak applications on supported Linux distributions and desktop environments.",
+  "platforms": [
+    "linux"
+  ],
+  "architectures": [
+    "x86_64",
+    "arm64"
+  ],
+  "device_types": [
+    "desktop",
+    "laptop",
+    "workstation"
+  ],
+  "package_formats": [
+    "flatpak"
+  ],
+  "source": {
+    "type": "documentation",
+    "url": "https://flathub.org/",
+    "publisher": "Flathub"
+  },
+  "license_note": "Each Flatpak application has its own licence, publisher and sandbox permissions. Review the app listing and permissions before installation.",
+  "verification": {
+    "method": "source-only-not-yet-verified",
+    "status": "needs-review",
+    "evidence_url": "https://flatpak.org/setup/"
+  },
+  "pricing": {
+    "model": "free"
+  },
+  "installation_guide": "https://flatpak.org/setup/",
+  "notes": [
+    "Install Flatpak using the official setup instructions for the Linux distribution.",
+    "Review application publisher identity, permissions and source details.",
+    "A Flatpak package is not interchangeable with a Windows EXE or macOS DMG."
+  ]
+}
