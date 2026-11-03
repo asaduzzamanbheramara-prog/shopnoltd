@@ -55,6 +55,7 @@
     }
   ],
   "notes": [
+    "Writing an image erases the selected USB drive or SD card; confirm the exact removable device before flashing.",
     "Available for Windows, macOS and Linux; check the release architecture.",
     "Verify the image from the OS publisher before writing.",
     "Double-check the target device and capacity; never select the system disk.",
