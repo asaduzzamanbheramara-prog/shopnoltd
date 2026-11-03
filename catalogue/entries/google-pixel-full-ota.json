@@ -1,0 +1,37 @@
+{
+  "id": "google-pixel-full-ota",
+  "name": "Google Pixel full OTA packages",
+  "kind": "recovery-tool",
+  "description": "Official full OTA packages for supported Pixel and Nexus devices. These can restore or update supported firmware without the factory-image workflow's required wipe or bootloader unlock in documented cases.",
+  "platforms": [
+    "android"
+  ],
+  "architectures": [
+    "arm64-v8a"
+  ],
+  "device_types": [
+    "phone",
+    "tablet"
+  ],
+  "package_formats": [
+    "zip"
+  ],
+  "source": {
+    "type": "official-release",
+    "url": "https://developers.google.com/android/ota",
+    "publisher": "Google"
+  },
+  "license_note": "Personal-use and device compatibility restrictions apply; use the exact model and build.",
+  "verification": {
+    "method": "source-only-not-yet-verified",
+    "status": "needs-review",
+    "evidence_url": "https://developers.google.com/android/ota"
+  },
+  "pricing": {
+    "model": "free"
+  },
+  "notes": [
+    "OTA sideload support depends on the exact device and recovery build.",
+    "Do not assume Pixel OTA packages work on other Android vendors' devices."
+  ]
+}
