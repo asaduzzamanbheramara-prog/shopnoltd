@@ -1,0 +1,63 @@
+{
+  "id": "balena-etcher-usb-image-writer",
+  "name": "balenaEtcher image writer",
+  "kind": "recovery-tool",
+  "description": "Official cross-platform utility for writing supported OS images to USB drives and SD cards from Windows, macOS or Linux. Image and target-device compatibility must be checked separately.",
+  "platforms": [
+    "windows",
+    "macos",
+    "linux"
+  ],
+  "architectures": [
+    "x86_64",
+    "arm64",
+    "universal"
+  ],
+  "device_types": [
+    "desktop",
+    "laptop",
+    "workstation"
+  ],
+  "package_formats": [
+    "exe",
+    "dmg",
+    "deb",
+    "rpm",
+    "zip"
+  ],
+  "source": {
+    "type": "official-download-page",
+    "url": "https://etcher.balena.io/",
+    "publisher": "balena"
+  },
+  "license_note": "balenaEtcher is open source under its published licence. The OS images written with it have separate publisher licences and verification requirements.",
+  "verification": {
+    "method": "source-only-not-yet-verified",
+    "status": "needs-review",
+    "evidence_url": "https://github.com/balena-io/etcher/releases"
+  },
+  "pricing": {
+    "model": "free"
+  },
+  "installation_guide": "https://etcher-docs.balena.io/",
+  "tutorials": [
+    {
+      "title": "balenaEtcher official documentation",
+      "type": "article",
+      "url": "https://etcher-docs.balena.io/",
+      "publisher": "balena",
+      "scope": "Official documentation for selecting an image, selecting removable media and flashing.",
+      "status": "official-reference",
+      "notes": [
+        "Writing an image overwrites the selected target drive.",
+        "Not every Windows installer ISO is supported as a directly bootable image; follow the OS publisher's recommended tool."
+      ]
+    }
+  ],
+  "notes": [
+    "Available for Windows, macOS and Linux; check the release architecture.",
+    "Verify the image from the OS publisher before writing.",
+    "Double-check the target device and capacity; never select the system disk.",
+    "Not a phone firmware flashing tool."
+  ]
+}
