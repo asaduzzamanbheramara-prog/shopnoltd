@@ -253,6 +253,66 @@
           "other"
         ]
       }
+    },
+    "tutorials": {
+      "type": "array",
+      "maxItems": 10,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "title",
+          "type",
+          "url",
+          "publisher",
+          "scope",
+          "status"
+        ],
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "video",
+              "article"
+            ]
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "pattern": "^https://"
+          },
+          "publisher": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "scope": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 400
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "official-reference",
+              "model-specific-tested",
+              "model-specific-not-verified"
+            ]
+          },
+          "notes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 500
+            }
+          }
+        }
+      }
     }
   },
   "allOf": [
