@@ -223,6 +223,21 @@ function AnalyticsTracker() {
   return null
 }
 
+function ProfileProvisioner() {
+  const location = useLocation()
+  useEffect(() => {
+    const token = localStorage.getItem('shopno_token')
+    if (!token || sessionStorage.getItem('shopno_profile_provisioned')) return
+    const storageApi = import.meta.env.VITE_STORAGE_API_URL || 'https://storage-service.shopnoltd.dpdns.org'
+    fetch(storageApi + '/api/v1/profiles/me', {
+      headers: { Authorization: 'Bearer ' + token, Accept: 'application/json' },
+    }).then(response => {
+      if (response.ok) sessionStorage.setItem('shopno_profile_provisioned', '1')
+    }).catch(() => {})
+  }, [location.pathname])
+  return null
+}
+
 const ROUTE_METADATA = {
   '/': {
     title: 'Shopnoltd | Digital Services, Domains & Business Tools',
@@ -332,7 +347,7 @@ function RouteMetadata() {
 }
 
 function App() {
-  return <BrowserRouter basename={import.meta.env.BASE_URL}><AnalyticsTracker /><RouteMetadata /><Nav /><SubdomainRedirect /><Routes>
+  return <BrowserRouter basename={import.meta.env.BASE_URL}><AnalyticsTracker /><ProfileProvisioner /><RouteMetadata /><Nav /><SubdomainRedirect /><Routes>
     <Route path="/" element={<Home />} /><Route path="/pricing" element={<Pricing />} /><Route path="/privacy" element={<Privacy />} /><Route path="/about" element={<About />} /><Route path="/contact" element={<Contact />} /><Route path="/terms" element={<Terms />} /><Route path="/create-website" element={<ProtectedRoute><WebsiteBuilder /></ProtectedRoute>} /><Route path="/discover" element={<ProtectedRoute><Discover /></ProtectedRoute>} /><Route path="/feed" element={<ProtectedRoute><SocialFeed /></ProtectedRoute>} /><Route path="/saved-posts" element={<ProtectedRoute><SavedPosts /></ProtectedRoute>} /><Route path="/post/:id" element={<ProtectedRoute><PostDetail /></ProtectedRoute>} />
     <Route path="/work" element={<ProtectedRoute><WorkHub /></ProtectedRoute>} /><Route path="/referrals" element={<ProtectedRoute><ReferralHub /></ProtectedRoute>} /><Route path="/work/:id" element={<ProtectedRoute><WorkDetail /></ProtectedRoute>} /><Route path="/create-work" element={<ProtectedRoute><WorkHub /></ProtectedRoute>} /><Route path="/my-created-work" element={<ProtectedRoute><WorkHub /></ProtectedRoute>} /><Route path="/my-active-work" element={<ProtectedRoute><WorkHub /></ProtectedRoute>} /><Route path="/my-submission" element={<ProtectedRoute><WorkHub /></ProtectedRoute>} /><Route path="/work-review" element={<ProtectedRoute><WorkHub /></ProtectedRoute>} />
     <Route path="/account" element={<ProtectedRoute><AccountHub /></ProtectedRoute>} /><Route path="/notifications" element={<ProtectedRoute><AccountHub /></ProtectedRoute>} /><Route path="/my-professional-profile" element={<ProtectedRoute><MyProfessionalProfile /></ProtectedRoute>} />
