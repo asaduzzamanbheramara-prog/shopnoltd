@@ -1,0 +1,42 @@
+{
+  "id": "freebsd",
+  "name": "FreeBSD",
+  "kind": "operating-system",
+  "description": "Official FreeBSD installation images for supported server, workstation, and embedded use cases.",
+  "platforms": [
+    "bsd"
+  ],
+  "architectures": [
+    "x86_64",
+    "arm64",
+    "arm"
+  ],
+  "device_types": [
+    "server",
+    "desktop",
+    "workstation",
+    "embedded"
+  ],
+  "package_formats": [
+    "iso",
+    "img"
+  ],
+  "source": {
+    "type": "official-download-page",
+    "url": "https://www.freebsd.org/where/",
+    "publisher": "FreeBSD Project"
+  },
+  "license_note": "FreeBSD and included third-party components have their own licence terms.",
+  "verification": {
+    "method": "source-only-not-yet-verified",
+    "status": "needs-review",
+    "evidence_url": "https://www.freebsd.org/releases/"
+  },
+  "pricing": {
+    "model": "free"
+  },
+  "notes": [
+    "Choose a release and architecture supported by the target hardware.",
+    "Use the correct installation image for the target platform."
+  ]
+}
