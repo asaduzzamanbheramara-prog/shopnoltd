@@ -193,7 +193,7 @@ async def download(video_id: str, request: Request, s: AsyncSession = Depends(db
         "Accept-Ranges": "bytes",
         "Content-Length": str(length),
         "Content-Disposition": f'attachment; filename="{filename}"',
-        "Cache-Control": "private, max-age=0, must-revalidate",
+        "Cache-Control": "private, no-store",
     }
     if partial:
         headers["Content-Range"] = f"bytes {start}-{end}/{size}"
@@ -226,7 +226,7 @@ async def stream(video_id: str, request: Request, s: AsyncSession = Depends(db))
             obj.close()
             obj.release_conn()
 
-    headers = {"Accept-Ranges": "bytes", "Content-Length": str(length), "Cache-Control": "public, max-age=3600"}
+    headers = {"Accept-Ranges": "bytes", "Content-Length": str(length), "Cache-Control": "private, no-store"}
     if partial:
         headers["Content-Range"] = f"bytes {start}-{end}/{size}"
     return StreamingResponse(body(), status_code=206 if partial else 200, media_type=v.content_type or "application/octet-stream", headers=headers)
@@ -369,8 +369,13 @@ async def add_embed(payload: dict, user=Depends(authenticated), s: AsyncSession 
     title = str(payload.get("title", "")).strip()
     if not title or len(title) > 200:
         raise HTTPException(400, "Valid title is required")
+    description = payload.get("description")
+    if description is not None:
+        if not isinstance(description, str) or len(description.strip()) > 500:
+            raise HTTPException(400, "Description must be 500 characters or fewer")
+        description = description.strip() or None
     provider, ref = _parse_embed(str(payload.get("url", "")).strip())
-    video = ProfileVideo(profile_slug=profile, title=title, description=payload.get("description"), source_type="embed", embed_provider=provider, embed_ref=ref, created_by=user.get("sub", "unknown"))
+    video = ProfileVideo(profile_slug=profile, title=title, description=description, source_type="embed", embed_provider=provider, embed_ref=ref, created_by=user.get("sub", "unknown"))
     s.add(video)
     await s.commit()
     return {"id": video.id, "published": video.published, "embed_provider": provider, "embed_ref": ref}
@@ -385,8 +390,23 @@ async def update_item(video_id: str, payload: dict, user=Depends(authenticated),
     if "title" in payload:
         v.title = str(payload["title"]).strip()
         if not v.title or len(v.title) > 200: raise HTTPException(400, "Invalid title")
-    for field in ("description", "published", "sort_order"):
-        if field in payload: setattr(v, field, payload[field])
+    if "description" in payload:
+        description = payload["description"]
+        if description is not None and (not isinstance(description, str) or len(description) > 500):
+            raise HTTPException(400, "Description must be 500 characters or fewer")
+        v.description = description.strip() if isinstance(description, str) else None
+    if "published" in payload:
+        if not isinstance(payload["published"], bool):
+            raise HTTPException(400, "published must be a boolean")
+        v.published = payload["published"]
+    if "sort_order" in payload:
+        try:
+            sort_order = int(payload["sort_order"])
+        except (TypeError, ValueError):
+            raise HTTPException(400, "sort_order must be an integer")
+        if sort_order < 0 or sort_order > 10000:
+            raise HTTPException(400, "sort_order is out of range")
+        v.sort_order = sort_order
     v.updated_at = datetime.utcnow()
     await s.commit()
     return {"id": v.id, "profile_slug": v.profile_slug, "published": v.published}
