@@ -13,7 +13,7 @@ function Embed({ video }) {
   if (video.source_type === 'upload') {
     return <video className="pvg-video" controls preload="metadata" playsInline src={mediaUrl(video.stream_url)} />
   }
-  if (video.source_type === 'direct') {
+  if (video.source_type === 'direct' || (video.source_type === 'embed' && video.embed_provider === 'direct')) {
     return <video className="pvg-video" controls preload="metadata" playsInline src={video.embed_ref} />
   }
   const src = video.embed_provider === 'youtube'

@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import BigInteger, Boolean, Column, DateTime, Integer, String
+from sqlalchemy import BigInteger, Boolean, Column, DateTime, Integer, JSON, String
 
 from app.core.db import Base
 
@@ -57,3 +57,23 @@ class ProfileVideoUpload(Base):
     total_parts = Column(Integer, nullable=False)
     created_by = Column(String(128), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
+
+
+
+class ProfessionalProfile(Base):
+    __tablename__ = "professional_profiles"
+    id = Column(String(64), primary_key=True, default=lambda: str(uuid.uuid4()))
+    owner_sub = Column(String(128), nullable=False, unique=True, index=True)
+    slug = Column(String(64), nullable=False, unique=True, index=True)
+    display_name = Column(String(160), nullable=False)
+    headline = Column(String(240), nullable=False, default="")
+    summary = Column(String(3000), nullable=False, default="")
+    location = Column(String(160), nullable=False, default="")
+    website = Column(String(512), nullable=False, default="")
+    skills = Column(JSON, nullable=False, default=list)
+    experience = Column(JSON, nullable=False, default=list)
+    education = Column(JSON, nullable=False, default=list)
+    portfolio = Column(JSON, nullable=False, default=list)
+    visibility = Column(String(16), nullable=False, default="private")
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

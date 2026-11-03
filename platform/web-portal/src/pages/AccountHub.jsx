@@ -15,7 +15,7 @@ export default function AccountHub() {
     if (path === '/notifications') platformApi.notifications().then(data => setNotifications(Array.isArray(data) ? data : (data?.items || []))).catch(() => {})
   }, [path])
   return <main style={shell}>
-    <nav style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 22 }}><Link to="/account">Account</Link><Link to="/wallet">Wallet</Link><Link to="/notifications">Notifications</Link><Link to="/feed">Feed</Link></nav>
+    <nav style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 22 }}><Link to="/account">Account</Link><Link to="/my-professional-profile">My professional profile</Link><Link to="/wallet">Wallet</Link><Link to="/notifications">Notifications</Link><Link to="/feed">Feed</Link></nav>
     {path === '/notifications' ? <><h1>Notifications</h1>{notifications.map((n, i) => <article key={n.id || i} style={card}><b>{n.title || n.type || 'Notification'}</b><p>{n.message || n.body || JSON.stringify(n)}</p></article>)}{notifications.length === 0 && <div style={card}>No notifications.</div>}</> : <><h1>Account</h1><article style={card}><h3>Profile</h3><p><b>Account ID:</b> {me?.sub || '—'}</p><p><b>Email:</b> {me?.email || '—'}</p><p><b>Tenant:</b> {me?.tenant_id || 'default'}</p><p><b>Roles:</b> {(me?.roles || []).join(', ') || 'customer'}</p></article><article style={card}><h3>Security</h3><p>Authentication is handled by the existing Shopnoltd Keycloak/OIDC flow. Use logout in the top navigation to clear the local session.</p></article><article style={card}><h3>Financial account</h3><p>Your real wallet, ledger, deposits, withdrawals and exchange remain in Financial Center.</p><Link to="/wallet">Open Wallet →</Link></article></>}
   </main>
 }
