@@ -1,0 +1,49 @@
+{
+  "id": "python-runtime",
+  "name": "Python",
+  "kind": "application",
+  "description": "Official Python programming language runtime and installer downloads for supported Windows, macOS and Linux environments.",
+  "platforms": [
+    "windows",
+    "macos",
+    "linux"
+  ],
+  "architectures": [
+    "x86_64",
+    "x86",
+    "arm64",
+    "arm"
+  ],
+  "device_types": [
+    "desktop",
+    "laptop",
+    "workstation",
+    "server"
+  ],
+  "package_formats": [
+    "exe",
+    "pkg",
+    "tar",
+    "source"
+  ],
+  "source": {
+    "type": "official-download-page",
+    "url": "https://www.python.org/downloads/",
+    "publisher": "Python Software Foundation"
+  },
+  "license_note": "Python is open source under the Python Software Foundation licence. Third-party packages installed through Python may have separate licences.",
+  "verification": {
+    "method": "source-only-not-yet-verified",
+    "status": "needs-review",
+    "evidence_url": "https://www.python.org/downloads/"
+  },
+  "pricing": {
+    "model": "free"
+  },
+  "installation_guide": "https://docs.python.org/3/using/index.html",
+  "notes": [
+    "Choose a supported Python release and matching architecture.",
+    "On Linux, prefer the distribution's supported package manager when appropriate.",
+    "Use virtual environments for project dependencies and review packages before installing."
+  ]
+}
