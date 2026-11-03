@@ -1,0 +1,42 @@
+{
+  "id": "macos-bootable-installer",
+  "name": "macOS bootable installer",
+  "kind": "operating-system",
+  "description": "Apple's supported bootable macOS installer workflow for compatible Intel and Apple silicon Macs. Create the installer on a working Mac; it is not a universal image for arbitrary PCs.",
+  "platforms": [
+    "macos"
+  ],
+  "architectures": [
+    "x86_64",
+    "arm64"
+  ],
+  "device_types": [
+    "desktop",
+    "laptop"
+  ],
+  "package_formats": [
+    "iso",
+    "zip",
+    "other"
+  ],
+  "source": {
+    "type": "documentation",
+    "url": "https://support.apple.com/101578",
+    "publisher": "Apple"
+  },
+  "license_note": "Use Apple's installer and licence terms. macOS version and hardware compatibility are model-specific.",
+  "verification": {
+    "method": "source-only-not-yet-verified",
+    "status": "needs-review",
+    "evidence_url": "https://support.apple.com/101578"
+  },
+  "pricing": {
+    "model": "free"
+  },
+  "installation_guide": "https://support.apple.com/101578",
+  "notes": [
+    "A bootable USB installer works only on compatible Mac models.",
+    "Intel and Apple silicon Macs use different startup procedures.",
+    "Some model-specific firmware components may still require internet access."
+  ]
+}
