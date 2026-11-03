@@ -86,7 +86,7 @@ export default function AdminProfileVideos() {
         setProgress(Math.round(part / totalParts * 100))
       }
       await api(`/uploads/${encodeURIComponent(uploadId)}/complete`, { method: 'POST' })
-      setFile(null); setForm({ title: '', description: '' }); setProgress(100); setMessage('Video uploaded successfully. It is published according to the storage-service default; verify the Published status below.'); await load()
+      setFile(null); setForm({ title: '', description: '' }); setProgress(100); setMessage('Video uploaded as a draft. Publish it below when it is ready for profile visitors.'); await load()
     } catch (e) {
       setError(`Upload failed: ${e.message}`)
       if (uploadId) {
@@ -129,7 +129,7 @@ export default function AdminProfileVideos() {
         <input type="file" accept="video/mp4,video/webm,.mp4,.webm" onChange={e => setFile(e.target.files?.[0] || null)} disabled={busy} />
         <input placeholder="Title" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} style={{ width: '100%', boxSizing: 'border-box', marginTop: 10, padding: 10, borderRadius: 8, border: '1px solid #cbd5e1' }} />
         <textarea placeholder="Description (optional)" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} rows={3} style={{ width: '100%', boxSizing: 'border-box', marginTop: 10, padding: 10, borderRadius: 8, border: '1px solid #cbd5e1' }} />
-        <Button onClick={upload} disabled={busy || !file}>{busy ? <Loader2 size={15} /> : <Upload size={15} />} {busy ? `Uploading ${progress}%` : 'Upload & publish'}</Button>
+        <Button onClick={upload} disabled={busy || !file}>{busy ? <Loader2 size={15} /> : <Upload size={15} />} {busy ? `Uploading ${progress}%` : 'Upload as draft'}</Button>
         {busy && progress > 0 && <progress value={progress} max="100" style={{ width: '100%', marginTop: 10 }} />}
       </section>
       <section style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: 18 }}>
