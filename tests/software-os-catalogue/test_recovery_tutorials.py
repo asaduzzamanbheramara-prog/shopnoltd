@@ -22,11 +22,11 @@ class RecoveryTutorialTests(unittest.TestCase):
         entry = self.load_entry("hp-14s-cf2xxx-windows-recovery.json")
         self.assertEqual(list(VALIDATOR.iter_errors(entry)), [])
         videos = [item for item in entry.get("tutorials", []) if item["type"] == "video"]
-        self.assertEqual(len(videos), 1)
-        self.assertEqual(urlparse(videos[0]["url"]).hostname, "www.youtube.com")
-        self.assertEqual(videos[0]["publisher"], "HP Support")
-        self.assertEqual(videos[0]["status"], "official-reference")
-        self.assertIn("not proof", videos[0]["scope"].lower())
+        self.assertEqual(len(videos), 2)
+        self.assertTrue(all(urlparse(item["url"]).hostname == "www.youtube.com" for item in videos))
+        self.assertTrue(all(item["publisher"] == "HP Support" for item in videos))
+        self.assertTrue(all(item["status"] == "official-reference" for item in videos))
+        self.assertTrue(all("not proof" in item["scope"].lower() or "does not validate" in item["scope"].lower() for item in videos))
 
     def test_realme_c35_uses_official_written_guides_without_fake_video_claim(self):
         entry = self.load_entry("realme-c35-rmx3511-recovery.json")
