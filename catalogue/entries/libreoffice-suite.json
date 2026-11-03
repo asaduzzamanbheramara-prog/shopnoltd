@@ -1,0 +1,50 @@
+{
+  "id": "libreoffice-suite",
+  "name": "LibreOffice",
+  "kind": "application",
+  "description": "Official LibreOffice productivity suite for supported Windows, macOS and Linux computers, including word processing, spreadsheets and presentations.",
+  "platforms": [
+    "windows",
+    "macos",
+    "linux"
+  ],
+  "architectures": [
+    "x86_64",
+    "x86",
+    "arm64"
+  ],
+  "device_types": [
+    "desktop",
+    "laptop",
+    "workstation"
+  ],
+  "package_formats": [
+    "exe",
+    "msi",
+    "dmg",
+    "deb",
+    "rpm",
+    "flatpak",
+    "tar"
+  ],
+  "source": {
+    "type": "official-download-page",
+    "url": "https://www.libreoffice.org/download/download-libreoffice/",
+    "publisher": "The Document Foundation"
+  },
+  "license_note": "LibreOffice is free and open source under its published licence notices. Extensions and bundled components may have separate terms.",
+  "verification": {
+    "method": "source-only-not-yet-verified",
+    "status": "needs-review",
+    "evidence_url": "https://www.libreoffice.org/download/download-libreoffice/"
+  },
+  "pricing": {
+    "model": "free"
+  },
+  "installation_guide": "https://www.libreoffice.org/get-help/install-howto/",
+  "notes": [
+    "Select the correct operating system, architecture and language.",
+    "Use the official download and installation instructions.",
+    "Check release notes before upgrading documents used in production workflows."
+  ]
+}
