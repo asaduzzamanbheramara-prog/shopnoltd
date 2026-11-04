@@ -32,5 +32,21 @@ class DevicePackageCoverageTests(unittest.TestCase):
         self.assertIn("entry.package_formats", page)
         self.assertIn("entry.package_formats||[]", page)
 
+
+    def test_schema_exposes_broad_software_categories(self):
+        categories = set(SCHEMA["properties"]["categories"]["items"]["enum"])
+        self.assertTrue({
+            "browser", "office-productivity", "developer-tools", "programming-runtimes",
+            "security-privacy", "drivers-firmware", "media-creative", "education-science",
+            "communication", "utilities", "server-self-hosted", "database-storage",
+            "backup-recovery", "accessibility", "gaming", "system-administration",
+            "design-engineering", "other"
+        } <= categories)
+
+    def test_catalogue_page_searches_and_displays_categories(self):
+        page = (ROOT / "frontend/software-os-center.html").read_text(encoding="utf-8")
+        self.assertIn("entry.categories||[]", page)
+        self.assertIn("Categories:", page)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
