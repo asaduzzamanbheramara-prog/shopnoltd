@@ -1,0 +1,2003 @@
+[
+  {
+    "id": "android-adb-sideload",
+    "name": "Android recovery ADB sideload",
+    "kind": "recovery-tool",
+    "description": "For Android devices whose recovery explicitly supports Apply update from ADB, send a device-compatible signed update package from a connected computer over USB. Support depends on the device build and manufacturer.",
+    "platforms": [
+      "android"
+    ],
+    "architectures": [
+      "arm64-v8a",
+      "armeabi-v7a",
+      "x86_64"
+    ],
+    "device_types": [
+      "phone",
+      "tablet"
+    ],
+    "package_formats": [
+      "zip"
+    ],
+    "source": {
+      "type": "documentation",
+      "url": "https://source.android.com/docs/core/ota/nonab/device_code",
+      "publisher": "Android Open Source Project"
+    },
+    "license_note": "Only use firmware packages authorized for the exact device model, region, and build.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://source.android.com/docs/core/ota/nonab/device_code"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "notes": [
+      "ADB sideload is not a universal Android OS installer.",
+      "Only the sideload command works while recovery is in sideload mode.",
+      "Never flash a package for a similar-looking but different model."
+    ]
+  },
+  {
+    "id": "apple-app-store",
+    "name": "Apple App Store installation",
+    "kind": "documentation",
+    "description": "Official Apple App Store channel for installing supported apps on iPhone, iPad, Apple TV and Apple Watch.",
+    "platforms": [
+      "ios",
+      "ipados",
+      "tvos",
+      "watchos"
+    ],
+    "device_types": [
+      "phone",
+      "tablet",
+      "tv",
+      "wearable"
+    ],
+    "package_formats": [
+      "ipa"
+    ],
+    "source": {
+      "type": "documentation",
+      "url": "https://www.apple.com/app-store/",
+      "publisher": "Apple"
+    },
+    "license_note": "Apps have individual publisher terms and App Store conditions. Shopnoltd does not distribute or re-sign iOS application packages.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://support.apple.com/guide/iphone/get-apps-iph3dfd91de/ios"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "installation_guide": "https://support.apple.com/guide/iphone/get-apps-iph3dfd91de/ios",
+    "notes": [
+      "Install apps through the App Store on supported devices.",
+      "Check region, OS compatibility, age rating, privacy details and in-app purchases.",
+      "A generic PC bootable USB is not an iPhone or iPad app installer."
+    ]
+  },
+  {
+    "id": "audacity-audio-editor",
+    "name": "Audacity audio editor",
+    "kind": "application",
+    "description": "Official Audacity audio recording and editing application for supported Windows, macOS and Linux systems.",
+    "platforms": [
+      "windows",
+      "macos",
+      "linux"
+    ],
+    "architectures": [
+      "x86_64",
+      "arm64",
+      "universal"
+    ],
+    "device_types": [
+      "desktop",
+      "laptop",
+      "workstation"
+    ],
+    "package_formats": [
+      "exe",
+      "dmg",
+      "appimage",
+      "flatpak",
+      "tar"
+    ],
+    "source": {
+      "type": "official-download-page",
+      "url": "https://www.audacityteam.org/download/",
+      "publisher": "Audacity Team"
+    },
+    "license_note": "Audacity is open source; review current privacy notices, bundled components, plugins and licence terms on the official project site.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://www.audacityteam.org/download/"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "installation_guide": "https://support.audacityteam.org/",
+    "notes": [
+      "Download only from the official Audacity project page.",
+      "Check current OS support and optional plugin requirements.",
+      "Review the privacy and telemetry settings presented by the current release."
+    ]
+  },
+  {
+    "id": "balena-etcher-usb-image-writer",
+    "name": "balenaEtcher image writer",
+    "kind": "recovery-tool",
+    "description": "Official cross-platform utility for writing supported OS images to USB drives and SD cards from Windows, macOS or Linux. Image and target-device compatibility must be checked separately.",
+    "platforms": [
+      "windows",
+      "macos",
+      "linux"
+    ],
+    "architectures": [
+      "x86_64",
+      "arm64",
+      "universal"
+    ],
+    "device_types": [
+      "desktop",
+      "laptop",
+      "workstation"
+    ],
+    "package_formats": [
+      "exe",
+      "dmg",
+      "deb",
+      "rpm",
+      "zip"
+    ],
+    "source": {
+      "type": "official-download-page",
+      "url": "https://etcher.balena.io/",
+      "publisher": "balena"
+    },
+    "license_note": "balenaEtcher is open source under its published licence. The OS images written with it have separate publisher licences and verification requirements.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://github.com/balena-io/etcher/releases"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "installation_guide": "https://etcher-docs.balena.io/",
+    "tutorials": [
+      {
+        "title": "balenaEtcher official documentation",
+        "type": "article",
+        "url": "https://etcher-docs.balena.io/",
+        "publisher": "balena",
+        "scope": "Official documentation for selecting an image, selecting removable media and flashing.",
+        "status": "official-reference",
+        "notes": [
+          "Writing an image overwrites the selected target drive.",
+          "Not every Windows installer ISO is supported as a directly bootable image; follow the OS publisher's recommended tool."
+        ]
+      }
+    ],
+    "notes": [
+      "Writing an image erases the selected USB drive or SD card; confirm the exact removable device before flashing.",
+      "Available for Windows, macOS and Linux; check the release architecture.",
+      "Verify the image from the OS publisher before writing.",
+      "Double-check the target device and capacity; never select the system disk.",
+      "Not a phone firmware flashing tool."
+    ]
+  },
+  {
+    "id": "blender-3d-suite",
+    "name": "Blender 3D creation suite",
+    "kind": "application",
+    "description": "Official Blender 3D creation suite downloads for supported Windows, macOS and Linux computers, including Intel and ARM device options where offered.",
+    "platforms": [
+      "windows",
+      "macos",
+      "linux"
+    ],
+    "architectures": [
+      "x86_64",
+      "arm64",
+      "universal"
+    ],
+    "device_types": [
+      "desktop",
+      "laptop",
+      "workstation"
+    ],
+    "package_formats": [
+      "exe",
+      "zip",
+      "dmg",
+      "tar",
+      "snap"
+    ],
+    "source": {
+      "type": "official-download-page",
+      "url": "https://www.blender.org/download/",
+      "publisher": "Blender Foundation"
+    },
+    "license_note": "Blender is free and open source; assets, add-ons and third-party content may have separate licences.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://www.blender.org/download/"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "installation_guide": "https://docs.blender.org/manual/en/latest/getting_started/installing/index.html",
+    "notes": [
+      "Choose the build for Windows, macOS or Linux and the correct CPU architecture.",
+      "Use stable releases for production work; experimental builds may be unstable.",
+      "Check GPU and memory requirements for rendering workloads."
+    ]
+  },
+  {
+    "id": "chromeos-recovery",
+    "name": "Chromebook / ChromeOS recovery",
+    "kind": "recovery-tool",
+    "description": "Recover supported Chromebooks using built-in internet recovery or Google USB recovery media prepared for the exact Chromebook model.",
+    "platforms": [
+      "chromeos"
+    ],
+    "architectures": [
+      "arm64",
+      "x86_64"
+    ],
+    "device_types": [
+      "laptop"
+    ],
+    "package_formats": [
+      "zip",
+      "img"
+    ],
+    "source": {
+      "type": "documentation",
+      "url": "https://support.google.com/chromebook/answer/1080595?hl=en",
+      "publisher": "Google"
+    },
+    "license_note": "Recovery image and device support are controlled by Google and the Chromebook manufacturer.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://support.google.com/chromebook/answer/1080595?hl=en"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "notes": [
+      "USB recovery erases local Chromebook storage.",
+      "Some newer Chromebooks support internet recovery instead.",
+      "Use recovery media for the exact Chromebook model."
+    ]
+  },
+  {
+    "id": "debian",
+    "name": "Debian",
+    "kind": "operating-system",
+    "description": "Official Debian installation images and installation documentation for supported architectures and device classes.",
+    "platforms": [
+      "linux"
+    ],
+    "architectures": [
+      "x86_64",
+      "arm64",
+      "arm",
+      "x86"
+    ],
+    "device_types": [
+      "desktop",
+      "laptop",
+      "server",
+      "embedded"
+    ],
+    "package_formats": [
+      "iso",
+      "img"
+    ],
+    "source": {
+      "type": "official-download-page",
+      "url": "https://www.debian.org/distrib/",
+      "publisher": "Debian Project"
+    },
+    "license_note": "Debian packages have individual licences; consult the official Debian Free Software Guidelines and package notices.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://www.debian.org/CD/verify"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "notes": [
+      "Select the correct architecture and installer type.",
+      "Some installer variants require network access to fetch packages."
+    ]
+  },
+  {
+    "id": "fdroid-android-client",
+    "name": "F-Droid Android app repository",
+    "kind": "application",
+    "description": "Official F-Droid project page for its Android app repository client. Review publisher guidance, device compatibility, and package integrity before installing any APK.",
+    "platforms": [
+      "android"
+    ],
+    "architectures": [
+      "arm64-v8a",
+      "armeabi-v7a",
+      "x86_64",
+      "x86"
+    ],
+    "device_types": [
+      "phone",
+      "tablet",
+      "tv"
+    ],
+    "package_formats": [
+      "apk"
+    ],
+    "source": {
+      "type": "official-download-page",
+      "url": "https://f-droid.org/",
+      "publisher": "F-Droid"
+    },
+    "license_note": "Review F-Droid and each app's licence and signing information. Shopnoltd does not repackage, sign, or host APK files.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://f-droid.org/"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "notes": [
+      "This is an official project page, not a direct APK binary URL.",
+      "Android may require the user to approve installing apps from a selected source; only proceed after verifying publisher and package signing information.",
+      "APK compatibility depends on Android version, CPU ABI, device policy, and app requirements."
+    ]
+  },
+  {
+    "id": "fedora-workstation",
+    "name": "Fedora Workstation",
+    "kind": "operating-system",
+    "description": "Official Fedora Linux desktop image and installation documentation for supported x86_64 and ARM64 systems.",
+    "platforms": [
+      "linux"
+    ],
+    "architectures": [
+      "x86_64",
+      "arm64"
+    ],
+    "device_types": [
+      "desktop",
+      "laptop",
+      "workstation"
+    ],
+    "package_formats": [
+      "iso"
+    ],
+    "source": {
+      "type": "official-download-page",
+      "url": "https://fedoraproject.org/workstation/download",
+      "publisher": "Fedora Project"
+    },
+    "license_note": "Review Fedora and bundled component licences; do not redistribute modified images without checking terms.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://fedoraproject.org/security"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "notes": [
+      "Check current hardware requirements and architecture.",
+      "Verify downloaded media using Fedora's official instructions."
+    ]
+  },
+  {
+    "id": "firefox-browser",
+    "name": "Mozilla Firefox",
+    "kind": "application",
+    "description": "Official Mozilla web browser for supported Windows, macOS, Linux, Android and iOS devices. Select the matching publisher download or app-store route for the target platform.",
+    "platforms": [
+      "windows",
+      "macos",
+      "linux",
+      "android",
+      "ios"
+    ],
+    "architectures": [
+      "x86_64",
+      "arm64",
+      "arm64-v8a",
+      "armeabi-v7a"
+    ],
+    "device_types": [
+      "desktop",
+      "laptop",
+      "phone",
+      "tablet"
+    ],
+    "package_formats": [
+      "exe",
+      "dmg",
+      "tar",
+      "apk",
+      "ipa"
+    ],
+    "source": {
+      "type": "official-download-page",
+      "url": "https://www.mozilla.org/firefox/browsers/",
+      "publisher": "Mozilla"
+    },
+    "license_note": "Firefox source is open source; branded builds and mobile distribution are subject to Mozilla and platform store terms. Review the current licence and supported OS on Mozilla's site.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://www.mozilla.org/firefox/browsers/"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "installation_guide": "https://support.mozilla.org/products/firefox",
+    "notes": [
+      "Shopnoltd links to Mozilla and official app stores; it does not repackage the browser.",
+      "Check the exact OS version and CPU architecture before installing.",
+      "Use the publisher's signature or checksum instructions when provided."
+    ]
+  },
+  {
+    "id": "flathub-linux-apps",
+    "name": "Flathub Linux application catalogue",
+    "kind": "documentation",
+    "description": "Official Flathub catalogue for discovering Flatpak applications on supported Linux distributions and desktop environments.",
+    "platforms": [
+      "linux"
+    ],
+    "architectures": [
+      "x86_64",
+      "arm64"
+    ],
+    "device_types": [
+      "desktop",
+      "laptop",
+      "workstation"
+    ],
+    "package_formats": [
+      "flatpak"
+    ],
+    "source": {
+      "type": "documentation",
+      "url": "https://flathub.org/",
+      "publisher": "Flathub"
+    },
+    "license_note": "Each Flatpak application has its own licence, publisher and sandbox permissions. Review the app listing and permissions before installation.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://flatpak.org/setup/"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "installation_guide": "https://flatpak.org/setup/",
+    "notes": [
+      "Install Flatpak using the official setup instructions for the Linux distribution.",
+      "Review application publisher identity, permissions and source details.",
+      "A Flatpak package is not interchangeable with a Windows EXE or macOS DMG."
+    ]
+  },
+  {
+    "id": "freebsd",
+    "name": "FreeBSD",
+    "kind": "operating-system",
+    "description": "Official FreeBSD installation images for supported server, workstation, and embedded use cases.",
+    "platforms": [
+      "bsd"
+    ],
+    "architectures": [
+      "x86_64",
+      "arm64",
+      "arm"
+    ],
+    "device_types": [
+      "server",
+      "desktop",
+      "workstation",
+      "embedded"
+    ],
+    "package_formats": [
+      "iso",
+      "img"
+    ],
+    "source": {
+      "type": "official-download-page",
+      "url": "https://www.freebsd.org/where/",
+      "publisher": "FreeBSD Project"
+    },
+    "license_note": "FreeBSD and included third-party components have their own licence terms.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://www.freebsd.org/releases/"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "notes": [
+      "Choose a release and architecture supported by the target hardware.",
+      "Use the correct installation image for the target platform."
+    ]
+  },
+  {
+    "id": "gimp-image-editor",
+    "name": "GIMP image editor",
+    "kind": "application",
+    "description": "Official GIMP image editor downloads for supported Windows, macOS and Linux systems, including publisher-provided installers and Linux package options.",
+    "platforms": [
+      "windows",
+      "macos",
+      "linux"
+    ],
+    "architectures": [
+      "x86_64",
+      "arm64",
+      "universal"
+    ],
+    "device_types": [
+      "desktop",
+      "laptop",
+      "workstation"
+    ],
+    "package_formats": [
+      "exe",
+      "dmg",
+      "appimage",
+      "flatpak",
+      "snap",
+      "tar"
+    ],
+    "source": {
+      "type": "official-download-page",
+      "url": "https://www.gimp.org/downloads/",
+      "publisher": "GIMP Project"
+    },
+    "license_note": "GIMP is free and open source. Plugins, brushes, fonts and other downloaded assets may carry separate licence terms.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://www.gimp.org/downloads/"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "installation_guide": "https://www.gimp.org/tutorials/",
+    "notes": [
+      "Use the official GIMP downloads page for current supported packages.",
+      "The publisher provides SHA-256 values for some release files; verify against the same release page.",
+      "Check OS minimum versions before installing."
+    ]
+  },
+  {
+    "id": "git-version-control",
+    "name": "Git",
+    "kind": "application",
+    "description": "Official Git version-control tools and installation guidance for Windows, macOS and Linux development environments.",
+    "platforms": [
+      "windows",
+      "macos",
+      "linux"
+    ],
+    "architectures": [
+      "x86_64",
+      "x86",
+      "arm64",
+      "arm"
+    ],
+    "device_types": [
+      "desktop",
+      "laptop",
+      "workstation",
+      "server"
+    ],
+    "package_formats": [
+      "exe",
+      "dmg",
+      "deb",
+      "rpm",
+      "tar"
+    ],
+    "source": {
+      "type": "official-download-page",
+      "url": "https://git-scm.com/downloads",
+      "publisher": "Git Project"
+    },
+    "license_note": "Git is free software distributed under its published open-source licence. Platform package maintainers may provide additional packaging.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://git-scm.com/downloads"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "installation_guide": "https://git-scm.com/book/en/v2/Getting-Started-Installing-Git",
+    "notes": [
+      "Use the package for the target operating system and architecture.",
+      "On Linux, the distribution package manager may provide the recommended build.",
+      "Do not place access tokens or private keys in Git remotes or repository files."
+    ]
+  },
+  {
+    "id": "google-pixel-factory-images",
+    "name": "Google Pixel factory images",
+    "kind": "recovery-tool",
+    "description": "Official factory images for supported Google Pixel models. Manual flashing can restore factory firmware but can erase all user data and may require bootloader unlocking.",
+    "platforms": [
+      "android"
+    ],
+    "architectures": [
+      "arm64-v8a"
+    ],
+    "device_types": [
+      "phone",
+      "tablet"
+    ],
+    "package_formats": [
+      "zip",
+      "firmware"
+    ],
+    "source": {
+      "type": "official-release",
+      "url": "https://developers.google.com/android/images",
+      "publisher": "Google"
+    },
+    "license_note": "Google device software terms and model-specific restrictions apply.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://developers.google.com/android/images"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "notes": [
+      "Select the exact Pixel model and build.",
+      "Factory image flashing erases user data; back up first.",
+      "Consider the full OTA package where appropriate."
+    ]
+  },
+  {
+    "id": "google-pixel-full-ota",
+    "name": "Google Pixel full OTA packages",
+    "kind": "recovery-tool",
+    "description": "Official full OTA packages for supported Pixel and Nexus devices. These can restore or update supported firmware without the factory-image workflow's required wipe or bootloader unlock in documented cases.",
+    "platforms": [
+      "android"
+    ],
+    "architectures": [
+      "arm64-v8a"
+    ],
+    "device_types": [
+      "phone",
+      "tablet"
+    ],
+    "package_formats": [
+      "zip"
+    ],
+    "source": {
+      "type": "official-release",
+      "url": "https://developers.google.com/android/ota",
+      "publisher": "Google"
+    },
+    "license_note": "Personal-use and device compatibility restrictions apply; use the exact model and build.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://developers.google.com/android/ota"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "notes": [
+      "OTA sideload support depends on the exact device and recovery build.",
+      "Do not assume Pixel OTA packages work on other Android vendors' devices."
+    ]
+  },
+  {
+    "id": "google-play-store",
+    "name": "Google Play Store app installation",
+    "kind": "documentation",
+    "description": "Official Google Play Store route for finding and installing Android apps on supported, certified devices. Availability depends on device certification, region, Android version and app requirements.",
+    "platforms": [
+      "android"
+    ],
+    "architectures": [
+      "arm64-v8a",
+      "armeabi-v7a",
+      "x86_64"
+    ],
+    "device_types": [
+      "phone",
+      "tablet",
+      "tv"
+    ],
+    "package_formats": [
+      "apk"
+    ],
+    "source": {
+      "type": "documentation",
+      "url": "https://play.google.com/store/apps",
+      "publisher": "Google"
+    },
+    "license_note": "Apps distributed through Google Play have individual publisher licences, permissions and data practices. Shopnoltd does not mirror or re-sign Play Store APKs.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://support.google.com/googleplay/answer/113412?hl=en"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "installation_guide": "https://support.google.com/googleplay/answer/113412?hl=en",
+    "notes": [
+      "Use Play Store on supported certified Android devices; do not sideload an APK just because an app is missing.",
+      "Check publisher, permissions, compatibility and regional availability.",
+      "Some Android devices do not include Google Play services."
+    ]
+  },
+  {
+    "id": "homebrew-macos-packages",
+    "name": "Homebrew macOS package manager",
+    "kind": "documentation",
+    "description": "Official Homebrew package manager for installing command-line tools and supported applications on macOS; Linux support is also documented by the project.",
+    "platforms": [
+      "macos",
+      "linux"
+    ],
+    "architectures": [
+      "x86_64",
+      "arm64"
+    ],
+    "device_types": [
+      "desktop",
+      "laptop",
+      "workstation",
+      "server"
+    ],
+    "package_formats": [
+      "tar",
+      "source"
+    ],
+    "source": {
+      "type": "documentation",
+      "url": "https://brew.sh/",
+      "publisher": "Homebrew Project"
+    },
+    "license_note": "Homebrew itself is open source; individual formulae and casks have their own licences and publisher sources.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://docs.brew.sh/Installation"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "installation_guide": "https://docs.brew.sh/Installation",
+    "notes": [
+      "Follow the official installation steps and review commands before running them.",
+      "Check formula/cask publisher source and licence before installing packages.",
+      "Do not use package-manager commands from untrusted catalogue entries."
+    ]
+  },
+  {
+    "id": "hp-14s-cf2xxx-windows-recovery",
+    "name": "HP Laptop 14s-cf2xxx · Windows 11 recovery profile",
+    "kind": "recovery-tool",
+    "description": "Device-specific recovery guidance for the inspected HP Laptop 14s-cf2xxx running 64-bit Windows 11 on a 256 GB NVMe GPT system disk. Windows Recovery Environment is enabled. Use Microsoft installation/recovery media and HP support for the exact product number; this record is a profile, not a tested recovery image.",
+    "platforms": [
+      "windows"
+    ],
+    "architectures": [
+      "x86_64"
+    ],
+    "device_types": [
+      "laptop"
+    ],
+    "package_formats": [
+      "iso",
+      "exe"
+    ],
+    "source": {
+      "type": "documentation",
+      "url": "https://support.hp.com/us-en",
+      "publisher": "HP"
+    },
+    "license_note": "Windows installation media and activation are governed by Microsoft's licence terms. HP drivers and firmware must match the exact product number and hardware revision.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://support.microsoft.com/en-us/windows/recovery-options-in-windows-31ce2444-7de3-818c-d626-e3b5a3024da5"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "notes": [
+      "Inspected host: HP Laptop 14s-cf2xxx; Windows 11 Home Single Language, build 26200, 64-bit.",
+      "Inspected internal disk: WD 256 GB NVMe, GPT. Windows Recovery Environment is enabled.",
+      "BitLocker status at inspection: C: fully decrypted; no BitLocker recovery key was reported.",
+      "Use Windows Startup Repair and other non-destructive WinRE options before reinstalling.",
+      "Windows installation USB can boot compatible PCs; creating it erases the selected USB unless using a compatible multiboot workflow.",
+      "Exact HP product number and driver set still need to be collected before claiming full model-specific support.",
+      "Existing 120 GB E2B USB must be preserved; do not format or repartition it."
+    ],
+    "tutorials": [
+      {
+        "title": "How to Use the HP Cloud Recovery Tool in Windows 11",
+        "type": "video",
+        "url": "https://www.youtube.com/watch?v=xmtXOU40vxk",
+        "publisher": "HP Support",
+        "scope": "General HP Windows 11 Cloud Recovery Tool walkthrough. HP model eligibility and the exact product number must be checked; this is not proof that the inspected 14s-cf2xxx is supported.",
+        "status": "official-reference",
+        "notes": [
+          "The video is published by the verified HP Support YouTube channel.",
+          "Use HP Cloud Recovery only if the exact HP product number is eligible.",
+          "Creating recovery media can erase the selected USB; preserve existing E2B media."
+        ]
+      },
+      {
+        "title": "Creating and Using a Microsoft Recovery USB Drive | HP Computers",
+        "type": "video",
+        "url": "https://www.youtube.com/watch?v=U52z0IQB2ro",
+        "publisher": "HP Support",
+        "scope": "General Windows recovery USB walkthrough from HP Support. It does not validate the exact inspected HP 14s-cf2xxx product number or replace its model-specific recovery check.",
+        "status": "official-reference",
+        "notes": [
+          "The video is published by the verified HP Support YouTube channel.",
+          "Creating the recovery USB removes data from the selected USB; use a separate blank drive.",
+          "Back up the target PC before using recovery media."
+        ]
+      },
+      {
+        "title": "HP PCs — Software recovery options (Windows)",
+        "type": "article",
+        "url": "https://support.hp.com/us-en/document/ish_5787612-5787757-16",
+        "publisher": "HP Support",
+        "scope": "Official overview of HP Windows recovery options and the distinction between recovery methods.",
+        "status": "official-reference",
+        "notes": [
+          "Review the model's exact support page before choosing a recovery image.",
+          "Back up files before factory recovery or reinstall."
+        ]
+      }
+    ]
+  },
+  {
+    "id": "inkscape-vector-editor",
+    "name": "Inkscape vector graphics editor",
+    "kind": "application",
+    "description": "Official Inkscape vector graphics editor for supported Windows, macOS and Linux computers.",
+    "platforms": [
+      "windows",
+      "macos",
+      "linux"
+    ],
+    "architectures": [
+      "x86_64",
+      "arm64",
+      "universal"
+    ],
+    "device_types": [
+      "desktop",
+      "laptop",
+      "workstation"
+    ],
+    "package_formats": [
+      "exe",
+      "msi",
+      "dmg",
+      "appimage",
+      "flatpak",
+      "snap"
+    ],
+    "source": {
+      "type": "official-download-page",
+      "url": "https://inkscape.org/release/",
+      "publisher": "Inkscape Project"
+    },
+    "license_note": "Inkscape is free and open source. Extensions, fonts and imported assets may have separate licence terms.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://inkscape.org/release/"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "installation_guide": "https://inkscape.org/learn/",
+    "notes": [
+      "Select the stable release and correct operating system package.",
+      "Review the release notes and system requirements.",
+      "Install extensions only from sources you trust."
+    ]
+  },
+  {
+    "id": "iphone-ipad-computer-restore",
+    "name": "iPhone and iPad computer restore",
+    "kind": "recovery-tool",
+    "description": "Restore or update supported iPhone and iPad devices using Finder on Mac or Apple Devices on Windows. This is a computer-assisted cable workflow, not a bootable pendrive installer.",
+    "platforms": [
+      "ios",
+      "ipados"
+    ],
+    "architectures": [
+      "arm64"
+    ],
+    "device_types": [
+      "phone",
+      "tablet"
+    ],
+    "package_formats": [
+      "zip",
+      "other"
+    ],
+    "source": {
+      "type": "documentation",
+      "url": "https://support.apple.com/en-la/118107",
+      "publisher": "Apple"
+    },
+    "license_note": "Apple firmware and restore procedures are governed by Apple's terms and device eligibility.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://support.apple.com/en-la/118107"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "notes": [
+      "Use Finder on Mac or Apple Devices on Windows.",
+      "Restore erases device content; create and verify a backup first.",
+      "Activation Lock and Apple Account requirements still apply."
+    ]
+  },
+  {
+    "id": "keepassxc-password-manager",
+    "name": "KeePassXC password manager",
+    "kind": "application",
+    "description": "Official KeePassXC local password manager for supported Windows, macOS and Linux desktop systems.",
+    "platforms": [
+      "windows",
+      "macos",
+      "linux"
+    ],
+    "architectures": [
+      "x86_64",
+      "arm64",
+      "universal"
+    ],
+    "device_types": [
+      "desktop",
+      "laptop",
+      "workstation"
+    ],
+    "package_formats": [
+      "exe",
+      "msi",
+      "dmg",
+      "appimage",
+      "flatpak",
+      "snap"
+    ],
+    "source": {
+      "type": "official-download-page",
+      "url": "https://keepassxc.org/download/",
+      "publisher": "KeePassXC Project"
+    },
+    "license_note": "KeePassXC is free and open source. Keep database backups encrypted and protect the database key separately.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://keepassxc.org/download/"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "installation_guide": "https://keepassxc.org/docs/",
+    "notes": [
+      "Use the official release for your OS and architecture.",
+      "Verify release signatures or checksums when the project publishes them.",
+      "Never upload an unencrypted password database to a public repository."
+    ]
+  },
+  {
+    "id": "libreoffice-suite",
+    "name": "LibreOffice",
+    "kind": "application",
+    "description": "Official LibreOffice productivity suite for supported Windows, macOS and Linux computers, including word processing, spreadsheets and presentations.",
+    "platforms": [
+      "windows",
+      "macos",
+      "linux"
+    ],
+    "architectures": [
+      "x86_64",
+      "x86",
+      "arm64"
+    ],
+    "device_types": [
+      "desktop",
+      "laptop",
+      "workstation"
+    ],
+    "package_formats": [
+      "exe",
+      "msi",
+      "dmg",
+      "deb",
+      "rpm",
+      "flatpak",
+      "tar"
+    ],
+    "source": {
+      "type": "official-download-page",
+      "url": "https://www.libreoffice.org/download/",
+      "publisher": "The Document Foundation"
+    },
+    "license_note": "LibreOffice is free and open source under its published licence notices. Extensions and bundled components may have separate terms.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://www.libreoffice.org/download/"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "installation_guide": "https://www.libreoffice.org/installation-instructions/",
+    "notes": [
+      "Select the correct operating system, architecture and language.",
+      "Use the official download and installation instructions.",
+      "Check release notes before upgrading documents used in production workflows."
+    ]
+  },
+  {
+    "id": "linux-mint",
+    "name": "Linux Mint",
+    "kind": "operating-system",
+    "description": "Official Linux Mint download page. Choose a supported edition and release, then follow the project's published integrity-verification guidance.",
+    "platforms": [
+      "linux"
+    ],
+    "architectures": [
+      "x86_64"
+    ],
+    "source": {
+      "type": "official-download-page",
+      "url": "https://linuxmint.com/download.php",
+      "publisher": "Linux Mint Project"
+    },
+    "license_note": "Review the distribution and bundled third-party software licences on the official project site. Shopnoltd does not repackage or redistribute the ISO in this scaffold.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://linuxmint.com/download.php"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "notes": [
+      "Metadata only; no ISO is hosted here.",
+      "Verify the downloaded image using project-published checksums/signatures before use."
+    ]
+  },
+  {
+    "id": "linux-software-installation",
+    "name": "Linux software installation methods",
+    "kind": "documentation",
+    "description": "Guidance for Linux package ecosystems including APT/DEB, DNF/RPM, Flatpak, Snap, and AppImage. Use the distribution repository or application's official publisher source.",
+    "platforms": [
+      "linux"
+    ],
+    "architectures": [
+      "x86_64",
+      "arm64",
+      "arm"
+    ],
+    "device_types": [
+      "desktop",
+      "laptop",
+      "server",
+      "single-board-computer"
+    ],
+    "package_formats": [
+      "deb",
+      "rpm",
+      "flatpak",
+      "snap",
+      "appimage"
+    ],
+    "source": {
+      "type": "documentation",
+      "url": "https://flatpak.org/setup/",
+      "publisher": "Flatpak and distribution maintainers"
+    },
+    "license_note": "Package licences and redistribution rules vary by application and distribution.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://flatpak.org/setup/"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "notes": [
+      "Use the package manager supported by the installed distribution.",
+      "Avoid random third-party mirrors and unverified scripts.",
+      "Offline installation requires matching dependencies and architecture."
+    ]
+  },
+  {
+    "id": "macos-bootable-installer",
+    "name": "macOS bootable installer",
+    "kind": "operating-system",
+    "description": "Apple's supported bootable macOS installer workflow for compatible Intel and Apple silicon Macs. Create the installer on a working Mac; it is not a universal image for arbitrary PCs.",
+    "platforms": [
+      "macos"
+    ],
+    "architectures": [
+      "x86_64",
+      "arm64"
+    ],
+    "device_types": [
+      "desktop",
+      "laptop"
+    ],
+    "package_formats": [
+      "iso",
+      "zip",
+      "other"
+    ],
+    "source": {
+      "type": "documentation",
+      "url": "https://support.apple.com/101578",
+      "publisher": "Apple"
+    },
+    "license_note": "Use Apple's installer and licence terms. macOS version and hardware compatibility are model-specific.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://support.apple.com/101578"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "installation_guide": "https://support.apple.com/101578",
+    "notes": [
+      "A bootable USB installer works only on compatible Mac models.",
+      "Intel and Apple silicon Macs use different startup procedures.",
+      "Some model-specific firmware components may still require internet access."
+    ]
+  },
+  {
+    "id": "macos-recovery",
+    "name": "macOS Recovery",
+    "kind": "recovery-tool",
+    "description": "Built-in Apple recovery environment for supported Macs. Use it to repair storage, restore from Time Machine, or reinstall a compatible macOS version; internet access is generally required for reinstall.",
+    "platforms": [
+      "macos"
+    ],
+    "architectures": [
+      "x86_64",
+      "arm64"
+    ],
+    "device_types": [
+      "desktop",
+      "laptop"
+    ],
+    "source": {
+      "type": "documentation",
+      "url": "https://support.apple.com/guide/mac-help/macos-recovery-a-mac-apple-silicon-mchl82829c17/mac",
+      "publisher": "Apple"
+    },
+    "license_note": "Use only the recovery version and procedure supported by the exact Mac model.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://support.apple.com/guide/mac-help/macos-recovery-a-mac-apple-silicon-mchl82829c17/mac"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "notes": [
+      "Not the same as a generic PC USB installer.",
+      "Apple silicon and Intel recovery startup steps differ.",
+      "Back up before erase or reinstall."
+    ]
+  },
+  {
+    "id": "macos-software-installation",
+    "name": "macOS software installation sources",
+    "kind": "documentation",
+    "description": "Install Mac applications through the Mac App Store or the software publisher's official signed/notarized distribution. Common package types include PKG and DMG; USB storage does not bypass Gatekeeper or licensing.",
+    "platforms": [
+      "macos"
+    ],
+    "architectures": [
+      "x86_64",
+      "arm64"
+    ],
+    "device_types": [
+      "desktop",
+      "laptop"
+    ],
+    "package_formats": [
+      "pkg",
+      "dmg",
+      "zip"
+    ],
+    "source": {
+      "type": "documentation",
+      "url": "https://support.apple.com/guide/mac-help/install-and-uninstall-apps-mh35835/mac",
+      "publisher": "Apple"
+    },
+    "license_note": "Applications remain subject to each developer's licence and distribution terms.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://support.apple.com/guide/mac-help/install-and-uninstall-apps-mh35835/mac"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "notes": [
+      "Prefer Mac App Store or the developer's official website.",
+      "Check Intel versus Apple silicon compatibility.",
+      "A USB copy does not guarantee offline activation or dependencies."
+    ]
+  },
+  {
+    "id": "microsoft-store",
+    "name": "Microsoft Store app installation",
+    "kind": "documentation",
+    "description": "Official Microsoft Store channel for installing supported Windows applications and games on compatible Windows devices.",
+    "platforms": [
+      "windows"
+    ],
+    "architectures": [
+      "x86_64",
+      "arm64"
+    ],
+    "device_types": [
+      "desktop",
+      "laptop",
+      "workstation"
+    ],
+    "package_formats": [
+      "msix",
+      "appx"
+    ],
+    "source": {
+      "type": "documentation",
+      "url": "https://apps.microsoft.com/",
+      "publisher": "Microsoft"
+    },
+    "license_note": "Each Store app has its own licence and publisher terms. Review the app's permissions, publisher identity and subscription conditions.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://apps.microsoft.com/"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "installation_guide": "https://apps.microsoft.com/",
+    "notes": [
+      "Use Microsoft Store on supported Windows devices for Store-distributed apps.",
+      "Some apps are paid or require subscriptions; check the listing before installing.",
+      "For Win32 software, use the software publisher's official installer or trusted Windows package manager."
+    ]
+  },
+  {
+    "id": "nodejs-runtime",
+    "name": "Node.js",
+    "kind": "application",
+    "description": "Official Node.js JavaScript runtime downloads for supported Windows, macOS and Linux systems, including current and long-term-support release channels.",
+    "platforms": [
+      "windows",
+      "macos",
+      "linux"
+    ],
+    "architectures": [
+      "x86_64",
+      "x86",
+      "arm64",
+      "arm"
+    ],
+    "device_types": [
+      "desktop",
+      "laptop",
+      "workstation",
+      "server"
+    ],
+    "package_formats": [
+      "exe",
+      "msi",
+      "pkg",
+      "tar",
+      "source"
+    ],
+    "source": {
+      "type": "official-download-page",
+      "url": "https://nodejs.org/en/download",
+      "publisher": "OpenJS Foundation"
+    },
+    "license_note": "Node.js is open source; bundled dependencies and npm packages may have separate licences. Review official release and licence notices.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://nodejs.org/en/download"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "installation_guide": "https://nodejs.org/en/learn/getting-started/how-to-install-nodejs",
+    "notes": [
+      "Prefer an active LTS release for production applications unless a project requires another supported version.",
+      "Choose the correct CPU architecture and installer format.",
+      "Review package scripts before running npm install or npx commands from unknown projects."
+    ]
+  },
+  {
+    "id": "python-runtime",
+    "name": "Python",
+    "kind": "application",
+    "description": "Official Python programming language runtime and installer downloads for supported Windows, macOS and Linux environments.",
+    "platforms": [
+      "windows",
+      "macos",
+      "linux"
+    ],
+    "architectures": [
+      "x86_64",
+      "x86",
+      "arm64",
+      "arm"
+    ],
+    "device_types": [
+      "desktop",
+      "laptop",
+      "workstation",
+      "server"
+    ],
+    "package_formats": [
+      "exe",
+      "pkg",
+      "tar",
+      "source"
+    ],
+    "source": {
+      "type": "official-download-page",
+      "url": "https://www.python.org/downloads/",
+      "publisher": "Python Software Foundation"
+    },
+    "license_note": "Python is open source under the Python Software Foundation licence. Third-party packages installed through Python may have separate licences.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://www.python.org/downloads/"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "installation_guide": "https://docs.python.org/3/using/index.html",
+    "notes": [
+      "Choose a supported Python release and matching architecture.",
+      "On Linux, prefer the distribution's supported package manager when appropriate.",
+      "Use virtual environments for project dependencies and review packages before installing."
+    ]
+  },
+  {
+    "id": "raspberry-pi-os",
+    "name": "Raspberry Pi OS and boot media",
+    "kind": "operating-system",
+    "description": "Use Raspberry Pi Imager on Windows, macOS, or Linux to download and write Raspberry Pi OS or supported third-party images to microSD or compatible USB storage.",
+    "platforms": [
+      "linux"
+    ],
+    "architectures": [
+      "arm64",
+      "arm"
+    ],
+    "device_types": [
+      "single-board-computer",
+      "embedded"
+    ],
+    "package_formats": [
+      "img",
+      "zip",
+      "tar"
+    ],
+    "source": {
+      "type": "documentation",
+      "url": "https://www.raspberrypi.com/documentation/computers/getting-started.html",
+      "publisher": "Raspberry Pi"
+    },
+    "license_note": "Review the OS image and third-party distribution licences individually.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://www.raspberrypi.com/documentation/computers/getting-started.html"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "notes": [
+      "Most Raspberry Pi models commonly use microSD; some also support USB or NVMe boot.",
+      "Raspberry Pi Imager can verify written media.",
+      "Selecting storage and writing an image overwrites that target."
+    ]
+  },
+  {
+    "id": "realme-c35-rmx3511-recovery",
+    "name": "realme C35 RMX3511 · Android 13 recovery profile",
+    "kind": "recovery-tool",
+    "description": "Recovery guidance for the inspected realme RMX3511 / RE87BAL1 (realme C35) running Android 13 build RMX3511PU_13.F.89. Use realme's documented Recovery Mode and official regional support channels. Firmware availability, region compatibility and any flash procedure require confirmation by realme; this entry is not a downloadable ROM or a universal USB installer.",
+    "platforms": [
+      "android"
+    ],
+    "architectures": [
+      "arm64-v8a",
+      "armeabi-v7a"
+    ],
+    "device_types": [
+      "phone"
+    ],
+    "package_formats": [
+      "zip"
+    ],
+    "source": {
+      "type": "documentation",
+      "url": "https://www.realme.com/global/support/troubleshooting",
+      "publisher": "realme"
+    },
+    "license_note": "Use only firmware and service procedures authorized by realme for the exact RMX3511 regional variant and current build. Do not redistribute proprietary firmware or use third-party flash packages.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://www.realme.com/bd/support"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "notes": [
+      "Inspected device: realme RMX3511, codename RE87BAL1, board ums9230_nico.",
+      "Inspected OS: Android 13 / API 33; build RMX3511PU_13.F.89; security patch 2025-05-01.",
+      "ADB reports boot slot _a, flash locked (ro.boot.flash.locked=1), verified boot state green.",
+      "realme documents Recovery Mode using Power + Volume Down after power-off, and storage-based firmware installation when a compatible official package is available.",
+      "Do not assume generic Android ADB sideload or a PC bootable pendrive can reinstall this phone.",
+      "USB cable is used for supported computer-assisted tools; the phone does not boot a generic Windows/Linux pendrive.",
+      "Back up user data and verify WhatsApp Business backup separately before any reset, wipe or firmware operation.",
+      "Exact Bangladesh-region firmware package and current supported update path must be confirmed by realme before flashing."
+    ],
+    "tutorials": [
+      {
+        "title": "About Recovery Mode in realme phones",
+        "type": "article",
+        "url": "https://www.realme.com/global/support/troubleshooting",
+        "publisher": "realme",
+        "scope": "Official general recovery-mode instructions. The exact RMX3511 regional firmware package and menu behaviour still require confirmation.",
+        "status": "model-specific-not-verified",
+        "notes": [
+          "The article documents Power + Volume Down to enter Recovery Mode and storage-based updates when a compatible official package is available.",
+          "Back up data and keep the phone powered during updates.",
+          "No verified official realme C35 RMX3511 recovery video was identified; do not substitute a third-party firmware video."
+        ]
+      },
+      {
+        "title": "realme software update instructions",
+        "type": "article",
+        "url": "https://www.realme.com/bd/support/software-update",
+        "publisher": "realme Bangladesh",
+        "scope": "Official Bangladesh support update guidance; confirm the page lists the exact RMX3511 variant and build before using any package.",
+        "status": "official-reference",
+        "notes": [
+          "Do not use a package intended for another region or model.",
+          "Do not interrupt the update process."
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rufus-bootable-usb-writer",
+    "name": "Rufus bootable USB writer",
+    "kind": "recovery-tool",
+    "description": "Official Rufus utility for creating bootable USB media from supported Windows, Linux and UEFI ISO images on a Windows working computer. It is not a universal phone/tablet recovery tool.",
+    "platforms": [
+      "windows"
+    ],
+    "architectures": [
+      "x86_64",
+      "x86",
+      "arm64"
+    ],
+    "device_types": [
+      "desktop",
+      "laptop"
+    ],
+    "package_formats": [
+      "exe",
+      "zip"
+    ],
+    "source": {
+      "type": "official-download-page",
+      "url": "https://rufus.ie/",
+      "publisher": "Rufus / Akeo Consulting"
+    },
+    "license_note": "Rufus is free and open source. Download only from the official Rufus site or its linked official release source.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://rufus.ie/"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "installation_guide": "https://rufus.ie/",
+    "tutorials": [
+      {
+        "title": "Rufus official usage and supported ISO guide",
+        "type": "article",
+        "url": "https://rufus.ie/",
+        "publisher": "Rufus Project",
+        "scope": "Official overview of creating bootable USB media from supported ISO images.",
+        "status": "official-reference",
+        "notes": [
+          "The selected USB is formatted and its data may be erased.",
+          "Verify the OS image and confirm the exact USB model and capacity before starting."
+        ]
+      }
+    ],
+    "notes": [
+      "Windows-only USB writer; run on a separate working Windows PC.",
+      "Select the USB by physical drive identity and capacity; do not select the system disk.",
+      "Creating boot media erases the selected USB in common workflows.",
+      "A Windows ISO may require Rufus-specific options; use Microsoft's Media Creation Tool when appropriate.",
+      "Do not use Rufus to flash Android firmware or arbitrary device firmware."
+    ]
+  },
+  {
+    "id": "ubuntu-desktop",
+    "name": "Ubuntu Desktop",
+    "kind": "operating-system",
+    "description": "Linux desktop operating system. Use the official project page to choose a supported release and review its system requirements.",
+    "platforms": [
+      "linux"
+    ],
+    "architectures": [
+      "x86_64",
+      "arm64"
+    ],
+    "source": {
+      "type": "official-download-page",
+      "url": "https://ubuntu.com/download/desktop",
+      "publisher": "Canonical"
+    },
+    "license_note": "Review Ubuntu licensing and third-party component terms on the official project site. Shopnoltd does not repackage or redistribute the ISO in this scaffold.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://ubuntu.com/tutorials/how-to-verify-ubuntu"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "installation_guide": "https://ubuntu.com/tutorials/install-ubuntu-desktop",
+    "notes": [
+      "This is metadata only; no ISO is hosted here.",
+      "Confirm current release, hardware compatibility, and published signature/checksum before use.",
+      "Installing an OS can erase data; back up first."
+    ]
+  },
+  {
+    "id": "seven-zip",
+    "name": "7-Zip",
+    "kind": "application",
+    "description": "Official 7-Zip file archiver for supported Windows versions, including x64, x86 and ARM64 builds.",
+    "platforms": [
+      "windows"
+    ],
+    "architectures": [
+      "x86_64",
+      "x86",
+      "arm64"
+    ],
+    "device_types": [
+      "desktop",
+      "laptop",
+      "workstation",
+      "server"
+    ],
+    "package_formats": [
+      "exe",
+      "msi",
+      "zip"
+    ],
+    "source": {
+      "type": "official-download-page",
+      "url": "https://www.7-zip.org/",
+      "publisher": "Igor Pavlov / 7-Zip"
+    },
+    "license_note": "7-Zip is distributed under its published open-source licence; review the exact component and package terms on the official site.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://www.7-zip.org/"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "installation_guide": "https://www.7-zip.org/",
+    "notes": [
+      "Select the x64, x86 or ARM64 package that matches Windows.",
+      "Avoid unofficial repackaged installers.",
+      "Encrypted archives do not replace a verified backup."
+    ]
+  },
+  {
+    "id": "snap-store-linux-apps",
+    "name": "Snap Store Linux application catalogue",
+    "kind": "documentation",
+    "description": "Official Snap Store catalogue and installation guidance for Linux distributions that support Snap packages.",
+    "platforms": [
+      "linux"
+    ],
+    "architectures": [
+      "x86_64",
+      "arm64",
+      "arm"
+    ],
+    "device_types": [
+      "desktop",
+      "laptop",
+      "workstation",
+      "server"
+    ],
+    "package_formats": [
+      "snap"
+    ],
+    "source": {
+      "type": "documentation",
+      "url": "https://snapcraft.io/store",
+      "publisher": "Canonical"
+    },
+    "license_note": "Snaps have individual publishers, licences and permissions. Review the package publisher and confinement information before installation.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://snapcraft.io/docs/installing-snapd"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "installation_guide": "https://snapcraft.io/docs/installing-snapd",
+    "notes": [
+      "Install snapd only using instructions for the target distribution.",
+      "Check publisher and permissions for each Snap.",
+      "Snap packages are not interchangeable with DEB, RPM, Flatpak or Windows installers."
+    ]
+  },
+  {
+    "id": "ventoy-multiboot-usb",
+    "name": "Ventoy multi-boot USB",
+    "kind": "recovery-tool",
+    "description": "Official multi-boot USB solution for supported ISO/WIM/IMG/VHD(x)/EFI images. Install Ventoy once on a selected USB, then copy supported image files to its data partition; compatibility varies by image and firmware.",
+    "platforms": [
+      "windows",
+      "linux"
+    ],
+    "architectures": [
+      "x86_64",
+      "x86",
+      "arm64",
+      "arm"
+    ],
+    "device_types": [
+      "desktop",
+      "laptop",
+      "workstation",
+      "server"
+    ],
+    "package_formats": [
+      "zip",
+      "tar",
+      "iso",
+      "img"
+    ],
+    "source": {
+      "type": "official-download-page",
+      "url": "https://www.ventoy.net/en/index.html",
+      "publisher": "Ventoy Project"
+    },
+    "license_note": "Ventoy is open source under its published licence. Each bootable OS image remains subject to its own licence and verification rules.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://www.ventoy.net/en/doc_start.html"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "installation_guide": "https://www.ventoy.net/en/doc_start.html",
+    "tutorials": [
+      {
+        "title": "Ventoy official getting-started guide",
+        "type": "article",
+        "url": "https://www.ventoy.net/en/doc_start.html",
+        "publisher": "Ventoy Project",
+        "scope": "Official instructions for installing Ventoy to USB, copying image files and booting from the menu.",
+        "status": "official-reference",
+        "notes": [
+          "Initial Ventoy installation formats the selected USB and deletes its data.",
+          "Use Update rather than Install when updating an existing Ventoy drive, and verify the target before confirming."
+        ]
+      }
+    ],
+    "notes": [
+      "The initial Install operation formats the selected USB; it is not safe for a drive containing files you need.",
+      "After Ventoy is installed, copying additional ISO files normally does not require reformatting the data partition.",
+      "Check the official tested-image list and release notes; some OS images need special handling.",
+      "Never select the existing E2B USB unless you explicitly intend to replace its layout; Shopnoltd recovery instructions must preserve it by default."
+    ]
+  },
+  {
+    "id": "visual-studio-code",
+    "name": "Visual Studio Code",
+    "kind": "application",
+    "description": "Microsoft's free source-code editor for supported Windows, macOS and Linux systems, with architecture-specific installers and package options.",
+    "platforms": [
+      "windows",
+      "macos",
+      "linux"
+    ],
+    "architectures": [
+      "x86_64",
+      "arm64",
+      "arm"
+    ],
+    "device_types": [
+      "desktop",
+      "laptop",
+      "workstation"
+    ],
+    "package_formats": [
+      "exe",
+      "zip",
+      "dmg",
+      "deb",
+      "rpm",
+      "tar",
+      "snap"
+    ],
+    "source": {
+      "type": "official-download-page",
+      "url": "https://code.visualstudio.com/download",
+      "publisher": "Microsoft"
+    },
+    "license_note": "The VS Code product is distributed under Microsoft's product licence; source components and extensions may have separate licences and terms.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://code.visualstudio.com/download"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "installation_guide": "https://code.visualstudio.com/docs/setup/setup-overview",
+    "notes": [
+      "Choose x64 or ARM64 as appropriate for the device.",
+      "The Insiders build is a separate pre-release channel and may be less stable.",
+      "Review extension publisher identity and permissions before installing extensions."
+    ]
+  },
+  {
+    "id": "vlc-media-player",
+    "name": "VLC media player",
+    "kind": "application",
+    "description": "Official VideoLAN media player for Windows, macOS, Linux, Android, iOS and other supported systems. Use the platform-specific download route from VideoLAN.",
+    "platforms": [
+      "windows",
+      "macos",
+      "linux",
+      "android",
+      "ios",
+      "ipados",
+      "chromeos",
+      "bsd"
+    ],
+    "architectures": [
+      "x86_64",
+      "x86",
+      "arm64",
+      "arm",
+      "arm64-v8a",
+      "armeabi-v7a"
+    ],
+    "device_types": [
+      "desktop",
+      "laptop",
+      "phone",
+      "tablet",
+      "tv"
+    ],
+    "package_formats": [
+      "exe",
+      "dmg",
+      "deb",
+      "rpm",
+      "apk",
+      "ipa",
+      "zip"
+    ],
+    "source": {
+      "type": "official-download-page",
+      "url": "https://www.videolan.org/vlc/",
+      "publisher": "VideoLAN"
+    },
+    "license_note": "VLC is free and open source; bundled codecs and third-party components may have separate licence terms. Review VideoLAN's notices.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://www.videolan.org/vlc/"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "installation_guide": "https://www.videolan.org/vlc/",
+    "notes": [
+      "Choose the correct Windows, macOS, Linux, Android or Apple-platform download.",
+      "On phones and tablets, prefer the official app store listing linked by VideoLAN.",
+      "Do not download repackaged installers from third-party download portals."
+    ]
+  },
+  {
+    "id": "windows-downloads",
+    "name": "Windows installation media",
+    "kind": "operating-system",
+    "description": "Official Microsoft page for Windows download and installation-media options. Confirm edition, current release, device compatibility, and licence requirements on the publisher site.",
+    "platforms": [
+      "windows"
+    ],
+    "architectures": [
+      "x86_64",
+      "arm64"
+    ],
+    "source": {
+      "type": "official-download-page",
+      "url": "https://www.microsoft.com/software-download/",
+      "publisher": "Microsoft"
+    },
+    "license_note": "Windows activation, edition eligibility, and redistribution are governed by Microsoft's terms. Shopnoltd does not host or redistribute Windows images.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://www.microsoft.com/software-download/"
+    },
+    "pricing": {
+      "model": "external-vendor-license"
+    },
+    "notes": [
+      "Metadata points to the official download page, not a direct ISO URL.",
+      "Check the target PC's architecture and back up data before installing."
+    ]
+  },
+  {
+    "id": "windows-media-creation-tool",
+    "name": "Microsoft Windows installation media",
+    "kind": "recovery-tool",
+    "description": "Microsoft's official Windows 11/10 Media Creation Tool and installation-media guidance for creating Windows USB installation media on a supported working PC.",
+    "platforms": [
+      "windows"
+    ],
+    "architectures": [
+      "x86_64"
+    ],
+    "device_types": [
+      "desktop",
+      "laptop",
+      "workstation"
+    ],
+    "package_formats": [
+      "exe",
+      "iso"
+    ],
+    "source": {
+      "type": "official-download-page",
+      "url": "https://www.microsoft.com/software-download/windows11",
+      "publisher": "Microsoft"
+    },
+    "license_note": "Windows installation and activation are governed by Microsoft's licence terms. Edition, hardware compatibility and product-key/digital-licence conditions apply.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://support.microsoft.com/en-us/windows/deployment/install-upgrade/create-installation-media-for-windows"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "installation_guide": "https://support.microsoft.com/en-us/windows/deployment/install-upgrade/create-installation-media-for-windows",
+    "tutorials": [
+      {
+        "title": "Create installation media for Windows",
+        "type": "article",
+        "url": "https://support.microsoft.com/en-us/windows/deployment/install-upgrade/create-installation-media-for-windows",
+        "publisher": "Microsoft Support",
+        "scope": "Official instructions for Windows installation USB creation and reinstall media.",
+        "status": "official-reference",
+        "notes": [
+          "Microsoft requires a blank USB of at least 8 GB for the media creation workflow.",
+          "Creating installation media deletes existing content on the selected USB.",
+          "Back up the target PC before a clean install; clean installation can remove personal files and applications."
+        ]
+      }
+    ],
+    "notes": [
+      "Microsoft's current Media Creation Tool for Windows 11 supports x64, not ARM-based PCs; check the official page for current ARM media options.",
+      "Use another working Windows PC to create media if the target PC cannot boot.",
+      "The selected USB will be erased; inspect its exact model and capacity before proceeding.",
+      "This tool does not install Windows on Android phones, iPhones, TVs or routers."
+    ]
+  },
+  {
+    "id": "windows-software-installation",
+    "name": "Windows software installation sources",
+    "kind": "documentation",
+    "description": "Use Microsoft Store, Windows Package Manager (winget), or each software publisher's official download page for Windows applications, drivers, and utilities. Offline installation availability varies by publisher.",
+    "platforms": [
+      "windows"
+    ],
+    "architectures": [
+      "x86_64",
+      "arm64"
+    ],
+    "device_types": [
+      "desktop",
+      "laptop",
+      "workstation",
+      "server"
+    ],
+    "package_formats": [
+      "msix",
+      "appx",
+      "msi",
+      "exe"
+    ],
+    "source": {
+      "type": "documentation",
+      "url": "https://learn.microsoft.com/en-us/windows/package-manager/winget/",
+      "publisher": "Microsoft"
+    },
+    "license_note": "Each application has its own publisher, licence, and redistribution restrictions. Do not bundle installers without permission.",
+    "verification": {
+      "method": "source-only-not-yet-verified",
+      "status": "needs-review",
+      "evidence_url": "https://learn.microsoft.com/en-us/windows/package-manager/winget/"
+    },
+    "pricing": {
+      "model": "free"
+    },
+    "notes": [
+      "Prefer Microsoft Store or publisher-signed installers.",
+      "Offline installer availability is application-specific.",
+      "Drivers and firmware must match exact hardware IDs and model."
+    ]
+  }
+]

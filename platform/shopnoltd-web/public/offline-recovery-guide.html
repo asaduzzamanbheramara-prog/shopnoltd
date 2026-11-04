@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shopnoltd Offline Device Recovery Guide</title>
+<style>
+body{font:16px/1.65 system-ui,-apple-system,Segoe UI,sans-serif;max-width:900px;margin:0 auto;padding:24px;color:#172033}
+h1,h2{line-height:1.2}h1{font-size:2rem}h2{margin-top:2rem;border-bottom:1px solid #cbd5e1;padding-bottom:.4rem}
+.warning{background:#fff7ed;border-left:4px solid #c2410c;padding:12px 16px;margin:18px 0}
+.note{background:#eff6ff;border-left:4px solid #2563eb;padding:12px 16px;margin:18px 0}
+li{margin:.45rem 0}a{overflow-wrap:anywhere}
+@media print{body{max-width:none;padding:0}.warning,.note{break-inside:avoid}}
+</style>
+</head>
+<body>
+<h1>Shopnoltd Offline Device Recovery Guide</h1>
+<p><strong>Purpose:</strong> Keep this guide on a separate USB or another device so the instructions remain available when the target computer has no internet connection.</p>
+<p>Prepared as a general safety guide. Always follow the exact device manufacturer's current instructions for the model and region.</p>
+
+<div class="warning"><strong>Stop before any erase, format, reset, reinstall or firmware flash.</strong> These actions can permanently delete data. Verify the backup, device model, target disk and recovery package first. Never guess the disk number or firmware variant.</div>
+
+<h2>1. Before recovery</h2>
+<ol>
+<li>Write down the exact manufacturer, model, hardware revision, region and current OS/build.</li>
+<li>Back up documents, photos, browser data, application data and authenticator recovery information where possible.</li>
+<li>Verify cloud and app-specific backups separately. A phone backup does not necessarily include every messaging app or local file.</li>
+<li>Keep recovery keys, passwords, activation keys and private tokens private. Do not put them in public Git repositories or send them to support chats.</li>
+<li>Connect reliable power. For phones, use the manufacturer's recommended battery level and do not interrupt an update.</li>
+<li>Identify the removable USB by model and capacity. Disconnect other external disks where practical.</li>
+</ol>
+
+<div class="note"><strong>Preserve existing recovery media.</strong> Do not format, repartition or overwrite an existing multiboot/E2B USB unless you explicitly intend to erase it and have separately backed up its contents. Use a different blank USB for new media.</div>
+
+<h2>2. Windows 10 / Windows 11 PC</h2>
+<ol>
+<li>If Windows still starts, try Windows Update, Startup Repair and other non-destructive recovery options before reinstalling.</li>
+<li>If Windows will not start, use another working PC to obtain installation/recovery media from Microsoft's official download page: <a href="https://www.microsoft.com/software-download/">Microsoft Software Download</a>.</li>
+<li>Microsoft's Media Creation Tool requires a blank USB of at least 8 GB for the supported workflow. It deletes the contents of the selected USB. Check current architecture support on Microsoft's page.</li>
+<li>For a compatible ISO, official USB tools include <a href="https://rufus.ie/">Rufus</a>, <a href="https://www.ventoy.net/en/index.html">Ventoy</a> and <a href="https://etcher.balena.io/">balenaEtcher</a>. Their image compatibility differs; follow the OS publisher's recommended tool.</li>
+<li>Verify the ISO using the publisher's signature or checksum from the official release page. Do not trust a checksum copied from an unrelated download site.</li>
+<li>Use the device's documented one-time boot menu. Confirm UEFI/Legacy mode, Secure Boot and CPU architecture.</li>
+<li>Choose Startup Repair or file-rescue options first. A clean install or factory recovery may erase the target system disk.</li>
+</ol>
+
+<h2>3. Linux PC</h2>
+<ol>
+<li>Download the ISO from the official Linux distribution website.</li>
+<li>Verify its checksum or signature using the distribution's official instructions.</li>
+<li>Use a compatible writer such as Rufus, balenaEtcher or Ventoy. Check that the specific distribution/release is supported.</li>
+<li>Confirm the USB device model and capacity before writing. Writing an image normally overwrites the selected USB.</li>
+<li>Boot the target PC from USB and choose a live/rescue environment for data backup before installation.</li>
+<li>Do not format the internal disk until the backup is checked and the correct target disk is identified.</li>
+</ol>
+
+<h2>4. Apple Mac</h2>
+<ul>
+<li>Intel Macs and Apple silicon Macs have different recovery and startup procedures.</li>
+<li>Use Apple's official macOS Recovery, reinstall and bootable-installer instructions for the exact Mac model and macOS version.</li>
+<li>Do not assume a generic Windows/Linux USB image can recover a Mac.</li>
+<li>Back up with the supported Apple backup method before erasing or reinstalling macOS.</li>
+</ul>
+<p>Official guidance: <a href="https://support.apple.com/mac">Apple Mac support</a>.</p>
+
+<h2>5. Android phones and tablets</h2>
+<ul>
+<li>Android devices use manufacturer- and model-specific OTA, recovery or service procedures. A PC bootable USB does not boot Android firmware on a phone.</li>
+<li>Use only firmware and tools confirmed by the manufacturer for the exact model, region and current build.</li>
+<li>For supported realme phones, realme documents Recovery Mode using Power + Volume Down after power-off. Storage-based installation is only appropriate when a compatible official package is available.</li>
+<li>Back up user data and messaging-app data separately. Do not choose Wipe Data, Format Data, factory reset or bootloader unlock during a non-destructive repair attempt.</li>
+<li>Keep the phone charged and do not force power off during a system update.</li>
+</ul>
+<p>Official realme guidance: <a href="https://www.realme.com/global/support/troubleshooting">realme troubleshooting</a> · <a href="https://www.realme.com/bd/support/software-update">realme Bangladesh software updates</a>.</p>
+
+<h2>6. iPhone and iPad</h2>
+<ul>
+<li>Use Apple's documented recovery/update process with a supported Mac or Windows computer and Finder/Apple Devices as applicable.</li>
+<li>A generic PC bootable USB is not an iPhone/iPad OS installer.</li>
+<li>Back up the device before restore. Restore can erase device data.</li>
+</ul>
+<p>Official guidance: <a href="https://support.apple.com/iphone">Apple iPhone support</a> · <a href="https://support.apple.com/ipad">Apple iPad support</a>.</p>
+
+<h2>7. Chromebook / ChromeOS</h2>
+<ul>
+<li>Use the official Chromebook Recovery Utility and the exact Chromebook model/product identifier.</li>
+<li>Recovery media creation erases the selected USB or SD card.</li>
+<li>Do not use a recovery image for a similar-looking but different Chromebook model.</li>
+</ul>
+<p>Official guidance: <a href="https://support.google.com/chromebook/answer/1080595">Recover your Chromebook</a>.</p>
+
+<h2>8. TVs, routers, consoles and embedded devices</h2>
+<ul>
+<li>Use the manufacturer's exact model-specific recovery procedure and firmware source.</li>
+<li>Do not flash firmware from another model or region.</li>
+<li>Do not assume USB storage, USB OTG, a service cable or network boot is supported.</li>
+<li>If the vendor does not publish a safe recovery procedure, contact its authorized service centre.</li>
+</ul>
+
+<h2>9. Installing software offline</h2>
+<ol>
+<li>While online on a trusted working device, download installers only from the software publisher or official platform store.</li>
+<li>Check operating system, version, CPU architecture and licence before downloading.</li>
+<li>Download the publisher's signature/checksum file where available and verify the installer before copying it to USB.</li>
+<li>Copy the installer, verification file and matching offline instructions to a clearly named folder on the USB.</li>
+<li>On the offline target, verify the copied file again before running it. Avoid unknown driver packs, cracked software and repackaged installers.</li>
+<li>Some installers require an internet connection, activation, licence check or additional packages; an offline copy cannot guarantee installation.</li>
+</ol>
+
+<h2>10. When to stop and ask for help</h2>
+<ul>
+<li>The device model, region, storage target or firmware package does not match exactly.</li>
+<li>The only available instructions require an unverified third-party ROM, bootloader unlock or unknown flashing utility.</li>
+<li>The backup cannot be verified, or the next step may erase data.</li>
+<li>The device shows storage failure, repeated I/O errors, battery swelling, overheating or signs of hardware damage.</li>
+</ul>
+
+<footer><p><strong>Shopnoltd:</strong> This guide is a safety checklist, not a guarantee of compatibility or successful repair. Follow current official manufacturer instructions and obtain professional service when required.</p></footer>
+</body>
+</html>

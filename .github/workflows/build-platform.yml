@@ -26,6 +26,7 @@ on:
         type: choice
         options:
           - web-portal
+          - shopnoltd-web
           - android-cloud-controller
           - android-cloud-gateway
 
@@ -98,6 +99,7 @@ jobs:
             'media-service': ('platform/media-service/Dockerfile', '.'),
             'admin-portal': ('platform/admin-portal/Dockerfile', '.'),
             'web-portal': ('platform/web-portal/Dockerfile', '.'),
+            'shopnoltd-web': ('platform/shopnoltd-web/Dockerfile', 'platform/shopnoltd-web'),
             'android-portal': ('platform/android-portal/Dockerfile', '.'),
             'android-cloud-controller': ('platform/android-cloud/controller/Dockerfile', '.'),
             'android-cloud-web': ('platform/android-cloud/web/Dockerfile', '.'),
@@ -230,6 +232,10 @@ jobs:
 
           if [ '${{ matrix.service }}' = 'vpn-service' ]; then
             test -d services/vpn-service
+          fi
+
+          if [ '${{ matrix.service }}' = 'shopnoltd-web' ]; then
+            python3 -c "import json; from pathlib import Path; root=Path('platform/shopnoltd-web/public'); page=(root/'software-os-center.html').read_text(encoding='utf-8'); guide=root/'offline-recovery-guide.html'; entries=json.loads((root/'catalogue.json').read_text(encoding='utf-8')); ids=[entry['id'] for entry in entries]; assert isinstance(entries,list) and entries, 'catalogue must be a non-empty JSON array'; assert len(ids)==len(set(ids)), 'catalogue IDs must be unique'; assert \"fetch('/catalogue.json'\" in page, 'catalogue page must load the packaged JSON'; assert guide.is_file() and guide.stat().st_size>0, 'offline recovery guide must be packaged'; print(f'Validated {len(entries)} catalogue entries and both recovery pages')"
           fi
 
       - uses: docker/login-action@v3
