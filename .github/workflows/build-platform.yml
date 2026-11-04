@@ -234,6 +234,23 @@ jobs:
             test -d services/vpn-service
           fi
 
+          if [ '${{ matrix.service }}' = 'shopnoltd-web' ]; then
+            python3 - <<'PY'
+            import json
+            from pathlib import Path
+            root = Path('platform/shopnoltd-web/public')
+            page = (root / 'software-os-center.html').read_text(encoding='utf-8')
+            guide = root / 'offline-recovery-guide.html'
+            entries = json.loads((root / 'catalogue.json').read_text(encoding='utf-8'))
+            assert isinstance(entries, list) and entries, 'catalogue must be a non-empty JSON array'
+            ids = [entry['id'] for entry in entries]
+            assert len(ids) == len(set(ids)), 'catalogue IDs must be unique'
+            assert "fetch('/catalogue.json'" in page, 'catalogue page must load the packaged JSON'
+            assert guide.is_file() and guide.stat().st_size > 0, 'offline recovery guide must be packaged'
+            print(f'Validated {len(entries)} catalogue entries and both recovery pages')
+            PY
+          fi
+
       - uses: docker/login-action@v3
         with:
           registry: ghcr.io
