@@ -37,6 +37,10 @@ class DevicePackageCoverageTests(unittest.TestCase):
         })
         self.assertEqual(tutorial["last_reviewed"]["format"], "date")
         self.assertEqual(tutorial["captions_available"]["type"], "boolean")
+        page = (ROOT / "frontend/software-os-center.html").read_text(encoding="utf-8")
+        self.assertIn("tutorial.source_kind", page)
+        self.assertIn("tutorial.privacy_review", page)
+        self.assertIn("tutorial.last_reviewed", page)
 
 
     def test_catalogue_page_exposes_device_and_package_metadata(self):
