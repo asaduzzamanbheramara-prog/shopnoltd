@@ -313,6 +313,34 @@
           }
         }
       }
+    },
+    "categories": {
+      "type": "array",
+      "uniqueItems": true,
+      "description": "Functional software category tags used for catalogue discovery.",
+      "items": {
+        "type": "string",
+        "enum": [
+          "browser",
+          "office-productivity",
+          "developer-tools",
+          "programming-runtimes",
+          "security-privacy",
+          "drivers-firmware",
+          "media-creative",
+          "education-science",
+          "communication",
+          "utilities",
+          "server-self-hosted",
+          "database-storage",
+          "backup-recovery",
+          "accessibility",
+          "gaming",
+          "system-administration",
+          "design-engineering",
+          "other"
+        ]
+      }
     }
   },
   "allOf": [
