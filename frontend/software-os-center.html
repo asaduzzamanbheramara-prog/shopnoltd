@@ -120,9 +120,10 @@
   function renderEntry(entry){
     const card=document.createElement('article');
     card.className='card';
-    card.dataset.search=[entry.name,entry.kind,...(entry.platforms||[]),...(entry.architectures||[]),...(entry.device_types||[]),...(entry.package_formats||[]),entry.description,...(entry.tutorials||[]).map(t=>t.title+' '+t.publisher+' '+t.scope)].join(' ');
+    card.dataset.search=[entry.name,entry.kind,...(entry.categories||[]),...(entry.platforms||[]),...(entry.architectures||[]),...(entry.device_types||[]),...(entry.package_formats||[]),entry.description,...(entry.tutorials||[]).map(t=>t.title+' '+t.publisher+' '+t.scope)].join(' ');
     card.append(makeText('h3',entry.name));
     card.append(makeText('p',(entry.platforms||[]).join(' · ')+' · '+entry.kind+' · '+((entry.architectures||[]).join(', ')||'architecture not specified'),'muted small'));
+    if((entry.categories||[]).length)card.append(makeText('p','Categories: '+entry.categories.map(value=>value.replaceAll('-',' ')).join(', '),'small'));
     if((entry.device_types||[]).length)card.append(makeText('p','Devices: '+entry.device_types.join(', '),'small'));
     if((entry.package_formats||[]).length)card.append(makeText('p','Package formats: '+entry.package_formats.join(', '),'small'));
     card.append(makeText('p',entry.description));
