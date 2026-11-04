@@ -26,6 +26,7 @@ on:
         type: choice
         options:
           - web-portal
+          - shopnoltd-web
           - android-cloud-controller
           - android-cloud-gateway
 
@@ -98,6 +99,7 @@ jobs:
             'media-service': ('platform/media-service/Dockerfile', '.'),
             'admin-portal': ('platform/admin-portal/Dockerfile', '.'),
             'web-portal': ('platform/web-portal/Dockerfile', '.'),
+            'shopnoltd-web': ('platform/shopnoltd-web/Dockerfile', 'platform/shopnoltd-web'),
             'android-portal': ('platform/android-portal/Dockerfile', '.'),
             'android-cloud-controller': ('platform/android-cloud/controller/Dockerfile', '.'),
             'android-cloud-web': ('platform/android-cloud/web/Dockerfile', '.'),
