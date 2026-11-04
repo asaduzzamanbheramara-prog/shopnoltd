@@ -1,0 +1,50 @@
+{
+  "id": "git-version-control",
+  "name": "Git",
+  "kind": "application",
+  "description": "Official Git version-control tools and installation guidance for Windows, macOS and Linux development environments.",
+  "platforms": [
+    "windows",
+    "macos",
+    "linux"
+  ],
+  "architectures": [
+    "x86_64",
+    "x86",
+    "arm64",
+    "arm"
+  ],
+  "device_types": [
+    "desktop",
+    "laptop",
+    "workstation",
+    "server"
+  ],
+  "package_formats": [
+    "exe",
+    "dmg",
+    "deb",
+    "rpm",
+    "tar"
+  ],
+  "source": {
+    "type": "official-download-page",
+    "url": "https://git-scm.com/downloads",
+    "publisher": "Git Project"
+  },
+  "license_note": "Git is free software distributed under its published open-source licence. Platform package maintainers may provide additional packaging.",
+  "verification": {
+    "method": "source-only-not-yet-verified",
+    "status": "needs-review",
+    "evidence_url": "https://git-scm.com/downloads"
+  },
+  "pricing": {
+    "model": "free"
+  },
+  "installation_guide": "https://git-scm.com/book/en/v2/Getting-Started-Installing-Git",
+  "notes": [
+    "Use the package for the target operating system and architecture.",
+    "On Linux, the distribution package manager may provide the recommended build.",
+    "Do not place access tokens or private keys in Git remotes or repository files."
+  ]
+}

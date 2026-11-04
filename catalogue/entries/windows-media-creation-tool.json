@@ -1,0 +1,57 @@
+{
+  "id": "windows-media-creation-tool",
+  "name": "Microsoft Windows installation media",
+  "kind": "recovery-tool",
+  "description": "Microsoft's official Windows 11/10 Media Creation Tool and installation-media guidance for creating Windows USB installation media on a supported working PC.",
+  "platforms": [
+    "windows"
+  ],
+  "architectures": [
+    "x86_64"
+  ],
+  "device_types": [
+    "desktop",
+    "laptop",
+    "workstation"
+  ],
+  "package_formats": [
+    "exe",
+    "iso"
+  ],
+  "source": {
+    "type": "official-download-page",
+    "url": "https://www.microsoft.com/software-download/windows11",
+    "publisher": "Microsoft"
+  },
+  "license_note": "Windows installation and activation are governed by Microsoft's licence terms. Edition, hardware compatibility and product-key/digital-licence conditions apply.",
+  "verification": {
+    "method": "source-only-not-yet-verified",
+    "status": "needs-review",
+    "evidence_url": "https://support.microsoft.com/en-us/windows/deployment/install-upgrade/create-installation-media-for-windows"
+  },
+  "pricing": {
+    "model": "free"
+  },
+  "installation_guide": "https://support.microsoft.com/en-us/windows/deployment/install-upgrade/create-installation-media-for-windows",
+  "tutorials": [
+    {
+      "title": "Create installation media for Windows",
+      "type": "article",
+      "url": "https://support.microsoft.com/en-us/windows/deployment/install-upgrade/create-installation-media-for-windows",
+      "publisher": "Microsoft Support",
+      "scope": "Official instructions for Windows installation USB creation and reinstall media.",
+      "status": "official-reference",
+      "notes": [
+        "Microsoft requires a blank USB of at least 8 GB for the media creation workflow.",
+        "Creating installation media deletes existing content on the selected USB.",
+        "Back up the target PC before a clean install; clean installation can remove personal files and applications."
+      ]
+    }
+  ],
+  "notes": [
+    "Microsoft's current Media Creation Tool for Windows 11 supports x64, not ARM-based PCs; check the official page for current ARM media options.",
+    "Use another working Windows PC to create media if the target PC cannot boot.",
+    "The selected USB will be erased; inspect its exact model and capacity before proceeding.",
+    "This tool does not install Windows on Android phones, iPhones, TVs or routers."
+  ]
+}

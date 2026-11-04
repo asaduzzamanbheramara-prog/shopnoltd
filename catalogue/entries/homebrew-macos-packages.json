@@ -1,0 +1,44 @@
+{
+  "id": "homebrew-macos-packages",
+  "name": "Homebrew macOS package manager",
+  "kind": "documentation",
+  "description": "Official Homebrew package manager for installing command-line tools and supported applications on macOS; Linux support is also documented by the project.",
+  "platforms": [
+    "macos",
+    "linux"
+  ],
+  "architectures": [
+    "x86_64",
+    "arm64"
+  ],
+  "device_types": [
+    "desktop",
+    "laptop",
+    "workstation",
+    "server"
+  ],
+  "package_formats": [
+    "tar",
+    "source"
+  ],
+  "source": {
+    "type": "documentation",
+    "url": "https://brew.sh/",
+    "publisher": "Homebrew Project"
+  },
+  "license_note": "Homebrew itself is open source; individual formulae and casks have their own licences and publisher sources.",
+  "verification": {
+    "method": "source-only-not-yet-verified",
+    "status": "needs-review",
+    "evidence_url": "https://docs.brew.sh/Installation"
+  },
+  "pricing": {
+    "model": "free"
+  },
+  "installation_guide": "https://docs.brew.sh/Installation",
+  "notes": [
+    "Follow the official installation steps and review commands before running them.",
+    "Check formula/cask publisher source and licence before installing packages.",
+    "Do not use package-manager commands from untrusted catalogue entries."
+  ]
+}

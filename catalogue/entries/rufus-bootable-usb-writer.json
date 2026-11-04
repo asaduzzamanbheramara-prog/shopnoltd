@@ -1,0 +1,58 @@
+{
+  "id": "rufus-bootable-usb-writer",
+  "name": "Rufus bootable USB writer",
+  "kind": "recovery-tool",
+  "description": "Official Rufus utility for creating bootable USB media from supported Windows, Linux and UEFI ISO images on a Windows working computer. It is not a universal phone/tablet recovery tool.",
+  "platforms": [
+    "windows"
+  ],
+  "architectures": [
+    "x86_64",
+    "x86",
+    "arm64"
+  ],
+  "device_types": [
+    "desktop",
+    "laptop"
+  ],
+  "package_formats": [
+    "exe",
+    "zip"
+  ],
+  "source": {
+    "type": "official-download-page",
+    "url": "https://rufus.ie/",
+    "publisher": "Rufus / Akeo Consulting"
+  },
+  "license_note": "Rufus is free and open source. Download only from the official Rufus site or its linked official release source.",
+  "verification": {
+    "method": "source-only-not-yet-verified",
+    "status": "needs-review",
+    "evidence_url": "https://rufus.ie/"
+  },
+  "pricing": {
+    "model": "free"
+  },
+  "installation_guide": "https://rufus.ie/",
+  "tutorials": [
+    {
+      "title": "Rufus official usage and supported ISO guide",
+      "type": "article",
+      "url": "https://rufus.ie/",
+      "publisher": "Rufus Project",
+      "scope": "Official overview of creating bootable USB media from supported ISO images.",
+      "status": "official-reference",
+      "notes": [
+        "The selected USB is formatted and its data may be erased.",
+        "Verify the OS image and confirm the exact USB model and capacity before starting."
+      ]
+    }
+  ],
+  "notes": [
+    "Windows-only USB writer; run on a separate working Windows PC.",
+    "Select the USB by physical drive identity and capacity; do not select the system disk.",
+    "Creating boot media erases the selected USB in common workflows.",
+    "A Windows ISO may require Rufus-specific options; use Microsoft's Media Creation Tool when appropriate.",
+    "Do not use Rufus to flash Android firmware or arbitrary device firmware."
+  ]
+}

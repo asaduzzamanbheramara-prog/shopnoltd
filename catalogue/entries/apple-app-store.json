@@ -1,0 +1,41 @@
+{
+  "id": "apple-app-store",
+  "name": "Apple App Store installation",
+  "kind": "documentation",
+  "description": "Official Apple App Store channel for installing supported apps on iPhone, iPad, Apple TV and Apple Watch.",
+  "platforms": [
+    "ios",
+    "ipados",
+    "tvos",
+    "watchos"
+  ],
+  "device_types": [
+    "phone",
+    "tablet",
+    "tv",
+    "wearable"
+  ],
+  "package_formats": [
+    "ipa"
+  ],
+  "source": {
+    "type": "documentation",
+    "url": "https://www.apple.com/app-store/",
+    "publisher": "Apple"
+  },
+  "license_note": "Apps have individual publisher terms and App Store conditions. Shopnoltd does not distribute or re-sign iOS application packages.",
+  "verification": {
+    "method": "source-only-not-yet-verified",
+    "status": "needs-review",
+    "evidence_url": "https://support.apple.com/guide/iphone/get-apps-iph3dfd91de/ios"
+  },
+  "pricing": {
+    "model": "free"
+  },
+  "installation_guide": "https://support.apple.com/guide/iphone/get-apps-iph3dfd91de/ios",
+  "notes": [
+    "Install apps through the App Store on supported devices.",
+    "Check region, OS compatibility, age rating, privacy details and in-app purchases.",
+    "A generic PC bootable USB is not an iPhone or iPad app installer."
+  ]
+}

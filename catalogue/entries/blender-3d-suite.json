@@ -1,0 +1,48 @@
+{
+  "id": "blender-3d-suite",
+  "name": "Blender 3D creation suite",
+  "kind": "application",
+  "description": "Official Blender 3D creation suite downloads for supported Windows, macOS and Linux computers, including Intel and ARM device options where offered.",
+  "platforms": [
+    "windows",
+    "macos",
+    "linux"
+  ],
+  "architectures": [
+    "x86_64",
+    "arm64",
+    "universal"
+  ],
+  "device_types": [
+    "desktop",
+    "laptop",
+    "workstation"
+  ],
+  "package_formats": [
+    "exe",
+    "zip",
+    "dmg",
+    "tar",
+    "snap"
+  ],
+  "source": {
+    "type": "official-download-page",
+    "url": "https://www.blender.org/download/",
+    "publisher": "Blender Foundation"
+  },
+  "license_note": "Blender is free and open source; assets, add-ons and third-party content may have separate licences.",
+  "verification": {
+    "method": "source-only-not-yet-verified",
+    "status": "needs-review",
+    "evidence_url": "https://www.blender.org/download/"
+  },
+  "pricing": {
+    "model": "free"
+  },
+  "installation_guide": "https://docs.blender.org/manual/en/latest/getting_started/installing/index.html",
+  "notes": [
+    "Choose the build for Windows, macOS or Linux and the correct CPU architecture.",
+    "Use stable releases for production work; experimental builds may be unstable.",
+    "Check GPU and memory requirements for rendering workloads."
+  ]
+}

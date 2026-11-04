@@ -1,0 +1,42 @@
+{
+  "id": "microsoft-store",
+  "name": "Microsoft Store app installation",
+  "kind": "documentation",
+  "description": "Official Microsoft Store channel for installing supported Windows applications and games on compatible Windows devices.",
+  "platforms": [
+    "windows"
+  ],
+  "architectures": [
+    "x86_64",
+    "arm64"
+  ],
+  "device_types": [
+    "desktop",
+    "laptop",
+    "workstation"
+  ],
+  "package_formats": [
+    "msix",
+    "appx"
+  ],
+  "source": {
+    "type": "documentation",
+    "url": "https://apps.microsoft.com/",
+    "publisher": "Microsoft"
+  },
+  "license_note": "Each Store app has its own licence and publisher terms. Review the app's permissions, publisher identity and subscription conditions.",
+  "verification": {
+    "method": "source-only-not-yet-verified",
+    "status": "needs-review",
+    "evidence_url": "https://apps.microsoft.com/"
+  },
+  "pricing": {
+    "model": "free"
+  },
+  "installation_guide": "https://apps.microsoft.com/",
+  "notes": [
+    "Use Microsoft Store on supported Windows devices for Store-distributed apps.",
+    "Some apps are paid or require subscriptions; check the listing before installing.",
+    "For Win32 software, use the software publisher's official installer or trusted Windows package manager."
+  ]
+}

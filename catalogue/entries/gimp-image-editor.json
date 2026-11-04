@@ -1,0 +1,49 @@
+{
+  "id": "gimp-image-editor",
+  "name": "GIMP image editor",
+  "kind": "application",
+  "description": "Official GIMP image editor downloads for supported Windows, macOS and Linux systems, including publisher-provided installers and Linux package options.",
+  "platforms": [
+    "windows",
+    "macos",
+    "linux"
+  ],
+  "architectures": [
+    "x86_64",
+    "arm64",
+    "universal"
+  ],
+  "device_types": [
+    "desktop",
+    "laptop",
+    "workstation"
+  ],
+  "package_formats": [
+    "exe",
+    "dmg",
+    "appimage",
+    "flatpak",
+    "snap",
+    "tar"
+  ],
+  "source": {
+    "type": "official-download-page",
+    "url": "https://www.gimp.org/downloads/",
+    "publisher": "GIMP Project"
+  },
+  "license_note": "GIMP is free and open source. Plugins, brushes, fonts and other downloaded assets may carry separate licence terms.",
+  "verification": {
+    "method": "source-only-not-yet-verified",
+    "status": "needs-review",
+    "evidence_url": "https://www.gimp.org/downloads/"
+  },
+  "pricing": {
+    "model": "free"
+  },
+  "installation_guide": "https://www.gimp.org/tutorials/",
+  "notes": [
+    "Use the official GIMP downloads page for current supported packages.",
+    "The publisher provides SHA-256 values for some release files; verify against the same release page.",
+    "Check OS minimum versions before installing."
+  ]
+}

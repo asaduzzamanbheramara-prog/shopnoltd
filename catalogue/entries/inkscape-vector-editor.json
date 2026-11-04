@@ -1,0 +1,49 @@
+{
+  "id": "inkscape-vector-editor",
+  "name": "Inkscape vector graphics editor",
+  "kind": "application",
+  "description": "Official Inkscape vector graphics editor for supported Windows, macOS and Linux computers.",
+  "platforms": [
+    "windows",
+    "macos",
+    "linux"
+  ],
+  "architectures": [
+    "x86_64",
+    "arm64",
+    "universal"
+  ],
+  "device_types": [
+    "desktop",
+    "laptop",
+    "workstation"
+  ],
+  "package_formats": [
+    "exe",
+    "msi",
+    "dmg",
+    "appimage",
+    "flatpak",
+    "snap"
+  ],
+  "source": {
+    "type": "official-download-page",
+    "url": "https://inkscape.org/release/",
+    "publisher": "Inkscape Project"
+  },
+  "license_note": "Inkscape is free and open source. Extensions, fonts and imported assets may have separate licence terms.",
+  "verification": {
+    "method": "source-only-not-yet-verified",
+    "status": "needs-review",
+    "evidence_url": "https://inkscape.org/release/"
+  },
+  "pricing": {
+    "model": "free"
+  },
+  "installation_guide": "https://inkscape.org/learn/",
+  "notes": [
+    "Select the stable release and correct operating system package.",
+    "Review the release notes and system requirements.",
+    "Install extensions only from sources you trust."
+  ]
+}

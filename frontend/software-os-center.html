@@ -7,7 +7,7 @@
 <title>Software & OS Center | Shopnoltd</title>
 <style>
 :root{color-scheme:light dark;--bg:#0b1220;--panel:#121d30;--line:#293851;--ink:#edf4ff;--muted:#a9b8ce;--accent:#70a5ff;--good:#8fe0b0;--warn:#ffd18b}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 system-ui,-apple-system,Segoe UI,sans-serif}a{color:var(--accent)}header,main,footer{max-width:1080px;margin:auto;padding:22px}header{display:flex;justify-content:space-between;align-items:center;gap:16px;border-bottom:1px solid var(--line)}.brand{font-weight:800;font-size:1.2rem;text-decoration:none;color:var(--ink)}.pill{border:1px solid var(--line);border-radius:999px;padding:5px 11px;color:var(--muted);font-size:.82rem}.hero{padding:42px 0 24px}.hero h1{font-size:clamp(2rem,5vw,3.2rem);line-height:1.1;margin:12px 0}.hero p,.muted{color:var(--muted)}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(245px,1fr));gap:16px}.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px}.card h2,.card h3{margin-top:0}.btn{display:inline-block;border:1px solid var(--accent);border-radius:9px;padding:9px 13px;text-decoration:none;font-weight:650;margin:5px 5px 0 0}.primary{background:var(--accent);color:#071326}.search{width:100%;padding:12px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font:inherit;margin:12px 0 18px}.notice{border-left:4px solid var(--warn);padding:12px 15px;background:#332819;border-radius:6px;margin:16px 0}.ok{color:var(--good)}.list{padding-left:20px}.section{margin:30px 0}footer{color:var(--muted);border-top:1px solid var(--line);font-size:.9rem}.small{font-size:.9rem}.hidden{display:none!important}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 system-ui,-apple-system,Segoe UI,sans-serif}a{color:var(--accent)}header,main,footer{max-width:1080px;margin:auto;padding:22px}header{display:flex;justify-content:space-between;align-items:center;gap:16px;border-bottom:1px solid var(--line)}.brand{font-weight:800;font-size:1.2rem;text-decoration:none;color:var(--ink)}.pill{border:1px solid var(--line);border-radius:999px;padding:5px 11px;color:var(--muted);font-size:.82rem}.hero{padding:42px 0 24px}.hero h1{font-size:clamp(2rem,5vw,3.2rem);line-height:1.1;margin:12px 0}.hero p,.muted{color:var(--muted)}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(245px,1fr));gap:16px}.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px}.card h2,.card h3{margin-top:0}.btn{display:inline-block;border:1px solid var(--accent);border-radius:9px;padding:9px 13px;text-decoration:none;font-weight:650;margin:5px 5px 0 0}.primary{background:var(--accent);color:#071326}.search{width:100%;padding:12px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font:inherit;margin:12px 0 18px}.notice{border-left:4px solid var(--warn);padding:12px 15px;background:#332819;border-radius:6px;margin:16px 0}.ok{color:var(--good)}.list{padding-left:20px}.section{margin:30px 0}footer{color:var(--muted);border-top:1px solid var(--line);font-size:.9rem}.small{font-size:.9rem}.hidden{display:none!important}.tutorial-video{display:block;width:100%;aspect-ratio:16/9;border:0;border-radius:10px;margin-top:10px;background:#000}.tutorial{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
 </style>
 </head>
 <body>
@@ -18,6 +18,7 @@
 <h1>Software &amp; OS Center</h1>
 <p>Find software and operating systems for supported computers, phones, tablets, servers, TVs, embedded devices, browsers and recovery environments. Filter by platform, device class, CPU architecture and package format.</p>
 <div class="notice"><strong>PC won't boot?</strong> A website cannot run on a computer that cannot start. Use another working computer to create bootable recovery media, or use network boot only if your device and network are already configured for it.</div>
+<p><a class="btn primary" href="/offline-recovery-guide.html" download="Shopnoltd-Offline-Recovery-Guide.html">Download offline recovery guide</a> <span class="small muted">Save this file to a separate USB so instructions remain available without internet.</span></p>
 </section>
 <section class="section">
 <h2>Browse catalogue</h2>
@@ -33,8 +34,8 @@
 <article class="card" data-search="linux mint linux operating system desktop iso">
 <h3>Linux Mint</h3><p class="muted small">Linux · OS · Community distribution</p><p>Use the official project site and its verification instructions; check the current release and hardware requirements.</p><p class="small">Official source · Review release metadata</p><a class="btn primary" href="https://linuxmint.com/download.php" rel="noopener noreferrer" target="_blank">Official download</a>
 </article>
-<article class="card" data-search="ventoy bootable usb recovery media tool">
-<h3>Bootable USB guidance</h3><p class="muted small">Recovery · External tool</p><p>For a non-bootable PC, prepare recovery media on another working computer. Writing an image can erase the selected USB drive.</p><a class="btn" href="https://www.ventoy.net/en/index.html" rel="noopener noreferrer" target="_blank">Ventoy official site</a>
+<article class="card" data-search="rufus ventoy balena etcher bootable usb recovery media tool">
+<h3>Bootable USB tools</h3><p class="muted small">Recovery · External tools</p><p>Use another working computer. Initial USB setup or image writing can erase the selected drive. Preserve existing E2B media and never select it by default.</p><a class="btn" href="https://rufus.ie/" rel="noopener noreferrer" target="_blank">Rufus</a><a class="btn" href="https://www.ventoy.net/en/index.html" rel="noopener noreferrer" target="_blank">Ventoy</a><a class="btn" href="https://etcher.balena.io/" rel="noopener noreferrer" target="_blank">balenaEtcher</a><a class="btn" href="https://www.microsoft.com/software-download/windows11" rel="noopener noreferrer" target="_blank">Microsoft Windows media</a>
 </article>
 </div><p id="empty" class="muted hidden">No catalogue entry matches that search.</p>
 </section>
@@ -119,9 +120,10 @@
   function renderEntry(entry){
     const card=document.createElement('article');
     card.className='card';
-    card.dataset.search=[entry.name,entry.kind,...(entry.platforms||[]),...(entry.architectures||[]),...(entry.device_types||[]),...(entry.package_formats||[]),entry.description].join(' ');
+    card.dataset.search=[entry.name,entry.kind,...(entry.categories||[]),...(entry.platforms||[]),...(entry.architectures||[]),...(entry.device_types||[]),...(entry.package_formats||[]),entry.description,...(entry.tutorials||[]).map(t=>t.title+' '+t.publisher+' '+t.scope)].join(' ');
     card.append(makeText('h3',entry.name));
     card.append(makeText('p',(entry.platforms||[]).join(' · ')+' · '+entry.kind+' · '+((entry.architectures||[]).join(', ')||'architecture not specified'),'muted small'));
+    if((entry.categories||[]).length)card.append(makeText('p','Categories: '+entry.categories.map(value=>value.replaceAll('-',' ')).join(', '),'small'));
     if((entry.device_types||[]).length)card.append(makeText('p','Devices: '+entry.device_types.join(', '),'small'));
     if((entry.package_formats||[]).length)card.append(makeText('p','Package formats: '+entry.package_formats.join(', '),'small'));
     card.append(makeText('p',entry.description));
@@ -137,6 +139,62 @@
       link.textContent='Official source';
       card.append(link);
     }
+    if(typeof entry.installation_guide==='string' && entry.installation_guide.startsWith('https://')){
+      const guide=document.createElement('a');
+      guide.className='btn';
+      guide.href=entry.installation_guide;
+      guide.target='_blank';
+      guide.rel='noopener noreferrer';
+      guide.textContent='Installation guide';
+      card.append(guide);
+    }
+    if(entry.verification&&typeof entry.verification.evidence_url==='string'){
+      const evidence=document.createElement('a');
+      evidence.className='btn';
+      evidence.href=entry.verification.evidence_url;
+      evidence.target='_blank';
+      evidence.rel='noopener noreferrer';
+      evidence.textContent='Verification instructions';
+      card.append(evidence);
+    }
+    if(entry.kind==='recovery-tool' && !(entry.tutorials||[]).some(tutorial=>tutorial.type==='video')){
+      card.append(makeText('p','No verified official recovery video is listed yet. Follow the written official guide; do not substitute an unverified firmware video.','small muted'));
+    }
+    (entry.tutorials||[]).forEach(tutorial=>{
+      const section=document.createElement('section');
+      section.className='tutorial';
+      section.append(makeText('h4',tutorial.title));
+      section.append(makeText('p',tutorial.publisher+' · '+tutorial.status,'small muted'));
+      section.append(makeText('p',tutorial.scope,'small'));
+      const link=document.createElement('a');
+      link.className='btn';
+      link.href=tutorial.url;
+      link.target='_blank';
+      link.rel='noopener noreferrer';
+      link.textContent=tutorial.type==='video'?'Watch official video':'Read official guide';
+      section.append(link);
+      if(tutorial.type==='video'){
+        try{
+          const parsed=new URL(tutorial.url);
+          let videoId='';
+          if(parsed.hostname==='www.youtube.com'||parsed.hostname==='youtube.com')videoId=parsed.searchParams.get('v')||'';
+          if(parsed.hostname==='youtu.be')videoId=parsed.pathname.slice(1);
+          if(/^[A-Za-z0-9_-]{11}$/.test(videoId)){
+            const frame=document.createElement('iframe');
+            frame.className='tutorial-video';
+            frame.src='https://www.youtube-nocookie.com/embed/'+videoId;
+            frame.title=tutorial.title;
+            frame.loading='lazy';
+            frame.referrerPolicy='strict-origin-when-cross-origin';
+            frame.allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
+            frame.allowFullscreen=true;
+            section.append(frame);
+          }
+        }catch(_){}
+      }
+      (tutorial.notes||[]).forEach(note=>section.append(makeText('p',note,'small muted')));
+      card.append(section);
+    });
     return card;
   }
   fetch('/catalogue.json',{cache:'no-cache'})

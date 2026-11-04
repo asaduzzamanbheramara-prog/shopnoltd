@@ -1,0 +1,60 @@
+{
+  "id": "vlc-media-player",
+  "name": "VLC media player",
+  "kind": "application",
+  "description": "Official VideoLAN media player for Windows, macOS, Linux, Android, iOS and other supported systems. Use the platform-specific download route from VideoLAN.",
+  "platforms": [
+    "windows",
+    "macos",
+    "linux",
+    "android",
+    "ios",
+    "ipados",
+    "chromeos",
+    "bsd"
+  ],
+  "architectures": [
+    "x86_64",
+    "x86",
+    "arm64",
+    "arm",
+    "arm64-v8a",
+    "armeabi-v7a"
+  ],
+  "device_types": [
+    "desktop",
+    "laptop",
+    "phone",
+    "tablet",
+    "tv"
+  ],
+  "package_formats": [
+    "exe",
+    "dmg",
+    "deb",
+    "rpm",
+    "apk",
+    "ipa",
+    "zip"
+  ],
+  "source": {
+    "type": "official-download-page",
+    "url": "https://www.videolan.org/vlc/",
+    "publisher": "VideoLAN"
+  },
+  "license_note": "VLC is free and open source; bundled codecs and third-party components may have separate licence terms. Review VideoLAN's notices.",
+  "verification": {
+    "method": "source-only-not-yet-verified",
+    "status": "needs-review",
+    "evidence_url": "https://www.videolan.org/vlc/"
+  },
+  "pricing": {
+    "model": "free"
+  },
+  "installation_guide": "https://www.videolan.org/vlc/",
+  "notes": [
+    "Choose the correct Windows, macOS, Linux, Android or Apple-platform download.",
+    "On phones and tablets, prefer the official app store listing linked by VideoLAN.",
+    "Do not download repackaged installers from third-party download portals."
+  ]
+}

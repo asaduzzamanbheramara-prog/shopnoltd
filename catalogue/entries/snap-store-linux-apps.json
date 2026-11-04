@@ -1,0 +1,43 @@
+{
+  "id": "snap-store-linux-apps",
+  "name": "Snap Store Linux application catalogue",
+  "kind": "documentation",
+  "description": "Official Snap Store catalogue and installation guidance for Linux distributions that support Snap packages.",
+  "platforms": [
+    "linux"
+  ],
+  "architectures": [
+    "x86_64",
+    "arm64",
+    "arm"
+  ],
+  "device_types": [
+    "desktop",
+    "laptop",
+    "workstation",
+    "server"
+  ],
+  "package_formats": [
+    "snap"
+  ],
+  "source": {
+    "type": "documentation",
+    "url": "https://snapcraft.io/store",
+    "publisher": "Canonical"
+  },
+  "license_note": "Snaps have individual publishers, licences and permissions. Review the package publisher and confinement information before installation.",
+  "verification": {
+    "method": "source-only-not-yet-verified",
+    "status": "needs-review",
+    "evidence_url": "https://snapcraft.io/docs/installing-snapd"
+  },
+  "pricing": {
+    "model": "free"
+  },
+  "installation_guide": "https://snapcraft.io/docs/installing-snapd",
+  "notes": [
+    "Install snapd only using instructions for the target distribution.",
+    "Check publisher and permissions for each Snap.",
+    "Snap packages are not interchangeable with DEB, RPM, Flatpak or Windows installers."
+  ]
+}
