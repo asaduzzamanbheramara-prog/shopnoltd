@@ -85,6 +85,7 @@ function App() {
 
         <div className="actions">
           <a href="/">Home</a>
+          <a href="/software-os-center.html">Software &amp; OS Center</a>
           <a href="/api/health">API Health</a>
           <a href="/api/docs">API Docs</a>
         </div>
