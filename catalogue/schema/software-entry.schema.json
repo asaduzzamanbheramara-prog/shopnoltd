@@ -310,6 +310,36 @@
               "type": "string",
               "maxLength": 500
             }
+          },
+          "source_kind": {
+            "type": "string",
+            "enum": [
+              "official-vendor",
+              "shopnoltd-owned",
+              "community-reference"
+            ],
+            "description": "Provenance of the tutorial; community references are informational and are not proof of tested recovery."
+          },
+          "language": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 35
+          },
+          "captions_available": {
+            "type": "boolean"
+          },
+          "last_reviewed": {
+            "type": "string",
+            "format": "date"
+          },
+          "privacy_review": {
+            "type": "string",
+            "enum": [
+              "not-applicable",
+              "pending",
+              "passed"
+            ],
+            "description": "Required for Shopnoltd-owned recordings; passed means secrets and personal data were reviewed and masked."
           }
         }
       }
