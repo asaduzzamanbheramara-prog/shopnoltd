@@ -165,6 +165,12 @@
       section.className='tutorial';
       section.append(makeText('h4',tutorial.title));
       section.append(makeText('p',tutorial.publisher+' · '+tutorial.status,'small muted'));
+      section.append(makeText('p','Source: '+(tutorial.source_kind||'unspecified')+
+        (tutorial.language?' · Language: '+tutorial.language:'')+
+        (tutorial.captions_available===true?' · Captions available':tutorial.captions_available===false?' · No captions listed':'')+
+        (tutorial.last_reviewed?' · Last reviewed: '+tutorial.last_reviewed:''),'small muted'));
+      if(tutorial.privacy_review==='pending')section.append(makeText('p','Privacy review pending — do not publish as a verified Shopnoltd recording.','small muted'));
+      if(tutorial.source_kind==='shopnoltd-owned' && tutorial.privacy_review!=='passed')section.append(makeText('p','Shopnoltd recording is not cleared for publication until privacy review passes.','small muted'));
       section.append(makeText('p',tutorial.scope,'small'));
       const link=document.createElement('a');
       link.className='btn';
