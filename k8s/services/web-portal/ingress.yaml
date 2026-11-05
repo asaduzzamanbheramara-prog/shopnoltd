@@ -42,6 +42,32 @@ spec:
     - host: shopnoltd.dpdns.org
       http:
         paths:
+          # Serve the Software & OS Center from its dedicated static web image.
+          # Exact matches preserve all existing root and application path routing.
+          - path: /software-os-center.html
+            pathType: Exact
+            backend:
+              service:
+                name: shopnoltd-web
+                port:
+                  number: 80
+
+          - path: /catalogue.json
+            pathType: Exact
+            backend:
+              service:
+                name: shopnoltd-web
+                port:
+                  number: 80
+
+          - path: /offline-recovery-guide.html
+            pathType: Exact
+            backend:
+              service:
+                name: shopnoltd-web
+                port:
+                  number: 80
+
           - path: /android-cloud
             pathType: Prefix
             backend:
