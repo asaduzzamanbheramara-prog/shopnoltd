@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "Shopno Agent",
+  "version": "0.1.0",
+  "description": "Lets your Shopnoltd AI agent work in this browser, with your approval.",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "tabs",
+    "storage"
+  ],
+  "optional_host_permissions": [
+    "https://*/*",
+    "http://*/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAu8LaGChcskEU9MNB2QB8v6M9RpRdPt3o7GcUEgEWRYTZE9tCVPN/qJ6INbCEtcbodEvMEsRLy0+N+zT1Vp2JQkH4ddIEoKzuFpF2TylnkpyPZKYcAdRBFGEDuIzNmJH59L0B3snVaT6dhcxXvBnQY+dLuIkd8vLfl/4wqgqSpHl13hZCOFgHpzs9nvd0tCTkoCTY8WsOMrbVi6iMhQEUa9aJaprAPS4jjgnEv2+WfynVSUaFFuEXb3FjpKXwAgKZAhPTIS1lyfxd2tf4D2vxu0CkSc7sGPo2hu8WdHPV8ds3v0Slqsw0Gea2wkXwPf4gCXl3VaikjxJC4xuSxO3BiQIDAQAB"
+}
