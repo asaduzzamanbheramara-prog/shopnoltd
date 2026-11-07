@@ -31,7 +31,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: backfill
-          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/freedomain-service:ea3e0cdf72148d56b854062e70d2f4097c55af98
+          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/freedomain-service:b10eaaf36b1bf35a2fe0e68f1335e16d33e885fe
           imagePullPolicy: IfNotPresent
           command:
             - python
