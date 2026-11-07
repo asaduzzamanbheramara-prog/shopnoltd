@@ -1,0 +1,65 @@
+name: Build Shopno Agent Service
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "agent-service/**"
+      - "k8s/services/agent-service/deployment.yaml"
+      - ".github/workflows/build-agent-service.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  packages: write
+
+concurrency:
+  group: agent-service-build-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  IMAGE_NAME: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-agent-service
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: ./agent-service
+          push: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:latest
+            ${{ env.IMAGE_NAME }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Promote immutable image to GitOps
+        env:
+          IMAGE: ${{ env.IMAGE_NAME }}:${{ github.sha }}
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import os, re
+          path = Path("k8s/services/agent-service/deployment.yaml")
+          text = path.read_text()
+          pattern = r'(?m)^([ \t]+image:) ghcr\.io/asaduzzamanbheramara-prog/shopnoltd-agent-service:[^\n]+$'
+          updated, count = re.subn(pattern, rf'\1 {os.environ["IMAGE"]}', text, count=1)
+          if count != 1:
+              raise SystemExit("Expected exactly one agent-service image reference")
+          path.write_text(updated)
+          PY
+      - name: Commit GitOps image update
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add k8s/services/agent-service/deployment.yaml
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "chore: update agent-service image to ${GITHUB_SHA} [skip ci]"
+          git push origin HEAD:${GITHUB_REF_NAME}

@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "Shopno Agent",
+  "version": "0.1.0",
+  "description": "Lets your Shopnoltd AI agent work in this browser, with your approval.",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "tabs",
+    "storage"
+  ],
+  "optional_host_permissions": [
+    "https://*/*",
+    "http://*/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html"
+  }
+}
