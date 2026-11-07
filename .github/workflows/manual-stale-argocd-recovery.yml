@@ -1,0 +1,135 @@
+name: One-shot guarded Argo CD stale-operation recovery
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: Type RECOVER-SHOPNOLTD-5576AE5 to authorize this exact recovery
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: k3s-gitops
+  cancel-in-progress: false
+
+jobs:
+  guarded-recovery:
+    name: Verify exact stale state and restart one Argo controller
+    runs-on: [self-hosted, linux]
+    timeout-minutes: 25
+    env:
+      ARGOCD_NAMESPACE: argocd
+      ARGOCD_APP: shopnoltd
+      BASE_REVISION: 5576ae589c40f5df99ad0275d891b27afcb54d8c
+      RECOVERY_REVISION: ${{ github.sha }}
+    steps:
+      - name: Checkout trusted main revision
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Validate exact stale-operation signature and controller
+        id: guard
+        shell: bash
+        env:
+          CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          set -euo pipefail
+          [[ "$CONFIRMATION" == 'RECOVER-SHOPNOLTD-5576AE5' ]] || { echo 'Refusing: confirmation string does not match.'; exit 1; }
+          [[ "$(git rev-parse HEAD)" == "$RECOVERY_REVISION" ]] || { echo 'Refusing: checked-out main revision does not match this workflow run.'; exit 1; }
+          git merge-base --is-ancestor "$BASE_REVISION" "$RECOVERY_REVISION" || { echo 'Refusing: recovery workflow commit is not descended from the approved app revision.'; exit 1; }
+          changed_files="$(git diff --name-only "$BASE_REVISION" "$RECOVERY_REVISION")"
+          [[ "$changed_files" == '.github/workflows/manual-stale-argocd-recovery.yml' ]] || { echo "Refusing: files changed since the approved app revision are not limited to this temporary workflow: $changed_files"; exit 1; }
+
+          app="$(timeout 20s kubectl --request-timeout=15s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o json)"
+          target_revision="$(jq -r '.spec.source.targetRevision // .spec.sources[0].targetRevision // ""' <<<"$app")"
+          live_operation="$(jq -r 'if .operation == null then "false" else "true" end' <<<"$app")"
+          phase="$(jq -r '.status.operationState.phase // ""' <<<"$app")"
+          message="$(jq -r '.status.operationState.message // ""' <<<"$app")"
+          sync_status="$(jq -r '.status.sync.status // ""' <<<"$app")"
+          sync_revision="$(jq -r '.status.sync.revision // ""' <<<"$app")"
+          health="$(jq -r '.status.health.status // ""' <<<"$app")"
+          started_at="$(jq -r '.status.operationState.startedAt // ""' <<<"$app")"
+
+          [[ "$live_operation" == 'false' ]] || { echo 'Refusing: a live Argo operation exists.'; exit 1; }
+          [[ "$target_revision" == 'main' ]] || { echo "Refusing: Argo target is not main (target=$target_revision)."; exit 1; }
+          [[ "$phase" == 'Running' ]] || { echo "Refusing: expected operationState Running, got ${phase:-empty}."; exit 1; }
+          [[ "$message" == 'waiting for healthy state of /Namespace/shopno-data and 1 more resources' ]] || { echo "Refusing: operation message does not match the approved signature: $message"; exit 1; }
+          [[ "$sync_status" == 'OutOfSync' && "$sync_revision" == "$BASE_REVISION" && "$health" == 'Healthy' ]] || { echo "Refusing: root app state changed (sync=$sync_status revision=$sync_revision health=$health)."; exit 1; }
+          [[ -n "$started_at" ]] || { echo 'Refusing: operation start time is unavailable.'; exit 1; }
+          started_epoch="$(date -u -d "$started_at" +%s)"
+          now_epoch="$(date -u +%s)"
+          (( now_epoch - started_epoch >= 1800 )) || { echo 'Refusing: the operation has not been stuck for at least 30 minutes.'; exit 1; }
+
+          running_resources="$(jq -c '[.status.operationState.syncResult.resources[]? | select(.hookPhase == "Running") | [.kind, .namespace, .name]] | sort' <<<"$app")"
+          expected_running='[["Namespace","default","shopno-data"],["Service","shopno-data","postgres"]]'
+          [[ "$running_resources" == "$expected_running" ]] || { echo "Refusing: recorded running resource set differs from approved signature: $running_resources"; exit 1; }
+          jq -e '.spec.syncPolicy.automated != null' <<<"$app" >/dev/null || { echo 'Refusing: automated sync is not enabled.'; exit 1; }
+
+          namespace="$(timeout 15s kubectl --request-timeout=10s get namespace shopno-data -o json)"
+          [[ "$(jq -r '.status.phase // ""' <<<"$namespace")" == 'Active' ]] || { echo 'Refusing: shopno-data namespace is not Active.'; exit 1; }
+          [[ -z "$(jq -r '.metadata.deletionTimestamp // ""' <<<"$namespace")" ]] || { echo 'Refusing: shopno-data namespace is terminating.'; exit 1; }
+          postgres="$(timeout 15s kubectl --request-timeout=10s -n shopno-data get deployment postgres -o json)"
+          desired="$(jq -r '.spec.replicas // 0' <<<"$postgres")"
+          ready="$(jq -r '.status.readyReplicas // 0' <<<"$postgres")"
+          [[ "$desired" -ge 1 && "$ready" == "$desired" ]] || { echo "Refusing: postgres deployment is not fully ready ($ready/$desired)."; exit 1; }
+          endpoints="$(timeout 15s kubectl --request-timeout=10s -n shopno-data get endpoints postgres -o json)"
+          jq -e '([.subsets[]?.addresses[]?] | length) > 0' <<<"$endpoints" >/dev/null || { echo 'Refusing: postgres service has no ready endpoint.'; exit 1; }
+
+          controllers="$(timeout 20s kubectl --request-timeout=15s -n "$ARGOCD_NAMESPACE" get statefulsets,deployments -o json)"
+          controller_resource="$(jq -r '[.items[]? | select((.metadata.name // "") == "argocd-application-controller" or (.metadata.labels["app.kubernetes.io/name"] // "") == "argocd-application-controller") | select((.spec.replicas // 1) > 0) | select((.status.readyReplicas // 0) > 0) | "\(.kind | ascii_downcase)/\(.metadata.name)"] | if length == 1 then .[0] else "" end' <<<"$controllers")"
+          [[ -n "$controller_resource" ]] || { echo 'Refusing: exactly one ready application-controller workload could not be identified.'; exit 1; }
+
+          echo "Approved signature revalidated: phase=$phase sync=$sync_status health=$health revision=$sync_revision startedAt=$started_at."
+          echo "PostgreSQL is ready ($ready/$desired) with at least one endpoint."
+          echo "Exactly one ready Argo application-controller workload identified: $controller_resource."
+          echo "controller_resource=$controller_resource" >> "$GITHUB_OUTPUT"
+
+      - name: Restart only the verified Argo application controller
+        shell: bash
+        env:
+          CONTROLLER_RESOURCE: ${{ steps.guard.outputs.controller_resource }}
+        run: |
+          set -euo pipefail
+          [[ -n "$CONTROLLER_RESOURCE" ]] || { echo 'Refusing: controller resource output is empty.'; exit 1; }
+          timeout 30s kubectl --request-timeout=20s -n "$ARGOCD_NAMESPACE" rollout restart "$CONTROLLER_RESOURCE"
+          timeout 210s kubectl --request-timeout=20s -n "$ARGOCD_NAMESPACE" rollout status "$CONTROLLER_RESOURCE" --timeout=180s
+
+      - name: Observe existing automated sync without changing application resources
+        shell: bash
+        run: |
+          set -euo pipefail
+          for _ in {1..144}; do
+            app="$(timeout 20s kubectl --request-timeout=15s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o json)"
+            live_operation="$(jq -r 'if .operation == null then "false" else "true" end' <<<"$app")"
+            phase="$(jq -r '.status.operationState.phase // ""' <<<"$app")"
+            message="$(jq -r '.status.operationState.message // ""' <<<"$app")"
+            sync_status="$(jq -r '.status.sync.status // ""' <<<"$app")"
+            revision="$(jq -r '.status.sync.revision // ""' <<<"$app")"
+            health="$(jq -r '.status.health.status // ""' <<<"$app")"
+            operation_revision="$(jq -r '.operation.sync.revision // ""' <<<"$app")"
+            echo "phase=$phase liveOperation=$live_operation sync=$sync_status health=$health revision=$revision operationRevision=$operation_revision"
+
+            [[ "$revision" == "$BASE_REVISION" || "$revision" == "$RECOVERY_REVISION" ]] || { echo 'Stopped observing: live sync revision changed unexpectedly.'; exit 1; }
+            if [[ "$live_operation" == 'true' && "$operation_revision" != "$BASE_REVISION" && "$operation_revision" != "$RECOVERY_REVISION" ]]; then
+              echo 'Stopped observing: another revision has a live operation; no action was taken on it.'
+              exit 1
+            fi
+            if [[ "$live_operation" == 'false' && "$sync_status" == 'Synced' && "$health" == 'Healthy' && "$phase" == 'Succeeded' && "$revision" == "$RECOVERY_REVISION" ]]; then
+              echo "PASS: requested revision is Synced and Healthy ($revision)."
+              exit 0
+            fi
+            if [[ "$health" == 'Degraded' ]]; then
+              echo "Stopped observing: root app became Degraded. Argo message: $message"
+              exit 1
+            fi
+            sleep 5
+          done
+          echo 'Timed out observing the existing Argo automated sync; no additional mutation was attempted.'
+          kubectl --request-timeout=20s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o custom-columns='NAME:.metadata.name,HEALTH:.status.health.status,SYNC:.status.sync.status,REVISION:.status.sync.revision,PHASE:.status.operationState.phase,MESSAGE:.status.operationState.message'
+          exit 1
