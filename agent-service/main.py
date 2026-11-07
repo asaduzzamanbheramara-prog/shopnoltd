@@ -1,6 +1,6 @@
 """Shopno Agent service: Manus-style agent loop with Keycloak auth.
 
-UI  --(WS /ws/ui)--> agent loop --(LiteLLM, OpenAI-compatible)--> model
+UI  --(WS /ws/ui, first message = auth)--> agent loop --(LiteLLM, OpenAI-compatible)--> model
                          |-- sandbox tools (files; shell only if explicitly enabled)
                          `-- browser tools --(WS /ws/ext)--> Chrome extension
 
@@ -59,19 +59,29 @@ async def verify_token(token: str) -> dict:
 
 
 async def authenticate(ws: WebSocket, kind: str) -> dict | None:
-    """Origin check + token check. Closes the socket and returns None on failure."""
+    """Origin check BEFORE the handshake, then token check from the FIRST message.
+
+    The token is never put in the URL (URLs end up in access logs). The client must send
+    {"type": "auth", "token": "<keycloak access token>"} within 10 seconds of connecting.
+    Returns claims, or None after closing the socket.
+    """
     origin = ws.headers.get("origin", "")
     if kind == "ui" and origin not in UI_ORIGINS:
-        await ws.close(code=4403); return None
+        await ws.close(code=4403); return None          # rejected before accept (HTTP 403)
     if kind == "ext":
         ext_id = origin.removeprefix("chrome-extension://")
         if not origin.startswith("chrome-extension://") or (EXT_IDS and ext_id not in EXT_IDS):
             await ws.close(code=4403); return None
-    token = ws.query_params.get("token", "")
+    await ws.accept()
     try:
-        return await verify_token(token)
+        first = await asyncio.wait_for(ws.receive_json(), timeout=10)
+        if first.get("type") != "auth":
+            raise ValueError("auth message required")
+        claims = await verify_token(str(first.get("token", "")))
     except Exception:
         await ws.close(code=4401); return None
+    await ws.send_json({"type": "auth_ok"})
+    return claims
 
 
 TOOLS = [
@@ -165,7 +175,6 @@ SYSTEM = ("You are Shopno Agent. Break the goal into steps, use tools, check res
 
 @app.websocket("/ws/ui")
 async def ui_socket(ws: WebSocket):
-    await ws.accept()
     claims = await authenticate(ws, "ui")
     if not claims: return
     user = claims["sub"]
@@ -200,7 +209,6 @@ async def ui_socket(ws: WebSocket):
 
 @app.websocket("/ws/ext")
 async def ext_socket(ws: WebSocket):
-    await ws.accept()
     claims = await authenticate(ws, "ext")
     if not claims: return
     user = claims["sub"]

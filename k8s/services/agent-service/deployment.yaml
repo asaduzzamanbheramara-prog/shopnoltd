@@ -1,13 +1,7 @@
-apiVersion: v1
-kind: Secret
-metadata:
-  name: agent-service-litellm-key
-  namespace: shopno-apps
-  annotations:
-    argocd.argoproj.io/sync-options: Prune=false
-type: Opaque
-stringData: {}   # fill at runtime: kubectl -n shopno-apps create secret generic agent-service-litellm-key --from-literal=LITELLM_MASTER_KEY=... --dry-run=client -o yaml | kubectl apply -f -
----
+# The Secret 'agent-service-litellm-key' is intentionally NOT in Git. Create it once:
+#   kubectl -n shopno-apps create secret generic agent-service-litellm-key \
+#     --from-literal=LITELLM_MASTER_KEY='<key>'
+# (Existing secret keeps working: it carries the Prune=false annotation from the earlier sync.)
 apiVersion: apps/v1
 kind: Deployment
 metadata:
