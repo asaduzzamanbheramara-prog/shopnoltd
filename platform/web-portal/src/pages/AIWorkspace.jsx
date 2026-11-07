@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { Link } from 'react-router-dom'
 import { ArrowDown, Bot, Check, ChevronDown, Copy, Download, Eye, FileText, Maximize2, Menu, MessageSquare, Mic, Minimize2, Paperclip, Plus, RefreshCw, Send, Sparkles, Square, Trash2, Volume2, X } from 'lucide-react'
 import { authenticatedRequest, authenticatedStreamRequest } from '../lib/financialApi'
+import AgentWorkspace from './AgentWorkspace'
 import { MAX_IMAGE_INPUT_BYTES, MAX_VIDEO_INPUT_BYTES, copyToClipboard, downloadBlob, friendlyError, prepareImage, prepareVideo, resolveLanguage, splitBlocks, svgDataUrl, svgToJpegBlob, svgToPngBlob } from './aiChatHelpers'
 
 async function request(path, options = {}) {
@@ -153,6 +154,7 @@ export default function AIWorkspace() {
   const [canRetry, setCanRetry] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [focusMode, setFocusMode] = useState(false)
+  const [mode, setMode] = useState('chat')
   const [panelHeight, setPanelHeight] = useState(() => Math.max(440, (typeof window === 'undefined' ? 800 : window.innerHeight) - 300))
   const [atBottom, setAtBottom] = useState(true)
   const rootRef = useRef(null)
@@ -508,12 +510,14 @@ export default function AIWorkspace() {
         <header style={{ height: 58, flex: '0 0 58px', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', gap: 10, padding: '0 14px 0 18px', background: 'rgba(255,255,255,.96)' }}>
           <button onClick={() => setSidebarOpen((value) => !value)} aria-label="Toggle chat history" style={{ border: 0, background: 'transparent', cursor: 'pointer', padding: 7 }}><Menu size={20} /></button>
           <div className="shopno-ai-title" style={{ fontWeight: 700, marginRight: 'auto', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Shopnoltd AI</div>
-          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}><Sparkles size={15} style={{ position: 'absolute', left: 10, pointerEvents: 'none' }} /><select value={activeModel} onChange={(e) => selectModel(e.target.value)} disabled={loadingModels || loading || !models.length} aria-label="AI model" style={{ appearance: 'none', padding: '8px 30px', border: '1px solid #d1d5db', borderRadius: 9, background: '#fff', fontWeight: 600, maxWidth: 300 }}>{!models.length && <option value="">No active models</option>}{models.map((item) => <option key={item.model_name} value={item.model_name}>{item.display_name || item.model_name}{item.is_default ? ' · default' : ''}</option>)}</select><ChevronDown size={15} style={{ position: 'absolute', right: 9, pointerEvents: 'none' }} /></div>
+          {mode === 'chat' && <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}><Sparkles size={15} style={{ position: 'absolute', left: 10, pointerEvents: 'none' }} /><select value={activeModel} onChange={(e) => selectModel(e.target.value)} disabled={loadingModels || loading || !models.length} aria-label="AI model" style={{ appearance: 'none', padding: '8px 30px', border: '1px solid #d1d5db', borderRadius: 9, background: '#fff', fontWeight: 600, maxWidth: 300 }}>{!models.length && <option value="">No active models</option>}{models.map((item) => <option key={item.model_name} value={item.model_name}>{item.display_name || item.model_name}{item.is_default ? ' · default' : ''}</option>)}</select><ChevronDown size={15} style={{ position: 'absolute', right: 9, pointerEvents: 'none' }} /></div>}
           <button onClick={loadModels} disabled={loadingModels || loading} aria-label="Refresh models" title="Refresh models" style={actionStyle}><RefreshCw size={18} /></button>
           <button onClick={() => setFocusMode((value) => !value)} aria-label={focusMode ? 'Exit full screen' : 'Full screen'} title={focusMode ? 'Exit full screen (Esc)' : 'Full screen'} style={actionStyle}>{focusMode ? <Minimize2 size={18} /> : <Maximize2 size={18} />}</button>
           <button className="shopno-ai-mobile-only" onClick={() => setSidebarOpen(false)} aria-label="Close history" style={{ ...actionStyle, alignItems: 'center' }}><X size={18} /></button>
           <Link to="/ai/connections" style={{ ...actionStyle, textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }} title="Connections">Connections</Link>
+          <button type="button" onClick={() => setMode((value) => (value === 'agent' ? 'chat' : 'agent'))} aria-pressed={mode === 'agent'} title="Autonomous agent mode" style={{ ...actionStyle, display: 'inline-flex', alignItems: 'center', gap: 5, fontWeight: 700, color: mode === 'agent' ? '#10a37f' : '#4b5563' }}><Bot size={16} /> Agent</button>
         </header>
+        {mode === 'agent' ? <AgentWorkspace /> : (<>
         <div style={{ position: 'relative', flex: 1, minHeight: 0, display: 'flex' }}>
           <div ref={scrollRef} onScroll={onScroll} className="shopno-ai-content" style={{ flex: 1, minHeight: 0, overflowY: 'auto', overscrollBehavior: 'contain', padding: '0 max(18px, calc((100% - 820px) / 2))' }}>
             <div style={{ minHeight: '100%', display: 'flex', flexDirection: 'column', justifyContent: activeMessages.length ? 'flex-start' : 'center' }}>
@@ -534,6 +538,7 @@ export default function AIWorkspace() {
           </form>
           <div style={{ textAlign: 'center', fontSize: 11, color: '#9ca3af', marginTop: 8 }}>Enter to send · Shift+Enter for a new line · Text files are extracted in the browser; images are sent to vision-capable AI models; videos are sampled into frames for visual analysis</div>
         </div>
+        </>)}
       </section>
     </div>
   )
