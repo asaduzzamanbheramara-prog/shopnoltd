@@ -1,0 +1,144 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: code-server-isolated
+  namespace: shopno-apps
+  labels:
+    app.kubernetes.io/name: code-server-isolated
+    app.kubernetes.io/part-of: shopnoltd
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: code-server-isolated
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: code-server-isolated
+        app.kubernetes.io/part-of: shopnoltd
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8443"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: code-server
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        - name: configure-continue
+          image: busybox:1.36
+          command: ["sh", "-c"]
+          args:
+            - |
+              set -eu
+              mkdir -p /config/.continue
+              cp /continue-config/config.json /config/.continue/config.json
+              printf '%s\n' "CODE_SERVER_LITELLM_API_KEY=$CODE_SERVER_LITELLM_API_KEY" > /config/.continue/.env
+              chown -R 10001:10001 /config/.continue
+          env:
+            - name: CODE_SERVER_LITELLM_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: code-server-litellm-key
+                  key: LITELLM_MASTER_KEY
+          securityContext:
+            runAsNonRoot: false
+            runAsUser: 0
+          volumeMounts:
+            - name: data
+              mountPath: /config
+            - name: continue-config
+              mountPath: /continue-config
+        - name: fix-run-perms
+          image: busybox:1.36
+          command: ["sh", "-c", "chown -R 10001:10001 /run"]
+          securityContext:
+            runAsNonRoot: false
+            runAsUser: 0
+          volumeMounts:
+            - name: run-dir
+              mountPath: /run
+      containers:
+        - name: code-server
+          image: linuxserver/code-server
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8443
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: code-server-isolated-config
+            - secretRef:
+                name: code-server-secret
+          env:
+            - name: POD_NAME
+              valueFrom: { fieldRef: { fieldPath: metadata.name } }
+            - name: POD_NAMESPACE
+              valueFrom: { fieldRef: { fieldPath: metadata.namespace } }
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+              ephemeral-storage: 256Mi
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+              ephemeral-storage: 1Gi
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            failureThreshold: 30
+          volumeMounts:
+            - name: data
+              mountPath: /config
+            - name: data
+              mountPath: /mnt
+              subPath: workspace
+            - name: tmp
+              mountPath: /tmp
+            - name: run-dir
+              mountPath: /run
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop: ["ALL"]
+      volumes:
+        - name: continue-config
+          configMap:
+            name: code-server-continue-config
+        - name: data
+          persistentVolumeClaim:
+            claimName: code-server-isolated-data
+        - name: tmp
+          emptyDir: {}
+        - name: run-dir
+          emptyDir: {}

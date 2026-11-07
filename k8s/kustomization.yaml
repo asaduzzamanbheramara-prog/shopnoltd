@@ -58,6 +58,7 @@ resources:
 - services/keycloak
 - services/gitea
 - services/code-server
+- services/code-server-isolated
 - services/agent-service
 - services/remote-device
 - services/enketo
