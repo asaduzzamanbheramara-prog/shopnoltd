@@ -18,5 +18,6 @@
   },
   "action": {
     "default_popup": "popup.html"
-  }
+  },
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAu8LaGChcskEU9MNB2QB8v6M9RpRdPt3o7GcUEgEWRYTZE9tCVPN/qJ6INbCEtcbodEvMEsRLy0+N+zT1Vp2JQkH4ddIEoKzuFpF2TylnkpyPZKYcAdRBFGEDuIzNmJH59L0B3snVaT6dhcxXvBnQY+dLuIkd8vLfl/4wqgqSpHl13hZCOFgHpzs9nvd0tCTkoCTY8WsOMrbVi6iMhQEUa9aJaprAPS4jjgnEv2+WfynVSUaFFuEXb3FjpKXwAgKZAhPTIS1lyfxd2tf4D2vxu0CkSc7sGPo2hu8WdHPV8ds3v0Slqsw0Gea2wkXwPf4gCXl3VaikjxJC4xuSxO3BiQIDAQAB"
 }
