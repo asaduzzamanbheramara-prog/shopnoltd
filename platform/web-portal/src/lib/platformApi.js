@@ -1,6 +1,14 @@
 import { tryRefresh } from './tokenRefresh'
 
-const API_BASE = import.meta.env.VITE_API_BASE || ''
+// Keep all browser business traffic on the unified API origin. Older builds
+// only set VITE_API_URL or VITE_API_BASE_URL, so retain those aliases while
+// allowing an explicit VITE_API_BASE override for local/test environments.
+const API_BASE = (
+  import.meta.env.VITE_API_BASE
+  || import.meta.env.VITE_API_BASE_URL
+  || import.meta.env.VITE_API_URL
+  || 'https://api.shopnoltd.dpdns.org'
+).replace(/\/+$/, '')
 const STORAGE_PUBLIC_API = import.meta.env.VITE_STORAGE_API_URL || 'https://storage-service.shopnoltd.dpdns.org'
 
 async function request(path, options = {}) {
@@ -42,7 +50,7 @@ async function storageRequest(path, options = {}) {
   for (let attempt = 0; attempt < 2; attempt += 1) {
     const headers = { ...(options.headers || {}) }
     if (token) headers.Authorization = `Bearer ${token}`
-    response = await fetch(`/api/v1/storage${path}`, { ...options, headers })
+    response = await fetch(`${API_BASE}/api/v1/storage${path}`, { ...options, headers })
     if (response.status !== 401 || attempt === 1) break
     const refreshed = await tryRefresh()
     if (!refreshed) break

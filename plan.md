@@ -19,3 +19,18 @@ GitHub remains the source of truth. Argo CD syncs the manifests from `main`. Dat
 ## Validation
 
 Run the web build, Kustomize render, YAML validation, extension syntax checks, and public health checks. Do not report the isolated workspace as live until Argo CD syncs it and the new hostname returns a healthy code-server session.
+
+## Live frontend repair — 2026-11-11
+
+### Goal
+Restore a single, browser-first frontend contract for `https://shopnoltd.dpdns.org` and make the public blog, domain search/registration, contact, authentication, checkout, and protected service routes use the unified API origin consistently.
+
+### Implementation
+- Make all browser API and storage mutations resolve through `https://api.shopnoltd.dpdns.org` in production, while preserving Vite overrides for other environments.
+- Preserve real service behavior: surface backend unavailability honestly, never fabricate registrations, payments, blog writes, or support tickets.
+- Add a functional contact request flow only when a server endpoint exists; otherwise keep a direct support email fallback with clear user guidance.
+- Add public route and smoke coverage for the observed blog/domain failures and deep-link behavior.
+- Verify the portal build, Python compilation, Kubernetes rendering, and focused browser/service contract checks.
+
+### Runtime boundary
+Code changes can be prepared and pushed to a repair branch. Production merge, Argo CD reconciliation, and live payment/domain/provider operations remain separate deployment steps and require runtime credentials/cluster access that are not present in this sandbox.

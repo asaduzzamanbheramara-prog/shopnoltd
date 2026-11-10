@@ -1,0 +1,20 @@
+{
+  "routes": [
+    { "path": "/", "title": "Shopnoltd" },
+    { "path": "/about", "title": "About Shopnoltd" },
+    { "path": "/services", "title": "Shopnoltd Services" },
+    { "path": "/pricing", "title": "Shopnoltd Pricing" },
+    { "path": "/contact", "title": "Contact Shopnoltd" },
+    { "path": "/privacy", "title": "Privacy Policy" },
+    { "path": "/terms", "title": "Terms of Service" },
+    { "path": "/blog", "title": "Shopnoltd Blog" },
+    { "path": "/plugins", "title": "Shopnoltd Plugins" },
+    { "path": "/downloads", "title": "Shopnoltd Downloads" },
+    { "path": "/profiles", "title": "Shopnoltd Profiles" },
+    { "path": "/profile/data-management", "title": "Data Management Profile" },
+    { "path": "/profile/interior-business", "title": "Interior Business Profile" },
+    { "path": "/phone", "title": "Shopnoltd Phone" },
+    { "path": "/domain-registration", "title": "Domain Registration" },
+    { "path": "/affiliate", "title": "Shopnoltd Affiliate & Tools" }
+  ]
+}
