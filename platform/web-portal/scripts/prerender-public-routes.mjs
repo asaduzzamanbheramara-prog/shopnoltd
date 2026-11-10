@@ -1,8 +1,9 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
-import { dirname } from 'node:path'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-const outputDirectory = new URL('../dist/', import.meta.url)
-const htmlPath = new URL('../dist/index.html', import.meta.url)
+const outputDirectory = fileURLToPath(new URL('../dist/', import.meta.url))
+const htmlPath = fileURLToPath(new URL('../dist/index.html', import.meta.url))
 const baseHtml = await readFile(htmlPath, 'utf8')
 
 const pages = {
@@ -103,8 +104,8 @@ function pageHtml(path, title, description) {
 
 for (const [path, [title, description]] of Object.entries(pages)) {
   const relativePath = path === '/' ? 'index.html' : path.slice(1) + '/index.html'
-  const destination = new URL(relativePath, outputDirectory)
-  await mkdir(dirname(destination.pathname), { recursive: true })
+  const destination = join(outputDirectory, relativePath)
+  await mkdir(dirname(destination), { recursive: true })
   await writeFile(destination, pageHtml(path, title, description), 'utf8')
 }
 

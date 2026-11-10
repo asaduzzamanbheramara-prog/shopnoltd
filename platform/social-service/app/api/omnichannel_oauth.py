@@ -3,11 +3,12 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
+import re
 import secrets
-from uuid import uuid4
 import time
-from datetime import datetime, timedelta, timezone
-from urllib.parse import urlencode, quote_plus
+from datetime import UTC, datetime, timedelta
+from urllib.parse import quote_plus, urlencode
+from uuid import uuid4
 
 import httpx
 from cryptography.fernet import Fernet, InvalidToken
@@ -17,8 +18,8 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import text
 
 from app.api.omnichannel import PROVIDER_CONFIG
-from app.core.db import SessionLocal
 from app.core.config import settings
+from app.core.db import SessionLocal
 from app.core.security import verify_token
 
 router = APIRouter()
@@ -67,18 +68,14 @@ def _scopes(provider: str, platform: str) -> list[str]:
     base = list(PROVIDER_CONFIG[provider].get("scopes", []))
     extras = {
         ("google", "gmail"): ["https://www.googleapis.com/auth/gmail.send"],
-        ("google", "youtube"): ["https://www.googleapis.com/auth/youtube"],
+        ("google", "youtube"): ["https://www.googleapis.com/auth/youtube.readonly"],
         ("microsoft", "outlook"): ["https://graph.microsoft.com/Mail.Send"],
         ("linkedin", "linkedin"): ["w_member_social"],
         ("x", "x"): ["tweet.write"],
-        ("tiktok", "tiktok"): ["video.publish"],
-        ("facebook", "facebook"): [
-            "pages_show_list", "pages_read_engagement", "pages_manage_posts",
-            "pages_messaging", "business_management",
-        ],
+        # Facebook profile and Instagram Professional identity lookup only.
+        ("facebook", "facebook"): [],
         ("instagram", "instagram"): [
-            "instagram_basic", "instagram_content_publish", "instagram_manage_messages",
-            "pages_show_list", "pages_read_engagement",
+            "instagram_basic", "pages_show_list", "pages_read_engagement",
         ],
     }
     for scope in extras.get((provider, platform), []):
@@ -87,45 +84,154 @@ def _scopes(provider: str, platform: str) -> list[str]:
     return base
 
 
+def _parse_scopes(value: object, fallback: list[str]) -> list[str]:
+    if isinstance(value, str):
+        return [scope for scope in re.split(r"[\s,]+", value.strip()) if scope]
+    if isinstance(value, list):
+        return [str(scope) for scope in value if str(scope).strip()]
+    return list(fallback)
+
+
+def _oauth_scope_string(provider: str, platform: str) -> str:
+    separator = "," if provider == "tiktok" else " "
+    return separator.join(_scopes(provider, platform))
+
+
+def _refresh_form(provider: str, cfg: dict, refresh_token: str, scopes: list[str]) -> dict:
+    if provider not in {"google", "microsoft", "linkedin", "x", "tiktok"}:
+        raise ValueError("unsupported_refresh_provider")
+    form = {
+        "grant_type": "refresh_token",
+        "refresh_token": refresh_token,
+        "client_secret": cfg["client_secret"],
+    }
+    if provider == "tiktok":
+        form["client_key"] = cfg["client_id"]
+    else:
+        form["client_id"] = cfg["client_id"]
+    if provider == "microsoft" and scopes:
+        form["scope"] = " ".join(scopes)
+    return form
+
+
 async def _exchange(provider: str, code: str, verifier: str) -> dict:
     cfg = PROVIDER_CONFIG[provider]
+    form = {
+        "grant_type": "authorization_code",
+        "code": code,
+        "redirect_uri": settings.provider_oauth_redirect_uri,
+        "client_secret": cfg["client_secret"],
+    }
+    if provider == "tiktok":
+        # TikTok's web flow uses client_key and does not use PKCE.
+        form["client_key"] = cfg["client_id"]
+    else:
+        form["client_id"] = cfg["client_id"]
+        form["code_verifier"] = verifier
     async with httpx.AsyncClient(timeout=20) as client:
         response = await client.post(
             cfg["token_url"],
-            data={
-                "grant_type": "authorization_code",
-                "code": code,
-                "redirect_uri": settings.provider_oauth_redirect_uri,
-                "client_id": cfg["client_id"],
-                "client_secret": cfg["client_secret"],
-                "code_verifier": verifier,
-            },
+            data=form,
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
-    if response.status_code >= 400:
+    try:
+        result = response.json()
+    except ValueError:
+        result = {}
+    if not isinstance(result, dict) or response.status_code >= 400 or result.get("error"):
         raise HTTPException(400, "provider token exchange failed")
-    return response.json()
+    return result
 
 
-async def _identity(provider: str, access_token: str) -> dict:
-    urls = {
-        "google": ("https://openidconnect.googleapis.com/v1/userinfo", {}),
-        "microsoft": ("https://graph.microsoft.com/v1.0/me", {}),
-        "linkedin": ("https://api.linkedin.com/v2/userinfo", {}),
-        "x": ("https://api.x.com/2/users/me", {"user.fields": "name,username,profile_image_url"}),
-        "tiktok": ("https://open.tiktokapis.com/v2/user/info/", {"fields": "open_id,union_id,display_name,avatar_url"}),
-        "facebook": ("https://graph.facebook.com/v24.0/me", {"fields": "id,name"}),
-        "instagram": ("https://graph.facebook.com/v24.0/me", {"fields": "id,name"}),
-    }
-    url, params = urls[provider]
+async def _identity(provider: str, access_token: str, platform: str | None = None) -> dict:
+    if provider == "google" and platform == "youtube":
+        url = "https://www.googleapis.com/youtube/v3/channels"
+        params = {"part": "id,snippet", "mine": "true"}
+    elif provider == "instagram":
+        # Instagram Professional accounts are connected through a Facebook Page.
+        url = "https://graph.facebook.com/v24.0/me/accounts"
+        params = {"fields": "id,name,instagram_business_account{id,username}"}
+    else:
+        urls = {
+            "google": ("https://openidconnect.googleapis.com/v1/userinfo", {}),
+            "microsoft": ("https://graph.microsoft.com/v1.0/me", {}),
+            "linkedin": ("https://api.linkedin.com/v2/userinfo", {}),
+            "x": ("https://api.x.com/2/users/me", {"user.fields": "name,username,profile_image_url"}),
+            "tiktok": ("https://open.tiktokapis.com/v2/user/info/", {"fields": "open_id,union_id,display_name,avatar_url"}),
+            "facebook": ("https://graph.facebook.com/v24.0/me", {"fields": "id,name"}),
+        }
+        url, params = urls[provider]
     async with httpx.AsyncClient(timeout=20) as client:
         response = await client.get(url, params=params, headers={"Authorization": f"Bearer {access_token}"})
     if response.status_code >= 400:
         raise HTTPException(400, "provider identity lookup failed")
     data = response.json()
+    if not isinstance(data, dict):
+        raise HTTPException(400, "provider identity lookup returned an invalid response")
+    if provider == "tiktok":
+        return (data.get("data") or {}).get("user") or {}
+    if provider == "google" and platform == "youtube":
+        channels = data.get("items") or []
+        if len(channels) != 1:
+            raise HTTPException(409, "Google account must have exactly one YouTube channel; channel selection is required for multiple channels")
+        channel = channels[0]
+        snippet = channel.get("snippet") or {}
+        return {"id": channel.get("id"), "name": snippet.get("title")}
+    if provider == "instagram":
+        accounts = []
+        for page in data.get("data") or []:
+            account = page.get("instagram_business_account") or {}
+            if account.get("id"):
+                accounts.append({**account, "name": page.get("name")})
+        if len(accounts) != 1:
+            raise HTTPException(409, "Instagram OAuth requires exactly one linked Instagram Professional account; connect or select the intended Facebook Page first")
+        return accounts[0]
     return data.get("data", data)
 
 
-def _identity_fields(provider: str, data: dict) -> tuple[str, str | None, str | None]:
+async def refresh_provider_tokens(
+    provider: str, refresh_token: str, scopes: list[str]
+) -> dict:
+    """Refresh a provider grant server-side; never expose tokens to callers/logs."""
+    cfg = PROVIDER_CONFIG.get(provider)
+    if provider not in {"google", "microsoft", "linkedin", "x", "tiktok"}:
+        raise HTTPException(409, "this provider does not support the configured refresh-token flow")
+    if not cfg or not cfg.get("client_id") or not cfg.get("client_secret"):
+        raise HTTPException(503, "provider refresh credentials are not configured")
+    form = _refresh_form(provider, cfg, refresh_token, scopes)
+    async with httpx.AsyncClient(timeout=20) as client:
+        response = await client.post(
+            cfg["token_url"],
+            data=form,
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+        )
+    try:
+        result = response.json()
+    except ValueError:
+        result = {}
+    if not isinstance(result, dict) or response.status_code >= 400 or result.get("error"):
+        raise HTTPException(409, "provider token refresh failed; reconnect the account")
+    access_token = result.get("access_token")
+    expires_in = result.get("expires_in")
+    if not access_token or not isinstance(expires_in, (int, float)) or expires_in <= 0:
+        raise HTTPException(409, "provider returned an invalid refresh response; reconnect the account")
+    refreshed_scopes = _parse_scopes(result.get("scope"), scopes)
+    refresh_expires_in = result.get("refresh_expires_in")
+    refresh_expires_at = None
+    if isinstance(refresh_expires_in, (int, float)) and refresh_expires_in > 0:
+        refresh_expires_at = datetime.now(UTC) + timedelta(seconds=int(refresh_expires_in))
+    return {
+        "access_token": str(access_token),
+        "refresh_token": str(result.get("refresh_token") or refresh_token),
+        "expires_at": datetime.now(UTC) + timedelta(seconds=int(expires_in)),
+        "refresh_expires_at": refresh_expires_at,
+        "scopes": refreshed_scopes,
+    }
+
+
+def _identity_fields(provider: str, data: dict, platform: str | None = None) -> tuple[str, str | None, str | None]:
+    if provider == "google" and platform == "youtube":
+        return str(data.get("id") or ""), data.get("customUrl"), data.get("name")
     if provider == "google":
         return str(data.get("sub") or ""), data.get("email"), data.get("name")
     if provider == "microsoft":
@@ -136,10 +242,12 @@ def _identity_fields(provider: str, data: dict) -> tuple[str, str | None, str | 
         return str(data.get("id") or ""), data.get("username"), data.get("name")
     if provider == "tiktok":
         return str(data.get("open_id") or data.get("union_id") or ""), None, data.get("display_name")
+    if provider == "instagram":
+        return str(data.get("id") or ""), data.get("username"), data.get("name")
     return str(data.get("id") or ""), None, data.get("name")
 
 
-@router.get("/start/{provider}/{platform}")
+@router.post("/start/{provider}/{platform}")
 async def start(provider: str, platform: str, creds: HTTPAuthorizationCredentials = Depends(bearer)):
     provider = provider.lower().strip()
     platform = platform.lower().strip()
@@ -150,9 +258,16 @@ async def start(provider: str, platform: str, creds: HTTPAuthorizationCredential
         raise HTTPException(409, "this platform requires provider-specific onboarding")
     if not cfg.get("client_id") or not cfg.get("client_secret"):
         raise HTTPException(409, "provider credentials are not configured")
+    if not settings.provider_oauth_state_secret or not settings.provider_oauth_encryption_ready:
+        raise HTTPException(503, "secure OAuth state and token encryption must be configured before connecting accounts")
     user = await verify_token(creds.credentials)
-    verifier = base64.urlsafe_b64encode(secrets.token_bytes(32)).decode().rstrip("=")
-    challenge = base64.urlsafe_b64encode(hashlib.sha256(verifier.encode()).digest()).decode().rstrip("=")
+    if not str(user.get("sub") or user.get("user_id") or "").strip():
+        raise HTTPException(401, "authenticated user identity is missing")
+    verifier = None
+    challenge = None
+    if provider != "tiktok":
+        verifier = base64.urlsafe_b64encode(secrets.token_bytes(32)).decode().rstrip("=")
+        challenge = base64.urlsafe_b64encode(hashlib.sha256(verifier.encode()).digest()).decode().rstrip("=")
     state = _sign_state({
         "sub": str(user.get("sub") or user.get("user_id") or ""),
         "tenant_id": str(user.get("tenant_id") or "default"),
@@ -163,15 +278,18 @@ async def start(provider: str, platform: str, creds: HTTPAuthorizationCredential
         "exp": int(time.time()) + 600,
     })
     params = {
-        "client_id": cfg["client_id"],
+        "client_key" if provider == "tiktok" else "client_id": cfg["client_id"],
         "redirect_uri": settings.provider_oauth_redirect_uri,
         "response_type": "code",
-        "scope": " ".join(_scopes(provider, platform)),
+        "scope": _oauth_scope_string(provider, platform),
         "state": state,
-        "code_challenge": challenge,
-        "code_challenge_method": "S256",
     }
-    return RedirectResponse(f"{cfg['auth_url']}?{urlencode(params)}", status_code=302)
+    if challenge:
+        params["code_challenge"] = challenge
+        params["code_challenge_method"] = "S256"
+    if provider == "google":
+        params.update({"access_type": "offline", "prompt": "consent"})
+    return {"authorization_url": f"{cfg['auth_url']}?{urlencode(params)}"}
 
 
 @router.get("/callback")
@@ -184,21 +302,25 @@ async def callback(code: str | None = None, state: str | None = None, error: str
     provider = payload["provider"]
     platform = payload["platform"]
     cfg = PROVIDER_CONFIG.get(provider)
-    if not cfg or not cfg.get("client_id"):
-        raise HTTPException(400, "provider is not configured")
+    if not cfg or platform not in cfg.get("platforms", []) or not cfg.get("client_id"):
+        raise HTTPException(400, "provider/platform is not configured")
     tokens = await _exchange(provider, code, payload["verifier"])
     access = tokens.get("access_token")
     if not access:
         raise HTTPException(400, "provider did not return an access token")
-    identity = await _identity(provider, access)
-    account_id, username, display_name = _identity_fields(provider, identity)
+    identity = await _identity(provider, access, platform)
+    account_id, username, display_name = _identity_fields(provider, identity, platform)
     if not account_id:
         raise HTTPException(400, "provider account identity was not returned")
 
     expires = tokens.get("expires_in")
     expires_at = None
     if expires:
-        expires_at = datetime.now(timezone.utc) + timedelta(seconds=int(expires))
+        expires_at = datetime.now(UTC) + timedelta(seconds=int(expires))
+    refresh_expires = tokens.get("refresh_expires_in")
+    refresh_expires_at = None
+    if refresh_expires:
+        refresh_expires_at = datetime.now(UTC) + timedelta(seconds=int(refresh_expires))
 
     f = _fernet()
     encrypted_access = f.encrypt(access.encode()).decode()
@@ -209,34 +331,33 @@ async def callback(code: str | None = None, state: str | None = None, error: str
     async with SessionLocal() as s:
         connection_id = str(uuid4())
         requested_scopes = _scopes(provider, platform)
-        returned_scopes = tokens.get("scope")
-        if isinstance(returned_scopes, str):
-            scopes = returned_scopes.split()
-        elif isinstance(returned_scopes, list):
-            scopes = [str(scope) for scope in returned_scopes]
-        else:
-            # OAuth 2.0 permits omitting "scope" when the grant equals the request.
-            scopes = requested_scopes
+        scopes = _parse_scopes(tokens.get("scope"), requested_scopes)
         row = (await s.execute(text(
             """INSERT INTO social_connections
-               (id, tenant_id, platform, account_type, platform_account_id, username,
+               (id, tenant_id, owner_user_id, platform, account_type, platform_account_id, username,
                 display_name, status, scopes, access_token_ref, refresh_token_ref,
                 token_expires_at, metadata, connected_at)
-               VALUES (:id, :tenant, :platform, 'user', :account_id, :username,
+               VALUES (:id, :tenant, :owner_user, :platform, :account_type, :account_id, :username,
                        :display_name, 'connected', :scopes::jsonb,
                        :access_ref, :refresh_ref, :expires, :metadata::jsonb, NOW())
                ON CONFLICT (tenant_id, platform, platform_account_id)
                DO UPDATE SET username=EXCLUDED.username, display_name=EXCLUDED.display_name,
                              status='connected', scopes=EXCLUDED.scopes,
                              access_token_ref=EXCLUDED.access_token_ref,
-                             refresh_token_ref=EXCLUDED.refresh_token_ref,
+                             refresh_token_ref=COALESCE(EXCLUDED.refresh_token_ref, social_connections.refresh_token_ref),
                              token_expires_at=EXCLUDED.token_expires_at,
-                             metadata=EXCLUDED.metadata, updated_at=NOW()
+                             metadata=EXCLUDED.metadata,
+                             owner_user_id=COALESCE(social_connections.owner_user_id, EXCLUDED.owner_user_id),
+                             updated_at=NOW()
+               WHERE social_connections.owner_user_id IS NULL
+                  OR social_connections.owner_user_id=EXCLUDED.owner_user_id
                RETURNING id"""
         ), {
             "id": connection_id,
             "tenant": payload["tenant_id"],
+            "owner_user": payload["sub"],
             "platform": platform,
+            "account_type": "channel" if platform == "youtube" else ("business" if platform == "instagram" else "user"),
             "account_id": account_id,
             "username": username,
             "display_name": display_name,
@@ -245,23 +366,28 @@ async def callback(code: str | None = None, state: str | None = None, error: str
             "refresh_ref": "oauth:omnichannel_oauth_tokens" if encrypted_refresh else None,
             "expires": expires_at,
             "metadata": json.dumps({"provider": provider, "email": identity.get("email")}),
-        })).scalar_one()
+        })).scalar_one_or_none()
+        if row is None:
+            raise HTTPException(409, "this provider account is already connected to another Shopnoltd user")
+        connection_id = str(row)
 
-        await s.execute(text(
+        token_row = (await s.execute(text(
             """INSERT INTO omnichannel_oauth_tokens
                (id, tenant_id, user_id, provider, platform, provider_account_id,
                 username, display_name, scopes, encrypted_access_token,
-                encrypted_refresh_token, token_expires_at, metadata)
+                encrypted_refresh_token, token_expires_at, refresh_token_expires_at, metadata)
                VALUES (:id, :tenant, :user, :provider, :platform, :account_id,
                        :username, :display_name, :scopes::jsonb, :access,
-                       :refresh, :expires, :metadata::jsonb)
+                       :refresh, :expires, :refresh_expires, :metadata::jsonb)
                ON CONFLICT (tenant_id, provider, platform, provider_account_id)
-               DO UPDATE SET user_id=EXCLUDED.user_id, username=EXCLUDED.username,
+               DO UPDATE SET username=EXCLUDED.username,
                              display_name=EXCLUDED.display_name, scopes=EXCLUDED.scopes,
                              encrypted_access_token=EXCLUDED.encrypted_access_token,
                              encrypted_refresh_token=COALESCE(EXCLUDED.encrypted_refresh_token, omnichannel_oauth_tokens.encrypted_refresh_token),
-                             token_expires_at=EXCLUDED.token_expires_at, metadata=EXCLUDED.metadata,
-                             status='connected', updated_at=NOW()"""
+                             token_expires_at=EXCLUDED.token_expires_at, refresh_token_expires_at=COALESCE(EXCLUDED.refresh_token_expires_at, omnichannel_oauth_tokens.refresh_token_expires_at), metadata=EXCLUDED.metadata,
+                             status='connected', updated_at=NOW()
+               WHERE omnichannel_oauth_tokens.user_id=EXCLUDED.user_id
+               RETURNING id"""
         ), {
             "id": str(uuid4()),
             "tenant": payload["tenant_id"],
@@ -275,8 +401,11 @@ async def callback(code: str | None = None, state: str | None = None, error: str
             "access": encrypted_access,
             "refresh": encrypted_refresh,
             "expires": expires_at,
+            "refresh_expires": refresh_expires_at,
             "metadata": json.dumps({"provider_identity": identity}),
-        })
+        })).scalar_one_or_none()
+        if token_row is None:
+            raise HTTPException(409, "this provider account is already authorized by another Shopnoltd user")
         await s.commit()
 
     return RedirectResponse(

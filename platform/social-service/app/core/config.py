@@ -1,3 +1,4 @@
+from cryptography.fernet import Fernet
 from pydantic_settings import BaseSettings
 
 
@@ -40,6 +41,16 @@ class Settings(BaseSettings):
     whatsapp_client_secret: str | None = None
     threecx_client_id: str | None = None
     threecx_client_secret: str | None = None
+
+    @property
+    def provider_oauth_encryption_ready(self) -> bool:
+        if not self.provider_oauth_encryption_key:
+            return False
+        try:
+            Fernet(self.provider_oauth_encryption_key.encode())
+            return True
+        except Exception:
+            return False
 
     @property
     def cors_origins_list(self) -> list[str]:

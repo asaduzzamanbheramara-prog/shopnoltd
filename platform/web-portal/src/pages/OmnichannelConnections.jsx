@@ -118,7 +118,11 @@ export default function OmnichannelConnections() {
       const payload = toPayload(form)
       if (!payload.platform_account_id) throw new Error('Platform account ID is required')
       if (editing) {
-        await platformApi.updateOmnichannelConnection(editing, payload)
+        await platformApi.updateOmnichannelConnection(editing, {
+          account_type: payload.account_type,
+          username: payload.username,
+          display_name: payload.display_name,
+        })
         setNotice('Platform profile updated.')
       } else {
         await platformApi.addOmnichannelConnection(payload)
@@ -139,6 +143,27 @@ export default function OmnichannelConnections() {
     setError('')
     setNotice('')
     window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  async function connectProvider(provider, platform) {
+    setBusy(true)
+    setError('')
+    setNotice('')
+    try {
+      const result = await platformApi.omnichannelOAuthStart(provider, platform)
+      const authorizationUrl = new URL(result?.authorization_url || '')
+      const allowedHosts = new Set([
+        'accounts.google.com', 'login.microsoftonline.com', 'www.linkedin.com',
+        'twitter.com', 'www.facebook.com', 'www.tiktok.com',
+      ])
+      if (authorizationUrl.protocol !== 'https:' || !allowedHosts.has(authorizationUrl.hostname)) {
+        throw new Error('The provider returned an unexpected authorization URL.')
+      }
+      window.location.assign(authorizationUrl.toString())
+    } catch (e) {
+      setError(e.message)
+      setBusy(false)
+    }
   }
 
   async function remove(item) {
@@ -162,6 +187,10 @@ export default function OmnichannelConnections() {
       <ArrowLeft size={16} /> Back to Dashboard
     </Link>
 
+    <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+      <Link to="/social-automation" style={{ ...styles.button, textDecoration: 'none', background: '#111827', color: '#fff', borderColor: '#111827' }}>Open Social Automation Center</Link>
+    </div>
+
     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'start', marginBottom: 18 }}>
       <div>
         <h1 style={{ margin: 0 }}>Platform Accounts & Profiles</h1>
@@ -169,7 +198,9 @@ export default function OmnichannelConnections() {
           Manage your Shopnoltd connections across WhatsApp, Facebook, Instagram, LinkedIn, X, Telegram, TikTok, YouTube, Gmail, Outlook and 3CX.
         </p>
       </div>
-      <button type="button" onClick={load} disabled={busy} style={styles.button}><RefreshCw size={15} /> Refresh</button>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <button type="button" onClick={load} disabled={busy} style={styles.button}><RefreshCw size={15} /> Refresh</button>
+      </div>
     </div>
 
     {error && <div role="alert" style={{ padding: 11, marginBottom: 12, borderRadius: 9, background: '#fef2f2', color: '#991b1b' }}><XCircle size={15} style={{ verticalAlign: 'middle', marginRight: 5 }} />{error}</div>}
@@ -251,7 +282,7 @@ export default function OmnichannelConnections() {
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 9 }}>
             {provider.platforms.map(platform => (
               provider.configured && provider.authorization_supported
-                ? <button key={platform} type="button" onClick={() => { window.location.href = platformApi.omnichannelOAuthStart(provider.provider, platform) }} style={styles.button}>
+                ? <button key={platform} type="button" disabled={busy} onClick={() => connectProvider(provider.provider, platform)} style={styles.button}>
                     <Link2 size={14} /> Connect {platform}
                   </button>
                 : <span key={platform} style={{ ...styles.button, color: '#92400e', cursor: 'default' }}>

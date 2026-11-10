@@ -19,7 +19,7 @@ COPY shared/libraries/python/shopno_core /app/shopno_core
 
 # Fail the image build if the application imports are inconsistent. This prevents
 # a stale/corrupt image from being promoted when admin_data imports blog helpers.
-RUN python -c "from app.api.blog import can_manage_blog; from app.api.admin_data import router; assert callable(can_manage_blog) and router is not None"
+RUN python -c "from app.main import app; from app.api.omnichannel_oauth import router as oauth_router; from app.api.social_automation import router as automation_router; from app.workers.social_scheduler import next_occurrence; from app.workers.omnichannel_executor import _rate_limit_delay_seconds; assert app is not None and oauth_router is not None and automation_router is not None and callable(next_occurrence) and callable(_rate_limit_delay_seconds)"
 
 USER shopno
 EXPOSE 8080
