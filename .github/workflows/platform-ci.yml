@@ -268,7 +268,7 @@ jobs:
         working-directory: platform/social-service
     env:
       DATABASE_URL: postgresql+asyncpg://test:test@127.0.0.1:1/test
-      PYTHONPATH: .
+      PYTHONPATH: .:../../shared/libraries/python
       OMNICHANNEL_EXECUTOR_ENABLED: "false"
     steps:
       - uses: actions/checkout@v6
