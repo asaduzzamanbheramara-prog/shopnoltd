@@ -5,6 +5,9 @@ import { getRoles, isPlatformAdmin } from '../lib/jwt'
 import { authenticatedRequest, getTransactions, getWallet } from '../lib/financialApi'
 import { platformApi } from '../lib/platformApi'
 
+const API_ORIGIN = (import.meta.env.VITE_API_URL || 'https://api.shopnoltd.dpdns.org').replace(/\/+$/, '').replace(/\/api\/v1$/, '')
+const API_BASE = `${API_ORIGIN}/api/v1`
+
 function QuickLink({ service }) {
   const isInternal = service.url.startsWith('/')
   return (
@@ -69,12 +72,12 @@ export default function Dashboard() {
         platformApi.notifications(),
         platformApi.activeWorks(),
         platformApi.omnichannelConnections(),
-        fetch(`${import.meta.env.VITE_DOMAIN_SERVICE_URL || 'https://domain.shopnoltd.dpdns.org/api/v1'}/domains`, { headers: { Accept: 'application/json', Authorization: `Bearer ${token}` } }).then(async (response) => {
+        fetch(`${API_BASE}/domains`, { headers: { Accept: 'application/json', Authorization: `Bearer ${token}` } }).then(async (response) => {
           const data = await response.json().catch(() => null)
           if (!response.ok) throw new Error(data?.detail || data?.message || `HTTP ${response.status}`)
           return data
         }),
-        fetch(`${import.meta.env.VITE_FREEDOMAIN_SERVICE_URL || 'https://freedomain.shopnoltd.dpdns.org/api/v1/domains'}/me`, { headers: { Accept: 'application/json', Authorization: `Bearer ${token}` } }).then(async (response) => {
+        fetch(`${API_BASE}/free-domains/me`, { headers: { Accept: 'application/json', Authorization: `Bearer ${token}` } }).then(async (response) => {
           const data = await response.json().catch(() => null)
           if (!response.ok) throw new Error(data?.detail || data?.message || `HTTP ${response.status}`)
           return data

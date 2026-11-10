@@ -11,12 +11,19 @@ function getToken() { return localStorage.getItem("shopno_token"); }
 
 async function request(path, options = {}) {
   const token = getToken();
-  const response = await fetch(`${API_BASE}${path}`, {
-    ...options,
-    headers: { Accept: "application/json", ...(options.body ? { "Content-Type": "application/json" } : {}), ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(options.headers || {}) },
-  });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.detail || data.message || `Domain request failed (${response.status})`);
+  let response;
+  try {
+    response = await fetch(`${API_BASE}${path}`, {
+      ...options,
+      headers: { Accept: "application/json", ...(options.body ? { "Content-Type": "application/json" } : {}), ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(options.headers || {}) },
+    });
+  } catch {
+    throw new Error("The domain API is unreachable. Please try again after the server is online.");
+  }
+  const text = await response.text();
+  let data = {};
+  try { data = text ? JSON.parse(text) : {}; } catch { data = {}; }
+  if (!response.ok) throw new Error(data.detail || data.message || text || `Domain request failed (${response.status})`);
   return data;
 }
 

@@ -28,6 +28,28 @@ spec:
                 port:
                   number: 80
 
+    - host: domain.shopnoltd.dpdns.org
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: domain-service
+                port:
+                  number: 80
+
+    - host: freedomain.shopnoltd.dpdns.org
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: freedomain-service
+                port:
+                  number: 80
+
     - host: "*.shopnoltd.dpdns.org"
       http:
         paths:
