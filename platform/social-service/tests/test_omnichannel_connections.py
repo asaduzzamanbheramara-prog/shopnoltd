@@ -1,5 +1,5 @@
-import pytes
-from pydantic import ValidationErro
+import pytest
+from pydantic import ValidationError
 
 from app.api.omnichannel import ConnectionIn
 
