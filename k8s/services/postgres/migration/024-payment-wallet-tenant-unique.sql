@@ -3,7 +3,7 @@
 -- migration hook applies this file after the existing 023 model migrations.
 -- This script is idempotent and never rewrites wallet rows.
 
-\\connect payments
+\connect payments
 
 BEGIN;
 
