@@ -10,6 +10,37 @@ on:
       - 'services/**'
       - '.github/workflows/self-hosted-k3s-gitops.yml'
   workflow_dispatch:
+    inputs:
+      perform_gitops_sync:
+        description: "Run full ArgoCD reconciliation; may change replicas and PVC specs, so review desired state first"
+        required: false
+        type: boolean
+        default: false
+      enable_argocd_auto_sync:
+        description: "Re-enable continuous ArgoCD auto-sync after a successful manual sync"
+        required: false
+        type: boolean
+        default: false
+      reconcile_kobo_database:
+        description: "Reconcile Kobo database ownership; preserve existing role passwords and secrets"
+        required: false
+        type: boolean
+        default: false
+      restart_kobo_workloads:
+        description: "Restart Kobo web, worker and beat after an approved maintenance change"
+        required: false
+        type: boolean
+        default: false
+      run_kobo_migrations:
+        description: "Run the Kobo Django migration Job after backup verification"
+        required: false
+        type: boolean
+        default: false
+      recreate_pending_pvcs:
+        description: "Recreate only the listed Pending PVCs after backup verification"
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -33,11 +64,16 @@ env:
 
 jobs:
   deploy-and-verify:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.perform_gitops_sync == true }}
     runs-on: [self-hosted, linux]
     timeout-minutes: 30
     env:
       GHCR_USERNAME: ${{ github.actor }}
       GHCR_TOKEN: ${{ github.token }}
+      RECONCILE_KOBO_DATABASE: ${{ inputs.reconcile_kobo_database || 'false' }}
+      RESTART_KOBO_WORKLOADS: ${{ inputs.restart_kobo_workloads || 'false' }}
+      RUN_KOBO_MIGRATIONS: ${{ inputs.run_kobo_migrations || 'false' }}
+      ENABLE_ARGOCD_AUTO_SYNC: ${{ inputs.enable_argocd_auto_sync || 'false' }}
     steps:
       - name: Checkout trusted main revision
         uses: actions/checkout@v4
@@ -774,33 +810,62 @@ jobs:
           kubectl -n shopno-data exec deployment/postgres -- env PGPASSWORD="$postgres_password" psql -U "$postgres_user" -d freedomain -v ON_ERROR_STOP=1 -c "DO \$\$ DECLARE r record; BEGIN FOR r IN SELECT tablename FROM pg_tables WHERE schemaname = 'public' LOOP EXECUTE format('ALTER TABLE public.%I OWNER TO freedomain', r.tablename); END LOOP; FOR r IN SELECT sequencename FROM pg_sequences WHERE schemaname = 'public' LOOP EXECUTE format('ALTER SEQUENCE public.%I OWNER TO freedomain', r.sequencename); END LOOP; END \$\$;"
           echo 'Free-domain PostgreSQL role, database, and existing object privileges reconciled.'
 
-      - name: Ensure Kobo and session-manager runtime database secrets
+      - name: Reconcile Kobo database only on request; ensure session-manager runtime secret
         shell: bash
         run: |
           set -euo pipefail
           postgres_password="$(kubectl -n shopno-data get secret postgres-secret -o jsonpath='{.data.POSTGRES_PASSWORD}' | base64 -d)"
           postgres_user="$(kubectl -n shopno-data get secret postgres-secret -o jsonpath='{.data.POSTGRES_USER}' | base64 -d)"
           postgres_db="$(kubectl -n shopno-data get secret postgres-secret -o jsonpath='{.data.POSTGRES_DB}' | base64 -d)"
-          kobo_password="$(kubectl -n shopno-apps get secret kobotoolbox-secret -o jsonpath='{.data.KOBOCAT_PASSWORD}' 2>/dev/null | base64 -d || true)"
-          if [ -z "$kobo_password" ]; then
-            kobo_password="$(openssl rand -hex 32)"
+          if [ "$RECONCILE_KOBO_DATABASE" = "true" ] || [ "$RUN_KOBO_MIGRATIONS" = "true" ]; then
+            if ! kubectl -n shopno-apps get secret kobotoolbox-secret >/dev/null 2>&1; then
+              echo 'ERROR: existing Kobo application secret is missing; refusing to synthesize credentials.'
+              exit 1
+            fi
+            if ! kubectl -n shopno-apps get secret kobotoolbox-database >/dev/null 2>&1; then
+              echo 'ERROR: existing Kobo database secret is missing; refusing to generate or rotate credentials.'
+              exit 1
+            fi
+            kobo_password="$(kubectl -n shopno-apps get secret kobotoolbox-database -o jsonpath='{.data.POSTGRES_PASSWORD}' | base64 -d)"
+            kpi_database_url="$(kubectl -n shopno-apps get secret kobotoolbox-database -o jsonpath='{.data.KPI_DATABASE_URL}' | base64 -d)"
+            kobocat_database_url="$(kubectl -n shopno-apps get secret kobotoolbox-database -o jsonpath='{.data.KC_DATABASE_URL}' | base64 -d)"
+            if [ -z "$kobo_password" ] || [ -z "$kpi_database_url" ] || [ -z "$kobocat_database_url" ]; then
+              echo 'ERROR: existing Kobo database secret is incomplete; refusing to synthesize credentials.'
+              exit 1
+            fi
           fi
-          kubectl -n shopno-data exec deployment/postgres -- env PGPASSWORD="$postgres_password" KOBO_PASSWORD="$kobo_password" PGUSER="$postgres_user" PGDB="$postgres_db" /bin/bash -lc 'set -euo pipefail; if psql -d "$PGDB" -Atqc "SELECT 1 FROM pg_roles WHERE rolname = '\''kobotoolbox'\''" | grep -q 1; then psql -v ON_ERROR_STOP=1 -d "$PGDB" -c "ALTER ROLE kobotoolbox LOGIN PASSWORD '\''$KOBO_PASSWORD'\''"; else psql -v ON_ERROR_STOP=1 -d "$PGDB" -c "CREATE ROLE kobotoolbox LOGIN PASSWORD '\''$KOBO_PASSWORD'\''"; fi; if ! psql -d "$PGDB" -Atqc "SELECT 1 FROM pg_database WHERE datname = '\''kpi'\''" | grep -q 1; then psql -v ON_ERROR_STOP=1 -d "$PGDB" -c "CREATE DATABASE kpi OWNER kobotoolbox"; fi; if ! psql -d "$PGDB" -Atqc "SELECT 1 FROM pg_database WHERE datname = '\''kobocat'\''" | grep -q 1; then psql -v ON_ERROR_STOP=1 -d "$PGDB" -c "CREATE DATABASE kobocat OWNER kobotoolbox"; fi'
-          kpi_database_url="postgresql://kobotoolbox:$kobo_password@postgres.shopno-data.svc.cluster.local:5432/kpi"
-          kobocat_database_url="postgis://kobotoolbox:$kobo_password@postgres.shopno-data.svc.cluster.local:5432/kobocat"
-          kubectl -n shopno-apps create secret generic kobotoolbox-database --from-literal=POSTGRES_HOST=postgres.shopno-data.svc.cluster.local --from-literal=POSTGRES_PORT=5432 --from-literal=POSTGRES_DB=kobocat --from-literal=POSTGRES_USER=kobotoolbox --from-literal=POSTGRES_PASSWORD="$kobo_password" --from-literal=DATABASE_URL="$kobocat_database_url" --from-literal=KPI_DATABASE_URL="$kpi_database_url" --from-literal=KC_DATABASE_URL="$kobocat_database_url" --dry-run=client -o yaml | kubectl -n shopno-apps apply -f -
+          if [ "$RECONCILE_KOBO_DATABASE" = "true" ]; then
+            echo 'Reconciling Kobo database ownership without changing existing role passwords or Secrets.'
+            kubectl -n shopno-data exec -i deployment/postgres -- env PGPASSWORD="$postgres_password" KOBO_PASSWORD="$kobo_password" PGUSER="$postgres_user" PGDB="$postgres_db" /bin/bash -s <<'REMOTE'
+          set -euo pipefail
+          role_exists="$(psql -d "$PGDB" -Atqc "SELECT 1 FROM pg_roles WHERE rolname = 'kobotoolbox'")"
+          if [ "$role_exists" = "1" ]; then
+            echo 'Existing kobotoolbox role found; preserving its current password.'
+          else
+            psql -v ON_ERROR_STOP=1 -v kobo_password="$KOBO_PASSWORD" -d "$PGDB" -c "CREATE ROLE kobotoolbox LOGIN PASSWORD :'kobo_password'"
+          fi
+          if ! psql -d "$PGDB" -Atqc "SELECT 1 FROM pg_database WHERE datname = 'kpi'" | grep -q 1; then
+            psql -v ON_ERROR_STOP=1 -d "$PGDB" -c "CREATE DATABASE kpi OWNER kobotoolbox"
+          fi
+          if ! psql -d "$PGDB" -Atqc "SELECT 1 FROM pg_database WHERE datname = 'kobocat'" | grep -q 1; then
+            psql -v ON_ERROR_STOP=1 -d "$PGDB" -c "CREATE DATABASE kobocat OWNER kobotoolbox"
+          fi
+          psql -v ON_ERROR_STOP=1 -d postgres -c "ALTER DATABASE kobocat OWNER TO kobotoolbox"
+          psql -v ON_ERROR_STOP=1 -d kobocat -c "CREATE EXTENSION IF NOT EXISTS postgis"
+          psql -v ON_ERROR_STOP=1 -d kobocat -c "ALTER SCHEMA public OWNER TO kobotoolbox; GRANT USAGE, CREATE ON SCHEMA public TO kobotoolbox"
+          REMOTE
+          else
+            echo 'Kobo database reconciliation skipped; use workflow_dispatch only after the required backup and review.'
+          fi
           encryption_key="$(kubectl -n shopno-tools get secret session-manager-secrets -o jsonpath='{.data.ENCRYPTION_KEY}' | base64 -d)"
           database_url="postgresql://${postgres_user}:${postgres_password}@postgres.shopno-data.svc.cluster.local:5432/session_manager"
           kubectl -n shopno-data exec deployment/postgres -- env PGPASSWORD="$postgres_password" PGUSER="$postgres_user" PGDB="$postgres_db" /bin/bash -lc 'if ! psql -d "$PGDB" -Atqc "SELECT 1 FROM pg_database WHERE datname = '\''session_manager'\''" | grep -q 1; then psql -v ON_ERROR_STOP=1 -d "$PGDB" -c "CREATE DATABASE session_manager OWNER \"$PGUSER\""; fi'
           kubectl -n shopno-tools create secret generic session-manager-secrets --from-literal=DATABASE_URL="$database_url" --from-literal=ENCRYPTION_KEY="$encryption_key" --dry-run=client -o yaml | kubectl -n shopno-tools apply -f -
-          echo 'Enforcing Kobo database ownership, PostGIS extension, and schema privileges.'
-          kubectl -n shopno-data exec deployment/postgres -- psql -U postgres -d postgres -v ON_ERROR_STOP=1 -c "ALTER DATABASE kobocat OWNER TO kobotoolbox;"
-          kubectl -n shopno-data exec deployment/postgres -- psql -U postgres -d kobocat -v ON_ERROR_STOP=1 -c "CREATE EXTENSION IF NOT EXISTS postgis;"
-          kubectl -n shopno-data exec deployment/postgres -- psql -U postgres -d kobocat -v ON_ERROR_STOP=1 -c "ALTER SCHEMA public OWNER TO kobotoolbox; GRANT USAGE,CREATE ON SCHEMA public TO kobotoolbox;"
-          echo 'Restarting Kobo web, worker, and beat workloads so they consume the reconciled database credentials.'
-          for deployment in kobotoolbox kobotoolbox-beat kobotoolbox-worker; do
-            kubectl -n shopno-apps rollout restart deployment/"$deployment"
-          done
+          if [ "$RESTART_KOBO_WORKLOADS" = "true" ]; then
+            echo 'Restarting Kobo workloads by explicit workflow_dispatch request.'
+            for deployment in kobotoolbox kobotoolbox-beat kobotoolbox-worker; do
+              kubectl -n shopno-apps rollout restart deployment/"$deployment"
+            done
           rollout_status_with_diagnostics() {
             local deployment="$1"
             # Kobo's image currently synchronizes Python dependencies during startup.
@@ -826,10 +891,14 @@ jobs:
             done < <(kubectl -n shopno-apps get pods -o name || true)
             return 1
           }
-          rollout_status_with_diagnostics kobotoolbox
-          rollout_status_with_diagnostics kobotoolbox-worker
-          rollout_status_with_diagnostics kobotoolbox-beat
-          echo 'Applying Kobo django_celery_beat migrations using a one-off Job (the worker Deployment is intentionally scaled to zero).'
+            rollout_status_with_diagnostics kobotoolbox
+            rollout_status_with_diagnostics kobotoolbox-worker
+            rollout_status_with_diagnostics kobotoolbox-beat
+          else
+            echo 'Kobo workload restarts skipped; ArgoCD handles normal deployment revisions.'
+          fi
+          if [ "$RUN_KOBO_MIGRATIONS" = "true" ]; then
+            echo 'Applying Kobo django_celery_beat migrations by explicit workflow_dispatch request.'
           worker_json="$(kubectl --request-timeout=20s -n shopno-apps get deployment kobotoolbox-worker -o json)"
           worker_container="$(jq -c '.spec.template.spec.containers[] | select(.name == "worker")' <<<"$worker_json")"
           worker_image="$(jq -r '.image // ""' <<<"$worker_container")"
@@ -893,8 +962,12 @@ jobs:
           fi
           kubectl --request-timeout=20s -n shopno-apps logs "job/$migration_job" --all-containers=true --tail=200
           echo 'Kobo django_celery_beat migration Job completed successfully.'
+          else
+            echo 'Kobo Django migration skipped; use workflow_dispatch only after backup verification.'
+          fi
 
       - name: Recreate only unbound disabled-service PVCs after storage migration
+        if: ${{ inputs.recreate_pending_pvcs == true }}
         shell: bash
         run: |
           set -euo pipefail
@@ -1170,16 +1243,20 @@ jobs:
             exit 1
           fi
           echo "n8n rollout verified: ready replicas=$ready/$desired."
-      - name: Restore Argo CD automated sync
+      - name: Restore Argo CD automated sync only when explicitly requested
         if: always()
         shell: bash
         run: |
           set -euo pipefail
-          if ! kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o jsonpath='{.spec.syncPolicy.automated}' 2>/dev/null | grep -q .; then
-            echo 'Restoring Argo CD automated sync policy from source.'
-            kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" patch application "$ARGOCD_APP" --type=merge -p='{"spec":{"syncPolicy":{"automated":{"prune":true,"selfHeal":true}}}}'
+          if [ "$ENABLE_ARGOCD_AUTO_SYNC" = "true" ]; then
+            if ! kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o jsonpath='{.spec.syncPolicy.automated}' 2>/dev/null | grep -q .; then
+              echo 'Re-enabling Argo CD automated sync by explicit workflow_dispatch request.'
+              kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" patch application "$ARGOCD_APP" --type=merge -p='{"spec":{"syncPolicy":{"automated":{"prune":true,"selfHeal":true}}}}'
+            else
+              echo 'Argo CD automated sync is already enabled.'
+            fi
           else
-            echo 'Argo CD automated sync is already enabled.'
+            echo 'Leaving Argo CD automated sync disabled; future deployments require manual workflow_dispatch.'
           fi
 
       - name: Verify Cloudflare tunnel
