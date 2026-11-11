@@ -1,0 +1,128 @@
+name: Payment Alembic migration validation
+
+on:
+  pull_request:
+    paths:
+      - "platform/payment-service/migrations/**"
+      - "platform/payment-service/requirements.txt"
+      - "platform/payment-service/app/models/**"
+      - ".github/workflows/payment-migration-validation.yml"
+      - "k8s/services/postgres/migration/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-payment-migrations:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ci-only-password
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install payment-service migration dependencies
+        run: |
+          python -m pip install --disable-pip-version-check -r platform/payment-service/requirements.txt
+
+      - name: Locate disposable PostgreSQL service container and create test databases
+        id: postgres
+        run: |
+          container_id="$(docker ps --filter 'ancestor=postgres:16' --format '{{.ID}}' | head -n 1)"
+          test -n "$container_id"
+          echo "container_id=$container_id" >> "$GITHUB_OUTPUT"
+          docker exec "$container_id" psql -U postgres -d postgres -v ON_ERROR_STOP=1 -c "CREATE DATABASE payment_migration_ci"
+          docker exec "$container_id" psql -U postgres -d postgres -v ON_ERROR_STOP=1 -c "CREATE DATABASE payments"
+
+      - name: Apply every payment Alembic migration to a fresh database
+        working-directory: platform/payment-service
+        env:
+          DATABASE_URL: postgresql+asyncpg://postgres:ci-only-password@127.0.0.1:5432/payment_migration_ci
+        run: alembic upgrade head
+
+      - name: Verify fresh-install payment schema
+        env:
+          PG_CONTAINER: ${{ steps.postgres.outputs.container_id }}
+        run: |
+          version="$(docker exec "$PG_CONTAINER" psql -U postgres -d payment_migration_ci -Atqc "SELECT version_num FROM alembic_version")"
+          test "$version" = "0007_wallet_tenant_user_currency"
+
+          old_constraint="$(docker exec "$PG_CONTAINER" psql -U postgres -d payment_migration_ci -Atqc "SELECT count(*) FROM pg_constraint WHERE conname='ix_wallet_user_currency' AND contype='u'")"
+          test "$old_constraint" = "0"
+
+          tenant_wallet_index="$(docker exec "$PG_CONTAINER" psql -U postgres -d payment_migration_ci -Atqc "SELECT indexdef FROM pg_indexes WHERE schemaname='public' AND indexname='ix_wallet_tenant_user_currency'")"
+          test -n "$tenant_wallet_index"
+          grep -q "CREATE UNIQUE INDEX" <<<"$tenant_wallet_index"
+          grep -q "(tenant_id, user_id, currency)" <<<"$tenant_wallet_index"
+
+          user_nullable="$(docker exec "$PG_CONTAINER" psql -U postgres -d payment_migration_ci -Atqc "SELECT is_nullable FROM information_schema.columns WHERE table_schema='public' AND table_name='transactions' AND column_name='user_id'")"
+          test "$user_nullable" = "NO"
+
+      - name: Build an existing 0006 database with the wallet index missing
+        working-directory: platform/payment-service
+        env:
+          DATABASE_URL: postgresql+asyncpg://postgres:ci-only-password@127.0.0.1:5432/payments
+          PG_CONTAINER: ${{ steps.postgres.outputs.container_id }}
+        run: |
+          alembic upgrade 0006_payment_accounts
+          docker exec "$PG_CONTAINER" psql -U postgres -d payments -v ON_ERROR_STOP=1 -c "DROP INDEX IF EXISTS public.ix_wallet_tenant_user_currency"
+
+      - name: Apply the canonical forward SQL repair to the existing 0006 database twice
+        env:
+          PG_CONTAINER: ${{ steps.postgres.outputs.container_id }}
+        run: |
+          for attempt in 1 2; do
+            docker exec -i "$PG_CONTAINER" psql -U postgres -d postgres -v ON_ERROR_STOP=1 < k8s/services/postgres/migration/024-payment-wallet-tenant-unique.sql
+          done
+
+      - name: Verify forward repair from 0006
+        env:
+          PG_CONTAINER: ${{ steps.postgres.outputs.container_id }}
+        run: |
+          version="$(docker exec "$PG_CONTAINER" psql -U postgres -d payments -Atqc "SELECT version_num FROM alembic_version")"
+          test "$version" = "0007_wallet_tenant_user_currency"
+
+          tenant_wallet_index="$(docker exec "$PG_CONTAINER" psql -U postgres -d payments -Atqc "SELECT indexdef FROM pg_indexes WHERE schemaname='public' AND indexname='ix_wallet_tenant_user_currency'")"
+          test -n "$tenant_wallet_index"
+          grep -q "CREATE UNIQUE INDEX" <<<"$tenant_wallet_index"
+          grep -q "(tenant_id, user_id, currency)" <<<"$tenant_wallet_index"
+
+      - name: Downgrade through wallet ownership migration
+        working-directory: platform/payment-service
+        env:
+          DATABASE_URL: postgresql+asyncpg://postgres:ci-only-password@127.0.0.1:5432/payment_migration_ci
+        run: alembic downgrade 0003_webhook_events
+
+      - name: Verify downgrade restores original wallet constraint
+        env:
+          PG_CONTAINER: ${{ steps.postgres.outputs.container_id }}
+        run: |
+          old_constraint="$(docker exec "$PG_CONTAINER" psql -U postgres -d payment_migration_ci -Atqc "SELECT count(*) FROM pg_constraint WHERE conname='ix_wallet_user_currency' AND contype='u'")"
+          test "$old_constraint" = "1"
+
+          tenant_wallet_index="$(docker exec "$PG_CONTAINER" psql -U postgres -d payment_migration_ci -Atqc "SELECT count(*) FROM pg_indexes WHERE schemaname='public' AND indexname='ix_wallet_tenant_user_currency'")"
+          test "$tenant_wallet_index" = "0"
+
+      - name: Re-apply all payment migrations
+        working-directory: platform/payment-service
+        env:
+          DATABASE_URL: postgresql+asyncpg://postgres:ci-only-password@127.0.0.1:5432/payment_migration_ci
+        run: alembic upgrade head

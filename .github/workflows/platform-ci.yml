@@ -139,7 +139,7 @@ jobs:
               if "revision" in values:
                   revisions[values["revision"]] = values.get("down_revision")
 
-          required = {"0001", "0002_admin_audit_log", "0003_webhook_events", "0004_transaction_ownership", "0005_direct_payments", "0006_payment_accounts"}
+          required = {"0001", "0002_admin_audit_log", "0003_webhook_events", "0004_transaction_ownership", "0005_direct_payments", "0006_payment_accounts", "0007_wallet_tenant_user_currency"}
           missing = required - revisions.keys()
           if missing:
               raise SystemExit(f"payment migration chain missing: {sorted(missing)}")
@@ -156,14 +156,17 @@ jobs:
           if revisions["0006_payment_accounts"] != "0005_direct_payments":
               raise SystemExit("0006_payment_accounts must revise 0005_direct_payments")
 
+          if revisions["0007_wallet_tenant_user_currency"] != "0006_payment_accounts":
+              raise SystemExit("0007_wallet_tenant_user_currency must revise 0006_payment_accounts")
+
           children = {rev: 0 for rev in revisions}
           for down in revisions.values():
               if isinstance(down, str) and down in children:
                   children[down] += 1
           heads = sorted(rev for rev, count in children.items() if count == 0)
-          if heads != ["0006_payment_accounts"]:
-              raise SystemExit(f"expected one Alembic head at 0006_payment_accounts, got {heads}")
-          print("payment migration chain OK: 0001 -> 0002_admin_audit_log -> 0003_webhook_events -> 0004_transaction_ownership -> 0005_direct_payments -> 0006_payment_accounts")
+          if heads != ["0007_wallet_tenant_user_currency"]:
+              raise SystemExit(f"expected one Alembic head at 0007_wallet_tenant_user_currency, got {heads}")
+          print("payment migration chain OK: 0001 -> 0002_admin_audit_log -> 0003_webhook_events -> 0004_transaction_ownership -> 0005_direct_payments -> 0006_payment_accounts -> 0007_wallet_tenant_user_currency")
           PY
 
   api-sql-guard-tests:

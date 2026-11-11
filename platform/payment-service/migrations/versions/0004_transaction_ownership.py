@@ -18,6 +18,10 @@ def upgrade():
     op.execute(sa.text("DO $$ BEGIN IF EXISTS (SELECT 1 FROM transactions WHERE user_id IS NULL) THEN RAISE EXCEPTION 'transactions.user_id could not be backfilled'; END IF; END $$;"))
     op.execute(sa.text("ALTER TABLE transactions ALTER COLUMN user_id SET NOT NULL"))
     op.execute(sa.text("CREATE INDEX IF NOT EXISTS ix_transactions_user_id ON transactions (user_id)"))
+    # The initial migration creates this name as a UNIQUE CONSTRAINT, whose
+    # backing index cannot be dropped directly. Also remove a legacy plain
+    # index with the same name if a previous bootstrap created one.
+    op.execute(sa.text("ALTER TABLE wallets DROP CONSTRAINT IF EXISTS ix_wallet_user_currency"))
     op.execute(sa.text("DROP INDEX IF EXISTS ix_wallet_user_currency"))
     op.execute(sa.text("CREATE UNIQUE INDEX IF NOT EXISTS ix_wallet_tenant_user_currency ON wallets (tenant_id, user_id, currency)"))
     op.execute(sa.text("CREATE INDEX IF NOT EXISTS ix_tx_external_method ON transactions (external_id, method)"))
@@ -26,6 +30,9 @@ def upgrade():
 def downgrade():
     op.execute(sa.text("DROP INDEX IF EXISTS ix_tx_external_method"))
     op.execute(sa.text("DROP INDEX IF EXISTS ix_wallet_tenant_user_currency"))
-    op.execute(sa.text("CREATE UNIQUE INDEX IF NOT EXISTS ix_wallet_user_currency ON wallets (user_id, currency)"))
+    # Restore the original schema object type so a downgrade returns to 0001.
+    op.execute(sa.text("ALTER TABLE wallets DROP CONSTRAINT IF EXISTS ix_wallet_user_currency"))
+    op.execute(sa.text("DROP INDEX IF EXISTS ix_wallet_user_currency"))
+    op.execute(sa.text("ALTER TABLE wallets ADD CONSTRAINT ix_wallet_user_currency UNIQUE (user_id, currency)"))
     op.execute(sa.text("DROP INDEX IF EXISTS ix_transactions_user_id"))
     op.execute(sa.text("ALTER TABLE transactions DROP COLUMN IF EXISTS user_id"))
