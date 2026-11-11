@@ -13,7 +13,6 @@ resources:
 - ingress.yaml
 - networkpolicy.yaml
 - poddisruptionbudget.yaml
-- servicemonitor.yaml
 - workflow-import-job.yaml
 
 configMapGenerator:

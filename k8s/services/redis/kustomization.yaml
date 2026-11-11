@@ -9,10 +9,8 @@ resources:
 - pvc.yaml
 - deployment.yaml
 - service.yaml
-- ingress.yaml
 - networkpolicy.yaml
 - poddisruptionbudget.yaml
-- servicemonitor.yaml
 
 labels:
 - includeSelectors: true
