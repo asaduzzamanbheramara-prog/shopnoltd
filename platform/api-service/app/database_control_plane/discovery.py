@@ -160,10 +160,15 @@ async def _kubernetes_secret(namespace: str, secret: str, key: str) -> str:
 
 def _mongo_database_names(client: MongoClient) -> list[str]:
     """Include the URI's configured database even before its first collection exists."""
-    names = {
-        name for name in client.list_database_names()
-        if name not in {"admin", "config", "local"}
-    }
+    try:
+        names = {
+            name for name in client.list_database_names()
+            if name not in {"admin", "config", "local"}
+        }
+    except PyMongoError:
+        # A scoped application user may be allowed to inspect its URI database
+        # without the cluster-wide listDatabases privilege.
+        names = set()
     try:
         configured = client.get_default_database()
     except Exception:
