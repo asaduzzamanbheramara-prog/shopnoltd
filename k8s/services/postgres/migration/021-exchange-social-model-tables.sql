@@ -2,7 +2,7 @@
 -- The migration hook runs before application deployments. It must be safe to
 -- execute repeatedly and must never drop or rewrite existing application rows.
 
-\\connect payments
+\connect payments
 
 BEGIN;
 
@@ -43,7 +43,7 @@ GRANT SELECT, INSERT ON TABLE public.conversions TO shopno;
 
 COMMIT;
 
-\\connect social
+\connect social
 
 BEGIN;
 
