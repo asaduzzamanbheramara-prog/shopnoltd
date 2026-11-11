@@ -268,7 +268,7 @@ jobs:
         working-directory: platform/social-service
     env:
       DATABASE_URL: postgresql+asyncpg://test:test@127.0.0.1:1/test
-      PYTHONPATH: .
+      PYTHONPATH: .:../../shared/libraries/python
       OMNICHANNEL_EXECUTOR_ENABLED: "false"
     steps:
       - uses: actions/checkout@v6
@@ -279,8 +279,15 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt pytest
-      - name: Test provider request contracts and fail-closed approval
-        run: pytest -q tests/test_omnichannel_executor.py
+      - name: Test OAuth, connection safety, scheduling, and provider contracts
+        run: >-
+          pytest -q
+          tests/test_omnichannel_executor.py
+          tests/test_omnichannel_oauth.py
+          tests/test_omnichannel_connections.py
+          tests/test_social_automation_models.py
+          tests/test_social_capabilities.py
+          tests/test_social_scheduler.py
 
   android-cloud-controller-tests:
     name: Android Cloud controller session lifecycle tests

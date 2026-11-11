@@ -2,10 +2,10 @@ import base64
 from email import message_from_bytes
 
 import pytest
-
 from app.workers.omnichannel_executor import (
     _approval_is_valid,
     _provider_request,
+    _rate_limit_delay_seconds,
     _response_disposition,
 )
 
@@ -124,3 +124,63 @@ def test_unsupported_or_invalid_requests_fail_closed(platform, action, payload):
 )
 def test_provider_response_disposition_is_fail_closed(status, expected):
     assert _response_disposition(status) == expected
+
+
+def test_action_names_are_normalized_before_capability_lookup():
+    from app.api.omnichannel import _normalize_action
+    from fastapi import HTTPException
+
+    assert _normalize_action(" Create_Post ") == "create_post"
+    with pytest.raises(HTTPException) as exc:
+        _normalize_action("   ")
+    assert exc.value.status_code == 400
+
+
+def test_post_approval_is_bound_to_exact_content_hash():
+    import hashlib
+
+    text = "approved post"
+    digest = hashlib.sha256(text.encode("utf-8")).hexdigest()
+    approved = {
+        "action": "create_post",
+        "request_payload": {
+            "text": text,
+            "_requested_by": "user-1",
+            "approval": {
+                "approved": True,
+                "approved_by": "user-1",
+                "approved_at": "2026-11-09T12:00:00+00:00",
+                "content_sha256": digest,
+            },
+        },
+    }
+    assert _approval_is_valid(approved)
+    approved["request_payload"]["text"] = "tampered post"
+    assert not _approval_is_valid(approved)
+
+
+def test_approved_mail_action_does_not_require_post_content_hash():
+    action = {
+        "action": "send_message",
+        "request_payload": {
+            "text": "mail body",
+            "_requested_by": "user-1",
+            "approval": {
+                "approved": True,
+                "approved_by": "user-1",
+                "approved_at": "2026-11-09T12:00:00+00:00",
+            },
+        },
+    }
+    assert _approval_is_valid(action)
+
+
+def test_rate_limit_retries_use_bounded_backoff_and_retry_after():
+    assert _rate_limit_delay_seconds(None, 1) == 15
+    assert _rate_limit_delay_seconds(None, 2) == 30
+    assert _rate_limit_delay_seconds("120", 1) == 120
+    assert _rate_limit_delay_seconds("0", 1) == 1
+    assert _rate_limit_delay_seconds("invalid", 3) == 60
+    assert _rate_limit_delay_seconds("99999", 1) == 900
+    assert _rate_limit_delay_seconds("NaN", 2) == 30
+    assert _rate_limit_delay_seconds("Infinity", 1) == 15

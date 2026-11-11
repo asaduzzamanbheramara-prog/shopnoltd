@@ -231,3 +231,6 @@ shopnoltd-consolidation-roadmap.md
 /paypal.py
 secret.env
 tests/browser-role/reports/
+
+# Keep ordered PostgreSQL migration source files version-controlled.
+!k8s/services/postgres/migration/*.sql
