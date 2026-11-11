@@ -8,6 +8,7 @@ on:
       - "platform/payment-service/app/models/**"
       - ".github/workflows/payment-migration-validation.yml"
       - "k8s/services/postgres/migration/**"
+  workflow_dispatch:
 
 permissions:
   contents: read
