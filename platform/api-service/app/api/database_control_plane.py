@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.core.security import verify_token
-from app.database_control_plane.discovery import reconcile_postgres
+from app.database_control_plane.discovery import discover_mongodb, reconcile_postgres
 from app.database_control_plane.registry import catalog
 
 router = APIRouter(prefix="/admin/database", tags=["admin-database-control-plane"])
@@ -36,8 +36,17 @@ async def database_catalog(_: dict = Depends(require_admin)):
 
 @router.get("/reconcile")
 async def database_reconcile(_: dict = Depends(require_admin)):
-    """Reconcile declared capabilities against the live PostgreSQL server."""
+    """Reconcile declared capabilities against live PostgreSQL and MongoDB stores."""
     try:
         return await reconcile_postgres()
     except Exception as exc:
-        raise HTTPException(503, "live PostgreSQL discovery unavailable") from exc
+        raise HTTPException(503, "live datastore discovery unavailable") from exc
+
+
+@router.get("/mongodb-catalog")
+async def mongodb_catalog(_: dict = Depends(require_admin)):
+    """Return read-only MongoDB database and collection metadata."""
+    try:
+        return {"read_only": True, **await discover_mongodb()}
+    except Exception as exc:
+        raise HTTPException(503, "live MongoDB discovery unavailable") from exc

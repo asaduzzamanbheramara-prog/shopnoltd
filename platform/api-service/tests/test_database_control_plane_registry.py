@@ -1,4 +1,6 @@
 from app.database_control_plane.contract import DatastoreKind
+from app.database_control_plane.access import resolve_table_capability
+from app.database_control_plane.discovery import _mongo_database_names
 from app.database_control_plane.registry import DATABASE_CAPABILITIES, catalog
 
 
@@ -22,15 +24,17 @@ def test_catalog_only_advertises_writable_tables_with_safe_contract():
 
 def test_catalog_is_complete_for_declared_control_plane_domains():
     services = {item["service"] for item in catalog()}
-    assert {"payment-service", "billing-engine", "exchange-service", "social/blog", "ai-platform", "kobotoolbox"} <= services
+    assert {"api-service", "payment-service", "exchange-service", "social-service", "ai-platform", "kobotoolbox"} <= services
 
 
 def test_mongodb_capability_is_read_only_and_typed():
     item = next(item for item in catalog() if item["service"] == "kobotoolbox")
+    assert item["database"] == "formhub"
     assert item["kind"] == DatastoreKind.MONGODB.value
     collection = next(table for table in item["tables"] if table["name"] == "instances")
-    assert collection["readable"] is True
+    assert collection["readable"] is False
     assert collection["writable"] is False
+    assert collection["exportable"] is False
     assert collection["protected_reason"]
 
 
@@ -50,6 +54,122 @@ def test_capability_cannot_cross_declared_schema_boundary():
     declared = resolve_table_capability("social", "blog_posts", "public")
     undeclared = resolve_table_capability("social", "blog_posts", "other_schema")
 
-    assert declared["writable"] is True
+    assert declared["status"] == "declared"
+    assert declared["readable"] is False
+    assert declared["writable"] is False
     assert undeclared["writable"] is False
+    assert undeclared["readable"] is False
     assert undeclared["status"] == "discovered_read_only"
+
+
+
+def test_postgres_kpi_and_mongodb_formhub_are_distinct_datastores():
+    postgres_kpi = resolve_table_capability("kpi", "instances", "public")
+    mongo_instances = resolve_table_capability(
+        "formhub", "instances", kind=DatastoreKind.MONGODB
+    )
+
+    assert postgres_kpi["status"] == "discovered_read_only"
+    assert postgres_kpi["readable"] is False
+    assert postgres_kpi["writable"] is False
+    assert postgres_kpi["exportable"] is False
+    assert mongo_instances["status"] == "declared"
+    assert mongo_instances["readable"] is False
+    assert mongo_instances["writable"] is False
+
+
+def test_registry_declares_live_postgres_stores_without_granting_generic_writes():
+    declared = {
+        item.database
+        for item in DATABASE_CAPABILITIES
+        if item.kind == DatastoreKind.POSTGRESQL
+    }
+    expected = {
+        "audit", "chatwoot_production", "freedomain", "keycloak",
+        "kobocat", "kpi", "litellm", "notifications",
+        "session_manager", "training",
+    }
+    assert expected <= declared
+
+
+def test_mongo_inventory_includes_configured_database_before_first_collection():
+    class FakeDatabase:
+        name = "formhub"
+
+    class FakeMongoClient:
+        def list_database_names(self):
+            return ["admin", "config", "local"]
+
+        def get_default_database(self):
+            return FakeDatabase()
+
+    assert _mongo_database_names(FakeMongoClient()) == ["formhub"]
+
+
+
+def test_unknown_live_tables_are_metadata_only_by_default():
+    capability = resolve_table_capability("keycloak", "user_entity", "public")
+    assert capability["status"] == "discovered_read_only"
+    assert capability["readable"] is False
+    assert capability["writable"] is False
+    assert capability["exportable"] is False
+    assert capability["reportable"] is False
+
+
+def test_registry_includes_expected_tables_for_empty_application_databases():
+    expected = {
+        ("auth", "sessions"),
+        ("live", "streams"),
+        ("meet", "rooms"),
+        ("messaging", "messages"),
+        ("session_manager", "profiles"),
+        ("notifications", "notifications"),
+        ("audit", "audit_logs"),
+        ("training", "courses"),
+        ("router", "tenant_routes"),
+        ("domains", "registrars"),
+        ("storage", "professional_profiles"),
+        ("mobile", "app_releases"),
+        ("analytics", "events"),
+        ("reports", "reports"),
+        ("worker", "tasks"),
+        ("foundation", "beneficiaries"),
+        ("interior", "interior_rooms"),
+        ("licenses", "licenses"),
+        ("events", "event_tickets"),
+        ("ai", "ai_conversations"),
+        ("oauth", "account_provisioning_jobs"),
+        ("mail", "mail_messages"),
+        ("social", "blog_posts"),
+        ("social", "social_automation_schedules"),
+        ("social", "social_post_drafts"),
+        ("payments", "rates"),
+    }
+    declared = {
+        (database.database, table.name)
+        for database in DATABASE_CAPABILITIES
+        for table in database.tables
+    }
+    assert expected <= declared
+
+
+def test_no_generic_table_write_or_backup_restore_is_advertised():
+    assert all(not table.writable for db in DATABASE_CAPABILITIES for table in db.tables)
+    assert all(not db.backup and not db.restore for db in DATABASE_CAPABILITIES)
+
+
+
+def test_mongo_inventory_falls_back_to_configured_database_without_list_privilege():
+    from pymongo.errors import PyMongoError
+
+    class FakeDatabase:
+        name = "formhub"
+
+    class FakeMongoClient:
+        def list_database_names(self):
+            raise PyMongoError("listDatabases not authorized")
+
+        def get_default_database(self):
+            return FakeDatabase()
+
+    assert _mongo_database_names(FakeMongoClient()) == ["formhub"]
