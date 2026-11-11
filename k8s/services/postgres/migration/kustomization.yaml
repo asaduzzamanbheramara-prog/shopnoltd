@@ -19,6 +19,7 @@ configMapGenerator:
   - 018-ad-network.sql
   - 019-ad-network-funding.sql
   - 020-payment-runtime-permissions.sql
+  - 021-exchange-social-model-tables.sql
   options:
     disableNameSuffixHash: true
 
