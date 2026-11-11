@@ -55,6 +55,8 @@ function coerce(column, value) {
 export default function DatabaseControlPlaneFull() {
   const [declared, setDeclared] = useState([])
   const [live, setLive] = useState([])
+  const [mongoDatabases, setMongoDatabases] = useState([])
+  const [mongoError, setMongoError] = useState('')
   const [database, setDatabase] = useState('')
   const [schema, setSchema] = useState('public')
   const [table, setTable] = useState('')
@@ -71,12 +73,15 @@ export default function DatabaseControlPlaneFull() {
   async function refresh() {
     setBusy(true); setError('')
     try {
-      const [catalog, inventory] = await Promise.all([
+      const [catalog, inventory, mongoInventory] = await Promise.all([
         api('/api/v1/admin/database/catalog'),
         api('/api/v1/admin/database/live-catalog'),
+        api('/api/v1/admin/database/mongodb-catalog').catch(e => ({ databases: [], error: e.message })),
       ])
       setDeclared(catalog?.databases || [])
       setLive(inventory?.databases || [])
+      setMongoDatabases(mongoInventory?.databases || [])
+      setMongoError(mongoInventory?.error || '')
       const first = inventory?.databases?.find(x => x.classification === 'application')?.database || catalog?.databases?.[0]?.database || ''
       setDatabase(current => current || first)
     } catch (e) { setError(e.message) } finally { setBusy(false) }
@@ -176,9 +181,17 @@ export default function DatabaseControlPlaneFull() {
   }
 
   return <main style={styles.page}><div style={styles.wrap}>
-    <header style={styles.header}><div><div style={styles.title}><Database size={25}/><h1>Website Database Management</h1></div><p style={styles.muted}>Complete live database/table inventory with capability-gated management. Safe tables expose CRUD/import/export; identity, financial, security and ledger data uses validated service administration rather than unsafe generic mutation. No browser SQL.</p></div><button style={styles.button} onClick={refresh} disabled={busy}><RefreshCw size={15}/> Refresh</button></header>
+    <header style={styles.header}><div><div style={styles.title}><Database size={25}/><h1>Website Database Management</h1></div><p style={styles.muted}>Live PostgreSQL table and MongoDB collection inventory with capability-gated management. Safe PostgreSQL tables expose CRUD/import/export; identity, financial, security and ledger data stays service-owned. MongoDB discovery is read-only.</p></div><button style={styles.button} onClick={refresh} disabled={busy}><RefreshCw size={15}/> Refresh</button></header>
     {error && <div style={styles.error}>{error}</div>}{message && <div style={styles.message}>{message}<button onClick={() => setMessage('')} style={styles.icon}><X size={14}/></button></div>}
-    <section style={styles.metrics}><Metric icon={<Database/>} label="Live databases" value={appDatabases.length}/><Metric icon={<ShieldCheck/>} label="Declared services" value={declared.length}/><Metric icon={<ShieldCheck/>} label="Protected tables" value={live.reduce((n,d)=>n+(d.tables||[]).filter(t=>t.capability?.protected_reason).length,0)}/><Metric icon={<Database/>} label="Current database" value={database || '—'}/></section>
+    <section style={styles.metrics}><Metric icon={<Database/>} label="Live PostgreSQL DBs" value={appDatabases.length}/><Metric icon={<Database/>} label="MongoDB stores" value={mongoDatabases.length}/><Metric icon={<ShieldCheck/>} label="Declared services" value={declared.length}/><Metric icon={<ShieldCheck/>} label="Protected tables" value={live.reduce((n,d)=>n+(d.tables||[]).filter(t=>t.capability?.protected_reason).length,0)}/><Metric icon={<Database/>} label="Current database" value={database || '—'}/></section>
+    {(mongoDatabases.length > 0 || mongoError) && <section style={styles.panel}>
+      <div style={styles.between}><div><h3>MongoDB collection inventory</h3><div style={styles.muted}>Read-only database and collection metadata. Document mutations are not exposed by this control plane.</div></div><span style={styles.badge}>Read-only</span></div>
+      {mongoError && <div style={styles.error}>MongoDB inventory unavailable: {mongoError}</div>}
+      {mongoDatabases.map(item => <div key={item.service + ':' + (item.database || 'unavailable')} style={{borderTop:'1px solid #27303b',paddingTop:10,marginTop:10}}>
+        <div style={styles.between}><div><strong>{item.database || item.service || 'MongoDB source'}</strong><div style={styles.muted}>{item.service || 'MongoDB'} · {item.declaration_status || 'status unknown'}</div></div><span style={styles.badge}>{item.reachable ? 'Reachable' : 'Not verified'}</span></div>
+        {item.reachable && item.collections?.length ? <div style={styles.capability}>{item.collections.map(collection => <span key={collection.name}>{collection.name} · estimated docs: {collection.estimated_documents ?? 'n/a'} · fields: {collection.fields?.length ?? 0} · indexes: {collection.indexes?.length ?? 0}</span>)}</div> : <p style={styles.muted}>{item.reachable ? 'Configured database has no collections yet.' : 'Collection inventory unavailable (' + (item.error_type || 'source not reachable') + ').'}</p>}
+      </div>)}
+    </section>}
     <section style={styles.toolbar}>
       <label>Database<select value={database} onChange={e=>{setDatabase(e.target.value);setTable('');setOffset(0)}}>{appDatabases.map(d=><option key={d.database} value={d.database}>{d.database}{d.declared_services?.length?' · '+d.declared_services.join(', '):''}</option>)}</select></label>
       <label>Schema<select value={schema} onChange={e=>{setSchema(e.target.value);setTable('');setOffset(0)}}>{schemas.map(s=><option key={s} value={s}>{s}</option>)}</select></label>
