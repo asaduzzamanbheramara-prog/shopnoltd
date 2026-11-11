@@ -1,0 +1,30 @@
+name: rekey-backup
+on: workflow_dispatch
+permissions:
+  contents: read
+jobs:
+  rekey:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: database-backups
+      - name: Decrypt with old key, re-encrypt with new
+        env:
+          OLD: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
+          NEW: ${{ secrets.BACKUP_ENCRYPTION_KEY_NEW }}
+        run: |
+          set -euo pipefail
+          umask 077
+          for f in latest.kubernetes-secrets.json.enc latest.dump.enc; do
+            openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 -pass env:OLD \
+              -in backup/$f -out /tmp/plain
+            openssl enc -aes-256-cbc -pbkdf2 -iter 600000 -salt -pass env:NEW \
+              -in /tmp/plain -out rekeyed-$f
+            shred -u /tmp/plain
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rekeyed-backups
+          path: rekeyed-*.enc
+          retention-days: 1
