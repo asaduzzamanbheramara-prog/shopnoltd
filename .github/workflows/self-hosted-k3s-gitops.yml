@@ -16,6 +16,11 @@ on:
         required: false
         type: boolean
         default: false
+      enable_argocd_auto_sync:
+        description: "Re-enable continuous ArgoCD auto-sync after a successful manual sync"
+        required: false
+        type: boolean
+        default: false
       reconcile_kobo_database:
         description: "Reconcile Kobo database ownership; preserve existing role passwords and secrets"
         required: false
@@ -68,6 +73,7 @@ jobs:
       RECONCILE_KOBO_DATABASE: ${{ inputs.reconcile_kobo_database || 'false' }}
       RESTART_KOBO_WORKLOADS: ${{ inputs.restart_kobo_workloads || 'false' }}
       RUN_KOBO_MIGRATIONS: ${{ inputs.run_kobo_migrations || 'false' }}
+      ENABLE_ARGOCD_AUTO_SYNC: ${{ inputs.enable_argocd_auto_sync || 'false' }}
     steps:
       - name: Checkout trusted main revision
         uses: actions/checkout@v4
@@ -1237,16 +1243,20 @@ jobs:
             exit 1
           fi
           echo "n8n rollout verified: ready replicas=$ready/$desired."
-      - name: Restore Argo CD automated sync
+      - name: Restore Argo CD automated sync only when explicitly requested
         if: always()
         shell: bash
         run: |
           set -euo pipefail
-          if ! kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o jsonpath='{.spec.syncPolicy.automated}' 2>/dev/null | grep -q .; then
-            echo 'Restoring Argo CD automated sync policy from source.'
-            kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" patch application "$ARGOCD_APP" --type=merge -p='{"spec":{"syncPolicy":{"automated":{"prune":true,"selfHeal":true}}}}'
+          if [ "$ENABLE_ARGOCD_AUTO_SYNC" = "true" ]; then
+            if ! kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" get application "$ARGOCD_APP" -o jsonpath='{.spec.syncPolicy.automated}' 2>/dev/null | grep -q .; then
+              echo 'Re-enabling Argo CD automated sync by explicit workflow_dispatch request.'
+              kubectl --request-timeout=30s -n "$ARGOCD_NAMESPACE" patch application "$ARGOCD_APP" --type=merge -p='{"spec":{"syncPolicy":{"automated":{"prune":true,"selfHeal":true}}}}'
+            else
+              echo 'Argo CD automated sync is already enabled.'
+            fi
           else
-            echo 'Argo CD automated sync is already enabled.'
+            echo 'Leaving Argo CD automated sync disabled; future deployments require manual workflow_dispatch.'
           fi
 
       - name: Verify Cloudflare tunnel
