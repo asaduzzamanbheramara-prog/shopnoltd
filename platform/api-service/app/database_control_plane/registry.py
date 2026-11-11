@@ -117,7 +117,7 @@ DATABASE_CAPABILITIES: tuple[DatabaseCapability, ...] = (
     ),
     DatabaseCapability(
         service="kobotoolbox",
-        database="kpi",
+        database="formhub",
         kind=DatastoreKind.MONGODB,
         tables=(
             _table("instances", protected="Kobo submission records are application-owned and must remain behind Kobo validation/audit flows"),
@@ -171,6 +171,30 @@ DATABASE_CAPABILITIES: tuple[DatabaseCapability, ...] = (
     DatabaseCapability(service="interior-service", database="interior", schemas=("public",), backup=True, restore=True),
     DatabaseCapability(service="analytics-service", database="analytics", schemas=("public",), backup=True, restore=True),
     DatabaseCapability(service="foundation-service", database="foundation", schemas=("public",), backup=True, restore=True),
+
+    # Live PostgreSQL stores confirmed from the current K3s workloads and catalog.
+    # These remain read-only until an owning-service table capability is explicitly
+    # declared; discovery still exposes every live table and its structural metadata.
+    DatabaseCapability(service="audit-service", database="audit", schemas=("public",),
+                       protected_reason="Security and audit history is service-owned."),
+    DatabaseCapability(service="chatwoot", database="chatwoot_production", schemas=("public",),
+                       protected_reason="Support conversations and customer data are Chatwoot-owned."),
+    DatabaseCapability(service="freedomain-service", database="freedomain", schemas=("public",),
+                       protected_reason="Tenant domain entitlements and provisioning are service-owned."),
+    DatabaseCapability(service="keycloak", database="keycloak", schemas=("public",),
+                       protected_reason="Identity, credential and session state is Keycloak-owned."),
+    DatabaseCapability(service="kobotoolbox-kc", database="kobocat", schemas=("public",),
+                       protected_reason="KoboCAT form and submission data is application-owned."),
+    DatabaseCapability(service="kobotoolbox-kpi", database="kpi", schemas=("public",),
+                       protected_reason="Kobo KPI reporting data is application-owned."),
+    DatabaseCapability(service="litellm-proxy", database="litellm", schemas=("public",),
+                       protected_reason="LLM proxy keys, usage and model metadata are service-owned."),
+    DatabaseCapability(service="notification-service", database="notifications", schemas=("public",),
+                       protected_reason="Notification state is service-owned."),
+    DatabaseCapability(service="session-manager", database="session_manager", schemas=("public",),
+                       protected_reason="Session and device-session state is security-sensitive."),
+    DatabaseCapability(service="training-service", database="training", schemas=("public",),
+                       protected_reason="Training progress and records are service-owned."),
 
 )
 
