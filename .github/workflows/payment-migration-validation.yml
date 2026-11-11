@@ -7,6 +7,7 @@ on:
       - "platform/payment-service/requirements.txt"
       - "platform/payment-service/app/models/**"
       - ".github/workflows/payment-migration-validation.yml"
+      - "k8s/services/postgres/migration/**"
 
 permissions:
   contents: read
@@ -48,7 +49,7 @@ jobs:
           test -n "$container_id"
           echo "container_id=$container_id" >> "$GITHUB_OUTPUT"
           docker exec "$container_id" psql -U postgres -d postgres -v ON_ERROR_STOP=1 -c "CREATE DATABASE payment_migration_ci"
-          docker exec "$container_id" psql -U postgres -d postgres -v ON_ERROR_STOP=1 -c "CREATE DATABASE payment_migration_existing_ci"
+          docker exec "$container_id" psql -U postgres -d postgres -v ON_ERROR_STOP=1 -c "CREATE DATABASE payments"
 
       - name: Apply every payment Alembic migration to a fresh database
         working-directory: platform/payment-service
@@ -77,26 +78,28 @@ jobs:
       - name: Build an existing 0006 database with the wallet index missing
         working-directory: platform/payment-service
         env:
-          DATABASE_URL: postgresql+asyncpg://postgres:ci-only-password@127.0.0.1:5432/payment_migration_existing_ci
+          DATABASE_URL: postgresql+asyncpg://postgres:ci-only-password@127.0.0.1:5432/payments
           PG_CONTAINER: ${{ steps.postgres.outputs.container_id }}
         run: |
           alembic upgrade 0006_payment_accounts
-          docker exec "$PG_CONTAINER" psql -U postgres -d payment_migration_existing_ci -v ON_ERROR_STOP=1 -c "DROP INDEX IF EXISTS public.ix_wallet_tenant_user_currency"
+          docker exec "$PG_CONTAINER" psql -U postgres -d payments -v ON_ERROR_STOP=1 -c "DROP INDEX IF EXISTS public.ix_wallet_tenant_user_currency"
 
-      - name: Apply the forward repair to the existing 0006 database
-        working-directory: platform/payment-service
+      - name: Apply the canonical forward SQL repair to the existing 0006 database twice
         env:
-          DATABASE_URL: postgresql+asyncpg://postgres:ci-only-password@127.0.0.1:5432/payment_migration_existing_ci
-        run: alembic upgrade head
+          PG_CONTAINER: ${{ steps.postgres.outputs.container_id }}
+        run: |
+          for attempt in 1 2; do
+            docker exec -i "$PG_CONTAINER" psql -U postgres -d postgres -v ON_ERROR_STOP=1 < k8s/services/postgres/migration/024-payment-wallet-tenant-unique.sql
+          done
 
       - name: Verify forward repair from 0006
         env:
           PG_CONTAINER: ${{ steps.postgres.outputs.container_id }}
         run: |
-          version="$(docker exec "$PG_CONTAINER" psql -U postgres -d payment_migration_existing_ci -Atqc "SELECT version_num FROM alembic_version")"
+          version="$(docker exec "$PG_CONTAINER" psql -U postgres -d payments -Atqc "SELECT version_num FROM alembic_version")"
           test "$version" = "0007_wallet_tenant_user_currency"
 
-          tenant_wallet_index="$(docker exec "$PG_CONTAINER" psql -U postgres -d payment_migration_existing_ci -Atqc "SELECT indexdef FROM pg_indexes WHERE schemaname='public' AND indexname='ix_wallet_tenant_user_currency'")"
+          tenant_wallet_index="$(docker exec "$PG_CONTAINER" psql -U postgres -d payments -Atqc "SELECT indexdef FROM pg_indexes WHERE schemaname='public' AND indexname='ix_wallet_tenant_user_currency'")"
           test -n "$tenant_wallet_index"
           grep -q "CREATE UNIQUE INDEX" <<<"$tenant_wallet_index"
           grep -q "(tenant_id, user_id, currency)" <<<"$tenant_wallet_index"
