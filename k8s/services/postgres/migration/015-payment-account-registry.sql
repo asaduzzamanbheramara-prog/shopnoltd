@@ -2,6 +2,8 @@
 -- This file is intentionally idempotent because the PostgreSQL migration Job
 -- executes every SQL file on each GitOps migration hook.
 
+\connect payments
+
 BEGIN;
 
 CREATE TABLE IF NOT EXISTS public.payment_accounts (

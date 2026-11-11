@@ -10,6 +10,8 @@
 -- made the old check below re-trigger this destructive rebuild on every sync
 -- and fail on the FK this file itself creates. Checking for the table this
 -- file creates last is correct regardless of how far the version has moved.
+\connect payments
+
 SELECT EXISTS (
     SELECT 1 FROM pg_catalog.pg_class c
     JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
