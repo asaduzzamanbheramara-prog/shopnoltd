@@ -443,8 +443,6 @@ async def execute_admin_sql(payload: dict[str, Any] = Body(...), token: dict = D
             raise HTTPException(403, f"generic SQL mutation is disabled for {schema}.{table}")
     if mutation and not tables:
         raise HTTPException(400, "mutation must name an explicit table")
-    if database == "kpi":
-        raise HTTPException(400, "MongoDB databases are not supported by the PostgreSQL SQL browser")
     conn = await _connect_database(database)
     try:
         if first in {"SELECT", "EXPLAIN", "WITH"}:
