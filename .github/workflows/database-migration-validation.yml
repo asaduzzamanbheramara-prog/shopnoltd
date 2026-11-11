@@ -1,0 +1,78 @@
+name: Database migration validation
+
+on:
+  pull_request:
+    paths:
+      - "k8s/services/postgres/migration/**"
+      - "platform/social-service/app/models/models.py"
+      - ".github/workflows/database-migration-validation.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  validate-exchange-social-schema:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ci-only-password
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Locate disposable PostgreSQL service container
+        id: postgres
+        run: |
+          container_id="$(docker ps --filter 'ancestor=postgres:16' --format '{{.ID}}' | head -n 1)"
+          test -n "$container_id"
+          echo "container_id=$container_id" >> "$GITHUB_OUTPUT"
+
+      - name: Prepare disposable test databases
+        env:
+          PG_CONTAINER: ${{ steps.postgres.outputs.container_id }}
+        run: |
+          docker exec "$PG_CONTAINER" psql -U postgres -d postgres -v ON_ERROR_STOP=1 -c "CREATE ROLE shopno NOLOGIN"
+          docker exec "$PG_CONTAINER" psql -U postgres -d postgres -v ON_ERROR_STOP=1 -c "CREATE DATABASE payments"
+
+      - name: Apply existing social schema and new model migration
+        env:
+          PG_CONTAINER: ${{ steps.postgres.outputs.container_id }}
+        run: |
+          docker exec -i "$PG_CONTAINER" psql -U postgres -d postgres -v ON_ERROR_STOP=1 < k8s/services/postgres/migration/016-omnichannel-crm.sql
+          docker exec -i "$PG_CONTAINER" psql -U postgres -d postgres -v ON_ERROR_STOP=1 < k8s/services/postgres/migration/017-omnichannel-provider-oauth.sql
+          docker exec -i "$PG_CONTAINER" psql -U postgres -d postgres -v ON_ERROR_STOP=1 < k8s/services/postgres/migration/023-exchange-social-model-tables.sql
+
+      - name: Verify schema completeness and least-privilege grants
+        env:
+          PG_CONTAINER: ${{ steps.postgres.outputs.container_id }}
+        run: |
+          payment_tables="$(docker exec "$PG_CONTAINER" psql -U postgres -d payments -Atqc "SELECT string_agg(tablename, ',' ORDER BY tablename) FROM pg_tables WHERE schemaname='public' AND tablename IN ('rates','conversions')")"
+          test "$payment_tables" = "conversions,rates"
+
+          social_count="$(docker exec "$PG_CONTAINER" psql -U postgres -d social -Atqc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE'")"
+          test "$social_count" = "26"
+
+          media_type="$(docker exec "$PG_CONTAINER" psql -U postgres -d social -Atqc "SELECT data_type FROM information_schema.columns WHERE table_schema='public' AND table_name='posts' AND column_name='media'")"
+          test "$media_type" = "jsonb"
+
+          grants="$(docker exec "$PG_CONTAINER" psql -U postgres -d social -Atqc "SELECT has_table_privilege('shopno','public.posts','SELECT') AND has_table_privilege('shopno','public.posts','INSERT') AND has_table_privilege('shopno','public.blog_admin_audit','INSERT')")"
+          test "$grants" = "t"
+
+      - name: Re-run migration to prove idempotency
+        env:
+          PG_CONTAINER: ${{ steps.postgres.outputs.container_id }}
+        run: |
+          docker exec -i "$PG_CONTAINER" psql -U postgres -d postgres -v ON_ERROR_STOP=1 < k8s/services/postgres/migration/023-exchange-social-model-tables.sql
+          social_count="$(docker exec "$PG_CONTAINER" psql -U postgres -d social -Atqc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE'")"
+          test "$social_count" = "26"

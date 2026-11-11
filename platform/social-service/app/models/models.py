@@ -1,7 +1,8 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Column, DateTime, ForeignKey, Index, Integer, String, Text
+from sqlalchemy import Column, DateTime, ForeignKey, Index, Integer, String, Text, text
+from sqlalchemy.dialects.postgresql import JSONB
 
 from app.core.db import Base
 
@@ -12,7 +13,7 @@ class Post(Base):
     tenant_id = Column(String(64), nullable=False, index=True)
     user_id = Column(String(64), nullable=False, index=True)
     content = Column(Text, nullable=False)
-    media = Column(String, default=list)
+    media = Column(JSONB, nullable=False, default=list, server_default=text("'[]'::jsonb"))
     visibility = Column(String(16), default="public")
     auto_posted: bool = False
     auto_posted2: bool = False
