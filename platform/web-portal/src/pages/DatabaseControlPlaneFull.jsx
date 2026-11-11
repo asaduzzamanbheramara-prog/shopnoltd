@@ -82,19 +82,55 @@ export default function DatabaseControlPlaneFull() {
       setLive(inventory?.databases || [])
       setMongoDatabases(mongoInventory?.databases || [])
       setMongoError(mongoInventory?.error || '')
-      const first = inventory?.databases?.find(x => x.classification === 'application')?.database || catalog?.databases?.[0]?.database || ''
+      const first = inventory?.databases?.find(x => x.kind === 'postgresql' && x.classification === 'application')?.database || catalog?.databases?.find(x => x.kind === 'postgresql')?.database || ''
       setDatabase(current => current || first)
     } catch (e) { setError(e.message) } finally { setBusy(false) }
   }
   useEffect(() => { refresh() }, [])
 
-  const db = useMemo(() => live.find(x => x.database === database), [live, database])
+  const declaredByDatabase = useMemo(() => {
+    const grouped = new Map()
+    declared.filter(item => item.kind === 'postgresql').forEach(item => {
+      const entry = grouped.get(item.database) || {
+        database: item.database, kind: 'postgresql', classification: 'declared_not_live',
+        declaration_status: 'declared_not_live', declared_services: [], schemas: [], expected_tables: [],
+      }
+      entry.declared_services.push(item.service)
+      entry.schemas.push(...(item.schemas || []))
+      entry.expected_tables.push(...(item.tables || []).map(t => t.name))
+      grouped.set(item.database, entry)
+    })
+    for (const entry of grouped.values()) {
+      entry.declared_services = [...new Set(entry.declared_services)]
+      entry.schemas = [...new Set(entry.schemas)]
+      entry.expected_tables = [...new Set(entry.expected_tables)]
+    }
+    return grouped
+  }, [declared])
+  const appDatabases = useMemo(() => {
+    const liveItems = live.filter(item => item.kind !== 'mongodb' && item.classification !== 'system').map(item => {
+      const declaredEntry = declaredByDatabase.get(item.database)
+      return {
+        ...item,
+        declared_services: [...new Set([...(item.declared_services || []), ...(declaredEntry?.declared_services || [])])],
+        expected_tables: declaredEntry?.expected_tables || [],
+      }
+    })
+    const liveNames = new Set(liveItems.map(item => item.database))
+    const declaredOnly = [...declaredByDatabase.values()]
+      .filter(item => !liveNames.has(item.database))
+      .map(item => ({ ...item, schemas: item.schemas.length ? item.schemas : ['public'], tables: [], reachable: false }))
+    return [...liveItems, ...declaredOnly].sort((a, b) => a.database.localeCompare(b.database))
+  }, [live, declaredByDatabase])
+  const db = useMemo(() => appDatabases.find(x => x.database === database), [appDatabases, database])
   const schemas = db?.schemas || ['public']
   const tables = db?.tables?.filter(t => !schema || t.schema === schema) || []
   const selected = tables.find(t => t.name === table) || tables[0]
   const capability = selected?.capability || { readable: false, writable: false, destructive: false, importable: false, exportable: false, protected_reason: 'No explicit capability' }
-  const declaredServices = db?.declared_services || declared.filter(x => x.database === database).map(x => x.service)
-  const appDatabases = live
+  const declaredServices = db?.declared_services || []
+  const expectedTables = db?.expected_tables || []
+  const liveTableNames = new Set(tables.map(t => t.name))
+  const missingExpectedTables = expectedTables.filter(name => !liveTableNames.has(name))
 
   useEffect(() => {
     if (db && !schemas.includes(schema)) setSchema(schemas[0] || 'public')
@@ -116,7 +152,10 @@ export default function DatabaseControlPlaneFull() {
       setAnalysis(meta)
     } catch (e) { setError(e.message) } finally { setBusy(false) }
   }
-  useEffect(() => { if (selected?.name) inspect(0) }, [database, schema, table])
+  useEffect(() => {
+    if (selected?.name && capability.readable) inspect(0)
+    else { setData(null); setAnalysis(null); setEditor(null); setImportPreview(null) }
+  }, [database, schema, table, capability.readable])
 
   function startAdd() {
     const values = {}
@@ -181,9 +220,9 @@ export default function DatabaseControlPlaneFull() {
   }
 
   return <main style={styles.page}><div style={styles.wrap}>
-    <header style={styles.header}><div><div style={styles.title}><Database size={25}/><h1>Website Database Management</h1></div><p style={styles.muted}>Live PostgreSQL table and MongoDB collection inventory with capability-gated management. Safe PostgreSQL tables expose CRUD/import/export; identity, financial, security and ledger data stays service-owned. MongoDB discovery is read-only.</p></div><button style={styles.button} onClick={refresh} disabled={busy}><RefreshCw size={15}/> Refresh</button></header>
+    <header style={styles.header}><div><div style={styles.title}><Database size={25}/><h1>Website Database Management</h1></div><p style={styles.muted}>Full live PostgreSQL table and MongoDB collection inventory, reconciled against every application model. Missing expected databases/tables are highlighted. Row-level reads, exports and generic mutations remain disabled by default; schema metadata is still visible.</p></div><button style={styles.button} onClick={refresh} disabled={busy}><RefreshCw size={15}/> Refresh</button></header>
     {error && <div style={styles.error}>{error}</div>}{message && <div style={styles.message}>{message}<button onClick={() => setMessage('')} style={styles.icon}><X size={14}/></button></div>}
-    <section style={styles.metrics}><Metric icon={<Database/>} label="Live PostgreSQL DBs" value={appDatabases.length}/><Metric icon={<Database/>} label="MongoDB stores" value={mongoDatabases.length}/><Metric icon={<ShieldCheck/>} label="Declared services" value={declared.length}/><Metric icon={<ShieldCheck/>} label="Protected tables" value={live.reduce((n,d)=>n+(d.tables||[]).filter(t=>t.capability?.protected_reason).length,0)}/><Metric icon={<Database/>} label="Current database" value={database || '—'}/></section>
+    <section style={styles.metrics}><Metric icon={<Database/>} label="Live PostgreSQL DBs" value={live.filter(d=>d.kind === 'postgresql' && d.classification === 'application').length}/><Metric icon={<Database/>} label="Declared, not live" value={appDatabases.filter(d=>d.classification === 'declared_not_live').length}/><Metric icon={<Database/>} label="MongoDB stores" value={mongoDatabases.length}/><Metric icon={<ShieldCheck/>} label="Declared services" value={declaredByDatabase.size}/><Metric icon={<ShieldCheck/>} label="Protected tables" value={live.reduce((n,d)=>n+(d.tables||[]).filter(t=>t.capability?.protected_reason).length,0)}/><Metric icon={<Database/>} label="Current database" value={database || '—'}/></section>
     {(mongoDatabases.length > 0 || mongoError) && <section style={styles.panel}>
       <div style={styles.between}><div><h3>MongoDB collection inventory</h3><div style={styles.muted}>Read-only database and collection metadata. Document mutations are not exposed by this control plane.</div></div><span style={styles.badge}>Read-only</span></div>
       {mongoError && <div style={styles.error}>MongoDB inventory unavailable: {mongoError}</div>}
@@ -193,21 +232,25 @@ export default function DatabaseControlPlaneFull() {
       </div>)}
     </section>}
     <section style={styles.toolbar}>
-      <label>Database<select value={database} onChange={e=>{setDatabase(e.target.value);setTable('');setOffset(0)}}>{appDatabases.map(d=><option key={d.database} value={d.database}>{d.database}{d.declared_services?.length?' · '+d.declared_services.join(', '):''}</option>)}</select></label>
+      <label>Database<select value={database} onChange={e=>{setDatabase(e.target.value);setTable('');setOffset(0)}}>{appDatabases.map(d=><option key={d.database} value={d.database}>{d.database}{d.classification === 'declared_not_live' ? ' · declared, not live' : ''}{d.declared_services?.length ? ' · ' + d.declared_services.join(', ') : ''}</option>)}</select></label>
       <label>Schema<select value={schema} onChange={e=>{setSchema(e.target.value);setTable('');setOffset(0)}}>{schemas.map(s=><option key={s} value={s}>{s}</option>)}</select></label>
       <label>Table<select value={selected?.name || ''} onChange={e=>{setTable(e.target.value);setOffset(0)}}>{tables.map(t=><option key={t.name} value={t.name}>{t.name}{t.capability?.writable?' · writable':' · protected'}</option>)}</select></label>
       <label style={styles.search}><Search size={15}/><input value={search} onChange={e=>setSearch(e.target.value)} onKeyDown={e=>e.key==='Enter'&&inspect(0)} placeholder="Search current table"/></label><button style={styles.button} onClick={()=>inspect(0)} disabled={busy}><Search size={15}/> Search</button>
     </section>
     {db && <section style={styles.panel}><div style={styles.between}><div><strong>{declaredServices.join(' · ') || 'Live / undeclared database'}</strong><div style={styles.muted}>{database} · {selected?.schema || schema}.{selected?.name || '—'}</div></div><span style={styles.badge}>{capability.writable?'Controlled write':'Protected / read-only'}</span></div>
+      {db?.classification === 'declared_not_live' && <div style={styles.error}>This database is declared by the application but is not present in the live PostgreSQL catalog. No row operations are available.</div>}
+      {missingExpectedTables.length > 0 && <div style={styles.error}>Missing expected tables ({missingExpectedTables.length}): {missingExpectedTables.join(', ')}</div>}
       {selected && <>
-        <div style={styles.capability}><span>Read: {capability.readable?'Yes':'No'}</span><span>Write: {capability.writable?'Yes':'No'}</span><span>Delete: {capability.destructive?'Yes':'No'}</span><span>Import: {capability.importable?'Yes':'No'}</span><span>Export: {capability.exportable?'Yes':'No'}</span><span>{capability.protected_reason || 'Explicitly allowlisted entity'}</span></div>
-        {analysis && <div style={styles.analysis}><span>Rows: {analysis.rows}</span><span>Columns: {analysis.columns}</span><span>Primary key: {analysis.primary_key?.join(', ') || 'None'}</span><span>Unique constraints: {analysis.unique_constraints?.length || 0}</span><span>Indexes: {analysis.indexes?.length || 0}</span></div>}
+        <div style={styles.capability}><span>Read: {capability.readable?'Yes':'No'}</span><span>Write: {capability.writable?'Yes':'No'}</span><span>Delete: {capability.destructive?'Yes':'No'}</span><span>Import: {capability.importable?'Yes':'No'}</span><span>Export: {capability.exportable?'Yes':'No'}</span><span>{capability.protected_reason || 'Schema metadata only'}</span></div>
+        <div style={styles.analysis}><span>Columns: {selected.columns?.length || 0}</span><span>Primary key: {(selected.constraints || []).find(c => c.constraint_type === 'PRIMARY KEY')?.columns?.join(', ') || 'Unknown'}</span><span>Unique constraints: {(selected.constraints || []).filter(c => c.constraint_type === 'UNIQUE').length}</span><span>Indexes: {selected.indexes?.length || 0}</span></div>
       </>}
       <div style={styles.actions}>{capability.writable && <button style={styles.button} onClick={startAdd}><Plus size={15}/> Add row</button>}{capability.writable && selected && <button style={styles.button} onClick={()=>setEditor(null)}>Clear editor</button>}{capability.exportable && <><button style={styles.button} onClick={()=>exportCurrent('json')}><Download size={15}/> JSON</button><button style={styles.button} onClick={()=>exportCurrent('csv')}><Download size={15}/> CSV</button></>}{selected && capability.readable && <button style={styles.button} onClick={()=>inspect(offset)} disabled={busy}><Search size={15}/> Analyze</button>}{capability.importable && capability.writable && <label style={styles.button}>Import JSON<input type="file" accept="application/json,.json" onChange={chooseImport} style={{display:'none'}} /></label>}</div>
     </section>}
     {importPreview && <section style={styles.panel}><div style={styles.between}><div><h3>Validated import preview</h3><div style={styles.muted}>{importPreview.rows.length} rows ready for transactional import.</div></div><button style={styles.button} onClick={commitImport} disabled={busy}><Save size={15}/> Commit import</button></div><pre style={styles.pre}>{JSON.stringify(importPreview.rows.slice(0,20), null, 2)}</pre></section>}
     {editor && <section style={styles.panel}><div style={styles.between}><h3>{editor.mode==='add'?'Add row':'Edit row'}</h3><button style={styles.icon} onClick={()=>setEditor(null)}><X/></button></div><div style={styles.form}>{(data?.columns||[]).filter(c=>c.column_name!=='id'||editor.mode==='edit').map(column => <label key={column.column_name}>{column.column_name}<small>{column.data_type}{column.primary_key?' · PK':''}{column.is_nullable==='YES'?' · nullable':''}</small><input disabled={editor.mode==='edit'&&column.primary_key} value={editor.values[column.column_name] ?? ''} onChange={e=>setEditor({...editor,values:{...editor.values,[column.column_name]:e.target.value}})} /></label>)}</div><button style={styles.button} onClick={save} disabled={busy}><Save size={15}/> Save</button></section>}
-    <section style={styles.panel}><div style={styles.between}><h3>{selected?.name || 'Table'} rows</h3><span className="muted">{data?.offset ?? 0}–{Math.min((data?.offset??0)+(data?.rows?.length||0), (data?.offset??0)+(data?.rows?.length||0))}</span></div><div style={styles.tableWrap}><table><thead><tr>{(data?.columns||[]).map(c=><th key={c.column_name}>{c.column_name}{c.primary_key?' 🔑':''}</th>)}{capability.writable&&<th>Actions</th>}</tr></thead><tbody>{(data?.rows||[]).map((row,i)=><tr key={i}>{(data?.columns||[]).map(c=><td key={c.column_name}>{typeof row[c.column_name]==='object'?JSON.stringify(row[c.column_name]):String(row[c.column_name]??'')}</td>)}{capability.writable&&<td><button style={styles.icon} onClick={()=>startEdit(row)} title="Edit"><Edit3 size={14}/></button>{capability.destructive&&<button style={styles.icon} onClick={()=>remove(row)} title="Delete"><Trash2 size={14}/></button>}</td>}</tr>)}</tbody></table></div><div style={styles.pager}><button style={styles.button} disabled={offset===0||busy} onClick={()=>inspect(Math.max(0,offset-PAGE))}>Previous</button><span>Offset {offset}</span><button style={styles.button} disabled={!data||data.rows.length<PAGE||busy} onClick={()=>inspect(offset+PAGE)}>Next</button></div></section>
+    <section style={styles.panel}><div style={styles.between}><h3>{selected?.name || 'Table'} rows</h3><span className="muted">{capability.readable ? ((data?.offset ?? 0) + '–' + ((data?.offset ?? 0) + (data?.rows?.length || 0))) : 'Schema inventory only'}</span></div>
+      {capability.readable ? <><div style={styles.tableWrap}><table><thead><tr>{(data?.columns||[]).map(c=><th key={c.column_name}>{c.column_name}{c.primary_key?' 🔑':''}</th>)}{capability.writable&&<th>Actions</th>}</tr></thead><tbody>{(data?.rows||[]).map((row,i)=><tr key={i}>{(data?.columns||[]).map(c=><td key={c.column_name}>{typeof row[c.column_name]==='object'?JSON.stringify(row[c.column_name]):String(row[c.column_name]??'')}</td>)}{capability.writable&&<td><button style={styles.icon} onClick={()=>startEdit(row)} title="Edit"><Edit3 size={14}/></button>{capability.destructive&&<button style={styles.icon} onClick={()=>remove(row)} title="Delete"><Trash2 size={14}/></button>}</td>}</tr>)}</tbody></table></div><div style={styles.pager}><button style={styles.button} disabled={offset===0||busy} onClick={()=>inspect(Math.max(0,offset-PAGE))}>Previous</button><span>Offset {offset}</span><button style={styles.button} disabled={!data||data.rows.length<PAGE||busy} onClick={()=>inspect(offset+PAGE)}>Next</button></div></> : <p style={styles.muted}>Row-level reads, exports and generic mutations are disabled. Column, constraint and index metadata remains available from the live catalog.</p>}
+    </section>
   </div></main>
 }
 function Metric({icon,label,value}){return <div style={styles.metric}>{icon}<small>{label}</small><strong>{value}</strong></div>}
