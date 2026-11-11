@@ -18,6 +18,7 @@ from pymongo.errors import PyMongoError
 from sqlalchemy.engine import make_url
 
 from app.core.config import settings
+from app.database_control_plane.contract import DatastoreKind
 from app.database_control_plane.registry import DATABASE_CAPABILITIES
 
 _SYSTEM_DATABASES = {"postgres", "template0", "template1"}
@@ -34,9 +35,12 @@ def _postgres_dsn(database: str) -> str:
     return url.render_as_string(hide_password=False).replace("+asyncpg", "")
 
 
-def _declared_by_database() -> dict[str, list[str]]:
+def _declared_by_database(kind: DatastoreKind) -> dict[str, list[str]]:
+    """Return declarations for one datastore kind; names can collide across engines."""
     result: dict[str, list[str]] = {}
     for item in DATABASE_CAPABILITIES:
+        if item.kind != kind:
+            continue
         result.setdefault(item.database, []).append(item.service)
     return result
 
@@ -107,13 +111,14 @@ async def discover_postgres() -> dict[str, Any]:
     finally:
         await conn.close()
 
-    declared = _declared_by_database()
+    declared = _declared_by_database(DatastoreKind.POSTGRESQL)
     semaphore = asyncio.Semaphore(3)
 
     async def inspect(row: Any) -> dict[str, Any]:
         name = row["datname"]
         item: dict[str, Any] = {
             "database": name,
+            "kind": DatastoreKind.POSTGRESQL.value,
             "size": row["size"],
             "size_bytes": row["size_bytes"],
             "declared_services": declared.get(name, []),
@@ -153,13 +158,25 @@ async def _kubernetes_secret(namespace: str, secret: str, key: str) -> str:
     return base64.b64decode(encoded).decode()
 
 
+def _mongo_database_names(client: MongoClient) -> list[str]:
+    """Include the URI's configured database even before its first collection exists."""
+    names = {
+        name for name in client.list_database_names()
+        if name not in {"admin", "config", "local"}
+    }
+    try:
+        configured = client.get_default_database()
+    except Exception:
+        configured = None
+    if configured is not None:
+        names.add(configured.name)
+    return sorted(names)
+
+
 def _mongo_server_metadata(uri: str) -> list[dict[str, Any]]:
     client = MongoClient(uri, serverSelectionTimeoutMS=3000, connectTimeoutMS=3000)
     try:
-        database_names = [
-            name for name in client.list_database_names()
-            if name not in {"admin", "config", "local"}
-        ]
+        database_names = _mongo_database_names(client)
         databases: list[dict[str, Any]] = []
         for database in sorted(database_names):
             db = client[database]
@@ -224,20 +241,26 @@ def _mongo_server_metadata(uri: str) -> list[dict[str, Any]]:
                 if count_error:
                     collection_item["count_error"] = count_error
                 collections.append(collection_item)
-            databases.append({"database": database, "reachable": True, "collections": collections})
+            databases.append({
+                "database": database,
+                "kind": DatastoreKind.MONGODB.value,
+                "reachable": True,
+                "collections": collections,
+            })
         return databases
     finally:
         client.close()
 
 
 async def discover_mongodb() -> dict[str, Any]:
-    declared = _declared_by_database()
+    declared = _declared_by_database(DatastoreKind.MONGODB)
     databases: list[dict[str, Any]] = []
     for source in _MONGO_SOURCES:
         try:
             uri = await _kubernetes_secret(source["namespace"], source["secret"], source["key"])
             live_databases = await asyncio.to_thread(_mongo_server_metadata, uri)
             for item in live_databases:
+                item["kind"] = DatastoreKind.MONGODB.value
                 item["service"] = source["service"]
                 item["secret"] = f"{source['namespace']}/{source['secret']}"
                 item["declared_services"] = declared.get(item["database"], [])
@@ -248,6 +271,7 @@ async def discover_mongodb() -> dict[str, Any]:
             databases.extend(live_databases)
         except Exception as exc:
             databases.append({
+                "kind": DatastoreKind.MONGODB.value,
                 "service": source["service"],
                 "secret": f"{source['namespace']}/{source['secret']}",
                 "declaration_status": "source_unavailable",
@@ -274,8 +298,10 @@ async def reconcile_postgres() -> dict[str, Any]:
             "reachable_databases": sum(1 for d in live if d.get("reachable")),
             "live_undeclared": sum(1 for d in live if d.get("declaration_status") == "live_undeclared"),
             "declared_not_live": len(result["declared_not_live"]),
-            "mongo_sources": len(mongo["databases"]),
+            "mongo_sources": len(_MONGO_SOURCES),
             "mongo_reachable": sum(1 for d in mongo["databases"] if d.get("reachable")),
+            "mongo_databases": len(mongo["databases"]),
+            "mongo_collections": sum(len(d.get("collections", [])) for d in mongo["databases"]),
         },
         "postgres": result,
         "mongodb": mongo,
