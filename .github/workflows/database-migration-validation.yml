@@ -51,7 +51,7 @@ jobs:
         run: |
           docker exec -i "$PG_CONTAINER" psql -U postgres -d postgres -v ON_ERROR_STOP=1 < k8s/services/postgres/migration/016-omnichannel-crm.sql
           docker exec -i "$PG_CONTAINER" psql -U postgres -d postgres -v ON_ERROR_STOP=1 < k8s/services/postgres/migration/017-omnichannel-provider-oauth.sql
-          docker exec -i "$PG_CONTAINER" psql -U postgres -d postgres -v ON_ERROR_STOP=1 < k8s/services/postgres/migration/021-exchange-social-model-tables.sql
+          docker exec -i "$PG_CONTAINER" psql -U postgres -d postgres -v ON_ERROR_STOP=1 < k8s/services/postgres/migration/023-exchange-social-model-tables.sql
 
       - name: Verify schema completeness and least-privilege grants
         env:
@@ -73,6 +73,6 @@ jobs:
         env:
           PG_CONTAINER: ${{ steps.postgres.outputs.container_id }}
         run: |
-          docker exec -i "$PG_CONTAINER" psql -U postgres -d postgres -v ON_ERROR_STOP=1 < k8s/services/postgres/migration/021-exchange-social-model-tables.sql
+          docker exec -i "$PG_CONTAINER" psql -U postgres -d postgres -v ON_ERROR_STOP=1 < k8s/services/postgres/migration/023-exchange-social-model-tables.sql
           social_count="$(docker exec "$PG_CONTAINER" psql -U postgres -d social -Atqc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE'")"
           test "$social_count" = "26"
