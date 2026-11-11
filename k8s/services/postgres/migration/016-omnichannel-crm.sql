@@ -1,3 +1,5 @@
+SELECT 'CREATE DATABASE social' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'social') \gexec
+
 \connect social
 -- Shopnoltd Omnichannel CRM / n8n contract
 -- Idempotent DDL. Apply through the owning deployment migration process.
@@ -189,7 +191,7 @@ CREATE TABLE IF NOT EXISTS platform_capabilities (
 
 GRANT USAGE ON SCHEMA public TO shopno;
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO shopno;
-ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
   GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO shopno;
 
 INSERT INTO platform_capabilities(platform, action, availability, requires_oauth, notes) VALUES
