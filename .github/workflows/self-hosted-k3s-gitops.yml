@@ -798,7 +798,7 @@ jobs:
           kubectl -n shopno-data exec deployment/postgres -- env PGPASSWORD="$postgres_password" psql -U "$postgres_user" -d freedomain -v ON_ERROR_STOP=1 -c "DO \$\$ DECLARE r record; BEGIN FOR r IN SELECT tablename FROM pg_tables WHERE schemaname = 'public' LOOP EXECUTE format('ALTER TABLE public.%I OWNER TO freedomain', r.tablename); END LOOP; FOR r IN SELECT sequencename FROM pg_sequences WHERE schemaname = 'public' LOOP EXECUTE format('ALTER SEQUENCE public.%I OWNER TO freedomain', r.sequencename); END LOOP; END \$\$;"
           echo 'Free-domain PostgreSQL role, database, and existing object privileges reconciled.'
 
-      - name: Ensure Kobo and session-manager runtime database secrets
+      - name: Reconcile Kobo database only on request; ensure session-manager runtime secret
         shell: bash
         run: |
           set -euo pipefail
