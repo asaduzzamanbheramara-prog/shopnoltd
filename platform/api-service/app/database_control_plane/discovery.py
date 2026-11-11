@@ -259,6 +259,12 @@ def _mongo_server_metadata(uri: str) -> list[dict[str, Any]]:
 
 async def discover_mongodb() -> dict[str, Any]:
     declared = _declared_by_database(DatastoreKind.MONGODB)
+    expected_collections: dict[str, set[str]] = {}
+    for capability in DATABASE_CAPABILITIES:
+        if capability.kind == DatastoreKind.MONGODB:
+            expected_collections.setdefault(capability.database, set()).update(
+                table.name for table in capability.tables
+            )
     databases: list[dict[str, Any]] = []
     for source in _MONGO_SOURCES:
         try:
@@ -269,20 +275,32 @@ async def discover_mongodb() -> dict[str, Any]:
                 item["service"] = source["service"]
                 item["secret"] = f"{source['namespace']}/{source['secret']}"
                 item["declared_services"] = declared.get(item["database"], [])
+                item["expected_collections"] = sorted(expected_collections.get(item["database"], set()))
                 item["declaration_status"] = (
                     "declared" if item["database"] in declared else "live_undeclared"
                 )
                 item["classification"] = "application"
             databases.extend(live_databases)
         except Exception as exc:
-            databases.append({
-                "kind": DatastoreKind.MONGODB.value,
-                "service": source["service"],
-                "secret": f"{source['namespace']}/{source['secret']}",
-                "declaration_status": "source_unavailable",
-                "reachable": False,
-                "error_type": type(exc).__name__,
-            })
+            expected_names = sorted(
+                capability.database for capability in DATABASE_CAPABILITIES
+                if capability.kind == DatastoreKind.MONGODB
+                and source["service"] in declared.get(capability.database, [])
+            )
+            if not expected_names:
+                expected_names = [""]
+            for expected_database in expected_names:
+                databases.append({
+                    "database": expected_database or None,
+                    "kind": DatastoreKind.MONGODB.value,
+                    "service": source["service"],
+                    "secret": f"{source['namespace']}/{source['secret']}",
+                    "declared_services": declared.get(expected_database, []),
+                    "expected_collections": sorted(expected_collections.get(expected_database, set())),
+                    "declaration_status": "source_unavailable",
+                    "reachable": False,
+                    "error_type": type(exc).__name__,
+                })
     return {"databases": databases}
 
 
