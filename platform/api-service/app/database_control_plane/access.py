@@ -39,12 +39,12 @@ def resolve_table_capability(
                 }
     return {
         "status": "discovered_read_only",
-        "readable": True,
+        "readable": False,
         "writable": False,
         "bulk_write": False,
         "importable": False,
-        "exportable": True,
-        "reportable": True,
+        "exportable": False,
+        "reportable": False,
         "destructive": False,
         "protected_reason": "Live table is not explicitly allowlisted for generic writes",
         "tenant_scoped": False,
