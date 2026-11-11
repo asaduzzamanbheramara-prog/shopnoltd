@@ -66,8 +66,11 @@ def test_postgres_kpi_and_mongodb_formhub_are_distinct_datastores():
     )
 
     assert postgres_kpi["status"] == "discovered_read_only"
+    assert postgres_kpi["readable"] is False
     assert postgres_kpi["writable"] is False
+    assert postgres_kpi["exportable"] is False
     assert mongo_instances["status"] == "declared"
+    assert mongo_instances["readable"] is False
     assert mongo_instances["writable"] is False
 
 
@@ -97,3 +100,53 @@ def test_mongo_inventory_includes_configured_database_before_first_collection():
             return FakeDatabase()
 
     assert _mongo_database_names(FakeMongoClient()) == ["formhub"]
+
+
+
+def test_unknown_live_tables_are_metadata_only_by_default():
+    capability = resolve_table_capability("keycloak", "user_entity", "public")
+    assert capability["status"] == "discovered_read_only"
+    assert capability["readable"] is False
+    assert capability["writable"] is False
+    assert capability["exportable"] is False
+    assert capability["reportable"] is False
+
+
+def test_registry_includes_expected_tables_for_empty_application_databases():
+    expected = {
+        ("auth", "sessions"),
+        ("live", "streams"),
+        ("meet", "rooms"),
+        ("messaging", "messages"),
+        ("session_manager", "profiles"),
+        ("notifications", "notifications"),
+        ("audit", "audit_logs"),
+        ("training", "courses"),
+        ("router", "tenant_routes"),
+        ("domains", "registrars"),
+        ("storage", "professional_profiles"),
+        ("mobile", "app_releases"),
+        ("analytics", "events"),
+        ("reports", "reports"),
+        ("worker", "tasks"),
+        ("foundation", "beneficiaries"),
+        ("interior", "interior_rooms"),
+        ("licenses", "licenses"),
+        ("events", "event_tickets"),
+        ("ai", "ai_conversations"),
+        ("oauth", "account_provisioning_jobs"),
+        ("mail", "mail_messages"),
+        ("social", "blog_posts"),
+        ("payments", "rates"),
+    }
+    declared = {
+        (database.database, table.name)
+        for database in DATABASE_CAPABILITIES
+        for table in database.tables
+    }
+    assert expected <= declared
+
+
+def test_no_generic_table_write_or_backup_restore_is_advertised():
+    assert all(not table.writable for db in DATABASE_CAPABILITIES for table in db.tables)
+    assert all(not db.backup and not db.restore for db in DATABASE_CAPABILITIES)
