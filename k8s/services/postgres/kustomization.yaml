@@ -11,7 +11,6 @@ resources:
 - service.yaml
 - networkpolicy.yaml
 - poddisruptionbudget.yaml
-- servicemonitor.yaml
 - migration
 
 labels:

@@ -12,7 +12,6 @@ resources:
 - ingress.yaml
 - networkpolicy.yaml
 - poddisruptionbudget.yaml
-- servicemonitor.yaml
 
 labels:
 - includeSelectors: true

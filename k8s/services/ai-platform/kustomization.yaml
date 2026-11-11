@@ -13,7 +13,6 @@ resources:
 - networkpolicy.yaml
 - ai-platform-external-https-networkpolicy.yaml
 - poddisruptionbudget.yaml
-- servicemonitor.yaml
 
 labels:
 - includeSelectors: true
