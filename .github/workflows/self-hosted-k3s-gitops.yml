@@ -11,6 +11,11 @@ on:
       - '.github/workflows/self-hosted-k3s-gitops.yml'
   workflow_dispatch:
     inputs:
+      perform_gitops_sync:
+        description: "Run full ArgoCD reconciliation; may change replicas and PVC specs, so review desired state first"
+        required: false
+        type: boolean
+        default: false
       reconcile_kobo_database:
         description: "Reconcile Kobo database ownership; preserve existing role passwords and secrets"
         required: false
@@ -54,6 +59,7 @@ env:
 
 jobs:
   deploy-and-verify:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.perform_gitops_sync == true }}
     runs-on: [self-hosted, linux]
     timeout-minutes: 30
     env:
