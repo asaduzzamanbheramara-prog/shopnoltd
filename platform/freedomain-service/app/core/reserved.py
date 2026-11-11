@@ -9,7 +9,7 @@ reserved by RFC 2142 and common mail practice.
 # tests/test_reserved_labels.py fails if a host is missing here.
 _PLATFORM_HOSTS = (
     "www mail api admin shopno shopnoltd ns1 ns2 mx ftp static cdn "
-    "admin-infrastructure admin-portal ai-platform analytics-service "
+    "admin-infrastructure admin-portal agent ai-platform analytics-service "
     "android-gateway android argocd audit-service auth-service auth keycloak "
     "billing payment exchange chatwoot chat code codeserver code-server "
     "devices domain enketo event exchange-service foundation freedomain "
