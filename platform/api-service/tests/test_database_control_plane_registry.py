@@ -141,6 +141,8 @@ def test_registry_includes_expected_tables_for_empty_application_databases():
         ("oauth", "account_provisioning_jobs"),
         ("mail", "mail_messages"),
         ("social", "blog_posts"),
+        ("social", "social_automation_schedules"),
+        ("social", "social_post_drafts"),
         ("payments", "rates"),
     }
     declared = {
