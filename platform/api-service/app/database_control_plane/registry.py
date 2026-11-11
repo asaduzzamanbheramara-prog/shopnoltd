@@ -130,6 +130,8 @@ DATABASE_CAPABILITIES: tuple[DatabaseCapability, ...] = (
             _table("platform_sync_errors", protected="Synchronization error history is service-owned.", tenant_scoped=True),
             _table("automation_rules", protected="Automation rules are service-owned.", tenant_scoped=True),
             _table("automation_runs", protected="Automation execution history is service-owned.", tenant_scoped=True),
+            _table("social_automation_schedules", protected="Social publishing schedules require tenant and owner validation.", tenant_scoped=True),
+            _table("social_post_drafts", protected="Social post drafts and approvals are user-scoped workflow data.", tenant_scoped=True),
         ),
         protected_reason="Social, blog and omnichannel records require tenant-scoped service validation and audit.",
     ),
