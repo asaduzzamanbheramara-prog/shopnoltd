@@ -129,7 +129,7 @@ export default function DatabaseControlPlaneFull() {
   const capability = selected?.capability || { readable: false, writable: false, destructive: false, importable: false, exportable: false, protected_reason: 'No explicit capability' }
   const declaredServices = db?.declared_services || []
   const expectedTables = db?.expected_tables || []
-  const liveTableNames = new Set(tables.map(t => t.name))
+  const liveTableNames = new Set((db?.tables || []).map(t => t.name))
   const missingExpectedTables = expectedTables.filter(name => !liveTableNames.has(name))
 
   useEffect(() => {
@@ -220,7 +220,7 @@ export default function DatabaseControlPlaneFull() {
   }
 
   return <main style={styles.page}><div style={styles.wrap}>
-    <header style={styles.header}><div><div style={styles.title}><Database size={25}/><h1>Website Database Management</h1></div><p style={styles.muted}>Full live PostgreSQL table and MongoDB collection inventory, reconciled against every application model. Missing expected databases/tables are highlighted. Row-level reads, exports and generic mutations remain disabled by default; schema metadata is still visible.</p></div><button style={styles.button} onClick={refresh} disabled={busy}><RefreshCw size={15}/> Refresh</button></header>
+    <header style={styles.header}><div><div style={styles.title}><Database size={25}/><h1>Website Database Management</h1></div><p style={styles.muted}>Full live PostgreSQL table and MongoDB collection inventory, reconciled against application models. Missing expected databases/tables are highlighted. Row-level reads, exports and generic mutations remain disabled by default; schema metadata remains visible.</p></div><button style={styles.button} onClick={refresh} disabled={busy}><RefreshCw size={15}/> Refresh</button></header>
     {error && <div style={styles.error}>{error}</div>}{message && <div style={styles.message}>{message}<button onClick={() => setMessage('')} style={styles.icon}><X size={14}/></button></div>}
     <section style={styles.metrics}><Metric icon={<Database/>} label="Live PostgreSQL DBs" value={live.filter(d=>d.kind === 'postgresql' && d.classification === 'application').length}/><Metric icon={<Database/>} label="Declared, not live" value={appDatabases.filter(d=>d.classification === 'declared_not_live').length}/><Metric icon={<Database/>} label="MongoDB stores" value={mongoDatabases.length}/><Metric icon={<ShieldCheck/>} label="Declared services" value={declaredByDatabase.size}/><Metric icon={<ShieldCheck/>} label="Protected tables" value={live.reduce((n,d)=>n+(d.tables||[]).filter(t=>t.capability?.protected_reason).length,0)}/><Metric icon={<Database/>} label="Current database" value={database || '—'}/></section>
     {(mongoDatabases.length > 0 || mongoError) && <section style={styles.panel}>
