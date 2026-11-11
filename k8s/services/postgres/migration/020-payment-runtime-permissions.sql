@@ -5,6 +5,8 @@
 -- the migration hook must explicitly grant only the DML needed by
 -- payment-service. This migration is idempotent and never changes ownership.
 
+\connect payments
+
 BEGIN;
 
 GRANT SELECT, INSERT, UPDATE, DELETE

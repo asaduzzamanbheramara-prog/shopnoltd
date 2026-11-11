@@ -231,3 +231,6 @@ shopnoltd-consolidation-roadmap.md
 /paypal.py
 secret.env
 tests/browser-role/reports/
+
+# Migration SQL must be tracked (Argo builds the migration ConfigMap from Git)
+!k8s/services/postgres/migration/*.sql

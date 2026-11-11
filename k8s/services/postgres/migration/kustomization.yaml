@@ -9,6 +9,7 @@ resources:
 configMapGenerator:
 - name: postgres-platform-migrations
   files:
+  - 010-ensure-runtime-roles.sql
   - 012-payment-schema-reconciliation.sql
   - 013-provision-comms-databases.sql
   - 014-provision-chatwoot-database.sql
