@@ -482,7 +482,7 @@ async def llm_with_failover(
         try:
             reply = await llm(messages, candidate)
             if candidate != active_model:
-                await ui.send_json({"type": "model", "model": candidate, "display_name": next((item["display_name"] for item in catalog if item["model_key"] == candidate), candidate), "reason": "selected" if active_model is None else "automatic failover"})
+                await ui.send_json({"type": "model", "model": candidate, "display_name": next((item["display_name"] for item in catalog if item["model_key"] == candidate), candidate), "reason": "selected" if not failed_models else "automatic failover"})
             return reply, candidate
         except Exception as exc:
             if not is_retryable_model_error(exc):
@@ -494,6 +494,7 @@ async def llm_with_failover(
             await ui.send_json({
                 "type": "model_failover",
                 "model": candidate,
+                "display_name": next((item["display_name"] for item in catalog if item["model_key"] == candidate), candidate),
                 "reason": f"temporary provider failure ({status_code}); trying another eligible model",
             })
     raise RuntimeError(f"All eligible models failed during this task: {type(last_error).__name__ if last_error else 'unavailable'}") from last_error
