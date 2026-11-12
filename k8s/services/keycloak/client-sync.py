@@ -18,6 +18,7 @@ CLIENT_IDS = ["shopnoltd-web", "web-portal"]
 REQUIRED_REDIRECT_URIS = [
     "http://localhost:5173/callback",
     "https://shopnoltd.dpdns.org/callback",
+    "https://web-portal.shopnoltd.dpdns.org/callback",
     "https://shopnoltd.dpdns.org/android-cloud/callback",
     "https://admin-portal.shopnoltd.dpdns.org/callback",
     "https://devices.shopnoltd.dpdns.org/",
@@ -30,6 +31,7 @@ REQUIRED_REDIRECT_URIS = [
 REQUIRED_WEB_ORIGINS = [
     "http://localhost:5173",
     "https://shopnoltd.dpdns.org",
+    "https://web-portal.shopnoltd.dpdns.org",
     "https://admin-portal.shopnoltd.dpdns.org",
     "https://devices.shopnoltd.dpdns.org",
     "https://android.shopnoltd.dpdns.org",
@@ -106,12 +108,14 @@ def request(method, path, token=None, body=None, form=False):
     if token:
         req.add_header("Authorization", f"Bearer {token}")
     try:
-        with urllib.request.urlopen(req, timeout=15) as resp:
+        with urllib.request.urlopen(req, timeout=10) as resp:
             raw = resp.read()
             return resp.status, json.loads(raw) if raw else None
     except urllib.error.HTTPError as exc:
         return exc.code, None
-    except Exception:
+    except (urllib.error.URLError, TimeoutError, OSError) as exc:
+        reason = getattr(exc, "reason", exc)
+        print(f"[WARN] Keycloak request {method} {path} failed: {type(reason).__name__}: {reason}", file=sys.stderr, flush=True)
         return None, None
 
 
@@ -186,7 +190,7 @@ def sync_client(token, client_id):
         client_uuid = client["id"]
         client["redirectUris"] = sorted(set((client.get("redirectUris") or []) + required_redirect_uris))
         client["webOrigins"] = sorted(set((client.get("webOrigins") or []) + required_web_origins))
-        # Explicitly reconcile existing clients created by older manifests.\n        client["directAccessGrantsEnabled"] = True
+        # Explicitly reconcile existing clients created by older manifests.\n        client["directAccessGrantsEnabled"] = False
         attributes = client.get("attributes") or {}
         attributes["pkce.code.challenge.method"] = "S256"
         client["attributes"] = attributes
@@ -260,17 +264,22 @@ def sync_social_providers(token):
 
 def main():
     last_error = None
-    for _ in range(30):
+    max_attempts = 8
+    for attempt in range(1, max_attempts + 1):
         try:
+            print(f"[INFO] Keycloak client sync attempt {attempt}/{max_attempts}", flush=True)
             token = get_admin_token()
             for client_id in CLIENT_IDS:
                 sync_client(token, client_id)
             sync_social_providers(token)
+            print("[OK] Keycloak client synchronization completed", flush=True)
             return
         except Exception as exc:
             last_error = exc
-            time.sleep(5)
-    print(f"[FAIL] Keycloak client sync: {last_error}", file=sys.stderr)
+            print(f"[WARN] Keycloak client sync attempt {attempt}/{max_attempts} failed: {exc}", file=sys.stderr, flush=True)
+            if attempt < max_attempts:
+                time.sleep(3)
+    print(f"[FAIL] Keycloak client sync exhausted {max_attempts} attempts: {last_error}", file=sys.stderr, flush=True)
     sys.exit(1)
 
 
