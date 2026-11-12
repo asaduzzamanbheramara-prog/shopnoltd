@@ -53,9 +53,14 @@ jobs:
           kubectl auth can-i list secrets --all-namespaces | grep -qx yes
           kubectl auth can-i get pods -n "$POSTGRES_NAMESPACE" | grep -qx yes
           kubectl auth can-i create pods/exec -n "$POSTGRES_NAMESPACE" | grep -qx yes
+          kubectl auth can-i get pods -n "$DATA_NAMESPACE" | grep -qx yes
+          kubectl auth can-i watch pods -n "$DATA_NAMESPACE" | grep -qx yes
           kubectl auth can-i create pods -n "$DATA_NAMESPACE" | grep -qx yes
           kubectl auth can-i delete pods -n "$DATA_NAMESPACE" | grep -qx yes
           kubectl auth can-i create pods/exec -n "$DATA_NAMESPACE" | grep -qx yes
+          kubectl auth can-i list persistentvolumeclaims --all-namespaces | grep -qx yes
+          kubectl auth can-i get persistentvolumes | grep -qx yes
+          sudo -n test -r /var/lib/rancher/k3s/server/token
           bash ./ops/backup/check-postgres-storage.sh
           echo "::add-mask::$BACKUP_ENCRYPTION_KEY"
 
