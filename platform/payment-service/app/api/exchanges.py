@@ -97,8 +97,9 @@ async def do_convert(body: ConvertIn, user=Depends(current_user), s: AsyncSessio
 
     try:
         converted = await convert(frm, to, body.amount)
-    except Exception as exc:
-        raise HTTPException(502, f"Exchange provider unavailable: {exc}") from exc
+    except Exception:
+        # Provider exceptions can contain upstream URLs, response bodies, or secrets.
+        raise HTTPException(502, "exchange provider unavailable") from None
 
     from_amount = Decimal(str(converted["from_amount"]))
     to_amount = Decimal(str(converted["to_amount"]))
