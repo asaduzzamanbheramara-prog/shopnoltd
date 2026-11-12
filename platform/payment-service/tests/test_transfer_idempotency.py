@@ -143,3 +143,11 @@ def test_admin_approval_and_rejection_are_tenant_scoped():
     assert source.count("Transaction.tenant_id == require_tenant_id(user)") == 3
     assert source.count("Wallet.tenant_id == tx.tenant_id") == 2
 
+def test_direct_mfs_feed_refuses_ambiguous_receiver_accounts():
+    from pathlib import Path
+
+    source = (Path(__file__).resolve().parents[1] / "app" / "api" / "direct_mfs_feed.py").read_text(encoding="utf-8")
+    assert "matching_accounts = [a for a in accounts if _norm_number(a.account_number) == receiver]" in source
+    assert "if len(matching_accounts) > 1:" in source
+    assert "automatic credit refused" in source
+
