@@ -24,6 +24,11 @@ spec:
         - namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: shopno-ai}}
       ports:
         - {port: 4000, protocol: TCP}
+    - to:   # Isolated Browserless Chromium; only the dedicated browser pod
+        - namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: shopno-apps}}
+          podSelector: {matchLabels: {app.kubernetes.io/name: agent-browser}}
+      ports:
+        - {port: 3000, protocol: TCP}
     - to:   # Keycloak JWKS (public HTTPS; private ranges excluded so the agent cannot reach cluster services)
         - ipBlock:
             cidr: 0.0.0.0/0
