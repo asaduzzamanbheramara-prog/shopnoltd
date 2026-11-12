@@ -141,6 +141,14 @@ jobs:
           echo "PASS: full isolated PostgreSQL restore completed (application_tables=$table_count; extensions=$extension_list)."
           echo "NOTE: only the disposable GitHub-hosted runner database was modified."
 
+      - name: Capture disposable PostgreSQL diagnostics on failure
+        if: failure()
+        shell: bash
+        run: |
+          set +e
+          docker inspect --format 'container_status={{.State.Status}} oom_killed={{.State.OOMKilled}} exit_code={{.State.ExitCode}}' shopnoltd-postgres-restore-validation 2>&1 || true
+          docker logs --tail 250 shopnoltd-postgres-restore-validation 2>&1 || true
+
       - name: Remove disposable PostgreSQL container and image
         if: always()
         shell: bash
