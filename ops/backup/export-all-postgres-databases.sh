@@ -34,7 +34,7 @@ for db in "${databases[@]}"; do
   mkdir -p "$BACKUP_WORKDIR/postgres/csv/$db"
   kubectl -n "$POSTGRES_NAMESPACE" exec "$pod" -- sh -c '
     export PGPASSWORD="$POSTGRES_PASSWORD"
-    psql -X -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$1" -At -F "|" -c "SELECT schemaname, tablename FROM pg_tables WHERE schemaname NOT IN (\047pg_catalog\047,\047information_schema\047) ORDER BY schemaname, tablename"
+    psql -X -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$1" -At -F "|" -c "SELECT schemaname, tablename FROM pg_tables WHERE schemaname NOT IN ($$pg_catalog$$,$$information_schema$$) ORDER BY schemaname, tablename"
   ' sh "$db" > "$BACKUP_WORKDIR/metadata/$db.tables.txt"
   while IFS='|' read -r schema table; do
     [[ -n "$schema" && -n "$table" ]] || continue
