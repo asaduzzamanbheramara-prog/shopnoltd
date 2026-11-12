@@ -18,10 +18,11 @@ UI protocol (client -> server):
   {"type":"auth","token"}                  first message; may be re-sent any time to extend the session
   {"goal":"...","model":"claude-sonnet"}   start a task
 """
-import asyncio, json, os, re, time, uuid
+import asyncio, base64, ipaddress, json, os, re, time, uuid
 from collections import deque
 from urllib.parse import urlparse
 import httpx
+from playwright.async_api import async_playwright
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from jose import JWTError, jwt
 
@@ -46,12 +47,14 @@ AUDIENCE = os.environ.get("KEYCLOAK_AUDIENCE", "api-service")
 ENABLE_SHELL = os.environ.get("ENABLE_SHELL", "false").lower() == "true"
 UI_ORIGINS = [o for o in os.environ.get("UI_ORIGINS", "https://shopnoltd.dpdns.org").split(",") if o]
 EXT_IDS = [i for i in os.environ.get("EXTENSION_IDS", "").split(",") if i]
+BROWSER_WS_ENDPOINT = os.environ.get("BROWSER_WS_ENDPOINT", "").strip()
 
 app = FastAPI(title="Shopno Agent")
 os.makedirs(WORKSPACE, exist_ok=True)
 
 extensions: dict[str, WebSocket] = {}      # user id -> extension socket
 pending: dict[str, asyncio.Future] = {}    # request id -> future
+browser_sessions: dict[str, dict] = {}    # one isolated browser context per active user task
 running: set[str] = set()                  # users with an active run (one at a time)
 histories: dict[str, list] = {}            # user id -> conversation (memory only)
 recent_goals: dict[str, deque] = {}        # user id -> timestamps of started goals
@@ -59,7 +62,7 @@ _jwks_cache: dict | None = None
 
 # approval needed in the UI before these browser actions run
 SENSITIVE_BROWSER = {"open", "click", "type"}
-BROWSER_ACTIONS = {"open", "get_text", "click", "type", "screenshot", "scroll"}
+BROWSER_ACTIONS = {"open", "get_text", "click", "type", "screenshot", "scroll", "wait_for"}
 USER_RE = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 
 
@@ -142,8 +145,8 @@ TOOLS = [
     _fn("write_file", "Write a file in the workspace.", {"path": {"type": "string"}, "content": {"type": "string"}}, ["path", "content"]),
     _fn("read_file", "Read a file from the workspace.", {"path": {"type": "string"}}, ["path"]),
     _fn("list_files", "List files in the workspace (optionally under a folder).", {"path": {"type": "string"}}, []),
-    _fn("browser_action", "Control a browser tab opened by you via the user's extension. "
-        "Start with action=open. action: open|get_text|click|type|screenshot|scroll.",
+    _fn("browser_action", "Control the user's isolated Chromium browser session. Start with action=open. "
+        "Actions: open|get_text|click|type|screenshot|scroll|wait_for.",
         {"action": {"type": "string", "enum": sorted(BROWSER_ACTIONS)},
          "url": {"type": "string"}, "selector": {"type": "string"}, "text": {"type": "string"}}, ["action"]),
 ]
@@ -200,17 +203,30 @@ async def ask_approval(ui: WebSocket, tool: str, args: dict) -> bool:
             return reply.get("approved") is True
 
 
+def validate_public_http_url(raw: str) -> str:
+    parsed = urlparse(raw)
+    if parsed.scheme not in ("http", "https") or not parsed.hostname or parsed.username or parsed.password:
+        raise ValueError("only public http(s) URLs without embedded credentials may be opened")
+    host = parsed.hostname.rstrip(".").lower()
+    if host == "localhost" or host.endswith((".localhost", ".local", ".internal", ".svc", ".cluster.local")):
+        raise ValueError("private and local destinations are blocked")
+    try:
+        address = ipaddress.ip_address(host)
+    except ValueError:
+        address = None
+    if address is not None and not address.is_global:
+        raise ValueError("private and non-global IP destinations are blocked")
+    return raw
+
+
 def clean_browser_args(args: dict) -> dict:
     action = args.get("action")
     if action not in BROWSER_ACTIONS:
         raise ValueError("unknown browser action")
     out = {"action": action}
     if action == "open":
-        url = str(args.get("url", ""))[:2000]
-        if urlparse(url).scheme not in ("http", "https"):
-            raise ValueError("only http(s) URLs may be opened")
-        out["url"] = url
-    if action in ("click", "type"):
+        out["url"] = validate_public_http_url(str(args.get("url", ""))[:2000])
+    if action in ("click", "type", "wait_for"):
         out["selector"] = str(args.get("selector", ""))[:500]
         if not out["selector"]:
             raise ValueError("selector required")
@@ -219,10 +235,50 @@ def clean_browser_args(args: dict) -> dict:
     return out
 
 
-async def browser_action(user: str, ui: WebSocket, args: dict) -> str:
+async def _get_browser_session(user: str) -> dict:
+    session = browser_sessions.get(user)
+    if session and session["browser"].is_connected():
+        return session
+    if not BROWSER_WS_ENDPOINT:
+        raise RuntimeError("isolated browser endpoint is not configured")
+    playwright = await async_playwright().start()
+    try:
+        browser = await playwright.chromium.connect_over_cdp(BROWSER_WS_ENDPOINT, timeout=20000)
+        context = await browser.new_context(
+            accept_downloads=True,
+            viewport={"width": 1440, "height": 900},
+        )
+        page = await context.new_page()
+        session = {"playwright": playwright, "browser": browser, "context": context, "page": page}
+        browser_sessions[user] = session
+        return session
+    except Exception:
+        await playwright.stop()
+        raise
+
+
+async def close_browser_session(user: str) -> None:
+    session = browser_sessions.pop(user, None)
+    if not session:
+        return
+    try:
+        await session["context"].close()
+    except Exception:
+        pass
+    try:
+        await session["browser"].close()
+    except Exception:
+        pass
+    try:
+        await session["playwright"].stop()
+    except Exception:
+        pass
+
+
+async def _extension_browser_action(user: str, ui: WebSocket, args: dict) -> str:
     ws = extensions.get(user)
     if not ws:
-        return "Extension not connected. Ask the user to open the Shopno Agent extension and connect."
+        return "Isolated browser is not configured and no approved browser extension is connected."
     rid = uuid.uuid4().hex
     fut = asyncio.get_running_loop().create_future(); pending[rid] = fut
     await ws.send_json({"id": rid, **args})
@@ -236,11 +292,44 @@ async def browser_action(user: str, ui: WebSocket, args: dict) -> str:
     img = res.pop("image", None)
     if img:
         await ui.send_json({"type": "screenshot", "image": img})
-        res["note"] = "screenshot captured and shown to the user; you cannot see it"
+        res["note"] = "screenshot captured and shown to the user"
     if isinstance(res.get("text"), str):
         res["text"] = "<untrusted_web_content>\n" + res["text"][:7000] + "\n</untrusted_web_content>"
     return json.dumps(res)[:8000]
 
+
+async def browser_action(user: str, ui: WebSocket, args: dict) -> str:
+    if not BROWSER_WS_ENDPOINT:
+        return await _extension_browser_action(user, ui, args)
+    session = await _get_browser_session(user)
+    page = session["page"]
+    action = args["action"]
+    result = {}
+    if action == "open":
+        response = await page.goto(args["url"], wait_until="domcontentloaded", timeout=45000)
+        result = {"url": page.url, "title": await page.title(), "status": response.status if response else None}
+    elif action == "get_text":
+        result = {"url": page.url, "title": await page.title(),
+                  "text": (await page.locator("body").inner_text(timeout=15000))[:20000]}
+    elif action == "click":
+        await page.locator(args["selector"]).first.click(timeout=15000)
+        result = {"clicked": True, "url": page.url, "title": await page.title()}
+    elif action == "type":
+        await page.locator(args["selector"]).first.fill(args["text"], timeout=15000)
+        result = {"typed": True, "selector": args["selector"]}
+    elif action == "scroll":
+        await page.evaluate("window.scrollBy(0, Math.max(300, window.innerHeight * 0.8))")
+        result = {"scrolled": True, "url": page.url}
+    elif action == "wait_for":
+        await page.locator(args["selector"]).first.wait_for(state="visible", timeout=15000)
+        result = {"visible": True, "selector": args["selector"]}
+    elif action == "screenshot":
+        image = await page.screenshot(type="jpeg", quality=60, full_page=False)
+        await ui.send_json({"type": "screenshot", "image": "data:image/jpeg;base64," + base64.b64encode(image).decode("ascii")})
+        result = {"captured": True, "url": page.url, "note": "screenshot shown to the user"}
+    if isinstance(result.get("text"), str):
+        result["text"] = "<untrusted_web_content>\n" + result["text"][:7000] + "\n</untrusted_web_content>"
+    return json.dumps(result)[:8000]
 
 async def call_tool(claims: dict, ui: WebSocket, name: str, args: dict) -> str:
     user = claims["sub"]
@@ -385,6 +474,7 @@ async def ui_socket(ws: WebSocket):
                 await ws.send_json({"type": "error", "text": f"{type(e).__name__}"})
             finally:
                 running.discard(user)
+                await close_browser_session(user)
                 trim(hist)
             await ws.send_json({"type": "done"})
     except (WebSocketDisconnect, RuntimeError):
