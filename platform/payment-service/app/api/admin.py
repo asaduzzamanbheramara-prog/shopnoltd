@@ -74,6 +74,8 @@ async def approve(tx_id: str, user=Depends(require_admin), s: AsyncSession = Dep
     w = wr.scalar_one_or_none()
     if w is None:
         raise HTTPException(409, "transaction wallet is missing")
+    if w.user_id != tx.user_id or w.currency != tx.currency:
+        raise HTTPException(409, "transaction wallet ownership or currency is inconsistent")
     if tx.type.value == "withdrawal":
         amount = Decimal(str(tx.amount)) + Decimal(str(tx.fee))
         balance = Decimal(str(w.balance))
@@ -119,6 +121,8 @@ async def reject(tx_id: str, user=Depends(require_admin), s: AsyncSession = Depe
         w = wr.scalar_one_or_none()
         if w is None:
             raise HTTPException(409, "transaction wallet is missing")
+        if w.user_id != tx.user_id or w.currency != tx.currency:
+            raise HTTPException(409, "transaction wallet ownership or currency is inconsistent")
         frozen = Decimal(str(w.frozen))
         amount = Decimal(str(tx.amount)) + Decimal(str(tx.fee))
         if frozen < amount:
