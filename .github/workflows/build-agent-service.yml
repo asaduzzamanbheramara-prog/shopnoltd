@@ -49,17 +49,40 @@ jobs:
           import os, re
           path = Path("k8s/services/agent-service/deployment.yaml")
           text = path.read_text()
-          pattern = r'(?m)^([ \t]+image:) ghcr\.io/asaduzzamanbheramara-prog/shopnoltd-agent-service:[^\n]+$'
-          updated, count = re.subn(pattern, rf'\1 {os.environ["IMAGE"]}', text, count=1)
+          pattern = r'(?m)^([ \\t]+image:) ghcr\\.io/asaduzzamanbheramara-prog/shopnoltd-agent-service:[^\\n]+$'
+          updated, count = re.subn(pattern, rf'\\1 {os.environ["IMAGE"]}', text, count=1)
           if count != 1:
               raise SystemExit("Expected exactly one agent-service image reference")
           path.write_text(updated)
           PY
-      - name: Commit GitOps image update
+      - name: Commit GitOps image update safely
+        shell: bash
         run: |
+          set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add k8s/services/agent-service/deployment.yaml
-          if git diff --cached --quiet; then exit 0; fi
+          if git diff --cached --quiet; then
+            echo "GitOps image already matches this build; nothing to commit."
+            exit 0
+          fi
+          git diff --cached --check
           git commit -m "chore: update agent-service image to ${GITHUB_SHA} [skip ci]"
-          git push origin HEAD:${GITHUB_REF_NAME}
+
+          # The platform image promotion workflow can update main concurrently.
+          # Rebase only this isolated image-reference commit; never force-push
+          # or resolve a manifest conflict automatically.
+          for attempt in 1 2 3; do
+            if git push origin "HEAD:${GITHUB_REF_NAME}"; then
+              exit 0
+            fi
+            echo "Push failed (attempt ${attempt}/3); fetching current main and rebasing."
+            git fetch origin "${GITHUB_REF_NAME}"
+            if ! git rebase "origin/${GITHUB_REF_NAME}"; then
+              git rebase --abort || true
+              echo "ERROR: GitOps promotion conflicts with newer main; refusing to overwrite changes."
+              exit 1
+            fi
+          done
+          echo "ERROR: unable to publish agent-service image reference after three safe attempts."
+          exit 1
