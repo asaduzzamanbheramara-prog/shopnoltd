@@ -81,7 +81,7 @@ jobs:
           kubectl --request-timeout=30s -n shopno-platform apply --dry-run=server -f k8s/services/web-portal/ingress.yaml
           kubectl --request-timeout=30s -n shopno-platform apply --dry-run=server -f k8s/services/web-portal/download-redirects.yaml
           test "$(grep -c '^kind: Ingress$' k8s/services/web-portal/download-redirects.yaml)" = "3"
-          test "$(grep -c 'nginx.ingress.kubernetes.io/permanent-redirect-code: "302"' k8s/services/web-portal/download-redirects.yaml)" = "3"
+          test "$(grep -c 'nginx.ingress.kubernetes.io/temporal-redirect:' k8s/services/web-portal/download-redirects.yaml)" = "3"
 
       - name: Apply only Web Portal Ingress and update only its image
         shell: bash
