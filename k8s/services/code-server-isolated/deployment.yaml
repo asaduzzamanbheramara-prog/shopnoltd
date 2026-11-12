@@ -80,6 +80,7 @@ spec:
                 name: code-server-isolated-config
             - secretRef:
                 name: code-server-secret
+                optional: true
           env:
             - name: POD_NAME
               valueFrom: { fieldRef: { fieldPath: metadata.name } }
