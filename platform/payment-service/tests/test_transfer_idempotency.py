@@ -527,3 +527,12 @@ def test_admin_decisions_verify_wallet_owner_and_currency_match_transaction():
     assert source.count("w.user_id != tx.user_id or w.currency != tx.currency") == 2
     assert source.count('transaction wallet ownership or currency is inconsistent') == 2
 
+def test_admin_money_movement_rejects_nonpositive_principal_or_negative_fee():
+    from pathlib import Path
+
+    source = (
+        Path(__file__).resolve().parents[1] / "app" / "api" / "admin.py"
+    ).read_text(encoding="utf-8")
+    assert source.count("Decimal(str(tx.amount)) <= 0 or Decimal(str(tx.fee)) < 0") == 2
+    assert source.count("transaction amount or fee is invalid; manual reconciliation required") == 2
+
