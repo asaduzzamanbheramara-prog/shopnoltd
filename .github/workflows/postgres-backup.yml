@@ -1,10 +1,11 @@
-name: Shopnoltd encrypted disaster-recovery backup
+name: Shopnoltd encrypted multi-store disaster-recovery backup
 
 on:
   push:
     branches: [main]
     paths:
       - '.github/workflows/postgres-backup.yml'
+      - '.github/workflows/backup-static-validation.yml'
       - 'ops/backup/**'
   schedule:
     - cron: '17 18 * * *'
@@ -20,14 +21,16 @@ concurrency:
 env:
   POSTGRES_NAMESPACE: shopno-data
   POSTGRES_DEPLOYMENT: postgres
+  DATA_NAMESPACE: shopno-data
   BACKUP_BRANCH: database-backups
-  BACKUP_WORKDIR: /tmp/shopnoltd-dr-backup
+  BACKUP_WORKDIR: ${{ vars.BACKUP_WORKDIR || '/tmp/shopnoltd-dr-backup' }}
+  MIN_BACKUP_FREE_KB: '20971520'
 
 jobs:
   backup:
-    name: Create, encrypt, validate and version PostgreSQL and Kubernetes backups
+    name: Create, encrypt, validate and version multi-store backup
     runs-on: [self-hosted, linux]
-    timeout-minutes: 180
+    timeout-minutes: 240
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
@@ -41,18 +44,19 @@ jobs:
         run: |
           set -euo pipefail
           umask 077
-          for cmd in kubectl openssl sha256sum python3 tar gzip git; do command -v "$cmd" >/dev/null; done
+          for cmd in kubectl openssl sha256sum python3 tar gzip git sudo df; do command -v "$cmd" >/dev/null; done
           test -n "${BACKUP_ENCRYPTION_KEY:-}" || { echo "::error::BACKUP_ENCRYPTION_KEY is missing."; exit 1; }
           test -f "${KUBECONFIG:-$HOME/.kube/config}" || { echo "::error::KUBECONFIG is missing."; exit 1; }
           kubectl cluster-info >/dev/null
           kubectl -n "$POSTGRES_NAMESPACE" get deployment "$POSTGRES_DEPLOYMENT" >/dev/null
+          kubectl -n "$DATA_NAMESPACE" get deployment mongo redis minio >/dev/null
           kubectl auth can-i list secrets --all-namespaces | grep -qx yes
           kubectl auth can-i get pods -n "$POSTGRES_NAMESPACE" | grep -qx yes
           kubectl auth can-i create pods/exec -n "$POSTGRES_NAMESPACE" | grep -qx yes
           bash ./ops/backup/check-postgres-storage.sh
           echo "::add-mask::$BACKUP_ENCRYPTION_KEY"
 
-      - name: Export all PostgreSQL databases and CSV tables
+      - name: Export all databases, object data and K3s bootstrap files
         shell: bash
         env:
           BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
@@ -61,6 +65,8 @@ jobs:
           umask 077
           bash ./ops/backup/export-all-postgres-databases.sh
           test -s "$BACKUP_WORKDIR/postgres-all-databases.tar.gz"
+          printf '%s\n' "$(date -u +%Y%m%dT%H%M%SZ)" > "$BACKUP_WORKDIR/metadata/timestamp.txt"
+          printf '%s\n' "$GITHUB_SHA" > "$BACKUP_WORKDIR/metadata/source-revision.txt"
           openssl enc -aes-256-cbc -pbkdf2 -iter 600000 -salt \
             -in "$BACKUP_WORKDIR/postgres-all-databases.tar.gz" \
             -out "$BACKUP_WORKDIR/postgres-all-databases.tar.gz.enc" \
@@ -87,7 +93,7 @@ jobs:
             -pass env:BACKUP_ENCRYPTION_KEY
           rm -f "$BACKUP_WORKDIR/kubernetes-secrets.json"
 
-      - name: Verify encrypted archives and checksums
+      - name: Authenticate encrypted files and verify decryptability
         shell: bash
         env:
           BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
@@ -96,12 +102,15 @@ jobs:
           umask 077
           echo "::add-mask::$BACKUP_ENCRYPTION_KEY"
           cd "$BACKUP_WORKDIR"
-          sha256sum postgres-all-databases.tar.gz.enc > postgres-all-databases.tar.gz.enc.sha256
-          sha256sum kubernetes-secrets.json.enc > kubernetes-secrets.json.enc.sha256
+          hmac_key="$(printf 'shopnoltd-backup-hmac-v1:%s' "$BACKUP_ENCRYPTION_KEY" | sha256sum | awk '{print $1}')"
+          for file in postgres-all-databases.tar.gz.enc kubernetes-secrets.json.enc; do
+            sha256sum "$file" > "$file.sha256"
+            openssl dgst -sha256 -hmac "$hmac_key" "$file" | awk '{print $2}' > "$file.hmac"
+          done
           openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 \
-            -in postgres-all-databases.tar.gz.enc -out verify-postgres.tar.gz \
+            -in postgres-all-databases.tar.gz.enc -out verify-data.tar.gz \
             -pass env:BACKUP_ENCRYPTION_KEY
-          tar -tzf verify-postgres.tar.gz >/dev/null
+          tar -tzf verify-data.tar.gz >/dev/null
           openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 \
             -in kubernetes-secrets.json.enc -out verify-secrets.json \
             -pass env:BACKUP_ENCRYPTION_KEY
@@ -112,15 +121,19 @@ jobs:
               raise SystemExit("Decrypted Kubernetes Secret export is invalid")
           print(f"PASS: decrypted {len(doc['items'])} Secret objects.")
           PY
-          sha256sum -c postgres-all-databases.tar.gz.enc.sha256
-          sha256sum -c kubernetes-secrets.json.enc.sha256
-          rm -f verify-postgres.tar.gz verify-secrets.json
+          for file in postgres-all-databases.tar.gz.enc kubernetes-secrets.json.enc; do
+            sha256sum -c "$file.sha256"
+            actual="$(openssl dgst -sha256 -hmac "$hmac_key" "$file" | awk '{print $2}')"
+            expected="$(cat "$file.hmac")"
+            test "$actual" = "$expected"
+          done
+          rm -f verify-data.tar.gz verify-secrets.json
 
       - name: Publish timestamped snapshot without overwriting history
         shell: bash
         run: |
           set -euo pipefail
-          timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
+          timestamp="$(cat "$BACKUP_WORKDIR/metadata/timestamp.txt")"
           snapshot="snapshots/$timestamp"
           git config user.name 'shopnoltd-backup-bot'
           git config user.email 'shopnoltd-backup-bot@users.noreply.github.com'
@@ -133,19 +146,16 @@ jobs:
           fi
           test ! -e "$snapshot" || { echo "::error::Snapshot already exists: $snapshot"; exit 1; }
           mkdir -p "$snapshot"
-          cp "$BACKUP_WORKDIR/postgres-all-databases.tar.gz.enc" "$snapshot/"
-          cp "$BACKUP_WORKDIR/postgres-all-databases.tar.gz.enc.sha256" "$snapshot/"
-          cp "$BACKUP_WORKDIR/kubernetes-secrets.json.enc" "$snapshot/"
-          cp "$BACKUP_WORKDIR/kubernetes-secrets.json.enc.sha256" "$snapshot/"
+          cp "$BACKUP_WORKDIR/postgres-all-databases.tar.gz.enc"* "$snapshot/"
+          cp "$BACKUP_WORKDIR/kubernetes-secrets.json.enc"* "$snapshot/"
           cp "$BACKUP_WORKDIR/metadata/"*.txt "$snapshot/"
           cat > "$snapshot/README.md" <<'EOF'
-          Encrypted all-database PostgreSQL archive (including per-table CSV exports)
-          and encrypted all-namespace Kubernetes Secret JSON export.
-          Decryption key is stored separately and is not present in this repository.
-          No automatic deletion or force-push is performed by this workflow.
+          Encrypted PostgreSQL all-database and CSV archive, MongoDB archive,
+          Redis RDB, MinIO PVC archive, K3s bootstrap files, and Kubernetes Secret JSON.
+          Key escrow is separate. No automatic deletion or force-push is performed.
           EOF
           git add "$snapshot"
-          git commit -m "backup: encrypted full PostgreSQL and Kubernetes snapshot $timestamp"
+          git commit -m "backup: encrypted multi-store snapshot $timestamp"
           git push origin "$BACKUP_BRANCH"
 
       - name: Remove plaintext staging files
