@@ -172,3 +172,26 @@ def test_exchange_retry_lookup_is_tenant_scoped():
     for query in transaction_queries:
         assert "Transaction.tenant_id" in ast.unparse(query)
 
+def test_wallet_ledger_transaction_query_is_tenant_scoped():
+    from pathlib import Path
+    import ast
+
+    source = (
+        Path(__file__).resolve().parents[1] / "app" / "api" / "wallets.py"
+    ).read_text(encoding="utf-8")
+    tree = ast.parse(source)
+    transaction_queries = [
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+        and node.func.attr == "where"
+        and "select(Transaction)" in ast.unparse(node.func.value)
+    ]
+    assert transaction_queries
+    assert any(
+        "Transaction.wallet_id == w.id" in ast.unparse(query)
+        and "Transaction.tenant_id == tenant_id" in ast.unparse(query)
+        for query in transaction_queries
+    )
+
