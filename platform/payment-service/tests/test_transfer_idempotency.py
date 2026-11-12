@@ -117,3 +117,22 @@ def test_history_requires_tenant_claim_before_querying():
     source = (Path(__file__).resolve().parents[1] / "app" / "api" / "transactions.py").read_text(encoding="utf-8")
     assert "tenant_id = require_tenant_id(user)" in source
     assert "Transaction.tenant_id == tenant_id" in source
+
+def test_direct_payment_admin_reads_and_verification_are_tenant_scoped():
+    from pathlib import Path
+
+    source = (Path(__file__).resolve().parents[1] / "app" / "api" / "direct_payments.py").read_text(encoding="utf-8")
+    assert ".join(DirectPaymentIntent, DirectPaymentSubmission.intent_id == DirectPaymentIntent.id)" in source
+    assert "query = query.where(DirectPaymentIntent.tenant_id == tenant_id)" in source
+    assert "submission_query = submission_query.where(DirectPaymentIntent.tenant_id == tenant_id)" in source
+    assert "Transaction.tenant_id == intent.tenant_id" in source
+    assert "DirectPaymentAccount.tenant_id == intent.tenant_id" in source
+
+
+def test_tenant_admin_receiving_account_creation_requires_signed_tenant():
+    from pathlib import Path
+
+    source = (Path(__file__).resolve().parents[1] / "app" / "api" / "direct_payments.py").read_text(encoding="utf-8")
+    assert "tenant_id = require_tenant_id(user)" in source
+    assert 'tenant_id = str(user.get("tenant_id") or "default").strip()' in source
+
