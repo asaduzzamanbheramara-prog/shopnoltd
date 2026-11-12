@@ -140,7 +140,13 @@ async def create_withdrawal(body: WithdrawalIn, user=Depends(current_user), s: A
     except NotImplementedError:
         # No payout was initiated by an unsupported provider: safely release
         # the reservation and mark this idempotency record terminal.
-        wallet = await s.scalar(select(Wallet).where(Wallet.id == tx.wallet_id).with_for_update())
+        wallet = await s.scalar(
+            select(Wallet).where(
+                Wallet.id == tx.wallet_id,
+                Wallet.tenant_id == tenant_id,
+                Wallet.user_id == user_id,
+            ).with_for_update()
+        )
         if wallet:
             wallet.frozen = max(Decimal("0"), Decimal(str(wallet.frozen)) - reserved_amount)
         tx.status = TxStatus.failed
