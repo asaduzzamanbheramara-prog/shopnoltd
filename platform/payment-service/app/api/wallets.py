@@ -21,6 +21,7 @@ from app.schemas.schemas import WalletOut
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter()
@@ -71,9 +72,9 @@ async def get_wallet(currency: str, user=Depends(current_user), s: AsyncSession 
         s.add(w)
         try:
             await s.commit()
-        except Exception:
-            # Another request created it concurrently (unique index on
-            # user_id+currency) — fetch the row that won instead of erroring.
+        except IntegrityError:
+            # Another request created this tenant/user/currency row concurrently;
+            # fetch the row that won without hiding unrelated database failures.
             await s.rollback()
             res = await s.execute(
                 select(Wallet).where(
