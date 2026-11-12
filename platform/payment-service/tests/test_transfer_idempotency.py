@@ -378,3 +378,12 @@ def test_withdrawal_fee_is_reserved_and_settled_with_principal():
     assert "wallet.frozen = Decimal(str(wallet.frozen)) + reserved_amount" in withdrawal
     assert "Decimal(str(tx.amount)) + Decimal(str(tx.fee))" in admin
 
+def test_wallet_ledger_accounts_for_withdrawal_and_exchange_fees():
+    from pathlib import Path
+
+    source = (
+        Path(__file__).resolve().parents[1] / "app" / "api" / "wallets.py"
+    ).read_text(encoding="utf-8")
+    assert "amount = -(amount + float(t.fee or 0))" in source
+    assert "amount -= float(t.fee or 0)" in source
+
