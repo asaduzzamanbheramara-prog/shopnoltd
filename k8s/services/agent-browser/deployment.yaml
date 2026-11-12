@@ -69,7 +69,13 @@ spec:
           volumeMounts:
             - name: tmp
               mountPath: /tmp
+            - name: shm
+              mountPath: /dev/shm
       volumes:
         - name: tmp
           emptyDir:
             sizeLimit: 512Mi
+        - name: shm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 256Mi
