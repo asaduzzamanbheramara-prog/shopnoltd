@@ -1,0 +1,84 @@
+name: Reconcile cert-manager ClusterIssuer
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cert-manager-issuer-reconcile
+  cancel-in-progress: false
+
+jobs:
+  reconcile-issuer:
+    runs-on: [self-hosted, linux]
+    timeout-minutes: 20
+    steps:
+      - name: Checkout trusted main revision
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Verify cluster and cert-manager without changing workloads
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s "${KUBECONFIG:-$HOME/.kube/config}"
+          kubectl --request-timeout=20s cluster-info
+          kubectl get crd clusterissuers.cert-manager.io >/dev/null
+          for deployment in cert-manager cert-manager-cainjector cert-manager-webhook; do
+            kubectl -n cert-manager rollout status "deployment/$deployment" --timeout=180s
+          done
+
+      - name: Apply only the production ClusterIssuer
+        shell: bash
+        run: |
+          set -euo pipefail
+          kubectl apply --dry-run=server -f k8s/cert-manager/letsencrypt-prod-issuer.yaml
+          kubectl apply -f k8s/cert-manager/letsencrypt-prod-issuer.yaml
+          kubectl wait --for=condition=Ready clusterissuer/letsencrypt-prod --timeout=180s
+
+      - name: Verify platform certificate issuance
+        shell: bash
+        run: |
+          set -euo pipefail
+          namespace=shopno-platform
+          expected=(license-service-tls training-service-tls interior-service-tls)
+          deadline=$((SECONDS + 600))
+          while (( SECONDS < deadline )); do
+            all_ready=1
+            for secret in "${expected[@]}"; do
+              if ! kubectl -n "$namespace" get certificate "$secret" >/dev/null 2>&1; then
+                all_ready=0
+                continue
+              fi
+              ready="$(kubectl -n "$namespace" get certificate "$secret" -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}' 2>/dev/null || true)"
+              if [[ "$ready" != "True" ]]; then all_ready=0; fi
+            done
+            if (( all_ready == 1 )); then break; fi
+            sleep 15
+          done
+
+          echo "ClusterIssuer:"
+          kubectl get clusterissuer letsencrypt-prod
+          echo "Certificate readiness (no secret data is displayed):"
+          kubectl -n "$namespace" get certificates "${expected[@]}" -o custom-columns=NAME:.metadata.name,READY:.status.conditions[-1].status,REASON:.status.conditions[-1].reason --ignore-not-found
+          echo "TLS Secret existence:"
+          for secret in "${expected[@]}"; do
+            if kubectl -n "$namespace" get secret "$secret" >/dev/null 2>&1; then
+              echo "PASS Secret $namespace/$secret exists"
+            else
+              echo "BLOCKED Secret $namespace/$secret is still missing"
+            fi
+          done
+
+          missing=0
+          for secret in "${expected[@]}"; do
+            kubectl -n "$namespace" get secret "$secret" >/dev/null 2>&1 || missing=1
+          done
+          if (( missing != 0 )); then
+            echo "Certificate issuance is not complete. Inspect Certificate/Order/Challenge events before further changes."
+            kubectl -n "$namespace" get certificates,certificaterequests,orders,challenges
+            exit 1
+          fi
