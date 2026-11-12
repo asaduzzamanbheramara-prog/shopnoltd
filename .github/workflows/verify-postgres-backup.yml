@@ -1,6 +1,9 @@
 name: Verify encrypted Shopnoltd database and Kubernetes Secrets backups
 
 on:
+  push:
+    branches:
+      - fix/backup-isolated-restore-validation-20261112
   workflow_dispatch:
   workflow_run:
     workflows:
