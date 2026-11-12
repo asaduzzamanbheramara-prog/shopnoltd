@@ -242,7 +242,7 @@ export default function AgentWorkspace() {
             <div style={{ width: 54, height: 54, margin: '0 auto 16px', borderRadius: 16, display: 'grid', placeItems: 'center', background: '#10a37f', color: '#fff' }}><Bot size={28} /></div>
             <h2 style={{ margin: '0 0 8px', color: '#111827' }}>Give the agent a goal</h2>
             <p style={{ margin: 0 }}>It plans the steps, works in its own workspace, and asks before it opens pages or clicks in your browser.</p>
-            <p style={{ margin: '10px 0 0', fontSize: 13 }}>Browser actions need the Shopno Agent extension connected, with access granted for the site.</p>
+            <p style={{ margin: '10px 0 0', fontSize: 13 }}>Browser actions run in an isolated Shopnoltd Chromium session. Opening pages, clicking and typing require your approval.</p>
           </div>
         )}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
