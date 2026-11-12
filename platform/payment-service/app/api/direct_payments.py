@@ -22,7 +22,7 @@ from app.models.models import (
     TxType,
     Wallet,
 )
-from app.schemas.schemas import DirectPaymentIntentIn, DirectPaymentVerificationIn
+from app.schemas.schemas import DirectPaymentIntentIn, DirectPaymentSubmissionIn, DirectPaymentVerificationIn
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
@@ -276,7 +276,7 @@ async def get_intent(intent_id: str, user=Depends(current_user), s: AsyncSession
 
 
 @router.post("/intents/{intent_id}/submit", status_code=201)
-async def submit_evidence(intent_id: str, body: dict, user=Depends(current_user), s: AsyncSession = Depends(db)):
+async def submit_evidence(intent_id: str, body: DirectPaymentSubmissionIn, user=Depends(current_user), s: AsyncSession = Depends(db)):
     tenant_id = require_tenant_id(user)
     try:
         iid = uuid.UUID(intent_id)
@@ -297,14 +297,12 @@ async def submit_evidence(intent_id: str, body: dict, user=Depends(current_user)
         intent.status = "expired"
         await s.commit()
         raise HTTPException(400, "payment intent expired")
-    txid = str(body.get("txid", "")).strip()
-    sender = str(body.get("sender_number", "")).strip()
-    if len(txid) < 4 or len(txid) > 128:
-        raise HTTPException(422, "txid is required")
+    txid = body.txid.strip()
+    sender = (body.sender_number or "").strip()
     if await s.scalar(select(DirectPaymentSubmission).where(DirectPaymentSubmission.txid == txid)):
         raise HTTPException(409, "this TxID has already been submitted")
     claimed_amount = _positive_decimal(
-        body.get("amount", intent.amount), "amount must be a positive finite number"
+        body.amount if body.amount is not None else intent.amount, "amount must be a positive finite number"
     )
     if claimed_amount != Decimal(str(intent.amount)):
         raise HTTPException(400, "submitted amount does not match the payment intent")
@@ -314,7 +312,7 @@ async def submit_evidence(intent_id: str, body: dict, user=Depends(current_user)
         txid=txid,
         sender_number=sender or None,
         amount_claimed=claimed_amount,
-        raw_evidence={"reference": body.get("reference"), "sender_number": sender or None},
+        raw_evidence={"reference": body.reference, "sender_number": sender or None},
         status="submitted",
     )
     s.add(submission)
