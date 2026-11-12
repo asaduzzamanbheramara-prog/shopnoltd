@@ -64,11 +64,12 @@ jobs:
           test -n "${BACKUP_ENCRYPTION_KEY:-}" || { echo "::error::BACKUP_ENCRYPTION_KEY secret is missing."; exit 1; }
           echo "::add-mask::$BACKUP_ENCRYPTION_KEY"
           snapshot="backup-source/${{ steps.snapshot.outputs.snapshot_path }}"
+          cd "$snapshot"
           work="$(mktemp -d "$RUNNER_TEMP/shopnoltd-dr-verify.XXXXXX")"
           cleanup() { rm -rf "$work"; }
           trap cleanup EXIT
-          data_file="$snapshot/postgres-all-databases.tar.gz.enc"
-          secrets_file="$snapshot/kubernetes-secrets.json.enc"
+          data_file="postgres-all-databases.tar.gz.enc"
+          secrets_file="kubernetes-secrets.json.enc"
           hmac_key="$(printf 'shopnoltd-backup-hmac-v1:%s' "$BACKUP_ENCRYPTION_KEY" | sha256sum | awk '{print $1}')"
           for file in "$data_file" "$secrets_file"; do
             sha256sum -c "$file.sha256"
