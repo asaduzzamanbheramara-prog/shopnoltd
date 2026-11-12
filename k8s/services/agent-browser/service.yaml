@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: agent-browser
+  namespace: shopno-apps
+  labels:
+    app.kubernetes.io/name: agent-browser
+    app.kubernetes.io/part-of: shopnoltd
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: agent-browser
+  ports:
+    - name: browser
+      port: 3000
+      targetPort: browser
+      protocol: TCP

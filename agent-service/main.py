@@ -2,7 +2,7 @@
 
 UI  --(WS /ws/ui, first message = auth)--> agent loop --(LiteLLM, OpenAI-compatible)--> model
                          |-- sandbox tools (files, plan; shell only if explicitly enabled)
-                         `-- browser tools --(WS /ws/ext)--> Chrome extension
+                         `-- browser tools --> isolated Browserless Chromium via Playwright (extension fallback)
 
 Provider API keys live only in LiteLLM. This service holds ONE LiteLLM *virtual* key
 (restricted models + budget), not the master key. Set it in the secret that is already
@@ -18,19 +18,22 @@ UI protocol (client -> server):
   {"type":"auth","token"}                  first message; may be re-sent any time to extend the session
   {"goal":"...","model":"claude-sonnet"}   start a task
 """
-import asyncio, json, os, re, time, uuid
+import asyncio, base64, ipaddress, json, os, re, time, uuid
 from collections import deque
 from urllib.parse import urlparse
 import httpx
+from playwright.async_api import async_playwright
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from jose import JWTError, jwt
 
 LITELLM_URL = os.environ.get("LITELLM_URL", "http://litellm-proxy.shopno-ai.svc.cluster.local:4000/v1")
 LITELLM_KEY = os.environ.get("LITELLM_KEY") or os.environ["LITELLM_MASTER_KEY"]
-ALLOWED_MODELS = [m for m in os.environ.get("ALLOWED_MODELS", "auto,claude-sonnet").split(",") if m]
-DEFAULT_MODEL = os.environ.get("DEFAULT_MODEL", "claude-sonnet")
-if DEFAULT_MODEL not in ALLOWED_MODELS:
-    DEFAULT_MODEL = ALLOWED_MODELS[0]
+ALLOWED_MODELS = [m.strip() for m in os.environ.get("ALLOWED_MODELS", "").split(",") if m.strip()]
+DEFAULT_MODEL = os.environ.get("DEFAULT_MODEL", "auto")
+AI_MODEL_CATALOG_URL = os.environ.get("AI_MODEL_CATALOG_URL", "http://ai-platform.shopno-platform.svc.cluster.local/api/v1/inference/models")
+MODEL_COOLDOWN_SECONDS = max(15, int(os.environ.get("MODEL_COOLDOWN_SECONDS", "90")))
+if DEFAULT_MODEL != "auto" and ALLOWED_MODELS and DEFAULT_MODEL not in ALLOWED_MODELS:
+    DEFAULT_MODEL = "auto"
 WORKSPACE = os.path.realpath(os.environ.get("WORKSPACE", "/workspace"))
 MAX_STEPS = int(os.environ.get("MAX_STEPS", "25"))
 MAX_FILE_BYTES = int(os.environ.get("MAX_FILE_BYTES", str(200_000)))
@@ -46,20 +49,24 @@ AUDIENCE = os.environ.get("KEYCLOAK_AUDIENCE", "api-service")
 ENABLE_SHELL = os.environ.get("ENABLE_SHELL", "false").lower() == "true"
 UI_ORIGINS = [o for o in os.environ.get("UI_ORIGINS", "https://shopnoltd.dpdns.org").split(",") if o]
 EXT_IDS = [i for i in os.environ.get("EXTENSION_IDS", "").split(",") if i]
+BROWSER_WS_ENDPOINT = os.environ.get("BROWSER_WS_ENDPOINT", "").strip()
 
 app = FastAPI(title="Shopno Agent")
 os.makedirs(WORKSPACE, exist_ok=True)
 
 extensions: dict[str, WebSocket] = {}      # user id -> extension socket
 pending: dict[str, asyncio.Future] = {}    # request id -> future
+browser_sessions: dict[str, dict] = {}    # one isolated browser context per active user task
+browser_semaphore = asyncio.Semaphore(max(1, int(os.environ.get("BROWSER_CONCURRENCY", "1"))))
 running: set[str] = set()                  # users with an active run (one at a time)
 histories: dict[str, list] = {}            # user id -> conversation (memory only)
 recent_goals: dict[str, deque] = {}        # user id -> timestamps of started goals
 _jwks_cache: dict | None = None
+model_cooldowns: dict[str, float] = {}
 
 # approval needed in the UI before these browser actions run
 SENSITIVE_BROWSER = {"open", "click", "type"}
-BROWSER_ACTIONS = {"open", "get_text", "click", "type", "screenshot", "scroll"}
+BROWSER_ACTIONS = {"open", "get_text", "click", "type", "screenshot", "scroll", "wait_for"}
 USER_RE = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 
 
@@ -107,7 +114,9 @@ async def authenticate(ws: WebSocket, kind: str) -> dict | None:
         first = await asyncio.wait_for(ws.receive_json(), timeout=10)
         if first.get("type") != "auth":
             raise ValueError("auth message required")
-        claims = await verify_token(str(first.get("token", "")))
+        access_token = str(first.get("token", ""))
+        claims = await verify_token(access_token)
+        claims["_access_token"] = access_token
         if not USER_RE.match(str(claims.get("sub", ""))):
             raise ValueError("bad subject")
     except Exception:
@@ -142,8 +151,8 @@ TOOLS = [
     _fn("write_file", "Write a file in the workspace.", {"path": {"type": "string"}, "content": {"type": "string"}}, ["path", "content"]),
     _fn("read_file", "Read a file from the workspace.", {"path": {"type": "string"}}, ["path"]),
     _fn("list_files", "List files in the workspace (optionally under a folder).", {"path": {"type": "string"}}, []),
-    _fn("browser_action", "Control a browser tab opened by you via the user's extension. "
-        "Start with action=open. action: open|get_text|click|type|screenshot|scroll.",
+    _fn("browser_action", "Control the user's isolated Chromium browser session. Start with action=open. "
+        "Actions: open|get_text|click|type|screenshot|scroll|wait_for.",
         {"action": {"type": "string", "enum": sorted(BROWSER_ACTIONS)},
          "url": {"type": "string"}, "selector": {"type": "string"}, "text": {"type": "string"}}, ["action"]),
 ]
@@ -200,17 +209,30 @@ async def ask_approval(ui: WebSocket, tool: str, args: dict) -> bool:
             return reply.get("approved") is True
 
 
+def validate_public_http_url(raw: str) -> str:
+    parsed = urlparse(raw)
+    if parsed.scheme not in ("http", "https") or not parsed.hostname or parsed.username or parsed.password:
+        raise ValueError("only public http(s) URLs without embedded credentials may be opened")
+    host = parsed.hostname.rstrip(".").lower()
+    if host == "localhost" or host.endswith((".localhost", ".local", ".internal", ".svc", ".cluster.local")):
+        raise ValueError("private and local destinations are blocked")
+    try:
+        address = ipaddress.ip_address(host)
+    except ValueError:
+        address = None
+    if address is not None and not address.is_global:
+        raise ValueError("private and non-global IP destinations are blocked")
+    return raw
+
+
 def clean_browser_args(args: dict) -> dict:
     action = args.get("action")
     if action not in BROWSER_ACTIONS:
         raise ValueError("unknown browser action")
     out = {"action": action}
     if action == "open":
-        url = str(args.get("url", ""))[:2000]
-        if urlparse(url).scheme not in ("http", "https"):
-            raise ValueError("only http(s) URLs may be opened")
-        out["url"] = url
-    if action in ("click", "type"):
+        out["url"] = validate_public_http_url(str(args.get("url", ""))[:2000])
+    if action in ("click", "type", "wait_for"):
         out["selector"] = str(args.get("selector", ""))[:500]
         if not out["selector"]:
             raise ValueError("selector required")
@@ -219,10 +241,63 @@ def clean_browser_args(args: dict) -> dict:
     return out
 
 
-async def browser_action(user: str, ui: WebSocket, args: dict) -> str:
+async def _get_browser_session(user: str) -> dict:
+    session = browser_sessions.get(user)
+    if session and session["browser"].is_connected():
+        return session
+    if session:
+        await close_browser_session(user)
+    if not BROWSER_WS_ENDPOINT:
+        raise RuntimeError("isolated browser endpoint is not configured")
+    try:
+        await asyncio.wait_for(browser_semaphore.acquire(), timeout=30)
+    except asyncio.TimeoutError:
+        raise RuntimeError("isolated browser is busy; retry shortly")
+    playwright = None
+    try:
+        playwright = await async_playwright().start()
+        browser = await playwright.chromium.connect_over_cdp(BROWSER_WS_ENDPOINT, timeout=20000)
+        context = await browser.new_context(
+            accept_downloads=True,
+            viewport={"width": 1440, "height": 900},
+        )
+        page = await context.new_page()
+        session = {"playwright": playwright, "browser": browser, "context": context, "page": page}
+        browser_sessions[user] = session
+        return session
+    except Exception:
+        if playwright is not None:
+            try:
+                await playwright.stop()
+            except Exception:
+                pass
+        browser_semaphore.release()
+        raise
+
+
+async def close_browser_session(user: str) -> None:
+    session = browser_sessions.pop(user, None)
+    if not session:
+        return
+    try:
+        await session["context"].close()
+    except Exception:
+        pass
+    try:
+        await session["browser"].close()
+    except Exception:
+        pass
+    try:
+        await session["playwright"].stop()
+    except Exception:
+        pass
+    browser_semaphore.release()
+
+
+async def _extension_browser_action(user: str, ui: WebSocket, args: dict) -> str:
     ws = extensions.get(user)
     if not ws:
-        return "Extension not connected. Ask the user to open the Shopno Agent extension and connect."
+        return "Isolated browser is not configured and no approved browser extension is connected."
     rid = uuid.uuid4().hex
     fut = asyncio.get_running_loop().create_future(); pending[rid] = fut
     await ws.send_json({"id": rid, **args})
@@ -236,11 +311,44 @@ async def browser_action(user: str, ui: WebSocket, args: dict) -> str:
     img = res.pop("image", None)
     if img:
         await ui.send_json({"type": "screenshot", "image": img})
-        res["note"] = "screenshot captured and shown to the user; you cannot see it"
+        res["note"] = "screenshot captured and shown to the user"
     if isinstance(res.get("text"), str):
         res["text"] = "<untrusted_web_content>\n" + res["text"][:7000] + "\n</untrusted_web_content>"
     return json.dumps(res)[:8000]
 
+
+async def browser_action(user: str, ui: WebSocket, args: dict) -> str:
+    if not BROWSER_WS_ENDPOINT:
+        return await _extension_browser_action(user, ui, args)
+    session = await _get_browser_session(user)
+    page = session["page"]
+    action = args["action"]
+    result = {}
+    if action == "open":
+        response = await page.goto(args["url"], wait_until="domcontentloaded", timeout=45000)
+        result = {"url": page.url, "title": await page.title(), "status": response.status if response else None}
+    elif action == "get_text":
+        result = {"url": page.url, "title": await page.title(),
+                  "text": (await page.locator("body").inner_text(timeout=15000))[:20000]}
+    elif action == "click":
+        await page.locator(args["selector"]).first.click(timeout=15000)
+        result = {"clicked": True, "url": page.url, "title": await page.title()}
+    elif action == "type":
+        await page.locator(args["selector"]).first.fill(args["text"], timeout=15000)
+        result = {"typed": True, "selector": args["selector"]}
+    elif action == "scroll":
+        await page.evaluate("window.scrollBy(0, Math.max(300, window.innerHeight * 0.8))")
+        result = {"scrolled": True, "url": page.url}
+    elif action == "wait_for":
+        await page.locator(args["selector"]).first.wait_for(state="visible", timeout=15000)
+        result = {"visible": True, "selector": args["selector"]}
+    elif action == "screenshot":
+        image = await page.screenshot(type="jpeg", quality=60, full_page=False)
+        await ui.send_json({"type": "screenshot", "image": "data:image/jpeg;base64," + base64.b64encode(image).decode("ascii")})
+        result = {"captured": True, "url": page.url, "note": "screenshot shown to the user"}
+    if isinstance(result.get("text"), str):
+        result["text"] = "<untrusted_web_content>\n" + result["text"][:7000] + "\n</untrusted_web_content>"
+    return json.dumps(result)[:8000]
 
 async def call_tool(claims: dict, ui: WebSocket, name: str, args: dict) -> str:
     user = claims["sub"]
@@ -299,6 +407,114 @@ async def llm(messages: list, model: str) -> dict:
         return r.json()["choices"][0]["message"]
 
 
+async def get_model_catalog(claims: dict) -> list[dict]:
+    """Return active models from the authenticated AI catalog; free_tier is admin-controlled."""
+    token = claims.get("_access_token")
+    if not token:
+        return []
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            response = await client.get(AI_MODEL_CATALOG_URL, headers={"Authorization": f"Bearer {token}"})
+            response.raise_for_status()
+            payload = response.json()
+            gateway_response = await client.get(
+                f"{LITELLM_URL}/models",
+                headers={"Authorization": f"Bearer {LITELLM_KEY}"},
+            )
+            gateway_response.raise_for_status()
+            gateway_payload = gateway_response.json()
+        if not isinstance(payload, list):
+            return []
+        gateway_data = gateway_payload.get("data", []) if isinstance(gateway_payload, dict) else []
+        gateway_models = {
+            str(item.get("id")) for item in gateway_data
+            if isinstance(item, dict) and item.get("id")
+        }
+        models = []
+        for item in payload:
+            if not isinstance(item, dict) or not item.get("model_name"):
+                continue
+            capabilities = item.get("capabilities") or {}
+            provider_name = str(item.get("provider_name") or "")
+            model_name = str(item["model_name"])
+            model_key = f"{provider_name}:{model_name}"
+            # The virtual key must be allowed to use the alias in LiteLLM.
+            if model_key not in gateway_models:
+                continue
+            models.append({
+                "model_name": model_name,
+                "model_key": model_key,
+                "display_name": str(item.get("display_name") or model_name),
+                "provider_name": provider_name,
+                "free_tier": capabilities.get("free_tier") is True,
+                "priority": int(item.get("priority") or 100),
+            })
+        return sorted(models, key=lambda item: (item["priority"], item["display_name"].lower()))
+    except Exception:
+        return []
+
+
+def is_retryable_model_error(exc: Exception) -> bool:
+    """Retry only provider availability/quota failures, not malformed requests or auth errors."""
+    if isinstance(exc, httpx.HTTPStatusError):
+        return exc.response.status_code in {402, 408, 425, 429, 500, 502, 503, 504}
+    return isinstance(exc, (httpx.TimeoutException, httpx.NetworkError))
+
+
+def eligible_free_models(catalog: list[dict], failed_models: set[str], now: float | None = None) -> list[str]:
+    """Return only explicitly free-tier, active-catalog models not failed or cooling down."""
+    current = time.time() if now is None else now
+    return [
+        item["model_key"] for item in catalog
+        if item.get("free_tier") is True
+        and item["model_key"] not in failed_models
+        and model_cooldowns.get(item["model_key"], 0) <= current
+    ]
+
+
+async def llm_with_failover(
+    messages: list,
+    requested_model: str,
+    active_model: str | None,
+    catalog: list[dict],
+    failed_models: set[str],
+    ui: WebSocket,
+) -> tuple[dict, str]:
+    free_models = eligible_free_models(catalog, failed_models)
+    candidates: list[str] = []
+    preferred = active_model or (requested_model if requested_model != "auto" else None)
+    if preferred and preferred not in failed_models:
+        candidates.append(preferred)
+    candidates.extend(name for name in free_models if name not in candidates)
+
+    if not candidates:
+        if requested_model == "auto":
+            raise RuntimeError("No healthy free model is currently available. Enable a free-tier model in AI Models or try again later.")
+        raise RuntimeError("The selected model and all eligible free fallback models are unavailable.")
+
+    last_error: Exception | None = None
+    for candidate in candidates:
+        try:
+            reply = await llm(messages, candidate)
+            if candidate != active_model:
+                await ui.send_json({"type": "model", "model": candidate, "display_name": next((item["display_name"] for item in catalog if item["model_key"] == candidate), candidate), "reason": "selected" if not failed_models else "automatic failover"})
+            return reply, candidate
+        except Exception as exc:
+            if not is_retryable_model_error(exc):
+                raise
+            last_error = exc
+            failed_models.add(candidate)
+            model_cooldowns[candidate] = time.time() + MODEL_COOLDOWN_SECONDS
+            status_code = getattr(getattr(exc, "response", None), "status_code", "network")
+            await ui.send_json({
+                "type": "model_failover",
+                "model": candidate,
+                "display_name": next((item["display_name"] for item in catalog if item["model_key"] == candidate), candidate),
+                "reason": f"temporary provider failure ({status_code}); trying another eligible model",
+            })
+    raise RuntimeError(f"All eligible models failed during this task: {type(last_error).__name__ if last_error else 'unavailable'}") from last_error
+
+
 SYSTEM = ("You are Shopno Agent. First call update_plan with the steps, then work step by step with tools, "
           "update the plan as steps finish, check results, and end with a short summary. "
           "Browser tabs: start with browser_action open; you can only operate tabs you opened. "
@@ -331,6 +547,7 @@ async def ui_socket(ws: WebSocket):
     if not claims: return
     user = claims["sub"]
     dog = asyncio.create_task(watchdog(ws, claims))
+    await ws.send_json({"type": "models", "items": await get_model_catalog(claims)})
     try:
         while True:
             msg = await ws.receive_json()
@@ -338,30 +555,36 @@ async def ui_socket(ws: WebSocket):
                 continue
             if msg.get("type") == "auth":                      # session refresh
                 try:
-                    fresh = await verify_token(str(msg.get("token", "")))
+                    refreshed_token = str(msg.get("token", ""))
+                    fresh = await verify_token(refreshed_token)
                     if fresh["sub"] != user: raise ValueError("different user")
+                    claims["_access_token"] = refreshed_token
                     claims["_deadline"] = time.time() + UI_MAX_SECONDS
                     await ws.send_json({"type": "auth_ok"})
                 except Exception:
                     await ws.close(code=4401); return
                 continue
             goal = str(msg.get("goal", "")).strip()[:4000]
-            model = msg.get("model") or DEFAULT_MODEL
+            model = str(msg.get("model") or DEFAULT_MODEL)
             if not goal:
                 continue
-            if model not in ALLOWED_MODELS:
-                await ws.send_json({"type": "error", "text": "model not allowed"}); continue
+            catalog = await get_model_catalog(claims)
+            catalog_names = {item["model_key"] for item in catalog}
+            if model != "auto" and model not in catalog_names and (not ALLOWED_MODELS or model not in ALLOWED_MODELS):
+                await ws.send_json({"type": "error", "text": "model not active or not permitted"}); continue
             if user in running:
                 await ws.send_json({"type": "error", "text": "a task is already running"}); continue
             if not rate_ok(user):
                 await ws.send_json({"type": "error", "text": "too many tasks this hour"}); continue
             running.add(user)
             hist = histories.setdefault(user, [])
+            failed_models: set[str] = set()
+            active_model: str | None = None
             start = len(hist)                                   # roll back to here if the run fails
             try:
                 hist.append({"role": "user", "content": goal})
                 for _ in range(MAX_STEPS):
-                    reply = await llm([{"role": "system", "content": SYSTEM}] + hist, model)
+                    reply, active_model = await llm_with_failover([{"role": "system", "content": SYSTEM}] + hist, model, active_model, catalog, failed_models, ws)
                     hist.append(reply)
                     if reply.get("content"): await ws.send_json({"type": "text", "text": reply["content"]})
                     calls = reply.get("tool_calls") or []
@@ -378,13 +601,17 @@ async def ui_socket(ws: WebSocket):
                             result = await call_tool(claims, ws, tname, args)
                         await ws.send_json({"type": "result", "name": tname, "result": result[:2000]})
                         hist.append({"role": "tool", "tool_call_id": tc["id"], "content": result})
-            except (WebSocketDisconnect, RuntimeError):
+            except WebSocketDisconnect:
                 del hist[start:]; raise
             except Exception as e:
-                del hist[start:]                                # never keep a half-finished tool exchange
-                await ws.send_json({"type": "error", "text": f"{type(e).__name__}"})
+                # Keep completed plan/tool results so a later retry can continue from this checkpoint.
+                # A lone user message means no work was completed, so avoid duplicating it next time.
+                if len(hist) <= start + 1:
+                    del hist[start:]
+                await ws.send_json({"type": "error", "text": f"{type(e).__name__}: {str(e)[:300]}"})
             finally:
                 running.discard(user)
+                await close_browser_session(user)
                 trim(hist)
             await ws.send_json({"type": "done"})
     except (WebSocketDisconnect, RuntimeError):
