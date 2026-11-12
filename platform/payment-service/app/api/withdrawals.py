@@ -129,6 +129,12 @@ async def create_withdrawal(body: WithdrawalIn, user=Depends(current_user), s: A
             return _withdrawal_out(existing)
         raise
 
+    # The default policy requires a human decision before any payout API
+    # is called. This is essential for providers (for example Stripe Transfer)
+    # whose create_withdrawal operation can move money immediately.
+    if settings.admin_approval_required:
+        return _withdrawal_out(tx)
+
     try:
         out = await provider.create_withdrawal(tx, destination=body.destination, idempotency_key=body.idempotency_key)
     except NotImplementedError:
