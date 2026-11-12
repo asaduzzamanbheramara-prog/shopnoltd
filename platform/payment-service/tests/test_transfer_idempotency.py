@@ -107,3 +107,34 @@ def test_customer_payment_routes_do_not_fall_back_to_default_tenant():
         assert 'user.get("tenant_id", "default")' not in source, (
             f"{module} must not silently assign an unscoped token to the default tenant"
         )
+
+
+def test_payment_tenant_claim_is_required_not_defaulted():
+    from app.core.tenant import require_tenant_id
+
+    assert require_tenant_id({"tenant_id": "tenant-a"}) == "tenant-a"
+    for claims in ({}, {"tenant_id": ""}, {"tenant_id": "   "}, {"tenant_id": None}):
+        with pytest.raises(HTTPException) as exc:
+            require_tenant_id(claims)
+        assert exc.value.status_code == 403
+
+
+def test_customer_payment_routes_do_not_fall_back_to_default_tenant():
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[1] / "app" / "api"
+    modules = ("wallets.py", "deposits.py", "withdrawals.py", "transfers.py",
+               "exchanges.py", "direct_payments.py", "transactions.py")
+    for module in modules:
+        source = (root / module).read_text(encoding="utf-8")
+        assert 'user.get("tenant_id", "default")' not in source, (
+            f"{module} must not silently assign an unscoped token to the default tenant"
+        )
+
+
+def test_history_requires_tenant_claim_before_querying():
+    from pathlib import Path
+
+    source = (Path(__file__).resolve().parents[1] / "app" / "api" / "transactions.py").read_text(encoding="utf-8")
+    assert "tenant_id = require_tenant_id(user)" in source
+    assert "Transaction.tenant_id == tenant_id" in source
