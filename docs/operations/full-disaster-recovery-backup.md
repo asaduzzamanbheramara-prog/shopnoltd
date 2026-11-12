@@ -5,7 +5,7 @@
 - Every non-template PostgreSQL database discovered from the live catalog, each as a custom-format dump.
 - PostgreSQL global roles and grants.
 - One CSV file per application table. These CSVs are inside the encrypted archive; do not publish them separately.
-- MongoDB all-database mongodump archive, including its database contents.
+- MongoDB all-database mongodump archive, including database contents.
 - Redis RDB snapshot transferred with redis-cli --rdb (replication transfer; no SAVE/BGSAVE command).
 - MinIO local-path PVC contents, but only while the MinIO Deployment is confirmed scaled to zero. The job fails closed if MinIO is active or the PV path is not accessible.
 - K3s server token and available local K3s kubeconfig/config files. The self-hosted runner must have non-interactive sudo read access; otherwise the job fails closed.
