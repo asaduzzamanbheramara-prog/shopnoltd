@@ -134,7 +134,7 @@ spec:
       volumes:
         - name: continue-config
           configMap:
-            name: code-server-continue-config
+            name: code-server-isolated-continue-config
         - name: data
           persistentVolumeClaim:
             claimName: code-server-isolated-data
