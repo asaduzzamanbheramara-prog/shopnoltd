@@ -71,8 +71,8 @@ def _decimal(value, field: str) -> Decimal:
         out = Decimal(str(value))
     except (InvalidOperation, TypeError, ValueError) as exc:
         raise HTTPException(422, f"invalid {field}") from exc
-    if out <= 0:
-        raise HTTPException(422, f"{field} must be positive")
+    if not out.is_finite() or out <= 0:
+        raise HTTPException(422, f"{field} must be a positive finite number")
     return out
 
 
