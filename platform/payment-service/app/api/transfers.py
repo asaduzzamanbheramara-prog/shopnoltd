@@ -2,6 +2,7 @@ from decimal import Decimal
 
 from app.core.db import SessionLocal
 from app.core.security import verify_token
+from app.core.tenant import require_tenant_id
 from app.models.models import PaymentMethod, Transaction, TxStatus, TxType, Wallet
 from app.schemas.schemas import TransferIn, TxOut
 from fastapi import APIRouter, Depends, HTTPException
@@ -38,6 +39,7 @@ async def current_user(creds: HTTPAuthorizationCredentials = Depends(bearer)):
 
 @router.post("", response_model=TxOut, status_code=201)
 async def internal_transfer(body: TransferIn, user=Depends(current_user), s: AsyncSession = Depends(db)):
+    tenant_id = require_tenant_id(user)
     if body.to_user_id == user["sub"]:
         raise HTTPException(400, "cannot transfer to the same user")
 
@@ -51,7 +53,7 @@ async def internal_transfer(body: TransferIn, user=Depends(current_user), s: Asy
     reference = f"transfer:{body.idempotency_key}"
     existing = await s.scalar(
         select(Transaction).where(
-            Transaction.tenant_id == user.get("tenant_id", "default"),
+            Transaction.tenant_id == tenant_id,
             Transaction.user_id == user["sub"],
             Transaction.type == TxType.transfer,
             Transaction.reference == reference,
@@ -72,7 +74,7 @@ async def internal_transfer(body: TransferIn, user=Depends(current_user), s: Asy
     for uid in users:
         wallet = await s.scalar(
             select(Wallet).where(
-                Wallet.tenant_id == user.get("tenant_id", "default"),
+                Wallet.tenant_id == tenant_id,
                 Wallet.user_id == uid,
                 Wallet.currency == currency,
             ).with_for_update()
@@ -81,7 +83,7 @@ async def internal_transfer(body: TransferIn, user=Depends(current_user), s: Asy
             if uid != body.to_user_id:
                 raise HTTPException(404, "source wallet not found")
             wallet = Wallet(
-                tenant_id=user.get("tenant_id", "default"),
+                tenant_id=tenant_id,
                 user_id=uid,
                 currency=currency,
                 balance=0,
@@ -94,7 +96,7 @@ async def internal_transfer(body: TransferIn, user=Depends(current_user), s: Asy
     # using the same key cannot create two money movements.
     existing = await s.scalar(
         select(Transaction).where(
-            Transaction.tenant_id == user.get("tenant_id", "default"),
+            Transaction.tenant_id == tenant_id,
             Transaction.user_id == user["sub"],
             Transaction.type == TxType.transfer,
             Transaction.reference == reference,
@@ -120,13 +122,13 @@ async def internal_transfer(body: TransferIn, user=Depends(current_user), s: Asy
     src.balance = Decimal(str(src.balance)) - amount
     dst.balance = Decimal(str(dst.balance)) + amount
     src_tx = Transaction(
-        tenant_id=user.get("tenant_id", "default"), user_id=user["sub"], wallet_id=src.id,
+        tenant_id=tenant_id, user_id=user["sub"], wallet_id=src.id,
         type=TxType.transfer, method=PaymentMethod.transfer, status=TxStatus.completed,
         amount=-amount, currency=currency, fee=0, reference=reference,
         meta={"to": body.to_user_id, "note": body.note, "idempotency_key": body.idempotency_key},
     )
     dst_tx = Transaction(
-        tenant_id=user.get("tenant_id", "default"), user_id=body.to_user_id, wallet_id=dst.id,
+        tenant_id=tenant_id, user_id=body.to_user_id, wallet_id=dst.id,
         type=TxType.transfer, method=PaymentMethod.transfer, status=TxStatus.completed,
         amount=amount, currency=currency, fee=0, reference=reference,
         meta={"from": user["sub"], "note": body.note, "idempotency_key": body.idempotency_key},
@@ -138,7 +140,7 @@ async def internal_transfer(body: TransferIn, user=Depends(current_user), s: Asy
         await s.rollback()
         existing = await s.scalar(
             select(Transaction).where(
-                Transaction.tenant_id == user.get("tenant_id", "default"),
+                Transaction.tenant_id == tenant_id,
                 Transaction.user_id == user["sub"],
                 Transaction.type == TxType.transfer,
                 Transaction.reference == reference,
