@@ -407,3 +407,13 @@ def test_direct_payment_evidence_amount_must_match_intent():
     assert 'if claimed_amount != Decimal(str(intent.amount)):' in source
     assert 'submitted amount does not match the payment intent' in source
 
+def test_signed_mfs_feed_amount_parser_rejects_non_finite_values():
+    from fastapi import HTTPException
+    from app.api.direct_mfs_feed import _decimal
+
+    assert _decimal("25.50", "amount") == Decimal("25.50")
+    for value in ("NaN", "Infinity", "-Infinity", "0", "-1"):
+        with pytest.raises(HTTPException) as exc:
+            _decimal(value, "amount")
+        assert exc.value.status_code == 422
+
