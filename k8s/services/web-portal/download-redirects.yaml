@@ -1,0 +1,95 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: shopnoltd-apk-redirect
+  namespace: shopno-platform
+  annotations:
+    nginx.ingress.kubernetes.io/temporal-redirect: "https://github.com/asaduzzamanbheramara-prog/shopnoltd/releases/download/shopnoltd-mobile-latest/Shopnoltd.apk"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - shopnoltd.dpdns.org
+      secretName: shopno-wildcard-tls
+  rules:
+    - host: shopnoltd.dpdns.org
+      http:
+        paths:
+          - path: /download/Shopnoltd.apk
+            pathType: Exact
+            backend:
+              service:
+                name: web-portal
+                port:
+                  number: 80
+          - path: /downloads/Shopnoltd.apk
+            pathType: Exact
+            backend:
+              service:
+                name: web-portal
+                port:
+                  number: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: shopnoltd-admin-apk-redirect
+  namespace: shopno-platform
+  annotations:
+    nginx.ingress.kubernetes.io/temporal-redirect: "https://github.com/asaduzzamanbheramara-prog/shopnoltd/releases/download/shopnoltd-mobile-latest/Shopnoltd-Admin.apk"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - shopnoltd.dpdns.org
+      secretName: shopno-wildcard-tls
+  rules:
+    - host: shopnoltd.dpdns.org
+      http:
+        paths:
+          - path: /download/Shopnoltd-Admin.apk
+            pathType: Exact
+            backend:
+              service:
+                name: web-portal
+                port:
+                  number: 80
+          - path: /downloads/Shopnoltd-Admin.apk
+            pathType: Exact
+            backend:
+              service:
+                name: web-portal
+                port:
+                  number: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: shopnoltd-collect-apk-redirect
+  namespace: shopno-platform
+  annotations:
+    nginx.ingress.kubernetes.io/temporal-redirect: "https://github.com/asaduzzamanbheramara-prog/shopnoltd-collect-android/releases/download/shopnoltdcollect-latest/ShopnoltdCollect.apk"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - shopnoltd.dpdns.org
+      secretName: shopno-wildcard-tls
+  rules:
+    - host: shopnoltd.dpdns.org
+      http:
+        paths:
+          - path: /download/ShopnoltdCollect.apk
+            pathType: Exact
+            backend:
+              service:
+                name: web-portal
+                port:
+                  number: 80
+          - path: /downloads/ShopnoltdCollect.apk
+            pathType: Exact
+            backend:
+              service:
+                name: web-portal
+                port:
+                  number: 80

@@ -8,6 +8,8 @@ on:
       - 'platform/web-portal/**'
       - 'k8s/services/web-portal/deployment.yaml'
       - 'k8s/services/web-portal/ingress.yaml'
+      - 'k8s/services/web-portal/download-redirects.yaml'
+      - 'k8s/services/web-portal/kustomization.yaml'
       - '.github/workflows/scoped-web-portal-download-deploy.yml'
 
 permissions:
@@ -26,7 +28,7 @@ jobs:
       - name: Checkout main
         uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ github.sha }}
           fetch-depth: 1
 
       - name: Verify runner and live Web Portal before changing anything
@@ -61,33 +63,6 @@ jobs:
             exit 1
           fi
 
-          android_deployment="$(kubectl --request-timeout=20s -n shopno-platform get deployment android-portal -o json)"
-          android_desired="$(jq -r '.spec.replicas // 1' <<<"$android_deployment")"
-          android_ready="$(jq -r '.status.readyReplicas // 0' <<<"$android_deployment")"
-          android_available="$(jq -r '.status.availableReplicas // 0' <<<"$android_deployment")"
-          if [ "$android_desired" != "1" ] || [ "$android_ready" != "$android_desired" ] || [ "$android_available" != "$android_desired" ]; then
-            echo "BLOCKED: Android download backend must already be healthy at exactly 1/1 (desired=$android_desired ready=$android_ready available=$android_available). No resources were changed."
-            echo "===== READ-ONLY ANDROID PORTAL CAPACITY AUDIT ====="
-            kubectl --request-timeout=20s get nodes -o wide || true
-            kubectl --request-timeout=20s top nodes || true
-            kubectl --request-timeout=20s describe nodes | sed -n '/Allocated resources:/,/Events:/p' || true
-            kubectl --request-timeout=20s -n shopno-platform get deployment android-portal -o wide || true
-            kubectl --request-timeout=20s -n shopno-platform get pods -l app.kubernetes.io/name=android-portal -o wide || true
-            kubectl --request-timeout=20s -n shopno-platform get pvc android-portal-data -o wide || true
-            kubectl --request-timeout=20s -n shopno-platform get service,endpoints android-portal -o wide || true
-            kubectl --request-timeout=20s get hpa -A -o wide || true
-            kubectl --request-timeout=20s get resourcequota -A -o wide || true
-            kubectl --request-timeout=20s top pods -A --sort-by=memory 2>/dev/null | head -n 40 || true
-            kubectl --request-timeout=20s get events -A --sort-by=.lastTimestamp 2>/dev/null | tail -n 100 || true
-            exit 1
-          fi
-          android_pvc_phase="$(kubectl --request-timeout=20s -n shopno-platform get pvc android-portal-data -o jsonpath='{.status.phase}')"
-          endpoint_count="$(kubectl --request-timeout=20s -n shopno-platform get endpoints android-portal -o json | jq '[.subsets[]?.addresses[]?] | length')"
-          if [ "$android_pvc_phase" != "Bound" ] || [ "$endpoint_count" -lt 1 ]; then
-            echo "BLOCKED: Android download backend prerequisites failed (PVC=$android_pvc_phase endpoints=$endpoint_count). No resources were changed."
-            exit 1
-          fi
-
           image="$(awk '$1 == "containers:" { in_containers=1; next } in_containers && $1 == "image:" { print $2; exit }' k8s/services/web-portal/deployment.yaml)"
           case "$image" in
             ghcr.io/asaduzzamanbheramara-prog/shopnoltd/web-portal:*) ;;
@@ -96,25 +71,26 @@ jobs:
           test -n "$image"
           printf 'WEB_PORTAL_IMAGE=%s\n' "$image" >> "$GITHUB_ENV"
           printf 'WEB_PORTAL_REPLICAS=%s\n' "$desired" >> "$GITHUB_ENV"
-          echo "Preflight PASS: Web Portal is healthy 1/1, its data PVC is Bound, and no HPA controls it."
+          echo "Preflight PASS: Web Portal is healthy 1/1, its data PVC is Bound, and no HPA controls it. Android Portal replicas are not required for the exact APK redirects."
           echo "Target image: $image"
 
-      - name: Validate the single Ingress object
+      - name: Validate the Web Portal and direct APK redirect Ingress objects
         shell: bash
         run: |
           set -euo pipefail
           kubectl --request-timeout=30s -n shopno-platform apply --dry-run=server -f k8s/services/web-portal/ingress.yaml
-          jq -e '.spec.rules[] | select(.host == "shopnoltd.dpdns.org") | .http.paths[] | select(.path == "/download" and .backend.service.name == "android-portal" and .backend.service.port.number == 80)' \
-            < <(kubectl --request-timeout=20s -n shopno-platform get ingress web-portal -o json) >/dev/null || {
-              echo "Existing Ingress does not currently expose the expected Android download route; applying the reviewed manifest next."
-            }
+          kubectl --request-timeout=30s -n shopno-platform apply --dry-run=server -f k8s/services/web-portal/download-redirects.yaml
+          test "$(grep -c '^kind: Ingress$' k8s/services/web-portal/download-redirects.yaml)" = "3"
+          test "$(grep -c 'nginx.ingress.kubernetes.io/temporal-redirect:' k8s/services/web-portal/download-redirects.yaml)" = "3"
 
       - name: Apply only Web Portal Ingress and update only its image
         shell: bash
         run: |
           set -euo pipefail
-          # This applies exactly one Ingress object. It does not apply the root Kustomize tree.
+          # Apply only the Web Portal Ingress objects; exact APK paths redirect directly to GitHub.
+          # This does not apply the root Kustomize tree or touch the zero-replica Android Portal.
           kubectl --request-timeout=30s -n shopno-platform apply -f k8s/services/web-portal/ingress.yaml
+          kubectl --request-timeout=30s -n shopno-platform apply -f k8s/services/web-portal/download-redirects.yaml
 
           current_image="$(kubectl --request-timeout=20s -n shopno-platform get deployment web-portal -o jsonpath='{.spec.template.spec.containers[?(@.name=="web-portal")].image}')"
           if [ "$current_image" != "$WEB_PORTAL_IMAGE" ]; then
