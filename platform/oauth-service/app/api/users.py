@@ -87,6 +87,25 @@ def _with_tenant_attribute(user_representation: dict, tenant_id: str | None) -> 
     return updated
 
 
+def _keycloak_user_representation(
+    *, email: str, name: str, password: str, tenant_id: str | None
+) -> dict:
+    """Build the Keycloak create payload with the same tenant attribute as its mirror."""
+    representation = {
+        "email": email,
+        "username": email,
+        "firstName": name,
+        "enabled": True,
+        "emailVerified": False,
+        "credentials": (
+            [{"type": "password", "value": password, "temporary": False}]
+            if password
+            else []
+        ),
+    }
+    return _with_tenant_attribute(representation, tenant_id)
+
+
 async def _ensure_account_provisioning_jobs(s: AsyncSession, u: UserMirror) -> None:
     """Atomically enqueue domain and mailbox work; never claim provider success."""
     for resource_type in ("subdomain", "mailbox"):
@@ -214,35 +233,47 @@ async def create(body: UserIn, user=Depends(admin), s: AsyncSession = Depends(db
     if await _find_email_owner(s, email):
         raise HTTPException(409, "email is already linked to another account")
 
+    tenant_id = body.tenant_id.strip() if body.tenant_id and body.tenant_id.strip() else None
+    keycloak_representation = _keycloak_user_representation(
+        email=email,
+        name=body.name,
+        password=body.password,
+        tenant_id=tenant_id,
+    )
     tok = await kc_token()
     async with httpx.AsyncClient() as c:
         r = await c.post(
             f"{ADMIN_URL}/users",
             headers={"Authorization": f"Bearer {tok}"},
-            json={
-                "email": email,
-                "username": email,
-                "firstName": body.name,
-                "enabled": True,
-                "emailVerified": False,
-                "credentials": [{"type": "password", "value": body.password, "temporary": False}]
-                if body.password
-                else [],
-            },
+            json=keycloak_representation,
         )
     if r.status_code == 409:
         raise HTTPException(409, "user already exists")
     r.raise_for_status()
     async with httpx.AsyncClient() as c:
         r2 = await c.get(
-            f"{ADMIN_URL}/users?email={email}", headers={"Authorization": f"Bearer {tok}"}
+            f"{ADMIN_URL}/users",
+            params={"username": email, "exact": "true"},
+            headers={"Authorization": f"Bearer {tok}"},
         )
-    kc_id = r2.json()[0]["id"]
+    r2.raise_for_status()
+    matches = [
+        candidate
+        for candidate in r2.json()
+        if candidate.get("username") == email
+        and _normalize_email(candidate.get("email")) == email
+    ]
+    if len(matches) != 1:
+        raise HTTPException(
+            502,
+            "Keycloak created the account but its unique identity could not be resolved; administrator reconciliation required",
+        )
+    kc_id = matches[0]["id"]
     u = UserMirror(
         keycloak_id=kc_id,
         email=email,
         name=body.name,
-        tenant_id=body.tenant_id,
+        tenant_id=tenant_id,
         identity_source="keycloak",
     )
     s.add(u)
