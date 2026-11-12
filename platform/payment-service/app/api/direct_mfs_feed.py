@@ -21,7 +21,7 @@ from app.models.models import (
     Wallet,
 )
 from fastapi import APIRouter, Header, HTTPException, Request
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -133,6 +133,7 @@ async def _credit_verified_feed(
                 DirectPaymentIntent.status.in_(["awaiting_payment", "submitted", "verifying"]),
                 DirectPaymentIntent.expires_at >= now,
                 DirectPaymentIntent.amount == amount,
+                func.upper(DirectPaymentIntent.expected_reference) == (reference or "").strip().upper(),
             )
             .order_by(DirectPaymentIntent.created_at.asc())
             .with_for_update()
