@@ -43,3 +43,45 @@ def test_same_key_with_changed_payload_is_rejected(body, currency, amount):
     with pytest.raises(HTTPException) as exc:
         _validate_existing_transfer(existing_transfer(), body, currency, amount)
     assert exc.value.status_code == 409
+
+
+def test_money_movement_wallet_queries_are_tenant_scoped():
+    """Every user-facing wallet lookup must include the signed tenant claim."""
+    import ast
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[1] / "app" / "api"
+    modules = ("deposits.py", "withdrawals.py", "transfers.py", "exchanges.py")
+    for module in modules:
+        tree = ast.parse((root / module).read_text(encoding="utf-8"))
+        wallet_selects = [
+            node for node in ast.walk(tree)
+            if isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and node.func.attr == "where"
+            and "select(Wallet)" in ast.unparse(node.func.value)
+        ]
+        assert wallet_selects, f"{module} should contain wallet lookups"
+        for query in wallet_selects:
+            assert "Wallet.tenant_id" in ast.unparse(query), (
+                f"{module} contains a wallet lookup without tenant isolation: "
+                f"{ast.unparse(query)}"
+            )
+
+
+def test_transfer_transaction_lookups_are_tenant_scoped():
+    import ast
+    from pathlib import Path
+
+    path = Path(__file__).resolve().parents[1] / "app" / "api" / "transfers.py"
+    tree = ast.parse(path.read_text(encoding="utf-8"))
+    transaction_queries = [
+        node for node in ast.walk(tree)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+        and node.func.attr == "where"
+        and "select(Transaction)" in ast.unparse(node.func.value)
+    ]
+    assert transaction_queries
+    for query in transaction_queries:
+        assert "Transaction.tenant_id" in ast.unparse(query)
