@@ -306,6 +306,8 @@ async def submit_evidence(intent_id: str, body: dict, user=Depends(current_user)
     claimed_amount = _positive_decimal(
         body.get("amount", intent.amount), "amount must be a positive finite number"
     )
+    if claimed_amount != Decimal(str(intent.amount)):
+        raise HTTPException(400, "submitted amount does not match the payment intent")
     submission = DirectPaymentSubmission(
         intent_id=intent.id,
         provider=intent.provider,
