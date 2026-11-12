@@ -471,3 +471,14 @@ def test_wallet_creation_does_not_swallow_unrelated_database_errors():
     assert "except IntegrityError:" in source
     assert "except Exception:" not in source
 
+def test_required_withdrawal_approval_precedes_any_external_payout_call():
+    from pathlib import Path
+
+    source = (
+        Path(__file__).resolve().parents[1] / "app" / "api" / "withdrawals.py"
+    ).read_text(encoding="utf-8")
+    approval_guard = source.index("if settings.admin_approval_required:")
+    payout_call = source.index("provider.create_withdrawal")
+    assert approval_guard < payout_call
+    assert "return _withdrawal_out(tx)" in source[approval_guard:payout_call]
+
