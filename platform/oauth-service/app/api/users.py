@@ -501,7 +501,6 @@ async def sync_keycloak(user=Depends(admin), s: AsyncSession = Depends(db)):
                     await s.flush()
                     created_users += 1
                 else:
-                    existing.active = True
                     # Legacy records remain sourced from the previous website.
                     if existing.identity_source != "legacy_sql":
                         email_owner = await _find_email_owner(
@@ -516,6 +515,7 @@ async def sync_keycloak(user=Depends(admin), s: AsyncSession = Depends(db)):
                         tenant_values = attrs.get("tenant_id") or []
                         if tenant_values:
                             existing.tenant_id = tenant_values[0]
+                    existing.active = True
 
                 profile = (
                     await s.execute(select(UserProfile).where(UserProfile.user_id == existing.id))
