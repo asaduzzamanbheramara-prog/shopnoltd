@@ -398,3 +398,12 @@ def test_direct_payment_verification_allows_only_one_credit_per_intent():
     assert "intent_query.with_for_update()" in source
     assert "submission_query.with_for_update()" in source
 
+def test_direct_payment_evidence_amount_must_match_intent():
+    from pathlib import Path
+
+    source = (
+        Path(__file__).resolve().parents[1] / "app" / "api" / "direct_payments.py"
+    ).read_text(encoding="utf-8")
+    assert 'if claimed_amount != Decimal(str(intent.amount)):' in source
+    assert 'submitted amount does not match the payment intent' in source
+
