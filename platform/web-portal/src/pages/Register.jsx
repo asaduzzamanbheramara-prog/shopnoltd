@@ -1,11 +1,11 @@
-import { KEYCLOAK_CLIENT_ID, KEYCLOAK_REALM, KEYCLOAK_URL, REDIRECT_URI } from '../config'
+import { KEYCLOAK_CLIENT_ID, KEYCLOAK_REALM, KEYCLOAK_URL, REDIRECT_URI, SOCIAL_LOGIN_PROVIDERS } from '../config'
 import { randomString, codeChallengeFor } from '../pkce'
 
 const PROVIDERS = [
   { id: 'google', label: 'Sign up with Google', icon: 'G' },
   { id: 'facebook', label: 'Sign up with Facebook', icon: 'f' },
   { id: 'github', label: 'Sign up with GitHub', icon: 'GH' },
-]
+].filter((provider) => SOCIAL_LOGIN_PROVIDERS[provider.id])
 
 async function startSocialSignup(provider) {
   const verifier = randomString(64)
@@ -96,7 +96,7 @@ export default function Register() {
       <h1>Create your Shopnoltd account</h1>
 
       <p style={{ color: '#64748b' }}>
-        Create an account with Shopnoltd or use one of the social providers.
+        {`Create an account with Shopnoltd${PROVIDERS.length ? ' or use an enabled social provider.' : '.'}`}
       </p>
 
       <button
@@ -116,6 +116,7 @@ export default function Register() {
         Register with Shopnoltd
       </button>
 
+      {PROVIDERS.length > 0 && <>
       <div
         style={{
           display: 'flex',
@@ -152,6 +153,7 @@ export default function Register() {
         ))}
       </div>
 
+      </>}
       <p style={{ marginTop: 28, textAlign: 'center' }}>
         Already have an account?{' '}
         <a href="/login" style={{ color: '#0284c7' }}>

@@ -7,3 +7,10 @@ export const KEYCLOAK_CLIENT_ID = import.meta.env.VITE_KEYCLOAK_CLIENT_ID || 'sh
 export const REDIRECT_URI = `${window.location.origin}/callback`
 
 export const API_URL = import.meta.env.VITE_API_URL || ''
+
+// Social sign-in buttons stay hidden until matching OAuth credentials are provisioned in Keycloak.
+export const SOCIAL_LOGIN_PROVIDERS = {
+  google: import.meta.env.VITE_SOCIAL_LOGIN_GOOGLE === 'true',
+  facebook: import.meta.env.VITE_SOCIAL_LOGIN_FACEBOOK === 'true',
+  github: import.meta.env.VITE_SOCIAL_LOGIN_GITHUB === 'true',
+}
