@@ -586,7 +586,7 @@ async def ui_socket(ws: WebSocket):
                             result = await call_tool(claims, ws, tname, args)
                         await ws.send_json({"type": "result", "name": tname, "result": result[:2000]})
                         hist.append({"role": "tool", "tool_call_id": tc["id"], "content": result})
-            except (WebSocketDisconnect, RuntimeError):
+            except WebSocketDisconnect:
                 del hist[start:]; raise
             except Exception as e:
                 # Keep completed plan/tool results so a later retry can continue from this checkpoint.
