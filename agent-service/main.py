@@ -55,6 +55,7 @@ os.makedirs(WORKSPACE, exist_ok=True)
 extensions: dict[str, WebSocket] = {}      # user id -> extension socket
 pending: dict[str, asyncio.Future] = {}    # request id -> future
 browser_sessions: dict[str, dict] = {}    # one isolated browser context per active user task
+browser_semaphore = asyncio.Semaphore(max(1, int(os.environ.get("BROWSER_CONCURRENCY", "1"))))
 running: set[str] = set()                  # users with an active run (one at a time)
 histories: dict[str, list] = {}            # user id -> conversation (memory only)
 recent_goals: dict[str, deque] = {}        # user id -> timestamps of started goals
@@ -241,6 +242,10 @@ async def _get_browser_session(user: str) -> dict:
         return session
     if not BROWSER_WS_ENDPOINT:
         raise RuntimeError("isolated browser endpoint is not configured")
+    try:
+        await asyncio.wait_for(browser_semaphore.acquire(), timeout=30)
+    except asyncio.TimeoutError:
+        raise RuntimeError("isolated browser is busy; retry shortly")
     playwright = await async_playwright().start()
     try:
         browser = await playwright.chromium.connect_over_cdp(BROWSER_WS_ENDPOINT, timeout=20000)
@@ -254,6 +259,7 @@ async def _get_browser_session(user: str) -> dict:
         return session
     except Exception:
         await playwright.stop()
+        browser_semaphore.release()
         raise
 
 
@@ -273,6 +279,7 @@ async def close_browser_session(user: str) -> None:
         await session["playwright"].stop()
     except Exception:
         pass
+    browser_semaphore.release()
 
 
 async def _extension_browser_action(user: str, ui: WebSocket, args: dict) -> str:
