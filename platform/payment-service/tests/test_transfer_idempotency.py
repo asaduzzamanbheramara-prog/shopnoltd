@@ -500,3 +500,12 @@ def test_direct_payment_intent_endpoint_uses_validated_request_schema():
     assert "DirectPaymentIntentIn, DirectPaymentVerificationIn" in source
     assert "async def create_intent(body: DirectPaymentIntentIn" in source
 
+def test_direct_payment_submission_endpoint_uses_validated_request_schema():
+    from pathlib import Path
+
+    source = (
+        Path(__file__).resolve().parents[1] / "app" / "api" / "direct_payments.py"
+    ).read_text(encoding="utf-8")
+    assert "DirectPaymentIntentIn, DirectPaymentSubmissionIn, DirectPaymentVerificationIn" in source
+    assert "body: DirectPaymentSubmissionIn" in source
+
