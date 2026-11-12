@@ -51,6 +51,7 @@ async def internal_transfer(body: TransferIn, user=Depends(current_user), s: Asy
     reference = f"transfer:{body.idempotency_key}"
     existing = await s.scalar(
         select(Transaction).where(
+            Transaction.tenant_id == user.get("tenant_id", "default"),
             Transaction.user_id == user["sub"],
             Transaction.type == TxType.transfer,
             Transaction.reference == reference,
@@ -70,7 +71,11 @@ async def internal_transfer(body: TransferIn, user=Depends(current_user), s: Asy
     wallets = {}
     for uid in users:
         wallet = await s.scalar(
-            select(Wallet).where(Wallet.user_id == uid, Wallet.currency == currency).with_for_update()
+            select(Wallet).where(
+                Wallet.tenant_id == user.get("tenant_id", "default"),
+                Wallet.user_id == uid,
+                Wallet.currency == currency,
+            ).with_for_update()
         )
         if not wallet:
             if uid != body.to_user_id:
@@ -89,6 +94,7 @@ async def internal_transfer(body: TransferIn, user=Depends(current_user), s: Asy
     # using the same key cannot create two money movements.
     existing = await s.scalar(
         select(Transaction).where(
+            Transaction.tenant_id == user.get("tenant_id", "default"),
             Transaction.user_id == user["sub"],
             Transaction.type == TxType.transfer,
             Transaction.reference == reference,
