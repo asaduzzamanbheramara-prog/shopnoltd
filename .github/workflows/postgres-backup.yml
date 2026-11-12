@@ -1,12 +1,11 @@
-name: Shopnoltd encrypted database and Kubernetes Secrets backup
+name: Shopnoltd encrypted disaster-recovery backup
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
     paths:
       - '.github/workflows/postgres-backup.yml'
-      - 'ops/backup/check-postgres-storage.sh'
+      - 'ops/backup/**'
   schedule:
     - cron: '17 18 * * *'
   workflow_dispatch:
@@ -26,72 +25,69 @@ env:
 
 jobs:
   backup:
-    name: Create, encrypt, verify and publish database and Secrets snapshots
+    name: Create, encrypt, validate and version PostgreSQL and Kubernetes backups
     runs-on: [self-hosted, linux]
-    timeout-minutes: 60
+    timeout-minutes: 180
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
         with:
-          fetch-depth: 1
+          fetch-depth: 0
 
-      - name: Check runner and cluster access
+      - name: Preflight runner and cluster permissions
         shell: bash
         env:
           BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
         run: |
           set -euo pipefail
           umask 077
-          for cmd in kubectl openssl sha256sum python3 tar git; do command -v "$cmd" >/dev/null; done
+          for cmd in kubectl openssl sha256sum python3 tar gzip git; do command -v "$cmd" >/dev/null; done
           test -n "${BACKUP_ENCRYPTION_KEY:-}" || { echo "::error::BACKUP_ENCRYPTION_KEY is missing."; exit 1; }
           test -f "${KUBECONFIG:-$HOME/.kube/config}" || { echo "::error::KUBECONFIG is missing."; exit 1; }
           kubectl cluster-info >/dev/null
           kubectl -n "$POSTGRES_NAMESPACE" get deployment "$POSTGRES_DEPLOYMENT" >/dev/null
           kubectl auth can-i list secrets --all-namespaces | grep -qx yes
+          kubectl auth can-i get pods -n "$POSTGRES_NAMESPACE" | grep -qx yes
+          kubectl auth can-i create pods/exec -n "$POSTGRES_NAMESPACE" | grep -qx yes
           bash ./ops/backup/check-postgres-storage.sh
           echo "::add-mask::$BACKUP_ENCRYPTION_KEY"
 
-      - name: Export PostgreSQL and Kubernetes Secrets
+      - name: Export all PostgreSQL databases and CSV tables
         shell: bash
         env:
           BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
         run: |
           set -euo pipefail
           umask 077
-          rm -rf "$BACKUP_WORKDIR"
-          mkdir -p "$BACKUP_WORKDIR"
-          timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
-          raw_db="$BACKUP_WORKDIR/database.dump"
-          raw_secrets="$BACKUP_WORKDIR/kubernetes-secrets.json"
+          bash ./ops/backup/export-all-postgres-databases.sh
+          test -s "$BACKUP_WORKDIR/postgres-all-databases.tar.gz"
+          openssl enc -aes-256-cbc -pbkdf2 -iter 600000 -salt \
+            -in "$BACKUP_WORKDIR/postgres-all-databases.tar.gz" \
+            -out "$BACKUP_WORKDIR/postgres-all-databases.tar.gz.enc" \
+            -pass env:BACKUP_ENCRYPTION_KEY
 
-          kubectl -n "$POSTGRES_NAMESPACE" exec "deployment/$POSTGRES_DEPLOYMENT" -- \
-            sh -c 'export PGPASSWORD="$POSTGRES_PASSWORD"; pg_dump --format=custom --no-owner --no-acl --username="$POSTGRES_USER" --dbname="$POSTGRES_DB"' \
-            > "$raw_db"
-          test -s "$raw_db"
-
-          kubectl get secrets --all-namespaces -o json > "$raw_secrets"
-          python3 - "$raw_secrets" <<'PY'
+      - name: Export and encrypt all Kubernetes Secrets
+        shell: bash
+        env:
+          BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
+        run: |
+          set -euo pipefail
+          umask 077
+          kubectl get secrets --all-namespaces -o json > "$BACKUP_WORKDIR/kubernetes-secrets.json"
+          python3 - "$BACKUP_WORKDIR/kubernetes-secrets.json" <<'PY'
           import json, sys
-          with open(sys.argv[1], encoding="utf-8") as f:
-              data = json.load(f)
-          items = data.get("items", [])
-          if data.get("kind") != "List" or not items:
+          doc=json.load(open(sys.argv[1], encoding="utf-8"))
+          if doc.get("kind") != "List" or not doc.get("items"):
               raise SystemExit("Kubernetes Secret export is empty or malformed")
-          print(f"Exported {len(items)} Kubernetes Secret objects.")
+          print(f"Validated {len(doc['items'])} Kubernetes Secret objects.")
           PY
+          openssl enc -aes-256-cbc -pbkdf2 -iter 600000 -salt \
+            -in "$BACKUP_WORKDIR/kubernetes-secrets.json" \
+            -out "$BACKUP_WORKDIR/kubernetes-secrets.json.enc" \
+            -pass env:BACKUP_ENCRYPTION_KEY
+          rm -f "$BACKUP_WORKDIR/kubernetes-secrets.json"
 
-          openssl enc -aes-256-cbc -pbkdf2 -iter 600000 -salt -in "$raw_db" \
-            -out "$BACKUP_WORKDIR/latest.dump.enc" -pass env:BACKUP_ENCRYPTION_KEY
-          openssl enc -aes-256-cbc -pbkdf2 -iter 600000 -salt -in "$raw_secrets" \
-            -out "$BACKUP_WORKDIR/latest.kubernetes-secrets.json.enc" -pass env:BACKUP_ENCRYPTION_KEY
-          rm -f "$raw_db" "$raw_secrets"
-          cd "$BACKUP_WORKDIR"
-          sha256sum latest.dump.enc > latest.dump.enc.sha256
-          sha256sum latest.kubernetes-secrets.json.enc > latest.kubernetes-secrets.json.enc.sha256
-          printf '%s\n' "$timestamp" > timestamp.txt
-          printf '%s\n' "$GITHUB_SHA" > source-revision.txt
-
-      - name: Decrypt and validate database and Kubernetes Secrets
+      - name: Verify encrypted archives and checksums
         shell: bash
         env:
           BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
@@ -100,60 +96,59 @@ jobs:
           umask 077
           echo "::add-mask::$BACKUP_ENCRYPTION_KEY"
           cd "$BACKUP_WORKDIR"
-          sha256sum -c latest.dump.enc.sha256
-          sha256sum -c latest.kubernetes-secrets.json.enc.sha256
-
-          openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 -in latest.dump.enc \
-            -out database-restore-check.dump -pass env:BACKUP_ENCRYPTION_KEY
-          openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 -in latest.kubernetes-secrets.json.enc \
-            -out secrets-restore-check.json -pass env:BACKUP_ENCRYPTION_KEY
-
-          python3 - secrets-restore-check.json <<'PY'
+          sha256sum postgres-all-databases.tar.gz.enc > postgres-all-databases.tar.gz.enc.sha256
+          sha256sum kubernetes-secrets.json.enc > kubernetes-secrets.json.enc.sha256
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 \
+            -in postgres-all-databases.tar.gz.enc -out verify-postgres.tar.gz \
+            -pass env:BACKUP_ENCRYPTION_KEY
+          tar -tzf verify-postgres.tar.gz >/dev/null
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 \
+            -in kubernetes-secrets.json.enc -out verify-secrets.json \
+            -pass env:BACKUP_ENCRYPTION_KEY
+          python3 - verify-secrets.json <<'PY'
           import json, sys
-          with open(sys.argv[1], encoding="utf-8") as f:
-              data = json.load(f)
-          items = data.get("items", [])
-          if data.get("kind") != "List" or not items:
+          doc=json.load(open(sys.argv[1], encoding="utf-8"))
+          if doc.get("kind") != "List" or not doc.get("items"):
               raise SystemExit("Decrypted Kubernetes Secret export is invalid")
-          print(f"PASS: {len(items)} Kubernetes Secret objects decrypted and parsed.")
+          print(f"PASS: decrypted {len(doc['items'])} Secret objects.")
           PY
-          test -s database-restore-check.dump
-          echo "PASS: encrypted PostgreSQL database and Kubernetes Secrets decrypted and validated."
-          rm -f database-restore-check.dump secrets-restore-check.json
+          sha256sum -c postgres-all-databases.tar.gz.enc.sha256
+          sha256sum -c kubernetes-secrets.json.enc.sha256
+          rm -f verify-postgres.tar.gz verify-secrets.json
 
-      - name: Publish encrypted database and Kubernetes Secrets snapshots
+      - name: Publish timestamped snapshot without overwriting history
         shell: bash
         run: |
           set -euo pipefail
+          timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
+          snapshot="snapshots/$timestamp"
           git config user.name 'shopnoltd-backup-bot'
           git config user.email 'shopnoltd-backup-bot@users.noreply.github.com'
-          git fetch origin "$BACKUP_BRANCH" || true
-          git switch --orphan "$BACKUP_BRANCH"
-          git rm -rf . >/dev/null 2>&1 || true
-          git clean -fdx >/dev/null 2>&1 || true
-          mkdir -p backup
-          cp "$BACKUP_WORKDIR/latest.dump.enc" backup/
-          cp "$BACKUP_WORKDIR/latest.dump.enc.sha256" backup/
-          cp "$BACKUP_WORKDIR/latest.kubernetes-secrets.json.enc" backup/
-          cp "$BACKUP_WORKDIR/latest.kubernetes-secrets.json.enc.sha256" backup/
-          cp "$BACKUP_WORKDIR/timestamp.txt" backup/
-          cp "$BACKUP_WORKDIR/source-revision.txt" backup/
-          cat > backup/README.md <<'EOF'
-          # Shopnoltd encrypted database and Kubernetes Secrets backups
-
-          This branch contains only the encrypted PostgreSQL database dump and the
-          all-namespace Kubernetes Secret export. The encryption key is supplied at
-          runtime through BACKUP_ENCRYPTION_KEY and is never stored here.
-
-          Never publish or apply decrypted files casually. Restore is a manual,
-          reviewed disaster-recovery operation. GitHub Actions secret values cannot
-          be exported; preserve them separately in a secure password manager.
+          if git ls-remote --exit-code --heads origin "$BACKUP_BRANCH" >/dev/null 2>&1; then
+            git fetch origin "$BACKUP_BRANCH"
+            git checkout -B "$BACKUP_BRANCH" "origin/$BACKUP_BRANCH"
+          else
+            git checkout --orphan "$BACKUP_BRANCH"
+            git rm -rf . >/dev/null 2>&1 || true
+          fi
+          test ! -e "$snapshot" || { echo "::error::Snapshot already exists: $snapshot"; exit 1; }
+          mkdir -p "$snapshot"
+          cp "$BACKUP_WORKDIR/postgres-all-databases.tar.gz.enc" "$snapshot/"
+          cp "$BACKUP_WORKDIR/postgres-all-databases.tar.gz.enc.sha256" "$snapshot/"
+          cp "$BACKUP_WORKDIR/kubernetes-secrets.json.enc" "$snapshot/"
+          cp "$BACKUP_WORKDIR/kubernetes-secrets.json.enc.sha256" "$snapshot/"
+          cp "$BACKUP_WORKDIR/metadata/"*.txt "$snapshot/"
+          cat > "$snapshot/README.md" <<'EOF'
+          Encrypted all-database PostgreSQL archive (including per-table CSV exports)
+          and encrypted all-namespace Kubernetes Secret JSON export.
+          Decryption key is stored separately and is not present in this repository.
+          No automatic deletion or force-push is performed by this workflow.
           EOF
-          git add backup
-          git commit -m "backup: encrypted database and Kubernetes Secrets snapshot"
-          git push --force origin "$BACKUP_BRANCH"
+          git add "$snapshot"
+          git commit -m "backup: encrypted full PostgreSQL and Kubernetes snapshot $timestamp"
+          git push origin "$BACKUP_BRANCH"
 
-      - name: Remove temporary plaintext and staging files
+      - name: Remove plaintext staging files
         if: always()
         shell: bash
         run: |
