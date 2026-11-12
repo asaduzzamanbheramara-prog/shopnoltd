@@ -238,6 +238,7 @@ function ModelForm({ providers, initial, onClose, onSaved }) {
       supports_documents: initial?.capabilities?.supports_documents ?? false,
       supports_audio: initial?.capabilities?.supports_audio ?? false,
       embeddings: initial?.capabilities?.embeddings ?? false,
+      free_tier: initial?.capabilities?.free_tier ?? false,
     },
   })
   const [saving, setSaving] = useState(false)
@@ -369,6 +370,7 @@ function ModelForm({ providers, initial, onClose, onSaved }) {
               ['supports_documents', 'Documents'],
               ['supports_audio', 'Audio'],
               ['embeddings', 'Embeddings'],
+              ['free_tier', 'Free-tier eligible for Auto mode'],
             ].map(([key, label]) => (
               <label
                 key={key}
