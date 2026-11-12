@@ -45,6 +45,8 @@ spec:
                   key: LITELLM_MASTER_KEY
             - name: BROWSER_WS_ENDPOINT
               value: ws://agent-browser.shopno-apps.svc.cluster.local:3000
+            - name: AI_MODEL_CATALOG_URL
+              value: http://ai-platform.shopno-platform.svc.cluster.local/api/v1/inference/models
             - name: KEYCLOAK_ISSUER
               value: https://auth.shopnoltd.dpdns.org/realms/shopnoltd
             - name: KEYCLOAK_AUDIENCE
