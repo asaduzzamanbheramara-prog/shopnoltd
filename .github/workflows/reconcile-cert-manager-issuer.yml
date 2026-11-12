@@ -2,6 +2,12 @@ name: Reconcile cert-manager ClusterIssuer
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/reconcile-cert-manager-issuer.yml'
+      - 'k8s/cert-manager/letsencrypt-prod-issuer.yaml'
 
 permissions:
   contents: read
