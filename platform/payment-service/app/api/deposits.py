@@ -27,6 +27,15 @@ async def current_user(creds: HTTPAuthorizationCredentials = Depends(bearer)):
     return await verify_token(creds.credentials)
 
 
+def _validate_existing_deposit(existing: Transaction, body: DepositIn, currency: str) -> None:
+    if (
+        Decimal(str(existing.amount)) != Decimal(str(body.amount))
+        or existing.currency.upper() != currency
+        or existing.method != body.method
+    ):
+        raise HTTPException(409, "Idempotency key was already used for a different deposit")
+
+
 def tx_out(tx: Transaction) -> TxOut:
     meta = tx.meta or {}
     return TxOut(
@@ -132,6 +141,7 @@ async def create_deposit(body: DepositIn, user=Depends(current_user), s: AsyncSe
             )
         )
         if existing:
+            _validate_existing_deposit(existing, body, currency)
             return tx_out(existing)
         raise HTTPException(409, "deposit idempotency conflict")
 
