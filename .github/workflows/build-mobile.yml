@@ -96,7 +96,7 @@ jobs:
 
       - name: Build installable QA APK
         working-directory: apps/mobile-shell/android
-        run: ./gradlew :app:${{ matrix.gradle_task }} --no-daemon --stacktrace
+        run: bash ./gradlew :app:${{ matrix.gradle_task }} --no-daemon --stacktrace
 
       - name: Verify APK
         working-directory: apps/mobile-shell/android
