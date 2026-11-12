@@ -25,11 +25,10 @@ async def proxy(method: str, path: str, access_token: str, **kwargs):
             response = await client.request(method, f"{PAYMENT}{path}", headers={"Authorization": f"Bearer {access_token}"}, **kwargs)
     except (httpx.ConnectError, httpx.ConnectTimeout, httpx.ReadTimeout) as exc:
         raise HTTPException(503, "Payment service unavailable") from exc
-    detail = response.text
+    if response.status_code >= 500:
+        raise HTTPException(response.status_code, "Payment service is temporarily unavailable")
     if response.status_code >= 400:
-        try: detail = response.json()
-        except Exception: pass
-        raise HTTPException(response.status_code, detail)
+        raise HTTPException(response.status_code, "Payment request was rejected")
     return response.json() if response.text else None
 
 
