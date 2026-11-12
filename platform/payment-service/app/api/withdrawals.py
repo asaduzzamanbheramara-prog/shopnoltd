@@ -146,7 +146,11 @@ async def create_withdrawal(body: WithdrawalIn, user=Depends(current_user), s: A
         # reconciliation; never automatically issue a second payout.
         raise HTTPException(502, "withdrawal provider outcome is pending reconciliation") from None
 
-    tx.status = TxStatus.requires_approval if out.get("status") == "requires_approval" else TxStatus.processing
+    tx.status = (
+        TxStatus.requires_approval
+        if settings.admin_approval_required or out.get("status") == "requires_approval"
+        else TxStatus.processing
+    )
     tx.external_id = out.get("external_id")
     await s.commit()
     return _withdrawal_out(tx, out.get("approval_url"))
