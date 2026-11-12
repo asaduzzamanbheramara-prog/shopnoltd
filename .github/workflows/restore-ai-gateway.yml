@@ -36,6 +36,17 @@ jobs:
           command -v jq >/dev/null
           kubectl --request-timeout=20s get --raw=/readyz >/dev/null
           kubectl -n shopno-ai get secret litellm-provider-keys >/dev/null
+          kubectl -n shopno-platform get secret ai-platform-secret >/dev/null
+          source_patch="$(kubectl -n shopno-platform get secret ai-platform-secret -o json \
+            | jq -c '{data: ((.data // {}) | with_entries(select(.key | test("^(DATABASE_URL|LITELLM_MASTER_KEY|[A-Z0-9_]+_(API_KEY|TOKEN))$"))))}')"
+          kubectl -n shopno-ai patch secret litellm-provider-keys --type merge -p "$source_patch" >/dev/null
+          db_b64="$(kubectl -n shopno-ai get secret litellm-provider-keys -o jsonpath='{.data.DATABASE_URL}')"
+          if [ -n "$db_b64" ]; then
+            db_value="$(printf '%s' "$db_b64" | base64 -d | sed 's/^postgresql+asyncpg:/postgresql:/')"
+            db_value_b64="$(printf '%s' "$db_value" | base64 -w0)"
+            kubectl -n shopno-ai patch secret litellm-provider-keys --type merge \
+              -p "{\"data\":{\"DATABASE_URL\":\"$db_value_b64\"}}" >/dev/null
+          fi
           keys="$(kubectl -n shopno-ai get secret litellm-provider-keys -o json | jq -r '.data | keys[]')"
           printf '%s\n' "$keys" | sed 's/^/existing-secret-key: /'
           for required in DATABASE_URL LITELLM_MASTER_KEY; do
