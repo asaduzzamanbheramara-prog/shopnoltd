@@ -367,3 +367,14 @@ def test_deposit_provider_errors_are_redacted_from_api_and_transaction_metadata(
     assert '"_error": str(exc)' not in source
     assert "out.get(\"note\")" not in source
 
+def test_withdrawal_fee_is_reserved_and_settled_with_principal():
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[1] / "app" / "api"
+    withdrawal = (root / "withdrawals.py").read_text(encoding="utf-8")
+    admin = (root / "admin.py").read_text(encoding="utf-8")
+    assert "reserved_amount = amount + fee" in withdrawal
+    assert "available < reserved_amount" in withdrawal
+    assert "wallet.frozen = Decimal(str(wallet.frozen)) + reserved_amount" in withdrawal
+    assert "Decimal(str(tx.amount)) + Decimal(str(tx.fee))" in admin
+
