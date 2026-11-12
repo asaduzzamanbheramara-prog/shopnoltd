@@ -186,6 +186,7 @@ async def create_deposit(body: DepositIn, user=Depends(current_user), s: AsyncSe
 
 @router.get("/{tx_id}", response_model=TxOut)
 async def get_deposit(tx_id: str, user=Depends(current_user), s: AsyncSession = Depends(db)):
+    tenant_id = require_tenant_id(user)
     try:
         transaction_id = uuid.UUID(tx_id)
     except ValueError as exc:
@@ -193,7 +194,7 @@ async def get_deposit(tx_id: str, user=Depends(current_user), s: AsyncSession = 
     res = await s.execute(
         select(Transaction).where(
             Transaction.id == transaction_id,
-            Transaction.tenant_id == user.get("tenant_id", "default"),
+            Transaction.tenant_id == tenant_id,
             Transaction.user_id == user["sub"],
         )
     )
