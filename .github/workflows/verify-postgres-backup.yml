@@ -85,13 +85,6 @@ jobs:
           set -euo pipefail
           docker pull ghcr.io/asaduzzamanbheramara-prog/shopnoltd-postgres-combined:pg16-postgis3.5-pgvector0.8.6
 
-      - name: Install PostgreSQL client
-        shell: bash
-        run: |
-          set -euo pipefail
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq postgresql-client
-
       - name: Restore backup into an isolated disposable PostgreSQL database
         shell: bash
         env:
@@ -118,26 +111,32 @@ jobs:
           done
           [[ "$ready" == true ]] || { echo "::error::Disposable PostgreSQL did not become ready."; exit 1; }
 
-          pg_restore --exit-on-error --no-owner --no-acl \
-            --host 127.0.0.1 --port 55432 \
-            --username restore_validator \
-            --dbname shopnoltd_restore_validation \
-            "$RUNNER_TEMP/shopnoltd.dump"
+          docker cp "$RUNNER_TEMP/shopnoltd.dump" \
+            shopnoltd-postgres-restore-validation:/tmp/shopnoltd.dump
+          docker exec --user root shopnoltd-postgres-restore-validation \
+            chown postgres:postgres /tmp/shopnoltd.dump
+          docker exec --user root shopnoltd-postgres-restore-validation \
+            chmod 600 /tmp/shopnoltd.dump
 
-          table_count="$(psql -X -v ON_ERROR_STOP=1 -At \
-            --host 127.0.0.1 --port 55432 \
-            --username restore_validator \
-            --dbname shopnoltd_restore_validation \
-            --command "SELECT count(*) FROM pg_catalog.pg_tables WHERE schemaname NOT IN ('pg_catalog', 'information_schema');")"
+          # Use pg_restore from the PostgreSQL 16 server image itself.
+          docker exec --user postgres shopnoltd-postgres-restore-validation \
+            pg_restore --exit-on-error --no-owner --no-acl \
+              --username restore_validator \
+              --dbname shopnoltd_restore_validation \
+              /tmp/shopnoltd.dump
+
+          table_count="$(docker exec --user postgres shopnoltd-postgres-restore-validation \
+            psql -X -v ON_ERROR_STOP=1 -U restore_validator \
+              -d shopnoltd_restore_validation -At \
+              -c "SELECT count(*) FROM pg_catalog.pg_tables WHERE schemaname NOT IN ('pg_catalog', 'information_schema');")"
           [[ "$table_count" =~ ^[0-9]+$ && "$table_count" -gt 0 ]] || {
             echo "::error::Restore completed but no application tables were found."
             exit 1
           }
-          extension_list="$(psql -X -v ON_ERROR_STOP=1 -At \
-            --host 127.0.0.1 --port 55432 \
-            --username restore_validator \
-            --dbname shopnoltd_restore_validation \
-            --command "SELECT COALESCE(string_agg(extname, ',' ORDER BY extname), 'none') FROM pg_extension;")"
+          extension_list="$(docker exec --user postgres shopnoltd-postgres-restore-validation \
+            psql -X -v ON_ERROR_STOP=1 -U restore_validator \
+              -d shopnoltd_restore_validation -At \
+              -c "SELECT COALESCE(string_agg(extname, ',' ORDER BY extname), 'none') FROM pg_extension;")"
           echo "PASS: full isolated PostgreSQL restore completed (application_tables=$table_count; extensions=$extension_list)."
           echo "NOTE: only the disposable GitHub-hosted runner database was modified."
 
