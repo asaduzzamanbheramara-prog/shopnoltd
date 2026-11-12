@@ -318,3 +318,14 @@ def test_payment_request_schemas_reject_non_finite_amounts(bad_amount):
     with pytest.raises(ValidationError):
         TransferIn(to_user_id="user-b", currency="BDT", amount=bad_amount, idempotency_key="transfer-key-01")
 
+def test_admin_approval_checks_wallet_and_withdrawal_reservation_invariants():
+    from pathlib import Path
+
+    source = (
+        Path(__file__).resolve().parents[1] / "app" / "api" / "admin.py"
+    ).read_text(encoding="utf-8")
+    assert source.count('raise HTTPException(409, "transaction wallet is missing")') == 2
+    assert 'if balance < amount or frozen < amount:' in source
+    assert source.count('raise HTTPException(409, "withdrawal reservation is inconsistent; manual reconciliation required")') == 2
+    assert 'only deposit and withdrawal transactions can be approved' in source
+
