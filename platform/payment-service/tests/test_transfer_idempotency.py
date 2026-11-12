@@ -258,5 +258,6 @@ def test_admin_transaction_decisions_lock_and_reject_only_pending_rows():
     assert source.count("s.execute(query.with_for_update())") == 2
     assert source.count('raise HTTPException(400, "tx not pending approval")') == 2
     assert source.count("Wallet.tenant_id == tx.tenant_id") == 2
-    assert source.count(").with_for_update()") >= 4
+    assert source.count("query.with_for_update()") == 2
+    assert source.count(").with_for_update()") == 2
 
