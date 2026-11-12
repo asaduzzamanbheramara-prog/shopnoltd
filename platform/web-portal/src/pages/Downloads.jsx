@@ -13,9 +13,9 @@ const desktop = [
 ]
 
 const mobile = [
-  { icon: '📱', name: 'Shopnoltd', href: ANDROID + '/Shopnoltd.apk', note: 'Official Shopnoltd Android QA build.' },
-  { icon: '🛡️', name: 'Shopnoltd Admin', href: ANDROID + '/Shopnoltd-Admin.apk', note: 'Official Shopnoltd Admin Android QA build.' },
-  { icon: '📋', name: 'ShopnoltdCollect', href: COLLECT + '/ShopnoltdCollect.apk', note: 'Official ShopnoltdCollect Android build.' },
+  { icon: '📱', name: 'Shopnoltd', href: '/download/Shopnoltd.apk', note: 'Official Shopnoltd Android QA build.' },
+  { icon: '🛡️', name: 'Shopnoltd Admin', href: '/download/Shopnoltd-Admin.apk', note: 'Official Shopnoltd Admin Android QA build.' },
+  { icon: '📋', name: 'ShopnoltdCollect', href: '/download/ShopnoltdCollect.apk', note: 'Official ShopnoltdCollect Android build.' },
 ]
 
 function Card({ icon, name, href, file, note }) {
