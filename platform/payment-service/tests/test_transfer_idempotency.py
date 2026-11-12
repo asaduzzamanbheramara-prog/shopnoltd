@@ -461,3 +461,13 @@ def test_platform_fee_configuration_is_finite_and_bounded():
     ).read_text(encoding="utf-8")
     assert "Field(default=1.5, ge=0, le=100, allow_inf_nan=False)" in source
 
+def test_wallet_creation_does_not_swallow_unrelated_database_errors():
+    from pathlib import Path
+
+    source = (
+        Path(__file__).resolve().parents[1] / "app" / "api" / "wallets.py"
+    ).read_text(encoding="utf-8")
+    assert "from sqlalchemy.exc import IntegrityError" in source
+    assert "except IntegrityError:" in source
+    assert "except Exception:" not in source
+
