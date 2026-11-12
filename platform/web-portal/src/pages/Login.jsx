@@ -1,11 +1,11 @@
-import { KEYCLOAK_CLIENT_ID, KEYCLOAK_REALM, KEYCLOAK_URL, REDIRECT_URI } from '../config'
+import { KEYCLOAK_CLIENT_ID, KEYCLOAK_REALM, KEYCLOAK_URL, REDIRECT_URI, SOCIAL_LOGIN_PROVIDERS } from '../config'
 import { randomString, codeChallengeFor } from '../pkce'
 
 const PROVIDERS = [
   { id: 'google', label: 'Continue with Google', icon: 'G' },
   { id: 'facebook', label: 'Continue with Facebook', icon: 'f' },
   { id: 'github', label: 'Continue with GitHub', icon: 'GH' },
-]
+].filter((provider) => SOCIAL_LOGIN_PROVIDERS[provider.id])
 
 async function startLogin(provider = '') {
   const verifier = randomString(64)
@@ -53,10 +53,11 @@ export default function Login() {
   return (
     <main style={{ maxWidth: 520, width: '100%', margin: 'clamp(28px, 8vw, 60px) auto', padding: 'clamp(20px, 5vw, 32px)', fontFamily: 'system-ui, sans-serif', boxSizing: 'border-box' }}>
       <h1>Sign in to Shopnoltd</h1>
-      <p style={{ color: '#64748b' }}>Use your Shopnoltd account or continue with a social provider.</p>
+      <p style={{ color: '#64748b' }}>Use your Shopnoltd account{PROVIDERS.length ? ' or continue with an enabled social provider.' : '.'}</p>
       <button onClick={() => startLogin()} style={{ width: '100%', padding: 14, marginTop: 18, border: 0, borderRadius: 8, background: '#0ea5e9', color: 'white', fontSize: 16, cursor: 'pointer' }}>
         Continue with Shopnoltd
       </button>
+      {PROVIDERS.length > 0 && <>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '24px 0', color: '#94a3b8' }}>
         <div style={{ flex: 1, height: 1, background: '#e2e8f0' }} /> OR <div style={{ flex: 1, height: 1, background: '#e2e8f0' }} />
       </div>
@@ -67,6 +68,7 @@ export default function Login() {
           </button>
         ))}
       </div>
+      </>}
       <p style={{ marginTop: 28, textAlign: 'center' }}>
         New to Shopnoltd? <a href="/register" style={{ color: '#0284c7' }}>Create an account</a>
       </p>
