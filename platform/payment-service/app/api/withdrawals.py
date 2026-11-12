@@ -3,6 +3,7 @@ from decimal import Decimal
 from app.core.config import settings
 from app.core.db import SessionLocal
 from app.core.security import verify_token
+from app.core.tenant import require_tenant_id
 from app.models.models import Transaction, TxStatus, TxType, Wallet
 from app.providers.registry import get_provider
 from app.schemas.schemas import TxOut, WithdrawalIn
@@ -29,6 +30,7 @@ async def create_withdrawal(body: WithdrawalIn, user=Depends(current_user), s: A
     if body.amount < settings.min_withdrawal or body.amount > settings.max_withdrawal:
         raise HTTPException(400, "amount out of range")
     currency = body.currency.upper()
+    tenant_id = require_tenant_id(user)
     try:
         provider = get_provider(body.method)
     except ValueError as exc:
@@ -40,7 +42,11 @@ async def create_withdrawal(body: WithdrawalIn, user=Depends(current_user), s: A
     # both observe the same available balance and over-reserve funds.
     res = await s.execute(
         select(Wallet)
-        .where(Wallet.user_id == user["sub"], Wallet.currency == currency)
+        .where(
+            Wallet.tenant_id == tenant_id,
+            Wallet.user_id == user["sub"],
+            Wallet.currency == currency,
+        )
         .with_for_update()
     )
     w = res.scalar_one_or_none()
@@ -54,7 +60,7 @@ async def create_withdrawal(body: WithdrawalIn, user=Depends(current_user), s: A
 
     w.frozen = frozen + amount
     tx = Transaction(
-        tenant_id=user.get("tenant_id", "default"), user_id=user["sub"], wallet_id=w.id,
+        tenant_id=tenant_id, user_id=user["sub"], wallet_id=w.id,
         type=TxType.withdrawal, method=body.method,
         status=TxStatus.requires_approval if settings.admin_approval_required else TxStatus.processing,
         amount=body.amount, currency=currency, fee=amount * settings.platform_fee_pct / 100,

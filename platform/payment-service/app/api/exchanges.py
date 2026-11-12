@@ -2,6 +2,7 @@ from decimal import Decimal
 
 from app.core.db import SessionLocal
 from app.core.security import verify_token
+from app.core.tenant import require_tenant_id
 from app.models.models import PaymentMethod, Transaction, TxStatus, TxType, Wallet
 from app.providers.exchange_client import convert, get_rate
 from fastapi import APIRouter, Depends, HTTPException
@@ -80,9 +81,11 @@ async def do_convert(body: ConvertIn, user=Depends(current_user), s: AsyncSessio
     if frm == to:
         raise HTTPException(400, "source and destination currencies must differ")
 
+    tenant_id = require_tenant_id(user)
     reference = f"exchange:{body.idempotency_key}"
     existing = await s.scalar(
         select(Transaction).where(
+            Transaction.tenant_id == tenant_id,
             Transaction.user_id == user["sub"],
             Transaction.type == TxType.exchange,
             Transaction.reference == reference,
@@ -112,13 +115,17 @@ async def do_convert(body: ConvertIn, user=Depends(current_user), s: AsyncSessio
     for currency in sorted([frm, to]):
         wallet = await s.scalar(
             select(Wallet)
-            .where(Wallet.user_id == user_id, Wallet.currency == currency)
+            .where(
+                Wallet.tenant_id == tenant_id,
+                Wallet.user_id == user_id,
+                Wallet.currency == currency,
+            )
             .with_for_update()
         )
         if not wallet:
             if currency == to:
                 wallet = Wallet(
-                    tenant_id=user.get("tenant_id", "default"),
+                    tenant_id=tenant_id,
                     user_id=user_id,
                     currency=currency,
                     balance=0,
@@ -158,7 +165,7 @@ async def do_convert(body: ConvertIn, user=Depends(current_user), s: AsyncSessio
         "to_currency": to,
     }
     source_tx = Transaction(
-        tenant_id=user.get("tenant_id", "default"),
+        tenant_id=tenant_id,
         user_id=user_id,
         wallet_id=source.id,
         type=TxType.exchange,
@@ -171,7 +178,7 @@ async def do_convert(body: ConvertIn, user=Depends(current_user), s: AsyncSessio
         meta=meta,
     )
     destination_tx = Transaction(
-        tenant_id=user.get("tenant_id", "default"),
+        tenant_id=tenant_id,
         user_id=user_id,
         wallet_id=destination.id,
         type=TxType.exchange,
