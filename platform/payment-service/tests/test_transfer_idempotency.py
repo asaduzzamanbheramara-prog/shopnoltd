@@ -204,3 +204,14 @@ def test_exchange_provider_errors_are_not_reflected_to_clients():
     assert 'HTTPException(502, "exchange provider unavailable") from None' in source
     assert 'f"Exchange provider unavailable: {exc}"' not in source
 
+def test_direct_payment_amount_parser_rejects_invalid_nonfinite_and_nonpositive_values():
+    from fastapi import HTTPException
+    from app.api.direct_payments import _positive_decimal
+
+    assert str(_positive_decimal("12.50", "invalid")) == "12.50"
+    for value in ("not-a-number", "NaN", "Infinity", "-Infinity", "0", "-1", None):
+        with pytest.raises(HTTPException) as exc:
+            _positive_decimal(value, "invalid amount")
+        assert exc.value.status_code == 422
+        assert exc.value.detail == "invalid amount"
+
