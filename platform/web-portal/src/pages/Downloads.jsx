@@ -2,8 +2,6 @@ import { Link } from 'react-router-dom'
 import { AdsterraResponsiveBanner } from '../components/AdsterraAds'
 
 const GITHUB = 'https://github.com/asaduzzamanbheramara-prog/shopnoltd/releases/download/shopnoltd-desktop-latest'
-const ANDROID = 'https://github.com/asaduzzamanbheramara-prog/shopnoltd/releases/download/shopnoltd-mobile-latest'
-const COLLECT = 'https://github.com/asaduzzamanbheramara-prog/shopnoltd-collect-android/releases/download/shopnoltdcollect-latest'
 
 const desktop = [
   { icon: '🪟', name: 'Windows', file: 'Shopnoltd-Setup.exe', note: 'NSIS installer for 64-bit Windows.' },
