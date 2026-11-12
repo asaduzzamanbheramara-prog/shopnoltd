@@ -445,3 +445,11 @@ def test_deposit_idempotency_rejects_changed_amount_currency_or_method():
             _validate_existing_deposit(existing, candidate, candidate.currency.upper())
         assert exc.value.status_code == 409
 
+def test_configured_withdrawal_approval_cannot_be_overridden_by_provider_status():
+    from pathlib import Path
+
+    source = (
+        Path(__file__).resolve().parents[1] / "app" / "api" / "withdrawals.py"
+    ).read_text(encoding="utf-8")
+    assert "if settings.admin_approval_required or out.get(\"status\") == \"requires_approval\"" in source
+
