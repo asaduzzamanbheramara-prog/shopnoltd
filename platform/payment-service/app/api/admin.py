@@ -71,12 +71,21 @@ async def approve(tx_id: str, user=Depends(require_admin), s: AsyncSession = Dep
             Wallet.tenant_id == tx.tenant_id,
         ).with_for_update()
     )
-    w = wr.scalar_one()
+    w = wr.scalar_one_or_none()
+    if w is None:
+        raise HTTPException(409, "transaction wallet is missing")
     if tx.type.value == "withdrawal":
-        w.balance = Decimal(str(w.balance)) - Decimal(str(tx.amount))
-        w.frozen = Decimal(str(w.frozen)) - Decimal(str(tx.amount))
+        amount = Decimal(str(tx.amount))
+        balance = Decimal(str(w.balance))
+        frozen = Decimal(str(w.frozen))
+        if balance < amount or frozen < amount:
+            raise HTTPException(409, "withdrawal reservation is inconsistent; manual reconciliation required")
+        w.balance = balance - amount
+        w.frozen = frozen - amount
     elif tx.type.value == "deposit":
         w.balance = Decimal(str(w.balance)) + Decimal(str(tx.amount))
+    else:
+        raise HTTPException(400, "only deposit and withdrawal transactions can be approved")
     tx.status = TxStatus.completed
     tx.completed_at = datetime.utcnow()
     tx.approved_by = user["sub"]
@@ -107,8 +116,14 @@ async def reject(tx_id: str, user=Depends(require_admin), s: AsyncSession = Depe
                 Wallet.tenant_id == tx.tenant_id,
             ).with_for_update()
         )
-        w = wr.scalar_one()
-        w.frozen = Decimal(str(w.frozen)) - Decimal(str(tx.amount))
+        w = wr.scalar_one_or_none()
+        if w is None:
+            raise HTTPException(409, "transaction wallet is missing")
+        frozen = Decimal(str(w.frozen))
+        amount = Decimal(str(tx.amount))
+        if frozen < amount:
+            raise HTTPException(409, "withdrawal reservation is inconsistent; manual reconciliation required")
+        w.frozen = frozen - amount
     tx.status = TxStatus.cancelled
     tx.completed_at = datetime.utcnow()
     tx.approved_by = user["sub"]
