@@ -417,3 +417,31 @@ def test_signed_mfs_feed_amount_parser_rejects_non_finite_values():
             _decimal(value, "amount")
         assert exc.value.status_code == 422
 
+def test_deposit_idempotency_rejects_changed_amount_currency_or_method():
+    from decimal import Decimal
+    from types import SimpleNamespace
+    from fastapi import HTTPException
+    from app.api.deposits import _validate_existing_deposit
+    from app.schemas.schemas import DepositIn
+    from app.models.models import PaymentMethod
+
+    body = DepositIn(
+        currency="BDT", amount="100", method=PaymentMethod.manual,
+        idempotency_key="deposit-key-001",
+    )
+    existing = SimpleNamespace(
+        amount=Decimal("100"), currency="BDT", method=PaymentMethod.manual,
+    )
+    _validate_existing_deposit(existing, body, "BDT")
+    for changes in (
+        {"amount": "101"},
+        {"currency": "USD"},
+        {"method": PaymentMethod.bkash},
+    ):
+        payload = body.model_dump()
+        payload.update(changes)
+        candidate = DepositIn(**payload)
+        with pytest.raises(HTTPException) as exc:
+            _validate_existing_deposit(existing, candidate, candidate.currency.upper())
+        assert exc.value.status_code == 409
+
