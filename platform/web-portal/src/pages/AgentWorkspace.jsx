@@ -111,7 +111,7 @@ export default function AgentWorkspace() {
       case 'auth_ok': setStatus('connected'); retryRef.current = 0; break
       case 'models': setModelCatalog(Array.isArray(m.items) ? m.items : []); break
       case 'model': push({ kind: 'text', text: `Using model: ${String(m.display_name || m.model || '')}` }); break
-      case 'model_failover': push({ kind: 'error', text: `Model ${String(m.model || '')} is temporarily unavailable. ${String(m.reason || 'Switching to another eligible model.')}` }); break
+      case 'model_failover': push({ kind: 'error', text: `Model ${String(m.display_name || m.model || '')} is temporarily unavailable. ${String(m.reason || 'Switching to another eligible model.')}` }); break
       case 'text': push({ kind: 'text', text: String(m.text || '') }); break
       case 'plan': setPlan(Array.isArray(m.steps) ? m.steps.slice(0, 20) : []); break
       case 'tool':
