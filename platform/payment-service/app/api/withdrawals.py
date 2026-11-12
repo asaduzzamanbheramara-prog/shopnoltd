@@ -40,7 +40,11 @@ async def create_withdrawal(body: WithdrawalIn, user=Depends(current_user), s: A
     # both observe the same available balance and over-reserve funds.
     res = await s.execute(
         select(Wallet)
-        .where(Wallet.user_id == user["sub"], Wallet.currency == currency)
+        .where(
+            Wallet.tenant_id == user.get("tenant_id", "default"),
+            Wallet.user_id == user["sub"],
+            Wallet.currency == currency,
+        )
         .with_for_update()
     )
     w = res.scalar_one_or_none()
