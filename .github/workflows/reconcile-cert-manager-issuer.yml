@@ -62,8 +62,39 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          kubectl apply --dry-run=server -f k8s/cert-manager/letsencrypt-prod-issuer.yaml
-          kubectl apply -f k8s/cert-manager/letsencrypt-prod-issuer.yaml
+          echo "Waiting for cert-manager CA injector to populate webhook trust bundles."
+          for configuration in mutatingwebhookconfiguration/cert-manager-webhook validatingwebhookconfiguration/cert-manager-webhook; do
+            ready=0
+            for attempt in {1..24}; do
+              if kubectl get "$configuration" -o json |
+                jq -e '(.webhooks | length) > 0 and all(.webhooks[]; ((.clientConfig.caBundle // "") | length) > 0)' >/dev/null; then
+                ready=1
+                break
+              fi
+              sleep 5
+            done
+            if [[ "$ready" -ne 1 ]]; then
+              echo "ERROR: CA bundle was not injected into $configuration."
+              kubectl get "$configuration" -o json |
+                jq -r '.webhooks[] | [.name, ((.clientConfig.caBundle // "") | length)] | @tsv'
+              exit 1
+            fi
+          done
+
+          applied=0
+          for attempt in {1..6}; do
+            if kubectl apply --dry-run=server -f k8s/cert-manager/letsencrypt-prod-issuer.yaml &&
+              kubectl apply -f k8s/cert-manager/letsencrypt-prod-issuer.yaml; then
+              applied=1
+              break
+            fi
+            echo "Issuer admission attempt $attempt/6 failed; retrying after webhook readiness check."
+            sleep 10
+          done
+          if [[ "$applied" -ne 1 ]]; then
+            echo "ERROR: ClusterIssuer could not be admitted after webhook CA injection retries."
+            exit 1
+          fi
           kubectl wait --for=condition=Ready clusterissuer/letsencrypt-prod --timeout=180s
 
       - name: Verify platform certificate issuance
