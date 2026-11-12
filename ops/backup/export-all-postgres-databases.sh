@@ -97,7 +97,7 @@ for pod in doc.get("items", []):
   [[ -z "$mounted_pods" ]] && break
   if (( SECONDS >= wait_deadline )); then
     echo "MinIO PVC is still referenced by pod(s); refusing backup reader mount:" >&2
-    printf '%s\\n' "$mounted_pods" >&2
+    printf '%s\n' "$mounted_pods" >&2
     exit 1
   fi
   sleep 2
