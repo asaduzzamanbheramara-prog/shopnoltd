@@ -125,7 +125,9 @@ async def get_wallet_ledger(
     for t in txs:
         amount = float(t.amount)
         if t.type.value == "withdrawal":
-            amount = -amount
+            amount = -(amount + float(t.fee or 0))
+        elif t.type.value == "exchange" and amount < 0:
+            amount -= float(t.fee or 0)
         running += amount
         entries.append(
             {
