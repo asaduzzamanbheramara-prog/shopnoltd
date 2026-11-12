@@ -215,3 +215,37 @@ def test_direct_payment_amount_parser_rejects_invalid_nonfinite_and_nonpositive_
         assert exc.value.status_code == 422
         assert exc.value.detail == "invalid amount"
 
+def test_internal_ad_wallet_idempotency_rejects_changed_payload():
+    from types import SimpleNamespace
+    from decimal import Decimal
+    from fastapi import HTTPException
+    from app.api.internal_ads import AdWalletOperation, _existing_operation_result
+    from app.models.models import TxStatus, TxType
+
+    existing = SimpleNamespace(
+        id="tx-1",
+        type=TxType.deposit,
+        currency="BDT",
+        amount=Decimal("50"),
+        reference="ad-order-1",
+        status=TxStatus.completed,
+    )
+    same = AdWalletOperation(
+        tenant_id="tenant-a", user_id="user-a", currency="BDT", amount="50",
+        operation="credit", idempotency_key="idem-key-001", reference="ad-order-1",
+    )
+    assert _existing_operation_result(existing, same, "BDT")["transaction_id"] == "tx-1"
+
+    for changes in (
+        {"amount": "51"},
+        {"operation": "debit"},
+        {"reference": "ad-order-2"},
+        {"currency": "USD"},
+    ):
+        payload = same.model_dump()
+        payload.update(changes)
+        candidate = AdWalletOperation(**payload)
+        with pytest.raises(HTTPException) as exc:
+            _existing_operation_result(existing, candidate, candidate.currency.upper())
+        assert exc.value.status_code == 409
+
