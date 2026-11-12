@@ -61,6 +61,34 @@ export default function Downloads() {
         </div>
       </section>
 
+      <section style={{ marginTop: 42, padding: 22, border: '1px solid #bae6fd', borderRadius: 16, background: '#f0f9ff' }}>
+        <h2 style={{ marginTop: 0 }}>Install on your device</h2>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,280px),1fr))', gap: 20 }}>
+          <div>
+            <h3>Android phone or tablet</h3>
+            <ol style={{ color: '#334155', lineHeight: 1.7, paddingLeft: 20 }}>
+              <li>Choose Shopnoltd or Shopnoltd Admin above and download the APK.</li>
+              <li>Open the downloaded APK from your device's Downloads folder.</li>
+              <li>If Android asks, allow this browser or file manager to install unknown apps for this installation.</li>
+              <li>Review the app name and requested permissions, then tap Install.</li>
+              <li>After installation, turn off the browser/file manager's unknown-app install permission again.</li>
+            </ol>
+            <p style={{ color: '#475569', lineHeight: 1.6 }}>These are QA/debug builds, not production Play Store releases. Install only if you trust this test build. Do not bypass Android security warnings.</p>
+          </div>
+          <div>
+            <h3>Windows, Linux or macOS</h3>
+            <p style={{ color: '#334155', lineHeight: 1.7 }}>Download the matching installer above and open it on that computer. Windows may ask you to confirm the installer; macOS builds may be unsigned/not notarized, so do not bypass system protections unless you have independently verified and trust the build.</p>
+            <h3>iPhone or iPad</h3>
+            <p style={{ color: '#334155', lineHeight: 1.7 }}>A signed public iOS/iPadOS installer is not currently available. Use the Shopnoltd website in Safari; no IPA sideload option is advertised.</p>
+          </div>
+        </div>
+        <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid #bae6fd' }}>
+          <h3 style={{ marginTop: 0 }}>Use Android without installing on your physical phone</h3>
+          <p style={{ color: '#334155', lineHeight: 1.7 }}>Open Android Cloud to start a private browser-based Android emulator. Sign in, launch the device, then install an official Shopnoltd app or upload another APK inside that emulator. This is a separate cloud device, not remote installation onto your phone.</p>
+          <Link to="/android-cloud" style={{ color: '#0369a1', fontWeight: 800 }}>Launch Android Cloud →</Link>
+        </div>
+      </section>
+
       <AdsterraResponsiveBanner />
 
       <section style={{ marginTop: 42, padding: 20, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 16 }}>
