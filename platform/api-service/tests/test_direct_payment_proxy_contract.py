@@ -49,3 +49,73 @@ def test_direct_payment_verification_proxy_forwards_submission_and_evidence(monk
             {"json": body},
         )
     ]
+
+
+def test_payment_proxy_redacts_upstream_server_error_details(monkeypatch):
+    class Response:
+        status_code = 502
+        text = '{"detail":"provider secret token=do-not-leak"}'
+
+    class Client:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            return False
+
+        async def request(self, *args, **kwargs):
+            return Response()
+
+    monkeypatch.setattr(direct_payment_proxy.httpx, "AsyncClient", Client)
+    try:
+        asyncio.run(
+            direct_payment_proxy.proxy(
+                "POST", "/api/v1/direct-payments/submissions/s1/verify",
+                "access-token",
+            )
+        )
+    except Exception as exc:
+        assert getattr(exc, "status_code", None) == 502
+        assert exc.detail == "Payment service is temporarily unavailable"
+        assert "do-not-leak" not in str(exc)
+    else:
+        raise AssertionError("expected sanitized HTTPException")
+
+
+def test_payment_proxy_does_not_forward_upstream_client_error_body(monkeypatch):
+    from fastapi import HTTPException
+
+    class Response:
+        status_code = 422
+        text = '{"detail":"internal validation path /srv/private"}'
+
+    class Client:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            return False
+
+        async def request(self, *args, **kwargs):
+            return Response()
+
+    monkeypatch.setattr(direct_payment_proxy.httpx, "AsyncClient", Client)
+    try:
+        asyncio.run(
+            direct_payment_proxy.proxy(
+                "POST", "/api/v1/direct-payments/submissions/s1/verify",
+                "access-token",
+            )
+        )
+    except HTTPException as exc:
+        assert exc.status_code == 422
+        assert exc.detail == "Payment request was rejected"
+        assert "/srv/private" not in str(exc)
+    else:
+        raise AssertionError("expected sanitized HTTPException")
