@@ -2,7 +2,7 @@
 
 UI  --(WS /ws/ui, first message = auth)--> agent loop --(LiteLLM, OpenAI-compatible)--> model
                          |-- sandbox tools (files, plan; shell only if explicitly enabled)
-                         `-- browser tools --(WS /ws/ext)--> Chrome extension
+                         `-- browser tools --> isolated Browserless Chromium via Playwright (extension fallback)
 
 Provider API keys live only in LiteLLM. This service holds ONE LiteLLM *virtual* key
 (restricted models + budget), not the master key. Set it in the secret that is already
@@ -262,7 +262,10 @@ async def _get_browser_session(user: str) -> dict:
         return session
     except Exception:
         if playwright is not None:
-            await playwright.stop()
+            try:
+                await playwright.stop()
+            except Exception:
+                pass
         browser_semaphore.release()
         raise
 
