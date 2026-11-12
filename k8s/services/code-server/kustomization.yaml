@@ -24,6 +24,9 @@ labels:
     app.kubernetes.io/name: code-server
     app.kubernetes.io/part-of: shopnoltd
 
+generatorOptions:
+  disableNameSuffixHash: true
+
 configMapGenerator:
 - name: code-server-continue-config
   files:

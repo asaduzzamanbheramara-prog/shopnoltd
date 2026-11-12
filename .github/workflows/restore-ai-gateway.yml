@@ -1,0 +1,102 @@
+name: Restore AI Gateway
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_ai_restore:
+        description: "Type restore-ai-gateway to activate the existing LiteLLM configuration"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: restore-ai-gateway
+  cancel-in-progress: false
+
+jobs:
+  restore:
+    name: Restore existing LiteLLM runtime
+    if: ${{ inputs.confirm_ai_restore == 'restore-ai-gateway' }}
+    runs-on: [self-hosted, linux]
+    timeout-minutes: 15
+    steps:
+      - name: Checkout trusted main revision
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: false
+
+      - name: Verify existing secret material without printing values
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v kubectl >/dev/null
+          command -v jq >/dev/null
+          kubectl --request-timeout=20s get --raw=/readyz >/dev/null
+          kubectl -n shopno-ai get secret litellm-provider-keys >/dev/null
+          keys="$(kubectl -n shopno-ai get secret litellm-provider-keys -o json | jq -r '.data | keys[]')"
+          printf '%s\n' "$keys" | sed 's/^/existing-secret-key: /'
+          for required in DATABASE_URL LITELLM_MASTER_KEY; do
+            printf '%s\n' "$keys" | grep -qx "$required" || {
+              echo "ERROR: shopno-ai/litellm-provider-keys is missing $required" >&2
+              exit 1
+            }
+          done
+          provider_count="$(printf '%s\n' "$keys" | grep -E '(_API_KEY|_TOKEN)$' | wc -l | tr -d ' ')"
+          test "$provider_count" -gt 0 || {
+            echo 'ERROR: no provider credential key is present in shopno-ai/litellm-provider-keys' >&2
+            exit 1
+          }
+          echo "PASS: existing LiteLLM secret has required runtime and provider key names ($provider_count provider entries)"
+
+      - name: Sync only the LiteLLM master key to code-server namespace
+        shell: bash
+        run: |
+          set -euo pipefail
+          kubectl -n shopno-ai get secret litellm-provider-keys \
+            -o jsonpath='{.data.LITELLM_MASTER_KEY}' | base64 -d | \
+            kubectl -n shopno-apps create secret generic code-server-litellm-key \
+              --from-file=LITELLM_MASTER_KEY=/dev/stdin \
+              --dry-run=client -o yaml | kubectl apply -f - >/dev/null
+          echo 'PASS: synced code-server namespace runtime key without printing its value'
+
+      - name: Restore LiteLLM deployment
+        shell: bash
+        run: |
+          set -euo pipefail
+          kubectl -n shopno-ai scale deployment/litellm-proxy --replicas=1
+          kubectl -n shopno-ai rollout restart deployment/litellm-proxy
+          kubectl -n shopno-ai rollout status deployment/litellm-proxy --timeout=8m
+          echo 'PASS: LiteLLM deployment is ready'
+
+      - name: Reconcile code-server AI configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          kubectl apply -k k8s/services/code-server >/dev/null
+          kubectl -n shopno-ai get secret litellm-provider-keys \
+            -o jsonpath='{.data.LITELLM_MASTER_KEY}' | base64 -d | \
+            kubectl -n shopno-apps create secret generic code-server-litellm-key \
+              --from-file=LITELLM_MASTER_KEY=/dev/stdin \
+              --dry-run=client -o yaml | kubectl apply -f - >/dev/null
+          kubectl -n shopno-apps rollout restart deployment/code-server
+          kubectl -n shopno-apps rollout status deployment/code-server --timeout=8m
+          echo 'PASS: code-server AI configuration is mounted and the workspace restarted'
+
+      - name: Verify public OpenAI-compatible endpoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          for attempt in {1..12}; do
+            code="$(curl -k -sS --connect-timeout 8 --max-time 15 -o /tmp/models.json -w '%{http_code}' https://openai.shopnoltd.dpdns.org/v1/models || true)"
+            if [ "$code" = 200 ] || [ "$code" = 401 ]; then
+              echo "PASS: public LiteLLM endpoint responded HTTP $code"
+              exit 0
+            fi
+            echo "LiteLLM endpoint returned HTTP ${code:-no-response}; retrying"
+            sleep 10
+          done
+          echo 'ERROR: public LiteLLM endpoint did not become available' >&2
+          exit 1

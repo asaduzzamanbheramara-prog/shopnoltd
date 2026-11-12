@@ -58,7 +58,7 @@ metadata:
   labels:
     app.kubernetes.io/name: litellm-proxy
 spec:
-  replicas: 0
+  replicas: 1
   strategy:
     type: Recreate
   selector:
