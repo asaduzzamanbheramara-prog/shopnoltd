@@ -11,7 +11,7 @@ resources:
   - ingress.yaml
 
 configMapGenerator:
-  - name: code-server-continue-config
+  - name: code-server-isolated-continue-config
     files:
       - config.json=continue-config.json
 
