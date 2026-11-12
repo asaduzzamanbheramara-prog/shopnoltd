@@ -329,3 +329,30 @@ def test_admin_approval_checks_wallet_and_withdrawal_reservation_invariants():
     assert source.count('raise HTTPException(409, "withdrawal reservation is inconsistent; manual reconciliation required")') == 2
     assert 'only deposit and withdrawal transactions can be approved' in source
 
+def test_exchange_idempotency_rejects_changed_currency_pair_or_amount():
+    from decimal import Decimal
+    from types import SimpleNamespace
+    from fastapi import HTTPException
+    from app.api.exchanges import _existing_result
+
+    existing = SimpleNamespace(
+        meta={
+            "from_amount": "25",
+            "to_amount": "30",
+            "rate": "1.2",
+            "from_currency": "USD",
+            "to_currency": "EUR",
+        },
+        fee=Decimal("0.5"),
+        id="exchange-tx-1",
+    )
+    _existing_result(existing, "USD", "EUR", "exchange:key-0001", Decimal("25"))
+    for frm, to, amount in (
+        ("GBP", "EUR", Decimal("25")),
+        ("USD", "BDT", Decimal("25")),
+        ("USD", "EUR", Decimal("26")),
+    ):
+        with pytest.raises(HTTPException) as exc:
+            _existing_result(existing, frm, to, "exchange:key-0001", amount)
+        assert exc.value.status_code == 409
+
