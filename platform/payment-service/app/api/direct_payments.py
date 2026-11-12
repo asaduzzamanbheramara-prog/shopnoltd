@@ -7,7 +7,7 @@ admin review with an audit reason.
 
 import uuid
 from datetime import datetime, timedelta
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 
 from app.core.db import SessionLocal
 from app.core.security import verify_token
@@ -47,6 +47,16 @@ async def require_admin(creds: HTTPAuthorizationCredentials = Depends(bearer)):
     if not ({"platform_admin", "admin"} & set(user.get("roles", []))):
         raise HTTPException(403, "admin only")
     return user
+
+
+def _positive_decimal(value: object, detail: str) -> Decimal:
+    try:
+        amount = Decimal(str(value))
+    except (InvalidOperation, TypeError, ValueError):
+        raise HTTPException(422, detail) from None
+    if not amount.is_finite() or amount <= 0:
+        raise HTTPException(422, detail)
+    return amount
 
 
 def intent_out(i: DirectPaymentIntent, account: DirectPaymentAccount | None = None):
@@ -187,11 +197,11 @@ async def create_intent(body: dict, user=Depends(current_user), s: AsyncSession 
     tenant_id = require_tenant_id(user)
     provider = str(body.get("provider", "")).lower()
     currency = str(body.get("currency", "BDT")).upper()
-    amount = Decimal(str(body.get("amount", "0")))
+    amount = _positive_decimal(body.get("amount", "0"), "direct payment requires a positive finite amount")
     if provider not in {"bkash", "nagad", "rocket"}:
         raise HTTPException(400, "direct payment supports bKash, Nagad and Rocket")
-    if currency != "BDT" or amount <= 0:
-        raise HTTPException(400, "direct payment currently requires a positive BDT amount")
+    if currency != "BDT":
+        raise HTTPException(400, "direct payment currently requires BDT currency")
     account_id = body.get("account_id")
     account = None
     if account_id:
@@ -293,9 +303,9 @@ async def submit_evidence(intent_id: str, body: dict, user=Depends(current_user)
         raise HTTPException(422, "txid is required")
     if await s.scalar(select(DirectPaymentSubmission).where(DirectPaymentSubmission.txid == txid)):
         raise HTTPException(409, "this TxID has already been submitted")
-    claimed_amount = Decimal(str(body.get("amount", intent.amount)))
-    if claimed_amount <= 0:
-        raise HTTPException(422, "amount must be positive")
+    claimed_amount = _positive_decimal(
+        body.get("amount", intent.amount), "amount must be a positive finite number"
+    )
     submission = DirectPaymentSubmission(
         intent_id=intent.id,
         provider=intent.provider,
