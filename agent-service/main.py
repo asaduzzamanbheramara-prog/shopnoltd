@@ -417,8 +417,19 @@ async def get_model_catalog(claims: dict) -> list[dict]:
             response = await client.get(AI_MODEL_CATALOG_URL, headers={"Authorization": f"Bearer {token}"})
             response.raise_for_status()
             payload = response.json()
+            gateway_response = await client.get(
+                f"{LITELLM_URL}/models",
+                headers={"Authorization": f"Bearer {LITELLM_KEY}"},
+            )
+            gateway_response.raise_for_status()
+            gateway_payload = gateway_response.json()
         if not isinstance(payload, list):
             return []
+        gateway_data = gateway_payload.get("data", []) if isinstance(gateway_payload, dict) else []
+        gateway_models = {
+            str(item.get("id")) for item in gateway_data
+            if isinstance(item, dict) and item.get("id")
+        }
         models = []
         for item in payload:
             if not isinstance(item, dict) or not item.get("model_name"):
@@ -426,9 +437,13 @@ async def get_model_catalog(claims: dict) -> list[dict]:
             capabilities = item.get("capabilities") or {}
             provider_name = str(item.get("provider_name") or "")
             model_name = str(item["model_name"])
+            model_key = f"{provider_name}:{model_name}"
+            # The virtual key must be allowed to use the alias in LiteLLM.
+            if model_key not in gateway_models:
+                continue
             models.append({
                 "model_name": model_name,
-                "model_key": f"{provider_name}:{model_name}",
+                "model_key": model_key,
                 "display_name": str(item.get("display_name") or model_name),
                 "provider_name": provider_name,
                 "free_tier": capabilities.get("free_tier") is True,
