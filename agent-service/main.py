@@ -240,14 +240,17 @@ async def _get_browser_session(user: str) -> dict:
     session = browser_sessions.get(user)
     if session and session["browser"].is_connected():
         return session
+    if session:
+        await close_browser_session(user)
     if not BROWSER_WS_ENDPOINT:
         raise RuntimeError("isolated browser endpoint is not configured")
     try:
         await asyncio.wait_for(browser_semaphore.acquire(), timeout=30)
     except asyncio.TimeoutError:
         raise RuntimeError("isolated browser is busy; retry shortly")
-    playwright = await async_playwright().start()
+    playwright = None
     try:
+        playwright = await async_playwright().start()
         browser = await playwright.chromium.connect_over_cdp(BROWSER_WS_ENDPOINT, timeout=20000)
         context = await browser.new_context(
             accept_downloads=True,
@@ -258,7 +261,8 @@ async def _get_browser_session(user: str) -> dict:
         browser_sessions[user] = session
         return session
     except Exception:
-        await playwright.stop()
+        if playwright is not None:
+            await playwright.stop()
         browser_semaphore.release()
         raise
 
