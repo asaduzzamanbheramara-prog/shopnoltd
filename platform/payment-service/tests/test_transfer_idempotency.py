@@ -509,3 +509,12 @@ def test_direct_payment_submission_endpoint_uses_validated_request_schema():
     assert "DirectPaymentIntentIn, DirectPaymentSubmissionIn, DirectPaymentVerificationIn" in source
     assert "body: DirectPaymentSubmissionIn" in source
 
+def test_signed_mfs_intent_query_uses_exact_reference_to_disambiguate_amounts():
+    from pathlib import Path
+
+    source = (
+        Path(__file__).resolve().parents[1] / "app" / "api" / "direct_mfs_feed.py"
+    ).read_text(encoding="utf-8")
+    assert "func.upper(DirectPaymentIntent.expected_reference)" in source
+    assert '(reference or "").strip().upper()' in source
+
