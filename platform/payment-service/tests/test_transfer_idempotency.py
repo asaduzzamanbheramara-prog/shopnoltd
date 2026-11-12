@@ -453,3 +453,11 @@ def test_configured_withdrawal_approval_cannot_be_overridden_by_provider_status(
     ).read_text(encoding="utf-8")
     assert "if settings.admin_approval_required or out.get(\"status\") == \"requires_approval\"" in source
 
+def test_platform_fee_configuration_is_finite_and_bounded():
+    from pathlib import Path
+
+    source = (
+        Path(__file__).resolve().parents[1] / "app" / "core" / "config.py"
+    ).read_text(encoding="utf-8")
+    assert "Field(default=1.5, ge=0, le=100, allow_inf_nan=False)" in source
+
