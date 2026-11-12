@@ -361,14 +361,16 @@ async def verify_submission(
         raise HTTPException(404, "submission not found")
     if sub.status == "verified":
         return {"ok": True, "status": "verified", "transaction_id": str(sub.transaction_id) if sub.transaction_id else None}
+    if sub.status != "submitted":
+        raise HTTPException(409, "only submitted payment evidence can be verified")
 
     intent_query = select(DirectPaymentIntent).where(DirectPaymentIntent.id == sub.intent_id)
     if "platform_admin" not in set(user.get("roles", [])):
         intent_query = intent_query.where(DirectPaymentIntent.tenant_id == tenant_id)
     intent = await s.scalar(intent_query.with_for_update())
-    if not intent or intent.status == "expired":
-        raise HTTPException(400, "payment intent is not valid")
-    if datetime.utcnow() >= intent.expires_at and intent.status != "verified":
+    if not intent or intent.status != "submitted":
+        raise HTTPException(409, "payment intent is not awaiting verification")
+    if datetime.utcnow() >= intent.expires_at:
         intent.status = "expired"
         await s.commit()
         raise HTTPException(400, "payment intent expired")
