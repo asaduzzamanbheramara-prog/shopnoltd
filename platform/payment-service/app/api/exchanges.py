@@ -45,7 +45,7 @@ async def rate(from_currency: str, to_currency: str, user=Depends(current_user))
 class ConvertIn(BaseModel):
     from_currency: str
     to_currency: str
-    amount: float = Field(gt=0)
+    amount: float = Field(gt=0, allow_inf_nan=False)
     idempotency_key: str = Field(min_length=8, max_length=128)
 
 
