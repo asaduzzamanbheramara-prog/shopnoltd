@@ -75,7 +75,7 @@ async def approve(tx_id: str, user=Depends(require_admin), s: AsyncSession = Dep
     if w is None:
         raise HTTPException(409, "transaction wallet is missing")
     if tx.type.value == "withdrawal":
-        amount = Decimal(str(tx.amount))
+        amount = Decimal(str(tx.amount)) + Decimal(str(tx.fee))
         balance = Decimal(str(w.balance))
         frozen = Decimal(str(w.frozen))
         if balance < amount or frozen < amount:
@@ -120,7 +120,7 @@ async def reject(tx_id: str, user=Depends(require_admin), s: AsyncSession = Depe
         if w is None:
             raise HTTPException(409, "transaction wallet is missing")
         frozen = Decimal(str(w.frozen))
-        amount = Decimal(str(tx.amount))
+        amount = Decimal(str(tx.amount)) + Decimal(str(tx.fee))
         if frozen < amount:
             raise HTTPException(409, "withdrawal reservation is inconsistent; manual reconciliation required")
         w.frozen = frozen - amount
