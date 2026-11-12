@@ -111,7 +111,11 @@ async def get_wallet_ledger(
 
     tres = await s.execute(
         select(Transaction)
-        .where(Transaction.wallet_id == w.id, Transaction.status == TxStatus.completed)
+        .where(
+            Transaction.wallet_id == w.id,
+            Transaction.tenant_id == tenant_id,
+            Transaction.status == TxStatus.completed,
+        )
         .order_by(Transaction.created_at.asc())
     )
     txs = tres.scalars().all()
