@@ -10,6 +10,7 @@ resources:
 - deployment.yaml
 - service.yaml
 - ingress.yaml
+- download-redirects.yaml
 - networkpolicy.yaml
 - poddisruptionbudget.yaml
 
