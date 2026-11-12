@@ -557,7 +557,7 @@ def test_payment_external_identity_migration_drops_only_legacy_user_foreign_keys
         root / "migrations" / "versions" / "0008_payment_external_identity.py"
     ).read_text(encoding="utf-8")
     reconciliation = (
-        root.parents[2]
+        root.parents[1]
         / "k8s" / "services" / "postgres" / "migration"
         / "012-payment-schema-reconciliation.sql"
     ).read_text(encoding="utf-8")
