@@ -1,0 +1,75 @@
+name: Deploy Code Server
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_code_server_only:
+        description: "Apply only k8s/services/code-server; do not reconcile the root application"
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  packages: read
+
+concurrency:
+  group: deploy-code-server
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: ${{ inputs.confirm_code_server_only == true }}
+    runs-on: [self-hosted, linux]
+    timeout-minutes: 15
+    steps:
+      - name: Checkout trusted main revision
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Verify cluster access
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v kubectl
+          test -s "${KUBECONFIG:-$HOME/.kube/config}"
+          kubectl --request-timeout=20s cluster-info
+
+      - name: Render code-server resources
+        shell: bash
+        run: |
+          set -euo pipefail
+          kubectl kustomize k8s/services/code-server >/tmp/code-server.yaml
+          grep -q 'name: code-server' /tmp/code-server.yaml
+          grep -q 'optional: true' /tmp/code-server.yaml
+
+      - name: Apply code-server resources only
+        shell: bash
+        run: |
+          set -euo pipefail
+          kubectl apply -k k8s/services/code-server
+
+      - name: Wait for code-server readiness
+        shell: bash
+        run: |
+          set -euo pipefail
+          kubectl -n shopno-apps rollout status deployment/code-server --timeout=8m
+          kubectl -n shopno-apps get deployment/code-server service/code-server pods -o wide
+          kubectl -n shopno-apps get ingress code-server -o wide
+
+      - name: Collect code-server diagnostics
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          set +e
+          kubectl -n shopno-apps get deployment/code-server service/code-server pods -o wide
+          kubectl -n shopno-apps describe deployment/code-server
+          kubectl -n shopno-apps get events --sort-by=.lastTimestamp | tail -n 120
+          for pod in $(kubectl -n shopno-apps get pods -l app.kubernetes.io/name=code-server -o name 2>/dev/null); do
+            echo "===== $pod ====="
+            kubectl -n shopno-apps describe "$pod"
+            kubectl -n shopno-apps logs "$pod" --all-containers --tail=200
+            kubectl -n shopno-apps logs "$pod" --all-containers --previous --tail=200
+          done
