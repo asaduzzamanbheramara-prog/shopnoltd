@@ -138,6 +138,7 @@ async def internal_transfer(body: TransferIn, user=Depends(current_user), s: Asy
         await s.rollback()
         existing = await s.scalar(
             select(Transaction).where(
+                Transaction.tenant_id == user.get("tenant_id", "default"),
                 Transaction.user_id == user["sub"],
                 Transaction.type == TxType.transfer,
                 Transaction.reference == reference,
