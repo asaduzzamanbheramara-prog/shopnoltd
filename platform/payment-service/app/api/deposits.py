@@ -1,4 +1,5 @@
 import uuid
+from decimal import Decimal
 from urllib.parse import urlparse
 
 from app.core.config import settings
