@@ -95,11 +95,13 @@ async def create_withdrawal(body: WithdrawalIn, user=Depends(current_user), s: A
         await s.rollback()
         return _withdrawal_out(existing)
 
+    fee = amount * Decimal(str(settings.platform_fee_pct)) / Decimal("100")
+    reserved_amount = amount + fee
     available = Decimal(str(wallet.balance)) - Decimal(str(wallet.frozen))
-    if available < amount:
-        raise HTTPException(400, "insufficient available funds")
+    if available < reserved_amount:
+        raise HTTPException(400, "insufficient available funds including withdrawal fee")
 
-    wallet.frozen = Decimal(str(wallet.frozen)) + amount
+    wallet.frozen = Decimal(str(wallet.frozen)) + reserved_amount
     tx = Transaction(
         tenant_id=tenant_id,
         user_id=user_id,
@@ -109,7 +111,7 @@ async def create_withdrawal(body: WithdrawalIn, user=Depends(current_user), s: A
         status=TxStatus.requires_approval if settings.admin_approval_required else TxStatus.processing,
         amount=amount,
         currency=currency,
-        fee=amount * settings.platform_fee_pct / 100,
+        fee=fee,
         idempotency_key=body.idempotency_key,
         meta={**(body.metadata or {}), "destination_sha256": _destination_fingerprint(body.destination)},
     )
