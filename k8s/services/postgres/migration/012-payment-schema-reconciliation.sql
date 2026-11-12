@@ -76,7 +76,7 @@ CREATE INDEX ix_wallets_user_id ON public.wallets (user_id);
 CREATE TABLE public.transactions (
     id UUID PRIMARY KEY,
     tenant_id VARCHAR(64) NOT NULL DEFAULT 'default',
-    user_id VARCHAR(64) NOT NULL REFERENCES public.users(id),
+    user_id VARCHAR(64) NOT NULL,
     wallet_id UUID NOT NULL REFERENCES public.wallets(id),
     type VARCHAR(32) NOT NULL DEFAULT 'deposit',
     method VARCHAR(32) NOT NULL DEFAULT 'manual',
@@ -110,7 +110,7 @@ CREATE UNIQUE INDEX uq_transaction_deposit_idempotency
 
 CREATE TABLE public.wallet_ledger_entries (
     id VARCHAR(64) PRIMARY KEY,
-    user_id VARCHAR(64) NOT NULL REFERENCES public.users(id),
+    user_id VARCHAR(64) NOT NULL,
     currency VARCHAR(8) NOT NULL,
     entry_type VARCHAR NOT NULL,
     amount NUMERIC(20,8) NOT NULL,
