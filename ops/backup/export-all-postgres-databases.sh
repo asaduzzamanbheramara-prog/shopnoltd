@@ -77,15 +77,60 @@ kubectl -n "$DATA_NAMESPACE" exec "$redis_pod" -- sh -c '
 ' > "$BACKUP_WORKDIR/redis/dump.rdb"
 test -s "$BACKUP_WORKDIR/redis/dump.rdb"
 
+# MinIO is scaled to zero. Mount its local-path PVC read-only in a short-lived
+# helper pod on the PV's node; do not read hostPath files with sudo.
 minio_replicas="$(kubectl -n "$DATA_NAMESPACE" get deployment minio -o jsonpath='{.spec.replicas}')"
 [[ "$minio_replicas" == "0" ]] || { echo "MinIO is active; refusing a non-atomic PVC copy." >&2; exit 1; }
 minio_pvc_volume="$(kubectl -n "$DATA_NAMESPACE" get pvc minio-data -o jsonpath='{.spec.volumeName}')"
 [[ -n "$minio_pvc_volume" ]] || { echo "MinIO PVC is not bound" >&2; exit 1; }
-minio_path="$(kubectl get pv "$minio_pvc_volume" -o jsonpath='{.spec.hostPath.path}')"
-[[ -n "$minio_path" && -d "$minio_path" ]] || { echo "MinIO local-path PV is not accessible to the backup runner" >&2; exit 1; }
-sudo -n tar -C "$minio_path" -czf "$BACKUP_WORKDIR/minio/minio-pvc.tar.gz" .
+minio_node="$(kubectl get pv "$minio_pvc_volume" -o jsonpath='{.spec.nodeAffinity.required.nodeSelectorTerms[0].matchExpressions[0].values[0]}')"
+[[ -n "$minio_node" ]] || { echo "MinIO PV node affinity is unavailable" >&2; exit 1; }
+minio_reader="shopnoltd-minio-backup-${GITHUB_RUN_ID:-manual}"
+cat > "$BACKUP_WORKDIR/minio/reader-pod.yaml" <<EOF
+apiVersion: v1
+kind: Pod
+metadata:
+  name: $minio_reader
+  namespace: $DATA_NAMESPACE
+spec:
+  nodeName: $minio_node
+  restartPolicy: Never
+  automountServiceAccountToken: false
+  securityContext:
+    runAsUser: 10001
+    runAsGroup: 10001
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - name: reader
+      image: busybox:1.36
+      command: ["sh", "-c", "sleep 180"]
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop: ["ALL"]
+      volumeMounts:
+        - name: minio-data
+          mountPath: /data
+          readOnly: true
+  volumes:
+    - name: minio-data
+      persistentVolumeClaim:
+        claimName: minio-data
+EOF
+cleanup_minio_reader() { kubectl -n "$DATA_NAMESPACE" delete pod "$minio_reader" --ignore-not-found --wait=false >/dev/null 2>&1 || true; }
+trap cleanup_minio_reader EXIT
+kubectl apply -f "$BACKUP_WORKDIR/minio/reader-pod.yaml"
+kubectl -n "$DATA_NAMESPACE" wait --for=condition=Ready "pod/$minio_reader" --timeout=180s
+kubectl -n "$DATA_NAMESPACE" exec "$minio_reader" -- tar -C /data -czf - . > "$BACKUP_WORKDIR/minio/minio-pvc.tar.gz"
 test -s "$BACKUP_WORKDIR/minio/minio-pvc.tar.gz"
+kubectl -n "$DATA_NAMESPACE" delete pod "$minio_reader" --wait=true
+trap - EXIT
 
+# K3s bootstrap token is host-only and must be made readable to the runner via
+# a narrowly scoped, reviewed sudoers rule; never print it in logs.
 sudo -n test -r /var/lib/rancher/k3s/server/token || { echo "Backup runner lacks non-interactive read access to the K3s server token." >&2; exit 1; }
 sudo -n cat /var/lib/rancher/k3s/server/token > "$BACKUP_WORKDIR/k3s/server-token"
 if sudo -n test -r /etc/rancher/k3s/k3s.yaml; then sudo -n cat /etc/rancher/k3s/k3s.yaml > "$BACKUP_WORKDIR/k3s/k3s.yaml"; fi

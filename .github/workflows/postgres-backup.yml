@@ -23,7 +23,7 @@ env:
   POSTGRES_DEPLOYMENT: postgres
   DATA_NAMESPACE: shopno-data
   BACKUP_BRANCH: database-backups
-  BACKUP_WORKDIR: ${{ vars.BACKUP_WORKDIR || '/tmp/shopnoltd-dr-backup' }}
+  BACKUP_WORKDIR: ${{ vars.BACKUP_WORKDIR || '/mnt/d/shopnoltd-dr-backup' }}
   MIN_BACKUP_FREE_KB: '20971520'
 
 jobs:
@@ -53,6 +53,9 @@ jobs:
           kubectl auth can-i list secrets --all-namespaces | grep -qx yes
           kubectl auth can-i get pods -n "$POSTGRES_NAMESPACE" | grep -qx yes
           kubectl auth can-i create pods/exec -n "$POSTGRES_NAMESPACE" | grep -qx yes
+          kubectl auth can-i create pods -n "$DATA_NAMESPACE" | grep -qx yes
+          kubectl auth can-i delete pods -n "$DATA_NAMESPACE" | grep -qx yes
+          kubectl auth can-i create pods/exec -n "$DATA_NAMESPACE" | grep -qx yes
           bash ./ops/backup/check-postgres-storage.sh
           echo "::add-mask::$BACKUP_ENCRYPTION_KEY"
 
