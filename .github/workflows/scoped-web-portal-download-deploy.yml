@@ -74,15 +74,14 @@ jobs:
           echo "Preflight PASS: Web Portal is healthy 1/1, its data PVC is Bound, and no HPA controls it. Android Portal replicas are not required for the exact APK redirects."
           echo "Target image: $image"
 
-      - name: Validate the single Ingress object
+      - name: Validate the Web Portal and direct APK redirect Ingress objects
         shell: bash
         run: |
           set -euo pipefail
           kubectl --request-timeout=30s -n shopno-platform apply --dry-run=server -f k8s/services/web-portal/ingress.yaml
-          jq -e '.spec.rules[] | select(.host == "shopnoltd.dpdns.org") | .http.paths[] | select(.path == "/download" and .backend.service.name == "android-portal" and .backend.service.port.number == 80)' \
-            < <(kubectl --request-timeout=20s -n shopno-platform get ingress web-portal -o json) >/dev/null || {
-              echo "Existing Ingress does not currently expose the expected Android download route; applying the reviewed manifest next."
-            }
+          kubectl --request-timeout=30s -n shopno-platform apply --dry-run=server -f k8s/services/web-portal/download-redirects.yaml
+          test "$(grep -c '^kind: Ingress$' k8s/services/web-portal/download-redirects.yaml)" = "3"
+          test "$(grep -c 'nginx.ingress.kubernetes.io/permanent-redirect-code: "302"' k8s/services/web-portal/download-redirects.yaml)" = "3"
 
       - name: Apply only Web Portal Ingress and update only its image
         shell: bash
