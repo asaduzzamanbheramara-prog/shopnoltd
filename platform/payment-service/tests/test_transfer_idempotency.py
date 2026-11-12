@@ -87,27 +87,6 @@ def test_transfer_transaction_lookups_are_tenant_scoped():
         assert "Transaction.tenant_id" in ast.unparse(query)
 
 
-def test_payment_tenant_claim_is_required_not_defaulted():
-    from app.core.tenant import require_tenant_id
-
-    assert require_tenant_id({"tenant_id": "tenant-a"}) == "tenant-a"
-    for claims in ({}, {"tenant_id": ""}, {"tenant_id": "   "}, {"tenant_id": None}):
-        with pytest.raises(HTTPException) as exc:
-            require_tenant_id(claims)
-        assert exc.value.status_code == 403
-
-
-def test_customer_payment_routes_do_not_fall_back_to_default_tenant():
-    from pathlib import Path
-
-    root = Path(__file__).resolve().parents[1] / "app" / "api"
-    for module in ("wallets.py", "deposits.py", "withdrawals.py", "transfers.py",
-                   "exchanges.py", "direct_payments.py"):
-        source = (root / module).read_text(encoding="utf-8")
-        assert 'user.get("tenant_id", "default")' not in source, (
-            f"{module} must not silently assign an unscoped token to the default tenant"
-        )
-
 
 def test_payment_tenant_claim_is_required_not_defaulted():
     from app.core.tenant import require_tenant_id
