@@ -10,10 +10,15 @@ resources:
   - service.yaml
   - ingress.yaml
 
+configMapGenerator:
+  - name: code-server-continue-config
+    files:
+      - config.json=continue-config.json
+
 images:
   - name: linuxserver/code-server
     newName: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-code-server
-    newTag: 470a010229144b4a1df84bb80a7957995843a90a
+    newTag: 5dce3846f443288a5d39858ba24c6871e52d0f4f
 
 labels:
   - includeSelectors: false

@@ -7,6 +7,7 @@ on:
     paths:
       - "k8s/services/code-server/image/**"
       - "k8s/services/code-server/deployment.yaml"
+      - "k8s/services/code-server-isolated/**"
       - ".github/workflows/build-code-server.yml"
   workflow_dispatch:
 
@@ -61,23 +62,32 @@ jobs:
           import os
           import re
 
-          path = Path("k8s/services/code-server/deployment.yaml")
-          text = path.read_text()
           image = os.environ["IMAGE"]
-          pattern = r'(?m)^([ \t]+image:) ghcr\.io/asaduzzamanbheramara-prog/shopnoltd-code-server:[^\n]+$'
-          updated, count = re.subn(pattern, rf'\1 {image}', text, count=1)
-          if count != 1:
-              raise SystemExit("Expected exactly one code-server image reference")
-          path.write_text(updated)
+          paths = [
+              Path("k8s/services/code-server/deployment.yaml"),
+              Path("k8s/services/code-server/kustomization.yaml"),
+              Path("k8s/services/code-server-isolated/kustomization.yaml"),
+          ]
+          for path in paths:
+              text = path.read_text()
+              if path.name == "deployment.yaml":
+                  pattern = r'(?m)^([ \t]+image:) ghcr\.io/asaduzzamanbheramara-prog/shopnoltd-code-server:[^\n]+$'
+                  updated, count = re.subn(pattern, rf'\1 {image}', text, count=1)
+              else:
+                  pattern = r'(?m)^([ \t]+newTag:) [^\n]+$'
+                  updated, count = re.subn(pattern, rf'\1 {os.environ["GITHUB_SHA"]}', text, count=1)
+              if count != 1:
+                  raise SystemExit(f"Expected exactly one code-server image reference in {path}")
+              path.write_text(updated)
           PY
           git diff --check
-          git diff -- k8s/services/code-server/deployment.yaml
+          git diff -- k8s/services/code-server/deployment.yaml k8s/services/code-server/kustomization.yaml k8s/services/code-server-isolated/kustomization.yaml
 
       - name: Commit GitOps image update
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add k8s/services/code-server/deployment.yaml
+          git add k8s/services/code-server/deployment.yaml k8s/services/code-server/kustomization.yaml k8s/services/code-server-isolated/kustomization.yaml
           if git diff --cached --quiet; then
             echo "No GitOps image change required."
             exit 0
