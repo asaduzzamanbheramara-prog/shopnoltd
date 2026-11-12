@@ -33,7 +33,8 @@ spec:
           type: RuntimeDefault
       containers:
         - name: chromium
-          image: ghcr.io/browserless/chromium@sha256:62c720e41dd5919b652a32e5183fbd68abff533c3a757087f7b962b73a9370e4
+          # Pin the linux/amd64 manifest for the current K3s node architecture.
+          image: ghcr.io/browserless/chromium:v2.61.0@sha256:02175bf926a98ff5fc02a2093a3930715ab6847202ffce379dfc858635998a29
           imagePullPolicy: IfNotPresent
           ports:
             - name: browser
