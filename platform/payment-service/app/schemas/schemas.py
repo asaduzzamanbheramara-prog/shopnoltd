@@ -69,7 +69,7 @@ class DirectPaymentIntentIn(BaseModel):
 class DirectPaymentSubmissionIn(BaseModel):
     txid: str = Field(min_length=4, max_length=128)
     sender_number: str | None = Field(default=None, max_length=32)
-    amount: float | None = Field(default=None, gt=0)
+    amount: float | None = Field(default=None, gt=0, allow_inf_nan=False)
     reference: str | None = Field(default=None, max_length=128)
 
 
