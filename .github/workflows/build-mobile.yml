@@ -22,11 +22,15 @@ jobs:
       matrix:
         include:
           - app: shopnoltd
-            config: web-portal
+            config: web
+            flavor: web
             package: org.shopnoltd.app
+            gradle_task: assembleWebDebug
           - app: shopnoltd-admin
-            config: admin-portal
+            config: admin
+            flavor: admin
             package: org.shopnoltd.admin
+            gradle_task: assembleAdminDebug
 
     steps:
       - name: Checkout
@@ -81,13 +85,13 @@ jobs:
 
       - name: Build installable QA APK
         working-directory: apps/mobile-shell/android
-        run: ./gradlew :app:assembleDebug --no-daemon --stacktrace
+        run: ./gradlew :app:${{ matrix.gradle_task }} --no-daemon --stacktrace
 
       - name: Verify APK
         working-directory: apps/mobile-shell/android
         run: |
           set -euo pipefail
-          apk="app/build/outputs/apk/debug/app-debug.apk"
+          apk="app/build/outputs/apk/${{ matrix.flavor }}/debug/app-${{ matrix.flavor }}-debug.apk"
           test -s "$apk"
           apksigner verify --verbose "$apk"
           mkdir -p ../../../dist
