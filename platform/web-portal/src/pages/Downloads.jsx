@@ -2,8 +2,6 @@ import { Link } from 'react-router-dom'
 import { AdsterraResponsiveBanner } from '../components/AdsterraAds'
 
 const GITHUB = 'https://github.com/asaduzzamanbheramara-prog/shopnoltd/releases/download/shopnoltd-desktop-latest'
-const ANDROID = 'https://github.com/asaduzzamanbheramara-prog/shopnoltd/releases/download/shopnoltd-mobile-latest'
-const COLLECT = 'https://github.com/asaduzzamanbheramara-prog/shopnoltd-collect-android/releases/download/shopnoltdcollect-latest'
 
 const desktop = [
   { icon: '🪟', name: 'Windows', file: 'Shopnoltd-Setup.exe', note: 'NSIS installer for 64-bit Windows.' },
@@ -13,9 +11,9 @@ const desktop = [
 ]
 
 const mobile = [
-  { icon: '📱', name: 'Shopnoltd', href: ANDROID + '/Shopnoltd.apk', note: 'Official Shopnoltd Android QA build.' },
-  { icon: '🛡️', name: 'Shopnoltd Admin', href: ANDROID + '/Shopnoltd-Admin.apk', note: 'Official Shopnoltd Admin Android QA build.' },
-  { icon: '📋', name: 'ShopnoltdCollect', href: COLLECT + '/ShopnoltdCollect.apk', note: 'Official ShopnoltdCollect Android build.' },
+  { icon: '📱', name: 'Shopnoltd', href: '/download/Shopnoltd.apk', note: 'Official Shopnoltd Android QA build.' },
+  { icon: '🛡️', name: 'Shopnoltd Admin', href: '/download/Shopnoltd-Admin.apk', note: 'Official Shopnoltd Admin Android QA build.' },
+  { icon: '📋', name: 'ShopnoltdCollect', href: '/download/ShopnoltdCollect.apk', note: 'Official ShopnoltdCollect Android build.' },
 ]
 
 function Card({ icon, name, href, file, note }) {
