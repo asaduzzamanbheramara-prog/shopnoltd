@@ -547,3 +547,23 @@ def test_direct_payment_submission_schema_rejects_non_finite_optional_amounts():
             DirectPaymentSubmissionIn(txid="TXID-1234", amount=amount)
 
     assert DirectPaymentSubmissionIn(txid="TXID-1234", amount=None).amount is None
+
+
+def test_payment_external_identity_migration_drops_only_legacy_user_foreign_keys():
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[1]
+    migration = (
+        root / "migrations" / "versions" / "0008_payment_external_identity.py"
+    ).read_text(encoding="utf-8")
+    reconciliation = (
+        root.parents[2]
+        / "k8s" / "services" / "postgres" / "migration"
+        / "012-payment-schema-reconciliation.sql"
+    ).read_text(encoding="utf-8")
+
+    assert 'down_revision = "0007_wallet_tenant_user_currency"' in migration
+    assert 'f"ALTER TABLE IF EXISTS public.{table} "' in migration
+    assert "DROP CONSTRAINT IF EXISTS" in migration
+    assert "REFERENCES public.users(id)" not in reconciliation
+    assert "Payment rows store the verified Keycloak JWT subject" in migration
