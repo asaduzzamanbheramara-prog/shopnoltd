@@ -443,6 +443,17 @@ def is_retryable_model_error(exc: Exception) -> bool:
     return isinstance(exc, (httpx.TimeoutException, httpx.NetworkError))
 
 
+def eligible_free_models(catalog: list[dict], failed_models: set[str], now: float | None = None) -> list[str]:
+    """Return only explicitly free-tier, active-catalog models not failed or cooling down."""
+    current = time.time() if now is None else now
+    return [
+        item["model_name"] for item in catalog
+        if item.get("free_tier") is True
+        and item["model_name"] not in failed_models
+        and model_cooldowns.get(item["model_name"], 0) <= current
+    ]
+
+
 async def llm_with_failover(
     messages: list,
     requested_model: str,
@@ -451,11 +462,7 @@ async def llm_with_failover(
     failed_models: set[str],
     ui: WebSocket,
 ) -> tuple[dict, str]:
-    free_models = [
-        item["model_name"] for item in catalog
-        if item.get("free_tier") and item["model_name"] not in failed_models
-        and model_cooldowns.get(item["model_name"], 0) <= time.time()
-    ]
+    free_models = eligible_free_models(catalog, failed_models)
     candidates: list[str] = []
     preferred = active_model or (requested_model if requested_model != "auto" else None)
     if preferred and preferred not in failed_models:
@@ -578,8 +585,11 @@ async def ui_socket(ws: WebSocket):
             except (WebSocketDisconnect, RuntimeError):
                 del hist[start:]; raise
             except Exception as e:
-                del hist[start:]                                # never keep a half-finished tool exchange
-                await ws.send_json({"type": "error", "text": f"{type(e).__name__}"})
+                # Keep completed plan/tool results so a later retry can continue from this checkpoint.
+                # A lone user message means no work was completed, so avoid duplicating it next time.
+                if len(hist) <= start + 1:
+                    del hist[start:]
+                await ws.send_json({"type": "error", "text": f"{type(e).__name__}: {str(e)[:300]}"})
             finally:
                 running.discard(user)
                 await close_browser_session(user)
