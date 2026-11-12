@@ -52,6 +52,29 @@ def _user_name(payload: dict) -> str:
     return " ".join(part for part in (given, family) if part)
 
 
+def _normalize_email(value: object) -> str:
+    """Use one normalized email representation for every identity write path."""
+    return str(value or "").strip().lower()
+
+
+async def _find_email_owner(
+    s: AsyncSession, email: str, *, exclude_user_id: str | None = None
+) -> UserMirror | None:
+    """Find a case-insensitive email owner and fail closed on legacy duplicates."""
+    stmt = select(UserMirror).where(func.lower(UserMirror.email) == email)
+    if exclude_user_id:
+        stmt = stmt.where(UserMirror.id != exclude_user_id)
+    owners = (
+        await s.execute(stmt.order_by(UserMirror.id).limit(2))
+    ).scalars().all()
+    if len(owners) > 1:
+        raise HTTPException(
+            409,
+            "email matches multiple existing accounts; administrator reconciliation required",
+        )
+    return owners[0] if owners else None
+
+
 async def _ensure_account_provisioning_jobs(s: AsyncSession, u: UserMirror) -> None:
     """Atomically enqueue domain and mailbox work; never claim provider success."""
     for resource_type in ("subdomain", "mailbox"):
@@ -82,7 +105,7 @@ def _user_out(u: UserMirror) -> UserOut:
 
 async def ensure_user_mirror(payload: dict, s: AsyncSession) -> UserMirror:
     keycloak_id = payload.get("sub")
-    email = (payload.get("email") or "").strip()
+    email = _normalize_email(payload.get("email"))
 
     if not keycloak_id:
         raise HTTPException(401, "authenticated token is missing subject")
@@ -122,9 +145,7 @@ async def ensure_user_mirror(payload: dict, s: AsyncSession) -> UserMirror:
         await s.commit()
         return existing
 
-    email_owner = (
-        await s.execute(select(UserMirror).where(UserMirror.email == email))
-    ).scalar_one_or_none()
+    email_owner = await _find_email_owner(s, email)
     if email_owner and email_owner.keycloak_id != keycloak_id:
         raise HTTPException(409, "email is already linked to another account")
 
@@ -150,9 +171,7 @@ async def ensure_user_mirror(payload: dict, s: AsyncSession) -> UserMirror:
             await _ensure_account_provisioning_jobs(s, existing)
             await s.commit()
             return existing
-        email_owner = (
-            await s.execute(select(UserMirror).where(UserMirror.email == email))
-        ).scalar_one_or_none()
+        email_owner = await _find_email_owner(s, email)
         if email_owner and email_owner.keycloak_id != keycloak_id:
             raise HTTPException(409, "email is already linked to another account")
         raise HTTPException(409, "unable to provision account safely")
@@ -177,14 +196,20 @@ async def ensure_user_mirror(payload: dict, s: AsyncSession) -> UserMirror:
 
 @router.post("", response_model=UserOut, status_code=201)
 async def create(body: UserIn, user=Depends(admin), s: AsyncSession = Depends(db)):
+    email = _normalize_email(body.email)
+    if not email:
+        raise HTTPException(400, "email is required")
+    if await _find_email_owner(s, email):
+        raise HTTPException(409, "email is already linked to another account")
+
     tok = await kc_token()
     async with httpx.AsyncClient() as c:
         r = await c.post(
             f"{ADMIN_URL}/users",
             headers={"Authorization": f"Bearer {tok}"},
             json={
-                "email": body.email,
-                "username": body.email,
+                "email": email,
+                "username": email,
                 "firstName": body.name,
                 "enabled": True,
                 "emailVerified": False,
@@ -198,19 +223,19 @@ async def create(body: UserIn, user=Depends(admin), s: AsyncSession = Depends(db
     r.raise_for_status()
     async with httpx.AsyncClient() as c:
         r2 = await c.get(
-            f"{ADMIN_URL}/users?email={body.email}", headers={"Authorization": f"Bearer {tok}"}
+            f"{ADMIN_URL}/users?email={email}", headers={"Authorization": f"Bearer {tok}"}
         )
     kc_id = r2.json()[0]["id"]
     u = UserMirror(
         keycloak_id=kc_id,
-        email=body.email,
+        email=email,
         name=body.name,
         tenant_id=body.tenant_id,
         identity_source="keycloak",
     )
     s.add(u)
     await s.flush()
-    s.add(UserProfile(user_id=u.id, display_name=body.name or body.email.split("@")[0], source="admin_created"))
+    s.add(UserProfile(user_id=u.id, display_name=body.name or email.split("@")[0], source="admin_created"))
     # Admin-created identities must receive the same durable provisioning jobs
     # as identities first mirrored during an authenticated user request.
     await _ensure_account_provisioning_jobs(s, u)
@@ -249,10 +274,10 @@ async def update_user(user_id: str, body: UserAdminPatch, user=Depends(admin), s
 
     changes = body.model_dump(exclude_unset=True)
     if "email" in changes:
-        email = (changes["email"] or "").strip().lower()
+        email = _normalize_email(changes["email"])
         if not email:
             raise HTTPException(400, "email cannot be empty")
-        owner = (await s.execute(select(UserMirror).where(UserMirror.email == email, UserMirror.id != u.id))).scalar_one_or_none()
+        owner = await _find_email_owner(s, email, exclude_user_id=u.id)
         if owner:
             raise HTTPException(409, "email is already linked to another account")
         if u.keycloak_id.startswith("import:"):
@@ -377,7 +402,10 @@ async def reconciliation_report(user=Depends(admin), s: AsyncSession = Depends(d
             await s.execute(
                 select(func.count())
                 .select_from(
-                    select(UserMirror.email).group_by(UserMirror.email).having(func.count() > 1).subquery()
+                    select(func.lower(UserMirror.email))
+                    .group_by(func.lower(UserMirror.email))
+                    .having(func.count() > 1)
+                    .subquery()
                 )
             )
         ).scalar_one()
@@ -447,7 +475,7 @@ async def sync_keycloak(user=Depends(admin), s: AsyncSession = Depends(db)):
                 if not payload.get("enabled", True):
                     continue
                 keycloak_id = payload.get("id")
-                email = (payload.get("email") or "").strip()
+                email = _normalize_email(payload.get("email"))
                 if not keycloak_id or not email:
                     continue
 
@@ -456,9 +484,7 @@ async def sync_keycloak(user=Depends(admin), s: AsyncSession = Depends(db)):
                 ).scalar_one_or_none()
 
                 if not existing:
-                    email_owner = (
-                        await s.execute(select(UserMirror).where(UserMirror.email == email))
-                    ).scalar_one_or_none()
+                    email_owner = await _find_email_owner(s, email)
                     if email_owner and email_owner.keycloak_id != keycloak_id:
                         skipped_conflicts += 1
                         continue
@@ -478,6 +504,12 @@ async def sync_keycloak(user=Depends(admin), s: AsyncSession = Depends(db)):
                     existing.active = True
                     # Legacy records remain sourced from the previous website.
                     if existing.identity_source != "legacy_sql":
+                        email_owner = await _find_email_owner(
+                            s, email, exclude_user_id=existing.id
+                        )
+                        if email_owner:
+                            skipped_conflicts += 1
+                            continue
                         existing.email = email
                         existing.name = _user_name(payload) or existing.name
                         attrs = payload.get("attributes") or {}
