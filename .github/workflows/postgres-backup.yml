@@ -44,6 +44,11 @@ jobs:
         run: |
           set -euo pipefail
           umask 077
+          run_dir="${GITHUB_RUN_ID:-manual}-${GITHUB_RUN_ATTEMPT:-1}"
+          BACKUP_WORKDIR="${BACKUP_WORKDIR%/}/run-${run_dir}"
+          echo "BACKUP_WORKDIR=$BACKUP_WORKDIR" >> "$GITHUB_ENV"
+          mkdir -p "$(dirname "$BACKUP_WORKDIR")"
+          test ! -e "$BACKUP_WORKDIR" || { echo "::error::Refusing to reuse existing backup staging directory."; exit 1; }
           for cmd in kubectl openssl sha256sum python3 tar gzip git sudo df; do command -v "$cmd" >/dev/null; done
           test -n "${BACKUP_ENCRYPTION_KEY:-}" || { echo "::error::BACKUP_ENCRYPTION_KEY is missing."; exit 1; }
           test -f "${KUBECONFIG:-$HOME/.kube/config}" || { echo "::error::KUBECONFIG is missing."; exit 1; }
