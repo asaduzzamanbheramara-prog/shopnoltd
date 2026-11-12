@@ -4,6 +4,7 @@ from decimal import Decimal
 
 from app.core.db import SessionLocal
 from app.core.security import verify_token
+from app.core.tenant import require_tenant_id
 from app.models.models import Transaction, TxStatus, Wallet
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -29,11 +30,12 @@ async def require_admin(creds: HTTPAuthorizationCredentials = Depends(bearer)):
 
 @router.get("/pending")
 async def pending(user=Depends(require_admin), s: AsyncSession = Depends(db)):
-    res = await s.execute(
-        select(Transaction).where(
-            Transaction.status.in_([TxStatus.requires_approval, TxStatus.pending])
-        )
+    query = select(Transaction).where(
+        Transaction.status.in_([TxStatus.requires_approval, TxStatus.pending])
     )
+    if "platform_admin" not in set(user.get("roles", [])):
+        query = query.where(Transaction.tenant_id == require_tenant_id(user))
+    res = await s.execute(query)
     return [
         {
             "id": str(t.id),
@@ -54,15 +56,21 @@ async def approve(tx_id: str, user=Depends(require_admin), s: AsyncSession = Dep
     except (ValueError, AttributeError, TypeError) as exc:
         raise HTTPException(400, "invalid transaction id") from exc
 
-    res = await s.execute(
-        select(Transaction).where(Transaction.id == transaction_id)
-    )
+    query = select(Transaction).where(Transaction.id == transaction_id)
+    if "platform_admin" not in set(user.get("roles", [])):
+        query = query.where(Transaction.tenant_id == require_tenant_id(user))
+    res = await s.execute(query)
     tx = res.scalar_one_or_none()
     if not tx:
         raise HTTPException(404, "tx not found")
     if tx.status not in (TxStatus.requires_approval, TxStatus.pending):
         raise HTTPException(400, "tx not pending approval")
-    wr = await s.execute(select(Wallet).where(Wallet.id == tx.wallet_id))
+    wr = await s.execute(
+        select(Wallet).where(
+            Wallet.id == tx.wallet_id,
+            Wallet.tenant_id == tx.tenant_id,
+        )
+    )
     w = wr.scalar_one()
     if tx.type.value == "withdrawal":
         w.balance = Decimal(str(w.balance)) - Decimal(str(tx.amount))
@@ -83,14 +91,20 @@ async def reject(tx_id: str, user=Depends(require_admin), s: AsyncSession = Depe
     except (ValueError, AttributeError, TypeError) as exc:
         raise HTTPException(400, "invalid transaction id") from exc
 
-    res = await s.execute(
-        select(Transaction).where(Transaction.id == transaction_id)
-    )
+    query = select(Transaction).where(Transaction.id == transaction_id)
+    if "platform_admin" not in set(user.get("roles", [])):
+        query = query.where(Transaction.tenant_id == require_tenant_id(user))
+    res = await s.execute(query)
     tx = res.scalar_one_or_none()
     if not tx:
         raise HTTPException(404, "tx not found")
     if tx.type.value == "withdrawal":
-        wr = await s.execute(select(Wallet).where(Wallet.id == tx.wallet_id))
+        wr = await s.execute(
+            select(Wallet).where(
+                Wallet.id == tx.wallet_id,
+                Wallet.tenant_id == tx.tenant_id,
+            )
+        )
         w = wr.scalar_one()
         w.frozen = Decimal(str(w.frozen)) - Decimal(str(tx.amount))
     tx.status = TxStatus.cancelled
