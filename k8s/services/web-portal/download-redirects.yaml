@@ -4,8 +4,7 @@ metadata:
   name: shopnoltd-apk-redirect
   namespace: shopno-platform
   annotations:
-    nginx.ingress.kubernetes.io/permanent-redirect: "https://github.com/asaduzzamanbheramara-prog/shopnoltd/releases/download/shopnoltd-mobile-latest/Shopnoltd.apk"
-    nginx.ingress.kubernetes.io/permanent-redirect-code: "302"
+    nginx.ingress.kubernetes.io/temporal-redirect: "https://github.com/asaduzzamanbheramara-prog/shopnoltd/releases/download/shopnoltd-mobile-latest/Shopnoltd.apk"
 spec:
   ingressClassName: nginx
   tls:
@@ -37,8 +36,7 @@ metadata:
   name: shopnoltd-admin-apk-redirect
   namespace: shopno-platform
   annotations:
-    nginx.ingress.kubernetes.io/permanent-redirect: "https://github.com/asaduzzamanbheramara-prog/shopnoltd/releases/download/shopnoltd-mobile-latest/Shopnoltd-Admin.apk"
-    nginx.ingress.kubernetes.io/permanent-redirect-code: "302"
+    nginx.ingress.kubernetes.io/temporal-redirect: "https://github.com/asaduzzamanbheramara-prog/shopnoltd/releases/download/shopnoltd-mobile-latest/Shopnoltd-Admin.apk"
 spec:
   ingressClassName: nginx
   tls:
@@ -70,8 +68,7 @@ metadata:
   name: shopnoltd-collect-apk-redirect
   namespace: shopno-platform
   annotations:
-    nginx.ingress.kubernetes.io/permanent-redirect: "https://github.com/asaduzzamanbheramara-prog/shopnoltd-collect-android/releases/download/shopnoltdcollect-latest/ShopnoltdCollect.apk"
-    nginx.ingress.kubernetes.io/permanent-redirect-code: "302"
+    nginx.ingress.kubernetes.io/temporal-redirect: "https://github.com/asaduzzamanbheramara-prog/shopnoltd-collect-android/releases/download/shopnoltdcollect-latest/ShopnoltdCollect.apk"
 spec:
   ingressClassName: nginx
   tls:
