@@ -1,0 +1,143 @@
+name: Scoped Web Portal Download Deployment
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'platform/web-portal/**'
+      - 'k8s/services/web-portal/deployment.yaml'
+      - 'k8s/services/web-portal/ingress.yaml'
+      - '.github/workflows/scoped-web-portal-download-deploy.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: shopnoltd-web-portal-download-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy-web-portal:
+    name: Deploy only the Web Portal and download Ingress
+    runs-on: [self-hosted, linux]
+    timeout-minutes: 20
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Verify runner and live Web Portal before changing anything
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v kubectl
+          command -v curl
+          command -v jq
+          test -s "${KUBECONFIG:-$HOME/.kube/config}"
+          kubectl --request-timeout=20s cluster-info >/dev/null
+          kubectl config current-context
+
+          deployment="$(kubectl --request-timeout=20s -n shopno-platform get deployment web-portal -o json)"
+          desired="$(jq -r '.spec.replicas // 1' <<<"$deployment")"
+          ready="$(jq -r '.status.readyReplicas // 0' <<<"$deployment")"
+          available="$(jq -r '.status.availableReplicas // 0' <<<"$deployment")"
+          updated="$(jq -r '.status.updatedReplicas // 0' <<<"$deployment")"
+          if [ "$desired" != "1" ] || [ "$ready" != "$desired" ] || [ "$available" != "$desired" ] || [ "$updated" != "$desired" ]; then
+            echo "BLOCKED: Web Portal must already be healthy at exactly 1/1 before a scoped image update (desired=$desired ready=$ready available=$available updated=$updated). No resources were changed."
+            exit 1
+          fi
+
+          pvc_phase="$(kubectl --request-timeout=20s -n shopno-platform get pvc web-portal-data -o jsonpath='{.status.phase}')"
+          if [ "$pvc_phase" != "Bound" ]; then
+            echo "BLOCKED: web-portal-data PVC is not Bound (phase=$pvc_phase). No resources were changed."
+            exit 1
+          fi
+
+          if kubectl --request-timeout=20s -n shopno-platform get hpa -o json | jq -e '.items[]? | select(.spec.scaleTargetRef.kind == "Deployment" and .spec.scaleTargetRef.name == "web-portal")' >/dev/null; then
+            echo "BLOCKED: an HPA owns Web Portal replica count; refusing to alter deployment state."
+            exit 1
+          fi
+
+          image="$(awk '$1 == "containers:" { in_containers=1; next } in_containers && $1 == "image:" { print $2; exit }' k8s/services/web-portal/deployment.yaml)"
+          case "$image" in
+            ghcr.io/asaduzzamanbheramara-prog/shopnoltd/web-portal:*) ;;
+            *) echo "BLOCKED: unexpected Web Portal image reference: $image"; exit 1 ;;
+          esac
+          test -n "$image"
+          printf 'WEB_PORTAL_IMAGE=%s\n' "$image" >> "$GITHUB_ENV"
+          printf 'WEB_PORTAL_REPLICAS=%s\n' "$desired" >> "$GITHUB_ENV"
+          echo "Preflight PASS: Web Portal is healthy 1/1, its data PVC is Bound, and no HPA controls it."
+          echo "Target image: $image"
+
+      - name: Validate the single Ingress object
+        shell: bash
+        run: |
+          set -euo pipefail
+          kubectl --request-timeout=30s -n shopno-platform apply --dry-run=server -f k8s/services/web-portal/ingress.yaml
+          jq -e '.spec.rules[] | select(.host == "shopnoltd.dpdns.org") | .http.paths[] | select(.path == "/download" and .backend.service.name == "android-portal" and .backend.service.port.number == 80)' \
+            < <(kubectl --request-timeout=20s -n shopno-platform get ingress web-portal -o json) >/dev/null || {
+              echo "Existing Ingress does not currently expose the expected Android download route; applying the reviewed manifest next."
+            }
+
+      - name: Apply only Web Portal Ingress and update only its image
+        shell: bash
+        run: |
+          set -euo pipefail
+          # This applies exactly one Ingress object. It does not apply the root Kustomize tree.
+          kubectl --request-timeout=30s -n shopno-platform apply -f k8s/services/web-portal/ingress.yaml
+
+          current_image="$(kubectl --request-timeout=20s -n shopno-platform get deployment web-portal -o jsonpath='{.spec.template.spec.containers[?(@.name=="web-portal")].image}')"
+          if [ "$current_image" != "$WEB_PORTAL_IMAGE" ]; then
+            # set image changes only the named container image; replica count, PVCs,
+            # ConfigMaps, Secrets, services and unrelated workloads are not applied.
+            kubectl --request-timeout=30s -n shopno-platform set image deployment/web-portal "web-portal=$WEB_PORTAL_IMAGE"
+          else
+            echo "Web Portal already uses the requested immutable image; no rollout required."
+          fi
+
+          kubectl --request-timeout=30s -n shopno-platform rollout status deployment/web-portal --timeout=300s
+          after="$(kubectl --request-timeout=20s -n shopno-platform get deployment web-portal -o json)"
+          after_replicas="$(jq -r '.spec.replicas // 1' <<<"$after")"
+          ready="$(jq -r '.status.readyReplicas // 0' <<<"$after")"
+          available="$(jq -r '.status.availableReplicas // 0' <<<"$after")"
+          image="$(jq -r '.spec.template.spec.containers[] | select(.name == "web-portal") | .image' <<<"$after")"
+          pvc_phase="$(kubectl --request-timeout=20s -n shopno-platform get pvc web-portal-data -o jsonpath='{.status.phase}')"
+          test "$after_replicas" = "$WEB_PORTAL_REPLICAS"
+          test "$ready" = "$WEB_PORTAL_REPLICAS"
+          test "$available" = "$WEB_PORTAL_REPLICAS"
+          test "$image" = "$WEB_PORTAL_IMAGE"
+          test "$pvc_phase" = "Bound"
+          echo "Deployment PASS: image=$image replicas=$ready/$after_replicas PVC=Bound."
+
+      - name: Verify public downloads and immutable release assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="https://shopnoltd.dpdns.org"
+          check_redirect() {
+            local path="$1"
+            local expected="$2"
+            local headers status location
+            headers="$(mktemp)"
+            status="$(curl -sS --max-time 30 -D "$headers" -o /dev/null -w '%{http_code}' "$base$path")"
+            location="$(awk 'BEGIN{IGNORECASE=1} /^Location:/ {sub(/^[^:]*:[[:space:]]*/, ""); sub(/\r$/, ""); print}' "$headers" | tail -n 1)"
+            rm -f "$headers"
+            if [ "$status" != "302" ] || [ "$location" != "$expected" ]; then
+              echo "FAIL: $path returned HTTP $status with Location=$location; expected 302 to $expected"
+              exit 1
+            fi
+            final_status="$(curl -sSIL --max-time 60 -o /dev/null -w '%{http_code}' "$location")"
+            if [ "$final_status" != "200" ]; then
+              echo "FAIL: release asset for $path returned HTTP $final_status"
+              exit 1
+            fi
+            echo "PASS: $path -> 302 -> release asset HTTP $final_status"
+          }
+
+          curl -fsSIL --max-time 30 -o /dev/null "$base/downloads"
+          check_redirect "/download/Shopnoltd.apk" "https://github.com/asaduzzamanbheramara-prog/shopnoltd/releases/download/shopnoltd-mobile-latest/Shopnoltd.apk"
+          check_redirect "/download/Shopnoltd-Admin.apk" "https://github.com/asaduzzamanbheramara-prog/shopnoltd/releases/download/shopnoltd-mobile-latest/Shopnoltd-Admin.apk"
+          check_redirect "/download/ShopnoltdCollect.apk" "https://github.com/asaduzzamanbheramara-prog/shopnoltd-collect-android/releases/download/shopnoltdcollect-latest/ShopnoltdCollect.apk"
