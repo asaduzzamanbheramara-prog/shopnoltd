@@ -491,3 +491,12 @@ def test_signed_mfs_auto_credit_requires_exact_payment_intent_reference():
     assert 'if not reference or reference.strip().upper() != intent.expected_reference.strip().upper():' in source
     assert 'payment reference does not match the selected payment intent' in source
 
+def test_direct_payment_intent_endpoint_uses_validated_request_schema():
+    from pathlib import Path
+
+    source = (
+        Path(__file__).resolve().parents[1] / "app" / "api" / "direct_payments.py"
+    ).read_text(encoding="utf-8")
+    assert "DirectPaymentIntentIn, DirectPaymentVerificationIn" in source
+    assert "async def create_intent(body: DirectPaymentIntentIn" in source
+
