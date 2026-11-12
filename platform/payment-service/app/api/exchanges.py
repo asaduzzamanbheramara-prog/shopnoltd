@@ -60,8 +60,16 @@ class ConvertOut(BaseModel):
     transaction_id: str
 
 
-def _existing_result(existing: Transaction, frm: str, to: str, reference: str) -> ConvertOut:
+def _existing_result(
+    existing: Transaction, frm: str, to: str, reference: str, requested_amount: Decimal
+) -> ConvertOut:
     meta = existing.meta or {}
+    if (
+        meta.get("from_currency") != frm
+        or meta.get("to_currency") != to
+        or Decimal(str(meta.get("from_amount", "0"))) != requested_amount
+    ):
+        raise HTTPException(409, "Idempotency key was already used for a different exchange")
     return ConvertOut(
         from_amount=float(meta["from_amount"]),
         to_amount=float(meta["to_amount"]),
@@ -93,7 +101,7 @@ async def do_convert(body: ConvertIn, user=Depends(current_user), s: AsyncSessio
         )
     )
     if existing:
-        return _existing_result(existing, frm, to, reference)
+        return _existing_result(existing, frm, to, reference, Decimal(str(body.amount)))
 
     try:
         converted = await convert(frm, to, body.amount)
