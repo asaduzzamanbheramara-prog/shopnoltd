@@ -87,7 +87,11 @@ async def create_deposit(body: DepositIn, user=Depends(current_user), s: AsyncSe
         return tx_out(existing)
 
     res = await s.execute(
-        select(Wallet).where(Wallet.user_id == user_id, Wallet.currency == currency)
+        select(Wallet).where(
+            Wallet.tenant_id == tenant_id,
+            Wallet.user_id == user_id,
+            Wallet.currency == currency,
+        )
     )
     w = res.scalar_one_or_none()
     if not w:
