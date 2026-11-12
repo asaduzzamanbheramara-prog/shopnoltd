@@ -38,7 +38,7 @@ The downgrade for migration 0008 intentionally does not recreate those invalid f
 
 The payment Deployment obtains `DATABASE_URL` from Kubernetes Secret `payment-service-canonical-db`. The shared PostgreSQL migration Job obtains its connection host and credentials from `postgres-secret`; it does not read `payment-service-canonical-db`.
 
-The payment SQL scripts `012-payment-schema-reconciliation.sql` and `024-payment-wallet-tenant-unique.sql` explicitly issue `\\connect payments`. Thus, for those scripts, the shared Job's effective PostgreSQL host and credentials are used to connect to the `payments` database. The Job's initial `POSTGRES_DB` value is not the final database selected by those scripts. The payment service's own `DATABASE_URL` remains a separate configuration source.
+The payment SQL scripts `012-payment-schema-reconciliation.sql` and `024-payment-wallet-tenant-unique.sql` explicitly issue `\connect payments`. Thus, for those scripts, the shared Job's effective PostgreSQL host and credentials are used to connect to the `payments` database. The Job's initial `POSTGRES_DB` value is not the final database selected by those scripts. The payment service's own `DATABASE_URL` remains a separate configuration source.
 
 Repository source therefore establishes the intended database name for these SQL scripts, but it does **not** establish that the shared Job's effective host is the same PostgreSQL server as the payment service's secret URL. Do not infer host equivalence from service names or checked-in defaults.
 
