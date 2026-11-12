@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - '.github/workflows/postgres-backup.yml'
+      - '.github/workflows/verify-postgres-backup.yml'
       - '.github/workflows/backup-static-validation.yml'
       - 'ops/backup/**'
       - 'docs/operations/full-disaster-recovery-backup.md'
@@ -25,4 +26,5 @@ jobs:
         run: |
           ruby -e 'require "yaml"; ARGV.each { |path| YAML.load_file(path); puts "PASS: #{path}" }' \
             .github/workflows/postgres-backup.yml \
+            .github/workflows/verify-postgres-backup.yml \
             .github/workflows/backup-static-validation.yml
