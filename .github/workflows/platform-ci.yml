@@ -228,7 +228,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt pytest
       - name: Test idempotent transfer payload validation
-        run: pytest -q tests/test_transfer_idempotency.py
+        run: pytest -q tests/test_transfer_idempotency.py tests/test_webhook_error_redaction.py
 
   service-contract-tests:
     name: "${{ matrix.service }} isolated ASGI contract tests"

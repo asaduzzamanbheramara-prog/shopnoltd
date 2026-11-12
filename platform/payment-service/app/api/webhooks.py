@@ -52,7 +52,9 @@ async def webhook(provider: str, request: Request):
     try:
         event = await p.verify_webhook(body, headers)
     except Exception as exc:
-        raise HTTPException(400, f"signature: {exc}") from exc
+        # Provider exceptions may include signed payload fragments, request headers,
+        # URLs, or credential material. Return a stable error without reflecting them.
+        raise HTTPException(400, "webhook signature verification failed") from None
 
     async with SessionLocal() as s:
         data = event.get("data") or {}
@@ -87,10 +89,15 @@ async def webhook(provider: str, request: Request):
             )
             .with_for_update()
         )
-        tx = res.scalar_one_or_none()
-
-        if not tx:
+        # External provider IDs and order references are not globally unique in
+        # the current schema. Never let an ambiguous callback credit an arbitrary
+        # tenant's transaction.
+        matches = res.scalars().all()
+        if not matches:
             return {"received": True, "warning": "tx not found"}
+        if len(matches) != 1:
+            return {"received": True, "warning": "ambiguous transaction identity"}
+        tx = matches[0]
 
         supplied_event_id = event.get("event_id") or headers.get("x-webhook-event-id")
         if supplied_event_id:
@@ -144,7 +151,8 @@ async def webhook(provider: str, request: Request):
             try:
                 verified = str(await p.get_status(verify_id)).upper()
             except Exception as exc:
-                raise HTTPException(502, f"Moneybag verification failed: {exc}") from exc
+                # Do not expose provider response bodies or transport diagnostics.
+                raise HTTPException(502, "payment status verification unavailable") from None
             if verified not in SUCCESS_STATUSES:
                 webhook_event.status = "verification_pending"
                 await s.commit()
