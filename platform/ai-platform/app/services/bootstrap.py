@@ -120,6 +120,8 @@ async def bootstrap_providers(db: AsyncSession) -> int:
                 priority=spec["priority"],
                 capabilities={
                     "chat": True,
+                    # Only models explicitly identified as free-tier are eligible for Auto.
+                    "free_tier": model_name.endswith(":free"),
                     **(
                         {"supports_vision": True}
                         if (
@@ -134,13 +136,15 @@ async def bootstrap_providers(db: AsyncSession) -> int:
         else:
             model.is_active = True
             model.priority = spec["priority"]
+            capabilities = dict(model.capabilities or {})
+            if model_name.endswith(":free"):
+                capabilities["free_tier"] = True
             if (
                 spec["env_key"] == "GOOGLE_AI_API_KEY"
                 and model_name == "gemini-2.5-flash"
             ):
-                capabilities = dict(model.capabilities or {})
                 capabilities["supports_vision"] = True
-                model.capabilities = capabilities
+            model.capabilities = capabilities
 
         configured += 1
 

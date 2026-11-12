@@ -5,10 +5,6 @@ import { tryRefresh } from '../lib/tokenRefresh'
 // Agent mode: talks to agent-service (/ws/ui). Auth is the same Keycloak access token the
 // rest of the portal already keeps in localStorage ('shopno_token'); nothing new is stored.
 const AGENT_WS_URL = 'wss://agent.shopnoltd.dpdns.org/ws/ui'
-const MODELS = [
-  { id: 'claude-sonnet', label: 'Manual · Claude Sonnet' },
-  { id: 'auto', label: 'Auto · model rotation' }
-]
 const STATUS_LABEL = {
   connecting: 'Connecting…',
   connected: 'Connected',
@@ -94,7 +90,8 @@ function ApprovalCard({ item, onRespond }) {
 
 export default function AgentWorkspace() {
   const [status, setStatus] = useState('connecting')
-  const [model, setModel] = useState('claude-sonnet')
+  const [model, setModel] = useState('auto')
+  const [modelCatalog, setModelCatalog] = useState([])
   const [goal, setGoal] = useState('')
   const [running, setRunning] = useState(false)
   const [plan, setPlan] = useState([])
@@ -112,6 +109,9 @@ export default function AgentWorkspace() {
   const handle = useCallback((m) => {
     switch (m.type) {
       case 'auth_ok': setStatus('connected'); retryRef.current = 0; break
+      case 'models': setModelCatalog(Array.isArray(m.items) ? m.items : []); break
+      case 'model': push({ kind: 'text', text: `Using model: ${String(m.display_name || m.model || '')}` }); break
+      case 'model_failover': push({ kind: 'error', text: `Model ${String(m.display_name || m.model || '')} is temporarily unavailable. ${String(m.reason || 'Switching to another eligible model.')}` }); break
       case 'text': push({ kind: 'text', text: String(m.text || '') }); break
       case 'plan': setPlan(Array.isArray(m.steps) ? m.steps.slice(0, 20) : []); break
       case 'tool':
@@ -230,7 +230,12 @@ export default function AgentWorkspace() {
         <span style={{ fontSize: 13, color: '#4b5563', marginRight: 'auto' }}>{STATUS_LABEL[status] || status}</span>
         <label style={{ fontSize: 13, color: '#4b5563' }}>Model{' '}
           <select value={model} onChange={(event) => setModel(event.target.value)} disabled={running} aria-label="Agent model" style={{ padding: '6px 10px', border: '1px solid #d1d5db', borderRadius: 8, background: '#fff', fontWeight: 600 }}>
-            {MODELS.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
+            <option value="auto">Auto · free models first</option>
+            {modelCatalog.map((item) => (
+              <option key={item.model_key} value={item.model_key}>
+                {item.free_tier ? 'Free · ' : 'Manual · '}{item.display_name}{item.provider_name ? ` · ${item.provider_name}` : ''}
+              </option>
+            ))}
           </select>
         </label>
         {(status === 'disconnected' || status === 'auth_failed') && <button type="button" onClick={() => { retryRef.current = 0; clearTimeout(timerRef.current); connect() }} style={{ ...smallBtn, display: 'inline-flex', alignItems: 'center', gap: 5 }}><RefreshCw size={13} /> Reconnect</button>}
@@ -266,7 +271,7 @@ export default function AgentWorkspace() {
           <textarea value={goal} onChange={(event) => setGoal(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); send() } }} rows={2} maxLength={4000} placeholder={connected ? 'Describe what the agent should do…' : 'Waiting for connection…'} disabled={!connected || running} style={{ display: 'block', width: '100%', boxSizing: 'border-box', border: 0, outline: 0, resize: 'none', borderRadius: 16, padding: '14px 56px 14px 16px', font: 'inherit', lineHeight: 1.45 }} />
           <button type="submit" disabled={!connected || running || !goal.trim()} aria-label="Send goal" title="Send" style={{ position: 'absolute', right: 9, bottom: 9, width: 36, height: 36, border: 0, borderRadius: 10, display: 'grid', placeItems: 'center', background: !connected || running || !goal.trim() ? '#d1d5db' : '#111827', color: '#fff', cursor: 'pointer' }}><Send size={17} /></button>
         </form>
-        <div style={{ textAlign: 'center', fontSize: 11, color: '#9ca3af', marginTop: 8 }}>Enter to send · The agent runs one task at a time · Opening pages, clicking and typing always ask first</div>
+        <div style={{ textAlign: 'center', fontSize: 11, color: '#9ca3af', marginTop: 8 }}>Enter to send · Auto uses active free-tier models first and switches on quota or provider failures · Opening pages, clicking and typing always ask first</div>
       </div>
     </div>
   )
