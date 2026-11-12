@@ -261,3 +261,48 @@ def test_admin_transaction_decisions_lock_and_reject_only_pending_rows():
     assert source.count("query.with_for_update()") == 2
     assert source.count(").with_for_update()") == 2
 
+def test_withdrawal_idempotency_payload_is_bound_to_amount_currency_method_and_destination():
+    from decimal import Decimal
+    from types import SimpleNamespace
+    from fastapi import HTTPException
+    from app.api.withdrawals import _validate_existing_withdrawal, _destination_fingerprint
+    from app.schemas.schemas import WithdrawalIn
+    from app.models.models import PaymentMethod, TxStatus, TxType
+
+    body = WithdrawalIn(
+        currency="BDT", amount="100", method=PaymentMethod.manual,
+        destination="01XXXXXXXXX", idempotency_key="withdrawal-key-01",
+    )
+    existing = SimpleNamespace(
+        amount=Decimal("100"), currency="BDT", method=PaymentMethod.manual,
+        meta={"destination_sha256": _destination_fingerprint("01XXXXXXXXX")},
+        type=TxType.withdrawal, status=TxStatus.processing,
+    )
+    _validate_existing_withdrawal(existing, body, "BDT", Decimal("100"))
+
+    for changes in (
+        {"amount": "101"},
+        {"currency": "USD"},
+        {"method": PaymentMethod.bkash},
+        {"destination": "01YYYYYYYYY"},
+    ):
+        payload = body.model_dump()
+        payload.update(changes)
+        candidate = WithdrawalIn(**payload)
+        with pytest.raises(HTTPException) as exc:
+            _validate_existing_withdrawal(existing, candidate, candidate.currency.upper(), Decimal(str(candidate.amount)))
+        assert exc.value.status_code == 409
+
+
+def test_withdrawals_persist_idempotency_before_provider_side_effect():
+    from pathlib import Path
+
+    source = (
+        Path(__file__).resolve().parents[1] / "app" / "api" / "withdrawals.py"
+    ).read_text(encoding="utf-8")
+    assert "Transaction.idempotency_key == body.idempotency_key" in source
+    assert "idempotency_key=body.idempotency_key" in source
+    assert source.index("await s.commit()") < source.index("provider.create_withdrawal")
+    assert "withdrawal provider outcome is pending reconciliation" in source
+    assert "destination_sha256" in source
+
