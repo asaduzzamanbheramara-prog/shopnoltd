@@ -89,10 +89,15 @@ async def webhook(provider: str, request: Request):
             )
             .with_for_update()
         )
-        tx = res.scalar_one_or_none()
-
-        if not tx:
+        # External provider IDs and order references are not globally unique in
+        # the current schema. Never let an ambiguous callback credit an arbitrary
+        # tenant's transaction.
+        matches = res.scalars().all()
+        if not matches:
             return {"received": True, "warning": "tx not found"}
+        if len(matches) != 1:
+            return {"received": True, "warning": "ambiguous transaction identity"}
+        tx = matches[0]
 
         supplied_event_id = event.get("event_id") or headers.get("x-webhook-event-id")
         if supplied_event_id:
