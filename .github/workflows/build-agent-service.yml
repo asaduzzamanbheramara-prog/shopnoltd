@@ -49,8 +49,8 @@ jobs:
           import os, re
           path = Path("k8s/services/agent-service/deployment.yaml")
           text = path.read_text()
-          pattern = r'(?m)^([ \\t]+image:) ghcr\\.io/asaduzzamanbheramara-prog/shopnoltd-agent-service:[^\\n]+$'
-          updated, count = re.subn(pattern, rf'\\1 {os.environ["IMAGE"]}', text, count=1)
+          pattern = r'(?m)^([ \t]+image:) ghcr\.io/asaduzzamanbheramara-prog/shopnoltd-agent-service:[^\n]+$'
+          updated, count = re.subn(pattern, rf'\1 {os.environ["IMAGE"]}', text, count=1)
           if count != 1:
               raise SystemExit("Expected exactly one agent-service image reference")
           path.write_text(updated)
