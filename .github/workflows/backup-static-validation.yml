@@ -1,0 +1,28 @@
+name: Backup workflow static validation
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/postgres-backup.yml'
+      - '.github/workflows/backup-static-validation.yml'
+      - 'ops/backup/**'
+      - 'docs/operations/full-disaster-recovery-backup.md'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Bash syntax
+        run: |
+          set -euo pipefail
+          bash -n ops/backup/export-all-postgres-databases.sh
+          bash -n ops/backup/check-postgres-storage.sh
+      - name: Validate workflow YAML
+        run: |
+          ruby -e 'require "yaml"; ARGV.each { |path| YAML.load_file(path); puts "PASS: #{path}" }' \
+            .github/workflows/postgres-backup.yml \
+            .github/workflows/backup-static-validation.yml
