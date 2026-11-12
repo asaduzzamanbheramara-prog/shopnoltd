@@ -115,7 +115,13 @@ async def create_account(body: dict, user=Depends(require_admin), s: AsyncSessio
         raise HTTPException(400, "account_number and BDT currency are required")
     if verification_mode not in {"manual", "authorized_feed"}:
         raise HTTPException(400, "verification_mode must be manual or authorized_feed")
-    tenant_id = tenant_id
+    roles = set(user.get("roles", []))
+    tenant_id = user.get("tenant_id")
+    if not tenant_id:
+        if "platform_admin" in roles:
+            tenant_id = "default"
+        else:
+            raise HTTPException(403, "tenant context required")
     exists = await s.scalar(
         select(DirectPaymentAccount).where(
             DirectPaymentAccount.tenant_id == tenant_id,
