@@ -151,3 +151,24 @@ def test_direct_mfs_feed_refuses_ambiguous_receiver_accounts():
     assert "if len(matching_accounts) > 1:" in source
     assert "automatic credit refused" in source
 
+def test_exchange_retry_lookup_is_tenant_scoped():
+    from pathlib import Path
+
+    source = (
+        Path(__file__).resolve().parents[1] / "app" / "api" / "exchanges.py"
+    ).read_text(encoding="utf-8")
+    import ast
+
+    tree = ast.parse(source)
+    transaction_queries = [
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+        and node.func.attr == "where"
+        and "select(Transaction)" in ast.unparse(node.func.value)
+    ]
+    assert len(transaction_queries) >= 2
+    for query in transaction_queries:
+        assert "Transaction.tenant_id" in ast.unparse(query)
+
