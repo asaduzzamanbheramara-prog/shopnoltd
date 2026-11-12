@@ -43,6 +43,8 @@ spec:
                 secretKeyRef:
                   name: agent-service-litellm-key
                   key: LITELLM_MASTER_KEY
+            - name: BROWSER_WS_ENDPOINT
+              value: ws://agent-browser.shopno-apps.svc.cluster.local:3000
             - name: KEYCLOAK_ISSUER
               value: https://auth.shopnoltd.dpdns.org/realms/shopnoltd
             - name: KEYCLOAK_AUDIENCE
