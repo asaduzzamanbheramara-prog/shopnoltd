@@ -356,3 +356,14 @@ def test_exchange_idempotency_rejects_changed_currency_pair_or_amount():
             _existing_result(existing, frm, to, "exchange:key-0001", amount)
         assert exc.value.status_code == 409
 
+def test_deposit_provider_errors_are_redacted_from_api_and_transaction_metadata():
+    from pathlib import Path
+
+    source = (
+        Path(__file__).resolve().parents[1] / "app" / "api" / "deposits.py"
+    ).read_text(encoding="utf-8")
+    assert "raise HTTPException(503, \"payment provider is unavailable\") from None" in source
+    assert "raise HTTPException(502, \"payment provider request failed\") from None" in source
+    assert '"_error": str(exc)' not in source
+    assert "out.get(\"note\")" not in source
+
