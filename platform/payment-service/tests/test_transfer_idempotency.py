@@ -306,3 +306,15 @@ def test_withdrawals_persist_idempotency_before_provider_side_effect():
     assert "withdrawal provider outcome is pending reconciliation" in source
     assert "destination_sha256" in source
 
+@pytest.mark.parametrize("bad_amount", [float("nan"), float("inf"), float("-inf")])
+def test_payment_request_schemas_reject_non_finite_amounts(bad_amount):
+    from pydantic import ValidationError
+    from app.schemas.schemas import DepositIn, WithdrawalIn, TransferIn
+
+    with pytest.raises(ValidationError):
+        DepositIn(currency="BDT", amount=bad_amount, method="manual", idempotency_key="deposit-key-01")
+    with pytest.raises(ValidationError):
+        WithdrawalIn(currency="BDT", amount=bad_amount, method="manual", destination="01XXXXXXXXX", idempotency_key="withdrawal-key-01")
+    with pytest.raises(ValidationError):
+        TransferIn(to_user_id="user-b", currency="BDT", amount=bad_amount, idempotency_key="transfer-key-01")
+
