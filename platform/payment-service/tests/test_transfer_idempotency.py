@@ -482,3 +482,12 @@ def test_required_withdrawal_approval_precedes_any_external_payout_call():
     assert approval_guard < payout_call
     assert "return _withdrawal_out(tx)" in source[approval_guard:payout_call]
 
+def test_signed_mfs_auto_credit_requires_exact_payment_intent_reference():
+    from pathlib import Path
+
+    source = (
+        Path(__file__).resolve().parents[1] / "app" / "api" / "direct_mfs_feed.py"
+    ).read_text(encoding="utf-8")
+    assert 'if not reference or reference.strip().upper() != intent.expected_reference.strip().upper():' in source
+    assert 'payment reference does not match the selected payment intent' in source
+
