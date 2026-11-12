@@ -97,6 +97,16 @@ jobs:
           fi
           kubectl wait --for=condition=Ready clusterissuer/letsencrypt-prod --timeout=180s
 
+      - name: Reconcile only the Interior Service Ingress
+        shell: bash
+        run: |
+          set -euo pipefail
+          ingress=k8s/services/interior-service/ingress.yaml
+          echo "Validating the repository-owned Interior Service Ingress only."
+          kubectl apply --dry-run=server -f "$ingress"
+          kubectl apply -f "$ingress"
+          kubectl -n shopno-platform get ingress interior-service -o wide
+
       - name: Verify platform certificate issuance
         shell: bash
         run: |
