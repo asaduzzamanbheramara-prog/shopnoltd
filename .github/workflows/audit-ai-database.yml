@@ -1,0 +1,76 @@
+name: Audit AI Database Metadata
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: Read-only AI database metadata audit
+    runs-on: [self-hosted, linux]
+    timeout-minutes: 10
+    steps:
+      - name: Checkout trusted main revision
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: false
+
+      - name: Inspect secret presence and key names only
+        shell: bash
+        run: |
+          set -euo pipefail
+          kubectl --request-timeout=20s get --raw=/readyz >/dev/null
+          for spec in \
+            'shopno-platform ai-platform-secret' \
+            'shopno-platform ai-platform-encryption' \
+            'shopno-ai litellm-provider-keys'; do
+            namespace="${spec%% *}"
+            name="${spec#* }"
+            echo "=== $namespace/$name ==="
+            if kubectl -n "$namespace" get secret "$name" >/dev/null 2>&1; then
+              kubectl -n "$namespace" get secret "$name" -o json \
+                | jq -r '.data // {} | keys[]' \
+                | sed 's/^/key-name: /'
+            else
+              echo 'MISSING'
+            fi
+          done
+
+      - name: Inspect encrypted provider and model metadata only
+        shell: bash
+        run: |
+          set -euo pipefail
+          pod="$(kubectl -n shopno-platform get pods -l app.kubernetes.io/name=ai-platform \
+            -o jsonpath='{.items[0].metadata.name}')"
+          test -n "$pod"
+          kubectl -n shopno-platform exec "$pod" -- python - <<'PY'
+          import asyncio
+          import os
+          from sqlalchemy import text
+          from sqlalchemy.ext.asyncio import create_async_engine
+
+          async def main():
+              engine = create_async_engine(os.environ["DATABASE_URL"])
+              async with engine.connect() as conn:
+                  providers = (await conn.execute(text("""
+                      SELECT name, provider_type::text, COALESCE(base_url, ''),
+                             is_active, (api_key_encrypted IS NOT NULL) AS has_encrypted_key
+                      FROM ai_providers ORDER BY priority NULLS LAST, name
+                  """))).mappings().all()
+                  models = (await conn.execute(text("""
+                      SELECT p.name AS provider, m.model_name, m.is_active, m.is_default
+                      FROM ai_models m JOIN ai_providers p ON p.id = m.provider_id
+                      ORDER BY p.name, m.priority NULLS LAST, m.model_name
+                  """))).mappings().all()
+              print(f"provider_count={len(providers)}")
+              for row in providers:
+                  print("provider_metadata=" + repr(dict(row)))
+              print(f"model_count={len(models)}")
+              for row in models:
+                  print("model_metadata=" + repr(dict(row)))
+
+          asyncio.run(main())
+          PY
