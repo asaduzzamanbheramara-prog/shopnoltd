@@ -113,9 +113,12 @@ async def _credit_verified_feed(
         )
     ).scalars().all()
     receiver = _norm_number(receiver_number)
-    account = next((a for a in accounts if _norm_number(a.account_number) == receiver), None)
-    if not account:
+    matching_accounts = [a for a in accounts if _norm_number(a.account_number) == receiver]
+    if not matching_accounts:
         raise HTTPException(400, "receiver number is not a configured active Shopnoltd account")
+    if len(matching_accounts) > 1:
+        raise HTTPException(409, "receiver number maps to multiple tenants; automatic credit refused")
+    account = matching_accounts[0]
     if account.verification_mode != "authorized_feed":
         raise HTTPException(409, "receiving account is not enabled for authorized feed verification")
 
