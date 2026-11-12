@@ -136,3 +136,10 @@ def test_tenant_admin_receiving_account_creation_requires_signed_tenant():
     assert "tenant_id = require_tenant_id(user)" in source
     assert 'tenant_id = str(user.get("tenant_id") or "default").strip()' in source
 
+def test_admin_approval_and_rejection_are_tenant_scoped():
+    from pathlib import Path
+
+    source = (Path(__file__).resolve().parents[1] / "app" / "api" / "admin.py").read_text(encoding="utf-8")
+    assert source.count("Transaction.tenant_id == require_tenant_id(user)") == 3
+    assert source.count("Wallet.tenant_id == tx.tenant_id") == 2
+
