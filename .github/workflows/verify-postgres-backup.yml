@@ -32,14 +32,6 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
 
-      - name: Checkout production PostgreSQL image source
-        uses: actions/checkout@v4
-        with:
-          ref: main
-          path: postgres-source
-          fetch-depth: 1
-          persist-credentials: false
-
       - name: Validate timestamp and required files
         shell: bash
         run: |
@@ -87,14 +79,11 @@ jobs:
           PY
           echo "PASS: encrypted database and Kubernetes Secrets decrypted and parsed."
 
-      - name: Build the production-matched PostgreSQL validation image
+      - name: Pull the exact PostgreSQL image used by production
         shell: bash
         run: |
           set -euo pipefail
-          docker build --pull \
-            --file postgres-source/docker/postgres-combined/Dockerfile \
-            --tag shopnoltd-postgres-restore-validation:ci \
-            postgres-source/docker/postgres-combined
+          docker pull ghcr.io/asaduzzamanbheramara-prog/shopnoltd-postgres-combined:pg16-postgis3.5-pgvector0.8.6
 
       - name: Install PostgreSQL client
         shell: bash
@@ -116,7 +105,7 @@ jobs:
             --env POSTGRES_USER=restore_validator \
             --env POSTGRES_PASSWORD="$POSTGRES_PASSWORD" \
             --env POSTGRES_DB=shopnoltd_restore_validation \
-            shopnoltd-postgres-restore-validation:ci
+            ghcr.io/asaduzzamanbheramara-prog/shopnoltd-postgres-combined:pg16-postgis3.5-pgvector0.8.6
 
           ready=false
           for attempt in $(seq 1 60); do
@@ -157,7 +146,7 @@ jobs:
         shell: bash
         run: |
           docker rm --force shopnoltd-postgres-restore-validation >/dev/null 2>&1 || true
-          docker image rm shopnoltd-postgres-restore-validation:ci >/dev/null 2>&1 || true
+          docker image rm ghcr.io/asaduzzamanbheramara-prog/shopnoltd-postgres-combined:pg16-postgis3.5-pgvector0.8.6 >/dev/null 2>&1 || true
 
       - name: Remove decrypted artifacts
         if: always()
