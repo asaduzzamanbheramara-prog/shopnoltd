@@ -24,6 +24,11 @@ spec:
         - namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: shopno-ai}}
       ports:
         - {port: 4000, protocol: TCP}
+    - to:   # Authenticated active-model catalog
+        - namespaceSelector: {matchLabels: {name: shopno-platform}}
+          podSelector: {matchLabels: {app.kubernetes.io/name: ai-platform}}
+      ports:
+        - {port: 8080, protocol: TCP}
     - to:   # Isolated Browserless Chromium; only the dedicated browser pod
         - namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: shopno-apps}}
           podSelector: {matchLabels: {app.kubernetes.io/name: agent-browser}}
