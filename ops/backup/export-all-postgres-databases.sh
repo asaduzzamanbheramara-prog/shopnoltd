@@ -81,6 +81,28 @@ test -s "$BACKUP_WORKDIR/redis/dump.rdb"
 # helper pod on the PV's node; do not read hostPath files with sudo.
 minio_replicas="$(kubectl -n "$DATA_NAMESPACE" get deployment minio -o jsonpath='{.spec.replicas}')"
 [[ "$minio_replicas" == "0" ]] || { echo "MinIO is active; refusing a non-atomic PVC copy." >&2; exit 1; }
+
+# Desired replicas=0 is not enough: wait until every pod referencing this
+# PVC is fully gone before attaching the read-only backup reader.
+wait_deadline=$((SECONDS + 180))
+while :; do
+  mounted_pods="$(kubectl -n "$DATA_NAMESPACE" get pods -o json | python3 -c '
+import json, sys
+doc = json.load(sys.stdin)
+for pod in doc.get("items", []):
+    volumes = pod.get("spec", {}).get("volumes", [])
+    if any(v.get("persistentVolumeClaim", {}).get("claimName") == "minio-data" for v in volumes):
+        print(pod.get("metadata", {}).get("name", "unknown"))
+')"
+  [[ -z "$mounted_pods" ]] && break
+  if (( SECONDS >= wait_deadline )); then
+    echo "MinIO PVC is still referenced by pod(s); refusing backup reader mount:" >&2
+    printf '%s\\n' "$mounted_pods" >&2
+    exit 1
+  fi
+  sleep 2
+done
+
 minio_pvc_volume="$(kubectl -n "$DATA_NAMESPACE" get pvc minio-data -o jsonpath='{.spec.volumeName}')"
 [[ -n "$minio_pvc_volume" ]] || { echo "MinIO PVC is not bound" >&2; exit 1; }
 minio_node="$(kubectl get pv "$minio_pvc_volume" -o jsonpath='{.spec.nodeAffinity.required.nodeSelectorTerms[0].matchExpressions[0].values[0]}')"
