@@ -518,3 +518,12 @@ def test_signed_mfs_intent_query_uses_exact_reference_to_disambiguate_amounts():
     assert "func.upper(DirectPaymentIntent.expected_reference)" in source
     assert '(reference or "").strip().upper()' in source
 
+def test_admin_decisions_verify_wallet_owner_and_currency_match_transaction():
+    from pathlib import Path
+
+    source = (
+        Path(__file__).resolve().parents[1] / "app" / "api" / "admin.py"
+    ).read_text(encoding="utf-8")
+    assert source.count("w.user_id != tx.user_id or w.currency != tx.currency") == 2
+    assert source.count('transaction wallet ownership or currency is inconsistent') == 2
+
