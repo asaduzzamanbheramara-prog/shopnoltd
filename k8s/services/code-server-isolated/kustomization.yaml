@@ -18,7 +18,7 @@ configMapGenerator:
 images:
   - name: linuxserver/code-server
     newName: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-code-server
-    newTag: 3cdc7b3683fa06b35ebff5db045481d9b89b44d3
+    newTag: e5e2bb84af54093ca5c48435bb9c84724761e8e2
 
 labels:
   - includeSelectors: false
