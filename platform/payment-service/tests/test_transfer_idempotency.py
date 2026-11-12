@@ -536,3 +536,14 @@ def test_admin_money_movement_rejects_nonpositive_principal_or_negative_fee():
     assert source.count("Decimal(str(tx.amount)) <= 0 or Decimal(str(tx.fee)) < 0") == 2
     assert source.count("transaction amount or fee is invalid; manual reconciliation required") == 2
 
+
+
+def test_direct_payment_submission_schema_rejects_non_finite_optional_amounts():
+    from pydantic import ValidationError
+    from app.schemas.schemas import DirectPaymentSubmissionIn
+
+    for amount in (float("nan"), float("inf"), float("-inf")):
+        with pytest.raises(ValidationError):
+            DirectPaymentSubmissionIn(txid="TXID-1234", amount=amount)
+
+    assert DirectPaymentSubmissionIn(txid="TXID-1234", amount=None).amount is None
