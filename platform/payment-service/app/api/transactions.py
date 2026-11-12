@@ -1,5 +1,6 @@
 from app.core.db import SessionLocal
 from app.core.security import verify_token
+from app.core.tenant import require_tenant_id
 from app.models.models import Transaction
 from app.schemas.schemas import TxOut
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -33,10 +34,11 @@ async def history(
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
 ):
+    tenant_id = require_tenant_id(user)
     res = await s.execute(
         select(Transaction)
         .where(
-            Transaction.tenant_id == user.get("tenant_id", "default"),
+            Transaction.tenant_id == tenant_id,
             Transaction.user_id == user["sub"],
         )
         .order_by(Transaction.created_at.desc())

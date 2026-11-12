@@ -21,7 +21,7 @@ from app.models.models import (
     Wallet,
 )
 from fastapi import APIRouter, Header, HTTPException, Request
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -71,8 +71,8 @@ def _decimal(value, field: str) -> Decimal:
         out = Decimal(str(value))
     except (InvalidOperation, TypeError, ValueError) as exc:
         raise HTTPException(422, f"invalid {field}") from exc
-    if out <= 0:
-        raise HTTPException(422, f"{field} must be positive")
+    if not out.is_finite() or out <= 0:
+        raise HTTPException(422, f"{field} must be a positive finite number")
     return out
 
 
@@ -113,9 +113,12 @@ async def _credit_verified_feed(
         )
     ).scalars().all()
     receiver = _norm_number(receiver_number)
-    account = next((a for a in accounts if _norm_number(a.account_number) == receiver), None)
-    if not account:
+    matching_accounts = [a for a in accounts if _norm_number(a.account_number) == receiver]
+    if not matching_accounts:
         raise HTTPException(400, "receiver number is not a configured active Shopnoltd account")
+    if len(matching_accounts) > 1:
+        raise HTTPException(409, "receiver number maps to multiple tenants; automatic credit refused")
+    account = matching_accounts[0]
     if account.verification_mode != "authorized_feed":
         raise HTTPException(409, "receiving account is not enabled for authorized feed verification")
 
@@ -130,6 +133,7 @@ async def _credit_verified_feed(
                 DirectPaymentIntent.status.in_(["awaiting_payment", "submitted", "verifying"]),
                 DirectPaymentIntent.expires_at >= now,
                 DirectPaymentIntent.amount == amount,
+                func.upper(DirectPaymentIntent.expected_reference) == (reference or "").strip().upper(),
             )
             .order_by(DirectPaymentIntent.created_at.asc())
             .with_for_update()
@@ -140,6 +144,8 @@ async def _credit_verified_feed(
     if len(intents) > 1:
         raise HTTPException(409, "multiple open payment intents match this transaction; automatic credit refused")
     intent = intents[0]
+    if not reference or reference.strip().upper() != intent.expected_reference.strip().upper():
+        raise HTTPException(409, "payment reference does not match the selected payment intent")
 
     wallet = await s.scalar(
         select(Wallet)
