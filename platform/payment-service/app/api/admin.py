@@ -65,6 +65,10 @@ async def approve(tx_id: str, user=Depends(require_admin), s: AsyncSession = Dep
         raise HTTPException(404, "tx not found")
     if tx.status not in (TxStatus.requires_approval, TxStatus.pending):
         raise HTTPException(400, "tx not pending approval")
+    if tx.type.value in {"deposit", "withdrawal"} and (
+        Decimal(str(tx.amount)) <= 0 or Decimal(str(tx.fee)) < 0
+    ):
+        raise HTTPException(409, "transaction amount or fee is invalid; manual reconciliation required")
     wr = await s.execute(
         select(Wallet).where(
             Wallet.id == tx.wallet_id,
@@ -111,6 +115,10 @@ async def reject(tx_id: str, user=Depends(require_admin), s: AsyncSession = Depe
         raise HTTPException(404, "tx not found")
     if tx.status not in (TxStatus.requires_approval, TxStatus.pending):
         raise HTTPException(400, "tx not pending approval")
+    if tx.type.value == "withdrawal" and (
+        Decimal(str(tx.amount)) <= 0 or Decimal(str(tx.fee)) < 0
+    ):
+        raise HTTPException(409, "transaction amount or fee is invalid; manual reconciliation required")
     if tx.type.value == "withdrawal":
         wr = await s.execute(
             select(Wallet).where(
