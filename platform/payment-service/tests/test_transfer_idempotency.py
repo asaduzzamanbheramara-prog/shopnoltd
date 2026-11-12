@@ -387,3 +387,14 @@ def test_wallet_ledger_accounts_for_withdrawal_and_exchange_fees():
     assert "amount = -(amount + float(t.fee or 0))" in source
     assert "amount -= float(t.fee or 0)" in source
 
+def test_direct_payment_verification_allows_only_one_credit_per_intent():
+    from pathlib import Path
+
+    source = (
+        Path(__file__).resolve().parents[1] / "app" / "api" / "direct_payments.py"
+    ).read_text(encoding="utf-8")
+    assert 'if sub.status != "submitted":' in source
+    assert 'if not intent or intent.status != "submitted":' in source
+    assert "intent_query.with_for_update()" in source
+    assert "submission_query.with_for_update()" in source
+
