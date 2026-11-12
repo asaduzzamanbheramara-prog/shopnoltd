@@ -75,6 +75,18 @@ async def _find_email_owner(
     return owners[0] if owners else None
 
 
+def _with_tenant_attribute(user_representation: dict, tenant_id: str | None) -> dict:
+    """Preserve Keycloak user attributes while synchronizing the signed tenant claim."""
+    updated = dict(user_representation)
+    attributes = dict(updated.get("attributes") or {})
+    if tenant_id is None or not str(tenant_id).strip():
+        attributes.pop("tenant_id", None)
+    else:
+        attributes["tenant_id"] = [str(tenant_id).strip()]
+    updated["attributes"] = attributes
+    return updated
+
+
 async def _ensure_account_provisioning_jobs(s: AsyncSession, u: UserMirror) -> None:
     """Atomically enqueue domain and mailbox work; never claim provider success."""
     for resource_type in ("subdomain", "mailbox"):
@@ -305,7 +317,24 @@ async def update_user(user_id: str, body: UserAdminPatch, user=Depends(admin), s
                 r.raise_for_status()
 
     if "tenant_id" in changes:
-        u.tenant_id = changes["tenant_id"]
+        tenant_id = changes["tenant_id"]
+        if u.keycloak_id.startswith("import:"):
+            raise HTTPException(409, "legacy synthetic identity has no Keycloak tenant claim")
+        tok = await kc_token()
+        async with httpx.AsyncClient() as c:
+            current = await c.get(
+                f"{ADMIN_URL}/users/{u.keycloak_id}",
+                headers={"Authorization": f"Bearer {tok}"},
+            )
+            current.raise_for_status()
+            representation = _with_tenant_attribute(current.json(), tenant_id)
+            updated = await c.put(
+                f"{ADMIN_URL}/users/{u.keycloak_id}",
+                headers={"Authorization": f"Bearer {tok}"},
+                json=representation,
+            )
+            updated.raise_for_status()
+        u.tenant_id = str(tenant_id).strip() if tenant_id is not None and str(tenant_id).strip() else None
     if "active" in changes and changes["active"] is not None:
         active = bool(changes["active"])
         if not u.keycloak_id.startswith("import:"):
