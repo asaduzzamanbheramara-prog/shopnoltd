@@ -4,6 +4,7 @@ from urllib.parse import urlparse
 from app.core.config import settings
 from app.core.db import SessionLocal
 from app.core.security import verify_token
+from app.core.tenant import require_tenant_id
 from app.models.models import Transaction, TxStatus, TxType, Wallet
 from app.providers.registry import get_provider, supports_deposit
 from app.schemas.schemas import DepositIn, TxOut
@@ -49,7 +50,7 @@ def tx_out(tx: Transaction) -> TxOut:
 @router.post("", response_model=TxOut, status_code=201)
 async def create_deposit(body: DepositIn, user=Depends(current_user), s: AsyncSession = Depends(db)):
     currency = body.currency.upper()
-    tenant_id = user.get("tenant_id", "default")
+    tenant_id = require_tenant_id(user)
     user_id = user["sub"]
 
     if body.amount < settings.min_deposit or body.amount > settings.max_deposit:
@@ -87,7 +88,11 @@ async def create_deposit(body: DepositIn, user=Depends(current_user), s: AsyncSe
         return tx_out(existing)
 
     res = await s.execute(
-        select(Wallet).where(Wallet.user_id == user_id, Wallet.currency == currency)
+        select(Wallet).where(
+            Wallet.tenant_id == tenant_id,
+            Wallet.user_id == user_id,
+            Wallet.currency == currency,
+        )
     )
     w = res.scalar_one_or_none()
     if not w:
@@ -181,6 +186,7 @@ async def create_deposit(body: DepositIn, user=Depends(current_user), s: AsyncSe
 
 @router.get("/{tx_id}", response_model=TxOut)
 async def get_deposit(tx_id: str, user=Depends(current_user), s: AsyncSession = Depends(db)):
+    tenant_id = require_tenant_id(user)
     try:
         transaction_id = uuid.UUID(tx_id)
     except ValueError as exc:
@@ -188,7 +194,7 @@ async def get_deposit(tx_id: str, user=Depends(current_user), s: AsyncSession = 
     res = await s.execute(
         select(Transaction).where(
             Transaction.id == transaction_id,
-            Transaction.tenant_id == user.get("tenant_id", "default"),
+            Transaction.tenant_id == tenant_id,
             Transaction.user_id == user["sub"],
         )
     )

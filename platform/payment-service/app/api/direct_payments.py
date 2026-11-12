@@ -11,6 +11,7 @@ from decimal import Decimal
 
 from app.core.db import SessionLocal
 from app.core.security import verify_token
+from app.core.tenant import require_tenant_id
 from app.models.models import (
     DirectPaymentAccount,
     DirectPaymentIntent,
@@ -77,9 +78,10 @@ def intent_out(i: DirectPaymentIntent, account: DirectPaymentAccount | None = No
 
 @router.get("/accounts")
 async def accounts(provider: str | None = None, user=Depends(current_user), s: AsyncSession = Depends(db)):
+    tenant_id = require_tenant_id(user)
     q = select(DirectPaymentAccount).where(
         DirectPaymentAccount.status == "active",
-        DirectPaymentAccount.tenant_id == user.get("tenant_id", "default"),
+        DirectPaymentAccount.tenant_id == tenant_id,
     )
     if provider:
         q = q.where(DirectPaymentAccount.provider == provider.lower())
@@ -113,7 +115,13 @@ async def create_account(body: dict, user=Depends(require_admin), s: AsyncSessio
         raise HTTPException(400, "account_number and BDT currency are required")
     if verification_mode not in {"manual", "authorized_feed"}:
         raise HTTPException(400, "verification_mode must be manual or authorized_feed")
-    tenant_id = user.get("tenant_id", "default")
+    roles = set(user.get("roles", []))
+    tenant_id = user.get("tenant_id")
+    if not tenant_id:
+        if "platform_admin" in roles:
+            tenant_id = "default"
+        else:
+            raise HTTPException(403, "tenant context required")
     exists = await s.scalar(
         select(DirectPaymentAccount).where(
             DirectPaymentAccount.tenant_id == tenant_id,
@@ -173,6 +181,7 @@ async def admin_submissions(user=Depends(require_admin), s: AsyncSession = Depen
 
 @router.post("/intents", status_code=201)
 async def create_intent(body: dict, user=Depends(current_user), s: AsyncSession = Depends(db)):
+    tenant_id = require_tenant_id(user)
     provider = str(body.get("provider", "")).lower()
     currency = str(body.get("currency", "BDT")).upper()
     amount = Decimal(str(body.get("amount", "0")))
@@ -190,7 +199,7 @@ async def create_intent(body: dict, user=Depends(current_user), s: AsyncSession 
         account = await s.scalar(
             select(DirectPaymentAccount).where(
                 DirectPaymentAccount.id == aid,
-                DirectPaymentAccount.tenant_id == user.get("tenant_id", "default"),
+                DirectPaymentAccount.tenant_id == tenant_id,
                 DirectPaymentAccount.status == "active",
             )
         )
@@ -200,7 +209,7 @@ async def create_intent(body: dict, user=Depends(current_user), s: AsyncSession 
             .where(
                 DirectPaymentAccount.provider == provider,
                 DirectPaymentAccount.currency == currency,
-                DirectPaymentAccount.tenant_id == user.get("tenant_id", "default"),
+                DirectPaymentAccount.tenant_id == tenant_id,
                 DirectPaymentAccount.status == "active",
             )
             .order_by(DirectPaymentAccount.created_at.asc())
@@ -212,7 +221,7 @@ async def create_intent(body: dict, user=Depends(current_user), s: AsyncSession 
     iid = uuid.uuid4()
     intent = DirectPaymentIntent(
         id=iid,
-        tenant_id=user.get("tenant_id", "default"),
+        tenant_id=tenant_id,
         user_id=user["sub"],
         order_id=body.get("order_id"),
         account_id=account.id,
@@ -230,6 +239,7 @@ async def create_intent(body: dict, user=Depends(current_user), s: AsyncSession 
 
 @router.get("/intents/{intent_id}")
 async def get_intent(intent_id: str, user=Depends(current_user), s: AsyncSession = Depends(db)):
+    tenant_id = require_tenant_id(user)
     try:
         iid = uuid.UUID(intent_id)
     except ValueError as exc:
@@ -237,7 +247,7 @@ async def get_intent(intent_id: str, user=Depends(current_user), s: AsyncSession
     intent = await s.scalar(
         select(DirectPaymentIntent).where(
             DirectPaymentIntent.id == iid,
-            DirectPaymentIntent.tenant_id == user.get("tenant_id", "default"),
+            DirectPaymentIntent.tenant_id == tenant_id,
             DirectPaymentIntent.user_id == user["sub"],
         )
     )
@@ -249,6 +259,7 @@ async def get_intent(intent_id: str, user=Depends(current_user), s: AsyncSession
 
 @router.post("/intents/{intent_id}/submit", status_code=201)
 async def submit_evidence(intent_id: str, body: dict, user=Depends(current_user), s: AsyncSession = Depends(db)):
+    tenant_id = require_tenant_id(user)
     try:
         iid = uuid.UUID(intent_id)
     except ValueError as exc:
@@ -256,7 +267,7 @@ async def submit_evidence(intent_id: str, body: dict, user=Depends(current_user)
     intent = await s.scalar(
         select(DirectPaymentIntent).where(
             DirectPaymentIntent.id == iid,
-            DirectPaymentIntent.tenant_id == user.get("tenant_id", "default"),
+            DirectPaymentIntent.tenant_id == tenant_id,
             DirectPaymentIntent.user_id == user["sub"],
         )
     )
