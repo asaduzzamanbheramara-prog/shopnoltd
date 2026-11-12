@@ -249,3 +249,12 @@ def test_internal_ad_wallet_idempotency_rejects_changed_payload():
             _existing_operation_result(existing, candidate, candidate.currency.upper())
         assert exc.value.status_code == 409
 
+def test_admin_transaction_decisions_lock_and_reject_only_pending_rows():
+    from pathlib import Path
+
+    source = (
+        Path(__file__).resolve().parents[1] / "app" / "api" / "admin.py"
+    ).read_text(encoding="utf-8")
+    assert source.count("s.execute(query.with_for_update())") == 2
+    assert source.count('raise HTTPException(400, "tx not pending approval")') == 2
+
