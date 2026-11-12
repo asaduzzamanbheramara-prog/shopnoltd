@@ -69,7 +69,7 @@ async def approve(tx_id: str, user=Depends(require_admin), s: AsyncSession = Dep
         select(Wallet).where(
             Wallet.id == tx.wallet_id,
             Wallet.tenant_id == tx.tenant_id,
-        )
+        ).with_for_update()
     )
     w = wr.scalar_one()
     if tx.type.value == "withdrawal":
@@ -105,7 +105,7 @@ async def reject(tx_id: str, user=Depends(require_admin), s: AsyncSession = Depe
             select(Wallet).where(
                 Wallet.id == tx.wallet_id,
                 Wallet.tenant_id == tx.tenant_id,
-            )
+            ).with_for_update()
         )
         w = wr.scalar_one()
         w.frozen = Decimal(str(w.frozen)) - Decimal(str(tx.amount))
