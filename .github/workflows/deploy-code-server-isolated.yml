@@ -45,6 +45,17 @@ jobs:
           grep -q 'name: code-server-isolated' /tmp/code-server-isolated.yaml
           grep -q 'code-server-isolated-continue-config' /tmp/code-server-isolated.yaml
 
+      - name: Provision isolated code-server LiteLLM key
+        shell: bash
+        run: |
+          set -euo pipefail
+          master_key="$(kubectl -n shopno-ai get secret litellm-provider-keys -o jsonpath='{.data.LITELLM_MASTER_KEY}' | base64 -d)"
+          test -n "$master_key"
+          kubectl -n shopno-apps create secret generic code-server-litellm-key \
+            --from-literal=LITELLM_MASTER_KEY="$master_key" \
+            --dry-run=client -o yaml | kubectl -n shopno-apps apply -f -
+          unset master_key
+
       - name: Apply isolated code-server resources only
         shell: bash
         run: |
