@@ -22,7 +22,7 @@ from app.models.models import (
     TxType,
     Wallet,
 )
-from app.schemas.schemas import DirectPaymentVerificationIn
+from app.schemas.schemas import DirectPaymentIntentIn, DirectPaymentVerificationIn
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
@@ -193,21 +193,21 @@ async def admin_submissions(user=Depends(require_admin), s: AsyncSession = Depen
 
 
 @router.post("/intents", status_code=201)
-async def create_intent(body: dict, user=Depends(current_user), s: AsyncSession = Depends(db)):
+async def create_intent(body: DirectPaymentIntentIn, user=Depends(current_user), s: AsyncSession = Depends(db)):
     tenant_id = require_tenant_id(user)
-    provider = str(body.get("provider", "")).lower()
-    currency = str(body.get("currency", "BDT")).upper()
-    amount = _positive_decimal(body.get("amount", "0"), "direct payment requires a positive finite amount")
+    provider = body.provider.lower()
+    currency = body.currency.upper()
+    amount = _positive_decimal(body.amount, "direct payment requires a positive finite amount")
     if provider not in {"bkash", "nagad", "rocket"}:
         raise HTTPException(400, "direct payment supports bKash, Nagad and Rocket")
     if currency != "BDT":
         raise HTTPException(400, "direct payment currently requires BDT currency")
-    account_id = body.get("account_id")
+    account_id = body.account_id
     account = None
     if account_id:
         try:
             aid = uuid.UUID(account_id)
-        except ValueError as exc:
+        except (ValueError, TypeError, AttributeError) as exc:
             raise HTTPException(400, "invalid account_id") from exc
         account = await s.scalar(
             select(DirectPaymentAccount).where(
@@ -236,7 +236,7 @@ async def create_intent(body: dict, user=Depends(current_user), s: AsyncSession 
         id=iid,
         tenant_id=tenant_id,
         user_id=user["sub"],
-        order_id=body.get("order_id"),
+        order_id=body.order_id,
         account_id=account.id,
         provider=provider,
         amount=amount,
