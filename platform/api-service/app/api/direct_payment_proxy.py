@@ -61,3 +61,17 @@ async def direct_payment_intent_detail(intent_id: str, access_token: str = Depen
 @router.post("/direct-payments/intents/{intent_id}/submit", status_code=201)
 async def direct_payment_submit(intent_id: str, body: dict, access_token: str = Depends(token)):
     return await proxy("POST", f"/api/v1/direct-payments/intents/{intent_id}/submit", access_token, json=body)
+
+
+@router.post("/direct-payments/submissions/{submission_id}/verify")
+async def direct_payment_verify_submission(
+    submission_id: str,
+    body: dict,
+    access_token: str = Depends(token),
+):
+    return await proxy(
+        "POST",
+        f"/api/v1/direct-payments/submissions/{submission_id}/verify",
+        access_token,
+        json=body,
+    )
