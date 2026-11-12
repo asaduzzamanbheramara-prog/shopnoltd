@@ -6,7 +6,7 @@ umask 077
 : "${BACKUP_WORKDIR:=/tmp/shopnoltd-dr-backup}"
 : "${DATA_NAMESPACE:=shopno-data}"
 : "${MIN_BACKUP_FREE_KB:=20971520}"
-case "$BACKUP_WORKDIR" in /tmp/shopnoltd-dr-backup|/mnt/*/shopnoltd-dr-backup) ;; *) echo "Unsafe BACKUP_WORKDIR path" >&2; exit 1 ;; esac
+case "$BACKUP_WORKDIR" in /tmp/shopnoltd-dr-backup/run-*|/mnt/*/shopnoltd-dr-backup/run-*) ;; *) echo "Unsafe BACKUP_WORKDIR path; use a unique run-* child under the approved staging directory" >&2; exit 1 ;; esac
 for cmd in kubectl tar gzip python3 sudo df; do command -v "$cmd" >/dev/null; done
 mkdir -p "$(dirname "$BACKUP_WORKDIR")"
 available_kb="$(df -Pk "$(dirname "$BACKUP_WORKDIR")" | awk 'NR==2 {print $4}')"
@@ -14,7 +14,7 @@ available_kb="$(df -Pk "$(dirname "$BACKUP_WORKDIR")" | awk 'NR==2 {print $4}')"
   echo "Insufficient free space for safe backup staging: need at least ${MIN_BACKUP_FREE_KB} KiB, have ${available_kb:-unknown} KiB. Set BACKUP_WORKDIR to an approved external volume." >&2
   exit 1
 }
-rm -rf "$BACKUP_WORKDIR"
+mkdir "$BACKUP_WORKDIR"
 mkdir -p "$BACKUP_WORKDIR/postgres/databases" "$BACKUP_WORKDIR/postgres/csv" "$BACKUP_WORKDIR/mongodb" "$BACKUP_WORKDIR/redis" "$BACKUP_WORKDIR/minio" "$BACKUP_WORKDIR/k3s" "$BACKUP_WORKDIR/metadata"
 
 pg_pod="$(kubectl -n "$POSTGRES_NAMESPACE" get pods -l app.kubernetes.io/name=postgres -o jsonpath='{.items[?(@.status.phase=="Running")].metadata.name}' | awk '{print $1}')"
