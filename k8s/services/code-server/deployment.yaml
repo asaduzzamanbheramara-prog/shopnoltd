@@ -54,7 +54,7 @@ spec:
               set -eu
               mkdir -p /config/.continue
               cp /continue-config/config.json /config/.continue/config.json
-              printf '%s\\n' "CODE_SERVER_LITELLM_API_KEY=$CODE_SERVER_LITELLM_API_KEY" > /config/.continue/.env
+              printf '%s\\n' "CODE_SERVER_LITELLM_API_KEY=${CODE_SERVER_LITELLM_API_KEY:-}" > /config/.continue/.env
               chown -R 10001:10001 /config/.continue
           env:
             - name: CODE_SERVER_LITELLM_API_KEY
@@ -62,6 +62,7 @@ spec:
                 secretKeyRef:
                   name: code-server-litellm-key
                   key: LITELLM_MASTER_KEY
+                  optional: true
           securityContext:
             runAsNonRoot: false
             runAsUser: 0
