@@ -40,7 +40,7 @@ spec:
             - name: CONCURRENT
               value: "1"
             - name: TIMEOUT
-              value: "300000"
+              value: "1800000"
           resources:
             requests:
               cpu: 250m
