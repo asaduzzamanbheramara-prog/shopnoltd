@@ -16,7 +16,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: shopnoltd-web-portal-download-deploy
+  group: shopnoltd-web-portal-download-deploy-v2
   cancel-in-progress: false
 
 jobs:
