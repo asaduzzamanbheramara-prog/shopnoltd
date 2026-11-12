@@ -97,7 +97,7 @@ jobs:
             --publish 127.0.0.1:55432:5432 \
             --env POSTGRES_USER=restore_validator \
             --env POSTGRES_PASSWORD="$POSTGRES_PASSWORD" \
-            --env POSTGRES_DB=shopnoltd_restore_validation \
+            --env POSTGRES_DB=postgres \
             ghcr.io/asaduzzamanbheramara-prog/shopnoltd-postgres-combined:pg16-postgis3.5-pgvector0.8.6
 
           ready=false
@@ -110,6 +110,12 @@ jobs:
             sleep 2
           done
           [[ "$ready" == true ]] || { echo "::error::Disposable PostgreSQL did not become ready."; exit 1; }
+
+          # Start from template0 so the PostGIS entrypoint's preloaded schemas
+          # in its default database cannot conflict with objects in the backup.
+          docker exec --user postgres shopnoltd-postgres-restore-validation \
+            psql -X -v ON_ERROR_STOP=1 -U restore_validator -d postgres \
+              -c "CREATE DATABASE shopnoltd_restore_validation TEMPLATE template0;"
 
           docker cp "$RUNNER_TEMP/shopnoltd.dump" \
             shopnoltd-postgres-restore-validation:/tmp/shopnoltd.dump
