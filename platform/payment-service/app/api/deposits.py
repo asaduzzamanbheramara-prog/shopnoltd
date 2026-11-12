@@ -4,6 +4,7 @@ from urllib.parse import urlparse
 from app.core.config import settings
 from app.core.db import SessionLocal
 from app.core.security import verify_token
+from app.core.tenant import require_tenant_id
 from app.models.models import Transaction, TxStatus, TxType, Wallet
 from app.providers.registry import get_provider, supports_deposit
 from app.schemas.schemas import DepositIn, TxOut
@@ -49,7 +50,7 @@ def tx_out(tx: Transaction) -> TxOut:
 @router.post("", response_model=TxOut, status_code=201)
 async def create_deposit(body: DepositIn, user=Depends(current_user), s: AsyncSession = Depends(db)):
     currency = body.currency.upper()
-    tenant_id = user.get("tenant_id", "default")
+    tenant_id = require_tenant_id(user)
     user_id = user["sub"]
 
     if body.amount < settings.min_deposit or body.amount > settings.max_deposit:
