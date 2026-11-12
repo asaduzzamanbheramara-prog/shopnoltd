@@ -59,7 +59,9 @@ jobs:
           kubectl auth can-i get pods -n "$POSTGRES_NAMESPACE" | grep -qx yes
           kubectl auth can-i create pods/exec -n "$POSTGRES_NAMESPACE" | grep -qx yes
           kubectl auth can-i get pods -n "$DATA_NAMESPACE" | grep -qx yes
+          kubectl auth can-i list pods -n "$DATA_NAMESPACE" | grep -qx yes
           kubectl auth can-i watch pods -n "$DATA_NAMESPACE" | grep -qx yes
+          kubectl auth can-i get persistentvolumeclaims -n "$DATA_NAMESPACE" | grep -qx yes
           kubectl auth can-i create pods -n "$DATA_NAMESPACE" | grep -qx yes
           kubectl auth can-i delete pods -n "$DATA_NAMESPACE" | grep -qx yes
           kubectl auth can-i create pods/exec -n "$DATA_NAMESPACE" | grep -qx yes
