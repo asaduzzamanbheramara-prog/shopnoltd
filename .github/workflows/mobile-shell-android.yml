@@ -40,6 +40,11 @@ jobs:
           cache: npm
           cache-dependency-path: apps/mobile-shell/package-lock.json
 
+      - name: Install Android SDK components
+        uses: android-actions/setup-android@v3
+        with:
+          packages: "platform-tools platforms;android-34 build-tools;35.0.0"
+
       - name: Install JavaScript dependencies
         run: npm ci
 
@@ -61,9 +66,12 @@ jobs:
           mkdir -p dist
           apk="android/app/build/outputs/apk/web/debug/app-web-debug.apk"
           test -s "$apk"
-          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose "$apk"
-          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$apk" | grep -F "package: name='org.shopnoltd.app'"
-          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$apk" | grep -F "application-label:'Shopnoltd'"
+          build_tools="$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n 1)"
+          test -x "$build_tools/apksigner"
+          test -x "$build_tools/aapt"
+          "$build_tools/apksigner" verify --verbose "$apk"
+          "$build_tools/aapt" dump badging "$apk" | grep -F "package: name='org.shopnoltd.app'"
+          "$build_tools/aapt" dump badging "$apk" | grep -F "application-label:'Shopnoltd'"
           cp "$apk" dist/Shopnoltd.apk
           sha256sum dist/Shopnoltd.apk > dist/Shopnoltd-SHA256.txt
 
@@ -84,9 +92,12 @@ jobs:
           set -euo pipefail
           apk="android/app/build/outputs/apk/admin/debug/app-admin-debug.apk"
           test -s "$apk"
-          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose "$apk"
-          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$apk" | grep -F "package: name='org.shopnoltd.admin'"
-          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$apk" | grep -F "application-label:'Shopnoltd Admin'"
+          build_tools="$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n 1)"
+          test -x "$build_tools/apksigner"
+          test -x "$build_tools/aapt"
+          "$build_tools/apksigner" verify --verbose "$apk"
+          "$build_tools/aapt" dump badging "$apk" | grep -F "package: name='org.shopnoltd.admin'"
+          "$build_tools/aapt" dump badging "$apk" | grep -F "application-label:'Shopnoltd Admin'"
           cp "$apk" dist/Shopnoltd-Admin.apk
           sha256sum dist/Shopnoltd-Admin.apk > dist/Shopnoltd-Admin-SHA256.txt
 
