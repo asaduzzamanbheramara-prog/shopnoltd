@@ -138,6 +138,7 @@ async def do_convert(body: ConvertIn, user=Depends(current_user), s: AsyncSessio
 
     existing = await s.scalar(
         select(Transaction).where(
+            Transaction.tenant_id == tenant_id,
             Transaction.user_id == user_id,
             Transaction.type == TxType.exchange,
             Transaction.reference == reference,
