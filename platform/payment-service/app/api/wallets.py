@@ -15,6 +15,7 @@ Two changes from the original:
 
 from app.core.db import SessionLocal
 from app.core.security import verify_token
+from app.core.tenant import require_tenant_id
 from app.models.models import Transaction, TxStatus, Wallet
 from app.schemas.schemas import WalletOut
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -37,10 +38,11 @@ async def current_user(creds: HTTPAuthorizationCredentials = Depends(bearer)):
 
 @router.get("", response_model=list[WalletOut])
 async def list_wallets(user=Depends(current_user), s: AsyncSession = Depends(db)):
+    tenant_id = require_tenant_id(user)
     res = await s.execute(
         select(Wallet).where(
             Wallet.user_id == user["sub"],
-            Wallet.tenant_id == user.get("tenant_id", "default"),
+            Wallet.tenant_id == tenant_id,
         )
     )
     return res.scalars().all()
@@ -48,18 +50,19 @@ async def list_wallets(user=Depends(current_user), s: AsyncSession = Depends(db)
 
 @router.get("/{currency}", response_model=WalletOut)
 async def get_wallet(currency: str, user=Depends(current_user), s: AsyncSession = Depends(db)):
+    tenant_id = require_tenant_id(user)
     currency = currency.upper()
     res = await s.execute(
         select(Wallet).where(
             Wallet.user_id == user["sub"],
-            Wallet.tenant_id == user.get("tenant_id", "default"),
+            Wallet.tenant_id == tenant_id,
             Wallet.currency == currency,
         )
     )
     w = res.scalar_one_or_none()
     if not w:
         w = Wallet(
-            tenant_id=user.get("tenant_id", "default"),
+            tenant_id=tenant_id,
             user_id=user["sub"],
             currency=currency,
             balance=0,
@@ -75,7 +78,7 @@ async def get_wallet(currency: str, user=Depends(current_user), s: AsyncSession 
             res = await s.execute(
                 select(Wallet).where(
                     Wallet.user_id == user["sub"],
-                    Wallet.tenant_id == user.get("tenant_id", "default"),
+                    Wallet.tenant_id == tenant_id,
                     Wallet.currency == currency,
                 )
             )
@@ -92,11 +95,12 @@ async def get_wallet_ledger(
     s: AsyncSession = Depends(db),
     limit: int = Query(50, le=200),
 ):
+    tenant_id = require_tenant_id(user)
     currency = currency.upper()
     wres = await s.execute(
         select(Wallet).where(
             Wallet.user_id == user["sub"],
-            Wallet.tenant_id == user.get("tenant_id", "default"),
+            Wallet.tenant_id == tenant_id,
             Wallet.currency == currency,
         )
     )
