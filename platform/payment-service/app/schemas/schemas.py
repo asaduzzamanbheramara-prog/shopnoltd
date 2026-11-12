@@ -27,7 +27,8 @@ class WithdrawalIn(BaseModel):
     currency: str = Field(min_length=3, max_length=8)
     amount: float = Field(gt=0)
     method: PaymentMethod
-    destination: str
+    destination: str = Field(min_length=1, max_length=256)
+    idempotency_key: str = Field(min_length=8, max_length=128)
     metadata: dict = Field(default_factory=dict)
 
 
