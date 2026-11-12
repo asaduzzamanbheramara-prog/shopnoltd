@@ -110,7 +110,7 @@ export default function AgentWorkspace() {
     switch (m.type) {
       case 'auth_ok': setStatus('connected'); retryRef.current = 0; break
       case 'models': setModelCatalog(Array.isArray(m.items) ? m.items : []); break
-      case 'model': push({ kind: 'text', text: `Using model: ${String(m.model || '')}` }); break
+      case 'model': push({ kind: 'text', text: `Using model: ${String(m.display_name || m.model || '')}` }); break
       case 'model_failover': push({ kind: 'error', text: `Model ${String(m.model || '')} is temporarily unavailable. ${String(m.reason || 'Switching to another eligible model.')}` }); break
       case 'text': push({ kind: 'text', text: String(m.text || '') }); break
       case 'plan': setPlan(Array.isArray(m.steps) ? m.steps.slice(0, 20) : []); break
@@ -232,7 +232,7 @@ export default function AgentWorkspace() {
           <select value={model} onChange={(event) => setModel(event.target.value)} disabled={running} aria-label="Agent model" style={{ padding: '6px 10px', border: '1px solid #d1d5db', borderRadius: 8, background: '#fff', fontWeight: 600 }}>
             <option value="auto">Auto · free models first</option>
             {modelCatalog.map((item) => (
-              <option key={item.model_name} value={item.model_name}>
+              <option key={item.model_key} value={item.model_key}>
                 {item.free_tier ? 'Free · ' : 'Manual · '}{item.display_name}{item.provider_name ? ` · ${item.provider_name}` : ''}
               </option>
             ))}
