@@ -138,7 +138,7 @@ jobs:
             local headers status location
             headers="$(mktemp)"
             status="$(curl -sS --max-time 30 -D "$headers" -o /dev/null -w '%{http_code}' "$base$path")"
-            location="$(awk 'BEGIN{IGNORECASE=1} /^Location:/ {sub(/^[^:]*:[[:space:]]*/, ""); sub(/\r$/, ""); print}' "$headers" | tail -n 1)"
+            location="$(awk 'tolower($1) == "location:" {sub(/^[^:]*:[[:space:]]*/, ""); sub(/\r$/, ""); print}' "$headers" | tail -n 1)"
             rm -f "$headers"
             if [ "$status" != "302" ] || [ "$location" != "$expected" ]; then
               echo "FAIL: $path returned HTTP $status with Location=$location; expected 302 to $expected"
