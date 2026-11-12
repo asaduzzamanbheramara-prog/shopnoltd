@@ -23,9 +23,12 @@ spec:
       terminationGracePeriodSeconds: 30
       securityContext:
         runAsNonRoot: true
-        runAsUser: 10001
-        runAsGroup: 10001
-        fsGroup: 10001
+        # Browserless creates blessuser with UID/GID 999 in its official image.
+        # Matching the image identity keeps Node os.userInfo() functional while
+        # preserving the non-root pod security boundary.
+        runAsUser: 999
+        runAsGroup: 999
+        fsGroup: 999
         seccompProfile:
           type: RuntimeDefault
       containers:
