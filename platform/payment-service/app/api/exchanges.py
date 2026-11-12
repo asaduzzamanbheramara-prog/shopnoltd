@@ -83,6 +83,7 @@ async def do_convert(body: ConvertIn, user=Depends(current_user), s: AsyncSessio
     reference = f"exchange:{body.idempotency_key}"
     existing = await s.scalar(
         select(Transaction).where(
+            Transaction.tenant_id == user.get("tenant_id", "default"),
             Transaction.user_id == user["sub"],
             Transaction.type == TxType.exchange,
             Transaction.reference == reference,
@@ -112,7 +113,11 @@ async def do_convert(body: ConvertIn, user=Depends(current_user), s: AsyncSessio
     for currency in sorted([frm, to]):
         wallet = await s.scalar(
             select(Wallet)
-            .where(Wallet.user_id == user_id, Wallet.currency == currency)
+            .where(
+                Wallet.tenant_id == user.get("tenant_id", "default"),
+                Wallet.user_id == user_id,
+                Wallet.currency == currency,
+            )
             .with_for_update()
         )
         if not wallet:
