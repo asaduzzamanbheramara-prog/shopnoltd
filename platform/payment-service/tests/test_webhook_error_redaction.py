@@ -27,3 +27,12 @@ def test_webhook_exception_responses_never_reflect_provider_errors():
             checked += 1
 
     assert checked >= 2, "Expected signature and provider-status error paths to be checked"
+
+
+def test_webhook_transaction_identity_fails_closed_when_ambiguous():
+    source = Path("app/api/webhooks.py").read_text(encoding="utf-8")
+    assert "matches = res.scalars().all()" in source
+    assert 'if len(matches) != 1:' in source
+    assert '"ambiguous transaction identity"' in source
+    assert "tx = matches[0]" in source
+    assert "res.scalar_one_or_none()" not in source
