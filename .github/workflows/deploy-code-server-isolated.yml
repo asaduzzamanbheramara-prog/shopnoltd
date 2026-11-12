@@ -1,0 +1,60 @@
+name: Deploy Isolated Code Server
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_code_server_only:
+        description: "Apply only k8s/services/code-server-isolated; do not reconcile the root application"
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  packages: read
+
+concurrency:
+  group: deploy-code-server-isolated
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: ${{ inputs.confirm_code_server_only == true }}
+    runs-on: [self-hosted, linux]
+    timeout-minutes: 15
+    steps:
+      - name: Checkout trusted main revision
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Verify cluster access
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v kubectl
+          test -s "${KUBECONFIG:-$HOME/.kube/config}"
+          kubectl --request-timeout=20s cluster-info
+
+      - name: Render isolated code-server resources
+        shell: bash
+        run: |
+          set -euo pipefail
+          kubectl kustomize k8s/services/code-server-isolated >/tmp/code-server-isolated.yaml
+          grep -q 'name: code-server-isolated' /tmp/code-server-isolated.yaml
+          grep -q 'code-server-isolated-continue-config' /tmp/code-server-isolated.yaml
+
+      - name: Apply isolated code-server resources only
+        shell: bash
+        run: |
+          set -euo pipefail
+          kubectl apply -k k8s/services/code-server-isolated
+
+      - name: Wait for isolated code-server readiness
+        shell: bash
+        run: |
+          set -euo pipefail
+          kubectl -n shopno-apps rollout status deployment/code-server-isolated --timeout=8m
+          kubectl -n shopno-apps get deployment/code-server-isolated service/code-server-isolated pods -o wide
+          kubectl -n shopno-apps get ingress code-server-isolated -o wide
