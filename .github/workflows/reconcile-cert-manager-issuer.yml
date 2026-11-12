@@ -32,7 +32,28 @@ jobs:
           set -euo pipefail
           test -s "${KUBECONFIG:-$HOME/.kube/config}"
           kubectl --request-timeout=20s cluster-info
-          kubectl get crd clusterissuers.cert-manager.io >/dev/null
+
+          echo "Checking node memory headroom before installing cert-manager."
+          kubectl top nodes --no-headers | awk '
+            {
+              usage=$5
+              gsub(/%/, "", usage)
+              if (usage + 0 >= 90) {
+                printf "BLOCKED: node %s memory usage is %s%% (limit 90%%).\\n", $1, usage
+                blocked=1
+              }
+            }
+            END { if (blocked) exit 1 }
+          '
+
+          if ! kubectl get crd clusterissuers.cert-manager.io >/dev/null 2>&1; then
+            echo "cert-manager CRD is missing; installing the repository-pinned v1.15.3 release."
+            kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.15.3/cert-manager.yaml
+          else
+            echo "cert-manager CRD already exists; preserving the current installation."
+          fi
+
+          kubectl wait --for=condition=Established crd/clusterissuers.cert-manager.io --timeout=180s
           for deployment in cert-manager cert-manager-cainjector cert-manager-webhook; do
             kubectl -n cert-manager rollout status "deployment/$deployment" --timeout=180s
           done
