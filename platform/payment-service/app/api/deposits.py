@@ -150,30 +150,27 @@ async def create_deposit(body: DepositIn, user=Depends(current_user), s: AsyncSe
             customer_postcode=metadata.get("customer_postcode"),
             description=metadata.get("description"),
         )
-    except NotImplementedError as exc:
+    except NotImplementedError:
         tx.status = TxStatus.failed
-        tx.meta = {**(tx.meta or {}), "_error": str(exc)}
+        tx.meta = {**(tx.meta or {}), "_error": "payment method operation is not supported"}
         await s.commit()
-        raise HTTPException(400, str(exc)) from exc
-    except (ValueError, RuntimeError) as exc:
+        raise HTTPException(400, "payment method operation is not supported") from None
+    except (ValueError, RuntimeError):
         tx.status = TxStatus.failed
-        tx.meta = {**(tx.meta or {}), "_error": str(exc)}
+        tx.meta = {**(tx.meta or {}), "_error": "payment provider is unavailable"}
         await s.commit()
-        raise HTTPException(503, str(exc)) from exc
-    except Exception as exc:
+        raise HTTPException(503, "payment provider is unavailable") from None
+    except Exception:
         tx.status = TxStatus.failed
         tx.meta = {**(tx.meta or {}), "_error": "payment provider request failed"}
         await s.commit()
-        raise HTTPException(502, "payment provider request failed") from exc
+        raise HTTPException(502, "payment provider request failed") from None
 
     if out.get("status") in {"failed", "unavailable"}:
         tx.status = TxStatus.failed
-        tx.meta = {
-            **(tx.meta or {}),
-            "_error": out.get("note") or "Payment provider is unavailable",
-        }
+        tx.meta = {**(tx.meta or {}), "_error": "payment provider is unavailable"}
         await s.commit()
-        raise HTTPException(503, out.get("note") or "Payment provider is unavailable")
+        raise HTTPException(503, "payment provider is unavailable")
 
     tx.external_id = out.get("external_id")
     tx.meta = {
