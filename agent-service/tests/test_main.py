@@ -55,20 +55,20 @@ class ModelFailoverTests(unittest.TestCase):
 
     def test_auto_candidates_include_only_explicit_free_models(self):
         catalog = [
-            {"model_name": "free-a", "free_tier": True},
-            {"model_name": "paid-b", "free_tier": False},
-            {"model_name": "unknown-c"},
+            {"model_key": "provider:free-a", "free_tier": True},
+            {"model_key": "provider:paid-b", "free_tier": False},
+            {"model_key": "provider:unknown-c"},
         ]
-        self.assertEqual(main.eligible_free_models(catalog, set(), now=100), ["free-a"])
+        self.assertEqual(main.eligible_free_models(catalog, set(), now=100), ["provider:free-a"])
 
     def test_auto_candidates_skip_failed_and_cooling_models(self):
-        main.model_cooldowns["cooling"] = 200
+        main.model_cooldowns["provider:cooling"] = 200
         catalog = [
-            {"model_name": "failed", "free_tier": True},
-            {"model_name": "cooling", "free_tier": True},
-            {"model_name": "ready", "free_tier": True},
+            {"model_key": "provider:failed", "free_tier": True},
+            {"model_key": "provider:cooling", "free_tier": True},
+            {"model_key": "provider:ready", "free_tier": True},
         ]
-        self.assertEqual(main.eligible_free_models(catalog, {"failed"}, now=100), ["ready"])
+        self.assertEqual(main.eligible_free_models(catalog, {"provider:failed"}, now=100), ["provider:ready"])
 
     def test_quota_and_provider_outages_are_retryable(self):
         request = httpx.Request("POST", "https://provider.example/v1/chat/completions")
