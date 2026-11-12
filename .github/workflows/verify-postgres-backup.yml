@@ -110,7 +110,7 @@ jobs:
           ready=false
           for attempt in $(seq 1 60); do
             if docker exec shopnoltd-postgres-restore-validation \
-              pg_isready -U restore_validator -d shopnoltd_restore_validation >/dev/null 2>&1; then
+              pg_isready --host 127.0.0.1 --port 5432 -U restore_validator -d shopnoltd_restore_validation >/dev/null 2>&1; then
               ready=true
               break
             fi
