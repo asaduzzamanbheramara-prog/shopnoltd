@@ -424,10 +424,13 @@ async def get_model_catalog(claims: dict) -> list[dict]:
             if not isinstance(item, dict) or not item.get("model_name"):
                 continue
             capabilities = item.get("capabilities") or {}
+            provider_name = str(item.get("provider_name") or "")
+            model_name = str(item["model_name"])
             models.append({
-                "model_name": str(item["model_name"]),
-                "display_name": str(item.get("display_name") or item["model_name"]),
-                "provider_name": str(item.get("provider_name") or ""),
+                "model_name": model_name,
+                "model_key": f"{provider_name}:{model_name}",
+                "display_name": str(item.get("display_name") or model_name),
+                "provider_name": provider_name,
                 "free_tier": capabilities.get("free_tier") is True,
                 "priority": int(item.get("priority") or 100),
             })
@@ -447,10 +450,10 @@ def eligible_free_models(catalog: list[dict], failed_models: set[str], now: floa
     """Return only explicitly free-tier, active-catalog models not failed or cooling down."""
     current = time.time() if now is None else now
     return [
-        item["model_name"] for item in catalog
+        item["model_key"] for item in catalog
         if item.get("free_tier") is True
-        and item["model_name"] not in failed_models
-        and model_cooldowns.get(item["model_name"], 0) <= current
+        and item["model_key"] not in failed_models
+        and model_cooldowns.get(item["model_key"], 0) <= current
     ]
 
 
@@ -479,7 +482,7 @@ async def llm_with_failover(
         try:
             reply = await llm(messages, candidate)
             if candidate != active_model:
-                await ui.send_json({"type": "model", "model": candidate, "reason": "selected" if active_model is None else "automatic failover"})
+                await ui.send_json({"type": "model", "model": candidate, "display_name": next((item["display_name"] for item in catalog if item["model_key"] == candidate), candidate), "reason": "selected" if active_model is None else "automatic failover"})
             return reply, candidate
         except Exception as exc:
             if not is_retryable_model_error(exc):
@@ -550,7 +553,7 @@ async def ui_socket(ws: WebSocket):
             if not goal:
                 continue
             catalog = await get_model_catalog(claims)
-            catalog_names = {item["model_name"] for item in catalog}
+            catalog_names = {item["model_key"] for item in catalog}
             if model != "auto" and model not in catalog_names and (not ALLOWED_MODELS or model not in ALLOWED_MODELS):
                 await ws.send_json({"type": "error", "text": "model not active or not permitted"}); continue
             if user in running:
