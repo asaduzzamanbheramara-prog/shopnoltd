@@ -143,6 +143,8 @@ async def _credit_verified_feed(
     if len(intents) > 1:
         raise HTTPException(409, "multiple open payment intents match this transaction; automatic credit refused")
     intent = intents[0]
+    if not reference or reference.strip().upper() != intent.expected_reference.strip().upper():
+        raise HTTPException(409, "payment reference does not match the selected payment intent")
 
     wallet = await s.scalar(
         select(Wallet)
