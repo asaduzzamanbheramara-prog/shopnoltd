@@ -21,7 +21,7 @@ def upgrade():
     for table in ("wallets", "transactions", "wallet_ledger_entries", "payment_methods"):
         op.execute(
             sa.text(
-                f"ALTER TABLE public.{table} "
+                f"ALTER TABLE IF EXISTS public.{table} "
                 f"DROP CONSTRAINT IF EXISTS {table}_user_id_fkey"
             )
         )
