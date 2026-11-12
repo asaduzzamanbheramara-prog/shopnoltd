@@ -61,6 +61,21 @@ jobs:
             exit 1
           fi
 
+          android_deployment="$(kubectl --request-timeout=20s -n shopno-platform get deployment android-portal -o json)"
+          android_desired="$(jq -r '.spec.replicas // 1' <<<"$android_deployment")"
+          android_ready="$(jq -r '.status.readyReplicas // 0' <<<"$android_deployment")"
+          android_available="$(jq -r '.status.availableReplicas // 0' <<<"$android_deployment")"
+          if [ "$android_desired" != "1" ] || [ "$android_ready" != "$android_desired" ] || [ "$android_available" != "$android_desired" ]; then
+            echo "BLOCKED: Android download backend must already be healthy at exactly 1/1 (desired=$android_desired ready=$android_ready available=$android_available). No resources were changed."
+            exit 1
+          fi
+          android_pvc_phase="$(kubectl --request-timeout=20s -n shopno-platform get pvc android-portal-data -o jsonpath='{.status.phase}')"
+          endpoint_count="$(kubectl --request-timeout=20s -n shopno-platform get endpoints android-portal -o json | jq '[.subsets[]?.addresses[]?] | length')"
+          if [ "$android_pvc_phase" != "Bound" ] || [ "$endpoint_count" -lt 1 ]; then
+            echo "BLOCKED: Android download backend prerequisites failed (PVC=$android_pvc_phase endpoints=$endpoint_count). No resources were changed."
+            exit 1
+          fi
+
           image="$(awk '$1 == "containers:" { in_containers=1; next } in_containers && $1 == "image:" { print $2; exit }' k8s/services/web-portal/deployment.yaml)"
           case "$image" in
             ghcr.io/asaduzzamanbheramara-prog/shopnoltd/web-portal:*) ;;
