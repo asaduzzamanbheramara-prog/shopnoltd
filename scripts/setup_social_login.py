@@ -111,6 +111,23 @@ def main():
     with open(sys.argv[1]) as f:
         creds = yaml.safe_load(f)
 
+    required = {
+        "google": ("client_id", "client_secret"),
+        "facebook": ("app_id", "app_secret"),
+        "github": ("client_id", "client_secret"),
+    }
+    missing = [
+        f"{provider}.{field}"
+        for provider, fields in required.items()
+        for field in fields
+        if not (creds.get(provider) or {}).get(field)
+    ]
+    if missing:
+        sys.exit(
+            "Missing social OAuth credentials (values are never printed): "
+            + ", ".join(missing)
+        )
+
     token = get_admin_token()
     results = []
 
@@ -157,7 +174,7 @@ def main():
             )
         )
 
-    if not all(results):
+    if len(results) != len(required) or not all(results):
         sys.exit(1)
     print("\nDone. Add each provider's redirect URI to its developer console:")
     for alias in ("google", "facebook", "github"):
