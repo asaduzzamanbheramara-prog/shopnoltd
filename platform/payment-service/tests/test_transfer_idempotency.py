@@ -195,3 +195,12 @@ def test_wallet_ledger_transaction_query_is_tenant_scoped():
         for query in transaction_queries
     )
 
+def test_exchange_provider_errors_are_not_reflected_to_clients():
+    from pathlib import Path
+
+    source = (
+        Path(__file__).resolve().parents[1] / "app" / "api" / "exchanges.py"
+    ).read_text(encoding="utf-8")
+    assert 'HTTPException(502, "exchange provider unavailable") from None' in source
+    assert 'f"Exchange provider unavailable: {exc}"' not in source
+
