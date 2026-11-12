@@ -67,6 +67,18 @@ jobs:
           android_available="$(jq -r '.status.availableReplicas // 0' <<<"$android_deployment")"
           if [ "$android_desired" != "1" ] || [ "$android_ready" != "$android_desired" ] || [ "$android_available" != "$android_desired" ]; then
             echo "BLOCKED: Android download backend must already be healthy at exactly 1/1 (desired=$android_desired ready=$android_ready available=$android_available). No resources were changed."
+            echo "===== READ-ONLY ANDROID PORTAL CAPACITY AUDIT ====="
+            kubectl --request-timeout=20s get nodes -o wide || true
+            kubectl --request-timeout=20s top nodes || true
+            kubectl --request-timeout=20s describe nodes | sed -n '/Allocated resources:/,/Events:/p' || true
+            kubectl --request-timeout=20s -n shopno-platform get deployment android-portal -o wide || true
+            kubectl --request-timeout=20s -n shopno-platform get pods -l app.kubernetes.io/name=android-portal -o wide || true
+            kubectl --request-timeout=20s -n shopno-platform get pvc android-portal-data -o wide || true
+            kubectl --request-timeout=20s -n shopno-platform get service,endpoints android-portal -o wide || true
+            kubectl --request-timeout=20s get hpa -A -o wide || true
+            kubectl --request-timeout=20s get resourcequota -A -o wide || true
+            kubectl --request-timeout=20s top pods -A --sort-by=memory 2>/dev/null | head -n 40 || true
+            kubectl --request-timeout=20s get events -A --sort-by=.lastTimestamp 2>/dev/null | tail -n 100 || true
             exit 1
           fi
           android_pvc_phase="$(kubectl --request-timeout=20s -n shopno-platform get pvc android-portal-data -o jsonpath='{.status.phase}')"
