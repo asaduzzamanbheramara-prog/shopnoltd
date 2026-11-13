@@ -1,0 +1,53 @@
+name: Restore Social Service
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_social_service_only:
+        description: "Scale only shopno-platform/social-service to one replica"
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: restore-social-service
+  cancel-in-progress: false
+
+jobs:
+  restore:
+    if: ${{ inputs.confirm_social_service_only == true }}
+    runs-on: [self-hosted, linux]
+    timeout-minutes: 15
+    steps:
+      - name: Checkout trusted main revision
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+      - name: Verify cluster access
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v kubectl
+          test -s "${KUBECONFIG:-$HOME/.kube/config}"
+          kubectl --request-timeout=20s cluster-info
+      - name: Restore social service replica only
+        shell: bash
+        run: |
+          set -euo pipefail
+          kubectl -n shopno-platform scale deployment/social-service --replicas=1
+          kubectl -n shopno-platform rollout status deployment/social-service --timeout=8m
+      - name: Verify social and blog health
+        shell: bash
+        run: |
+          set -euo pipefail
+          kubectl -n shopno-platform get deployment/social-service -o wide
+          kubectl -n shopno-platform get pods -l app.kubernetes.io/name=social-service -o wide
+          kubectl -n shopno-platform get endpointslice -l kubernetes.io/service-name=social-service -o wide
+          kubectl -n shopno-platform run social-health-probe --rm -i --restart=Never --image=curlimages/curl:8.10.1 -- curl -fsS --max-time 10 http://social-service/healthz
+          kubectl -n shopno-platform run social-ready-probe --rm -i --restart=Never --image=curlimages/curl:8.10.1 -- curl -fsS --max-time 10 http://social-service/readyz
+          curl --fail --silent --show-error --max-time 20 https://social.shopnoltd.dpdns.org/healthz
+          curl --fail --silent --show-error --max-time 20 https://shopnoltd.dpdns.org/api/v2/blog
