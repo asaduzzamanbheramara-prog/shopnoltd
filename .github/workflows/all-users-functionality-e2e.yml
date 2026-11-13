@@ -7,6 +7,8 @@ on:
         description: "Limit to first N users (blank = all)"
         required: false
         default: ""
+  schedule:
+    - cron: "0 3,15 * * *" # 09:00 and 21:00 Bangladesh time (UTC+6)
 
 permissions:
   contents: read
