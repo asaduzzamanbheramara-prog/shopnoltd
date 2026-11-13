@@ -45,3 +45,14 @@ jobs:
           kubectl -n shopno-data get endpointslice -l kubernetes.io/service-name=postgres -o wide
           kubectl -n shopno-data get endpointslice -l kubernetes.io/service-name=redis -o wide
           kubectl -n shopno-data run dependency-probe --rm -i --restart=Never --image=busybox:1.36 -- sh -c 'nc -zvw3 postgres 5432; nc -zvw3 redis 6379' || true
+          echo '== parsed social dependency targets (credentials omitted) =='
+          pod="$(kubectl -n shopno-platform get pods -l app.kubernetes.io/name=social-service -o jsonpath='{.items[0].metadata.name}')"
+          kubectl -n shopno-platform exec "$pod" -- python3 -c '
+          import os
+          from urllib.parse import urlsplit
+          for key in ("DATABASE_URL", "REDIS_URL"):
+              value=os.environ.get(key, "")
+              parsed=urlsplit(value)
+              print(key, {"scheme": parsed.scheme, "hostname": parsed.hostname, "port": parsed.port, "path": parsed.path})
+          '
+          kubectl -n shopno-platform run dependency-probe --rm -i --restart=Never --image=busybox:1.36 -- sh -c 'nc -zvw3 postgres.shopno-data.svc.cluster.local 5432; nc -zvw3 redis.shopno-data.svc.cluster.local 6379' || true
