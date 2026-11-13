@@ -32,8 +32,8 @@ jobs:
         env:
           FACEBOOK_APP_SECRET: ${{ secrets.FACEBOOK_APP_SECRET }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
-          GITHUB_CLIENT_ID: ${{ secrets.GITHUB_CLIENT_ID }}
-          GITHUB_CLIENT_SECRET: ${{ secrets.GITHUB_CLIENT_SECRET }}
+          GITHUB_CLIENT_ID: ${{ secrets.SHOPNOLTD_GITHUB_CLIENT_ID }}
+          GITHUB_CLIENT_SECRET: ${{ secrets.SHOPNOLTD_GITHUB_CLIENT_SECRET }}
         run: |
           set -euo pipefail
           test -n "${FACEBOOK_APP_SECRET:-}" || { echo 'FACEBOOK_APP_SECRET is not configured.' >&2; exit 1; }
