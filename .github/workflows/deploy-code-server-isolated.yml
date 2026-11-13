@@ -67,15 +67,15 @@ jobs:
           # isolated code-server pod must contain only its code-server
           # container. Chromium runs separately as agent-browser.
           patch="$(kubectl -n shopno-apps get deployment code-server-isolated -o json | python3 -c '
-import json, sys
-d=json.load(sys.stdin)
-containers=d["spec"]["template"]["spec"].get("containers", [])
-ops=[]
-for i in range(len(containers)-1, -1, -1):
-    if containers[i].get("name") != "code-server":
-        ops.append({"op":"remove", "path":f"/spec/template/spec/containers/{i}"})
-print(json.dumps(ops))
-')"
+          import json, sys
+          d=json.load(sys.stdin)
+          containers=d["spec"]["template"]["spec"].get("containers", [])
+          ops=[]
+          for i in range(len(containers)-1, -1, -1):
+              if containers[i].get("name") != "code-server":
+                  ops.append({"op":"remove", "path":f"/spec/template/spec/containers/{i}"})
+          print(json.dumps(ops))
+          ')"
           if [ "$patch" != "[]" ]; then
             kubectl -n shopno-apps patch deployment code-server-isolated --type=json -p "$patch"
           fi
