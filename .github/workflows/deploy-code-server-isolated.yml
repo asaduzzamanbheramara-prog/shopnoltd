@@ -85,7 +85,9 @@ jobs:
         run: |
           set -euo pipefail
           kubectl -n shopno-apps rollout status deployment/code-server-isolated --timeout=8m
-          kubectl -n shopno-apps get deployment/code-server-isolated service/code-server-isolated pods -o wide
+          kubectl -n shopno-apps get deployment/code-server-isolated -o wide
+          kubectl -n shopno-apps get service/code-server-isolated -o wide
+          kubectl -n shopno-apps get pods -l app.kubernetes.io/name=code-server-isolated -o wide
           kubectl -n shopno-apps get ingress code-server-isolated -o wide
 
       - name: Collect isolated code-server diagnostics
@@ -93,7 +95,9 @@ jobs:
         shell: bash
         run: |
           set +e
-          kubectl -n shopno-apps get deployment/code-server-isolated service/code-server-isolated pods -o wide
+          kubectl -n shopno-apps get deployment/code-server-isolated -o wide
+          kubectl -n shopno-apps get service/code-server-isolated -o wide
+          kubectl -n shopno-apps get pods -l app.kubernetes.io/name=code-server-isolated -o wide
           kubectl -n shopno-apps describe deployment/code-server-isolated
           kubectl -n shopno-apps get events --sort-by=.lastTimestamp | tail -n 120
           for pod in $(kubectl -n shopno-apps get pods -l app.kubernetes.io/name=code-server-isolated -o name 2>/dev/null); do
