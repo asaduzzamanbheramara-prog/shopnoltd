@@ -38,6 +38,22 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          kubectl -n shopno-platform patch deployment social-service --type=strategic -p '
+          spec:
+            template:
+              spec:
+                containers:
+                  - name: social-service
+                    resources:
+                      requests:
+                        cpu: 50m
+                        memory: 256Mi
+                        ephemeral-storage: 256Mi
+                      limits:
+                        cpu: "1000m"
+                        memory: 1Gi
+                        ephemeral-storage: 1Gi
+          '
           kubectl -n shopno-platform scale deployment/social-service --replicas=1
           kubectl -n shopno-platform rollout status deployment/social-service --timeout=8m
       - name: Verify social and blog health
