@@ -1,6 +1,9 @@
 name: Verify encrypted Shopnoltd database and Kubernetes Secrets backups
 
 on:
+  push:
+    branches:
+      - fix/backup-isolated-restore-validation-20261112
   workflow_dispatch:
   workflow_run:
     workflows:
@@ -22,7 +25,7 @@ jobs:
     if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     name: Verify encrypted database and Kubernetes Secrets
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - name: Checkout encrypted backup branch
         uses: actions/checkout@v4
@@ -79,17 +82,87 @@ jobs:
           PY
           echo "PASS: encrypted database and Kubernetes Secrets decrypted and parsed."
 
-      - name: Validate PostgreSQL custom-format archive
+      - name: Pull the exact PostgreSQL image used by production
         shell: bash
         run: |
           set -euo pipefail
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq postgresql-client
-          pg_restore --list "$RUNNER_TEMP/shopnoltd.dump" > "$RUNNER_TEMP/shopnoltd-pg-restore-list.txt"
-          entries="$(grep -cE '^[0-9]+; ' "$RUNNER_TEMP/shopnoltd-pg-restore-list.txt" || true)"
-          [[ "$entries" =~ ^[0-9]+$ ]] && (( entries > 0 )) || { echo "::error::PostgreSQL archive has no recognizable entries."; exit 1; }
-          echo "PASS: PostgreSQL custom-format archive is readable ($entries entries)."
-          echo "NOTE: This validates archive readability, not a full isolated database restore."
+          docker pull ghcr.io/asaduzzamanbheramara-prog/shopnoltd-postgres-combined:pg16-postgis3.5-pgvector0.8.6
+
+      - name: Restore backup into an isolated disposable PostgreSQL database
+        shell: bash
+        env:
+          POSTGRES_PASSWORD: shopnoltd-restore-validation-only
+        run: |
+          set -euo pipefail
+          export PGPASSWORD="$POSTGRES_PASSWORD"
+          docker run --detach \
+            --name shopnoltd-postgres-restore-validation \
+            --publish 127.0.0.1:55432:5432 \
+            --env POSTGRES_USER=restore_validator \
+            --env POSTGRES_PASSWORD="$POSTGRES_PASSWORD" \
+            --env POSTGRES_DB=postgres \
+            ghcr.io/asaduzzamanbheramara-prog/shopnoltd-postgres-combined:pg16-postgis3.5-pgvector0.8.6
+
+          ready=false
+          for attempt in $(seq 1 60); do
+            if docker exec shopnoltd-postgres-restore-validation \
+              pg_isready --host 127.0.0.1 --port 5432 -U restore_validator -d shopnoltd_restore_validation >/dev/null 2>&1; then
+              ready=true
+              break
+            fi
+            sleep 2
+          done
+          [[ "$ready" == true ]] || { echo "::error::Disposable PostgreSQL did not become ready."; exit 1; }
+
+          # Start from template0 so the PostGIS entrypoint's preloaded schemas
+          # in its default database cannot conflict with objects in the backup.
+          docker exec --user postgres shopnoltd-postgres-restore-validation \
+            psql -X -v ON_ERROR_STOP=1 -U restore_validator -d postgres \
+              -c "CREATE DATABASE shopnoltd_restore_validation TEMPLATE template0;"
+
+          docker cp "$RUNNER_TEMP/shopnoltd.dump" \
+            shopnoltd-postgres-restore-validation:/tmp/shopnoltd.dump
+          docker exec --user root shopnoltd-postgres-restore-validation \
+            chown postgres:postgres /tmp/shopnoltd.dump
+          docker exec --user root shopnoltd-postgres-restore-validation \
+            chmod 600 /tmp/shopnoltd.dump
+
+          # Use pg_restore from the PostgreSQL 16 server image itself.
+          docker exec --user postgres shopnoltd-postgres-restore-validation \
+            pg_restore --exit-on-error --no-owner --no-acl \
+              --username restore_validator \
+              --dbname shopnoltd_restore_validation \
+              /tmp/shopnoltd.dump
+
+          table_count="$(docker exec --user postgres shopnoltd-postgres-restore-validation \
+            psql -X -v ON_ERROR_STOP=1 -U restore_validator \
+              -d shopnoltd_restore_validation -At \
+              -c "SELECT count(*) FROM pg_catalog.pg_tables WHERE schemaname NOT IN ('pg_catalog', 'information_schema');")"
+          [[ "$table_count" =~ ^[0-9]+$ && "$table_count" -gt 0 ]] || {
+            echo "::error::Restore completed but no application tables were found."
+            exit 1
+          }
+          extension_list="$(docker exec --user postgres shopnoltd-postgres-restore-validation \
+            psql -X -v ON_ERROR_STOP=1 -U restore_validator \
+              -d shopnoltd_restore_validation -At \
+              -c "SELECT COALESCE(string_agg(extname, ',' ORDER BY extname), 'none') FROM pg_extension;")"
+          echo "PASS: full isolated PostgreSQL restore completed (application_tables=$table_count; extensions=$extension_list)."
+          echo "NOTE: only the disposable GitHub-hosted runner database was modified."
+
+      - name: Capture disposable PostgreSQL diagnostics on failure
+        if: failure()
+        shell: bash
+        run: |
+          set +e
+          docker inspect --format 'container_status={{.State.Status}} oom_killed={{.State.OOMKilled}} exit_code={{.State.ExitCode}}' shopnoltd-postgres-restore-validation 2>&1 || true
+          docker logs --tail 250 shopnoltd-postgres-restore-validation 2>&1 || true
+
+      - name: Remove disposable PostgreSQL container and image
+        if: always()
+        shell: bash
+        run: |
+          docker rm --force shopnoltd-postgres-restore-validation >/dev/null 2>&1 || true
+          docker image rm ghcr.io/asaduzzamanbheramara-prog/shopnoltd-postgres-combined:pg16-postgis3.5-pgvector0.8.6 >/dev/null 2>&1 || true
 
       - name: Remove decrypted artifacts
         if: always()
