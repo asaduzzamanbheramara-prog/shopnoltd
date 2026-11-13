@@ -78,6 +78,8 @@ class Session:
     created_at: float
     last_seen: float
     ttl_seconds: int
+    backend: str = "emulator"
+    device_id: str | None = None
 
 
 sessions: dict[str, Session] = {}
@@ -330,6 +332,23 @@ def delete_resources(session: Session) -> None:
                 raise
 
 
+def cleanup_session(session: Session) -> None:
+    """Clean up resources according to the session backend.
+
+    Physical-device release is deliberately fail-closed until its registry
+    and reservation lifecycle are implemented. Never delete emulator
+    Kubernetes resources for a physical-device session.
+    """
+    if session.backend == "emulator":
+        delete_resources(session)
+        return
+
+    if session.backend == "physical_device":
+        raise RuntimeError("physical_device_release_not_implemented")
+
+    raise RuntimeError("unsupported_android_backend")
+
+
 def cleanup_expired() -> None:
     """Delete expired sessions without holding the shared lock during API calls."""
     now = time.time()
@@ -343,7 +362,7 @@ def cleanup_expired() -> None:
 
     for session_id, session in candidates:
         try:
-            delete_resources(session)
+            cleanup_session(session)
         except Exception:
             logger.exception("Failed to clean up expired Android Cloud session %s", session_id)
             with sessions_lock:
@@ -912,7 +931,7 @@ async def stop_session(session_id: str, user_id: str = Depends(current_user)) ->
             raise HTTPException(status_code=409, detail="android_session_stopping")
         stopping_sessions.add(session_id)
     try:
-        await asyncio.to_thread(delete_resources, session)
+        await asyncio.to_thread(cleanup_session, session)
     except Exception as exc:
         with sessions_lock:
             stopping_sessions.discard(session_id)
