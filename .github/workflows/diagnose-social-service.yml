@@ -40,3 +40,8 @@ jobs:
           echo '== internal health probe from runner =='
           kubectl -n shopno-platform run social-health-probe --rm -i --restart=Never --image=curlimages/curl:8.10.1 -- curl -fsS --max-time 10 http://social-service/healthz || true
           kubectl -n shopno-platform run social-ready-probe --rm -i --restart=Never --image=curlimages/curl:8.10.1 -- curl -fsS --max-time 10 http://social-service/readyz || true
+          echo '== database dependency status =='
+          kubectl -n shopno-data get deployment postgres redis -o wide
+          kubectl -n shopno-data get endpointslice -l kubernetes.io/service-name=postgres -o wide
+          kubectl -n shopno-data get endpointslice -l kubernetes.io/service-name=redis -o wide
+          kubectl -n shopno-data run dependency-probe --rm -i --restart=Never --image=busybox:1.36 -- sh -c 'nc -zvw3 postgres 5432; nc -zvw3 redis 6379' || true
