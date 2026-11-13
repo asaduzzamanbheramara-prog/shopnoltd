@@ -1,0 +1,73 @@
+name: Repair Facebook Keycloak Identity Provider
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  repair-facebook-provider:
+    runs-on: [self-hosted, linux]
+    timeout-minutes: 15
+    steps:
+      - name: Checkout trusted main revision
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Verify runner and cluster access
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v kubectl
+          command -v jq
+          command -v curl
+          test -s "${KUBECONFIG:-$HOME/.kube/config}"
+          kubectl --request-timeout=20s cluster-info >/dev/null
+
+      - name: Preserve provider settings and add Facebook credentials
+        shell: bash
+        env:
+          FACEBOOK_APP_SECRET: ${{ secrets.FACEBOOK_APP_SECRET }}
+        run: |
+          set -euo pipefail
+          test -n "${FACEBOOK_APP_SECRET:-}" || { echo 'FACEBOOK_APP_SECRET is not configured.' >&2; exit 1; }
+          existing="$(kubectl -n shopno-identity get secret keycloak-social-providers -o json 2>/dev/null || printf '%s' '{"apiVersion":"v1","kind":"Secret","metadata":{}}')"
+          app_id_b64="$(printf '%s' '1239063184913011' | base64 -w0)"
+          app_secret_b64="$(printf '%s' "$FACEBOOK_APP_SECRET" | base64 -w0)"
+          printf '%s' "$existing" |
+            jq --arg app_id "$app_id_b64" --arg app_secret "$app_secret_b64" '
+              .apiVersion="v1" |
+              .kind="Secret" |
+              .metadata.namespace="shopno-identity" |
+              .metadata.name="keycloak-social-providers" |
+              .type="Opaque" |
+              .data=((.data // {}) + {FACEBOOK_APP_ID:$app_id, FACEBOOK_APP_SECRET:$app_secret})
+            ' |
+            kubectl apply -f -
+          unset FACEBOOK_APP_SECRET
+
+      - name: Refresh the existing Keycloak sync job
+        shell: bash
+        run: |
+          set -euo pipefail
+          kubectl -n shopno-identity create configmap keycloak-client-sync-script \
+            --from-file=client-sync.py=k8s/services/keycloak/client-sync.py \
+            --dry-run=client -o yaml | kubectl apply -f -
+          kubectl -n shopno-identity delete job keycloak-client-sync --ignore-not-found=true
+          kubectl -n shopno-identity apply -f k8s/services/keycloak/client-sync-job.yaml
+          kubectl -n shopno-identity wait --for=condition=complete job/keycloak-client-sync --timeout=10m
+
+      - name: Verify Facebook broker endpoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          code="$(curl -sS -o /tmp/facebook-broker-response -w '%{http_code}' \
+            'https://auth.shopnoltd.dpdns.org/realms/shopnoltd/broker/facebook/endpoint')"
+          if [ "$code" = "404" ] && grep -q 'Identity Provider \[facebook\] not found' /tmp/facebook-broker-response; then
+            echo 'Facebook provider is still missing from Keycloak.' >&2
+            exit 1
+          fi
+          echo "Facebook broker endpoint responded with HTTP $code."
