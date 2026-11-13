@@ -62,6 +62,24 @@ jobs:
           set -euo pipefail
           kubectl apply -k k8s/services/code-server-isolated
 
+          # Server-side apply preserves merge-list entries that were added by
+          # an older deployment. Remove any stale sidecar explicitly; the
+          # isolated code-server pod must contain only its code-server
+          # container. Chromium runs separately as agent-browser.
+          patch="$(kubectl -n shopno-apps get deployment code-server-isolated -o json | python3 -c '
+import json, sys
+d=json.load(sys.stdin)
+containers=d["spec"]["template"]["spec"].get("containers", [])
+ops=[]
+for i in range(len(containers)-1, -1, -1):
+    if containers[i].get("name") != "code-server":
+        ops.append({"op":"remove", "path":f"/spec/template/spec/containers/{i}"})
+print(json.dumps(ops))
+')"
+          if [ "$patch" != "[]" ]; then
+            kubectl -n shopno-apps patch deployment code-server-isolated --type=json -p "$patch"
+          fi
+
       - name: Wait for isolated code-server readiness
         shell: bash
         run: |
@@ -81,6 +99,6 @@ jobs:
           for pod in $(kubectl -n shopno-apps get pods -l app.kubernetes.io/name=code-server-isolated -o name 2>/dev/null); do
             echo "===== $pod ====="
             kubectl -n shopno-apps describe "$pod"
-            kubectl -n shopno-apps logs "$pod" --all-containers --tail=200
-            kubectl -n shopno-apps logs "$pod" --all-containers --previous --tail=200
+            kubectl -n shopno-apps logs "$pod" --all-containers --tail=200 || true
+            kubectl -n shopno-apps logs "$pod" --all-containers --previous --tail=200 || true
           done
