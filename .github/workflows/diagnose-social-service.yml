@@ -1,0 +1,42 @@
+name: Diagnose Social Service
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: [self-hosted, linux]
+    timeout-minutes: 10
+    steps:
+      - name: Checkout trusted main revision
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+      - name: Inspect social service safely
+        shell: bash
+        run: |
+          set +e
+          echo '== deployment =='
+          kubectl -n shopno-platform get deployment social-service -o wide
+          echo '== pods =='
+          kubectl -n shopno-platform get pods -l app.kubernetes.io/name=social-service -o wide
+          echo '== service endpoints =='
+          kubectl -n shopno-platform get endpointslice -l kubernetes.io/service-name=social-service -o wide
+          echo '== secret key names only =='
+          kubectl -n shopno-platform get secret social-service-secret -o json | python3 -c 'import json,sys; print(sorted(json.load(sys.stdin).get("data",{})))'
+          echo '== deployment events =='
+          kubectl -n shopno-platform describe deployment social-service | tail -n 120
+          echo '== pod diagnostics and recent logs =='
+          for pod in $(kubectl -n shopno-platform get pods -l app.kubernetes.io/name=social-service -o name 2>/dev/null); do
+            echo "--- $pod"
+            kubectl -n shopno-platform describe "$pod" | tail -n 160
+            kubectl -n shopno-platform logs "$pod" --tail=240 || true
+            kubectl -n shopno-platform logs "$pod" --previous --tail=120 || true
+          done
+          echo '== internal health probe from runner =='
+          kubectl -n shopno-platform run social-health-probe --rm -i --restart=Never --image=curlimages/curl:8.10.1 -- curl -fsS --max-time 10 http://social-service/healthz || true
+          kubectl -n shopno-platform run social-ready-probe --rm -i --restart=Never --image=curlimages/curl:8.10.1 -- curl -fsS --max-time 10 http://social-service/readyz || true
