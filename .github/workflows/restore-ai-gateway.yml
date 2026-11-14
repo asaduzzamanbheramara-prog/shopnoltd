@@ -82,6 +82,20 @@ jobs:
           kubectl -n shopno-ai rollout status deployment/litellm-proxy --timeout=8m
           echo 'PASS: LiteLLM deployment is ready'
 
+      - name: Report LiteLLM rollout diagnostics
+        if: ${{ failure() }}
+        shell: bash
+        run: |
+          set +e
+          kubectl -n shopno-ai get deployment litellm-proxy -o wide
+          kubectl -n shopno-ai get pods -l app.kubernetes.io/name=litellm-proxy -o wide
+          kubectl -n shopno-ai get pods -l app=litellm-proxy -o wide
+          pod="$(kubectl -n shopno-ai get pods -l app.kubernetes.io/name=litellm-proxy -o jsonpath='{.items[0].metadata.name}')"
+          if [ -n "$pod" ]; then
+            kubectl -n shopno-ai describe pod "$pod" | sed -E 's/(API_KEY|MASTER_KEY|PASSWORD|TOKEN|DATABASE_URL):.*/\1: [redacted]/I'
+          fi
+          kubectl -n shopno-ai get events --sort-by=.lastTimestamp | tail -80
+
       - name: Reconcile code-server AI configuration
         shell: bash
         run: |
