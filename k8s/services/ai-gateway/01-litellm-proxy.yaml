@@ -78,7 +78,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: litellm-provider-keys
-                  key: DATABASE_URL
+                  key: AI_DATABASE_URL
           volumeMounts:
             - name: sync-script
               mountPath: /scripts
