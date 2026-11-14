@@ -28,7 +28,13 @@ export default function AppWorkspace() {
     let active = true
     fetch(CODE_HEALTH_URL, { credentials: 'omit', cache: 'no-store' })
       .then(response => { if (!response.ok) throw new Error('Code Server unavailable'); return response.json() })
-      .then(payload => { if (active && payload?.status === 'alive') setCodeState('healthy') })
+      .then(payload => {
+        // code-server returns HTTP 200 with `expired` when the isolated
+        // workspace has no active editor heartbeat. The IDE is still
+        // reachable and can be opened; only a non-2xx response means it is
+        // unavailable.
+        if (active && (payload?.status === 'alive' || payload?.status === 'expired')) setCodeState('healthy')
+      })
       .catch(() => { if (active) setCodeState('offline') })
     return () => { active = false }
   }, [])
