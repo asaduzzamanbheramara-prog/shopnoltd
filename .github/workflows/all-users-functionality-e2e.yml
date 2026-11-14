@@ -51,6 +51,11 @@ jobs:
       - name: Run all-users E2E
         run: npx playwright test all-users-e2e.spec.js --workers=1
 
+      - name: Fix workspace ownership
+        if: always()
+        shell: bash
+        run: chown -R 1000:1000 /__w/shopnoltd/shopnoltd || true
+
       - name: Upload report
         if: always() && hashFiles('tests/browser-role/reports/all-users-e2e.csv') != ''
         uses: actions/upload-artifact@v4
