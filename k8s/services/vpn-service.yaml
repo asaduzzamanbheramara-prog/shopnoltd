@@ -100,7 +100,7 @@ metadata:
   name: vpn-service-udp
   namespace: shopno-apps
 spec:
-  type: LoadBalancer
+  type: NodePort
   selector:
     app.kubernetes.io/name: vpn-service
   ports:
