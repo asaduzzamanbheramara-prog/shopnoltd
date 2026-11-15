@@ -41,6 +41,11 @@ test('API client admin role does not grant platform-wide admin UI access', () =>
   assert.equal(isPlatformAdmin(), false)
 })
 
+test('API client platform_admin role does not grant platform-wide admin UI access', () => {
+  storedToken = tokenWith({ resource_access: { 'api-service': { roles: ['platform_admin'] } } })
+  assert.equal(isPlatformAdmin(), false)
+})
+
 test('unauthenticated and ordinary customer sessions are not platform admins', () => {
   assert.equal(isPlatformAdmin(), false)
   storedToken = tokenWith({ roles: ['customer'] })
