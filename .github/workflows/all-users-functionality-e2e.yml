@@ -1,6 +1,11 @@
 name: All-users login + functionality E2E (impersonation)
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/all-users-functionality-e2e.yml'
+      - 'tests/browser-role/all-users-e2e.spec.js'
   workflow_dispatch:
     inputs:
       limit_users:
