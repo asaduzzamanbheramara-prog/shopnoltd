@@ -89,11 +89,7 @@ test('AI Agent controls remain visible and reachable at common mobile widths', a
   const pageErrors = []
   page.on('pageerror', error => pageErrors.push(error.message))
   await page.addInitScript(() => {
-    const payload = btoa(JSON.stringify({ exp: 4102444800, roles: ['customer'] }))
-      .replace(/\\+/g, '-')
-      .replace(/\\//g, '_')
-      .replace(/=+$/g, '')
-    localStorage.setItem('shopno_token', `e30.${payload}.sig`)
+    localStorage.setItem('shopno_token', 'e30.eyJleHAiOjQxMDI0NDQ4MDB9.sig')
   })
   await page.route('**/inference/models', route => route.fulfill({
     status: 200,
