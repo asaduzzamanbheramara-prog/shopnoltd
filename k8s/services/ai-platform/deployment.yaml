@@ -48,6 +48,9 @@ spec:
                 name: ai-platform-config
             - secretRef:
                 name: ai-platform-secret
+            - secretRef:
+                name: ai-platform-provider-keys
+                optional: true
           env:
             - name: AI_KEY_ENCRYPTION_KEY
               valueFrom:

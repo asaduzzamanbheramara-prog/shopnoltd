@@ -43,6 +43,36 @@ spec:
                 secretKeyRef:
                   name: agent-service-litellm-key
                   key: LITELLM_MASTER_KEY
+            - name: MANUS_API_KEY_1
+              valueFrom:
+                secretKeyRef:
+                  name: agent-service-manus-keys
+                  key: MANUS_API_KEY_1
+                  optional: true
+            - name: MANUS_API_KEY_2
+              valueFrom:
+                secretKeyRef:
+                  name: agent-service-manus-keys
+                  key: MANUS_API_KEY_2
+                  optional: true
+            - name: MANUS_API_KEY_3
+              valueFrom:
+                secretKeyRef:
+                  name: agent-service-manus-keys
+                  key: MANUS_API_KEY_3
+                  optional: true
+            - name: MANUS_API_KEY_4
+              valueFrom:
+                secretKeyRef:
+                  name: agent-service-manus-keys
+                  key: MANUS_API_KEY_4
+                  optional: true
+            - name: MANUS_API_KEY_5
+              valueFrom:
+                secretKeyRef:
+                  name: agent-service-manus-keys
+                  key: MANUS_API_KEY_5
+                  optional: true
             - name: BROWSER_WS_ENDPOINT
               value: ws://agent-browser.shopno-apps.svc.cluster.local:3000
             - name: AI_MODEL_CATALOG_URL
