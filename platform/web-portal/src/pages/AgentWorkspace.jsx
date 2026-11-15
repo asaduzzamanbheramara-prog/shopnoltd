@@ -108,6 +108,11 @@ export default function AgentWorkspace() {
 
   const handle = useCallback((m) => {
     switch (m.type) {
+      case 'user': push({ kind: 'user', text: String(m.text || '') }); break
+      case 'state':
+        setRunning(m.running === true)
+        setItems((cur) => cur.map((it, i) => (it.kind === 'approval' && it.state === 'pending' && !(m.running === true && i === cur.length - 1) ? { ...it, state: 'expired' } : it)))
+        break
       case 'auth_ok': setStatus('connected'); retryRef.current = 0; break
       case 'models': setModelCatalog(Array.isArray(m.items) ? m.items : []); break
       case 'model': push({ kind: 'text', text: `Using model: ${String(m.display_name || m.model || '')}` }); break
@@ -150,7 +155,7 @@ export default function AgentWorkspace() {
     if (!token) { setStatus('auth_failed'); return }
     const ws = new WebSocket(AGENT_WS_URL)
     wsRef.current = ws
-    ws.onopen = () => ws.send(JSON.stringify({ type: 'auth', token }))
+    ws.onopen = () => { setItems([]); setPlan([]); ws.send(JSON.stringify({ type: 'auth', token })) }
     ws.onmessage = (event) => {
       let message
       try { message = JSON.parse(event.data) } catch { return }
@@ -210,11 +215,15 @@ export default function AgentWorkspace() {
     setItems((current) => current.map((it) => (it.id === item.id ? { ...it, state: approved ? 'allowed' : 'denied' } : it)))
   }
 
+  function cancel() {
+    const ws = wsRef.current
+    if (ws?.readyState === 1) ws.send(JSON.stringify({ type: 'cancel' }))
+  }
+
   function send() {
     const text = goal.trim()
     const ws = wsRef.current
     if (!text || running || status !== 'connected' || ws?.readyState !== 1) return
-    push({ kind: 'user', text })
     setPlan([])
     setRunning(true)
     ws.send(JSON.stringify({ goal: text, model }))

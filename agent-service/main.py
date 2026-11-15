@@ -556,6 +556,7 @@ async def run_task(claims: dict, sink: TaskSink, goal: str, model: str, catalog:
         async def loop():
             nonlocal active_model
             hist.append({"role": "user", "content": goal})
+            await sink.send_json({"type": "user", "text": goal})
             for _ in range(MAX_STEPS):
                 reply, active_model = await llm_with_failover(
                     [{"role": "system", "content": SYSTEM}] + hist, model, active_model, catalog, failed_models, sink)
@@ -605,6 +606,7 @@ async def ui_socket(ws: WebSocket):
         cur = sinks.get(user)
         if cur:
             await cur.attach(ws); attached = cur
+            await ws.send_json({"type": "state", "running": cur.status == "running"})
         while True:
             msg = await ws.receive_json()
             if not isinstance(msg, dict):
