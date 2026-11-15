@@ -41,7 +41,7 @@ spec:
           # Let cloudflared choose QUIC or HTTP/2 based on the node's actual
           # outbound connectivity. Forcing HTTP/2 can break the tunnel when
           # TCP/7844 is blocked even though UDP/7844 is available.
-          args: ["tunnel", "--dns-resolver-addrs", "172.23.128.1:53", "--config", "/etc/cloudflared/config.yml", "--protocol", "auto", "--metrics", "0.0.0.0:2000", "run"]
+          args: ["tunnel", "--config", "/etc/cloudflared/config.yml", "--protocol", "auto", "--metrics", "0.0.0.0:2000", "run", "--dns-resolver-addrs", "172.23.128.1:53"]
           resources:
             requests: { cpu: 50m, memory: 64Mi }
             limits:   { cpu: 200m, memory: 128Mi }
