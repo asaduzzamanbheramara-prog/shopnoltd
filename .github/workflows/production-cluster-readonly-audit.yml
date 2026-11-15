@@ -153,5 +153,110 @@ jobs:
             code="$(curl -k -sS --connect-timeout 8 --max-time 15 -o /dev/null -w '%{http_code}' "https://interior.shopnoltd.dpdns.org/$path" 2>/dev/null || true)"
             echo "https://interior.shopnoltd.dpdns.org/$path -> HTTP ${code:-no-response}"
           done
+      - name: Audit Keycloak social providers (metadata only; read-only)
+        shell: bash
+        run: |
+          set -euo pipefail
+          pf_log="${RUNNER_TEMP:-/tmp}/shopnoltd-keycloak-social-audit-port-forward.log"
+          kubectl -n shopno-identity port-forward --address 127.0.0.1 svc/keycloak 18080:80 >"$pf_log" 2>&1 &
+          pf_pid=$!
+          trap 'kill "$pf_pid" 2>/dev/null || true' EXIT
+          ready=0
+          for attempt in {1..20}; do
+            if curl --fail --silent --max-time 2 http://127.0.0.1:18080/realms/shopnoltd/.well-known/openid-configuration >/dev/null 2>&1; then
+              ready=1
+              break
+            fi
+            sleep 1
+          done
+          if [ "$ready" -ne 1 ]; then
+            echo "::error::Keycloak is not reachable through the read-only port-forward."
+            exit 1
+          fi
+          python3 - <<'PY'
+          import base64, json, os, subprocess, sys, urllib.error, urllib.parse, urllib.request
+
+          namespace = "shopno-identity"
+          base = "http://127.0.0.1:18080"
+
+          def read_secret(name):
+              result = subprocess.run(
+                  ["kubectl", "-n", namespace, "get", "secret", name, "-o", "json"],
+                  capture_output=True, text=True, check=False,
+              )
+              if result.returncode != 0:
+                  return {}
+              try:
+                  return json.loads(result.stdout).get("data") or {}
+              except Exception:
+                  return {}
+
+          social_data = read_secret("keycloak-social-providers")
+          admin_data = read_secret("keycloak-secret")
+          expected = {
+              "google": ("GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET"),
+              "facebook": ("FACEBOOK_APP_ID", "FACEBOOK_APP_SECRET"),
+              "github": ("GITHUB_CLIENT_ID", "GITHUB_CLIENT_SECRET"),
+          }
+          print("Keycloak social Secret:")
+          print("  exists:", "yes" if social_data else "no")
+          for alias, keys in expected.items():
+              count = sum(1 for key in keys if key in social_data)
+              print(f"  {alias} credential key names: {count}/2 present (values not read)")
+          password_b64 = admin_data.get("KC_BOOTSTRAP_ADMIN_PASSWORD")
+          if not password_b64:
+              print("BLOCKED: keycloak-secret/KC_BOOTSTRAP_ADMIN_PASSWORD is unavailable; provider list not queried.")
+              sys.exit(1)
+          password = base64.b64decode(password_b64).decode()
+          form = urllib.parse.urlencode({
+              "grant_type": "password",
+              "client_id": "admin-cli",
+              "username": "admin",
+              "password": password,
+          }).encode()
+          token_req = urllib.request.Request(
+              base + "/realms/master/protocol/openid-connect/token",
+              data=form,
+              headers={"Content-Type": "application/x-www-form-urlencoded"},
+          )
+          try:
+              with urllib.request.urlopen(token_req, timeout=15) as response:
+                  token = json.loads(response.read()).get("access_token")
+          except urllib.error.HTTPError as error:
+              print(f"BLOCKED: Keycloak metadata authentication returned HTTP {error.code}; no credential values printed.")
+              sys.exit(1)
+          if not token:
+              print("BLOCKED: Keycloak did not return an access token.")
+              sys.exit(1)
+          providers_req = urllib.request.Request(
+              base + "/admin/realms/shopnoltd/identity-provider/instances",
+              headers={"Authorization": "Bearer " + token, "Accept": "application/json"},
+          )
+          try:
+              with urllib.request.urlopen(providers_req, timeout=15) as response:
+                  providers = json.loads(response.read())
+          except urllib.error.HTTPError as error:
+              print(f"BLOCKED: Keycloak provider metadata returned HTTP {error.code}; no credential values printed.")
+              sys.exit(1)
+          configured = {
+              item.get("alias"): {
+                  "provider": item.get("providerId", "unknown"),
+                  "enabled": bool(item.get("enabled")),
+              }
+              for item in providers if isinstance(item, dict)
+          }
+          print("Keycloak identity-provider state (metadata only):")
+          summary = ["## Keycloak social provider audit", "", "| Provider | Keycloak state | Secret key names |", "|---|---|---|"]
+          for alias, keys in expected.items():
+              item = configured.get(alias)
+              state = "enabled" if item and item["enabled"] else "present but disabled" if item else "not configured"
+              key_count = sum(1 for key in keys if key in social_data)
+              print(f"  {alias}: {state}")
+              summary.append(f"| {alias} | {state} | {key_count}/2 present |")
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as output:
+              output.write("\n".join(summary) + "\n")
+          print("Audit complete. No Secret values were read into logs, no Keycloak settings were changed.")
+          PY
+
           echo "=== AUDIT SAFETY ==="
           echo "Read-only inventory only: no scale, apply, delete, rollout, secret values, or database contents were requested."
