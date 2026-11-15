@@ -32,8 +32,8 @@ PROVIDERS = (
         "provider_type": ProviderType.anthropic,
         "base_url": "https://api.anthropic.com/v1",
         "model_env": "ANTHROPIC_AI_MODEL",
-        "default_model": "claude-sonnet-4-5-20250929",
-        "display_name": "Claude Sonnet",
+        "default_model": "claude-sonnet-5-5",
+        "display_name": "Claude Sonnet 5.5",
         "priority": 50,
     },
     {
