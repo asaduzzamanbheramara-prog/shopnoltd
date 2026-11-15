@@ -25,7 +25,11 @@ export function getRoles() {
 }
 
 export function isPlatformAdmin() {
-  const roles = getRoles()
-  // Platform-wide admin UI must match the backend platform_admin-only guard.
-  return roles.includes('platform_admin')
+  const token = localStorage.getItem('shopno_token')
+  const payload = token ? decodeToken(token) : null
+  // Only realm roles (including the documented flat realm-role claim) grant
+  // platform-wide access. Client-specific roles must never grant admin UI access.
+  const realmRoles = new Set(payload?.roles || [])
+  for (const role of payload?.realm_access?.roles || []) realmRoles.add(role)
+  return realmRoles.has('platform_admin')
 }
