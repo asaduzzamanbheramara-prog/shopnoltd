@@ -4,6 +4,17 @@ on:
     branches: [main]
   pull_request:
 jobs:
+  test-web-portal-admin-authorization:
+    name: Test web portal platform-admin authorization
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Run role guard regression tests
+        working-directory: platform/web-portal
+        run: npm run test:authz
   test-agent-service:
     name: Test autonomous agent service
     runs-on: ubuntu-latest

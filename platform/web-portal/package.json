@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build && node scripts/prerender-public-routes.mjs",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:authz": "node --test tests/*.test.js"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",

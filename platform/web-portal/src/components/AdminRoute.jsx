@@ -10,8 +10,7 @@ export default function AdminRoute({ children }) {
   }
 
   // Authenticated but not a platform administrator.
-  // Uses the same check as the nav bar (accepts 'platform_admin' OR 'admin')
-  // so anyone who sees the Admin link can actually open it.
+  // This matches the backend platform_admin-only authorization policy.
   if (!isPlatformAdmin()) {
     return <Navigate to="/dashboard" replace />
   }

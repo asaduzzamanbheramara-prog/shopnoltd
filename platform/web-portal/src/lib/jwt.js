@@ -26,5 +26,6 @@ export function getRoles() {
 
 export function isPlatformAdmin() {
   const roles = getRoles()
-  return roles.includes('platform_admin') || roles.includes('admin')
+  // Platform-wide admin UI must match the backend platform_admin-only guard.
+  return roles.includes('platform_admin')
 }
