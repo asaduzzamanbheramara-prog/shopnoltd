@@ -152,6 +152,7 @@ jobs:
               affected = (
                   'ALL' in changed
                   or shared_changed
+                  or (service == 'web-portal' and '.github/workflows/build-platform.yml' in changed)
                   or any(
                       p == prefix or p.startswith(prefix + '/')
                       for p in changed
