@@ -238,8 +238,8 @@ export default function AgentWorkspace() {
       <div className="shopno-agent-toolbar" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 18px', borderBottom: '1px solid #e5e7eb', flexWrap: 'wrap' }}>
         <span style={{ width: 9, height: 9, borderRadius: 99, background: connected ? '#10a37f' : status === 'connecting' ? '#f59e0b' : '#ef4444' }} />
         <span style={{ fontSize: 13, color: '#4b5563', marginRight: 'auto' }}>{STATUS_LABEL[status] || status}</span>
-        <label className="shopno-agent-model-label" style={{ fontSize: 13, color: '#4b5563' }}>Model
-          <select className="shopno-agent-model-select" value={model} onChange={(event) => setModel(event.target.value)} disabled={running} aria-label="Agent model" style={{ padding: '6px 10px', border: '1px solid #d1d5db', borderRadius: 8, background: '#fff', fontWeight: 600 }}>
+        <label className="shopno-agent-model-label" style={{ fontSize: 13, color: '#4b5563', minWidth: 0, maxWidth: '100%', flex: '0 1 auto' }}>Model
+          <select className="shopno-agent-model-select" value={model} onChange={(event) => setModel(event.target.value)} disabled={running} aria-label="Agent model" style={{ padding: '6px 10px', border: '1px solid #d1d5db', borderRadius: 8, background: '#fff', fontWeight: 600, width: 'min(58vw, 280px)', maxWidth: '100%', minWidth: 0, boxSizing: 'border-box', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             <option value="auto">Auto · free models first</option>
             {modelCatalog.map((item) => (
               <option key={item.model_key} value={item.model_key}>
