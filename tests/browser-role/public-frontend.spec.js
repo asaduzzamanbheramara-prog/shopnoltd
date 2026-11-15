@@ -91,6 +91,11 @@ test('AI Agent controls remain visible and reachable at common mobile widths', a
   await page.addInitScript(() => {
     localStorage.setItem('shopno_token', 'e30.eyJleHAiOjQxMDI0NDQ4MDB9.sig')
   })
+  await page.route('**/api/v1/users/me', route => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ id: 'responsive-test-user', email: 'responsive-test@example.invalid', roles: ['customer'] }),
+  }))
   await page.route('**/inference/models', route => route.fulfill({
     status: 200,
     contentType: 'application/json',
