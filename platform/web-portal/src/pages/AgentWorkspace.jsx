@@ -48,7 +48,7 @@ function PlanCard({ plan }) {
       {plan.map((step, index) => (
         <div key={index} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', padding: '3px 0', color: step.status === 'done' ? '#6b7280' : '#111827' }}>
           <span style={{ width: 18, flex: '0 0 18px', textAlign: 'center' }}>{step.status === 'done' ? <Check size={14} color="#10a37f" /> : step.status === 'doing' ? '▶' : '○'}</span>
-          <span style={{ textDecoration: step.status === 'done' ? 'line-through' : 'none', fontWeight: step.status === 'doing' ? 700 : 400 }}>{step.title}</span>
+          <span className="shopno-agent-plan-title" style={{ textDecoration: step.status === 'done' ? 'line-through' : 'none', fontWeight: step.status === 'doing' ? 700 : 400 }}>{step.title}</span>
         </div>
       ))}
     </div>
@@ -62,8 +62,8 @@ function ToolCard({ item }) {
   return (
     <div style={{ ...card, background: '#f9fafb' }}>
       <button type="button" onClick={() => setOpen((value) => !value)} style={{ border: 0, background: 'transparent', padding: 0, cursor: 'pointer', textAlign: 'left', width: '100%', display: 'flex', gap: 8, alignItems: 'center', font: 'inherit' }}>
-        <span style={{ fontWeight: 700 }}>{summary}</span>
-        <span style={{ color: '#6b7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{String(target).slice(0, 120)}</span>
+        <span style={{ fontWeight: 700, minWidth: 0, overflowWrap: 'anywhere' }}>{summary}</span>
+        <span className="shopno-agent-tool-target" style={{ color: '#6b7280', flex: 1 }}>{String(target).slice(0, 120)}</span>
         <span style={{ color: item.result === null ? '#b45309' : '#10a37f', fontSize: 12 }}>{item.result === null ? 'running…' : 'done'}</span>
       </button>
       {open && <pre style={{ margin: '8px 0 0', whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', fontSize: 12, color: '#374151', maxHeight: 260, overflow: 'auto' }}>{JSON.stringify(item.args, null, 2)}{item.result !== null ? `\n\n→ ${item.result}` : ''}</pre>}
@@ -233,12 +233,13 @@ export default function AgentWorkspace() {
   const connected = status === 'connected'
 
   return (
-    <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', background: '#fff' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 18px', borderBottom: '1px solid #e5e7eb', flexWrap: 'wrap' }}>
+    <div style={{ flex: 1, minHeight: 0, minWidth: 0, display: 'flex', flexDirection: 'column', background: '#fff' }}>
+      <style>{`.shopno-agent-toolbar{min-width:0;flex-wrap:wrap}.shopno-agent-model-label{display:flex;align-items:center;gap:6px;min-width:0;max-width:100%;flex:0 1 auto}.shopno-agent-model-select{width:100%;min-width:0;max-width:min(58vw,280px);box-sizing:border-box;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.shopno-agent-tool-target{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.shopno-agent-plan-title{min-width:0;overflow-wrap:anywhere}`}</style>
+      <div className="shopno-agent-toolbar" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 18px', borderBottom: '1px solid #e5e7eb', flexWrap: 'wrap' }}>
         <span style={{ width: 9, height: 9, borderRadius: 99, background: connected ? '#10a37f' : status === 'connecting' ? '#f59e0b' : '#ef4444' }} />
         <span style={{ fontSize: 13, color: '#4b5563', marginRight: 'auto' }}>{STATUS_LABEL[status] || status}</span>
-        <label style={{ fontSize: 13, color: '#4b5563' }}>Model{' '}
-          <select value={model} onChange={(event) => setModel(event.target.value)} disabled={running} aria-label="Agent model" style={{ padding: '6px 10px', border: '1px solid #d1d5db', borderRadius: 8, background: '#fff', fontWeight: 600 }}>
+        <label className="shopno-agent-model-label" style={{ fontSize: 13, color: '#4b5563' }}>Model
+          <select className="shopno-agent-model-select" value={model} onChange={(event) => setModel(event.target.value)} disabled={running} aria-label="Agent model" style={{ padding: '6px 10px', border: '1px solid #d1d5db', borderRadius: 8, background: '#fff', fontWeight: 600 }}>
             <option value="auto">Auto · free models first</option>
             {modelCatalog.map((item) => (
               <option key={item.model_key} value={item.model_key}>
