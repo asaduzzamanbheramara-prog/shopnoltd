@@ -11,6 +11,7 @@ on:
       - 'k8s/services/web-portal/download-redirects.yaml'
       - 'k8s/services/web-portal/kustomization.yaml'
       - '.github/workflows/scoped-web-portal-download-deploy.yml'
+  workflow_dispatch:
 
 permissions:
   contents: read
