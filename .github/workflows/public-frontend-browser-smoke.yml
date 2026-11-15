@@ -44,6 +44,10 @@ jobs:
         run: npm ci --prefix platform/web-portal --no-audit --no-fund
       - name: Build Web Portal local preview
         if: ${{ github.event_name != 'workflow_dispatch' || inputs.target != 'live' }}
+        env:
+          VITE_SOCIAL_LOGIN_GOOGLE: "true"
+          VITE_SOCIAL_LOGIN_FACEBOOK: "true"
+          VITE_SOCIAL_LOGIN_GITHUB: "true"
         run: npm run build --prefix platform/web-portal
       - name: Start local Web Portal preview
         if: ${{ github.event_name != 'workflow_dispatch' || inputs.target != 'live' }}
@@ -70,7 +74,7 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Exercise public pages in Chromium
         working-directory: tests/browser-role
-        run: npx playwright test public-frontend.spec.js
+        run: npx playwright test public-frontend.spec.js registration-smoke.spec.js
       - name: Upload browser report on failure
         if: failure()
         uses: actions/upload-artifact@v4

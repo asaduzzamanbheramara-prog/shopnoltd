@@ -33,6 +33,7 @@ on:
 permissions:
   contents: write
   packages: write
+  actions: write
 
 concurrency:
   group: platform-build-promote-main
@@ -152,6 +153,7 @@ jobs:
               affected = (
                   'ALL' in changed
                   or shared_changed
+                  or (service == 'web-portal' and '.github/workflows/build-platform.yml' in changed)
                   or any(
                       p == prefix or p.startswith(prefix + '/')
                       for p in changed
@@ -251,6 +253,10 @@ jobs:
         with:
           context: ${{ matrix.context }}
           file: ${{ matrix.dockerfile }}
+          build-args: |
+            VITE_SOCIAL_LOGIN_GOOGLE=${{ matrix.service == 'web-portal' && 'true' || 'false' }}
+            VITE_SOCIAL_LOGIN_FACEBOOK=${{ matrix.service == 'web-portal' && 'true' || 'false' }}
+            VITE_SOCIAL_LOGIN_GITHUB=${{ matrix.service == 'web-portal' && 'true' || 'false' }}
           push: true
           tags: |
             ghcr.io/${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
@@ -538,3 +544,17 @@ jobs:
 
           echo "ERROR: could not push image promotion after three safe attempts."
           exit 1
+
+      - name: Dispatch scoped Web Portal deployment after image promotion
+        if: ${{ contains(needs.detect-changes.outputs.matrix, '"service":"web-portal"') }}
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'scoped-web-portal-download-deploy.yml',
+              ref: 'main',
+            })
+            core.info('Dispatched the guarded Web Portal-only deployment workflow.')

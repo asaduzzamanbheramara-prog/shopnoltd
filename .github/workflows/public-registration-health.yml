@@ -10,6 +10,10 @@ on:
       - 'tests/browser-role/public-frontend.spec.js'
       - 'tests/browser-role/registration-smoke.spec.js'
       - '.github/workflows/public-registration-health.yml'
+  workflow_run:
+    workflows: ["Scoped Web Portal Download Deployment"]
+    types: [completed]
+    branches: [main]
 
 permissions:
   contents: read
@@ -20,6 +24,7 @@ concurrency:
 
 jobs:
   public-and-registration-smoke:
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     name: Public pages and signup handoff (read-only)
     runs-on: ubuntu-24.04
     timeout-minutes: 20
