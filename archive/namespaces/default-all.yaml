@@ -1,3 +1,4 @@
+# SECURITY NOTICE (2026-11-15): credential literals were removed from this archived snapshot. Evidence-only; DO NOT APPLY.
 apiVersion: v1
 items:
 - apiVersion: v1
@@ -344,7 +345,7 @@ items:
       - name: REDIS_ADDR
         value: redis:6379
       - name: JWT_SECRET
-        value: SUPER_SECRET_KEY
+        value: "REDACTED_DO_NOT_APPLY"
       - name: BILLING_SERVICE
         value: http://billing-engine:5000
       - name: OTEL_SERVICE_NAME
@@ -512,7 +513,7 @@ items:
       - name: REDIS_ADDR
         value: redis:6379
       - name: JWT_SECRET
-        value: SUPER_SECRET_KEY
+        value: "REDACTED_DO_NOT_APPLY"
       - name: BILLING_SERVICE
         value: http://billing-engine:5000
       - name: OTEL_SERVICE_NAME
@@ -1595,17 +1596,17 @@ items:
             key: SESSION_SECRET
             name: oauth-secrets
       - name: GOOGLE_CLIENT_ID
-        value: 530228436303-2k8sl5mdjfotsvkcqgtcktcb7q2b78fn.apps.googleusercontent.com
+        value: "REDACTED_DO_NOT_APPLY"
       - name: GOOGLE_CLIENT_SECRET
-        value: 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
+        value: "REDACTED_DO_NOT_APPLY"
       - name: FACEBOOK_APP_ID
-        value: "1239063184913011"
+        value: "REDACTED_DO_NOT_APPLY"
       - name: FACEBOOK_APP_SECRET
-        value: 9afa42656338eb1917cdc3ac79c61f2d
+        value: "REDACTED_DO_NOT_APPLY"
       - name: GITHUB_CLIENT_ID
-        value: Ov23liIa4IFALaMIZ1XP
+        value: "REDACTED_DO_NOT_APPLY"
       - name: GITHUB_CLIENT_SECRET
-        value: 682ac6a6332f85eda27113ad6e634f51eff0ffe2
+        value: "REDACTED_DO_NOT_APPLY"
       - name: OTEL_SERVICE_NAME
         value: oauth-service
       - name: OTEL_EXPORTER_OTLP_ENDPOINT
@@ -3174,7 +3175,7 @@ items:
           - name: REDIS_ADDR
             value: redis:6379
           - name: JWT_SECRET
-            value: SUPER_SECRET_KEY
+            value: "REDACTED_DO_NOT_APPLY"
           - name: BILLING_SERVICE
             value: http://billing-engine:5000
           - name: OTEL_SERVICE_NAME
@@ -3689,17 +3690,17 @@ items:
                 key: SESSION_SECRET
                 name: oauth-secrets
           - name: GOOGLE_CLIENT_ID
-            value: 530228436303-2k8sl5mdjfotsvkcqgtcktcb7q2b78fn.apps.googleusercontent.com
+            value: "REDACTED_DO_NOT_APPLY"
           - name: GOOGLE_CLIENT_SECRET
-            value: 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
+            value: "REDACTED_DO_NOT_APPLY"
           - name: FACEBOOK_APP_ID
-            value: "1239063184913011"
+            value: "REDACTED_DO_NOT_APPLY"
           - name: FACEBOOK_APP_SECRET
-            value: 9afa42656338eb1917cdc3ac79c61f2d
+            value: "REDACTED_DO_NOT_APPLY"
           - name: GITHUB_CLIENT_ID
-            value: Ov23liIa4IFALaMIZ1XP
+            value: "REDACTED_DO_NOT_APPLY"
           - name: GITHUB_CLIENT_SECRET
-            value: 682ac6a6332f85eda27113ad6e634f51eff0ffe2
+            value: "REDACTED_DO_NOT_APPLY"
           - name: OTEL_SERVICE_NAME
             value: oauth-service
           - name: OTEL_EXPORTER_OTLP_ENDPOINT
@@ -4193,7 +4194,7 @@ items:
           - name: REDIS_ADDR
             value: redis:6379
           - name: JWT_SECRET
-            value: SUPER_SECRET_KEY
+            value: "REDACTED_DO_NOT_APPLY"
           - name: BILLING_SERVICE
             value: http://billing-engine:5000
           - name: OTEL_SERVICE_NAME
@@ -4263,7 +4264,7 @@ items:
           - name: REDIS_ADDR
             value: redis:6379
           - name: JWT_SECRET
-            value: SUPER_SECRET_KEY
+            value: "REDACTED_DO_NOT_APPLY"
           - name: BILLING_SERVICE
             value: http://billing-engine:5000
           - name: OTEL_SERVICE_NAME
@@ -4333,7 +4334,7 @@ items:
           - name: REDIS_ADDR
             value: redis:6379
           - name: JWT_SECRET
-            value: SUPER_SECRET_KEY
+            value: "REDACTED_DO_NOT_APPLY"
           - name: BILLING_SERVICE
             value: http://billing-engine:5000
           - name: OTEL_SERVICE_NAME
@@ -4404,7 +4405,7 @@ items:
           - name: REDIS_ADDR
             value: redis:6379
           - name: JWT_SECRET
-            value: SUPER_SECRET_KEY
+            value: "REDACTED_DO_NOT_APPLY"
           - name: BILLING_SERVICE
             value: http://billing-engine:5000
           - name: OTEL_SERVICE_NAME
@@ -4472,7 +4473,7 @@ items:
           - name: REDIS_ADDR
             value: redis:6379
           - name: JWT_SECRET
-            value: SUPER_SECRET_KEY
+            value: "REDACTED_DO_NOT_APPLY"
           - name: BILLING_SERVICE
             value: http://billing-engine:5000
           - name: OTEL_SERVICE_NAME
@@ -5560,17 +5561,17 @@ items:
                 key: SESSION_SECRET
                 name: oauth-secrets
           - name: GOOGLE_CLIENT_ID
-            value: 530228436303-2k8sl5mdjfotsvkcqgtcktcb7q2b78fn.apps.googleusercontent.com
+            value: "REDACTED_DO_NOT_APPLY"
           - name: GOOGLE_CLIENT_SECRET
-            value: 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
+            value: "REDACTED_DO_NOT_APPLY"
           - name: FACEBOOK_APP_ID
-            value: "1239063184913011"
+            value: "REDACTED_DO_NOT_APPLY"
           - name: FACEBOOK_APP_SECRET
-            value: 9afa42656338eb1917cdc3ac79c61f2d
+            value: "REDACTED_DO_NOT_APPLY"
           - name: GITHUB_CLIENT_ID
-            value: Ov23liIa4IFALaMIZ1XP
+            value: "REDACTED_DO_NOT_APPLY"
           - name: GITHUB_CLIENT_SECRET
-            value: 682ac6a6332f85eda27113ad6e634f51eff0ffe2
+            value: "REDACTED_DO_NOT_APPLY"
           - name: OTEL_SERVICE_NAME
             value: oauth-service
           - name: OTEL_EXPORTER_OTLP_ENDPOINT
@@ -5654,17 +5655,17 @@ items:
                 key: SESSION_SECRET
                 name: oauth-secrets
           - name: GOOGLE_CLIENT_ID
-            value: 530228436303-2k8sl5mdjfotsvkcqgtcktcb7q2b78fn.apps.googleusercontent.com
+            value: "REDACTED_DO_NOT_APPLY"
           - name: GOOGLE_CLIENT_SECRET
-            value: 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
+            value: "REDACTED_DO_NOT_APPLY"
           - name: FACEBOOK_APP_ID
-            value: "1239063184913011"
+            value: "REDACTED_DO_NOT_APPLY"
           - name: FACEBOOK_APP_SECRET
-            value: 9afa42656338eb1917cdc3ac79c61f2d
+            value: "REDACTED_DO_NOT_APPLY"
           - name: GITHUB_CLIENT_ID
-            value: Ov23liIa4IFALaMIZ1XP
+            value: "REDACTED_DO_NOT_APPLY"
           - name: GITHUB_CLIENT_SECRET
-            value: 682ac6a6332f85eda27113ad6e634f51eff0ffe2
+            value: "REDACTED_DO_NOT_APPLY"
           - name: OTEL_SERVICE_NAME
             value: oauth-service
           - name: OTEL_EXPORTER_OTLP_ENDPOINT
@@ -5745,17 +5746,17 @@ items:
                 key: SESSION_SECRET
                 name: oauth-secrets
           - name: GOOGLE_CLIENT_ID
-            value: 530228436303-2k8sl5mdjfotsvkcqgtcktcb7q2b78fn.apps.googleusercontent.com
+            value: "REDACTED_DO_NOT_APPLY"
           - name: GOOGLE_CLIENT_SECRET
-            value: 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
+            value: "REDACTED_DO_NOT_APPLY"
           - name: FACEBOOK_APP_ID
-            value: "1239063184913011"
+            value: "REDACTED_DO_NOT_APPLY"
           - name: FACEBOOK_APP_SECRET
-            value: 9afa42656338eb1917cdc3ac79c61f2d
+            value: "REDACTED_DO_NOT_APPLY"
           - name: GITHUB_CLIENT_ID
-            value: Ov23liIa4IFALaMIZ1XP
+            value: "REDACTED_DO_NOT_APPLY"
           - name: GITHUB_CLIENT_SECRET
-            value: 682ac6a6332f85eda27113ad6e634f51eff0ffe2
+            value: "REDACTED_DO_NOT_APPLY"
           - name: OTEL_SERVICE_NAME
             value: oauth-service
           - name: OTEL_EXPORTER_OTLP_ENDPOINT
