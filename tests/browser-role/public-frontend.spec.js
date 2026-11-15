@@ -85,7 +85,7 @@ test('public routes stay within phone, tablet and desktop viewport widths', asyn
   expect(pageErrors, 'responsive public routes should not throw uncaught browser JavaScript errors').toEqual([])
 })
 
-test('AI Agent controls remain visible and reachable at common mobile widths', async ({ page }) => {
+test('AI Agent controls remain visible and reachable on mobile and desktop', async ({ page }) => {
   const pageErrors = []
   page.on('pageerror', error => pageErrors.push(error.message))
   await page.addInitScript(() => {
@@ -102,7 +102,7 @@ test('AI Agent controls remain visible and reachable at common mobile widths', a
     body: '[]',
   }))
 
-  for (const width of [320, 360, 390, 430]) {
+  for (const width of [320, 360, 390, 430, 1280]) {
     await page.setViewportSize({ width, height: 844 })
     const response = await page.goto(`${baseURL}/ai`, { waitUntil: 'domcontentloaded' })
     expect(response?.status(), `AI page at ${width}px should load`).toBeLessThan(400)
@@ -125,7 +125,7 @@ test('AI Agent controls remain visible and reachable at common mobile widths', a
 })
 
 
-test('Agent mode stays inside mobile viewports with long model labels', async ({ page }) => {
+test('Agent mode stays inside mobile and desktop viewports with long model labels', async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem('shopno_token', 'e30.eyJleHAiOjQxMDI0NDQ4MDB9.sig')
   })
@@ -159,7 +159,7 @@ test('Agent mode stays inside mobile viewports with long model labels', async ({
     })
   })
 
-  for (const width of [320, 360, 390, 430]) {
+  for (const width of [320, 360, 390, 430, 1280]) {
     await page.setViewportSize({ width, height: 844 })
     const response = await page.goto(`${baseURL}/ai`, { waitUntil: 'domcontentloaded' })
     expect(response?.status(), `AI page at ${width}px should load`).toBeLessThan(400)
