@@ -541,6 +541,58 @@ def rate_ok(user: str) -> bool:
 
 
 # ---------------------------------------------------------------- sockets
+from tasks import TaskSink
+sinks: dict[str, TaskSink] = {}
+TASK_MAX_SECONDS = int(os.environ.get("TASK_MAX_SECONDS", "1800"))
+
+
+async def run_task(claims: dict, sink: TaskSink, goal: str, model: str, catalog: list):
+    user = claims["sub"]
+    hist = histories.setdefault(user, [])
+    failed_models: set[str] = set()
+    active_model: str | None = None
+    start = len(hist)
+    try:
+        async def loop():
+            nonlocal active_model
+            hist.append({"role": "user", "content": goal})
+            for _ in range(MAX_STEPS):
+                reply, active_model = await llm_with_failover(
+                    [{"role": "system", "content": SYSTEM}] + hist, model, active_model, catalog, failed_models, sink)
+                hist.append(reply)
+                if reply.get("content"): await sink.send_json({"type": "text", "text": reply["content"]})
+                calls = reply.get("tool_calls") or []
+                if not calls: break
+                for tc in calls:
+                    tname = tc["function"]["name"]
+                    try:
+                        args = json.loads(tc["function"]["arguments"] or "{}")
+                        if not isinstance(args, dict): raise ValueError
+                    except Exception:
+                        result = "invalid tool arguments: must be a JSON object"
+                    else:
+                        await sink.send_json({"type": "tool", "name": tname, "args": args})
+                        result = await call_tool(claims, sink, tname, args)
+                    await sink.send_json({"type": "result", "name": tname, "result": result[:2000]})
+                    hist.append({"role": "tool", "tool_call_id": tc["id"], "content": result})
+        await asyncio.wait_for(loop(), timeout=TASK_MAX_SECONDS)
+    except asyncio.CancelledError:
+        await sink.send_json({"type": "error", "text": "task cancelled"})
+    except asyncio.TimeoutError:
+        await sink.send_json({"type": "error", "text": "task timed out"})
+    except Exception as e:
+        if len(hist) <= start + 1:
+            del hist[start:]
+        await sink.send_json({"type": "error", "text": f"{type(e).__name__}: {str(e)[:300]}"})
+    finally:
+        running.discard(user)
+        await close_browser_session(user)
+        trim(hist)
+        sink.status = "done"
+        sink.finished_at = time.time()
+        await sink.send_json({"type": "done"})
+
+
 @app.websocket("/ws/ui")
 async def ui_socket(ws: WebSocket):
     claims = await authenticate(ws, "ui")
@@ -548,12 +600,16 @@ async def ui_socket(ws: WebSocket):
     user = claims["sub"]
     dog = asyncio.create_task(watchdog(ws, claims))
     await ws.send_json({"type": "models", "items": await get_model_catalog(claims)})
+    attached: TaskSink | None = None
     try:
+        cur = sinks.get(user)
+        if cur:
+            await cur.attach(ws); attached = cur
         while True:
             msg = await ws.receive_json()
             if not isinstance(msg, dict):
                 continue
-            if msg.get("type") == "auth":                      # session refresh
+            if msg.get("type") == "auth":
                 try:
                     refreshed_token = str(msg.get("token", ""))
                     fresh = await verify_token(refreshed_token)
@@ -563,6 +619,13 @@ async def ui_socket(ws: WebSocket):
                     await ws.send_json({"type": "auth_ok"})
                 except Exception:
                     await ws.close(code=4401); return
+                continue
+            cur = sinks.get(user)
+            if msg.get("type") == "approval":
+                if cur and cur.status == "running": cur.inbox.put_nowait(msg)
+                continue
+            if msg.get("type") == "cancel":
+                if cur and cur.task and cur.status == "running": cur.task.cancel()
                 continue
             goal = str(msg.get("goal", "")).strip()[:4000]
             model = str(msg.get("model") or DEFAULT_MODEL)
@@ -577,46 +640,15 @@ async def ui_socket(ws: WebSocket):
             if not rate_ok(user):
                 await ws.send_json({"type": "error", "text": "too many tasks this hour"}); continue
             running.add(user)
-            hist = histories.setdefault(user, [])
-            failed_models: set[str] = set()
-            active_model: str | None = None
-            start = len(hist)                                   # roll back to here if the run fails
-            try:
-                hist.append({"role": "user", "content": goal})
-                for _ in range(MAX_STEPS):
-                    reply, active_model = await llm_with_failover([{"role": "system", "content": SYSTEM}] + hist, model, active_model, catalog, failed_models, ws)
-                    hist.append(reply)
-                    if reply.get("content"): await ws.send_json({"type": "text", "text": reply["content"]})
-                    calls = reply.get("tool_calls") or []
-                    if not calls: break
-                    for tc in calls:
-                        tname = tc["function"]["name"]
-                        try:
-                            args = json.loads(tc["function"]["arguments"] or "{}")
-                            if not isinstance(args, dict): raise ValueError
-                        except Exception:
-                            result = "invalid tool arguments: must be a JSON object"
-                        else:
-                            await ws.send_json({"type": "tool", "name": tname, "args": args})
-                            result = await call_tool(claims, ws, tname, args)
-                        await ws.send_json({"type": "result", "name": tname, "result": result[:2000]})
-                        hist.append({"role": "tool", "tool_call_id": tc["id"], "content": result})
-            except WebSocketDisconnect:
-                del hist[start:]; raise
-            except Exception as e:
-                # Keep completed plan/tool results so a later retry can continue from this checkpoint.
-                # A lone user message means no work was completed, so avoid duplicating it next time.
-                if len(hist) <= start + 1:
-                    del hist[start:]
-                await ws.send_json({"type": "error", "text": f"{type(e).__name__}: {str(e)[:300]}"})
-            finally:
-                running.discard(user)
-                await close_browser_session(user)
-                trim(hist)
-            await ws.send_json({"type": "done"})
+            if attached: attached.detach(ws)
+            sink = TaskSink(user)
+            sinks[user] = sink
+            await sink.attach(ws); attached = sink
+            sink.task = asyncio.create_task(run_task(claims, sink, goal, model, catalog))
     except (WebSocketDisconnect, RuntimeError):
         pass
     finally:
+        if attached: attached.detach(ws)
         dog.cancel()
 
 
