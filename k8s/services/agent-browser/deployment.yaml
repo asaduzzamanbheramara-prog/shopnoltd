@@ -7,7 +7,7 @@ metadata:
     app.kubernetes.io/name: agent-browser
     app.kubernetes.io/part-of: shopnoltd
 spec:
-  replicas: 0
+  replicas: 1
   strategy:
     type: Recreate
   selector:
