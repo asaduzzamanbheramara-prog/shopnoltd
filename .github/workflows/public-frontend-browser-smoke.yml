@@ -10,6 +10,15 @@ on:
       - 'tests/browser-role/package.json'
       - '.github/workflows/public-frontend-browser-smoke.yml'
   workflow_dispatch:
+    inputs:
+      target:
+        description: 'Run against the local branch preview or the deployed live site'
+        required: true
+        type: choice
+        options:
+          - preview
+          - live
+        default: preview
 
 permissions:
   contents: read
@@ -22,14 +31,37 @@ jobs:
   public-browser:
     name: Public frontend browser checks
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 20
     env:
-      SHOPNOLTD_BASE_URL: https://shopnoltd.dpdns.org
+      SHOPNOLTD_BASE_URL: ${{ github.event_name == 'workflow_dispatch' && inputs.target == 'live' && 'https://shopnoltd.dpdns.org' || 'http://127.0.0.1:4173' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Install Web Portal dependencies for local preview
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.target != 'live' }}
+        run: npm ci --prefix platform/web-portal --no-audit --no-fund
+      - name: Build Web Portal local preview
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.target != 'live' }}
+        run: npm run build --prefix platform/web-portal
+      - name: Start local Web Portal preview
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.target != 'live' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run preview --prefix platform/web-portal -- --host 127.0.0.1 --port 4173 >"$RUNNER_TEMP/shopno-web-preview.log" 2>&1 &
+          echo $! >"$RUNNER_TEMP/shopno-web-preview.pid"
+          for attempt in {1..30}; do
+            if curl --fail --silent --max-time 2 http://127.0.0.1:4173/ >/dev/null; then
+              echo "Local Web Portal preview is ready."
+              exit 0
+            fi
+            sleep 1
+          done
+          cat "$RUNNER_TEMP/shopno-web-preview.log"
+          echo "::error::Local Web Portal preview did not become ready."
+          exit 1
       - name: Install isolated Playwright test dependencies
         working-directory: tests/browser-role
         run: npm install --no-audit --no-fund
@@ -39,3 +71,11 @@ jobs:
       - name: Exercise public pages in Chromium
         working-directory: tests/browser-role
         run: npx playwright test public-frontend.spec.js
+      - name: Upload browser report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: shopnoltd-public-browser-report
+          path: tests/browser-role/test-results/
+          if-no-files-found: ignore
+          retention-days: 7

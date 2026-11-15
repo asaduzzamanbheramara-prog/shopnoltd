@@ -85,19 +85,24 @@ test('public routes stay within phone, tablet and desktop viewport widths', asyn
   expect(pageErrors, 'responsive public routes should not throw uncaught browser JavaScript errors').toEqual([])
 })
 
-test('AI Agent controls remain visible and reachable at common mobile widths', async ({ page }) => {
+test('AI Agent controls remain visible and reachable on mobile and desktop', async ({ page }) => {
   const pageErrors = []
   page.on('pageerror', error => pageErrors.push(error.message))
   await page.addInitScript(() => {
     localStorage.setItem('shopno_token', 'e30.eyJleHAiOjQxMDI0NDQ4MDB9.sig')
   })
+  await page.route('**/api/v1/users/me', route => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ id: 'responsive-test-user', email: 'responsive-test@example.invalid', roles: ['customer'] }),
+  }))
   await page.route('**/inference/models', route => route.fulfill({
     status: 200,
     contentType: 'application/json',
     body: '[]',
   }))
 
-  for (const width of [320, 360, 390, 430]) {
+  for (const width of [320, 360, 390, 430, 1280]) {
     await page.setViewportSize({ width, height: 844 })
     const response = await page.goto(`${baseURL}/ai`, { waitUntil: 'domcontentloaded' })
     expect(response?.status(), `AI page at ${width}px should load`).toBeLessThan(400)
@@ -117,4 +122,62 @@ test('AI Agent controls remain visible and reachable at common mobile widths', a
   await page.getByRole('button', { name: 'Agent', exact: true }).click()
   await expect(page.getByRole('button', { name: 'Agent', exact: true })).toHaveAttribute('aria-pressed', 'true')
   expect(pageErrors, 'AI mobile page should not throw uncaught browser JavaScript errors').toEqual([])
+})
+
+
+test('Agent mode stays inside mobile and desktop viewports with long model labels', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('shopno_token', 'e30.eyJleHAiOjQxMDI0NDQ4MDB9.sig')
+  })
+  await page.route('**/api/v1/users/me', route => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ id: 'responsive-test-user', email: 'responsive-test@example.invalid', roles: ['customer'] }),
+  }))
+  await page.route('**/inference/models', route => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: '[]',
+  }))
+  await page.routeWebSocket('wss://agent.shopnoltd.dpdns.org/ws/ui', socket => {
+    socket.onMessage(message => {
+      let payload
+      try { payload = JSON.parse(String(message)) } catch { return }
+      if (payload.type === 'auth') {
+        socket.send(JSON.stringify({ type: 'auth_ok' }))
+        socket.send(JSON.stringify({
+          type: 'models',
+          items: [{
+            model_key: 'OpenRouter:meta-llama/very-long-model-name:free',
+            model_name: 'meta-llama/very-long-model-name:free',
+            display_name: 'OpenRouter Llama Free Model With a Deliberately Long Display Name',
+            provider_name: 'OpenRouter',
+            free_tier: true,
+          }],
+        }))
+      }
+    })
+  })
+
+  for (const width of [320, 360, 390, 430, 1280]) {
+    await page.setViewportSize({ width, height: 844 })
+    const response = await page.goto(`${baseURL}/ai`, { waitUntil: 'domcontentloaded' })
+    expect(response?.status(), `AI page at ${width}px should load`).toBeLessThan(400)
+    const agent = page.getByRole('button', { name: 'Agent', exact: true })
+    await expect(agent).toBeVisible()
+    await agent.click()
+    await expect(agent).toHaveAttribute('aria-pressed', 'true')
+    const model = page.getByRole('combobox', { name: 'Agent model' })
+    await expect(model).toBeVisible()
+    await expect(model.locator('option').filter({ hasText: 'Deliberately Long Display Name' })).toHaveCount(1)
+    const bounds = await model.boundingBox()
+    expect(bounds, `Agent model selector should be visible at ${width}px`).not.toBeNull()
+    expect(bounds.x + bounds.width, `Agent model selector should fit at ${width}px`).toBeLessThanOrEqual(width + 2)
+    const dimensions = await page.evaluate(() => ({
+      viewport: document.documentElement.clientWidth,
+      document: document.documentElement.scrollWidth,
+    }))
+    expect(dimensions.document, `Agent mode at ${width}px should not overflow horizontally`)
+      .toBeLessThanOrEqual(dimensions.viewport + 2)
+  }
 })
