@@ -33,6 +33,7 @@ on:
 permissions:
   contents: write
   packages: write
+  actions: write
 
 concurrency:
   group: platform-build-promote-main
@@ -543,3 +544,17 @@ jobs:
 
           echo "ERROR: could not push image promotion after three safe attempts."
           exit 1
+
+      - name: Dispatch scoped Web Portal deployment after image promotion
+        if: ${{ contains(needs.detect-changes.outputs.matrix, '"service":"web-portal"') }}
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'scoped-web-portal-download-deploy.yml',
+              ref: 'main',
+            })
+            core.info('Dispatched the guarded Web Portal-only deployment workflow.')
