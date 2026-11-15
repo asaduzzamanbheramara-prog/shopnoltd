@@ -6,7 +6,7 @@ metadata:
   labels:
     app.kubernetes.io/name: chatwoot
 spec:
-  replicas: 0
+  replicas: 1
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -75,11 +75,11 @@ spec:
           resources:
             requests:
               cpu: 100m
-              memory: 128Mi
+              memory: 256Mi
               ephemeral-storage: 256Mi
             limits:
               cpu: 1000m
-              memory: 512Mi
+              memory: 1Gi
               ephemeral-storage: 1Gi
           livenessProbe:
             httpGet:

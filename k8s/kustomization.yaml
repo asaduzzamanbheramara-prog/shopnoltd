@@ -75,6 +75,7 @@ resources:
 - services/mail
 - services/mail-server
 - services/chatwoot
+- services/chatwoot-worker
 - ingress/cloudflared
 
 patches:
