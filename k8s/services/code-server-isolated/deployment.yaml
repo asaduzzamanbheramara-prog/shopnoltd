@@ -7,7 +7,7 @@ metadata:
     app.kubernetes.io/name: code-server-isolated
     app.kubernetes.io/part-of: shopnoltd
 spec:
-  replicas: 0
+  replicas: 1
   strategy:
     type: Recreate
   selector:
@@ -93,7 +93,7 @@ spec:
               ephemeral-storage: 256Mi
             limits:
               cpu: 1000m
-              memory: 1Gi
+              memory: 512Mi
               ephemeral-storage: 1Gi
           livenessProbe:
             httpGet:
