@@ -16,7 +16,7 @@ resources:
 images:
 - name: linuxserver/code-server
   newName: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-code-server
-  newTag: 5c65a7f3c678b195df73186d30a1a081dc9ae620
+  newTag: 005244a55d0892a37f4c3865f1c0b50cdb762c74
 
 labels:
 - includeSelectors: false
