@@ -27,6 +27,7 @@ on:
         options:
           - web-portal
           - shopnoltd-web
+          - ai-platform
           - android-cloud-controller
           - android-cloud-gateway
 
