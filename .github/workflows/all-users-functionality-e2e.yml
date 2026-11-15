@@ -28,7 +28,7 @@ jobs:
       KEYCLOAK_BASE_URL: https://auth.shopnoltd.dpdns.org
       KEYCLOAK_REALM: shopnoltd
       AUTH_ROUTES: /dashboard,/profiles,/feed
-      ADMIN_ROLE: admin
+      ADMIN_ROLE: platform_admin
 
       LIMIT_USERS: ${{ github.event.inputs.limit_users }}
       KEYCLOAK_E2E_CLIENT_ID: ${{ secrets.KEYCLOAK_E2E_CLIENT_ID }}

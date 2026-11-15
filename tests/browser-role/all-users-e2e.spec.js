@@ -5,7 +5,7 @@ import crypto from 'node:crypto'
 const app = (process.env.SHOPNOLTD_BASE_URL || 'https://shopnoltd.dpdns.org').replace(/\/$/, '')
 const kc = (process.env.KEYCLOAK_BASE_URL || 'https://auth.shopnoltd.dpdns.org').replace(/\/$/, '')
 const realm = process.env.KEYCLOAK_REALM || 'shopnoltd'
-const adminRole = process.env.ADMIN_ROLE || 'admin'
+const adminRole = process.env.ADMIN_ROLE || 'platform_admin'
 const authRoutes = (process.env.AUTH_ROUTES || '/dashboard').split(',').map(s => s.trim()).filter(Boolean)
 const admin = `${kc}/admin/realms/${realm}`
 
