@@ -46,7 +46,7 @@ jobs:
           pod="$(kubectl -n shopno-platform get pods -l app.kubernetes.io/name=ai-platform \
             -o jsonpath='{.items[0].metadata.name}')"
           test -n "$pod"
-          kubectl -n shopno-platform exec "$pod" -- python - <<'PY'
+          kubectl -n shopno-platform exec -i "$pod" -- python - <<'PY'
           import asyncio
           import os
           from sqlalchemy import text
