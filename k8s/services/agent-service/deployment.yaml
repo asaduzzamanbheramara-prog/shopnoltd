@@ -31,7 +31,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: agent-service
-          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-agent-service:72eb252250dec1d2a4b9a82d7b427107fc1fc2e1
+          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-agent-service:46573c69e896bd3700e99648c62c9995b8e1136a
           ports:
             - name: http
               containerPort: 8080
@@ -43,6 +43,36 @@ spec:
                 secretKeyRef:
                   name: agent-service-litellm-key
                   key: LITELLM_MASTER_KEY
+            - name: MANUS_API_KEY_1
+              valueFrom:
+                secretKeyRef:
+                  name: agent-service-manus-keys
+                  key: MANUS_API_KEY_1
+                  optional: true
+            - name: MANUS_API_KEY_2
+              valueFrom:
+                secretKeyRef:
+                  name: agent-service-manus-keys
+                  key: MANUS_API_KEY_2
+                  optional: true
+            - name: MANUS_API_KEY_3
+              valueFrom:
+                secretKeyRef:
+                  name: agent-service-manus-keys
+                  key: MANUS_API_KEY_3
+                  optional: true
+            - name: MANUS_API_KEY_4
+              valueFrom:
+                secretKeyRef:
+                  name: agent-service-manus-keys
+                  key: MANUS_API_KEY_4
+                  optional: true
+            - name: MANUS_API_KEY_5
+              valueFrom:
+                secretKeyRef:
+                  name: agent-service-manus-keys
+                  key: MANUS_API_KEY_5
+                  optional: true
             - name: BROWSER_WS_ENDPOINT
               value: ws://agent-browser.shopno-apps.svc.cluster.local:3000
             - name: AI_MODEL_CATALOG_URL

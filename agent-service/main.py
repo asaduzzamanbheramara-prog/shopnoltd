@@ -22,6 +22,7 @@ import asyncio, base64, ipaddress, json, os, re, time, uuid
 from collections import deque
 from urllib.parse import urlparse
 import httpx
+from manus import create_manus_task, manus_configured
 from playwright.async_api import async_playwright
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from jose import JWTError, jwt
@@ -158,6 +159,13 @@ TOOLS = [
 ]
 if ENABLE_SHELL:
     TOOLS.append(_fn("run_shell", "Run a shell command in the sandbox (admin only).", {"command": {"type": "string"}}, ["command"]))
+if manus_configured():
+    TOOLS.append(_fn(
+        "manus_task",
+        "Delegate a task to Manus. This may consume credits; obtain user approval before calling.",
+        {"goal": {"type": "string"}},
+        ["goal"],
+    ))
 
 
 def user_path(user: str, p: str) -> str:
@@ -388,6 +396,17 @@ async def call_tool(claims: dict, ui: WebSocket, name: str, args: dict) -> str:
             if not ENABLE_SHELL or "admin" not in claims["roles"]:
                 return "run_shell is not permitted"
             return await run_shell(user, args["command"])
+        if name == "manus_task":
+            if not manus_configured():
+                return "Manus is not configured on this Agent deployment."
+            goal = str(args.get("goal", "")).strip()[:12000]
+            if not goal:
+                return "Manus task goal is empty."
+            if not await ask_approval(ui, "manus_task", {"goal": goal[:1000]}):
+                return "User denied Manus delegation; no Manus task was created."
+            async def report_manus_progress(event: dict):
+                await ui.send_json(event)
+            return await create_manus_task(goal, report_manus_progress)
         if name == "browser_action":
             clean = clean_browser_args(args)
             if clean["action"] in SENSITIVE_BROWSER:

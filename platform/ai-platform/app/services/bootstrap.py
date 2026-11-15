@@ -17,6 +17,26 @@ from app.db.models import AIModel, AIProvider, ProviderType
 
 PROVIDERS = (
     {
+        "env_key": "OPENAI_API_KEY",
+        "name": "OpenAI",
+        "provider_type": ProviderType.openai,
+        "base_url": "https://api.openai.com/v1",
+        "model_env": "OPENAI_AI_MODEL",
+        "default_model": "gpt-4.1-mini",
+        "display_name": "GPT-4.1 mini",
+        "priority": 10,
+    },
+    {
+        "env_key": "ANTHROPIC_API_KEY",
+        "name": "Anthropic",
+        "provider_type": ProviderType.anthropic,
+        "base_url": "https://api.anthropic.com/v1",
+        "model_env": "ANTHROPIC_AI_MODEL",
+        "default_model": "claude-sonnet-5-5",
+        "display_name": "Claude Sonnet 5.5",
+        "priority": 50,
+    },
+    {
         "env_key": "GOOGLE_AI_API_KEY",
         "name": "Google Gemini",
         "provider_type": ProviderType.google,
