@@ -13,7 +13,6 @@ resources:
 - ingress.yaml
 - networkpolicy.yaml
 - poddisruptionbudget.yaml
-- workflow-import-job.yaml
 
 configMapGenerator:
 - name: n8n-omnichannel-workflow
