@@ -1,6 +1,7 @@
 import os
 import tempfile
 import unittest
+from unittest import mock
 
 import httpx
 
@@ -161,8 +162,8 @@ class WebSocketAuthenticationDisconnectTests(unittest.IsolatedAsyncioTestCase):
                 raise main.WebSocketDisconnect(code=1006)
 
         ws = AuthenticatedSocket()
-        with unittest.mock.patch.object(
-            main, "verify_token", new=unittest.mock.AsyncMock(return_value={"sub": "user-a"})
+        with mock.patch.object(
+            main, "verify_token", new=mock.AsyncMock(return_value={"sub": "user-a"})
         ):
             claims = await main.authenticate(ws, "ui")
 
