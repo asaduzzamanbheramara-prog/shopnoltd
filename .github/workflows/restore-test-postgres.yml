@@ -93,7 +93,7 @@ jobs:
           restore_dir=/tmp/shopnoltd-restore-source
 
           # The service container is disposable and isolated from production.
-          docker exec -e PGPASSWORD="$PGPASSWORD" "$container_id" \
+          docker exec --user root -e PGPASSWORD="$PGPASSWORD" "$container_id" \
             psql -U "$PGUSER" --dbname=postgres --set ON_ERROR_STOP=1 \
             --file "$restore_dir/globals.sql" >/dev/null
 
@@ -102,8 +102,8 @@ jobs:
             [[ -n "$database" ]] || continue
             [[ "$database" =~ ^[A-Za-z0-9_]+$ ]] || { echo "::error::Unsafe database name in backup inventory."; exit 1; }
             dump="$restore_dir/all-databases/$database.dump"
-            docker exec "$container_id" test -s "$dump" || { echo "::error::A listed database archive is missing."; exit 1; }
-            docker exec -e PGPASSWORD="$PGPASSWORD" "$container_id" \
+            docker exec --user root "$container_id" test -s "$dump" || { echo "::error::A listed database archive is missing."; exit 1; }
+            docker exec --user root -e PGPASSWORD="$PGPASSWORD" "$container_id" \
               pg_restore --exit-on-error --clean --if-exists --create \
               --username="$PGUSER" --dbname=template1 "$dump"
             restored=$((restored + 1))
@@ -115,7 +115,7 @@ jobs:
           verified=0
           while IFS= read -r database; do
             [[ -n "$database" ]] || continue
-            actual="$(docker exec -e PGPASSWORD="$PGPASSWORD" "$container_id" \
+            actual="$(docker exec --user root -e PGPASSWORD="$PGPASSWORD" "$container_id" \
               psql -U "$PGUSER" --dbname="$database" --tuples-only --no-align \
               --set ON_ERROR_STOP=1 --command='SELECT current_database()')"
             [[ "$actual" == "$database" ]] || { echo "::error::A restored database failed its connection check."; exit 1; }
@@ -124,7 +124,7 @@ jobs:
 
           echo "PASS: restored and connected to all $verified databases in the disposable PostgreSQL 16 instance."
           echo "PASS: production PostgreSQL and Kubernetes Secrets were not accessed or modified by this restore job."
-          docker exec "$container_id" rm -rf "$restore_dir"
+          docker exec --user root "$container_id" rm -rf "$restore_dir"
 
       - name: Remove decrypted backup material
         if: always()
