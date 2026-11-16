@@ -37,7 +37,7 @@ jobs:
         run: |
           set -euo pipefail
           cd backup-source/backup
-          for file in timestamp.txt latest.dump.enc latest.dump.enc.sha256 latest.kubernetes-secrets.json.enc latest.kubernetes-secrets.json.enc.sha256; do
+          for file in timestamp.txt latest.dump.enc latest.dump.enc.sha256 latest.all-databases.tar.gz.enc latest.all-databases.tar.gz.enc.sha256 latest.kubernetes-secrets.json.enc latest.kubernetes-secrets.json.enc.sha256; do
             test -s "$file" || { echo "::error::Required backup file missing: $file"; exit 1; }
           done
           timestamp="$(tr -d '\r\n' < timestamp.txt)"
@@ -59,14 +59,16 @@ jobs:
           cd backup-source/backup
           umask 077
           echo "::add-mask::$BACKUP_ENCRYPTION_KEY"
-          for file in latest.dump.enc latest.kubernetes-secrets.json.enc; do
+          for file in latest.dump.enc latest.all-databases.tar.gz.enc latest.kubernetes-secrets.json.enc; do
             expected="$(awk 'NR==1 {print $1}' "$file.sha256")"
             actual="$(sha256sum "$file" | awk '{print $1}')"
             [[ "$expected" =~ ^[[:xdigit:]]{64}$ && "$expected" == "$actual" ]] || { echo "::error::Checksum mismatch: $file"; exit 1; }
           done
           openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 -in latest.dump.enc -out "$RUNNER_TEMP/shopnoltd.dump" -pass env:BACKUP_ENCRYPTION_KEY
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 -in latest.all-databases.tar.gz.enc -out "$RUNNER_TEMP/shopnoltd-all-databases.tar.gz" -pass env:BACKUP_ENCRYPTION_KEY
           openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 -in latest.kubernetes-secrets.json.enc -out "$RUNNER_TEMP/shopnoltd-secrets.json" -pass env:BACKUP_ENCRYPTION_KEY
           test -s "$RUNNER_TEMP/shopnoltd.dump"
+          tar -tzf "$RUNNER_TEMP/shopnoltd-all-databases.tar.gz" >/dev/null
           python3 - "$RUNNER_TEMP/shopnoltd-secrets.json" <<'PY'
           import json, sys
           with open(sys.argv[1], encoding="utf-8") as f:
@@ -88,11 +90,36 @@ jobs:
           pg_restore --list "$RUNNER_TEMP/shopnoltd.dump" > "$RUNNER_TEMP/shopnoltd-pg-restore-list.txt"
           entries="$(grep -cE '^[0-9]+; ' "$RUNNER_TEMP/shopnoltd-pg-restore-list.txt" || true)"
           [[ "$entries" =~ ^[0-9]+$ ]] && (( entries > 0 )) || { echo "::error::PostgreSQL archive has no recognizable entries."; exit 1; }
-          echo "PASS: PostgreSQL custom-format archive is readable ($entries entries)."
+          echo "PASS: primary PostgreSQL custom-format archive is readable ($entries entries)."
+
+          mkdir -p "$RUNNER_TEMP/shopnoltd-all-databases"
+          tar -xzf "$RUNNER_TEMP/shopnoltd-all-databases.tar.gz" -C "$RUNNER_TEMP/shopnoltd-all-databases"
+          globals="$RUNNER_TEMP/shopnoltd-all-databases/globals.sql"
+          database_list="$RUNNER_TEMP/shopnoltd-all-databases/database-list.txt"
+          dumps_dir="$RUNNER_TEMP/shopnoltd-all-databases/all-databases"
+          test -s "$globals"
+          test -s "$database_list"
+          grep -qE '^CREATE ROLE|^CREATE USER' "$globals" || { echo "::error::Global role archive is empty."; exit 1; }
+
+          database_count=0
+          while IFS= read -r database; do
+            [[ -n "$database" ]] || continue
+            [[ "$database" =~ ^[A-Za-z0-9_]+$ ]] || { echo "::error::Unsafe database name in archive."; exit 1; }
+            dump="$dumps_dir/$database.dump"
+            test -s "$dump" || { echo "::error::Missing database archive: $database"; exit 1; }
+            pg_restore --list "$dump" > "$RUNNER_TEMP/shopnoltd-pg-restore-list.txt"
+            entries="$(grep -cE '^[0-9]+; ' "$RUNNER_TEMP/shopnoltd-pg-restore-list.txt" || true)"
+            [[ "$entries" =~ ^[0-9]+$ ]] && (( entries > 0 )) || { echo "::error::Unreadable PostgreSQL archive: $database"; exit 1; }
+            database_count=$((database_count + 1))
+          done < "$database_list"
+
+          [[ "$database_count" -gt 0 ]] || { echo "::error::No database archives were verified."; exit 1; }
+          echo "PASS: all $database_count database archives and global roles are readable."
           echo "NOTE: This validates archive readability, not a full isolated database restore."
 
       - name: Remove decrypted artifacts
         if: always()
         shell: bash
         run: |
-          rm -f "$RUNNER_TEMP/shopnoltd.dump" "$RUNNER_TEMP/shopnoltd-secrets.json" "$RUNNER_TEMP/shopnoltd-pg-restore-list.txt"
+          rm -f "$RUNNER_TEMP/shopnoltd.dump" "$RUNNER_TEMP/shopnoltd-all-databases.tar.gz" "$RUNNER_TEMP/shopnoltd-secrets.json" "$RUNNER_TEMP/shopnoltd-pg-restore-list.txt"
+          rm -rf "$RUNNER_TEMP/shopnoltd-all-databases"
