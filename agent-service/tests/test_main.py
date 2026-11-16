@@ -120,5 +120,32 @@ class WorkspaceIsolationTests(unittest.TestCase):
             main.user_path("user-a", "escape/secret.txt")
 
 
+class WebSocketAuthenticationDisconnectTests(unittest.IsolatedAsyncioTestCase):
+    async def test_disconnect_before_first_auth_message_is_handled_cleanly(self):
+        class DisconnectedSocket:
+            headers = {"origin": main.UI_ORIGINS[0]}
+
+            def __init__(self):
+                self.accepted = False
+                self.close_called = False
+
+            async def accept(self):
+                self.accepted = True
+
+            async def receive_json(self):
+                raise main.WebSocketDisconnect(code=1005)
+
+            async def close(self, code):
+                self.close_called = True
+                raise AssertionError("disconnected socket must not receive a close frame")
+
+        ws = DisconnectedSocket()
+        claims = await main.authenticate(ws, "ui")
+
+        self.assertTrue(ws.accepted)
+        self.assertIsNone(claims)
+        self.assertFalse(ws.close_called)
+
+
 if __name__ == "__main__":
     unittest.main()
