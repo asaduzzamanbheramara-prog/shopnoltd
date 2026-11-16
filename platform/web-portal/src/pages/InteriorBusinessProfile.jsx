@@ -3,6 +3,8 @@ import { useEffect } from 'react'
 import { qrUrl, shareProfile } from './profileShare'
 import ProfileVideoGallery from './ProfileVideoGallery'
 
+const WHATSAPP_URL = 'https://wa.me/message/BVP2XYEGBPEPA1'
+
 const CATALOG = [
   { size: 'lg', title: 'Corporate & Commercial', items: ['Corporate office interior', 'Bank decoration & renovation', 'Super shop & showroom interior', 'Restaurant & retail interior'] },
   { size: 'lg', title: 'Home & Residence', items: ['Flat / residence interior', 'Living, dining & kitchen', 'Bedroom & guest room decoration', 'Rooftop garden design'] },
@@ -34,6 +36,7 @@ export default function InteriorBusinessProfile() {
         .ib-actions { display: flex; flex-wrap: wrap; gap: 10px; }
         .ib-btn { padding: 12px 20px; border-radius: 3px; font-weight: 700; text-decoration: none; font-size: 14.5px; }
         .ib-btn-brass { background: var(--brass); color: #201812; }
+        .ib-btn-whatsapp { background: #1f8f55; color: #fff; }
         .ib-btn-ghost { border: 1px solid rgba(239,232,219,.5); color: var(--plaster); }
 
         .ib-video-frame { background: #1A1310; border: 1px solid rgba(239,232,219,.15); border-radius: 6px; aspect-ratio: 4/3; display: flex; align-items: center; justify-content: center; color: rgba(239,232,219,.55); font-size: 14px; text-align: center; padding: 18px; }
@@ -75,6 +78,7 @@ export default function InteriorBusinessProfile() {
             <p className="ib-sub">Residential, workplace, retail and commercial interiors — from space planning and design concepts to material selection, lighting, cabinetry, finishes and coordinated fit-out. Each project is scoped around the client's brief, site requirements, budget and delivery location.</p>
             <div className="ib-actions">
               <a className="ib-btn ib-btn-brass" href="/cv/shopno-business-interior-profile.pdf" download>Download profile</a>
+              <a className="ib-btn ib-btn-whatsapp" href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer">Chat on WhatsApp</a>
               <a className="ib-btn ib-btn-ghost" href="https://shopnoltd.wixsite.com/shopno/home-decoration" target="_blank" rel="noopener noreferrer">Original portfolio</a>
               <Link className="ib-btn ib-btn-ghost" to="/profiles">All profiles</Link>
               <button type="button" className="ib-btn ib-btn-ghost ib-btn-button" onClick={() => shareProfile(profileUrl, 'Shopno Interior Design & Decoration')}>Share profile</button>
@@ -103,6 +107,17 @@ export default function InteriorBusinessProfile() {
             <h2>Take this profile with you</h2>
             <p>Scan the code to open this page on your phone, or send the link to a client or colleague.</p>
             <button type="button" className="ib-share-btn" onClick={() => shareProfile(profileUrl, 'Shopno Interior Design & Decoration')}>Share link</button>
+          </div>
+        </div>
+      </section>
+
+      <section className="ib-share">
+        <div className="ib-share-card">
+          <img src={qrUrl(WHATSAPP_URL)} alt="QR code to message Shopno Database Firm on WhatsApp" width="180" height="180" loading="lazy" />
+          <div>
+            <h2>Contact Shopno Database Firm on WhatsApp</h2>
+            <p>Scan this code to start a WhatsApp conversation, or use the direct business chat link.</p>
+            <a className="ib-share-btn" href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', textDecoration: 'none' }}>Message Shopno Database Firm</a>
           </div>
         </div>
       </section>
