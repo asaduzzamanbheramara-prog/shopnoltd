@@ -147,5 +147,27 @@ class WebSocketAuthenticationDisconnectTests(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(ws.close_called)
 
 
+    async def test_disconnect_while_sending_auth_confirmation_returns_none(self):
+        class AuthenticatedSocket:
+            headers = {"origin": main.UI_ORIGINS[0]}
+
+            async def accept(self):
+                pass
+
+            async def receive_json(self):
+                return {"type": "auth", "token": "test-token"}
+
+            async def send_json(self, message):
+                raise main.WebSocketDisconnect(code=1006)
+
+        ws = AuthenticatedSocket()
+        with unittest.mock.patch.object(
+            main, "verify_token", new=unittest.mock.AsyncMock(return_value={"sub": "user-a"})
+        ):
+            claims = await main.authenticate(ws, "ui")
+
+        self.assertIsNone(claims)
+
+
 if __name__ == "__main__":
     unittest.main()
