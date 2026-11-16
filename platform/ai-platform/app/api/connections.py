@@ -1,15 +1,17 @@
+import hashlib
+import json
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from urllib.parse import urlparse
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import current_user, require_admin, encrypt_secret, decrypt_secret, mask_secret
-from app.db.models import AIConnection
+from app.db.models import AIConnection, GitHubWriteApproval
 from app.db.session import get_db
 
 router = APIRouter(prefix="/api/v1/connections", tags=["connections"])
@@ -165,29 +167,119 @@ async def github_file(connection_id: uuid.UUID, repo: str, path: str, ref: str |
         return {"repo": repo, "path": path, "ref": ref, "content": r.text}
 
 
-class GithubWrite(BaseModel):
-    repo: str
-    path: str
-    content: str
+class GithubWriteOperation(BaseModel):
+    repo: str = Field(pattern=r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")
+    path: str = Field(min_length=1, max_length=500)
+    content: str = Field(max_length=1_000_000)
     message: str = Field(min_length=1, max_length=200)
-    branch: str
+    branch: str = Field(min_length=1, max_length=255)
     sha: str | None = None
-    approved: bool = False
+
+
+class GithubWriteApprovalRequest(GithubWriteOperation):
+    """Submitting this endpoint is the explicit admin approval action."""
+
+
+class GithubWrite(GithubWriteOperation):
+    approval_id: uuid.UUID
+
+
+def _github_write_digest(body: GithubWriteOperation) -> str:
+    canonical = json.dumps(
+        body.model_dump(mode="json"), sort_keys=True, separators=(",", ":")
+    ).encode("utf-8")
+    return hashlib.sha256(canonical).hexdigest()
+
+
+@router.post("/{connection_id}/github/approvals", status_code=status.HTTP_201_CREATED)
+async def approve_github_write(
+    connection_id: uuid.UUID,
+    body: GithubWriteApprovalRequest,
+    user=Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Create a five-minute approval for this exact operation; approval is single-use."""
+    c = await _owned(connection_id, user, db)
+    if c.kind != "github":
+        raise HTTPException(400, "Not a GitHub connection")
+    if any(part == ".." for part in body.path.split("/")):
+        raise HTTPException(400, "Invalid repository path")
+
+    now = datetime.now(timezone.utc)
+    approval = GitHubWriteApproval(
+        connection_id=c.id,
+        user_id=str(user.get("sub")),
+        operation_hash=_github_write_digest(body),
+        expires_at=now + timedelta(minutes=5),
+    )
+    db.add(approval)
+    await db.commit()
+    await db.refresh(approval)
+    return {
+        "approval_id": str(approval.id),
+        "expires_at": approval.expires_at,
+        "single_use": True,
+        "operation_sha256": approval.operation_hash,
+    }
 
 
 @router.put("/{connection_id}/github/file")
-async def github_write_file(connection_id: uuid.UUID, body: GithubWrite, user=Depends(require_admin), db: AsyncSession = Depends(get_db)):
-    if not body.approved:
-        raise HTTPException(409, "Explicit approval is required before writing to GitHub")
+async def github_write_file(
+    connection_id: uuid.UUID,
+    body: GithubWrite,
+    user=Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
     c = await _owned(connection_id, user, db)
-    if c.kind != "github": raise HTTPException(400, "Not a GitHub connection")
+    if c.kind != "github":
+        raise HTTPException(400, "Not a GitHub connection")
+
+    now = datetime.now(timezone.utc)
+    consumed = await db.execute(
+        update(GitHubWriteApproval)
+        .where(
+            GitHubWriteApproval.id == body.approval_id,
+            GitHubWriteApproval.connection_id == c.id,
+            GitHubWriteApproval.user_id == str(user.get("sub")),
+            GitHubWriteApproval.operation_hash == _github_write_digest(body),
+            GitHubWriteApproval.expires_at > now,
+            GitHubWriteApproval.consumed_at.is_(None),
+        )
+        .values(consumed_at=now)
+        .returning(GitHubWriteApproval.id)
+    )
+    if consumed.scalar_one_or_none() is None:
+        await db.rollback()
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "Approval is missing, expired, already used, or does not match this exact operation",
+        )
+    # Consume before the external side effect. A failed GitHub call requires a fresh approval.
+    await db.commit()
+
     token = decrypt_secret(c.secret_encrypted or "")
     import base64
-    payload = {"message": body.message, "content": base64.b64encode(body.content.encode()).decode(), "branch": body.branch}
-    if body.sha: payload["sha"] = body.sha
+    payload = {
+        "message": body.message,
+        "content": base64.b64encode(body.content.encode()).decode(),
+        "branch": body.branch,
+    }
+    if body.sha:
+        payload["sha"] = body.sha
     async with httpx.AsyncClient(timeout=20) as client:
-        r = await client.put(f"https://api.github.com/repos/{body.repo}/contents/{body.path.lstrip('/')}",
-            json=payload, headers={"Accept":"application/vnd.github+json","Authorization":f"Bearer {token}","X-GitHub-Api-Version":"2022-11-28"})
+        r = await client.put(
+            f"https://api.github.com/repos/{body.repo}/contents/{body.path.lstrip('/')}",
+            json=payload,
+            headers={
+                "Accept": "application/vnd.github+json",
+                "Authorization": f"Bearer {token}",
+                "X-GitHub-Api-Version": "2022-11-28",
+            },
+        )
         r.raise_for_status()
         data = r.json()
-    return {"ok": True, "commit": data.get("commit", {}).get("sha"), "content": data.get("content", {}).get("path")}
+    return {
+        "ok": True,
+        "commit": data.get("commit", {}).get("sha"),
+        "content": data.get("content", {}).get("path"),
+    }
