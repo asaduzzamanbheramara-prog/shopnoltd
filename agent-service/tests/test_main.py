@@ -1,6 +1,8 @@
 import os
 import tempfile
 import unittest
+import socket
+from unittest.mock import patch
 
 import httpx
 
@@ -12,10 +14,12 @@ import main
 
 class BrowserArgumentTests(unittest.TestCase):
     def test_accepts_public_http_url(self):
-        self.assertEqual(
-            main.validate_public_http_url("https://example.com/path"),
-            "https://example.com/path",
-        )
+        public_answer = [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 443))]
+        with patch("main.socket.getaddrinfo", return_value=public_answer):
+            self.assertEqual(
+                main.validate_public_http_url("https://example.com/path"),
+                "https://example.com/path",
+            )
 
     def test_rejects_localhost_and_private_networks(self):
         for url in (
@@ -28,6 +32,25 @@ class BrowserArgumentTests(unittest.TestCase):
         ):
             with self.subTest(url=url), self.assertRaises(ValueError):
                 main.validate_public_http_url(url)
+
+    def test_rejects_hostname_resolving_to_private_address(self):
+        private_answer = [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("10.0.0.8", 80))]
+        with patch("main.socket.getaddrinfo", return_value=private_answer):
+            with self.assertRaisesRegex(ValueError, "private and non-global"):
+                main.validate_public_http_url("http://attacker.example/")
+
+    def test_rejects_hostname_when_dns_resolution_fails(self):
+        with patch("main.socket.getaddrinfo", side_effect=socket.gaierror("no answer")):
+            with self.assertRaisesRegex(ValueError, "DNS could not be safely resolved"):
+                main.validate_public_http_url("https://unresolvable.example/")
+
+    def test_accepts_hostname_resolving_only_to_public_addresses(self):
+        public_answer = [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 443))]
+        with patch("main.socket.getaddrinfo", return_value=public_answer):
+            self.assertEqual(
+                main.validate_public_http_url("https://example.com/"),
+                "https://example.com/",
+            )
 
     def test_requires_selector_for_wait_for(self):
         with self.assertRaisesRegex(ValueError, "selector required"):
