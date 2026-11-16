@@ -68,42 +68,44 @@ jobs:
           test -s "$RUNNER_TEMP/shopnoltd-restore-source/database-list.txt"
           echo "PASS: encrypted backup decrypted and extracted on the disposable GitHub-hosted runner."
 
-      - name: Install PostgreSQL client
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq postgresql-client
-          pg_restore --version
-
-      - name: Restore roles and all database archives
+      - name: Restore roles and all database archives with PostgreSQL 16 tools
         shell: bash
         env:
-          PGHOST: 127.0.0.1
-          PGPORT: "5432"
           PGUSER: restore_admin_${{ github.run_id }}
           PGPASSWORD: restore-only-${{ github.run_id }}-${{ github.run_attempt }}
         run: |
           set -euo pipefail
+          echo "::add-mask::$PGPASSWORD"
           source_dir="$RUNNER_TEMP/shopnoltd-restore-source"
           dumps_dir="$source_dir/all-databases"
           database_list="$source_dir/database-list.txt"
           test -d "$dumps_dir"
 
-          for attempt in $(seq 1 30); do
-            if pg_isready -d postgres >/dev/null 2>&1; then break; fi
-            sleep 2
-          done
-          pg_isready -d postgres
+          image='ghcr.io/asaduzzamanbheramara-prog/shopnoltd-postgres-combined:pg16-postgis3.5-pgvector0.8.6'
+          container_id="$(docker ps --filter "ancestor=$image" --format '{{.ID}}' | head -n 1)"
+          test -n "$container_id" || { echo "::error::Disposable PostgreSQL service container was not found."; exit 1; }
+
+          client_version="$(docker exec "$container_id" pg_restore --version)"
+          echo "Using matching restore client: $client_version"
+          [[ "$client_version" == *"16."* ]] || { echo "::error::Restore client must match PostgreSQL 16."; exit 1; }
+          docker exec "$container_id" pg_isready -U "$PGUSER" -d postgres
+          docker cp "$source_dir" "$container_id:/tmp/"
+          restore_dir=/tmp/shopnoltd-restore-source
 
           # The service container is disposable and isolated from production.
-          psql --dbname=postgres --set ON_ERROR_STOP=1 --file "$source_dir/globals.sql" >/dev/null
+          docker exec -e PGPASSWORD="$PGPASSWORD" "$container_id" \
+            psql -U "$PGUSER" --dbname=postgres --set ON_ERROR_STOP=1 \
+            --file "$restore_dir/globals.sql" >/dev/null
 
           restored=0
           while IFS= read -r database; do
             [[ -n "$database" ]] || continue
             [[ "$database" =~ ^[A-Za-z0-9_]+$ ]] || { echo "::error::Unsafe database name in backup inventory."; exit 1; }
-            dump="$dumps_dir/$database.dump"
-            test -s "$dump" || { echo "::error::Missing archive for a listed database."; exit 1; }
-            pg_restore --exit-on-error --clean --if-exists --create --dbname=template1 "$dump"
+            dump="$restore_dir/all-databases/$database.dump"
+            docker exec "$container_id" test -s "$dump" || { echo "::error::A listed database archive is missing."; exit 1; }
+            docker exec -e PGPASSWORD="$PGPASSWORD" "$container_id" \
+              pg_restore --exit-on-error --clean --if-exists --create \
+              --username="$PGUSER" --dbname=template1 "$dump"
             restored=$((restored + 1))
           done < "$database_list"
 
@@ -113,13 +115,16 @@ jobs:
           verified=0
           while IFS= read -r database; do
             [[ -n "$database" ]] || continue
-            actual="$(psql --dbname="$database" --tuples-only --no-align --set ON_ERROR_STOP=1 --command='SELECT current_database()')"
+            actual="$(docker exec -e PGPASSWORD="$PGPASSWORD" "$container_id" \
+              psql -U "$PGUSER" --dbname="$database" --tuples-only --no-align \
+              --set ON_ERROR_STOP=1 --command='SELECT current_database()')"
             [[ "$actual" == "$database" ]] || { echo "::error::A restored database failed its connection check."; exit 1; }
             verified=$((verified + 1))
           done < "$database_list"
 
-          echo "PASS: restored and connected to all $verified databases in the disposable PostgreSQL instance."
+          echo "PASS: restored and connected to all $verified databases in the disposable PostgreSQL 16 instance."
           echo "PASS: production PostgreSQL and Kubernetes Secrets were not accessed or modified by this restore job."
+          docker exec "$container_id" rm -rf "$restore_dir"
 
       - name: Remove decrypted backup material
         if: always()
