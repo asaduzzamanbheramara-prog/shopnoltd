@@ -1,0 +1,129 @@
+name: Isolated PostgreSQL backup restore test
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: read
+
+concurrency:
+  group: isolated-postgres-restore-test
+  cancel-in-progress: false
+
+jobs:
+  restore:
+    name: Restore all databases in disposable PostgreSQL
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    services:
+      postgres:
+        image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-postgres-combined:pg16-postgis3.5-pgvector0.8.6
+        credentials:
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+        env:
+          POSTGRES_USER: restore_admin_${{ github.run_id }}
+          POSTGRES_PASSWORD: restore-only-${{ github.run_id }}-${{ github.run_attempt }}
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U restore_admin_${{ github.run_id }} -d postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 12
+
+    steps:
+      - name: Checkout encrypted backup branch
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository }}
+          ref: database-backups
+          path: backup-source
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Decrypt and extract latest backup
+        shell: bash
+        env:
+          BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
+        run: |
+          set -euo pipefail
+          umask 077
+          test -n "${BACKUP_ENCRYPTION_KEY:-}" || { echo "::error::BACKUP_ENCRYPTION_KEY is missing."; exit 1; }
+          echo "::add-mask::$BACKUP_ENCRYPTION_KEY"
+          cd backup-source/backup
+          for file in latest.all-databases.tar.gz.enc latest.all-databases.tar.gz.enc.sha256; do
+            test -s "$file" || { echo "::error::Required encrypted database backup is missing: $file"; exit 1; }
+          done
+          sha256sum -c latest.all-databases.tar.gz.enc.sha256
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 \
+            -in latest.all-databases.tar.gz.enc \
+            -out "$RUNNER_TEMP/shopnoltd-all-databases.tar.gz" \
+            -pass env:BACKUP_ENCRYPTION_KEY
+          mkdir -p "$RUNNER_TEMP/shopnoltd-restore-source"
+          tar -xzf "$RUNNER_TEMP/shopnoltd-all-databases.tar.gz" -C "$RUNNER_TEMP/shopnoltd-restore-source"
+          test -s "$RUNNER_TEMP/shopnoltd-restore-source/globals.sql"
+          test -s "$RUNNER_TEMP/shopnoltd-restore-source/database-list.txt"
+          echo "PASS: encrypted backup decrypted and extracted on the disposable GitHub-hosted runner."
+
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client
+          pg_restore --version
+
+      - name: Restore roles and all database archives
+        shell: bash
+        env:
+          PGHOST: 127.0.0.1
+          PGPORT: "5432"
+          PGUSER: restore_admin_${{ github.run_id }}
+          PGPASSWORD: restore-only-${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          set -euo pipefail
+          source_dir="$RUNNER_TEMP/shopnoltd-restore-source"
+          dumps_dir="$source_dir/all-databases"
+          database_list="$source_dir/database-list.txt"
+          test -d "$dumps_dir"
+
+          for attempt in $(seq 1 30); do
+            if pg_isready -d postgres >/dev/null 2>&1; then break; fi
+            sleep 2
+          done
+          pg_isready -d postgres
+
+          # The service container is disposable and isolated from production.
+          psql --dbname=postgres --set ON_ERROR_STOP=1 --file "$source_dir/globals.sql" >/dev/null
+
+          restored=0
+          while IFS= read -r database; do
+            [[ -n "$database" ]] || continue
+            [[ "$database" =~ ^[A-Za-z0-9_]+$ ]] || { echo "::error::Unsafe database name in backup inventory."; exit 1; }
+            dump="$dumps_dir/$database.dump"
+            test -s "$dump" || { echo "::error::Missing archive for a listed database."; exit 1; }
+            pg_restore --exit-on-error --clean --if-exists --create --dbname=template1 "$dump"
+            restored=$((restored + 1))
+          done < "$database_list"
+
+          listed="$(grep -cve '^$' "$database_list")"
+          [[ "$restored" -eq "$listed" && "$restored" -gt 0 ]] || { echo "::error::Not every database archive was restored."; exit 1; }
+
+          verified=0
+          while IFS= read -r database; do
+            [[ -n "$database" ]] || continue
+            actual="$(psql --dbname="$database" --tuples-only --no-align --set ON_ERROR_STOP=1 --command='SELECT current_database()')"
+            [[ "$actual" == "$database" ]] || { echo "::error::A restored database failed its connection check."; exit 1; }
+            verified=$((verified + 1))
+          done < "$database_list"
+
+          echo "PASS: restored and connected to all $verified databases in the disposable PostgreSQL instance."
+          echo "PASS: production PostgreSQL and Kubernetes Secrets were not accessed or modified by this restore job."
+
+      - name: Remove decrypted backup material
+        if: always()
+        shell: bash
+        run: |
+          rm -f "$RUNNER_TEMP/shopnoltd-all-databases.tar.gz"
+          rm -rf "$RUNNER_TEMP/shopnoltd-restore-source"
