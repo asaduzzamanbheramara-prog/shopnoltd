@@ -70,6 +70,8 @@ jobs:
             platform/license-service/app \
             platform/training-service/app \
             shared/libraries/python/shopno_core
+      - name: Test GitHub write approval security contract
+        run: python -m unittest discover -s platform/ai-platform/tests -p 'test_github_write_approval_contract.py' -v
 
   web-portal:
     name: Web portal build
