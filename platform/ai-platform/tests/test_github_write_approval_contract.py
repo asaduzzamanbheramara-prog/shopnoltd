@@ -58,6 +58,8 @@ class GitHubWriteApprovalContractTests(unittest.TestCase):
         fn = _function(self.api_tree, "github_write_file")
         source = ast.unparse(fn)
         self.assertIn("GitHubWriteApproval.consumed_at.is_(None)", source)
+        for field in ("connection_id", "user_id", "operation_hash", "expires_at"):
+            self.assertIn(f"GitHubWriteApproval.{field}", source)
         self.assertIn("values(consumed_at=now)", source)
         self.assertIn("db.commit()", source)
         self.assertIn("status.HTTP_409_CONFLICT", source)
