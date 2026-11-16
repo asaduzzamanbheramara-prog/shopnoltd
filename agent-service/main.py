@@ -132,7 +132,11 @@ async def authenticate(ws: WebSocket, kind: str) -> dict | None:
             pass
         return None
     claims["_deadline"] = time.time() + (UI_MAX_SECONDS if kind == "ui" else EXT_MAX_SECONDS)
-    await ws.send_json({"type": "auth_ok"})
+    try:
+        await ws.send_json({"type": "auth_ok"})
+    except (WebSocketDisconnect, RuntimeError):
+        # The peer can disconnect after sending a valid token but before auth_ok is delivered.
+        return None
     return claims
 
 
