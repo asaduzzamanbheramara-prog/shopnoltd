@@ -27,7 +27,7 @@ spec:
       hostNetwork: true
       dnsPolicy: Default
       hostAliases:
-        - ip: 10.43.174.50
+        - ip: 10.43.40.255
           hostnames:
             - ingress-nginx-controller.ingress-nginx.svc.cluster.local
       securityContext:
