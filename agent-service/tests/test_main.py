@@ -14,10 +14,12 @@ import main
 
 class BrowserArgumentTests(unittest.TestCase):
     def test_accepts_public_http_url(self):
-        self.assertEqual(
-            main.validate_public_http_url("https://example.com/path"),
-            "https://example.com/path",
-        )
+        public_answer = [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 443))]
+        with patch("main.socket.getaddrinfo", return_value=public_answer):
+            self.assertEqual(
+                main.validate_public_http_url("https://example.com/path"),
+                "https://example.com/path",
+            )
 
     def test_rejects_localhost_and_private_networks(self):
         for url in (
