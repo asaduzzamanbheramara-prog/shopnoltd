@@ -21,10 +21,15 @@ async def current_user(creds: HTTPAuthorizationCredentials = Depends(bearer)):
     return await verify_token(creds.credentials)
 
 
+def _tenant_id(user: dict) -> str:
+    """Resolve the tenant consistently for both creation and access checks."""
+    return str(user.get("tenant_id") or "default")
+
+
 @router.post("", status_code=201)
 async def create(body: AgentIn, user=Depends(current_user), s: AsyncSession = Depends(db)):
     a = Agent(
-        tenant_id=user.get("tenant_id", "default"),
+        tenant_id=_tenant_id(user),
         name=body.name,
         system_prompt=body.system_prompt,
         model=body.model,
@@ -36,7 +41,7 @@ async def create(body: AgentIn, user=Depends(current_user), s: AsyncSession = De
 
 @router.get("")
 async def list_(user=Depends(current_user), s: AsyncSession = Depends(db)):
-    res = await s.execute(select(Agent).where(Agent.tenant_id == user.get("tenant_id", "default")))
+    res = await s.execute(select(Agent).where(Agent.tenant_id == _tenant_id(user)))
     return [{"id": a.id, "name": a.name, "model": a.model} for a in res.scalars().all()]
 
 
@@ -44,7 +49,16 @@ async def list_(user=Depends(current_user), s: AsyncSession = Depends(db)):
 async def chat(
     agent_id: str, message: str, user=Depends(current_user), s: AsyncSession = Depends(db)
 ):
-    a = (await s.execute(select(Agent).where(Agent.id == agent_id))).scalar_one_or_none()
+    # Always scope the lookup to the caller's tenant. Returning the same 404
+    # for missing and foreign-tenant IDs avoids leaking whether an agent exists.
+    a = (
+        await s.execute(
+            select(Agent).where(
+                Agent.id == agent_id,
+                Agent.tenant_id == _tenant_id(user),
+            )
+        )
+    ).scalar_one_or_none()
     if not a:
         raise HTTPException(404, "agent not found")
     s.add(Conversation(agent_id=a.id, user_id=user["sub"], role="user", content=message))
