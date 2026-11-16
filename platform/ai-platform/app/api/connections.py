@@ -1,3 +1,5 @@
+import ipaddress
+import socket
 import uuid
 from datetime import datetime, timezone
 from urllib.parse import urlparse
@@ -13,6 +15,37 @@ from app.db.models import AIConnection
 from app.db.session import get_db
 
 router = APIRouter(prefix="/api/v1/connections", tags=["connections"])
+
+
+def _validate_local_base_url(raw: str) -> str:
+    """Reject local/private destinations and unsafe URL forms for user-supplied AI endpoints."""
+    parsed = urlparse(raw)
+    if (
+        parsed.scheme not in {"http", "https"}
+        or not parsed.hostname
+        or parsed.username
+        or parsed.password
+        or parsed.query
+        or parsed.fragment
+    ):
+        raise ValueError("Base URL must be a public http(s) URL without credentials, query, or fragment")
+    host = parsed.hostname.rstrip(".").lower()
+    if host == "localhost" or host.endswith((".localhost", ".local", ".internal", ".svc", ".cluster.local")):
+        raise ValueError("Private and local destinations are blocked")
+    try:
+        addresses = {ipaddress.ip_address(host)}
+    except ValueError:
+        try:
+            answers = socket.getaddrinfo(
+                host, parsed.port or (443 if parsed.scheme == "https" else 80),
+                type=socket.SOCK_STREAM,
+            )
+            addresses = {ipaddress.ip_address(answer[4][0]) for answer in answers}
+        except (OSError, ValueError):
+            raise ValueError("Destination DNS could not be safely resolved")
+    if not addresses or any(not address.is_global for address in addresses):
+        raise ValueError("Private and non-global IP destinations are blocked")
+    return raw.rstrip("/")
 
 
 class ConnectionCreate(BaseModel):
@@ -65,16 +98,10 @@ async def create_connection(body: ConnectionCreate, user=Depends(current_user), 
     if body.kind == "local":
         if not body.base_url:
             raise HTTPException(400, "Local server base URL is required")
-        parsed = urlparse(body.base_url)
-        if parsed.scheme not in {"http", "https"} or not parsed.netloc:
-            raise HTTPException(400, "Base URL must be an http(s) URL")
-        if parsed.hostname in {"localhost", "127.0.0.1", "::1"}:
-            raise HTTPException(
-                400,
-                "Localhost points to the Shopnoltd AI pod, not your computer. "
-                "Use a network-reachable local AI URL (for example your LAN host "
-                "address or a secure tunnel URL).",
-            )
+        try:
+            body.base_url = _validate_local_base_url(body.base_url)
+        except ValueError as exc:
+            raise HTTPException(400, str(exc)) from exc
     c = AIConnection(
         user_id=str(user.get("sub")), kind=body.kind, name=body.name.strip(),
         base_url=body.base_url.rstrip("/") if body.base_url else None,
@@ -91,7 +118,14 @@ async def create_connection(body: ConnectionCreate, user=Depends(current_user), 
 async def update_connection(connection_id: uuid.UUID, body: ConnectionUpdate, user=Depends(current_user), db: AsyncSession = Depends(get_db)):
     c = await _owned(connection_id, user, db)
     if body.name is not None: c.name = body.name.strip()
-    if body.base_url is not None: c.base_url = body.base_url.rstrip("/")
+    if body.base_url is not None:
+        if c.kind == "local":
+            try:
+                c.base_url = _validate_local_base_url(body.base_url)
+            except ValueError as exc:
+                raise HTTPException(400, str(exc)) from exc
+        else:
+            c.base_url = body.base_url.rstrip("/")
     if body.secret: c.secret_encrypted = encrypt_secret(body.secret)
     if body.config is not None: c.config = body.config
     if body.is_active is not None: c.is_active = body.is_active
@@ -125,7 +159,9 @@ async def test_connection(connection_id: uuid.UUID, user=Depends(current_user), 
             headers = {}
             if c.secret_encrypted:
                 headers["Authorization"] = f"Bearer {decrypt_secret(c.secret_encrypted)}"
-            async with httpx.AsyncClient(timeout=10) as client:
+            # Never follow redirects to a destination that bypasses the initial URL check.
+            _validate_local_base_url(c.base_url or "")
+            async with httpx.AsyncClient(timeout=10, follow_redirects=False, trust_env=False) as client:
                 r = await client.get(f"{c.base_url}/models", headers=headers)
                 r.raise_for_status()
             msg = f"Local OpenAI-compatible server reachable ({r.status_code})"
