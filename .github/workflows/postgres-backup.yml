@@ -62,12 +62,38 @@ jobs:
           mkdir -p "$BACKUP_WORKDIR"
           timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
           raw_db="$BACKUP_WORKDIR/database.dump"
+          raw_all_databases="$BACKUP_WORKDIR/all-databases.tar.gz"
           raw_secrets="$BACKUP_WORKDIR/kubernetes-secrets.json"
 
           kubectl -n "$POSTGRES_NAMESPACE" exec "deployment/$POSTGRES_DEPLOYMENT" -- \
             sh -c 'export PGPASSWORD="$POSTGRES_PASSWORD"; pg_dump --format=custom --no-owner --no-acl --username="$POSTGRES_USER" --dbname="$POSTGRES_DB"' \
             > "$raw_db"
           test -s "$raw_db"
+
+          # Back up every connectable, non-template database plus global roles.
+          mkdir -p "$BACKUP_WORKDIR/all-databases"
+          kubectl -n "$POSTGRES_NAMESPACE" exec "deployment/$POSTGRES_DEPLOYMENT" -- \
+            sh -c 'export PGPASSWORD="$POSTGRES_PASSWORD"; pg_dumpall --globals-only --username="$POSTGRES_USER"' \
+            > "$BACKUP_WORKDIR/globals.sql"
+          kubectl -n "$POSTGRES_NAMESPACE" exec "deployment/$POSTGRES_DEPLOYMENT" -- \
+            sh -c 'export PGPASSWORD="$POSTGRES_PASSWORD"; psql --username="$POSTGRES_USER" --dbname="$POSTGRES_DB" --no-align --tuples-only --command="SELECT datname FROM pg_database WHERE datallowconn AND NOT datistemplate ORDER BY datname"' \
+            > "$BACKUP_WORKDIR/database-list.txt"
+          test -s "$BACKUP_WORKDIR/globals.sql"
+          test -s "$BACKUP_WORKDIR/database-list.txt"
+
+          while IFS= read -r database; do
+            [[ -n "$database" ]] || continue
+            [[ "$database" =~ ^[A-Za-z0-9_]+$ ]] || { echo "::error::Unsafe database name in inventory."; exit 1; }
+            kubectl -n "$POSTGRES_NAMESPACE" exec "deployment/$POSTGRES_DEPLOYMENT" -- \
+              sh -c 'export PGPASSWORD="$POSTGRES_PASSWORD"; pg_dump --format=custom --username="$POSTGRES_USER" --dbname="$1"' \
+              sh "$database" > "$BACKUP_WORKDIR/all-databases/$database.dump"
+            test -s "$BACKUP_WORKDIR/all-databases/$database.dump"
+          done < "$BACKUP_WORKDIR/database-list.txt"
+
+          database_count="$(find "$BACKUP_WORKDIR/all-databases" -type f -name '*.dump' | wc -l)"
+          (( database_count > 0 )) || { echo "::error::No per-database archives were created."; exit 1; }
+          tar -czf "$raw_all_databases" -C "$BACKUP_WORKDIR" globals.sql database-list.txt all-databases
+          tar -tzf "$raw_all_databases" >/dev/null
 
           kubectl get secrets --all-namespaces -o json > "$raw_secrets"
           python3 - "$raw_secrets" <<'PY'
@@ -82,11 +108,15 @@ jobs:
 
           openssl enc -aes-256-cbc -pbkdf2 -iter 600000 -salt -in "$raw_db" \
             -out "$BACKUP_WORKDIR/latest.dump.enc" -pass env:BACKUP_ENCRYPTION_KEY
+          openssl enc -aes-256-cbc -pbkdf2 -iter 600000 -salt -in "$raw_all_databases" \
+            -out "$BACKUP_WORKDIR/latest.all-databases.tar.gz.enc" -pass env:BACKUP_ENCRYPTION_KEY
           openssl enc -aes-256-cbc -pbkdf2 -iter 600000 -salt -in "$raw_secrets" \
             -out "$BACKUP_WORKDIR/latest.kubernetes-secrets.json.enc" -pass env:BACKUP_ENCRYPTION_KEY
-          rm -f "$raw_db" "$raw_secrets"
+          rm -f "$raw_db" "$raw_secrets" "$raw_all_databases" "$BACKUP_WORKDIR/globals.sql" "$BACKUP_WORKDIR/database-list.txt"
+          rm -rf "$BACKUP_WORKDIR/all-databases"
           cd "$BACKUP_WORKDIR"
           sha256sum latest.dump.enc > latest.dump.enc.sha256
+          sha256sum latest.all-databases.tar.gz.enc > latest.all-databases.tar.gz.enc.sha256
           sha256sum latest.kubernetes-secrets.json.enc > latest.kubernetes-secrets.json.enc.sha256
           printf '%s\n' "$timestamp" > timestamp.txt
           printf '%s\n' "$GITHUB_SHA" > source-revision.txt
@@ -101,10 +131,24 @@ jobs:
           echo "::add-mask::$BACKUP_ENCRYPTION_KEY"
           cd "$BACKUP_WORKDIR"
           sha256sum -c latest.dump.enc.sha256
+          sha256sum -c latest.all-databases.tar.gz.enc.sha256
           sha256sum -c latest.kubernetes-secrets.json.enc.sha256
 
           openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 -in latest.dump.enc \
             -out database-restore-check.dump -pass env:BACKUP_ENCRYPTION_KEY
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 -in latest.all-databases.tar.gz.enc \
+            -out all-databases-restore-check.tar.gz -pass env:BACKUP_ENCRYPTION_KEY
+          mkdir -p all-databases-restore-check
+          tar -xzf all-databases-restore-check.tar.gz -C all-databases-restore-check
+          test -s all-databases-restore-check/globals.sql
+          python3 - all-databases-restore-check/database-list.txt all-databases-restore-check/all-databases <<'PY'
+          import pathlib, sys
+          names = [line.strip() for line in pathlib.Path(sys.argv[1]).read_text().splitlines() if line.strip()]
+          dumps = {p.stem for p in pathlib.Path(sys.argv[2]).glob("*.dump") if p.is_file() and p.stat().st_size}
+          if not names or set(names) != dumps:
+              raise SystemExit("All-database archive inventory does not match its dump files")
+          print(f"PASS: {len(names)} database archives and global roles decrypted and parsed.")
+          PY
           openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 -in latest.kubernetes-secrets.json.enc \
             -out secrets-restore-check.json -pass env:BACKUP_ENCRYPTION_KEY
 
@@ -119,7 +163,8 @@ jobs:
           PY
           test -s database-restore-check.dump
           echo "PASS: encrypted PostgreSQL database and Kubernetes Secrets decrypted and validated."
-          rm -f database-restore-check.dump secrets-restore-check.json
+          rm -f database-restore-check.dump secrets-restore-check.json all-databases-restore-check.tar.gz
+          rm -rf all-databases-restore-check
 
       - name: Publish encrypted database and Kubernetes Secrets snapshots
         shell: bash
@@ -134,6 +179,8 @@ jobs:
           mkdir -p backup
           cp "$BACKUP_WORKDIR/latest.dump.enc" backup/
           cp "$BACKUP_WORKDIR/latest.dump.enc.sha256" backup/
+          cp "$BACKUP_WORKDIR/latest.all-databases.tar.gz.enc" backup/
+          cp "$BACKUP_WORKDIR/latest.all-databases.tar.gz.enc.sha256" backup/
           cp "$BACKUP_WORKDIR/latest.kubernetes-secrets.json.enc" backup/
           cp "$BACKUP_WORKDIR/latest.kubernetes-secrets.json.enc.sha256" backup/
           cp "$BACKUP_WORKDIR/timestamp.txt" backup/
@@ -141,8 +188,9 @@ jobs:
           cat > backup/README.md <<'EOF'
           # Shopnoltd encrypted database and Kubernetes Secrets backups
 
-          This branch contains only the encrypted PostgreSQL database dump and the
-          all-namespace Kubernetes Secret export. The encryption key is supplied at
+          This branch contains an encrypted primary PostgreSQL dump, an encrypted
+          archive of every connectable non-template database plus global roles, and
+          the all-namespace Kubernetes Secret export. The encryption key is supplied at
           runtime through BACKUP_ENCRYPTION_KEY and is never stored here.
 
           Never publish or apply decrypted files casually. Restore is a manual,
