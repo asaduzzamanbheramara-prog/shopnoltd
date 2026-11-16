@@ -3,6 +3,8 @@ import { useEffect } from 'react'
 import { qrUrl, shareProfile } from './profileShare'
 import ProfileVideoGallery from './ProfileVideoGallery'
 
+const WHATSAPP_URL = 'https://wa.me/message/BVP2XYEGBPEPA1'
+
 const RECORD_SURVEYS = [
   { n: '500,000', label: 'Retail Outlet Census 2015 — Unilever' },
   { n: '500,000', label: 'CVDP-2 Phase' },
@@ -48,6 +50,13 @@ export default function DataManagementProfile() {
         .dm-btn { padding: 12px 20px; border-radius: 4px; font-weight: 600; text-decoration: none; font-size: 14.5px; }
         .dm-btn-primary { background: var(--paper); color: var(--ink); }
         .dm-btn-ghost { border: 1px solid #3A4452; color: var(--paper); }
+.dm-btn-whatsapp { background: #16A34A; color: #fff; border: 1px solid #16A34A; }
+.dm-whatsapp-share { max-width: 1100px; margin: 0 auto; padding: 0 24px 56px; display: grid; grid-template-columns: 180px 1fr; gap: 28px; align-items: center; }
+@media (max-width: 640px) { .dm-whatsapp-share { grid-template-columns: 1fr; } }
+.dm-whatsapp-share img { width: 180px; max-width: 100%; height: auto; background: #fff; border-radius: 8px; border: 1px solid var(--rule); }
+.dm-whatsapp-share h2 { font-family: 'Source Serif 4', serif; font-size: 22px; margin: 0 0 8px; }
+.dm-whatsapp-share p { margin: 0 0 14px; line-height: 1.65; color: var(--muted); max-width: 52ch; }
+.dm-whatsapp-link { display: inline-block; padding: 10px 16px; border-radius: 4px; background: #16A34A; color: #fff; font-weight: 700; text-decoration: none; }
 
         .dm-body { background: var(--paper); color: var(--ink); }
         .dm-grid { max-width: 1100px; margin: 0 auto; padding: 56px 24px 80px; display: grid; grid-template-columns: 280px 1fr; gap: 48px; }
@@ -101,6 +110,7 @@ export default function DataManagementProfile() {
           <a className="dm-btn dm-btn-primary" href="/cv/md-asaduzzaman-data-management-cv.pdf" download>Download CV</a>
           <Link className="dm-btn dm-btn-ghost" to="/profiles">All profiles</Link>
           <button type="button" className="dm-btn dm-btn-ghost dm-btn-button" onClick={() => shareProfile(profileUrl, 'Md. Asaduzzaman — Data Management Profile')}>Share profile</button>
+          <a className="dm-btn dm-btn-whatsapp" href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer">Chat on WhatsApp</a>
         </div>
       </div>
 
@@ -142,6 +152,17 @@ export default function DataManagementProfile() {
             <h2>Open this profile on your phone</h2>
             <p>Scan the code with a phone camera to open this exact page, or send the link through any app on your device.</p>
             <button type="button" className="dm-share-btn" onClick={() => shareProfile(profileUrl, 'Md. Asaduzzaman — Data Management Profile')}>Share link</button>
+          </div>
+        </div>
+      </div>
+
+      <div className="dm-body">
+        <div className="dm-whatsapp-share">
+          <img src={qrUrl(WHATSAPP_URL)} alt="Scan to start a WhatsApp chat with Shopno Database Firm" width="180" height="180" loading="lazy" />
+          <div>
+            <h2>Contact Shopno Database Firm on WhatsApp</h2>
+            <p>Scan this code to start a WhatsApp chat, or open the WhatsApp business chat link directly.</p>
+            <a className="dm-whatsapp-link" href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer">Message Shopno Database Firm</a>
           </div>
         </div>
       </div>
