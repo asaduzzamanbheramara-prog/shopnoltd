@@ -18,7 +18,7 @@ UI protocol (client -> server):
   {"type":"auth","token"}                  first message; may be re-sent any time to extend the session
   {"goal":"...","model":"claude-sonnet"}   start a task
 """
-import asyncio, base64, ipaddress, json, os, re, time, uuid
+import asyncio, base64, ipaddress, json, os, re, socket, time, uuid
 from collections import deque
 from urllib.parse import urlparse
 import httpx
@@ -225,12 +225,34 @@ def validate_public_http_url(raw: str) -> str:
     if host == "localhost" or host.endswith((".localhost", ".local", ".internal", ".svc", ".cluster.local")):
         raise ValueError("private and local destinations are blocked")
     try:
-        address = ipaddress.ip_address(host)
+        addresses = {ipaddress.ip_address(host)}
     except ValueError:
-        address = None
-    if address is not None and not address.is_global:
+        try:
+            # Validate every A/AAAA answer, not just the literal hostname. Browser
+            # redirects are checked again by the request interception below.
+            answers = socket.getaddrinfo(host, parsed.port or (443 if parsed.scheme == "https" else 80),
+                                         type=socket.SOCK_STREAM)
+            addresses = {ipaddress.ip_address(answer[4][0]) for answer in answers}
+        except (OSError, ValueError):
+            raise ValueError("destination DNS could not be safely resolved")
+    if not addresses or any(not address.is_global for address in addresses):
         raise ValueError("private and non-global IP destinations are blocked")
     return raw
+
+
+async def guard_browser_request(route) -> None:
+    """Block private-network requests, including redirects and subresource loads."""
+    request_url = route.request.url
+    scheme = urlparse(request_url).scheme.lower()
+    if scheme not in ("http", "https"):
+        await route.continue_()
+        return
+    try:
+        validate_public_http_url(request_url)
+    except ValueError:
+        await route.abort("blockedbyclient")
+        return
+    await route.continue_()
 
 
 def clean_browser_args(args: dict) -> dict:
@@ -268,7 +290,11 @@ async def _get_browser_session(user: str) -> dict:
         context = await browser.new_context(
             accept_downloads=True,
             viewport={"width": 1440, "height": 900},
+            service_workers="block",
         )
+        # Apply to every navigation, redirect and subresource request, not only
+        # the initial URL selected by the model.
+        await context.route("**/*", guard_browser_request)
         page = await context.new_page()
         session = {"playwright": playwright, "browser": browser, "context": context, "page": page}
         browser_sessions[user] = session
