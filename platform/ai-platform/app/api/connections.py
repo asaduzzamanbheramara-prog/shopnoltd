@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.security import current_user, encrypt_secret, decrypt_secret, mask_secret
+from app.core.security import current_user, require_admin, encrypt_secret, decrypt_secret, mask_secret
 from app.db.models import AIConnection
 from app.db.session import get_db
 
@@ -176,7 +176,7 @@ class GithubWrite(BaseModel):
 
 
 @router.put("/{connection_id}/github/file")
-async def github_write_file(connection_id: uuid.UUID, body: GithubWrite, user=Depends(current_user), db: AsyncSession = Depends(get_db)):
+async def github_write_file(connection_id: uuid.UUID, body: GithubWrite, user=Depends(require_admin), db: AsyncSession = Depends(get_db)):
     if not body.approved:
         raise HTTPException(409, "Explicit approval is required before writing to GitHub")
     c = await _owned(connection_id, user, db)
