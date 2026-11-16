@@ -186,7 +186,7 @@ class GithubWrite(GithubWriteOperation):
 
 def _github_write_digest(body: GithubWriteOperation) -> str:
     canonical = json.dumps(
-        body.model_dump(mode="json"), sort_keys=True, separators=(",", ":")
+        body.model_dump(mode="json", exclude={"approval_id"}), sort_keys=True, separators=(",", ":")
     ).encode("utf-8")
     return hashlib.sha256(canonical).hexdigest()
 
