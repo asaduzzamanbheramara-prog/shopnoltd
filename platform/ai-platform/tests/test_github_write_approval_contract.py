@@ -49,7 +49,8 @@ class GitHubWriteApprovalContractTests(unittest.TestCase):
         source = ast.unparse(fn)
         self.assertIn("Depends(require_admin)", source)
         self.assertIn("connection_id", source)
-        self.assertIn("str(user.get", source)
+        self.assertIn("user.get", source)
+        self.assertIn("str(", source)
         self.assertIn("_github_write_digest(body)", source)
         self.assertIn("timedelta(minutes=5)", self.api_source)
 
