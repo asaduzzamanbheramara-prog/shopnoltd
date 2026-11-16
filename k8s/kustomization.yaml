@@ -63,7 +63,7 @@ resources:
 - services/agent-service
 - services/remote-device
 - services/enketo
-- services/services/argocd/public-ingress.yaml
+- services/argocd/public-ingress.yaml
 - services/kobotoolbox
 - shopno-apps/kobo-worker.yaml
 - shopno-apps/kobo-beat.yaml
