@@ -108,8 +108,12 @@ jobs:
             dump="$dumps_dir/$database.dump"
             test -s "$dump" || { echo "::error::Missing database archive: $database"; exit 1; }
             pg_restore --list "$dump" > "$RUNNER_TEMP/shopnoltd-pg-restore-list.txt"
-            entries="$(grep -cE '^[0-9]+; ' "$RUNNER_TEMP/shopnoltd-pg-restore-list.txt" || true)"
-            [[ "$entries" =~ ^[0-9]+$ ]] && (( entries > 0 )) || { echo "::error::Unreadable PostgreSQL archive: $database"; exit 1; }
+            # Empty databases can have a valid custom-format archive with zero TOC entries.
+            # pg_restore --list must succeed and emit the archive header; do not require objects.
+            grep -q '^; Archive created at ' "$RUNNER_TEMP/shopnoltd-pg-restore-list.txt" || {
+              echo "::error::Invalid PostgreSQL custom-format archive: $database"
+              exit 1
+            }
             database_count=$((database_count + 1))
           done < "$database_list"
 
