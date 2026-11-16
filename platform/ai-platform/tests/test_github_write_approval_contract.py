@@ -64,8 +64,20 @@ class GitHubWriteApprovalContractTests(unittest.TestCase):
 
     def test_digest_excludes_only_the_approval_identifier(self):
         fn = _function(self.api_tree, "_github_write_digest")
+        calls = [node for node in ast.walk(fn) if isinstance(node, ast.Call)]
+        exclude_values = [
+            keyword.value
+            for call in calls
+            for keyword in call.keywords
+            if keyword.arg == "exclude"
+        ]
+        self.assertEqual(len(exclude_values), 1)
+        self.assertIsInstance(exclude_values[0], ast.Set)
+        self.assertEqual(
+            {item.value for item in exclude_values[0].elts if isinstance(item, ast.Constant)},
+            {"approval_id"},
+        )
         source = ast.unparse(fn)
-        self.assertIn('exclude={"approval_id"}', source)
         self.assertIn("sort_keys=True", source)
         self.assertIn("hashlib.sha256", source)
 
