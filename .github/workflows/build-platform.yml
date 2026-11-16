@@ -37,7 +37,9 @@ permissions:
   actions: write
 
 concurrency:
-  group: platform-build-promote-main
+  # Keep pull-request image validation independent from main-branch promotion.
+  # A queued PR build must not be blocked by an unrelated main deployment.
+  group: platform-build-promote-${{ github.ref }}
   cancel-in-progress: false
 
 env:
