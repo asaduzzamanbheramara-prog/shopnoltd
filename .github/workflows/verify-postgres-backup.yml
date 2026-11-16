@@ -1,10 +1,10 @@
-name: Verify encrypted Shopnoltd database and Kubernetes Secrets backups
+name: Verify encrypted Shopnoltd multi-store disaster-recovery snapshots
 
 on:
   workflow_dispatch:
   workflow_run:
     workflows:
-      - Shopnoltd encrypted database and Kubernetes Secrets backup
+      - Shopnoltd encrypted multi-store disaster-recovery backup
     types:
       - completed
   schedule:
@@ -14,60 +14,79 @@ permissions:
   contents: read
 
 concurrency:
-  group: verify-postgres-backup
+  group: verify-shopnoltd-disaster-recovery-backup
   cancel-in-progress: false
 
 jobs:
   verify:
     if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
-    name: Verify encrypted database and Kubernetes Secrets
+    name: Verify newest encrypted multi-store snapshot
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
-      - name: Checkout encrypted backup branch
+      - name: Checkout append-only encrypted snapshot branch
         uses: actions/checkout@v4
         with:
           ref: database-backups
           path: backup-source
-          fetch-depth: 1
+          fetch-depth: 0
           persist-credentials: false
 
-      - name: Validate timestamp and required files
+      - name: Locate and validate newest snapshot
+        id: snapshot
         shell: bash
         run: |
           set -euo pipefail
-          cd backup-source/backup
-          for file in timestamp.txt latest.dump.enc latest.dump.enc.sha256 latest.kubernetes-secrets.json.enc latest.kubernetes-secrets.json.enc.sha256; do
-            test -s "$file" || { echo "::error::Required backup file missing: $file"; exit 1; }
+          cd backup-source
+          snapshot_name="$(find snapshots -mindepth 1 -maxdepth 1 -type d -printf '%f\n' 2>/dev/null | grep -E '^[0-9]{8}T[0-9]{6}Z$' | sort -r | head -n 1 || true)"
+          [[ "$snapshot_name" =~ ^[0-9]{8}T[0-9]{6}Z$ ]] || { echo "::error::No timestamped snapshot directory found."; exit 1; }
+          snapshot="snapshots/$snapshot_name"
+          for file in postgres-all-databases.tar.gz.enc postgres-all-databases.tar.gz.enc.sha256 postgres-all-databases.tar.gz.enc.hmac kubernetes-secrets.json.enc kubernetes-secrets.json.enc.sha256 kubernetes-secrets.json.enc.hmac timestamp.txt source-revision.txt; do
+            test -s "$snapshot/$file" || { echo "::error::Required snapshot file missing: $snapshot/$file"; exit 1; }
           done
-          timestamp="$(tr -d '\r\n' < timestamp.txt)"
-          [[ "$timestamp" =~ ^[0-9]{8}T[0-9]{6}Z$ ]] || { echo "::error::Invalid backup timestamp."; exit 1; }
+          timestamp="$(tr -d '\r\n' < "$snapshot/timestamp.txt")"
+          [[ "$timestamp" == "$snapshot_name" ]] || { echo "::error::Snapshot directory and timestamp metadata differ."; exit 1; }
           iso="${timestamp:0:4}-${timestamp:4:2}-${timestamp:6:2}T${timestamp:9:2}:${timestamp:11:2}:${timestamp:13:2}Z"
           epoch="$(date -u -d "$iso" +%s)"
           now="$(date -u +%s)"
           age=$((now - epoch))
-          (( age >= 0 && age <= 172800 )) || { echo "::error::Backup is future-dated or older than 48 hours."; exit 1; }
-          echo "PASS: backup timestamp is fresh ($((age / 3600)) hours old)."
+          (( age >= 0 && age <= 172800 )) || { echo "::error::Newest snapshot is future-dated or older than 48 hours."; exit 1; }
+          echo "snapshot_path=$snapshot" >> "$GITHUB_OUTPUT"
+          echo "PASS: newest snapshot $snapshot is fresh ($((age / 3600)) hours old)."
 
-      - name: Verify checksums and decrypt database and Kubernetes Secrets
+      - name: Verify checksums, HMACs, decryption and archive contents
         shell: bash
         env:
           BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
         run: |
           set -euo pipefail
-          test -n "${BACKUP_ENCRYPTION_KEY:-}" || { echo "::error::BACKUP_ENCRYPTION_KEY secret is missing."; exit 1; }
-          cd backup-source/backup
           umask 077
+          test -n "${BACKUP_ENCRYPTION_KEY:-}" || { echo "::error::BACKUP_ENCRYPTION_KEY secret is missing."; exit 1; }
           echo "::add-mask::$BACKUP_ENCRYPTION_KEY"
-          for file in latest.dump.enc latest.kubernetes-secrets.json.enc; do
-            expected="$(awk 'NR==1 {print $1}' "$file.sha256")"
-            actual="$(sha256sum "$file" | awk '{print $1}')"
-            [[ "$expected" =~ ^[[:xdigit:]]{64}$ && "$expected" == "$actual" ]] || { echo "::error::Checksum mismatch: $file"; exit 1; }
+          snapshot="backup-source/${{ steps.snapshot.outputs.snapshot_path }}"
+          cd "$snapshot"
+          work="$(mktemp -d "$RUNNER_TEMP/shopnoltd-dr-verify.XXXXXX")"
+          cleanup() { rm -rf "$work"; }
+          trap cleanup EXIT
+          data_file="postgres-all-databases.tar.gz.enc"
+          secrets_file="kubernetes-secrets.json.enc"
+          hmac_key="$(printf 'shopnoltd-backup-hmac-v1:%s' "$BACKUP_ENCRYPTION_KEY" | sha256sum | awk '{print $1}')"
+          for file in "$data_file" "$secrets_file"; do
+            sha256sum -c "$file.sha256"
+            expected="$(tr -d '\r\n' < "$file.hmac")"
+            [[ "$expected" =~ ^[[:xdigit:]]{64}$ ]] || { echo "::error::Malformed HMAC sidecar for $(basename "$file")."; exit 1; }
+            actual="$(openssl dgst -sha256 -hmac "$hmac_key" "$file" | awk '{print $2}')"
+            [[ "$actual" == "$expected" ]] || { echo "::error::HMAC mismatch for $(basename "$file")."; exit 1; }
           done
-          openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 -in latest.dump.enc -out "$RUNNER_TEMP/shopnoltd.dump" -pass env:BACKUP_ENCRYPTION_KEY
-          openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 -in latest.kubernetes-secrets.json.enc -out "$RUNNER_TEMP/shopnoltd-secrets.json" -pass env:BACKUP_ENCRYPTION_KEY
-          test -s "$RUNNER_TEMP/shopnoltd.dump"
-          python3 - "$RUNNER_TEMP/shopnoltd-secrets.json" <<'PY'
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 -in "$data_file" -out "$work/data.tar.gz" -pass env:BACKUP_ENCRYPTION_KEY
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 -in "$secrets_file" -out "$work/secrets.json" -pass env:BACKUP_ENCRYPTION_KEY
+          tar -tzf "$work/data.tar.gz" > "$work/archive-members.txt"
+          for required in postgres/globals.sql mongodb/all-databases.archive.gz redis/dump.rdb minio/minio-pvc.tar.gz k3s/server-token metadata/postgres-databases.txt metadata/pvc-inventory.json metadata/summary.txt; do
+            grep -Fxq "$required" "$work/archive-members.txt" || { echo "::error::Archive member missing: $required"; exit 1; }
+          done
+          grep -Eq '^postgres/databases/.+\.dump$' "$work/archive-members.txt" || { echo "::error::No PostgreSQL custom-format database dumps found."; exit 1; }
+          grep -Eq '^postgres/csv/.+\.csv$' "$work/archive-members.txt" || { echo "::error::No PostgreSQL table CSV exports found."; exit 1; }
+          python3 - "$work/secrets.json" <<'PY'
           import json, sys
           with open(sys.argv[1], encoding="utf-8") as f:
               data = json.load(f)
@@ -75,24 +94,27 @@ jobs:
           if data.get("kind") != "List" or not items:
               raise SystemExit("Kubernetes Secret export is empty or malformed")
           namespaces = {x.get("metadata", {}).get("namespace", "") for x in items}
-          print(f"PASS: Kubernetes Secret export parsed ({len(items)} objects, {len(namespaces)} namespaces).")
+          if not namespaces or "" in namespaces:
+              raise SystemExit("Kubernetes Secret export has missing namespace metadata")
+          print(f"PASS: Kubernetes Secret JSON parsed ({len(items)} objects across {len(namespaces)} namespaces).")
           PY
-          echo "PASS: encrypted database and Kubernetes Secrets decrypted and parsed."
-
-      - name: Validate PostgreSQL custom-format archive
-        shell: bash
-        run: |
-          set -euo pipefail
           sudo apt-get update -qq
           sudo apt-get install -y -qq postgresql-client
-          pg_restore --list "$RUNNER_TEMP/shopnoltd.dump" > "$RUNNER_TEMP/shopnoltd-pg-restore-list.txt"
-          entries="$(grep -cE '^[0-9]+; ' "$RUNNER_TEMP/shopnoltd-pg-restore-list.txt" || true)"
-          [[ "$entries" =~ ^[0-9]+$ ]] && (( entries > 0 )) || { echo "::error::PostgreSQL archive has no recognizable entries."; exit 1; }
-          echo "PASS: PostgreSQL custom-format archive is readable ($entries entries)."
-          echo "NOTE: This validates archive readability, not a full isolated database restore."
+          tar -xzf "$work/data.tar.gz" -C "$work"
+          mapfile -d '' dumps < <(find "$work/postgres/databases" -type f -name '*.dump' -print0)
+          (( ${#dumps[@]} > 0 )) || { echo "::error::No extracted PostgreSQL database dumps."; exit 1; }
+          for dump in "${dumps[@]}"; do
+            pg_restore --list "$dump" > "$work/restore-list.txt"
+            entries="$(grep -cE '^[0-9]+; ' "$work/restore-list.txt" || true)"
+            [[ "$entries" =~ ^[0-9]+$ ]] && (( entries > 0 )) || { echo "::error::Unreadable PostgreSQL archive: $(basename "$dump")"; exit 1; }
+          done
+          test -s "$work/postgres/globals.sql"
+          echo "PASS: decrypted archive contains ${#dumps[@]} readable PostgreSQL database dumps, global roles, CSV exports, MongoDB, Redis, MinIO and K3s artifacts."
+          echo "NOTE: This is integrity/decryptability/archive validation, not an isolated service restore test."
 
-      - name: Remove decrypted artifacts
+      - name: Remove decrypted verification artifacts
         if: always()
         shell: bash
         run: |
-          rm -f "$RUNNER_TEMP/shopnoltd.dump" "$RUNNER_TEMP/shopnoltd-secrets.json" "$RUNNER_TEMP/shopnoltd-pg-restore-list.txt"
+          set +e
+          rm -rf "$RUNNER_TEMP"/shopnoltd-dr-verify.*
