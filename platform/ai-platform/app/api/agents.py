@@ -22,8 +22,12 @@ async def current_user(creds: HTTPAuthorizationCredentials = Depends(bearer)):
 
 
 def _tenant_id(user: dict) -> str:
-    """Resolve the tenant consistently for both creation and access checks."""
-    return str(user.get("tenant_id") or "default")
+    """Use the explicit tenant claim, or isolate users when no tenant is present."""
+    tenant_id = user.get("tenant_id")
+    subject = user.get("sub")
+    if not tenant_id and not subject:
+        raise HTTPException(403, "authenticated identity has no tenant or subject")
+    return str(tenant_id or f"user:{subject}")
 
 
 @router.post("", status_code=201)
@@ -49,8 +53,7 @@ async def list_(user=Depends(current_user), s: AsyncSession = Depends(db)):
 async def chat(
     agent_id: str, message: str, user=Depends(current_user), s: AsyncSession = Depends(db)
 ):
-    # Always scope the lookup to the caller's tenant. Returning the same 404
-    # for missing and foreign-tenant IDs avoids leaking whether an agent exists.
+    # Scope lookup to caller's tenant; do not disclose foreign-tenant agent IDs.
     a = (
         await s.execute(
             select(Agent).where(
