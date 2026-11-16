@@ -6,6 +6,7 @@ real GitHub credential.
 """
 import asyncio
 import unittest
+from datetime import datetime, timedelta, timezone
 import uuid
 from unittest.mock import patch
 
@@ -104,6 +105,7 @@ class GitHubWriteApprovalApiTests(unittest.TestCase):
     def test_approval_handler_persists_user_connection_digest_and_expiry(self):
         async def run():
             db = _FakeDB(self.connection)
+            started = datetime.now(timezone.utc)
             result = await connections.approve_github_write(
                 self.connection_id, self._approval_request(), self.user, db
             )
@@ -117,7 +119,8 @@ class GitHubWriteApprovalApiTests(unittest.TestCase):
                 approval.operation_hash,
                 connections._github_write_digest(self._approval_request()),
             )
-            self.assertGreater(approval.expires_at, approval.created_at or approval.expires_at)
+            self.assertGreater(approval.expires_at, started)
+            self.assertLessEqual(approval.expires_at, started + timedelta(minutes=5, seconds=2))
             self.assertEqual(result["approval_id"], str(approval.id))
             self.assertTrue(result["single_use"])
             self.assertEqual(db.commit_calls, 1)
