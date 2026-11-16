@@ -12,7 +12,6 @@ resources:
 - namespaces/shopno-payments.yaml
 - namespaces/shopno-tools.yaml
 - namespaces/shopno-ingress.yaml
-- metrics-server
 - services/observability
 - services/api-service
 - services/gateway
@@ -64,7 +63,7 @@ resources:
 - services/agent-service
 - services/remote-device
 - services/enketo
-- services/argocd/public-ingress.yaml
+- services/services/argocd/public-ingress.yaml
 - services/kobotoolbox
 - shopno-apps/kobo-worker.yaml
 - shopno-apps/kobo-beat.yaml
