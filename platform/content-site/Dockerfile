@@ -1,4 +1,5 @@
 FROM nginxinc/nginx-unprivileged:1.27-alpine
+RUN apk add --no-cache ca-certificates && update-ca-certificates
 COPY platform/content-site/nginx.conf /etc/nginx/conf.d/default.conf
 COPY platform/content-site/public/ /usr/share/nginx/html/
 RUN nginx -t
