@@ -13,8 +13,21 @@
   <meta name="apple-mobile-web-app-title" content="Shopnoltd" />
   <meta name="google-adsense-account" content="ca-pub-4532970890139771" />
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4532970890139771" crossorigin="anonymous"></script>
-  <!-- Monetag Vignette zone 12288239; retained separately from the Shopnoltd service worker. -->
-  <script>(function(s){s.dataset.zone='12288239',s.src='https://n6wxm.com/vignette.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
+  <!-- Monetag rollout gate: intentionally disabled while AdSense Vignette experiments run.
+       Do not enable globally: wildcard Shopnoltd hosts include functional/auth/payment services.
+       A dedicated content-only hostname and route-level UX review are required first. -->
+  <script>
+    (function () {
+      const MONETAG_ENABLED = false;
+      const ALLOWED_HOSTS = new Set([]);
+      if (!MONETAG_ENABLED || !ALLOWED_HOSTS.has(window.location.hostname.toLowerCase())) return;
+      const script = document.createElement('script');
+      script.dataset.zone = '12288239';
+      script.src = 'https://n6wxm.com/vignette.min.js';
+      script.async = true;
+      document.head.appendChild(script);
+    })();
+  </script>
   <link rel="apple-touch-icon" href="/logo.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Shopnoltd | Digital Services, Domains &amp; Business Tools</title>
