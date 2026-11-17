@@ -1,0 +1,40 @@
+name: Build isolated content-site image
+
+on:
+  pull_request:
+    paths:
+      - "platform/content-site/**"
+      - ".github/workflows/build-content-site.yml"
+  push:
+    branches: [main]
+    paths:
+      - "platform/content-site/**"
+      - ".github/workflows/build-content-site.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        if: github.event_name != 'pull_request'
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./platform/content-site/Dockerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: |
+            ghcr.io/${{ github.repository }}/content-site:latest
+            ghcr.io/${{ github.repository }}/content-site:sha-${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
