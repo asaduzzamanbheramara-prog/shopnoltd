@@ -1,0 +1,55 @@
+name: Deploy AI Platform Only
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_ai_platform:
+        description: "Deploy only k8s/services/ai-platform and wait for readiness"
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.confirm_ai_platform == true }}
+    runs-on: [self-hosted, linux]
+    timeout-minutes: 15
+    steps:
+      - name: Checkout trusted main revision
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Verify cluster access and render AI manifests
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v kubectl
+          test -s "${KUBECONFIG:-$HOME/.kube/config}"
+          kubectl --request-timeout=20s cluster-info >/dev/null
+          kubectl kustomize k8s/services/ai-platform >/tmp/ai-platform-rendered.yaml
+          grep -q 'kind: Deployment' /tmp/ai-platform-rendered.yaml
+          grep -q 'name: ai-platform' /tmp/ai-platform-rendered.yaml
+          echo "Applying AI-platform-only manifests from $(git rev-parse HEAD)."
+
+      - name: Apply AI platform only
+        shell: bash
+        run: |
+          set -euo pipefail
+          kubectl apply -k k8s/services/ai-platform
+          kubectl -n shopno-platform rollout status deployment/ai-platform --timeout=600s
+          kubectl -n shopno-platform get deployment/ai-platform -o wide
+
+      - name: Verify AI health and default-provider rollout
+        shell: bash
+        run: |
+          set -euo pipefail
+          kubectl -n shopno-platform get pods -l app.kubernetes.io/name=ai-platform -o wide
+          kubectl -n shopno-platform get deployment ai-platform -o jsonpath='{.spec.template.spec.containers[0].image}{"\n"}'
+          curl --fail --silent --show-error --max-time 20 https://ai-platform.shopnoltd.dpdns.org/healthz
+          echo
+          echo 'AI platform only rollout completed.'
