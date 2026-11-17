@@ -16,6 +16,7 @@ resources:
 - services/api-service
 - services/gateway
 - services/web-portal
+- services/content-site
 - services/shopnoltd-web
 - services/admin-portal
 - services/admin-infrastructure
