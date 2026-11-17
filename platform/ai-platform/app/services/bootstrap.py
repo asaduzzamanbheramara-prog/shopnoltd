@@ -24,7 +24,7 @@ PROVIDERS = (
         "model_env": "OPENAI_AI_MODEL",
         "default_model": "gpt-4.1-mini",
         "display_name": "GPT-4.1 mini",
-        "priority": 10,
+        "priority": 20,
     },
     {
         "env_key": "ANTHROPIC_API_KEY",
@@ -44,7 +44,7 @@ PROVIDERS = (
         "model_env": "GOOGLE_AI_MODEL",
         "default_model": "gemini-2.5-flash",
         "display_name": "Gemini Flash",
-        "priority": 10,
+        "priority": 5,
     },
     {
         "env_key": "GROQ_API_KEY",
