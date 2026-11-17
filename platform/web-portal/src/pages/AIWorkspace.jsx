@@ -168,9 +168,13 @@ export default function AIWorkspace() {
 
   const activeChat = chats.find((chat) => chat.id === activeId) || chats[0]
   const activeMessages = activeChat?.messages || []
-  const activeModel = activeChat?.model || model || ''
+  // The header selector must win immediately after a user changes models. A
+  // chat can still contain the previous model while React is committing the
+  // selection; preferring `model` prevents a request from silently using the
+  // stale chat model.
+  const activeModel = model || activeChat?.model || ''
   useEffect(() => { lastMultimodalRef.current = [] }, [activeId])
-  const activeModelId = activeChat?.modelId || modelId || null
+  const activeModelId = modelId || activeChat?.modelId || null
 
   useEffect(() => { localStorage.setItem(STORAGE_KEY, JSON.stringify(chats)) }, [chats])
 
@@ -304,6 +308,13 @@ export default function AIWorkspace() {
     setModelId(selected?.id || null)
     setChats((current) => current.map((chat) => chat.id === activeId ? { ...chat, model: value, modelId: selected?.id || null } : chat))
   }
+
+  useEffect(() => {
+    const chat = chats.find((item) => item.id === activeId)
+    if (!chat) return
+    if (chat.model && chat.model !== model) setModel(chat.model)
+    if (chat.modelId && chat.modelId !== modelId) setModelId(chat.modelId)
+  }, [activeId])
 
   async function readAttachment(file) {
     const type = file.type || 'application/octet-stream'
