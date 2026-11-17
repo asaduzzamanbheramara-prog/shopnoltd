@@ -120,10 +120,23 @@ async def authenticate(ws: WebSocket, kind: str) -> dict | None:
         claims["_access_token"] = access_token
         if not USER_RE.match(str(claims.get("sub", ""))):
             raise ValueError("bad subject")
+    except WebSocketDisconnect:
+        # A client may close immediately after the upgrade, before sending auth.
+        # The socket is already gone, so do not try to send a close frame.
+        return None
     except Exception:
-        await ws.close(code=4401); return None
+        try:
+            await ws.close(code=4401)
+        except (WebSocketDisconnect, RuntimeError):
+            # Authentication rejection is best-effort if the peer has disconnected.
+            pass
+        return None
     claims["_deadline"] = time.time() + (UI_MAX_SECONDS if kind == "ui" else EXT_MAX_SECONDS)
-    await ws.send_json({"type": "auth_ok"})
+    try:
+        await ws.send_json({"type": "auth_ok"})
+    except (WebSocketDisconnect, RuntimeError):
+        # The peer can disconnect after sending a valid token but before auth_ok is delivered.
+        return None
     return claims
 
 
