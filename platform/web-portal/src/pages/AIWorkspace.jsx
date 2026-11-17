@@ -165,6 +165,7 @@ export default function AIWorkspace() {
   const recognitionRef = useRef(null)
   const lastRequestRef = useRef(null)
   const lastMultimodalRef = useRef([])
+  const explicitModelSelectionRef = useRef(false)
 
   const activeChat = chats.find((chat) => chat.id === activeId) || chats[0]
   const activeMessages = activeChat?.messages || []
@@ -239,6 +240,9 @@ export default function AIWorkspace() {
       const items = await request('/inference/models')
       const list = Array.isArray(items) ? items : []
       setModels(list)
+      // Do not let a slower initial model-list request overwrite a selection
+      // the user made while the dropdown was becoming ready.
+      if (explicitModelSelectionRef.current) return
       const preferred = list.find((item) => item.is_default) || list[0]
       if (preferred) {
         // Older browser sessions may have persisted the former server default.
@@ -304,6 +308,7 @@ export default function AIWorkspace() {
 
   function selectModel(value) {
     const selected = models.find((item) => item.model_name === value)
+    explicitModelSelectionRef.current = true
     setModel(value)
     setModelId(selected?.id || null)
     setChats((current) => current.map((chat) => chat.id === activeId ? { ...chat, model: value, modelId: selected?.id || null } : chat))
