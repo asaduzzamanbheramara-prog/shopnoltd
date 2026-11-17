@@ -10,11 +10,29 @@ Monetag documents Push Notifications, In-Page Push (IPP), and Direct Link as for
 
 | Format | Rollout decision | Technical requirement / blocker |
 | --- | --- | --- |
-| In-Page Push | First candidate for a controlled content-only test; not active yet | Copy the exact IPP zone tag from the Monetag dashboard and install only on a dedicated isolated content host. Test placement, dismissal, consent, mobile/desktop, and navigation. |
+| In-Page Push | First candidate for a controlled content-only test; not active yet | Two publisher-supplied zone tags are recorded below. Test one zone at a time on a dedicated isolated content host; do not load both globally or assume they are interchangeable. |
 | Push Notifications | Defer until a dedicated host is available | Monetag requires its zone-provided `sw.js` at the site root. Shopnoltd already has an application service worker at `/sw.js`; do not overwrite or merge provider code into it without a separately reviewed integration and rollback plan. |
 | Direct Link | Optional later, clearly labelled sponsored link only | Must be a separate sponsored placement, never a service, download, registration, or payment button. |
 | Vignette Banner | Disabled while the AdSense Vignette frequency experiment is Running | Review the completed AdSense experiment before considering a separate controlled test. |
 | OnClick / Popunder | Prohibited on AdSense pages | Google AdSense policy does not permit ads on sites that contain or trigger pop-unders. |
+
+### Supplied In-Page Push tags (not deployed)
+
+The publisher supplied these exact tags on 2026-11-18. Both use the same loader URL but different zone IDs:
+
+Zone `12129960`:
+
+```html
+<script>(function(s){s.dataset.zone='12129960',s.src='https://nap5k.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
+```
+
+Zone `12128278`:
+
+```html
+<script>(function(s){s.dataset.zone='12128278',s.src='https://nap5k.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
+```
+
+These are recorded for traceability only. Neither tag is active in the application or production. Do not insert both tags together: first validate one zone at a time in an isolated test host and compare behavior, ad density, and reporting. Do not infer that separate zone IDs mean separate safe placements or that either tag is safe across all Shopnoltd hosts.
 
 No Monetag IPP or Push script has been fabricated from a zone ID. The exact publisher-generated code and any required root file must come from the Monetag dashboard.
 
@@ -50,7 +68,7 @@ The existing public Blog and Blog Post pages are also routes inside this same sh
 
 1. Confirm the AdSense Vignette experiment is complete before testing Monetag Vignette.
 2. Provision a dedicated public content-only hostname with an independently controlled origin/service-worker scope; do not assume the wildcard SPA is isolated.
-3. Obtain the exact zone tag(s) and any provider files from the Monetag dashboard.
+3. Test one of the supplied IPP zone tags at a time on the isolated host; keep the other disabled until the first test is reviewed.
 4. Verify host routing and the final deployed HTML for every included and excluded hostname.
 5. Test desktop/mobile, consent, keyboard navigation, back/forward navigation, and ad dismissal.
 6. Confirm no ad overlays, shifts, or blocks Google ads, page content, navigation, or user actions.
