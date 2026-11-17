@@ -11,6 +11,9 @@ grep -q '<script src="/app.js" defer></script>' "$html"
 grep -q 'location = /sw.js { return 404; }' "$nginx"
 grep -q 'limit_except GET HEAD { deny all; }' "$nginx"
 test "$(grep -c 'limit_except GET HEAD { deny all; }' "$nginx")" -eq 2
+test "$(grep -c 'proxy_set_header Authorization "";' "$nginx")" -eq 2
+test "$(grep -c 'proxy_set_header Cookie "";' "$nginx")" -eq 2
+test "$(grep -c 'proxy_hide_header Set-Cookie;' "$nginx")" -eq 2
 grep -q 'proxy_pass https://api.shopnoltd.dpdns.org/api/v2/blog' "$nginx"
 grep -q 'frame-src https://www.youtube-nocookie.com' "$nginx"
 grep -Fq 'location ^~ /blog/ { try_files $uri /index.html; }' "$nginx"
