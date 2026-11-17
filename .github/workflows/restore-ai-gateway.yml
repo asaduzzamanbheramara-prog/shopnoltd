@@ -54,6 +54,9 @@ jobs:
             kubectl -n shopno-platform patch secret ai-platform-secret --type merge \
               -p "{\"data\":{\"ANTHROPIC_API_KEY\":\"$anthropic_rotation\"}}" >/dev/null
             echo 'PASS: promoted existing Anthropic rotation entry to the AI Platform primary credential'
+            kubectl -n shopno-platform rollout restart deployment/ai-platform >/dev/null
+            kubectl -n shopno-platform rollout status deployment/ai-platform --timeout=8m
+            echo 'PASS: reloaded AI Platform with the promoted provider credential'
           else
             echo 'WARN: no Anthropic rotation entry was available; preserving the current platform credential'
           fi
