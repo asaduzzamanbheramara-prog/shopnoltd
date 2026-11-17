@@ -37,9 +37,26 @@ jobs:
           kubectl --request-timeout=20s get --raw=/readyz >/dev/null
           kubectl -n shopno-ai get secret litellm-provider-keys >/dev/null
           kubectl -n shopno-platform get secret ai-platform-secret >/dev/null
-          source_patch="$(kubectl -n shopno-platform get secret ai-platform-secret -o json \
-            | jq -c '{data: ((.data // {}) | with_entries(select(.key | test("^(DATABASE_URL|LITELLM_MASTER_KEY|[A-Z0-9_]+_(API_KEY|TOKEN))$"))))}')"
+          # The platform secret may contain stale or placeholder provider values.
+          # Never overwrite an existing LiteLLM key; only add keys that are absent.
+          source_json="$(kubectl -n shopno-platform get secret ai-platform-secret -o json)"
+          target_json="$(kubectl -n shopno-ai get secret litellm-provider-keys -o json)"
+          source_patch="$(jq -c --argjson target "$target_json" '
+            {data: ((.data // {})
+              | with_entries(select(.key | test("^(DATABASE_URL|LITELLM_MASTER_KEY|[A-Z0-9_]+_(API_KEY|TOKEN))$")))
+              | with_entries(select($target.data[.key] == null)))}' <<<"$source_json")"
           kubectl -n shopno-ai patch secret litellm-provider-keys --type merge -p "$source_patch" >/dev/null
+
+          # Prefer the first full Anthropic rotation entry for the AI Platform
+          # record, while keeping the complete rotation in LiteLLM untouched.
+          anthropic_rotation="$(kubectl -n shopno-ai get secret litellm-provider-keys -o jsonpath='{.data.ANTHROPIC_API_KEY_1}')"
+          if [ -n "$anthropic_rotation" ]; then
+            kubectl -n shopno-platform patch secret ai-platform-secret --type merge \
+              -p "{\"data\":{\"ANTHROPIC_API_KEY\":\"$anthropic_rotation\"}}" >/dev/null
+            echo 'PASS: promoted existing Anthropic rotation entry to the AI Platform primary credential'
+          else
+            echo 'WARN: no Anthropic rotation entry was available; preserving the current platform credential'
+          fi
           db_b64="$(kubectl -n shopno-ai get secret litellm-provider-keys -o jsonpath='{.data.DATABASE_URL}')"
           if [ -n "$db_b64" ]; then
             db_value="$(printf '%s' "$db_b64" | base64 -d | sed 's/^postgresql+asyncpg:/postgresql:/')"
