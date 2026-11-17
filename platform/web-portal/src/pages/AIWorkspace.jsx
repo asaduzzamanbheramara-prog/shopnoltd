@@ -237,7 +237,12 @@ export default function AIWorkspace() {
       setModels(list)
       const preferred = list.find((item) => item.is_default) || list[0]
       if (preferred) {
-        const chosen = activeChat?.model || preferred.model_name
+        // Older browser sessions may have persisted the former server default.
+        // Migrate that implicit choice when the backend default changes, while
+        // leaving any other explicitly selected model untouched.
+        const migrateLegacyDefault = activeChat?.model === 'gpt-4.1-mini'
+          && preferred.model_name !== activeChat.model
+        const chosen = migrateLegacyDefault ? preferred.model_name : (activeChat?.model || preferred.model_name)
         const chosenModel = list.find((item) => item.model_name === chosen) || preferred
         const chosenModelId = activeChat?.modelId || chosenModel?.id || null
 
@@ -245,7 +250,9 @@ export default function AIWorkspace() {
         setModelId(chosenModelId)
 
         setChats((current) => current.map((chat) => {
-          const chatModel = chat.model || chosen
+          const chatModel = (chat.id === activeId && migrateLegacyDefault)
+            ? chosen
+            : (chat.model || chosen)
           const chatModelEntry = list.find((item) => item.model_name === chatModel)
           const chatModelId = chat.modelId || chatModelEntry?.id || null
 
