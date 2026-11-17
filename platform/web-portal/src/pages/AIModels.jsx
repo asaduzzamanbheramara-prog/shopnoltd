@@ -537,9 +537,15 @@ function ModelRow({ model, onChange, onEdit, onDelete }) {
   const action = async (operation) => {
     setBusy(true)
     try {
-      const result = await request(`/models/${encodeURIComponent(model.id)}/${operation}`, {
-        method: 'POST',
-      })
+      const result = operation === 'set-default'
+        ? await request(`/models/${encodeURIComponent(model.id)}`, {
+          method: 'PATCH',
+          headers: jsonHeaders(),
+          body: JSON.stringify({ is_default: true, is_active: true }),
+        })
+        : await request(`/models/${encodeURIComponent(model.id)}/${operation}`, {
+          method: 'POST',
+        })
       onChange(result)
     } catch (err) {
       window.alert(err?.message || `Model ${operation} failed.`)

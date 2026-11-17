@@ -55,6 +55,8 @@ class ModelCreate(BaseModel):
 
 class ModelUpdate(BaseModel):
     display_name: str | None = None
+    is_active: bool | None = None
+    is_default: bool | None = None
     capabilities: dict | None = None
     priority: int | None = None
 

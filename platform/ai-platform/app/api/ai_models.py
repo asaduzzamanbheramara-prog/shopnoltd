@@ -78,6 +78,18 @@ async def update_model(
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Model not found")
     if payload.display_name is not None:
         model.display_name = payload.display_name
+    if payload.is_active is not None:
+        model.is_active = payload.is_active
+    if payload.is_default:
+        if not model.is_active:
+            raise HTTPException(
+                status.HTTP_400_BAD_REQUEST,
+                "Cannot set an inactive model as default — activate it first",
+            )
+        await _clear_other_defaults(db)
+        model.is_default = True
+    elif payload.is_default is False:
+        model.is_default = False
     if payload.capabilities is not None:
         model.capabilities = payload.capabilities
     if payload.priority is not None:
