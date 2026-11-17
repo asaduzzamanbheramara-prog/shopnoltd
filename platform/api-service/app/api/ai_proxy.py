@@ -57,6 +57,16 @@ async def providers(request: Request, provider_id: str | None = None, token: str
     return await proxy(request, "/api/ai/providers" + (f"/{provider_id}" if provider_id else ""), token)
 
 
+@router.api_route("/ai/providers/{provider_id}/{operation}", methods=["POST"])
+async def provider_operation(request: Request, provider_id: str, operation: str, token: str = Depends(raw_token)):
+    return await proxy(request, f"/api/ai/providers/{provider_id}/{operation}", token)
+
+
+@router.api_route("/ai/providers/sync-all", methods=["POST"])
+async def sync_all_providers(request: Request, token: str = Depends(raw_token)):
+    return await proxy(request, "/api/ai/providers/sync-all", token)
+
+
 @router.api_route("/ai/models", methods=["GET", "POST"])
 @router.api_route("/ai/models/{model_id}", methods=["GET", "PATCH", "DELETE"])
 async def models(request: Request, model_id: str | None = None, token: str = Depends(raw_token)):
