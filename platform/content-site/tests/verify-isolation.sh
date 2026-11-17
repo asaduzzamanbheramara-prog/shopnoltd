@@ -7,7 +7,7 @@ nginx="$root/nginx.conf"
 ! grep -Eiq 'monetag|nap5k\.com|n6wxm\.com|12129960|12128278|12288239' "$html" "$app"
 ! grep -Eiq 'serviceWorker|navigator\.serviceWorker|shopno_token|/api/v[0-9]+/(users|payments|domains|wallet)' "$html" "$app"
 grep -q '<script src="/app.js" defer></script>' "$html"
-! grep -Eiq '<script[^>]+src=["'"]https?://' "$html"
+! grep -Eiq "<script[^>]+src=[\"']https?://" "$html"
 grep -q 'location = /sw.js { return 404; }' "$nginx"
 grep -q 'limit_except GET HEAD { deny all; }' "$nginx"
 test "$(grep -c 'limit_except GET HEAD { deny all; }' "$nginx")" -eq 2
