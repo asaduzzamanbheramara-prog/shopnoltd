@@ -244,7 +244,7 @@ export default function AIWorkspace() {
           && preferred.model_name !== activeChat.model
         const chosen = migrateLegacyDefault ? preferred.model_name : (activeChat?.model || preferred.model_name)
         const chosenModel = list.find((item) => item.model_name === chosen) || preferred
-        const chosenModelId = activeChat?.modelId || chosenModel?.id || null
+        const chosenModelId = migrateLegacyDefault ? (chosenModel?.id || null) : (activeChat?.modelId || chosenModel?.id || null)
 
         setModel(chosen)
         setModelId(chosenModelId)
@@ -254,7 +254,9 @@ export default function AIWorkspace() {
             ? chosen
             : (chat.model || chosen)
           const chatModelEntry = list.find((item) => item.model_name === chatModel)
-          const chatModelId = chat.modelId || chatModelEntry?.id || null
+          const chatModelId = (chat.id === activeId && migrateLegacyDefault)
+            ? (chatModelEntry?.id || null)
+            : (chat.modelId || chatModelEntry?.id || null)
 
           if (chat.id === activeId) {
             return {
