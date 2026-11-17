@@ -45,6 +45,8 @@ spec:
               value: "1"
             - name: TIMEOUT
               value: "1800000"
+            - name: DEFAULT_LAUNCH_ARGS
+              value: '["--disable-dev-shm-usage"]'
           resources:
             requests:
               cpu: 250m
