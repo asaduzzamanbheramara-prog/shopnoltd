@@ -42,6 +42,7 @@ export default function ProtectedRoute({ children }) {
         } else {
           localStorage.removeItem('shopno_token')
           localStorage.removeItem('shopno_refresh_token')
+          localStorage.removeItem('shopno_id_token')
           setStatus('unauthenticated')
         }
       }
