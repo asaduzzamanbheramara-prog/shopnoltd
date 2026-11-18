@@ -1,11 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import SessionLocal
-from app.core.security import require_customer_self_or_above, require_tenant_access, verify_token
-from app.models.models import Customer
+from app.core.security import require_customer_self_or_above, require_tenant_owner_access, verify_token
+from app.models.models import Customer, UserMirror
 from app.schemas.schemas import CustomerIn, CustomerOut
 
 router = APIRouter()
@@ -39,13 +39,31 @@ async def create(
 ):
     """platform_admin or tenant_owner only -- customers don't create their own
     record here (that happens via the normal signup/social-login flow)."""
-    await require_tenant_access(creds.credentials, tenant_id)
+    await require_tenant_owner_access(creds.credentials, tenant_id)
     payload = await verify_token(creds.credentials)
+    customer_email = body.email.strip().lower()
+    customer_user = (
+        await s.execute(
+            select(UserMirror).where(
+                func.lower(UserMirror.email) == customer_email,
+                UserMirror.tenant_id == tenant_id,
+                UserMirror.active.is_(True),
+            )
+        )
+    ).scalar_one_or_none()
+    if not customer_user:
+        raise HTTPException(
+            409,
+            "customer must register and sign in to this tenant before a customer record can be linked",
+        )
+    if customer_user.keycloak_id == payload.get("sub"):
+        raise HTTPException(409, "tenant owner cannot be linked as a customer record")
+
     c = Customer(
         tenant_id=tenant_id,
-        keycloak_id=payload["sub"],
-        email=body.email,
-        name=body.name,
+        keycloak_id=customer_user.keycloak_id,
+        email=customer_user.email,
+        name=body.name or customer_user.name or "",
         phone=body.phone,
         billing_address=body.billing_address,
         preferences=body.preferences,
