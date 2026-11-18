@@ -62,7 +62,7 @@ jobs:
           sql = Path(sys.argv[2]).read_text(errors="replace").splitlines()
           table_entries = [
               line for line in toc
-              if re.search(r"\\b(TABLE|TABLE DATA)\\b", line, re.I)
+              if re.search(r"\b(TABLE|TABLE DATA)\b", line, re.I)
               and re.search(r"(blog|article|post|cms|content)", line, re.I)
           ]
           slugs = [
@@ -77,10 +77,10 @@ jobs:
               "data management", "shared workspace",
               *slugs,
           ]
-          insert_lines = [line for line in sql if re.search(r"^INSERT INTO ", line, re.I)]
+              if re.search(r"INSERT INTO [\"']?(?:public\.)?[\"']?(?:blog_posts|articles|posts)[\"']?", line, re.I)
           blog_insert_lines = [
               line for line in insert_lines
-              if re.search(r'INSERT INTO ["']?(?:public\\.)?["']?(?:blog_posts|articles|posts)["']?', line, re.I)
+              if re.search(r"INSERT INTO [\"']?(?:public\.)?[\"']?(?:blog_posts|articles|posts)[\"']?", line, re.I)
           ]
           matched = [
               line for line in insert_lines
@@ -96,8 +96,8 @@ jobs:
               "blog_article_post_insert_statements": len(blog_insert_lines),
               "candidate_insert_statements": len(matched),
               "slug_matches": matches_by_slug,
-              "video_reference_matches": len(re.findall(r"youtube\\.com/watch|youtu\\.be/|vimeo\\.com", all_text, re.I)),
-              "image_reference_matches": len(re.findall(r"https?://[^\\s]+\\.(?:png|jpe?g|webp|gif)|<img|!\\[", all_text, re.I)),
+              "video_reference_matches": len(re.findall(r"youtube\.com/watch|youtu\.be/|vimeo\.com", all_text, re.I)),
+              "image_reference_matches": len(re.findall(r"https?://[^\s]+\.(?:png|jpe?g|webp|gif)|<img|!\[", all_text, re.I)),
           }
           Path("recovery-artifact/summary.json").write_text(json.dumps(summary, indent=2) + "\n")
           Path("recovery-artifact/table-entries.txt").write_text("\n".join(table_entries) + "\n")
