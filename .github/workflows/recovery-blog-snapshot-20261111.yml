@@ -1,6 +1,7 @@
 name: Read-only recovery scan of Nov 11 blog snapshot
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - recovery/blog-snapshot-20261111
