@@ -95,12 +95,6 @@ function PostCard({ post, refresh, following, toggleFollow }) {
         )}
         · {post.published_at ? new Date(post.published_at).toLocaleString() : ''}
       </div>
-      <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{post.content}</div>
-      {mediaItems.length > 0 && <div style={{ display: 'grid', gap: 10, marginTop: 12 }}>
-        {mediaItems.map((item, index) => /video|\.(mp4|webm|ogg)(?:$|\?)/i.test(`${item.type} ${item.url}`)
-          ? <video key={item.url + index} src={item.url} controls preload="metadata" style={{ width: '100%', maxHeight: 520, borderRadius: 10, background: '#0f172a' }} />
-          : <img key={item.url + index} src={item.url} alt="" loading="lazy" style={{ width: '100%', maxHeight: 520, objectFit: 'contain', borderRadius: 10, background: '#f8fafc' }} />)}
-      </div>}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 16 }}>
         <button disabled={busy} onClick={toggleLike}>{liked ? '♥ Liked' : '♡ Like'} · {post.like_count || 0}</button>
         <button onClick={doShare}>↗ Share · {post.share_count || 0}</button>
@@ -108,6 +102,13 @@ function PostCard({ post, refresh, following, toggleFollow }) {
         <button onClick={() => navigator.clipboard?.writeText(direct)}>🔗 Copy link</button>
         <button onClick={() => navigate(`/post/${post.id}`)}>Open</button>
       </div>
+      <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{post.content}</div>
+      {mediaItems.length > 0 && <div style={{ display: 'grid', gap: 10, marginTop: 12 }}>
+        {mediaItems.map((item, index) => /video|\.(mp4|webm|ogg)(?:$|\?)/i.test(`${item.type} ${item.url}`)
+          ? <video key={item.url + index} src={item.url} controls preload="metadata" style={{ width: '100%', maxHeight: 520, borderRadius: 10, background: '#0f172a' }} />
+          : <img key={item.url + index} src={item.url} alt="" loading="lazy" style={{ width: '100%', maxHeight: 520, objectFit: 'contain', borderRadius: 10, background: '#f8fafc' }} />)}
+      </div>}
+
       <form onSubmit={addComment} style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 14 }}>
         <input value={comment} onChange={e => setComment(e.target.value)} placeholder="Write a comment…" style={{ flex: 1, padding: 9, border: '1px solid #cbd5e1', borderRadius: 8 }} />
         <button type="submit">Comment · {post.comment_count || comments.length}</button>
