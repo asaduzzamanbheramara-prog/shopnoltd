@@ -1,0 +1,114 @@
+name: Inspect local November 7 encrypted database backup for blog content
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: local-nov7-blog-backup-audit
+  cancel-in-progress: false
+
+jobs:
+  inspect:
+    name: Read-only archive inspection on Shopnoltd PC
+    runs-on: [self-hosted, Linux, X64]
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Decrypt and inspect the November 7 backup
+        shell: bash
+        env:
+          BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
+        run: |
+          set -euo pipefail
+          umask 077
+          source_dir=/home/asadu/restore/20261107T215303Z
+          encrypted="$source_dir/latest.dump.enc"
+          checksum="$source_dir/latest.dump.enc.sha256"
+          test -s "$encrypted"
+          test -s "$checksum"
+          command -v pg_restore >/dev/null
+          tmp="$(mktemp -d "${RUNNER_TEMP:-/tmp}/shopnoltd-nov7-blog-audit.XXXXXX")"
+          chmod 700 "$tmp"
+          cleanup() {
+            unset BACKUP_ENCRYPTION_KEY
+            rm -rf -- "$tmp"
+          }
+          trap cleanup EXIT
+          cd "$source_dir"
+          sha256sum -c latest.dump.enc.sha256
+          test -n "${BACKUP_ENCRYPTION_KEY:-}" || { echo "::error::BACKUP_ENCRYPTION_KEY is missing."; exit 1; }
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 \
+            -in "$encrypted" -out "$tmp/database.dump" \
+            -pass env:BACKUP_ENCRYPTION_KEY
+          unset BACKUP_ENCRYPTION_KEY
+          pg_restore --list "$tmp/database.dump" > "$tmp/archive-toc.txt"
+          pg_restore --data-only --inserts --file "$tmp/all-data.sql" "$tmp/database.dump"
+          mkdir -p recovery-artifact
+          python3 - "$tmp/archive-toc.txt" "$tmp/all-data.sql" <<'PY'
+          import json
+          import re
+          import sys
+          from pathlib import Path
+
+          toc = Path(sys.argv[1]).read_text(errors="replace").splitlines()
+          sql = Path(sys.argv[2]).read_text(errors="replace").splitlines()
+          table_entries = [
+              line for line in toc
+              if re.search(r"\b(TABLE|TABLE DATA)\b", line, re.I)
+              and re.search(r"(blog|article|post|cms|content)", line, re.I)
+          ]
+          slugs = [
+              "choose-a-domain-name",
+              "domain-registration-checklist",
+              "choosing-the-right-plan",
+              "data-management-basics",
+              "shared-workspace-for-small-business",
+          ]
+          terms = [
+              "domain name", "registration", "right plan",
+              "data management", "shared workspace",
+              *slugs,
+          ]
+          insert_lines = [line for line in sql if re.search(r"^INSERT INTO ", line, re.I)]
+          blog_insert_lines = [
+              line for line in insert_lines
+              if any(name in line.split(" VALUES ", 1)[0].lower() for name in ("blog_posts", "articles", "posts"))
+          ]
+          matched = [
+              line for line in blog_insert_lines
+              if any(term in line.lower() for term in terms)
+          ]
+          matches_by_slug = {slug: sum(slug in line for line in blog_insert_lines) for slug in slugs}
+          all_text = "\n".join(matched)
+          summary = {
+              "backup_timestamp": "2026-11-07T21:53:03Z",
+              "archive_table_entries": len(table_entries),
+              "blog_or_article_table_entries": table_entries,
+              "insert_statements_total": len(insert_lines),
+              "blog_article_post_insert_statements": len(blog_insert_lines),
+              "candidate_insert_statements": len(matched),
+              "slug_matches": matches_by_slug,
+              "video_reference_matches": len(re.findall(r"youtube\.com/watch|youtu\.be/|vimeo\.com", all_text, re.I)),
+              "image_reference_matches": len(re.findall(r"https?://[^\s]+\.(?:png|jpe?g|webp|gif)|<img|!\[", all_text, re.I)),
+          }
+          Path("recovery-artifact/summary.json").write_text(json.dumps(summary, indent=2) + "\n")
+          Path("recovery-artifact/table-entries.txt").write_text("\n".join(table_entries) + "\n")
+          Path("recovery-artifact/candidate-rows.sql").write_text("\n".join(matched) + ("\n" if matched else ""))
+          print(json.dumps(summary, indent=2))
+          PY
+
+      - name: Upload read-only archive audit
+        uses: actions/upload-artifact@v4
+        with:
+          name: shopnoltd-nov7-blog-backup-audit
+          path: recovery-artifact/
+          if-no-files-found: error
+          retention-days: 7
