@@ -112,8 +112,8 @@ jobs:
           FROM (
             SELECT id, tenant_id, author_id, title, slug, excerpt, content, cover_image,
                    status, published_at, created_at, updated_at,
-                   (content ~* '(youtube\\.com/watch|youtu\\.be/|vimeo\\.com/)') AS has_video,
-                   (content ~* '(<img|!\\[)') AS has_inline_image
+                   (content ~* '(youtube\.com/watch|youtu\.be/|vimeo\.com/)') AS has_video,
+                   (content ~* '(<img|!\[)') AS has_inline_image
             FROM public.blog_posts
             WHERE slug IN (
               'choose-a-domain-name',
