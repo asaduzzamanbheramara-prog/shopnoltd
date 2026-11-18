@@ -23,7 +23,8 @@ async def db():
 
 
 def _user_id(payload: dict) -> str:
-    # OIDC subject is immutable; email and username can change.\n    value = payload.get("sub") or payload.get("email") or payload.get("preferred_username")
+    # OIDC subject is immutable; email and username can change.
+    value = payload.get("sub") or payload.get("email") or payload.get("preferred_username")
     if not value:
         raise HTTPException(401, "token has no usable user identity")
     return value
