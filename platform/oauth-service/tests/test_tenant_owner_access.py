@@ -1,4 +1,5 @@
 import pytest
+from fastapi import HTTPException
 
 from app.core import security
 
@@ -23,8 +24,9 @@ async def test_tenant_owner_access_enforces_management_boundary(monkeypatch, cla
     if allowed:
         assert await security.require_tenant_owner_access("token", tenant_id) == claims
     else:
-        with pytest.raises(PermissionError):
+        with pytest.raises(HTTPException) as exc:
             await security.require_tenant_owner_access("token", tenant_id)
+        assert exc.value.status_code == 403
 
 
 @pytest.mark.asyncio
