@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { platformApi } from '../lib/platformApi'
 import { AdsterraResponsiveBanner } from '../components/AdsterraAds'
@@ -25,6 +25,7 @@ function PostCard({ post, refresh, following, toggleFollow }) {
   const [comments, setComments] = useState([])
   const [comment, setComment] = useState('')
   const [busy, setBusy] = useState(false)
+  const commentInputRef = useRef(null)
   const isFollowing = following.has(String(post.user_id))
   const mediaItems = normalizeMedia(post.media).map((item) => {
     const url = typeof item === 'string' ? item : (item?.url || item?.src || '')
@@ -97,6 +98,7 @@ function PostCard({ post, refresh, following, toggleFollow }) {
       </div>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 16 }}>
         <button disabled={busy} onClick={toggleLike}>{liked ? '♥ Liked' : '♡ Like'} · {post.like_count || 0}</button>
+        <button type="button" onClick={() => commentInputRef.current?.focus()}>Comment · {post.comment_count || comments.length}</button>
         <button onClick={doShare}>↗ Share · {post.share_count || 0}</button>
         <button disabled={busy} onClick={toggleSave}>{saved ? '🔖 Saved' : '🔖 Save'}</button>
         <button onClick={() => navigator.clipboard?.writeText(direct)}>🔗 Copy link</button>
@@ -110,7 +112,7 @@ function PostCard({ post, refresh, following, toggleFollow }) {
       </div>}
 
       <form onSubmit={addComment} style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 14 }}>
-        <input value={comment} onChange={e => setComment(e.target.value)} placeholder="Write a comment…" style={{ flex: 1, padding: 9, border: '1px solid #cbd5e1', borderRadius: 8 }} />
+        <input ref={commentInputRef} value={comment} onChange={e => setComment(e.target.value)} placeholder="Write a comment…" style={{ flex: 1, padding: 9, border: '1px solid #cbd5e1', borderRadius: 8 }} />
         <button type="submit">Comment · {post.comment_count || comments.length}</button>
       </form>
       {comments.length > 0 && <div style={{ marginTop: 12, borderTop: '1px solid #e2e8f0', paddingTop: 10 }}>
