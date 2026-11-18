@@ -1,0 +1,181 @@
+name: Read-only blog recovery audit from encrypted backup
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: read
+  actions: read
+
+concurrency:
+  group: blog-backup-recovery-audit
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    name: Extract five historical blog records in disposable PostgreSQL
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    services:
+      postgres:
+        image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-postgres-combined:pg16-postgis3.5-pgvector0.8.6
+        credentials:
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+        env:
+          POSTGRES_USER: restore_admin_${{ github.run_id }}
+          POSTGRES_PASSWORD: restore-only-${{ github.run_id }}-${{ github.run_attempt }}
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U restore_admin_${{ github.run_id }} -d postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 12
+
+    steps:
+      - name: Checkout encrypted backup branch
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository }}
+          ref: database-backups
+          path: backup-source
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Decrypt backup into runner temporary storage
+        shell: bash
+        env:
+          BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
+        run: |
+          set -euo pipefail
+          umask 077
+          test -n "${BACKUP_ENCRYPTION_KEY:-}" || { echo "::error::BACKUP_ENCRYPTION_KEY is missing."; exit 1; }
+          cd backup-source/backup
+          test -s latest.all-databases.tar.gz.enc
+          test -s latest.all-databases.tar.gz.enc.sha256
+          sha256sum -c latest.all-databases.tar.gz.enc.sha256
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 \
+            -in latest.all-databases.tar.gz.enc \
+            -out "$RUNNER_TEMP/shopnoltd-all-databases.tar.gz" \
+            -pass env:BACKUP_ENCRYPTION_KEY
+          mkdir -p "$RUNNER_TEMP/shopnoltd-restore-source"
+          tar -xzf "$RUNNER_TEMP/shopnoltd-all-databases.tar.gz" -C "$RUNNER_TEMP/shopnoltd-restore-source"
+          test -s "$RUNNER_TEMP/shopnoltd-restore-source/globals.sql"
+          test -s "$RUNNER_TEMP/shopnoltd-restore-source/database-list.txt"
+          grep -Fxq social "$RUNNER_TEMP/shopnoltd-restore-source/database-list.txt"
+          echo "PASS: encrypted backup decrypted; social database archive is listed."
+
+      - name: Restore only social database into disposable PostgreSQL
+        shell: bash
+        env:
+          PGUSER: restore_admin_${{ github.run_id }}
+          PGPASSWORD: restore-only-${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          set -euo pipefail
+          source_dir="$RUNNER_TEMP/shopnoltd-restore-source"
+          dump="$source_dir/all-databases/social.dump"
+          test -s "$dump"
+          image='ghcr.io/asaduzzamanbheramara-prog/shopnoltd-postgres-combined:pg16-postgis3.5-pgvector0.8.6'
+          container_id="$(docker ps --filter "ancestor=$image" --format '{{.ID}}' | head -n 1)"
+          test -n "$container_id"
+          client_version="$(docker exec "$container_id" pg_restore --version)"
+          [[ "$client_version" == *"16."* ]]
+          docker exec "$container_id" pg_isready -U "$PGUSER" -d postgres
+          docker cp "$source_dir" "$container_id:/tmp/"
+          restore_dir=/tmp/shopnoltd-restore-source
+          docker exec --user root -e PGPASSWORD="$PGPASSWORD" "$container_id" \
+            psql -U "$PGUSER" --dbname=postgres --set ON_ERROR_STOP=1 \
+            --file "$restore_dir/globals.sql" >/dev/null
+          docker exec --user root -e PGPASSWORD="$PGPASSWORD" "$container_id" \
+            pg_restore --exit-on-error --clean --if-exists --create \
+            --username="$PGUSER" --dbname=template1 "$restore_dir/all-databases/social.dump"
+          docker exec --user root -e PGPASSWORD="$PGPASSWORD" "$container_id" \
+            psql -U "$PGUSER" --dbname=social --set ON_ERROR_STOP=1 \
+            --command='SELECT current_database(), count(*) FROM public.blog_posts'
+
+      - name: Export the five article records and media metadata
+        shell: bash
+        env:
+          PGUSER: restore_admin_${{ github.run_id }}
+          PGPASSWORD: restore-only-${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          set -euo pipefail
+          mkdir -p recovery-artifact
+          image='ghcr.io/asaduzzamanbheramara-prog/shopnoltd-postgres-combined:pg16-postgis3.5-pgvector0.8.6'
+          container_id="$(docker ps --filter "ancestor=$image" --format '{{.ID}}' | head -n 1)"
+          test -n "$container_id"
+          query="$(cat <<'SQL'
+          SELECT COALESCE(json_agg(row_to_json(posts) ORDER BY posts.slug), '[]'::json)::text
+          FROM (
+            SELECT id, tenant_id, author_id, title, slug, excerpt, content, cover_image,
+                   status, published_at, created_at, updated_at,
+                   (content ~* '(youtube\.com/watch|youtu\.be/|vimeo\.com/)') AS has_video,
+                   (content ~* '(<img|!\[)') AS has_inline_image
+            FROM public.blog_posts
+            WHERE slug IN (
+              'choose-a-domain-name',
+              'domain-registration-checklist',
+              'choosing-the-right-plan',
+              'data-management-basics',
+              'shared-workspace-for-small-business'
+            )
+          ) AS posts;
+          SQL
+          )"
+          docker exec --user root -e PGPASSWORD="$PGPASSWORD" "$container_id" \
+            psql -U "$PGUSER" --dbname=social --tuples-only --no-align \
+            --set ON_ERROR_STOP=1 --command="$query" > recovery-artifact/blog-posts.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          rows = json.loads(Path("recovery-artifact/blog-posts.json").read_text())
+          expected = {
+              "choose-a-domain-name",
+              "domain-registration-checklist",
+              "choosing-the-right-plan",
+              "data-management-basics",
+              "shared-workspace-for-small-business",
+          }
+          found = {row["slug"] for row in rows}
+          summary = []
+          for row in rows:
+              summary.append({
+                  "slug": row["slug"],
+                  "title": row["title"],
+                  "status": row["status"],
+                  "published_at": row["published_at"],
+                  "has_cover_image": bool(row.get("cover_image")),
+                  "has_inline_image": bool(row.get("has_inline_image")),
+                  "has_video": bool(row.get("has_video")),
+                  "content_characters": len(row.get("content") or ""),
+              })
+          Path("recovery-artifact/summary.json").write_text(json.dumps({
+              "found_count": len(rows),
+              "expected_count": len(expected),
+              "missing_slugs": sorted(expected - found),
+              "articles": summary,
+          }, indent=2) + "\n")
+          print(json.dumps({
+              "found_count": len(rows),
+              "expected_count": len(expected),
+              "missing_slugs": sorted(expected - found),
+          }, indent=2))
+          PY
+
+      - name: Upload recovery audit artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: shopnoltd-blog-backup-recovery-audit
+          path: recovery-artifact/
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Remove decrypted backup material
+        if: always()
+        shell: bash
+        run: |
+          rm -f "$RUNNER_TEMP/shopnoltd-all-databases.tar.gz"
+          rm -rf "$RUNNER_TEMP/shopnoltd-restore-source"
