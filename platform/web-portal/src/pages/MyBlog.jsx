@@ -42,7 +42,8 @@ export default function MyBlog() {
     load().then(data => {
       if (!recoveryImportStarted.current && Array.isArray(data) && RECOVERY_ARTICLES.some(filename => {
         const slug = filename.replace(/\.md$/, '')
-        return !data.some(post => post.slug === slug)
+        const post = data.find(item => item.slug === slug)
+        return !post || post.status !== 'published'
       })) {
         recoveryImportStarted.current = true
         importEditorialDrafts()
