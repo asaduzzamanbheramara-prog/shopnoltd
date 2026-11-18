@@ -210,9 +210,10 @@ export default function MyBlog() {
       'choosing-the-right-plan.md',
       'data-management-basics.md',
       'shared-workspace-for-small-business.md',
+      'small-business-website-security-checklist.md',
     ]
     setBusy(true)
-    setMessage('Importing repository articles using their explicit source status…')
+    setMessage('Importing six reviewed repository articles using their explicit source status…')
     let imported = 0
     let skipped = 0
     try {
@@ -274,7 +275,7 @@ export default function MyBlog() {
       <div style={{ marginBottom: 16, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <button onClick={newPost} disabled={busy || uploading}>New post</button>
         <button onClick={load} disabled={busy || uploading || loading}>{loading ? 'Loading…' : 'Refresh'}</button>
-        <button onClick={importEditorialDrafts} disabled={busy || uploading || loading}>Import 5 GitHub articles</button>
+        <button onClick={importEditorialDrafts} disabled={busy || uploading || loading}>Import 6 GitHub articles</button>
         <button onClick={syncSharedWorkspaceArticle} disabled={busy || uploading || loading}>Update shared-workspace article from GitHub</button>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(260px,.8fr) minmax(420px,1.4fr)', gap: 24 }}>
