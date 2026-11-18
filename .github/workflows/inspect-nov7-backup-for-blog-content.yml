@@ -77,10 +77,9 @@ jobs:
               "data management", "shared workspace",
               *slugs,
           ]
-              if re.search(r"INSERT INTO [\"']?(?:public\.)?[\"']?(?:blog_posts|articles|posts)[\"']?", line, re.I)
+          insert_lines = [line for line in sql if re.search(r"^INSERT INTO ", line, re.I)]
           blog_insert_lines = [
               line for line in insert_lines
-              if re.search(r"INSERT INTO [\"']?(?:public\.)?[\"']?(?:blog_posts|articles|posts)[\"']?", line, re.I)
           ]
           matched = [
               line for line in insert_lines
