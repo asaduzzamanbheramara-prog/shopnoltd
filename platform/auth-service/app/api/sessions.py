@@ -48,7 +48,7 @@ async def revoke(sess_id: str, user=Depends(current_user), s: AsyncSession = Dep
         await s.execute(
             select(Session).where(
                 Session.id == sess_id,
-                Session.user_id == user.get("email", user["sub"]),
+                Session.user_id.in_({v for v in (user.get("sub"), user.get("email"), user.get("preferred_username")) if v}),
             )
         )
     ).scalar_one_or_none()
