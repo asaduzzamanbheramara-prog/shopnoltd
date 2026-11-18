@@ -1,4 +1,5 @@
 import httpx
+from fastapi import HTTPException
 from shopno_core.security.jwt import JWTError, jwt
 
 from app.core.config import settings
@@ -77,7 +78,7 @@ async def require_tenant_owner_access(token: str, tenant_id: str) -> dict:
         return u
     if "tenant_owner" in roles and u.get("tenant_id") == tenant_id:
         return u
-    raise PermissionError("tenant owner or platform admin required")
+    raise HTTPException(status_code=403, detail="tenant owner or platform admin required")
 
 
 async def require_tenant_access(token: str, tenant_id: str) -> dict:
