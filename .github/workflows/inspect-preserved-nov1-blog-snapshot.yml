@@ -2,6 +2,11 @@ name: Inspect preserved Nov 1 database snapshot for historical blog posts
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - recovery/inspect-preserved-nov1-blog-snapshot-20261118
+    paths:
+      - .github/workflows/inspect-preserved-nov1-blog-snapshot.yml
 
 permissions:
   contents: read
