@@ -2,7 +2,7 @@
 title: "Data Management Basics for Small Teams"
 slug: "data-management-basics"
 meta_description: "Practical data-management habits for small teams: organize files, control access, keep backups and define simple retention rules."
-status: "editorial-draft"
+status: "published"
 ---
 
 # Data Management Basics for Small Teams

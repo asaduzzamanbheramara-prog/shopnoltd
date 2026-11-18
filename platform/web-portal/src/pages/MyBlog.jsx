@@ -2,6 +2,14 @@ import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { platformApi } from '../lib/platformApi'
 
 const EMPTY = { id: null, title: '', slug: '', excerpt: '', content: '', cover_image: '', status: 'draft' }
+const RECOVERY_ARTICLES = [
+  'choose-a-domain-name.md',
+  'domain-registration-checklist.md',
+  'choosing-the-right-plan.md',
+  'data-management-basics.md',
+  'shared-workspace-for-small-business.md',
+  'small-business-website-security-checklist.md',
+]
 
 export default function MyBlog() {
   const [posts, setPosts] = useState([])
@@ -19,15 +27,29 @@ export default function MyBlog() {
       const data = await platformApi.myBlog()
       setPosts(Array.isArray(data) ? data : [])
       setMessage('')
+      return Array.isArray(data) ? data : []
     } catch (e) {
       setPosts([])
       setMessage(`Unable to load My Blog: ${e?.message || 'request failed'}`)
+      return null
     } finally {
       setLoading(false)
     }
   }, [])
 
-  useEffect(() => { load() }, [load])
+  const recoveryImportStarted = useRef(false)
+  useEffect(() => {
+    load().then(data => {
+      if (!recoveryImportStarted.current && Array.isArray(data) && RECOVERY_ARTICLES.some(filename => {
+        const slug = filename.replace(/\.md$/, '')
+        const post = data.find(item => item.slug === slug)
+        return !post || post.status !== 'published'
+      })) {
+        recoveryImportStarted.current = true
+        importEditorialDrafts()
+      }
+    })
+  }, [load])
 
   function editPost(post) {
     setMessage('')
@@ -204,19 +226,14 @@ export default function MyBlog() {
   }
 
   async function importEditorialDrafts() {
-    const articles = [
-      'choose-a-domain-name.md',
-      'domain-registration-checklist.md',
-      'choosing-the-right-plan.md',
-      'data-management-basics.md',
-      'shared-workspace-for-small-business.md',
-    ]
+    const articles = RECOVERY_ARTICLES
     setBusy(true)
-    setMessage('Importing repository articles using their explicit source status…')
+    setMessage('Importing six reviewed repository articles using their explicit source status…')
     let imported = 0
-    let skipped = 0
+    let updated = 0
     try {
-      const existing = new Set(posts.map(post => post.slug))
+      const currentPosts = await platformApi.myBlog()
+      const existing = new Map((Array.isArray(currentPosts) ? currentPosts : []).map(post => [post.slug, post]))
       for (const filename of articles) {
         const url = 'https://raw.githubusercontent.com/asaduzzamanbheramara-prog/shopnoltd/main/docs/blog/' + filename
         const response = await fetch(url)
@@ -238,10 +255,6 @@ export default function MyBlog() {
         const sourceStatus = field('status').toLowerCase()
         const status = sourceStatus === 'published' ? 'published' : 'draft'
         const coverImage = field('cover_image') || null
-        if (existing.has(slug)) {
-          skipped += 1
-          continue
-        }
         let body = markdown.replace(/^---\s*\n[\s\S]*?\n---\s*\n?/, '')
         body = body
           .replace(/^#{1,6}\s+/gm, '')
@@ -251,13 +264,22 @@ export default function MyBlog() {
           .replace(/^-\s+/gm, '• ')
           .replace(/^\d+\.\s+/gm, '• ')
           .trim()
-        await platformApi.createBlogPost({ title, slug, excerpt, content: body, cover_image: coverImage, status })
-        existing.add(slug)
-        imported += 1
+        const current = existing.get(slug)
+        if (current) {
+          await platformApi.updateBlogPost(current.id, {
+            title, slug, excerpt, content: body,
+            cover_image: coverImage || current.cover_image || null,
+            status,
+          })
+          updated += 1
+        } else {
+          await platformApi.createBlogPost({ title, slug, excerpt, content: body, cover_image: coverImage, status })
+          imported += 1
+        }
       }
       await load()
       setForm(EMPTY)
-      setMessage('Imported ' + imported + ' article(s) using explicit source status; skipped ' + skipped + ' existing article(s). Historical publish dates are not inferred.')
+      setMessage('Blog recovery complete: imported ' + imported + ' and updated ' + updated + ' article(s). Published status follows the reviewed source files; original historical dates are not fabricated.')
     } catch (e) {
       await load()
       setMessage('Import stopped after ' + imported + ' draft(s): ' + (e?.message || 'request failed') + '. Refresh and retry; existing slugs will be skipped.')
@@ -274,7 +296,7 @@ export default function MyBlog() {
       <div style={{ marginBottom: 16, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <button onClick={newPost} disabled={busy || uploading}>New post</button>
         <button onClick={load} disabled={busy || uploading || loading}>{loading ? 'Loading…' : 'Refresh'}</button>
-        <button onClick={importEditorialDrafts} disabled={busy || uploading || loading}>Import 5 GitHub articles</button>
+        <button onClick={importEditorialDrafts} disabled={busy || uploading || loading}>Import 6 GitHub articles</button>
         <button onClick={syncSharedWorkspaceArticle} disabled={busy || uploading || loading}>Update shared-workspace article from GitHub</button>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(260px,.8fr) minmax(420px,1.4fr)', gap: 24 }}>

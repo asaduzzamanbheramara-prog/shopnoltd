@@ -2,7 +2,7 @@
 title: "How to Choose a Domain Name for Your Small Business"
 slug: "choose-a-domain-name"
 meta_description: "A practical guide to choosing a clear, memorable domain name for a small business, with checks for branding, availability and future growth."
-status: "editorial-draft"
+status: "published"
 ---
 
 # How to Choose a Domain Name for Your Small Business
@@ -64,3 +64,6 @@ Use accurate owner contact details and an email address the business will retain
 Shopnoltd provides a domain-registration entry point at [Domain Registration](/domain-registration). Check the actual availability, eligibility, pricing and registration terms shown during the process; do not assume every domain ending or service is offered under the same conditions.
 
 **Final thought:** the strongest domain is not necessarily the most inventive. It is the one your intended customers can recognize, remember and use confidently—and that your business can keep secure over time.
+
+
+[VIDEO: https://www.youtube.com/watch?v=Y4cRx19nhJk]
