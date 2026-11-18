@@ -1,0 +1,218 @@
+name: Search all restored databases for historical blog articles
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: read
+  actions: read
+
+concurrency:
+  group: blog-backup-all-databases-audit
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    name: Search every database in disposable PostgreSQL
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    services:
+      postgres:
+        image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-postgres-combined:pg16-postgis3.5-pgvector0.8.6
+        credentials:
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+        env:
+          POSTGRES_USER: restore_admin_${{ github.run_id }}
+          POSTGRES_PASSWORD: restore-only-${{ github.run_id }}-${{ github.run_attempt }}
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U restore_admin_${{ github.run_id }} -d postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 12
+
+    steps:
+      - name: Checkout encrypted backup branch
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository }}
+          ref: database-backups
+          path: backup-source
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Decrypt backup into runner temporary storage
+        shell: bash
+        env:
+          BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
+        run: |
+          set -euo pipefail
+          umask 077
+          test -n "${BACKUP_ENCRYPTION_KEY:-}" || { echo "::error::BACKUP_ENCRYPTION_KEY is missing."; exit 1; }
+          cd backup-source/backup
+          sha256sum -c latest.all-databases.tar.gz.enc.sha256
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 \
+            -in latest.all-databases.tar.gz.enc \
+            -out "$RUNNER_TEMP/shopnoltd-all-databases.tar.gz" \
+            -pass env:BACKUP_ENCRYPTION_KEY
+          mkdir -p "$RUNNER_TEMP/shopnoltd-restore-source"
+          tar -xzf "$RUNNER_TEMP/shopnoltd-all-databases.tar.gz" -C "$RUNNER_TEMP/shopnoltd-restore-source"
+          test -s "$RUNNER_TEMP/shopnoltd-restore-source/globals.sql"
+          test -s "$RUNNER_TEMP/shopnoltd-restore-source/database-list.txt"
+          test -d "$RUNNER_TEMP/shopnoltd-restore-source/all-databases"
+
+      - name: Restore every database in disposable PostgreSQL
+        shell: bash
+        env:
+          PGUSER: restore_admin_${{ github.run_id }}
+          PGPASSWORD: restore-only-${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          set -euo pipefail
+          source_dir="$RUNNER_TEMP/shopnoltd-restore-source"
+          image='ghcr.io/asaduzzamanbheramara-prog/shopnoltd-postgres-combined:pg16-postgis3.5-pgvector0.8.6'
+          container_id="$(docker ps --filter "ancestor=$image" --format '{{.ID}}' | head -n 1)"
+          test -n "$container_id"
+          docker exec "$container_id" pg_isready -U "$PGUSER" -d postgres
+          docker cp "$source_dir" "$container_id:/tmp/"
+          restore_dir=/tmp/shopnoltd-restore-source
+          docker exec --user root -e PGPASSWORD="$PGPASSWORD" "$container_id" \
+            psql -U "$PGUSER" --dbname=postgres --set ON_ERROR_STOP=1 \
+            --file "$restore_dir/globals.sql" >/dev/null
+          restored=0
+          while IFS= read -r database; do
+            [[ -n "$database" ]] || continue
+            [[ "$database" =~ ^[A-Za-z0-9_]+$ ]] || { echo "::error::Unsafe database name in backup inventory."; exit 1; }
+            dump="$restore_dir/all-databases/$database.dump"
+            test -s "$dump"
+            docker exec --user root -e PGPASSWORD="$PGPASSWORD" "$container_id" \
+              pg_restore --exit-on-error --clean --if-exists --create \
+              --username="$PGUSER" --dbname=template1 "$dump"
+            restored=$((restored + 1))
+          done < "$source_dir/database-list.txt"
+          listed="$(grep -cve '^$' "$source_dir/database-list.txt")"
+          [[ "$restored" -eq "$listed" && "$restored" -gt 0 ]]
+          echo "PASS: restored all $restored databases into disposable PostgreSQL."
+
+      - name: Search blog and article tables across every database
+        shell: bash
+        env:
+          PGUSER: restore_admin_${{ github.run_id }}
+          PGPASSWORD: restore-only-${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          set -euo pipefail
+          mkdir -p recovery-artifact
+          python3 - <<'PY'
+          import json
+          import os
+          import re
+          import subprocess
+          from pathlib import Path
+
+          user = os.environ["PGUSER"]
+          password = os.environ["PGPASSWORD"]
+          image = "ghcr.io/asaduzzamanbheramara-prog/shopnoltd-postgres-combined:pg16-postgis3.5-pgvector0.8.6"
+          container = subprocess.check_output(
+              ["docker", "ps", "--filter", f"ancestor={image}", "--format", "{{.ID}}"],
+              text=True
+          ).splitlines()[0]
+          databases = [
+              line.strip()
+              for line in Path(os.environ["RUNNER_TEMP"], "shopnoltd-restore-source", "database-list.txt").read_text().splitlines()
+              if line.strip()
+          ]
+          env = os.environ.copy()
+          env["PGPASSWORD"] = password
+
+          def psql(database, query):
+              return subprocess.check_output([
+                  "docker", "exec", "--user", "root", "-e", f"PGPASSWORD={password}",
+                  container, "psql", "-U", user, "--dbname", database,
+                  "--tuples-only", "--no-align", "--set", "ON_ERROR_STOP=1",
+                  "--command", query
+              ], text=True).strip()
+
+          candidates = []
+          inventory = []
+          slug_values = [
+              "choose-a-domain-name",
+              "domain-registration-checklist",
+              "choosing-the-right-plan",
+              "data-management-basics",
+              "shared-workspace-for-small-business",
+          ]
+          title_patterns = [
+              "%domain name%", "%registration%", "%right plan%",
+              "%data management%", "%shared workspace%"
+          ]
+          for db in databases:
+              if not re.fullmatch(r"[A-Za-z0-9_]+", db):
+                  continue
+              query_tables = """
+              SELECT table_schema || '.' || table_name
+              FROM information_schema.tables
+              WHERE table_type = 'BASE TABLE'
+                AND table_schema NOT IN ('pg_catalog', 'information_schema')
+                AND table_name ~* '(blog|article|post|cms|content)'
+              ORDER BY table_schema, table_name
+              """
+              tables = [x for x in psql(db, query_tables).splitlines() if x]
+              for qualified in tables:
+                  schema, table = qualified.split(".", 1)
+                  inventory.append({"database": db, "table": qualified})
+                  q_ident = '"' + schema.replace('"', '""') + '"."' + table.replace('"', '""') + '"'
+                  slugs = ", ".join("'" + x.replace("'", "''") + "'" for x in slug_values)
+                  patterns = ", ".join("'" + x.replace("'", "''") + "'" for x in title_patterns)
+                  query_rows = f"""
+                  SELECT COALESCE(json_agg(to_jsonb(t)), '[]'::json)::text
+                  FROM {q_ident} AS t
+                  WHERE COALESCE(to_jsonb(t)->>'slug', '') IN ({slugs})
+                     OR COALESCE(to_jsonb(t)->>'title', '') ILIKE ANY (ARRAY[{patterns}])
+                     OR (
+                       to_jsonb(t)::text ILIKE '%domain name%'
+                       AND to_jsonb(t)::text ILIKE '%small business%'
+                     )
+                  """
+                  raw = psql(db, query_rows)
+                  rows = json.loads(raw or "[]")
+                  for row in rows:
+                      serialized = json.dumps(row, ensure_ascii=False)
+                      candidates.append({
+                          "database": db,
+                          "table": qualified,
+                          "record": row,
+                          "media_flags": {
+                              "has_video_reference": bool(re.search(r"youtube\\.com/watch|youtu\\.be/|vimeo\\.com", serialized, re.I)),
+                              "has_image_reference": bool(re.search(r"https?://[^\\s\"']+\\.(?:png|jpe?g|webp|gif)|<img|!\\[", serialized, re.I)),
+                          }
+                      })
+
+          Path("recovery-artifact/table-inventory.json").write_text(json.dumps(inventory, ensure_ascii=False, indent=2) + "\n")
+          Path("recovery-artifact/candidate-articles.json").write_text(json.dumps(candidates, ensure_ascii=False, indent=2) + "\n")
+          summary = {
+              "databases_checked": len(databases),
+              "blog_related_tables": len(inventory),
+              "candidate_records": len(candidates),
+              "candidate_locations": sorted({f'{x["database"]}.{x["table"]}' for x in candidates}),
+          }
+          Path("recovery-artifact/summary.json").write_text(json.dumps(summary, indent=2) + "\n")
+          print(json.dumps(summary, indent=2))
+          PY
+
+      - name: Upload all-database recovery search artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: shopnoltd-all-database-blog-search
+          path: recovery-artifact/
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Remove decrypted backup material
+        if: always()
+        shell: bash
+        run: |
+          rm -f "$RUNNER_TEMP/shopnoltd-all-databases.tar.gz"
+          rm -rf "$RUNNER_TEMP/shopnoltd-restore-source"
