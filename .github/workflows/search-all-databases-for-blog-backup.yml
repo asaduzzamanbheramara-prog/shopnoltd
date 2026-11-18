@@ -185,8 +185,8 @@ jobs:
                           "table": qualified,
                           "record": row,
                           "media_flags": {
-                              "has_video_reference": bool(re.search(r"youtube\\.com/watch|youtu\\.be/|vimeo\\.com", serialized, re.I)),
-                              "has_image_reference": bool(re.search(r"https?://[^\\s\"']+\\.(?:png|jpe?g|webp|gif)|<img|!\\[", serialized, re.I)),
+                              "has_video_reference": bool(re.search(r"youtube\.com/watch|youtu\.be/|vimeo\.com", serialized, re.I)),
+                              "has_image_reference": bool(re.search(r"https?://[^\s\"']+\.(?:png|jpe?g|webp|gif)|<img|!\[", serialized, re.I)),
                           }
                       })
 
