@@ -1,5 +1,5 @@
 import { KEYCLOAK_CLIENT_ID, KEYCLOAK_REALM, KEYCLOAK_URL } from '../config.js'
-import { isRefreshSessionCurrent } from './authSession'
+import { isRefreshSessionCurrent } from './authSession.js'
 
 const TOKEN_URL = `${KEYCLOAK_URL}/realms/${KEYCLOAK_REALM}/protocol/openid-connect/token`
 
