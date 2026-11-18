@@ -1,18 +1,23 @@
-# Shopnoltd blog editorial drafts
+# Shopnoltd blog publication recovery
 
-This directory contains the five proposed small-business guides. They are editorial drafts, not published posts. Before publishing, verify live prices and feature claims, add first-hand examples or original screenshots where available, and review links and metadata.
+This directory contains five recovered blog guides and one newly added companion guide. The five original guides are marked `published` in their source frontmatter following the owner's instruction to restore them. The new website-security guide is also marked `published`.
 
 ## Articles
 
 1. `choose-a-domain-name.md` — How to choose a domain name for a small business.
-2. `domain-registration-checklist.md` — Domain registration checklist.
-3. `choosing-the-right-plan.md` — Free through Enterprise plan comparison.
-4. `data-management-basics.md` — Data management for small teams.
-5. `shared-workspace-for-small-business.md` — Shared workspace setup.
+2. `domain-registration-checklist.md` — A beginner's checklist for registering a domain name.
+3. `choosing-the-right-plan.md` — How to choose the right plan for a small business.
+4. `data-management-basics.md` — Data management basics for small teams.
+5. `shared-workspace-for-small-business.md` — How to set up a shared workspace for a small business.
+6. `small-business-website-security-checklist.md` — A practical website security checklist for small businesses.
 
-## Publication requirements
+## Media recovery notes
 
-- Enter each post through the authorized Shopnoltd blog editor and publish only after editorial review.
-- Do not invent customer stories, product screenshots, testimonials or personal experience.
-- Confirm current prices and plan limits at `/pricing` before publication.
-- After publication, test each canonical URL, the public blog API, rendered HTML and sitemap.
+- The domain-name guide includes the verified video `Y4cRx19nhJk`.
+- The registration checklist includes the verified video `bVLjWYB2uoo`.
+- The shared-workspace guide retains its existing video `nn3QzxWHYuI`.
+- No unverified video IDs have been assigned to the plan-selection or data-management guides. Their original video references still need independent confirmation.
+
+## Publication and verification
+
+The My Blog importer now reads all six source files and respects explicit `published` status. It skips existing slugs to avoid duplicate posts. After importing from the authenticated owner account, verify all six canonical URLs, the public blog API, rendered media and sitemap. Historical publication timestamps are not fabricated; the API records the actual restoration publication time.
