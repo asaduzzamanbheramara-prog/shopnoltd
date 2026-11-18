@@ -87,7 +87,7 @@ jobs:
             [[ -n "$database" ]] || continue
             [[ "$database" =~ ^[A-Za-z0-9_]+$ ]] || { echo "::error::Unsafe database name in backup inventory."; exit 1; }
             dump="$restore_dir/all-databases/$database.dump"
-            test -s "$dump"
+            docker exec --user root "$container_id" test -s "$dump"
             docker exec --user root -e PGPASSWORD="$PGPASSWORD" "$container_id" \
               pg_restore --exit-on-error --clean --if-exists --create \
               --username="$PGUSER" --dbname=template1 "$dump"
