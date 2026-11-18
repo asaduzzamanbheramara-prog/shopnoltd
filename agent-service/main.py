@@ -635,8 +635,13 @@ async def run_task(claims: dict, sink: TaskSink, goal: str, model: str, catalog:
             hist.append({"role": "user", "content": goal})
             await sink.send_json({"type": "user", "text": goal})
             for _ in range(MAX_STEPS):
+                mode_policy = {
+                    "auto": "AUTO mode: execute routine user-requested browser interactions without pausing; still require explicit approval for form submission and file upload.",
+                    "hybrid": "HYBRID mode: inspect and research autonomously, but request approval before every browser mutation.",
+                    "manual": "MANUAL mode: request approval before every browser interaction that changes navigation or page state; read-only inspection can proceed.",
+                }[mode]
                 reply, active_model = await llm_with_failover(
-                    [{"role": "system", "content": SYSTEM}] + hist, model, active_model, catalog, failed_models, sink)
+                    [{"role": "system", "content": SYSTEM + "\\n" + mode_policy}] + hist, model, active_model, catalog, failed_models, sink)
                 hist.append(reply)
                 if reply.get("content"): await sink.send_json({"type": "text", "text": reply["content"]})
                 calls = reply.get("tool_calls") or []
