@@ -242,14 +242,14 @@ export default function MyBlog() {
           skipped += 1
           continue
         }
-        let body = markdown.replace(/^---\\s*\\n[\\s\\S]*?\\n---\\s*\\n?/, '')
+        let body = markdown.replace(/^---\s*\n[\s\S]*?\n---\s*\n?/, '')
         body = body
-          .replace(/^#{1,6}\\s+/gm, '')
-          .replace(/(?<!!)\\[([^\\]]+)\\]\\(([^)]+)\\)/g, '$1 ($2)')
-          .replace(/\\*\\*(.*?)\\*\\*/g, '$1')
-          .replace(/(?<!\\*)\\*([^*]+)\\*(?!\\*)/g, '$1')
-          .replace(/^-\\s+/gm, '• ')
-          .replace(/^\\d+\\.\\s+/gm, '• ')
+          .replace(/^#{1,6}\s+/gm, '')
+          .replace(/(?<!!)\[([^\]]+)\]\(([^)]+)\)/g, '$1 ($2)')
+          .replace(/\*\*(.*?)\*\*/g, '$1')
+          .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '$1')
+          .replace(/^-\s+/gm, '• ')
+          .replace(/^\d+\.\s+/gm, '• ')
           .trim()
         await platformApi.createBlogPost({ title, slug, excerpt, content: body, cover_image: coverImage, status })
         existing.add(slug)
