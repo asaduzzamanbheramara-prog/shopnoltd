@@ -42,7 +42,7 @@ PROVIDERS = (
         "provider_type": ProviderType.google,
         "base_url": "https://generativelanguage.googleapis.com/v1beta",
         "model_env": "GOOGLE_AI_MODEL",
-        "default_model": "gemini-2.5-flash",
+        "default_model": "gemini-3.5-flash",
         "display_name": "Gemini Flash",
         "priority": 5,
     },
@@ -146,7 +146,7 @@ async def bootstrap_providers(db: AsyncSession) -> int:
                         {"supports_vision": True}
                         if (
                             spec["env_key"] == "GOOGLE_AI_API_KEY"
-                            and model_name == "gemini-2.5-flash"
+                            and model_name == "gemini-3.5-flash"
                         )
                         else {}
                     ),
@@ -161,7 +161,7 @@ async def bootstrap_providers(db: AsyncSession) -> int:
                 capabilities["free_tier"] = True
             if (
                 spec["env_key"] == "GOOGLE_AI_API_KEY"
-                and model_name == "gemini-2.5-flash"
+                and model_name == "gemini-3.5-flash"
             ):
                 capabilities["supports_vision"] = True
             model.capabilities = capabilities
