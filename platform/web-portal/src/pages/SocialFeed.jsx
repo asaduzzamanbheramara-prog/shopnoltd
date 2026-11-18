@@ -129,10 +129,15 @@ export default function SocialFeed() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [following, setFollowing] = useState(new Set())
+  const loadInFlight = useRef(false)
 
-  async function load() {
-    setLoading(true)
-    setError('')
+  async function load({ silent = false } = {}) {
+    if (loadInFlight.current) return
+    loadInFlight.current = true
+    if (!silent) {
+      setLoading(true)
+      setError('')
+    }
     try {
       // Global is the canonical discovery feed. If an older deployment still
       // lacks that facade, fall back to the authenticated personal feed rather
@@ -160,17 +165,22 @@ export default function SocialFeed() {
       setPosts(combined)
       setFollowing(new Set((Array.isArray(followed) ? followed : []).map(String)))
     } catch (e) {
-      setPosts([])
-      setError(`Feed could not be loaded: ${e.message}`)
+      if (!silent) {
+        setPosts([])
+        setError(`Feed could not be loaded: ${e.message}`)
+      } else {
+        console.warn('Background feed refresh failed; keeping the current feed visible.', e)
+      }
     } finally {
-      setLoading(false)
+      loadInFlight.current = false
+      if (!silent) setLoading(false)
     }
   }
 
   useEffect(() => {
     load()
     const refreshWhenVisible = () => {
-      if (!document.hidden) load()
+      if (!document.hidden) load({ silent: true })
     }
     const timer = window.setInterval(refreshWhenVisible, 45000)
     window.addEventListener('focus', refreshWhenVisible)
