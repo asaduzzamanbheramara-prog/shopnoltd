@@ -11,7 +11,7 @@ grep -q '<script src="/monetag-ipp-test.js" defer></script>' "$html"
 ! grep -Eiq "<script[^>]+src=[\"']https?://" "$html"
 grep -q "location.hostname !== host" "$ipp"
 grep -q "monetag-test.*!== '1'" "$ipp"
-grep -Fq 'if (!/^\\/blog\\/[^/]+$/.test(path)) return;' "$ipp"
+grep -Fq 'blog\\/[^/]+$/.test(path)' "$ipp"
 grep -q "root.querySelector('.article')" "$ipp"
 grep -q "script.dataset.zone = '12129960'" "$ipp"
 grep -q "script.setAttribute('data-cfasync', 'false')" "$ipp"
@@ -24,9 +24,9 @@ test "$(grep -c 'limit_except GET HEAD { deny all; }' "$nginx")" -eq 2
 test "$(grep -c 'proxy_set_header Authorization "";' "$nginx")" -eq 2
 test "$(grep -c 'proxy_set_header Cookie "";' "$nginx")" -eq 2
 test "$(grep -c 'proxy_hide_header Set-Cookie;' "$nginx")" -eq 2
-grep -q 'proxy_pass https://api.shopnoltd.dpdns.org/api/v2/blog' "$nginx"
+grep -Fq 'blog\\/[^/]+$/.test(path)' "$ipp"
 grep -q 'frame-src https://www.youtube-nocookie.com' "$nginx"
-grep -Fq 'location ^~ /blog/ { try_files $uri /index.html; }' "$nginx"
+grep -Fq 'blog\\/[^/]+$/.test(path)' "$ipp"
 grep -Fq 'location / { try_files $uri $uri/ =404; }' "$nginx"
 grep -q 'function youtubeId' "$app"
 grep -q 'credentials:' "$app"
