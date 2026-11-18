@@ -75,3 +75,62 @@ jobs:
           if not found:
               print("NO_TARGET_ROWS_FOUND_IN_THIS_DATABASE_SNAPSHOT")
           PY
+
+      - name: Check recovered Nov 2 snapshot with current key and scan blog records
+        shell: bash
+        env:
+          BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
+        run: |
+          set -euo pipefail
+          umask 077
+          snapshot="/home/asadu/restore/20261102T165642Z/latest.dump.enc"
+          workdir="$(mktemp -d "${RUNNER_TEMP:-/tmp}/shopnoltd-blog-recovery-nov2.XXXXXX")"
+          trap 'rm -rf "$workdir"' EXIT
+          sha256sum -c /home/asadu/restore/20261102T165642Z/latest.dump.enc.sha256
+          if ! openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 \
+            -in "$snapshot" -out "$workdir/database.dump" \
+            -pass env:BACKUP_ENCRYPTION_KEY 2>/dev/null; then
+            echo "NOV2_CURRENT_KEY_DECRYPTION: failed (snapshot uses a different historical key)"
+            exit 0
+          fi
+          echo "NOV2_CURRENT_KEY_DECRYPTION: PASS"
+          kubectl -n shopno-data exec -i deploy/postgres -- pg_restore --list < "$workdir/database.dump" > "$workdir/toc.txt"
+          kubectl -n shopno-data exec -i deploy/postgres -- pg_restore --file=- < "$workdir/database.dump" > "$workdir/database.sql"
+          python3 - "$workdir/toc.txt" "$workdir/database.sql" <<'PY'
+          import pathlib, re, sys
+          toc = pathlib.Path(sys.argv[1]).read_text(errors="replace").splitlines()
+          sql = pathlib.Path(sys.argv[2]).read_text(errors="replace").splitlines()
+          targets = [
+              "choose-a-domain-name", "domain-registration-checklist",
+              "choosing-the-right-plan", "data-management-basics",
+              "shared-workspace-for-small-business",
+              "How to Choose a Domain Name for Your Small Business",
+              "A Beginner's Checklist for Registering a Domain Name",
+              "How to Choose the Right Plan for Your Small Business",
+              "Data Management Basics for Small Teams",
+              "How to Set Up a Shared Workspace for a Small Business",
+          ]
+          tables = [line for line in toc if "TABLE DATA" in line]
+          print("NOV2_TABLE_DATA_ENTRIES:")
+          for line in tables:
+              print(line)
+          active = None
+          found = set()
+          for line in sql:
+              if line.startswith("COPY ") and line.endswith(" FROM stdin;"):
+                  active = line
+                  continue
+              if active and line == r"\\.":
+                  active = None
+                  continue
+              if active:
+                  hits = [term for term in targets if term.casefold() in line.casefold()]
+                  if hits:
+                      found.update(hits)
+                      print("MATCH_TABLE:", active)
+                      print("MATCH_TERMS:", " | ".join(hits))
+                      print("MATCH_ROW:", line)
+          print("NOV2_MATCHED_TARGETS:", len(found), "of", len(targets))
+          if not found:
+              print("NO_TARGET_ROWS_FOUND_IN_NOV2_SNAPSHOT")
+          PY
