@@ -212,7 +212,7 @@ export default function MyBlog() {
       'shared-workspace-for-small-business.md',
     ]
     setBusy(true)
-    setMessage('Importing repository articles as drafts…')
+    setMessage('Importing repository articles using their explicit source status…')
     let imported = 0
     let skipped = 0
     try {
@@ -233,6 +233,11 @@ export default function MyBlog() {
         const title = field('title') || filename.replace(/\.md$/, '').replaceAll('-', ' ')
         const slug = field('slug') || filename.replace(/\.md$/, '')
         const excerpt = field('meta_description')
+        // Only an explicit source status may publish an imported article.
+        // Missing, editorial-draft, and unknown statuses remain private drafts.
+        const sourceStatus = field('status').toLowerCase()
+        const status = sourceStatus === 'published' ? 'published' : 'draft'
+        const coverImage = field('cover_image') || null
         if (existing.has(slug)) {
           skipped += 1
           continue
@@ -246,13 +251,13 @@ export default function MyBlog() {
           .replace(/^-\s+/gm, '• ')
           .replace(/^\d+\.\s+/gm, '• ')
           .trim()
-        await platformApi.createBlogPost({ title, slug, excerpt, content: body, cover_image: null, status: 'draft' })
+        await platformApi.createBlogPost({ title, slug, excerpt, content: body, cover_image: coverImage, status })
         existing.add(slug)
         imported += 1
       }
       await load()
       setForm(EMPTY)
-      setMessage('Imported ' + imported + ' draft(s); skipped ' + skipped + ' existing article(s). Review each draft before publishing.')
+      setMessage('Imported ' + imported + ' article(s) using explicit source status; skipped ' + skipped + ' existing article(s). Historical publish dates are not inferred.')
     } catch (e) {
       await load()
       setMessage('Import stopped after ' + imported + ' draft(s): ' + (e?.message || 'request failed') + '. Refresh and retry; existing slugs will be skipped.')
@@ -269,7 +274,7 @@ export default function MyBlog() {
       <div style={{ marginBottom: 16, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <button onClick={newPost} disabled={busy || uploading}>New post</button>
         <button onClick={load} disabled={busy || uploading || loading}>{loading ? 'Loading…' : 'Refresh'}</button>
-        <button onClick={importEditorialDrafts} disabled={busy || uploading || loading}>Import 5 GitHub drafts</button>
+        <button onClick={importEditorialDrafts} disabled={busy || uploading || loading}>Import 5 GitHub articles</button>
         <button onClick={syncSharedWorkspaceArticle} disabled={busy || uploading || loading}>Update shared-workspace article from GitHub</button>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(260px,.8fr) minmax(420px,1.4fr)', gap: 24 }}>
