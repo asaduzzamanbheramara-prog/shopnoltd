@@ -1,0 +1,144 @@
+name: Inspect preserved Nov 1 database snapshot for historical blog posts
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: inspect-preserved-nov1-blog-snapshot
+  cancel-in-progress: false
+
+jobs:
+  inspect:
+    runs-on: [self-hosted, linux]
+    timeout-minutes: 15
+    env:
+      NOV2_HISTORICAL_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY_20261102 }}
+    steps:
+      - name: Checkout workflow source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Verify, decrypt, and inspect preserved Nov 1 snapshot (read-only)
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          test -n "${NOV2_HISTORICAL_KEY:-}" || { echo "::error::Dedicated historical key secret is missing."; exit 1; }
+          workdir="$(mktemp -d "${RUNNER_TEMP:-/tmp}/shopnoltd-nov1-blog-audit.XXXXXX")"
+          trap 'rm -rf "$workdir"; unset NOV2_HISTORICAL_KEY' EXIT
+
+          git fetch --no-tags origin database-backups-preserved-20261102
+          git show FETCH_HEAD:backup/latest.dump.enc > "$workdir/latest.dump.enc"
+          git show FETCH_HEAD:backup/latest.dump.enc.sha256 > "$workdir/latest.dump.enc.sha256"
+          expected="$(awk '{print $1}' "$workdir/latest.dump.enc.sha256")"
+          actual="$(sha256sum "$workdir/latest.dump.enc" | awk '{print $1}')"
+          test -n "$expected" && test "$actual" = "$expected"
+          echo "PRESERVED_SNAPSHOT_SHA256: PASS"
+          echo "PRESERVED_SNAPSHOT_TIMESTAMP: $(git show FETCH_HEAD:backup/timestamp.txt | tr -d '\r\n')"
+          echo "PRESERVED_SNAPSHOT_SOURCE_REVISION: $(git show FETCH_HEAD:backup/source-revision.txt | tr -d '\r\n')"
+
+          if ! openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 \
+            -in "$workdir/latest.dump.enc" \
+            -out "$workdir/database.dump" \
+            -pass env:NOV2_HISTORICAL_KEY; then
+            echo "::error::The dedicated Nov 2 key cannot decrypt the preserved Nov 1 snapshot."
+            exit 1
+          fi
+          echo "PRESERVED_SNAPSHOT_OPENSSL_DECRYPT: PASS"
+
+          kubectl -n shopno-data exec -i deployment/postgres -- pg_restore --list \
+            < "$workdir/database.dump" > "$workdir/archive-toc.txt"
+          echo "PRESERVED_SNAPSHOT_PG_RESTORE_LIST: PASS"
+          kubectl -n shopno-data exec -i deployment/postgres -- pg_restore --file=- \
+            < "$workdir/database.dump" > "$workdir/database.sql"
+
+          mkdir -p recovery-artifact
+          python3 - "$workdir/database.sql" recovery-artifact/target-articles.json <<'PY'
+          import json, pathlib, re, sys
+
+          sql_path = pathlib.Path(sys.argv[1])
+          output_path = pathlib.Path(sys.argv[2])
+          targets = {
+              "choose-a-domain-name": "How to Choose a Domain Name for Your Small Business",
+              "domain-registration-checklist": "A Beginner's Checklist for Registering a Domain Name",
+              "choosing-the-right-plan": "How to Choose the Right Plan for Your Small Business",
+              "data-management-basics": "Data Management Basics for Small Teams",
+              "shared-workspace-for-small-business": "How to Set Up a Shared Workspace for a Small Business",
+          }
+
+          def decode_copy(value):
+              if value == r"\N":
+                  return None
+              value = value.replace(r"\\b", "\b").replace(r"\\f", "\f")
+              value = value.replace(r"\\n", "\n").replace(r"\\r", "\r")
+              value = value.replace(r"\\t", "\t").replace(r"\\v", "\v")
+              value = re.sub(r"\\([0-7]{1,3})", lambda m: chr(int(m.group(1), 8)), value)
+              return value.replace(r"\\\\", "\\")
+
+          found = []
+          active_table = None
+          columns = []
+          for line in sql_path.open(encoding="utf-8", errors="replace"):
+              line = line.rstrip("\n")
+              if line.startswith("COPY ") and line.endswith(" FROM stdin;"):
+                  match = re.match(r"COPY (.+?) \((.*?)\) FROM stdin;", line)
+                  active_table = match.group(1) if match else line.split(" FROM stdin;")[0]
+                  columns = [x.strip().strip('"') for x in match.group(2).split(",")] if match else []
+                  continue
+              if active_table and line == r"\.":
+                  active_table, columns = None, []
+                  continue
+              if not active_table:
+                  continue
+              values = line.split("\t")
+              if len(values) != len(columns):
+                  continue
+              row = {column: decode_copy(value) for column, value in zip(columns, values)}
+              slug = str(row.get("slug") or "")
+              title = str(row.get("title") or "")
+              matches = [key for key, expected_title in targets.items()
+                         if slug == key or title.casefold() == expected_title.casefold()]
+              if not matches:
+                  continue
+              record = {
+                  "matched_slug": matches[0],
+                  "table": active_table,
+                  "slug": slug,
+                  "title": title,
+                  "status": row.get("status"),
+                  "published_at": row.get("published_at"),
+                  "created_at": row.get("created_at"),
+                  "updated_at": row.get("updated_at"),
+                  "excerpt": row.get("excerpt"),
+                  "content": row.get("content"),
+                  "cover_image": row.get("cover_image"),
+                  "video_reference_candidates": sorted(set(re.findall(
+                      r"https?://(?:www\\.)?(?:youtube\\.com/watch\\?v=[^\\s&]+|youtu\\.be/[^\\s?]+|vimeo\\.com/[^\\s]+)",
+                      "\\n".join(str(v) for v in row.values() if v is not None), re.I))),
+              }
+              found.append(record)
+
+          output_path.write_text(json.dumps(found, ensure_ascii=False, indent=2) + "\n")
+          print("PRESERVED_SNAPSHOT_TARGET_ROWS:", len(found))
+          for record in found:
+              print("ARTICLE:", record["matched_slug"],
+                    "| status:", record["status"],
+                    "| published_at:", record["published_at"],
+                    "| media:", bool(record["cover_image"]),
+                    "| video_refs:", len(record["video_reference_candidates"]))
+          missing = sorted(set(targets) - {x["matched_slug"] for x in found})
+          print("MISSING_TARGET_SLUGS:", ", ".join(missing) if missing else "none")
+          PY
+
+      - name: Upload recovered article rows (if any)
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: shopnoltd-preserved-nov1-blog-rows
+          path: recovery-artifact/target-articles.json
+          if-no-files-found: warn
+          retention-days: 7
