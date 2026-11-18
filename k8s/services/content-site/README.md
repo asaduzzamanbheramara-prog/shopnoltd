@@ -6,7 +6,8 @@ This service serves the public Blog and BlogPost read views from a dedicated sta
 - Authenticated like, comment, save, and share actions remain on the original Shopnoltd article URL.
 - No account, payment, domain, dashboard, download, or administrative API is proxied.
 - No service worker is registered or served; `/sw.js` returns 404.
-- No Monetag or AdSense tags are included.
+- The Monetag integration is **manual-test-only**: it loads only on a successfully rendered editorial article at `content.shopnoltd.dpdns.org/blog/{slug}?monetag-test=1`.
+- Normal visitors, the editorial listing, and all other hosts do not load Monetag. The only configured zone is IPP `12129960`; zone `12128278`, Vignette `12288239`, Popunder/OnClick, and Multitag remain disabled.
 - The main web-portal Blog routes remain available during staged migration and rollback.
 
-Do not enable Monetag until CI passes, the image is published, the content host is deployed and verified, API read proxy behavior is tested, and the AdSense experiment is reviewed.
+The manual test gate is intentionally retained until a published article exists and the Monetag loader's browser network/CSP behavior has been checked. Do not remove the query gate or broaden CSP destinations without reviewing observed requests. The main Shopnoltd application, its AdSense implementation, database, secrets, and service worker are not modified.
