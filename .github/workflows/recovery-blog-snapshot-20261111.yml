@@ -76,10 +76,10 @@ jobs:
               print("NO_TARGET_ROWS_FOUND_IN_THIS_DATABASE_SNAPSHOT")
           PY
 
-      - name: Test archived Nov 7 key candidate against Nov 2 snapshot
+      - name: Decrypt Nov 2 snapshot with its dedicated historical key
         shell: bash
         env:
-          BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY_20261107 }}
+          BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY_20261102 }}
         run: |
           set -euo pipefail
           umask 077
@@ -88,13 +88,17 @@ jobs:
           workdir="$(mktemp -d "${RUNNER_TEMP:-/tmp}/shopnoltd-blog-recovery-nov2.XXXXXX")"
           trap 'rm -rf "$workdir"' EXIT
           sha256sum -c latest.dump.enc.sha256
+          if [ -z "${BACKUP_ENCRYPTION_KEY:-}" ]; then
+            echo "NOV2_DECRYPTION: waiting for BACKUP_ENCRYPTION_KEY_20261102 secret"
+            exit 0
+          fi
           if ! openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 \
             -in "$snapshot" -out "$workdir/database.dump" \
             -pass env:BACKUP_ENCRYPTION_KEY 2>/dev/null; then
-            echo "NOV2_NOV7_CANDIDATE_KEY_DECRYPTION: failed (snapshot uses a different historical key)"
+            echo "NOV2_DECRYPTION: failed; verify the dedicated Nov 2 historical key"
             exit 0
           fi
-          echo "NOV2_NOV7_CANDIDATE_KEY_DECRYPTION: PASS"
+          echo "NOV2_DECRYPTION: PASS"
           kubectl -n shopno-data exec -i deploy/postgres -- pg_restore --list < "$workdir/database.dump" > "$workdir/toc.txt"
           kubectl -n shopno-data exec -i deploy/postgres -- pg_restore --file=- < "$workdir/database.dump" > "$workdir/database.sql"
           python3 - "$workdir/toc.txt" "$workdir/database.sql" <<'PY'
