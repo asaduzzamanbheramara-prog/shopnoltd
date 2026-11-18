@@ -1,9 +1,8 @@
 import React from 'react'
 import { Link, useParams } from 'react-router-dom'
 
-const TRACKING = 'https://www.af9m8trk.com/ZPC11ES8/UQ711VGP/'
 const OFFERS = [
- {id:35682,slug:'iphone-18-pro-rewards-us',name:'Rewards US – iPhone 18 Pro',payout:2,category:'Rewards',geo:'United States',description:'Email-submit rewards campaign advertised as an opportunity to get $1,000 towards an iPhone 18 Pro. Reward eligibility and fulfilment are controlled by the advertiser.'},
+ {id:35682,slug:'iphone-18-pro-rewards-us',name:'Rewards US – iPhone 18 Pro',payout:2,category:'Rewards',geo:'United States',trackingUrl:'https://www.af9m8trk.com/ZPC11ES8/UQ711VGP/',description:'Email-submit rewards campaign advertised as an opportunity to get $1,000 towards an iPhone 18 Pro. Reward eligibility and fulfilment are controlled by the advertiser.'},
  {id:35333,slug:'kelly-services-jobs-us',name:'DailyJobs – Kelly Services Jobs',payout:1.30,category:'Jobs',geo:'United States',description:'Email-submit lead campaign associated with Kelly Services job listings. This is not a job offer or a guarantee of employment.'},
  {id:35332,slug:'dollar-tree-jobs-us',name:'JobsListings – Dollar Tree Jobs',payout:2,category:'Jobs',geo:'United States',description:'Email-submit lead campaign associated with Dollar Tree job listings. Verify vacancies and application details with the advertiser.'},
  {id:32421,slug:'ai-jobs-us',name:'DailyJobs – AI Jobs',payout:2,category:'Jobs',geo:'United States',description:'Email-submit lead campaign for AI-related job listings. Openings and hiring decisions are determined by employers.'},
@@ -20,15 +19,14 @@ const OFFERS = [
  {id:33616,slug:'paypal-1000-rewards-us',name:'Rewards US – PayPal $1000',payout:3,category:'Rewards',geo:'United States',description:'Email-submit rewards campaign advertised with a $1,000 PayPal reward. The advertised reward is not guaranteed.'},
  {id:33614,slug:'cash-750-rewards-us',name:'Rewards US – Cash $750',payout:3,category:'Rewards',geo:'United States',description:'Email-submit rewards campaign advertised with a $750 cash reward. Eligibility is controlled by the advertiser.'},
  {id:34909,slug:'grocery-750-rewards-us',name:'Rewards US – Grocery $750',payout:2,category:'Rewards',geo:'United States',description:'Email-submit rewards campaign advertised with a $750 grocery reward. Review the advertiser terms.'}
+ {id:27283,slug:'costco-750-rewards-us',name:'UpLevelRewards – Costco $750',payout:2.50,category:'Rewards',geo:'United States',previewUrl:'https://www.uplevelrewards.com/?Flow=6b51d955-0748-462e-9eb5-0ccdd7eceb37&isPrePop=true&RBC=1&reward=costco750&bckm=1',description:'Email-submit rewards campaign advertised as $750 towards Costco. Reward eligibility and fulfilment are determined by the advertiser.'},
+ {id:27282,slug:'mcdonalds-100-rewards-us',name:'UpLevelRewards – McDonald’s $100',payout:2.50,category:'Rewards',geo:'United States',previewUrl:'https://www.uplevelrewards.com/?Flow=656AE1C3-D3CE-3C2C-D9AE-1CBE7395FA7DE8814900&isPrePop=true&RBC=1&lp=fastfoodreviewer&reward=mcds100foodrvwrbns&bckm=1',description:'Email-submit rewards campaign advertised as $100 for food or drinks at McDonald’s. Review advertiser terms; the reward is not guaranteed.'},
+ {id:27281,slug:'target-750-rewards-us',name:'Rewards US – Target $750',payout:2.50,category:'Rewards',geo:'United States',previewUrl:'https://www.uplevelrewards.com/?Flow=656AE1C3-D3CE-3C2C-D9AE-1CBE7395FA7DE8814900&isPrePop=true&RBC=1&lp=flashpolllimitedtime&reward=target750limitedpoll',description:'Email-submit rewards campaign advertised as $750 towards Target shopping. Eligibility and fulfilment are controlled by the advertiser.'},
+ {id:27279,slug:'zelle-750-rewards-us',name:'UpLevelRewards – Zelle $750',payout:2.50,category:'Rewards',geo:'United States',previewUrl:'https://www.surveysandpromoonline.com/?Flow=6b51d955-0748-462e-9eb5-0ccdd7eceb37&isPrePop=true&RBC=1&reward=zelle750',description:'Email-submit rewards campaign advertised as $750 on Zelle. Review advertiser terms and eligibility; reward is not guaranteed.'},
+ {id:27034,slug:'ebike-1000-rewards-us',name:'UpLevelRewards – $1,000 eBike',payout:2.50,category:'Rewards',geo:'United States',previewUrl:'https://www.uplevelrewards.com/?Flow=656AE1C3-D3CE-3C2C-D9AE-1CBE7395FA7DE8814900&isPrePop=true&RBC=1&lp=flashpollshopping&reward=ebikepoll1000&bckm=1',description:'Email-submit rewards campaign advertised as $1,000 towards an eBike. Review all advertiser conditions; reward is not guaranteed.'},
+ {id:21982,slug:'pepsi-jobs-us',name:'JobListings – Pepsi Jobs',payout:2.40,category:'Jobs',geo:'United States',description:'Email-submit lead campaign associated with Pepsi job listings. No specific job availability or interview may be claimed. Any wage claims must be substantiated.',restrictions:['No misleading or incentive traffic.','Do not state or imply that a particular job is currently available.','Do not state or imply that the visitor has an interview scheduled or will be scheduled.','Any claims about hourly wages must be substantiated.']}
 ]
 const money = n => '$' + Number(n).toFixed(2)
-function tracked(offer) {
- const url = new URL(TRACKING)
- url.searchParams.set('s1','shopnoltd')
- url.searchParams.set('s2',String(offer.id))
- url.searchParams.set('s3','offer-detail')
- return url.toString()
-}
 const shell = {maxWidth:1120,margin:'0 auto',padding:'36px 18px 80px',fontFamily:'system-ui,sans-serif',color:'#172033'}
 const box = {border:'1px solid #e2e8f0',borderRadius:14,padding:18,background:'#fff'}
 const cta = {display:'inline-block',background:'#0369a1',color:'#fff',borderRadius:9,padding:'10px 15px',textDecoration:'none',fontWeight:700}
@@ -62,8 +60,10 @@ export default function AffiliateOffers() {
      <li>Never provide passwords, payment-card details or government identity numbers through an offer form.</li>
     </ul>
    </aside>
+   {offer.previewUrl ? <p><a href={offer.previewUrl} target="_blank" rel="nofollow noopener noreferrer">View advertiser preview ↗</a></p> : null}
+   {offer.restrictions?.length ? <aside><b>Mandatory advertiser restrictions</b><ul>{offer.restrictions.map(rule=><li key={rule}>{rule}</li>)}</ul></aside> : null}
    <p style={{fontSize:13,color:'#64748b'}}>Affiliate disclosure: Shopnoltd may earn a commission if the advertiser accepts a qualifying lead. The advertiser's page and terms govern the actual offer.</p>
-   <a href={tracked(offer)} target="_blank" rel="sponsored nofollow noopener noreferrer" style={cta}>Continue to advertiser ↗</a>
+   {offer.trackingUrl ? <a href={(() => { const url = new URL(offer.trackingUrl); url.searchParams.set('s1','shopnoltd'); url.searchParams.set('s2',String(offer.id)); url.searchParams.set('s3','offer-detail'); return url.toString() })()} target="_blank" rel="sponsored nofollow noopener noreferrer" style={cta}>Continue to advertiser ↗</a> : <p style={{color:'#92400e',background:'#fffbeb',padding:12,borderRadius:8}}>Affiliate tracking link pending. This offer is listed for review, but its advertiser tracking link has not been supplied yet, so applications are not enabled.</p>}
   </article>
  </main>
  return <main style={shell}>
