@@ -42,6 +42,7 @@ export default function Blog() {
       <h1>Blog</h1>
       <p style={{ color: '#64748b' }}>Product updates, platform guides and service news from Shopnoltd.</p>
       <Link to="/saved-articles" style={{ display: 'inline-block', marginTop: 8, padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: 8, textDecoration: 'none', color: '#0f172a' }}>🔖 Saved articles</Link>
+      <Link to="/feed" style={{ display: 'inline-block', marginTop: 8, marginLeft: 8, padding: '8px 12px', border: '1px solid #0284c7', borderRadius: 8, textDecoration: 'none', color: '#0369a1', fontWeight: 700 }}>Open unified Feed →</Link>
     </header>
     {error && <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', color: '#b91c1c', margin: '16px 0' }}><span>{error}</span><button type="button" onClick={load} disabled={loading}>Retry</button></div>}
     <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', margin: '24px 0' }}>
