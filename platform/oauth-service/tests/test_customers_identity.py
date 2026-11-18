@@ -27,6 +27,8 @@ class FakeSession:
     def add(self, value):
         if getattr(value, "id", None) is None:
             value.id = "customer-row-1"
+        if getattr(value, "active", None) is None:
+            value.active = True
         self.added.append(value)
 
 
