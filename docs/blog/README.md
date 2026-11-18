@@ -20,4 +20,4 @@ This directory contains five recovered blog guides and one newly added companion
 
 ## Publication and verification
 
-The My Blog importer now reads all six source files and respects explicit `published` status. It skips existing slugs to avoid duplicate posts. After importing from the authenticated owner account, verify all six canonical URLs, the public blog API, rendered media and sitemap. Historical publication timestamps are not fabricated; the API records the actual restoration publication time.
+The My Blog page now checks the authenticated owner's posts on load and automatically imports missing recovery articles or updates matching draft slugs to `published`. Existing posts are updated by slug rather than duplicated. After the owner opens My Blog while signed in, verify all six canonical URLs, the public blog API, rendered media and sitemap. Historical publication timestamps are not fabricated; the API records the actual restoration publication time.
