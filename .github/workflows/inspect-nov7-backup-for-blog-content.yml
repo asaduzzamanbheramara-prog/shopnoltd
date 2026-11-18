@@ -83,10 +83,10 @@ jobs:
               if any(name in line.split(" VALUES ", 1)[0].lower() for name in ("blog_posts", "articles", "posts"))
           ]
           matched = [
-              line for line in insert_lines
+              line for line in blog_insert_lines
               if any(term in line.lower() for term in terms)
           ]
-          matches_by_slug = {slug: sum(slug in line for line in insert_lines) for slug in slugs}
+          matches_by_slug = {slug: sum(slug in line for line in blog_insert_lines) for slug in slugs}
           all_text = "\n".join(matched)
           summary = {
               "backup_timestamp": "2026-11-07T21:53:03Z",
