@@ -1,5 +1,5 @@
 #!/bin/sh
-set -eu
+set -eux
 root="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
 html="$root/public/index.html"
 app="$root/public/app.js"
