@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - "platform/auth-service/**"
+      - "platform/web-portal/**"
       - "shared/libraries/python/**"
       - ".github/workflows/auth-session-tests.yml"
   push:
@@ -40,3 +41,18 @@ jobs:
       - name: Run auth identity tests
         working-directory: platform/auth-service
         run: python -m pytest -q --strict-markers tests/test_auth_identity.py
+
+  web-portal-session-tests:
+    name: Web portal account-switch and refresh regression tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Run web portal regression tests
+        working-directory: platform/web-portal
+        run: node --test tests/*.test.js
