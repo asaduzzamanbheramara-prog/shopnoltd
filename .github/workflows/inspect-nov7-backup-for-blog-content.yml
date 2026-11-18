@@ -80,6 +80,7 @@ jobs:
           insert_lines = [line for line in sql if re.search(r"^INSERT INTO ", line, re.I)]
           blog_insert_lines = [
               line for line in insert_lines
+              if any(name in line.split(" VALUES ", 1)[0].lower() for name in ("blog_posts", "articles", "posts"))
           ]
           matched = [
               line for line in insert_lines
