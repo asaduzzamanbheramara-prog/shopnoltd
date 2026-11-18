@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { platformApi } from '../lib/platformApi'
 import { AdsterraResponsiveBanner } from '../components/AdsterraAds'
+import BlogFeedCard from '../components/BlogFeedCard'
 
 const shell = { width: '100%', maxWidth: 900, minWidth: 0, boxSizing: 'border-box', margin: '0 auto', padding: '28px clamp(12px,4vw,16px) 80px', overflowWrap: 'anywhere', fontFamily: 'system-ui, sans-serif' }
 const card = { minWidth: 0, boxSizing: 'border-box', background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14, padding: 18, marginBottom: 14, overflowWrap: 'anywhere' }
@@ -140,8 +141,20 @@ export default function SocialFeed() {
         if (!/404|not found/i.test(globalError.message || '')) throw globalError
         feed = await platformApi.feed()
       }
-      const followed = await platformApi.following().catch(() => [])
-      setPosts(Array.isArray(feed) ? feed : (feed?.items || []))
+      const [articles, followed] = await Promise.all([
+        platformApi.blog().catch(() => []),
+        platformApi.following().catch(() => []),
+      ])
+      const socialPosts = (Array.isArray(feed) ? feed : (feed?.items || [])).map(item => ({ ...item, feed_kind: 'social' }))
+      const blogPosts = (Array.isArray(articles) ? articles : (articles?.items || []))
+        .filter(item => item?.slug && (item.status === undefined || item.status === 'published' || item.published === true))
+        .map(item => ({ ...item, feed_kind: 'blog' }))
+      const combined = [...socialPosts, ...blogPosts].sort((a, b) => {
+        const aDate = new Date(a.published_at || a.created_at || 0).getTime()
+        const bDate = new Date(b.published_at || b.created_at || 0).getTime()
+        return bDate - aDate
+      })
+      setPosts(combined)
       setFollowing(new Set((Array.isArray(followed) ? followed : []).map(String)))
     } catch (e) {
       setPosts([])
@@ -212,7 +225,11 @@ export default function SocialFeed() {
     {loading && <p>Loading feed…</p>}
     {error && <div role="alert" style={{ ...card, color: '#b91c1c' }}>{error} <button onClick={load} style={{ marginLeft: 8 }}>Retry</button></div>}
     {!loading && !error && posts.length === 0 && <div style={card}>No posts yet. Be the first to publish.</div>}
-    {posts.map(post => <PostCard key={post.id} post={post} refresh={refresh} following={following} toggleFollow={toggleFollow} />)}
-    {!loading && posts.length > 0 && <AdsterraResponsiveBanner />}
+    {posts.map((post, index) => <React.Fragment key={post.feed_kind === 'blog' ? `blog-${post.slug}` : `social-${post.id}`}>
+      {post.feed_kind === 'blog'
+        ? <BlogFeedCard post={post} />
+        : <PostCard post={post} refresh={refresh} following={following} toggleFollow={toggleFollow} />}
+      {(index + 1) % 5 === 0 && index < posts.length - 1 && <AdsterraResponsiveBanner />}
+    </React.Fragment>)}
   </div>
 }
