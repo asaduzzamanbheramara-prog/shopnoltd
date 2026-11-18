@@ -94,7 +94,7 @@ jobs:
             --username="$PGUSER" --dbname=template1 "$restore_dir/all-databases/social.dump"
           docker exec --user root -e PGPASSWORD="$PGPASSWORD" "$container_id" \
             psql -U "$PGUSER" --dbname=social --set ON_ERROR_STOP=1 \
-            --command='SELECT current_database(), count(*) FROM public.blog_posts' 
+            --command='SELECT current_database(), count(*) FROM public.blog_posts'
 
       - name: Export the five article records and media metadata
         shell: bash
