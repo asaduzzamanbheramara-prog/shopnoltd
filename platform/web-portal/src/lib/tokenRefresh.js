@@ -6,14 +6,17 @@ const TOKEN_URL = `${KEYCLOAK_URL}/realms/${KEYCLOAK_REALM}/protocol/openid-conn
 // Keycloak refresh-token rotation means concurrent refresh requests can invalidate
 // each other. Keep one refresh request in flight and let all callers share it.
 let refreshPromise = null
+let refreshPromiseToken = null
 
 export async function tryRefresh() {
-  if (refreshPromise) return refreshPromise
+  const refreshToken = localStorage.getItem('shopno_refresh_token')
+  if (!refreshToken) return null
+  if (refreshPromise && refreshPromiseToken === refreshToken) return refreshPromise
 
-  refreshPromise = (async () => {
+  const requestRefreshToken = refreshToken
+  refreshPromiseToken = requestRefreshToken
+  const requestPromise = (async () => {
     try {
-      const refreshToken = localStorage.getItem('shopno_refresh_token')
-      if (!refreshToken) return null
 
       // A refresh can finish after logout or after another user signs in on the
       // same browser. Never let an older session overwrite the newer session.
@@ -60,11 +63,16 @@ export async function tryRefresh() {
     } catch {
       return null
     } finally {
-      refreshPromise = null
+      // Do not clear a newer user's in-flight refresh promise.
+      if (refreshPromiseToken === requestRefreshToken) {
+        refreshPromise = null
+        refreshPromiseToken = null
+      }
     }
   })()
 
-  return refreshPromise
+  refreshPromise = requestPromise
+  return requestPromise
 }
 
 export function scheduleTokenRefresh() {
