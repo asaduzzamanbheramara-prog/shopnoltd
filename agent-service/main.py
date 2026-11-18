@@ -277,7 +277,7 @@ async def _get_browser_session(user: str) -> dict:
     playwright = None
     try:
         playwright = await async_playwright().start()
-        browser = await playwright.chromium.connect_over_cdp(BROWSER_WS_ENDPOINT, timeout=20000)
+        browser = await playwright.chromium.connect_over_cdp(BROWSER_WS_ENDPOINT, timeout=45000)
         context = await browser.new_context(
             accept_downloads=True,
             viewport={"width": 1440, "height": 900},
