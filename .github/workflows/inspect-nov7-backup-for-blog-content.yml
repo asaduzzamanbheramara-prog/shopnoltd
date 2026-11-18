@@ -1,4 +1,4 @@
-name: Inspect local November 7 encrypted database backup for blog content
+name: Inspect November 7 encrypted backup for historical blog content
 
 on:
   workflow_dispatch:
@@ -6,65 +6,149 @@ on:
 permissions:
   contents: read
   actions: read
+  packages: read
 
 concurrency:
-  group: local-nov7-blog-backup-audit
+  group: nov7-blog-backup-inspection
   cancel-in-progress: false
 
 jobs:
-  inspect:
-    name: Read-only archive inspection on Shopnoltd PC
+  stage-local-backup:
+    name: Stage encrypted backup from Shopnoltd PC
     runs-on: [self-hosted, Linux, X64]
-    timeout-minutes: 15
+    timeout-minutes: 10
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: false
+      - name: Verify and stage ciphertext only
+        shell: bash
+        run: |
+          set -euo pipefail
+          source_dir=/home/asadu/restore/20261107T215303Z
+          mkdir -p staging
+          cp "$source_dir/latest.dump.enc" staging/latest.dump.enc
+          cp "$source_dir/latest.dump.enc.sha256" staging/latest.dump.enc.sha256
+          cd staging
+          sha256sum -c latest.dump.enc.sha256
+          echo "PASS: staged only the encrypted 7 November database archive."
 
-      - name: Decrypt and inspect the November 7 backup
+      - name: Upload encrypted archive for isolated hosted restore
+        uses: actions/upload-artifact@v4
+        with:
+          name: shopnoltd-nov7-encrypted-db
+          path: staging/
+          if-no-files-found: error
+          retention-days: 1
+
+  inspect:
+    name: Decrypt and search in disposable PostgreSQL
+    needs: stage-local-backup
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-postgres-combined:pg16-postgis3.5-pgvector0.8.6
+        credentials:
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+        env:
+          POSTGRES_USER: restore_admin_${{ github.run_id }}
+          POSTGRES_PASSWORD: restore-only-${{ github.run_id }}-${{ github.run_attempt }}
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U restore_admin_${{ github.run_id }} -d postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 12
+
+    steps:
+      - name: Download encrypted backup artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: shopnoltd-nov7-encrypted-db
+          path: backup-input
+
+      - name: Decrypt and restore into disposable PostgreSQL
         shell: bash
         env:
           BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
+          PGUSER: restore_admin_${{ github.run_id }}
+          PGPASSWORD: restore-only-${{ github.run_id }}-${{ github.run_attempt }}
         run: |
           set -euo pipefail
           umask 077
-          source_dir=/home/asadu/restore/20261107T215303Z
-          encrypted="$source_dir/latest.dump.enc"
-          checksum="$source_dir/latest.dump.enc.sha256"
-          test -s "$encrypted"
-          test -s "$checksum"
-          command -v pg_restore >/dev/null
-          tmp="$(mktemp -d "${RUNNER_TEMP:-/tmp}/shopnoltd-nov7-blog-audit.XXXXXX")"
+          test -n "${BACKUP_ENCRYPTION_KEY:-}" || { echo "::error::BACKUP_ENCRYPTION_KEY is missing."; exit 1; }
+          cd backup-input
+          sha256sum -c latest.dump.enc.sha256
+          tmp="$RUNNER_TEMP/shopnoltd-nov7-audit"
+          mkdir -p "$tmp"
           chmod 700 "$tmp"
           cleanup() {
-            unset BACKUP_ENCRYPTION_KEY
+            unset BACKUP_ENCRYPTION_KEY PGPASSWORD
             rm -rf -- "$tmp"
           }
           trap cleanup EXIT
-          cd "$source_dir"
-          sha256sum -c latest.dump.enc.sha256
-          test -n "${BACKUP_ENCRYPTION_KEY:-}" || { echo "::error::BACKUP_ENCRYPTION_KEY is missing."; exit 1; }
           openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 \
-            -in "$encrypted" -out "$tmp/database.dump" \
+            -in latest.dump.enc -out "$tmp/database.dump" \
             -pass env:BACKUP_ENCRYPTION_KEY
           unset BACKUP_ENCRYPTION_KEY
-          pg_restore --list "$tmp/database.dump" > "$tmp/archive-toc.txt"
-          pg_restore --data-only --inserts --file "$tmp/all-data.sql" "$tmp/database.dump"
+          image='ghcr.io/asaduzzamanbheramara-prog/shopnoltd-postgres-combined:pg16-postgis3.5-pgvector0.8.6'
+          container_id="$(docker ps --filter "ancestor=$image" --format '{{.ID}}' | head -n 1)"
+          test -n "$container_id"
+          docker exec "$container_id" pg_isready -U "$PGUSER" -d postgres
+          docker cp "$tmp/database.dump" "$container_id:/tmp/nov7-database.dump"
+          docker exec --user root -e PGPASSWORD="$PGPASSWORD" "$container_id" \
+            pg_restore --list /tmp/nov7-database.dump > "$tmp/archive-toc.txt"
+          db_name="$(sed -n 's/^;[[:space:]]*dbname:[[:space:]]*//p' "$tmp/archive-toc.txt" | head -n 1)"
+          [[ "$db_name" =~ ^[A-Za-z0-9_]+$ ]] || { echo "::error::Could not safely identify the database name in the archive."; exit 1; }
+          docker exec --user root -e PGPASSWORD="$PGPASSWORD" "$container_id" \
+            pg_restore --exit-on-error --clean --if-exists --create --no-owner --no-privileges \
+            --username="$PGUSER" --dbname=template1 /tmp/nov7-database.dump
+          docker exec --user root -e PGPASSWORD="$PGPASSWORD" "$container_id" \
+            psql -U "$PGUSER" --dbname="$db_name" --set ON_ERROR_STOP=1 \
+            --command='SELECT current_database()'
+          cp "$tmp/archive-toc.txt" recovery-artifact-toc.txt
+          echo "PASS: November 7 database archive restored into disposable PostgreSQL only."
+
+      - name: Search restored database for the five blog articles
+        shell: bash
+        env:
+          PGUSER: restore_admin_${{ github.run_id }}
+          PGPASSWORD: restore-only-${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          set -euo pipefail
+          image='ghcr.io/asaduzzamanbheramara-prog/shopnoltd-postgres-combined:pg16-postgis3.5-pgvector0.8.6'
+          container_id="$(docker ps --filter "ancestor=$image" --format '{{.ID}}' | head -n 1)"
+          test -n "$container_id"
+          db_name="$(grep -m1 '^; *dbname:' recovery-artifact-toc.txt | sed 's/^; *dbname: *//')"
+          [[ "$db_name" =~ ^[A-Za-z0-9_]+$ ]]
           mkdir -p recovery-artifact
-          python3 - "$tmp/archive-toc.txt" "$tmp/all-data.sql" <<'PY'
+          python3 - "$container_id" "$PGUSER" "$PGPASSWORD" "$db_name" <<'PY'
           import json
+          import os
           import re
+          import subprocess
           import sys
           from pathlib import Path
 
-          toc = Path(sys.argv[1]).read_text(errors="replace").splitlines()
-          sql = Path(sys.argv[2]).read_text(errors="replace").splitlines()
-          table_entries = [
-              line for line in toc
-              if re.search(r"\b(TABLE|TABLE DATA)\b", line, re.I)
-              and re.search(r"(blog|article|post|cms|content)", line, re.I)
-          ]
+          container, user, password, database = sys.argv[1:]
+          def psql(query):
+              return subprocess.check_output([
+                  "docker", "exec", "--user", "root", "-e", f"PGPASSWORD={password}",
+                  container, "psql", "-U", user, "--dbname", database,
+                  "--tuples-only", "--no-align", "--set", "ON_ERROR_STOP=1",
+                  "--command", query
+              ], text=True).strip()
+
+          table_query = """
+          SELECT table_schema || '.' || table_name
+          FROM information_schema.tables
+          WHERE table_type = 'BASE TABLE'
+            AND table_schema NOT IN ('pg_catalog', 'information_schema')
+            AND table_name ~* '(blog|article|post|cms|content)'
+          ORDER BY table_schema, table_name
+          """
+          tables = [x for x in psql(table_query).splitlines() if x]
           slugs = [
               "choose-a-domain-name",
               "domain-registration-checklist",
@@ -72,43 +156,47 @@ jobs:
               "data-management-basics",
               "shared-workspace-for-small-business",
           ]
-          terms = [
-              "domain name", "registration", "right plan",
-              "data management", "shared workspace",
-              *slugs,
-          ]
-          insert_lines = [line for line in sql if re.search(r"^INSERT INTO ", line, re.I)]
-          blog_insert_lines = [
-              line for line in insert_lines
-              if any(name in line.split(" VALUES ", 1)[0].lower() for name in ("blog_posts", "articles", "posts"))
-          ]
-          matched = [
-              line for line in blog_insert_lines
-              if any(term in line.lower() for term in terms)
-          ]
-          matches_by_slug = {slug: sum(slug in line for line in blog_insert_lines) for slug in slugs}
-          all_text = "\n".join(matched)
+          patterns = ["%domain name%", "%registration%", "%right plan%", "%data management%", "%shared workspace%"]
+          candidates = []
+          for qualified in tables:
+              schema, table = qualified.split(".", 1)
+              ident = '"' + schema.replace('"', '""') + '"."' + table.replace('"', '""') + '"'
+              slug_sql = ", ".join("'" + x.replace("'", "''") + "'" for x in slugs)
+              title_sql = ", ".join("'" + x.replace("'", "''") + "'" for x in patterns)
+              query = f"""
+              SELECT COALESCE(json_agg(to_jsonb(t)), '[]'::json)::text
+              FROM {ident} AS t
+              WHERE COALESCE(to_jsonb(t)->>'slug', '') IN ({slug_sql})
+                 OR COALESCE(to_jsonb(t)->>'title', '') ILIKE ANY (ARRAY[{title_sql}])
+                 OR (to_jsonb(t)::text ILIKE '%domain name%' AND to_jsonb(t)::text ILIKE '%small business%')
+              """
+              for row in json.loads(psql(query) or "[]"):
+                  serialized = json.dumps(row, ensure_ascii=False)
+                  candidates.append({
+                      "table": qualified,
+                      "record": row,
+                      "media_flags": {
+                          "has_video_reference": bool(re.search(r"youtube\.com/watch|youtu\.be/|vimeo\.com", serialized, re.I)),
+                          "has_image_reference": bool(re.search(r"https?://[^\s]+\.(?:png|jpe?g|webp|gif)|<img|!\[", serialized, re.I)),
+                      }
+                  })
+
           summary = {
               "backup_timestamp": "2026-11-07T21:53:03Z",
-              "archive_table_entries": len(table_entries),
-              "blog_or_article_table_entries": table_entries,
-              "insert_statements_total": len(insert_lines),
-              "blog_article_post_insert_statements": len(blog_insert_lines),
-              "candidate_insert_statements": len(matched),
-              "slug_matches": matches_by_slug,
-              "video_reference_matches": len(re.findall(r"youtube\.com/watch|youtu\.be/|vimeo\.com", all_text, re.I)),
-              "image_reference_matches": len(re.findall(r"https?://[^\s]+\.(?:png|jpe?g|webp|gif)|<img|!\[", all_text, re.I)),
+              "database": database,
+              "blog_related_tables": tables,
+              "candidate_records": len(candidates),
+              "candidate_locations": sorted({row["table"] for row in candidates}),
           }
-          Path("recovery-artifact/summary.json").write_text(json.dumps(summary, indent=2) + "\n")
-          Path("recovery-artifact/table-entries.txt").write_text("\n".join(table_entries) + "\n")
-          Path("recovery-artifact/candidate-rows.sql").write_text("\n".join(matched) + ("\n" if matched else ""))
+          Path("recovery-artifact/summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2) + "\n")
+          Path("recovery-artifact/candidate-articles.json").write_text(json.dumps(candidates, ensure_ascii=False, indent=2) + "\n")
           print(json.dumps(summary, indent=2))
           PY
 
-      - name: Upload read-only archive audit
+      - name: Upload November 7 recovery audit
         uses: actions/upload-artifact@v4
         with:
-          name: shopnoltd-nov7-blog-backup-audit
+          name: shopnoltd-nov7-blog-recovery-audit
           path: recovery-artifact/
           if-no-files-found: error
           retention-days: 7
