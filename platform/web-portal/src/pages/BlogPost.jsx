@@ -163,14 +163,15 @@ export default function BlogPost() {
         <h1 style={{ fontSize: 'clamp(32px,5vw,52px)', lineHeight: 1.15, margin: '8px 0 12px', color: '#0f172a' }}>{post.title}</h1>
         <div style={{ color: '#64748b', marginBottom: 30 }}>{post.published_at ? new Date(post.published_at).toLocaleDateString() : ''}</div>
         {post.excerpt && <p style={{ fontSize: 19, lineHeight: 1.8, color: '#334155', fontWeight: 600, marginBottom: 28 }}>{post.excerpt}</p>}
-        {blocks.map((block, index) => <React.Fragment key={index}>{renderContentBlock(block, index)}{index === 3 && blocks.length > 5 && <AdsterraResponsiveBanner />}</React.Fragment>)}
-      </div>
-      <section aria-label="Article actions" style={{ borderTop: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0', padding: '18px 0', marginTop: 34, display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+      <section aria-label="Article actions" style={{ borderTop: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0', padding: '18px 0', marginTop: 8, marginBottom: 28, display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
         <button type="button" style={{ ...buttonStyle, background: like.liked ? '#e0f2fe' : '#fff', borderColor: like.liked ? '#0284c7' : '#cbd5e1' }} onClick={toggleLike} disabled={interactionBusy}>{like.liked ? '♥ Liked' : '♡ Like'} · {like.count}</button>
         <button type="button" style={buttonStyle} onClick={() => document.getElementById('blog-comments')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>Comment · {comments.length}</button>
         <button type="button" style={buttonStyle} onClick={shareArticle}>Share · {shareCount}</button>
         <button type="button" style={{ ...buttonStyle, background: saved ? '#e0f2fe' : '#fff', borderColor: saved ? '#0284c7' : '#cbd5e1' }} onClick={toggleSave} disabled={interactionBusy}>{saved ? '🔖 Saved' : '🔖 Save'}</button>
       </section>
+        {blocks.map((block, index) => <React.Fragment key={index}>{renderContentBlock(block, index)}{index === 3 && blocks.length > 5 && <AdsterraResponsiveBanner />}</React.Fragment>)}
+      </div>
+
       {interactionMessage && <p role="status" style={{ color: '#475569', fontSize: 14, margin: '12px 0' }}>{interactionMessage}</p>}
       <section id="blog-comments" style={{ marginTop: 34 }}>
         <h2 style={{ color: '#0f172a', fontSize: 25 }}>Comments ({comments.length})</h2>
