@@ -34,7 +34,7 @@ jobs:
             -in "$backup_name" -out "$workdir/database.dump" \
             -pass env:BACKUP_ENCRYPTION_KEY
           kubectl -n shopno-data exec -i deploy/postgres -- pg_restore --list < "$workdir/database.dump" > "$workdir/toc.txt"
-          kubectl -n shopno-data exec -i deploy/postgres -- pg_restore < "$workdir/database.dump" > "$workdir/database.sql"
+          kubectl -n shopno-data exec -i deploy/postgres -- pg_restore --file=- < "$workdir/database.dump" > "$workdir/database.sql"
           python3 - "$workdir/toc.txt" "$workdir/database.sql" <<'PY'
           import pathlib, re, sys
           toc = pathlib.Path(sys.argv[1]).read_text(errors="replace").splitlines()
