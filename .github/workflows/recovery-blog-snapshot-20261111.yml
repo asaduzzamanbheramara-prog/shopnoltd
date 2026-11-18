@@ -76,10 +76,10 @@ jobs:
               print("NO_TARGET_ROWS_FOUND_IN_THIS_DATABASE_SNAPSHOT")
           PY
 
-      - name: Check recovered Nov 2 snapshot with current key and scan blog records
+      - name: Test archived Nov 7 key candidate against Nov 2 snapshot
         shell: bash
         env:
-          BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
+          BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY_20261107 }}
         run: |
           set -euo pipefail
           umask 077
@@ -91,10 +91,10 @@ jobs:
           if ! openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 \
             -in "$snapshot" -out "$workdir/database.dump" \
             -pass env:BACKUP_ENCRYPTION_KEY 2>/dev/null; then
-            echo "NOV2_CURRENT_KEY_DECRYPTION: failed (snapshot uses a different historical key)"
+            echo "NOV2_NOV7_CANDIDATE_KEY_DECRYPTION: failed (snapshot uses a different historical key)"
             exit 0
           fi
-          echo "NOV2_CURRENT_KEY_DECRYPTION: PASS"
+          echo "NOV2_NOV7_CANDIDATE_KEY_DECRYPTION: PASS"
           kubectl -n shopno-data exec -i deploy/postgres -- pg_restore --list < "$workdir/database.dump" > "$workdir/toc.txt"
           kubectl -n shopno-data exec -i deploy/postgres -- pg_restore --file=- < "$workdir/database.dump" > "$workdir/database.sql"
           python3 - "$workdir/toc.txt" "$workdir/database.sql" <<'PY'
