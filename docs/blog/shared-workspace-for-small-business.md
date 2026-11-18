@@ -2,7 +2,7 @@
 title: "How to Set Up a Shared Workspace for a Small Business"
 slug: "shared-workspace-for-small-business"
 meta_description: "Set up a shared team workspace with clear folder structure, sensible permissions, naming rules and a practical onboarding checklist."
-status: "editorial-draft"
+status: "published"
 ---
 
 # How to Set Up a Shared Workspace for a Small Business
