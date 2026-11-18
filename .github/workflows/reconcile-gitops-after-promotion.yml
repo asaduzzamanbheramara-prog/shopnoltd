@@ -37,5 +37,6 @@ jobs:
           set -euo pipefail
           gh workflow run self-hosted-k3s-gitops.yml \
             --repo "$REPOSITORY" \
-            --ref main
-          echo 'Self-hosted GitOps reconciliation dispatched for main.'
+            --ref main \
+            -f perform_gitops_sync=true
+          echo 'Self-hosted GitOps reconciliation dispatched for main with perform_gitops_sync=true.'
