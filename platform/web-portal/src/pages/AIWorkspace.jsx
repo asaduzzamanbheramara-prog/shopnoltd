@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowDown, Bot, Check, ChevronDown, Copy, Download, Eye, FileText, Maximize2, Menu, MessageSquare, Mic, Minimize2, Paperclip, Plus, RefreshCw, Send, Sparkles, Square, Trash2, Volume2, X } from 'lucide-react'
+import { ArrowDown, Bot, Check, ChevronDown, Copy, Download, Eye, FileText, FolderKanban, ListTodo, Maximize2, Menu, MessageSquare, Mic, Minimize2, Monitor, Paperclip, Plus, PlusCircle, RefreshCw, Send, Sparkles, Square, Trash2, Volume2, X } from 'lucide-react'
 import { authenticatedRequest, authenticatedStreamRequest } from '../lib/financialApi'
 import AgentWorkspace from './AgentWorkspace'
 import { MAX_IMAGE_INPUT_BYTES, MAX_VIDEO_INPUT_BYTES, copyToClipboard, downloadBlob, friendlyError, prepareImage, prepareVideo, resolveLanguage, splitBlocks, svgDataUrl, svgToJpegBlob, svgToPngBlob } from './aiChatHelpers'
@@ -155,6 +155,7 @@ export default function AIWorkspace() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [focusMode, setFocusMode] = useState(false)
   const [mode, setMode] = useState('chat')
+  const [workspaceView, setWorkspaceView] = useState('chat')
   const [panelHeight, setPanelHeight] = useState(() => Math.max(440, (typeof window === 'undefined' ? 800 : window.innerHeight) - 300))
   const [atBottom, setAtBottom] = useState(true)
   const rootRef = useRef(null)
@@ -320,6 +321,13 @@ export default function AIWorkspace() {
     if (chat.model && chat.model !== model) setModel(chat.model)
     if (chat.modelId && chat.modelId !== modelId) setModelId(chat.modelId)
   }, [activeId])
+
+  function openWorkspaceView(view) {
+    setWorkspaceView(view)
+    if (view === 'chat') setMode('chat')
+    if (view === 'new-task' || view === 'tasks' || view === 'computers') setMode('agent')
+    setSidebarOpen(false)
+  }
 
   async function readAttachment(file) {
     const type = file.type || 'application/octet-stream'
@@ -526,7 +534,15 @@ export default function AIWorkspace() {
     <div ref={rootRef} style={{ ...rootStyle, display: 'flex', background: '#fff', color: '#111827', overflow: 'hidden' }}>
       <style>{`.shopno-ai-mobile-only{display:none!important}@media (max-width:760px){.shopno-ai-mobile-only{display:inline-flex!important}.shopno-ai-sidebar{position:absolute!important;z-index:20;inset:0 auto 0 0;width:280px!important;box-shadow:12px 0 35px rgba(0,0,0,.18)}.shopno-ai-sidebar.closed{display:none!important}.shopno-ai-main{width:100%!important}.shopno-ai-main>header{height:auto!important;min-height:58px;flex:0 0 auto!important;flex-wrap:wrap!important;gap:6px!important;padding:8px 10px!important}.shopno-ai-title{flex:1 1 120px;min-width:0;margin-right:0!important}.shopno-ai-main>header select{max-width:42vw!important}.shopno-ai-composer{padding:12px!important}.shopno-ai-content{padding:0 14px!important}}`}</style>
       <aside className={`shopno-ai-sidebar${sidebarOpen ? '' : ' closed'}`} style={{ width: 270, flex: '0 0 270px', background: '#f7f7f8', borderRight: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-        <div style={{ padding: 12 }}><button onClick={newChat} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9, border: '1px solid #d1d5db', background: '#fff', borderRadius: 8, padding: '10px 12px', cursor: 'pointer', fontWeight: 600 }}><Plus size={17} /> New chat</button></div>
+        <div style={{ padding: 12 }}><button onClick={() => openWorkspaceView('new-task')} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9, border: 0, background: '#111827', color: '#fff', borderRadius: 8, padding: '10px 12px', cursor: 'pointer', fontWeight: 700 }}><PlusCircle size={17} /> New task</button></div>
+        <nav aria-label="AI workspace" style={{ padding: '0 8px 10px', display: 'grid', gap: 2 }}>
+          {[
+            ['tasks', 'Tasks', ListTodo],
+            ['computers', 'Computers', Monitor],
+            ['projects', 'Projects', FolderKanban],
+            ['chat', 'Chat', MessageSquare],
+          ].map(([id, label, Icon]) => <button key={id} type="button" onClick={() => openWorkspaceView(id)} aria-current={workspaceView === id ? 'page' : undefined} style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', border: 0, borderRadius: 8, padding: '9px 10px', background: workspaceView === id ? '#e5e7eb' : 'transparent', color: '#374151', cursor: 'pointer', textAlign: 'left', fontWeight: workspaceView === id ? 700 : 500 }}><Icon size={16} />{label}</button>)}
+        </nav>
         <div style={{ padding: '6px 10px 10px', fontSize: 11, color: '#6b7280', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em' }}>Recent chats</div>
         <div style={{ overflowY: 'auto', overscrollBehavior: 'contain', flex: 1, minHeight: 0, padding: '0 8px' }}>{chats.map((chat) => <div key={chat.id} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}><button onClick={() => { setActiveId(chat.id); setSidebarOpen(false) }} style={{ flex: 1, minWidth: 0, textAlign: 'left', display: 'flex', alignItems: 'center', gap: 9, border: 0, borderRadius: 8, background: chat.id === activeId ? '#e5e7eb' : 'transparent', padding: '9px 10px', cursor: 'pointer', color: '#374151' }}><MessageSquare size={16} /><span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{chat.title}</span></button><button onClick={() => deleteChat(chat.id)} aria-label="Delete chat" title="Delete chat" style={{ border: 0, background: 'transparent', color: '#9ca3af', padding: 5, cursor: 'pointer' }}><Trash2 size={14} /></button></div>)}</div>
         <div style={{ padding: 12, borderTop: '1px solid #e5e7eb', fontSize: 12, color: '#6b7280' }}>Shopnoltd AI · Your chats are stored locally in this browser.</div>
@@ -534,7 +550,7 @@ export default function AIWorkspace() {
       <section className="shopno-ai-main" style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
         <header style={{ height: 58, flex: '0 0 58px', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', gap: 10, padding: '0 14px 0 18px', background: 'rgba(255,255,255,.96)' }}>
           <button onClick={() => setSidebarOpen((value) => !value)} aria-label="Toggle chat history" style={{ border: 0, background: 'transparent', cursor: 'pointer', padding: 7 }}><Menu size={20} /></button>
-          <div className="shopno-ai-title" style={{ fontWeight: 700, marginRight: 'auto', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Shopnoltd AI</div>
+          <div className="shopno-ai-title" style={{ fontWeight: 700, marginRight: 'auto', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{workspaceView === 'chat' ? 'Shopnoltd AI' : workspaceView === 'new-task' ? 'New task' : workspaceView[0].toUpperCase() + workspaceView.slice(1)}</div>
           {mode === 'chat' && <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}><Sparkles size={15} style={{ position: 'absolute', left: 10, pointerEvents: 'none' }} /><select value={activeModel} onChange={(e) => selectModel(e.target.value)} disabled={loadingModels || loading || !models.length} aria-label="AI model" style={{ appearance: 'none', padding: '8px 30px', border: '1px solid #d1d5db', borderRadius: 9, background: '#fff', fontWeight: 600, maxWidth: 300 }}>{!models.length && <option value="">No active models</option>}{models.map((item) => <option key={item.model_name} value={item.model_name}>{item.display_name || item.model_name}{item.is_default ? ' · default' : ''}</option>)}</select><ChevronDown size={15} style={{ position: 'absolute', right: 9, pointerEvents: 'none' }} /></div>}
           <button onClick={loadModels} disabled={loadingModels || loading} aria-label="Refresh models" title="Refresh models" style={actionStyle}><RefreshCw size={18} /></button>
           <button onClick={() => setFocusMode((value) => !value)} aria-label={focusMode ? 'Exit full screen' : 'Full screen'} title={focusMode ? 'Exit full screen (Esc)' : 'Full screen'} style={actionStyle}>{focusMode ? <Minimize2 size={18} /> : <Maximize2 size={18} />}</button>
@@ -542,7 +558,7 @@ export default function AIWorkspace() {
           <Link to="/ai/connections" style={{ ...actionStyle, textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }} title="Connections">Connections</Link>
           <button type="button" onClick={() => setMode((value) => (value === 'agent' ? 'chat' : 'agent'))} aria-pressed={mode === 'agent'} title="Autonomous agent mode" style={{ ...actionStyle, display: 'inline-flex', alignItems: 'center', gap: 5, fontWeight: 700, color: mode === 'agent' ? '#10a37f' : '#4b5563' }}><Bot size={16} /> Agent</button>
         </header>
-        {mode === 'agent' ? <AgentWorkspace /> : (<>
+        {workspaceView === 'projects' ? <div style={{ flex: 1, overflowY: 'auto', padding: '34px max(18px, calc((100% - 820px) / 2))' }}><div style={{ color: '#6b7280', fontSize: 13, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase' }}>Projects</div><h1 style={{ margin: '8px 0 10px', fontSize: 30 }}>Organize your AI work</h1><p style={{ color: '#6b7280', lineHeight: 1.6 }}>Projects keep related tasks, chats, and files together. Your default Shopnoltd workspace is ready.</p><div style={{ marginTop: 22, border: '1px solid #e5e7eb', borderRadius: 14, padding: 18, background: '#fff' }}><div style={{ display: 'flex', alignItems: 'center', gap: 12 }}><FolderKanban size={20} color="#10a37f" /><div><strong>Shopnoltd AI</strong><div style={{ color: '#6b7280', fontSize: 13, marginTop: 3 }}>Default project · {chats.length} chat{chats.length === 1 ? '' : 's'}</div></div></div></div></div> : mode === 'agent' ? <AgentWorkspace /> : (<>
         <div style={{ position: 'relative', flex: 1, minHeight: 0, display: 'flex' }}>
           <div ref={scrollRef} onScroll={onScroll} className="shopno-ai-content" style={{ flex: 1, minHeight: 0, overflowY: 'auto', overscrollBehavior: 'contain', padding: '0 max(18px, calc((100% - 820px) / 2))' }}>
             <div style={{ minHeight: '100%', display: 'flex', flexDirection: 'column', justifyContent: activeMessages.length ? 'flex-start' : 'center' }}>
