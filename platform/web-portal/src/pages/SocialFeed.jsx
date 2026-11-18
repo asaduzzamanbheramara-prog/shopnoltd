@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { platformApi } from '../lib/platformApi'
 import { AdsterraResponsiveBanner } from '../components/AdsterraAds'
@@ -25,6 +25,7 @@ function PostCard({ post, refresh, following, toggleFollow }) {
   const [comments, setComments] = useState([])
   const [comment, setComment] = useState('')
   const [busy, setBusy] = useState(false)
+  const commentInputRef = useRef(null)
   const isFollowing = following.has(String(post.user_id))
   const mediaItems = normalizeMedia(post.media).map((item) => {
     const url = typeof item === 'string' ? item : (item?.url || item?.src || '')
@@ -97,6 +98,7 @@ function PostCard({ post, refresh, following, toggleFollow }) {
       </div>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 16 }}>
         <button disabled={busy} onClick={toggleLike}>{liked ? '♥ Liked' : '♡ Like'} · {post.like_count || 0}</button>
+        <button type="button" onClick={() => commentInputRef.current?.focus()}>Comment · {post.comment_count || comments.length}</button>
         <button onClick={doShare}>↗ Share · {post.share_count || 0}</button>
         <button disabled={busy} onClick={toggleSave}>{saved ? '🔖 Saved' : '🔖 Save'}</button>
         <button onClick={() => navigator.clipboard?.writeText(direct)}>🔗 Copy link</button>
@@ -110,7 +112,7 @@ function PostCard({ post, refresh, following, toggleFollow }) {
       </div>}
 
       <form onSubmit={addComment} style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 14 }}>
-        <input value={comment} onChange={e => setComment(e.target.value)} placeholder="Write a comment…" style={{ flex: 1, padding: 9, border: '1px solid #cbd5e1', borderRadius: 8 }} />
+        <input ref={commentInputRef} value={comment} onChange={e => setComment(e.target.value)} placeholder="Write a comment…" style={{ flex: 1, padding: 9, border: '1px solid #cbd5e1', borderRadius: 8 }} />
         <button type="submit">Comment · {post.comment_count || comments.length}</button>
       </form>
       {comments.length > 0 && <div style={{ marginTop: 12, borderTop: '1px solid #e2e8f0', paddingTop: 10 }}>
@@ -127,10 +129,15 @@ export default function SocialFeed() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [following, setFollowing] = useState(new Set())
+  const loadInFlight = useRef(false)
 
-  async function load() {
-    setLoading(true)
-    setError('')
+  async function load({ silent = false } = {}) {
+    if (loadInFlight.current) return
+    loadInFlight.current = true
+    if (!silent) {
+      setLoading(true)
+      setError('')
+    }
     try {
       // Global is the canonical discovery feed. If an older deployment still
       // lacks that facade, fall back to the authenticated personal feed rather
@@ -158,14 +165,32 @@ export default function SocialFeed() {
       setPosts(combined)
       setFollowing(new Set((Array.isArray(followed) ? followed : []).map(String)))
     } catch (e) {
-      setPosts([])
-      setError(`Feed could not be loaded: ${e.message}`)
+      if (!silent) {
+        setPosts([])
+        setError(`Feed could not be loaded: ${e.message}`)
+      } else {
+        console.warn('Background feed refresh failed; keeping the current feed visible.', e)
+      }
     } finally {
-      setLoading(false)
+      loadInFlight.current = false
+      if (!silent) setLoading(false)
     }
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    load()
+    const refreshWhenVisible = () => {
+      if (!document.hidden) load({ silent: true })
+    }
+    const timer = window.setInterval(refreshWhenVisible, 45000)
+    window.addEventListener('focus', refreshWhenVisible)
+    document.addEventListener('visibilitychange', refreshWhenVisible)
+    return () => {
+      window.clearInterval(timer)
+      window.removeEventListener('focus', refreshWhenVisible)
+      document.removeEventListener('visibilitychange', refreshWhenVisible)
+    }
+  }, [])
 
   async function create() {
     const text = content.trim()
@@ -212,7 +237,7 @@ export default function SocialFeed() {
 
   return <div style={shell}>
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
-      <div><h1 style={{ marginBottom: 4 }}>Shopnoltd Feed</h1><p style={{ color: '#64748b', marginTop: 0 }}>Create, watch, like, comment, share and follow with direct post links.</p></div>
+      <div><h1 style={{ marginBottom: 4 }}>Shopnoltd Feed</h1><p style={{ color: '#64748b', marginTop: 0 }}>Create, watch, like, comment, share and follow. Feed refreshes automatically every 45 seconds.</p></div>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <Link to="/saved-posts" style={{ padding: '9px 13px', border: '1px solid #cbd5e1', borderRadius: 8, textDecoration: 'none', color: '#0f172a', fontWeight: 700 }}>🔖 Saved posts</Link>
         <Link to="/work" style={{ padding: '9px 13px', background: '#0ea5e9', color: '#fff', borderRadius: 8, textDecoration: 'none', fontWeight: 700 }}>Find Work</Link>
