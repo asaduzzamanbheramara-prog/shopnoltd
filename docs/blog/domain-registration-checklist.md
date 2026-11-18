@@ -2,7 +2,7 @@
 title: "A Beginner's Checklist for Registering a Domain Name"
 slug: "domain-registration-checklist"
 meta_description: "A step-by-step domain registration checklist covering availability, full costs, owner details, renewals, DNS and account security."
-status: "editorial-draft"
+status: "published"
 ---
 
 # A Beginner's Checklist for Registering a Domain Name
@@ -76,3 +76,6 @@ Keep a small record with the domain, registrar, owner contact, renewal date, nam
 - [ ] Website and connected services tested
 
 Shopnoltd's [Domain Registration](/domain-registration) page is the starting point for exploring its domain workflow. Confirm the domain type, availability, final price and terms displayed in the actual registration flow. This guide is general information; it is not a promise that every domain ending, privacy feature or registrar option is available through Shopnoltd.
+
+
+[VIDEO: https://www.youtube.com/watch?v=bVLjWYB2uoo]
