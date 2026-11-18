@@ -1,0 +1,77 @@
+name: Read-only recovery scan of Nov 11 blog snapshot
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - recovery/blog-snapshot-20261111
+    paths:
+      - .github/workflows/recovery-blog-snapshot-20261111.yml
+
+permissions:
+  contents: read
+
+jobs:
+  inspect-local-backup:
+    runs-on: [self-hosted, linux]
+    timeout-minutes: 10
+    env:
+      BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
+    steps:
+      - name: Decrypt and inspect local encrypted snapshot without touching production
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          backup_dir="/home/asadu/private-db-backups"
+          backup_name="shopnoltd-20261111T065753Z.dump.enc"
+          workdir="$(mktemp -d "${RUNNER_TEMP:-/tmp}/shopnoltd-blog-recovery.XXXXXX")"
+          trap 'rm -rf "$workdir"' EXIT
+          test -n "${BACKUP_ENCRYPTION_KEY:-}" || { echo "ERROR: required backup key unavailable"; exit 1; }
+          cd "$backup_dir"
+          sha256sum -c "$backup_name.sha256"
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 \
+            -in "$backup_name" -out "$workdir/database.dump" \
+            -pass env:BACKUP_ENCRYPTION_KEY
+          pg_restore --list "$workdir/database.dump" > "$workdir/toc.txt"
+          pg_restore --file="$workdir/database.sql" "$workdir/database.dump"
+          python3 - "$workdir/toc.txt" "$workdir/database.sql" <<'PY'
+          import pathlib, re, sys
+          toc = pathlib.Path(sys.argv[1]).read_text(errors="replace").splitlines()
+          sql = pathlib.Path(sys.argv[2]).read_text(errors="replace").splitlines()
+          targets = [
+              "choose-a-domain-name",
+              "domain-registration-checklist",
+              "choosing-the-right-plan",
+              "data-management-basics",
+              "shared-workspace-for-small-business",
+              "How to Choose a Domain Name for Your Small Business",
+              "A Beginner's Checklist for Registering a Domain Name",
+              "How to Choose the Right Plan for Your Small Business",
+              "Data Management Basics for Small Teams",
+              "How to Set Up a Shared Workspace for a Small Business",
+          ]
+          tables = [line for line in toc if re.search(r"TABLE DATA .*?(blog|article|post)", line, re.I)]
+          print("BLOG_RELATED_TABLE_DATA_ENTRIES:")
+          for line in tables:
+              print(line)
+          active = None
+          found = set()
+          for line in sql:
+              if line.startswith("COPY ") and line.endswith(" FROM stdin;"):
+                  active = line
+                  continue
+              if active and line == r"\\.":
+                  active = None
+                  continue
+              if active:
+                  hits = [term for term in targets if term.casefold() in line.casefold()]
+                  if hits:
+                      found.update(hits)
+                      print("MATCH_TABLE:", active)
+                      print("MATCH_TERMS:", " | ".join(hits))
+                      print("MATCH_ROW:", line)
+          print("MATCHED_TARGETS:", len(found), "of", len(targets))
+          if not found:
+              print("NO_TARGET_ROWS_FOUND_IN_THIS_DATABASE_SNAPSHOT")
+          PY
