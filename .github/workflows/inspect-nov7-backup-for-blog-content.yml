@@ -107,7 +107,7 @@ jobs:
           docker exec --user root -e PGPASSWORD="$PGPASSWORD" "$container_id" \
             psql -U "$PGUSER" --dbname="$db_name" --set ON_ERROR_STOP=1 \
             --command='SELECT current_database()'
-          cp "$tmp/archive-toc.txt" recovery-artifact-toc.txt
+          echo "DB_NAME=$db_name" >> "$GITHUB_ENV"
           echo "PASS: November 7 database archive restored into disposable PostgreSQL only."
 
       - name: Search restored database for the five blog articles
@@ -120,7 +120,7 @@ jobs:
           image='ghcr.io/asaduzzamanbheramara-prog/shopnoltd-postgres-combined:pg16-postgis3.5-pgvector0.8.6'
           container_id="$(docker ps --filter "ancestor=$image" --format '{{.ID}}' | head -n 1)"
           test -n "$container_id"
-          db_name="$(grep -m1 '^; *dbname:' recovery-artifact-toc.txt | sed 's/^; *dbname: *//')"
+          db_name="${DB_NAME:?DB_NAME was not set by the restore step}"
           [[ "$db_name" =~ ^[A-Za-z0-9_]+$ ]]
           mkdir -p recovery-artifact
           python3 - "$container_id" "$PGUSER" "$PGPASSWORD" "$db_name" <<'PY'
