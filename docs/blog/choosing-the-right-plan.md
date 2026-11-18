@@ -2,7 +2,7 @@
 title: "How to Choose the Right Plan for Your Small Business"
 slug: "choosing-the-right-plan"
 meta_description: "Compare software plans by users, storage, support and growth needs before choosing a small-business subscription."
-status: "editorial-draft"
+status: "published"
 ---
 
 # How to Choose the Right Plan for Your Small Business
