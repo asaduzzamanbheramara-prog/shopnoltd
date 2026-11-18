@@ -83,10 +83,11 @@ jobs:
         run: |
           set -euo pipefail
           umask 077
-          snapshot="/home/asadu/restore/20261102T165642Z/latest.dump.enc"
+          cd /home/asadu/restore/20261102T165642Z
+          snapshot="$PWD/latest.dump.enc"
           workdir="$(mktemp -d "${RUNNER_TEMP:-/tmp}/shopnoltd-blog-recovery-nov2.XXXXXX")"
           trap 'rm -rf "$workdir"' EXIT
-          sha256sum -c /home/asadu/restore/20261102T165642Z/latest.dump.enc.sha256
+          sha256sum -c latest.dump.enc.sha256
           if ! openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 \
             -in "$snapshot" -out "$workdir/database.dump" \
             -pass env:BACKUP_ENCRYPTION_KEY 2>/dev/null; then
@@ -120,7 +121,7 @@ jobs:
               if line.startswith("COPY ") and line.endswith(" FROM stdin;"):
                   active = line
                   continue
-              if active and line == r"\\.":
+              if active and line == r"\.":
                   active = None
                   continue
               if active:
