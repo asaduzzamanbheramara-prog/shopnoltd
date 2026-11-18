@@ -71,7 +71,7 @@ jobs:
       - name: Decrypt and restore into disposable PostgreSQL
         shell: bash
         env:
-          BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
+          BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY_20261107 }}
           PGUSER: restore_admin_${{ github.run_id }}
           PGPASSWORD: restore-only-${{ github.run_id }}-${{ github.run_attempt }}
         run: |
