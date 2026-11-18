@@ -68,7 +68,7 @@ model_cooldowns: dict[str, float] = {}
 # approval needed in the UI before these browser actions run
 BROWSER_ACTIONS = {"open", "get_text", "click", "type", "screenshot", "scroll", "wait_for", "press", "select", "check", "uncheck", "submit", "upload"}
 BROWSER_MUTATING = {"click", "type", "press", "select", "check", "uncheck", "submit", "upload"}
-ALWAYS_APPROVE_BROWSER = {"submit", "upload"}
+ALWAYS_APPROVE_BROWSER = {"submit", "upload", "press"}
 AGENT_MODES = {"auto", "manual", "hybrid"}
 USER_RE = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 
