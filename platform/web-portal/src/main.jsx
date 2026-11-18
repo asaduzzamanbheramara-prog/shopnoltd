@@ -60,6 +60,7 @@ import AdminAnalytics from './pages/AdminAnalytics'
 import Affiliate from './pages/Affiliate'
 import AdNetwork from './pages/AdNetwork'
 import { trackPageView } from './lib/analytics'
+import { KEYCLOAK_CLIENT_ID, KEYCLOAK_REALM, KEYCLOAK_URL } from './config'
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
@@ -107,11 +108,31 @@ function Nav() {
   React.useEffect(() => { setMenuOpen(false) }, [location.pathname])
 
   function handleLogout() {
+    // End the Shopnoltd session and the Keycloak SSO session. Without the
+    // provider logout, a shared browser can silently restore the previous user.
+    const idToken = localStorage.getItem('shopno_id_token')
+    const logoutUrl = new URL(
+      `${KEYCLOAK_URL}/realms/${KEYCLOAK_REALM}/protocol/openid-connect/logout`
+    )
+    logoutUrl.searchParams.set('client_id', KEYCLOAK_CLIENT_ID)
+    logoutUrl.searchParams.set('post_logout_redirect_uri', `${window.location.origin}/`)
+    if (idToken) logoutUrl.searchParams.set('id_token_hint', idToken)
+
     localStorage.removeItem('shopno_token')
     localStorage.removeItem('shopno_refresh_token')
-    sessionStorage.removeItem('shopno_profile_provisioned')
-    navigate('/')
+    localStorage.removeItem('shopno_id_token')
+    for (const key of [
+      'shopno_profile_provisioned',
+      'pkce_verifier',
+      'oidc_state',
+      'pending_domain',
+      'pending_referral_code',
+      'pending_referral_category',
+      'post_login_next',
+    ]) sessionStorage.removeItem(key)
+
     setMenuOpen(false)
+    window.location.assign(logoutUrl.toString())
   }
 
   function renderPublicLink(label, path) {

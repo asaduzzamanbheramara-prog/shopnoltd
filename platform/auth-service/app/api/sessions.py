@@ -24,10 +24,9 @@ async def current_user(creds: HTTPAuthorizationCredentials = Depends(bearer)):
 
 @router.get("")
 async def list_(user=Depends(current_user), s: AsyncSession = Depends(db)):
+    identities = {v for v in (user.get("sub"), user.get("email"), user.get("preferred_username")) if v}
     res = await s.execute(
-        select(Session).where(
-            Session.user_id == user.get("email", user["sub"]), Session.active.is_(True)
-        )
+        select(Session).where(Session.user_id.in_(identities), Session.active.is_(True))
     )
     return [
         {
@@ -48,7 +47,7 @@ async def revoke(sess_id: str, user=Depends(current_user), s: AsyncSession = Dep
         await s.execute(
             select(Session).where(
                 Session.id == sess_id,
-                Session.user_id == user.get("email", user["sub"]),
+                Session.user_id.in_({v for v in (user.get("sub"), user.get("email"), user.get("preferred_username")) if v}),
             )
         )
     ).scalar_one_or_none()

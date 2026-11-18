@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import SessionLocal
-from app.core.security import require_customer_self_or_above, require_tenant_access, verify_token
+from app.core.security import require_customer_self_or_above, require_tenant_owner_access, verify_token
 from app.models.models import Customer
 from app.schemas.schemas import CustomerIn, CustomerOut
 
@@ -39,7 +39,7 @@ async def create(
 ):
     """platform_admin or tenant_owner only -- customers don't create their own
     record here (that happens via the normal signup/social-login flow)."""
-    await require_tenant_access(creds.credentials, tenant_id)
+    await require_tenant_owner_access(creds.credentials, tenant_id)
     payload = await verify_token(creds.credentials)
     c = Customer(
         tenant_id=tenant_id,
@@ -64,7 +64,7 @@ async def list_(
 ):
     """platform_admin or tenant_owner -- lists everyone in the tenant.
     (Customers should use GET /{tenant_id}/customers/{id} for their own record.)"""
-    await require_tenant_access(creds.credentials, tenant_id)
+    await require_tenant_owner_access(creds.credentials, tenant_id)
     res = await s.execute(select(Customer).where(Customer.tenant_id == tenant_id))
     return [_out(c) for c in res.scalars().all()]
 
@@ -122,7 +122,7 @@ async def delete(
     s: AsyncSession = Depends(db),
 ):
     """platform_admin or tenant_owner only -- customers cannot delete themselves here."""
-    await require_tenant_access(creds.credentials, tenant_id)
+    await require_tenant_owner_access(creds.credentials, tenant_id)
     c = (
         await s.execute(
             select(Customer).where(Customer.id == customer_id, Customer.tenant_id == tenant_id)

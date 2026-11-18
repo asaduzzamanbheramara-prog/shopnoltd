@@ -53,6 +53,8 @@ export default function Callback() {
         // "Completing sign in…" after Keycloak has successfully authenticated them.
         localStorage.setItem('shopno_token', data.access_token)
         if (data.refresh_token) localStorage.setItem('shopno_refresh_token', data.refresh_token)
+        if (data.id_token) localStorage.setItem('shopno_id_token', data.id_token)
+        else localStorage.removeItem('shopno_id_token')
 
         const pendingReferral = sessionStorage.getItem('pending_referral_code')
         const pendingReferralCategory = sessionStorage.getItem('pending_referral_category')

@@ -68,6 +68,10 @@ CLIENT_CONFIG = {
     "shopnoltd-web": {"redirect_uris": REQUIRED_REDIRECT_URIS, "web_origins": REQUIRED_WEB_ORIGINS},
     "web-portal": {"redirect_uris": WEB_PORTAL_REDIRECT_URIS, "web_origins": WEB_PORTAL_WEB_ORIGINS},
 }
+POST_LOGOUT_REDIRECT_URIS = {
+    "shopnoltd-web": "https://shopnoltd.dpdns.org/*",
+    "web-portal": "https://web-portal.shopnoltd.dpdns.org/*",
+}
 
 API_AUDIENCE_MAPPER_NAME = "api-service-audience"
 API_AUDIENCE_REPAIR_MAPPER_NAME = "api-service-audience-repaired"
@@ -193,6 +197,7 @@ def sync_client(token, client_id):
         # Explicitly reconcile existing clients created by older manifests.\n        client["directAccessGrantsEnabled"] = False
         attributes = client.get("attributes") or {}
         attributes["pkce.code.challenge.method"] = "S256"
+        attributes["post.logout.redirect.uris"] = POST_LOGOUT_REDIRECT_URIS[client_id]
         client["attributes"] = attributes
         code, _ = request("PUT", f"/admin/realms/{REALM}/clients/{client_uuid}", token=token, body=client)
         if code != 204:
@@ -202,7 +207,7 @@ def sync_client(token, client_id):
         sync_storage_audience_mapper(token, client_uuid)
         print(f"[OK] synchronized {client_id} with api-service, ai-platform and storage-service JWT audiences")
     else:
-        payload = {"clientId": client_id, "publicClient": True, "protocol": "openid-connect", "standardFlowEnabled": True, "directAccessGrantsEnabled": False, "redirectUris": required_redirect_uris, "webOrigins": required_web_origins, "attributes": {"pkce.code.challenge.method": "S256"}}
+        payload = {"clientId": client_id, "publicClient": True, "protocol": "openid-connect", "standardFlowEnabled": True, "directAccessGrantsEnabled": False, "redirectUris": required_redirect_uris, "webOrigins": required_web_origins, "attributes": {"pkce.code.challenge.method": "S256", "post.logout.redirect.uris": POST_LOGOUT_REDIRECT_URIS[client_id]}}
         code, _ = request("POST", f"/admin/realms/{REALM}/clients", token=token, body=payload)
         if code != 201:
             raise RuntimeError(f"Unable to create Keycloak client (HTTP {code})")

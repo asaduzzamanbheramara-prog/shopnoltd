@@ -23,7 +23,8 @@ async def db():
 
 
 def _user_id(payload: dict) -> str:
-    value = payload.get("email") or payload.get("preferred_username") or payload.get("sub")
+    # OIDC subject is immutable; email and username can change.
+    value = payload.get("sub") or payload.get("email") or payload.get("preferred_username")
     if not value:
         raise HTTPException(401, "token has no usable user identity")
     return value
@@ -202,8 +203,9 @@ async def login(body: LoginIn, request: Request, s: AsyncSession = Depends(db)):
     if r.status_code != 200:
         raise HTTPException(401, "invalid credentials")
     d = r.json()
+    claims = await verify_token(d["access_token"])
     sess = Session(
-        user_id=body.email,
+        user_id=_user_id(claims),
         ip=request.client.host if request.client else "",
         user_agent=request.headers.get("user-agent", ""),
         device=body.device,
@@ -238,8 +240,10 @@ async def logout(
     creds: HTTPAuthorizationCredentials = Depends(bearer), s: AsyncSession = Depends(db)
 ):
     payload = await verify_token(creds.credentials)
+    # Include legacy email/username IDs so existing sessions can still be revoked.
+    identities = {v for v in (payload.get("sub"), payload.get("email"), payload.get("preferred_username")) if v}
     res = await s.execute(
-        select(Session).where(Session.user_id == _user_id(payload), Session.active.is_(True))
+        select(Session).where(Session.user_id.in_(identities), Session.active.is_(True))
     )
     for sess in res.scalars().all():
         sess.active = False

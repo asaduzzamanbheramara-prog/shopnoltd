@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import SessionLocal
-from app.core.security import require_tenant_access
+from app.core.security import require_tenant_owner_access
 from app.models.models import Tenant
 from app.schemas.schemas import TenantSettingsOut, TenantSettingsPatch
 
@@ -46,7 +46,7 @@ async def update(
     """platform_admin or tenant_owner only. Only the keys present in the
     request body are merged in -- omit a key to leave it untouched, send an
     empty object ({}) to clear it."""
-    await require_tenant_access(creds.credentials, tenant_id)
+    await require_tenant_owner_access(creds.credentials, tenant_id)
     t = (await s.execute(select(Tenant).where(Tenant.id == tenant_id))).scalar_one_or_none()
     if not t:
         raise HTTPException(404, "tenant not found")
