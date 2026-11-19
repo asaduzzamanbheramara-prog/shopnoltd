@@ -50,10 +50,17 @@ function consentAllowed() {
 
 export function setAnalyticsConsent(value) {
   try { localStorage.setItem('shopno_analytics_consent', value ? 'granted' : 'denied') } catch {}
+  if (typeof window.gtag === 'function') {
+    window.gtag('consent', 'update', { analytics_storage: value ? 'granted' : 'denied' })
+  }
 }
 
 export function trackPageView(path = window.location.pathname) {
   if (!consentAllowed()) return
+  // React Router owns navigation; disable GA automatic page_view to avoid duplicates.
+  if (typeof window.gtag === 'function') {
+    window.gtag('event', 'page_view', { page_path: path, page_location: window.location.href, page_title: document.title || 'Shopnoltd' })
+  }
   const url = new URL(window.location.href)
   const properties = {
     visitor_id: visitorId(),
