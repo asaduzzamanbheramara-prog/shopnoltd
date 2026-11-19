@@ -710,5 +710,10 @@ async def ext_socket(ws: WebSocket):
         if extensions.get(user) is ws: extensions.pop(user, None)
 
 
+@app.get("/")
+def root():
+    return {"service": "Shopno Agent", "status": "ok", "health": "/health", "ui_websocket": "/ws/ui", "extension_websocket": "/ws/ext"}
+
+
 @app.get("/health")
 def health(): return {"status": "ok"}

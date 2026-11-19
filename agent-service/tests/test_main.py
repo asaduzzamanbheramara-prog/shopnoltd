@@ -11,6 +11,15 @@ os.environ.setdefault("WORKSPACE", tempfile.mkdtemp(prefix="shopno-agent-tests-"
 import main
 
 
+class AgentRouteTests(unittest.TestCase):
+    def test_root_discovery_route_is_registered(self):
+        routes = {getattr(route, "path", None) for route in main.app.routes}
+        self.assertIn("/", routes)
+        self.assertIn("/health", routes)
+        self.assertIn("/ws/ui", routes)
+        self.assertIn("/ws/ext", routes)
+
+
 class BrowserArgumentTests(unittest.TestCase):
     def test_accepts_public_http_url(self):
         self.assertEqual(
