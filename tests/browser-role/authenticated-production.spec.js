@@ -42,8 +42,15 @@ function generateTotp(secret, now = Date.now()) {
   return String((digest.readUInt32BE(offset) & 0x7fffffff) % 1_000_000).padStart(6, '0')
 }
 
+async function dismissConsentBanner(page) {
+  const rejectAll = page.getByRole('button', { name: 'Reject all', exact: true })
+  await rejectAll.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {})
+  if (await rejectAll.isVisible().catch(() => false)) await rejectAll.click()
+}
+
 async function login(page, username, password, totpSecret, roleLabel) {
   await page.goto(`${baseURL}/login`, { waitUntil: 'domcontentloaded' })
+  await dismissConsentBanner(page)
   await page.getByRole('button', { name: 'Continue with Shopnoltd' }).click()
   await page.locator('#username').fill(username)
   await page.locator('#password').fill(password)
@@ -100,6 +107,24 @@ async function login(page, username, password, totpSecret, roleLabel) {
     { timeout: 10000 },
   ).toBe(true)
 }
+
+test('authenticated feed shows published blog posts with Like, Comment and Share controls', async ({ page }) => {
+  await login(page, userUser, userPassword, userTotpSecret, 'user')
+  const blogResponse = await page.request.get(`${baseURL}/api/v2/blog`)
+  expect(blogResponse.status(), 'published blog API must be available to an authenticated user').toBeLessThan(300)
+  const payload = await blogResponse.json()
+  const articles = Array.isArray(payload) ? payload : (payload?.items || [])
+  const article = articles.find(item => item?.slug && item?.title)
+  expect(article, 'at least one published blog article must be available for the feed').toBeTruthy()
+
+  await page.goto(`${baseURL}/feed`, { waitUntil: 'domcontentloaded' })
+  const card = page.locator('article').filter({ hasText: article.title }).first()
+  await expect(card, 'published blog article must appear in the authenticated social feed').toBeVisible({ timeout: 30000 })
+  await expect(card.getByRole('button', { name: /Like/ })).toBeVisible()
+  await expect(card.getByRole('button', { name: /Comment/ })).toBeVisible()
+  await expect(card.getByRole('button', { name: /Share/ })).toBeVisible()
+  await expect(card.getByRole('link', { name: /Read article/ })).toBeVisible()
+})
 
 test('admin can inspect the database inventory and read one table without mutating data', async ({ page }) => {
   await login(page, adminUser, adminPassword, adminTotpSecret, 'admin')
