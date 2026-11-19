@@ -3,6 +3,17 @@ import { test, expect } from '@playwright/test'
 const baseURL = (process.env.SHOPNOLTD_BASE_URL || 'https://shopnoltd.dpdns.org').replace(/\/$/, '')
 const authPattern = 'https://auth.shopnoltd.dpdns.org/**'
 
+
+async function dismissConsentBanner(page) {
+  const rejectAll = page.getByRole('button', { name: 'Reject all', exact: true })
+  try {
+    await rejectAll.waitFor({ state: 'visible', timeout: 4000 })
+    await rejectAll.click()
+  } catch {
+    // A saved choice means no first-visit banner is expected.
+  }
+}
+
 async function captureAuthHandoff(page, buttonName, expectedPath, query = '') {
   const requests = []
   const capturedStorage = {}
@@ -33,6 +44,7 @@ async function captureAuthHandoff(page, buttonName, expectedPath, query = '') {
     await route.abort()
   })
   await page.goto(baseURL + '/register' + query, { waitUntil: 'domcontentloaded' })
+  await dismissConsentBanner(page)
   await page.getByRole('button', { name: buttonName }).click()
   await expect.poll(() => requests.length, { timeout: 10000 }).toBeGreaterThan(0)
 
@@ -51,6 +63,7 @@ async function captureAuthHandoff(page, buttonName, expectedPath, query = '') {
 
 test('registration page exposes local signup and supported social signup choices', async ({ page }) => {
   await page.goto(baseURL + '/register', { waitUntil: 'domcontentloaded' })
+  await dismissConsentBanner(page)
   await expect(page.getByRole('heading', { name: 'Create your Shopnoltd account' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Register with Shopnoltd', exact: true })).toBeVisible()
   await expect(page.getByRole('button', { name: /Sign up with Google/ })).toBeVisible()
