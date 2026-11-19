@@ -1,43 +1,48 @@
-const { app, BrowserWindow, shell, Menu } = require('electron');
+const { app, BrowserWindow, shell, Menu, dialog } = require('electron');
 const path = require('path');
 const { isTrustedPortalUrl, isSafeExternalUrl } = require('./navigation-policy');
 
-// Which site this build of the shell points at. `configs/active.json` is
-// written by the `select-config.js` script before packaging -- baked in at
-// build time, not read from an env var at runtime.
 const config = require(path.join(__dirname, 'configs', 'active.json'));
+const isBrowserApp = config.appId === 'org.shopnoltd.browser';
 
 let mainWindow;
 
 function openSafeExternalUrl(url) {
   if (isSafeExternalUrl(url, config.url)) {
-    // Electron's external opener is only reached for HTTPS URLs.
     void shell.openExternal(url).catch(() => {});
   }
 }
 
+function focusBrowserAddressBar() {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  void mainWindow.webContents.executeJavaScript(
+    "document.querySelector('input[aria-label=\\\"Browser address\\\"]')?.focus()"
+  ).catch(() => {});
+}
+
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 1280,
-    height: 800,
+    width: 1440,
+    height: 900,
+    minWidth: 960,
+    minHeight: 640,
     icon: path.join(__dirname, '..', 'build', 'icon.png'),
     title: config.title,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
       sandbox: true,
+      webSecurity: true,
+      allowRunningInsecureContent: false,
+      webviewTag: false,
       preload: path.join(__dirname, 'preload.js'),
     },
   });
 
   mainWindow.loadURL(config.url);
 
-  // Trust only the exact HTTPS origin selected for this build. Do not accept
-  // arbitrary sibling subdomains based on hostname suffix matching.
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    if (isTrustedPortalUrl(url, config.url)) {
-      return { action: 'allow' };
-    }
+    if (isTrustedPortalUrl(url, config.url)) return { action: 'allow' };
     openSafeExternalUrl(url);
     return { action: 'deny' };
   });
@@ -49,21 +54,38 @@ function createWindow() {
     }
   });
 
+  // Every download requires a user-selected destination; never silently write files.
+  mainWindow.webContents.session.on('will-download', async (event, item) => {
+    const { canceled, filePath } = await dialog.showSaveDialog(mainWindow, {
+      defaultPath: path.join(app.getPath('downloads'), item.getFilename()),
+      title: 'Save download',
+    });
+    if (canceled || !filePath) {
+      item.cancel();
+      return;
+    }
+    item.setSavePath(filePath);
+  });
+
   Menu.setApplicationMenu(buildMenu());
 }
 
 function buildMenu() {
-  return Menu.buildFromTemplate([
-    {
-      label: config.title,
-      submenu: [
-        { label: 'Reload', accelerator: 'CmdOrCtrl+R', click: () => mainWindow.reload() },
-        { label: 'Toggle DevTools', accelerator: 'CmdOrCtrl+Shift+I', click: () => mainWindow.webContents.toggleDevTools() },
-        { type: 'separator' },
-        { role: 'quit' },
-      ],
-    },
-  ]);
+  const navigation = [
+    { label: 'Back', accelerator: 'Alt+Left', click: () => { if (mainWindow?.webContents.canGoBack()) mainWindow.webContents.goBack(); } },
+    { label: 'Forward', accelerator: 'Alt+Right', click: () => { if (mainWindow?.webContents.canGoForward()) mainWindow.webContents.goForward(); } },
+    { label: 'Home', accelerator: 'Alt+Home', click: () => mainWindow?.loadURL(config.url) },
+    { label: 'Reload', accelerator: 'CmdOrCtrl+R', click: () => mainWindow?.reload() },
+  ];
+  if (isBrowserApp) {
+    navigation.push({ label: 'Focus address bar', accelerator: 'CmdOrCtrl+L', click: focusBrowserAddressBar });
+  }
+  navigation.push({ type: 'separator' });
+  if (!app.isPackaged) {
+    navigation.push({ label: 'Toggle DevTools', accelerator: 'CmdOrCtrl+Shift+I', click: () => mainWindow?.webContents.toggleDevTools() });
+  }
+  navigation.push({ type: 'separator' }, { role: 'quit' });
+  return Menu.buildFromTemplate([{ label: config.title, submenu: navigation }]);
 }
 
 app.whenReady().then(createWindow);
