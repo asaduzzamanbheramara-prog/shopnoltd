@@ -528,7 +528,7 @@ class _ScrapeParser(HTMLParser):
             href = dict(attrs).get("href")
             self.current_link = {"href": href, "text": []}
         if tag in {"p", "div", "br", "li", "h1", "h2", "h3", "tr"}:
-            self.text_parts.append("\\n")
+            self.text_parts.append("\n")
 
     def handle_endtag(self, tag):
         if tag in self.SKIP_TAGS and self.skip_depth:
@@ -554,8 +554,8 @@ class _ScrapeParser(HTMLParser):
             self.current_link["text"].append(data)
 
     def result(self, base_url: str):
-        text = re.sub(r"[ \\t]+", " ", "".join(self.text_parts))
-        text = re.sub(r"\\n[ \\n]+", "\\n", text).strip()
+        text = re.sub(r"[ \t]+", " ", "".join(self.text_parts))
+        text = re.sub(r"\n[ \n]+", "\n", text).strip()
         links = []
         for item in self.links[:100]:
             href = item.get("href")
@@ -580,7 +580,8 @@ async def smart_scrape(user: str, ui: WebSocket, args: dict, mode: str) -> str:
     status_code = 0
     content_type = ""
     body = b""
-    async with httpx.AsyncClient(timeout=20, follow_redirects=False, headers={
+    encoding = "utf-8"
+    async with httpx.AsyncClient(timeout=20, follow_redirects=False, trust_env=False, headers={
         "User-Agent": "Shopnoltd-SmartScrape/1.0 (+https://shopnoltd.dpdns.org)"
     }) as client:
         for _ in range(6):
@@ -644,13 +645,13 @@ async def smart_scrape(user: str, ui: WebSocket, args: dict, mode: str) -> str:
             return "HTTP scrape returned little content and the browser fallback did not produce readable text."
 
     if output_format == "html":
-        return f"URL: {current_url}\\nHTTP: {status_code}\\n<untrusted_web_content>\\n{raw[:12000]}\\n</untrusted_web_content>"
+        return f"URL: {current_url}\nHTTP: {status_code}\n<untrusted_web_content>\n{raw[:12000]}\n</untrusted_web_content>"
     if output_format == "links":
         return json.dumps({"url": current_url, "source": source, "links": links}, ensure_ascii=False)[:12000]
     if output_format == "text":
-        return f"URL: {current_url}\\nTitle: {title}\\nSource: {source}\\n<untrusted_web_content>\\n{extracted_text}\\n</untrusted_web_content>"[:12000]
-    link_lines = "\\n".join(f"- [{item['text'] or item['url']}]({item['url']})" for item in links[:50])
-    return f"# {title or current_url}\\nSource: {source} · HTTP {status_code}\\n\\n<untrusted_web_content>\\n{extracted_text}\\n</untrusted_web_content>\\n\\n## Links\\n{link_lines}"[:12000]
+        return f"URL: {current_url}\nTitle: {title}\nSource: {source}\n<untrusted_web_content>\n{extracted_text}\n</untrusted_web_content>"[:12000]
+    link_lines = "\n".join(f"- [{item['text'] or item['url']}]({item['url']})" for item in links[:50])
+    return f"# {title or current_url}\nSource: {source} · HTTP {status_code}\n\n<untrusted_web_content>\n{extracted_text}\n</untrusted_web_content>\n\n## Links\n{link_lines}[:12000]
 
 async def call_tool(claims: dict, ui: WebSocket, name: str, args: dict, mode: str = "manual") -> str:
     if mode not in AGENT_MODES:
