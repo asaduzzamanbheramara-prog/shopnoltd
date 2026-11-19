@@ -265,3 +265,51 @@ test('advertising-only consent does not load or configure the GA4 library', asyn
   ))).toEqual({ analytics: false, advertising: true })
   await expect.poll(() => page.evaluate(() => window.__shopnoltdGaConfigured === true)).toBe(false)
 })
+
+
+test('purchase conversion is emitted only after the payment API confirms completion', async ({ page }) => {
+  const transactionId = '00000000-0000-4000-8000-000000000001'
+  await page.addInitScript(({ transactionId }) => {
+    localStorage.setItem('shopno_token', 'e30.eyJleHAiOjQxMDI0NDQ4MDB9.sig')
+    localStorage.setItem('shopno_consent_preferences', JSON.stringify({ analytics: true, advertising: false }))
+    sessionStorage.setItem('shopno_pending_checkout', JSON.stringify({
+      transaction_id: transactionId,
+      plan: 'pro',
+      currency: 'USD',
+      value: 29,
+      gateway: 'stripe',
+    }))
+  }, { transactionId })
+  await page.route('https://www.googletagmanager.com/**', route => route.abort())
+  await page.route('**/api/v1/deposits/' + transactionId, route => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({
+      id: transactionId,
+      status: 'completed',
+      amount: 29,
+      currency: 'USD',
+      method: 'stripe',
+    }),
+  }))
+
+  const response = await page.goto(baseURL + '/checkout/complete', { waitUntil: 'domcontentloaded' })
+  expect(response?.status()).toBeLessThan(400)
+  await expect(page.getByText('Payment confirmed.')).toBeVisible({ timeout: 12000 })
+  await expect.poll(() => page.evaluate(() => {
+    const events = (window.dataLayer || []).map(item => Array.from(item || []))
+    return events.filter(item => item[0] === 'event' && item[1] === 'purchase').length
+  })).toBe(1)
+
+  const purchase = await page.evaluate(() => {
+    const events = (window.dataLayer || []).map(item => Array.from(item || []))
+    return events.find(item => item[0] === 'event' && item[1] === 'purchase')
+  })
+  expect(purchase[2]).toMatchObject({
+    transaction_id: transactionId,
+    currency: 'USD',
+    value: 29,
+    method: 'stripe',
+  })
+  expect(await page.evaluate(() => sessionStorage.getItem('shopno_pending_checkout'))).toBeNull()
+})

@@ -8,6 +8,8 @@ const PROVIDERS = [
 ].filter((provider) => SOCIAL_LOGIN_PROVIDERS[provider.id])
 
 async function startLogin(provider = '') {
+  sessionStorage.setItem('shopno_auth_intent', 'login')
+  sessionStorage.setItem('shopno_auth_method', provider || 'shopnoltd')
   const verifier = randomString(64)
   const challenge = await codeChallengeFor(verifier)
   const state = randomString(32)

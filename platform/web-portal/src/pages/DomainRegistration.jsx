@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { trackEvent } from "../lib/analytics";
 
 // All browser domain traffic stays on the unified API origin. The API service
 // forwards to the owning domain-service and preserves its authorization rules.
@@ -55,6 +56,12 @@ export default function DomainRegistration() {
       const key = registrationKey || crypto.randomUUID();
       if (!registrationKey) setRegistrationKey(key);
       const data = await request("/domains/register", { method: "POST", headers: { "Idempotency-Key": key }, body: JSON.stringify({ domain, years, contact }) });
+      trackEvent("domain_registration_submitted", {
+        years,
+        currency: String(data.currency || result?.data?.currency || "USD").toUpperCase(),
+        value: Number(data.price ?? result?.data?.price),
+        item_category: "domain_registration",
+      }, { dedupeKey: data.order_id || data.id || key });
       setRegistered({ type: "success", data }); setShowContactForm(false); setRegistrationKey(null);
     } catch (err) { setRegistered({ type: "error", message: err.message || "Registration failed. Please try again." }); }
     finally { setLoading(false); }
