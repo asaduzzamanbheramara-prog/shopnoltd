@@ -18,7 +18,7 @@ UI protocol (client -> server):
   {"type":"auth","token"}                  first message; may be re-sent any time to extend the session
   {"goal":"...","model":"claude-sonnet"}   start a task
 """
-import asyncio, base64, ipaddress, json, os, re, time, uuid
+import asyncio, base64, ipaddress, json, os, re, socket, time, uuid
 from collections import deque
 from urllib.parse import urlparse
 import httpx
@@ -28,7 +28,7 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from jose import JWTError, jwt
 
 LITELLM_URL = os.environ.get("LITELLM_URL", "http://litellm-proxy.shopno-ai.svc.cluster.local:4000/v1")
-LITELLM_KEY = os.environ.get("LITELLM_KEY") or os.environ["LITELLM_MASTER_KEY"]
+LITELLM_KEY = os.environ.get("LITELLM_KEY") or os.environ.get("LITELLM_MASTER_KEY")
 ALLOWED_MODELS = [m.strip() for m in os.environ.get("ALLOWED_MODELS", "").split(",") if m.strip()]
 DEFAULT_MODEL = os.environ.get("DEFAULT_MODEL", "auto")
 AI_MODEL_CATALOG_URL = os.environ.get("AI_MODEL_CATALOG_URL", "http://ai-platform.shopno-platform.svc.cluster.local/api/v1/inference/models")
@@ -66,8 +66,14 @@ _jwks_cache: dict | None = None
 model_cooldowns: dict[str, float] = {}
 
 # approval needed in the UI before these browser actions run
-SENSITIVE_BROWSER = {"open", "click", "type"}
-BROWSER_ACTIONS = {"open", "get_text", "click", "type", "screenshot", "scroll", "wait_for"}
+BROWSER_ACTIONS = {"open", "get_text", "click", "type", "screenshot", "scroll", "wait_for", "press", "select", "check", "uncheck", "submit", "upload"}
+BROWSER_MUTATING = {"click", "type", "press", "select", "check", "uncheck", "submit", "upload"}
+ALWAYS_APPROVE_BROWSER = {"submit", "upload", "press"}
+READ_ONLY_BROWSER = {"get_text", "screenshot", "wait_for"}
+AGENT_MODES = {"auto", "manual", "hybrid"}
+SENSITIVE_TARGET_RE = re.compile(r"\\b(delete|remove|submit|send|post|publish|like|follow|unfollow|share|comment|invite|accept|reject|confirm|purchase|buy|checkout|pay|transfer|withdraw|live|create|update|save|edit|upload|subscribe|unsubscribe|block|report|approve|authorize|consent|permission|password|email|phone|address|card|bank|otp|verification|security code|terms)\\b", re.I)
+_dns_policy_cache: dict[str, tuple[float, bool]] = {}
+_dns_policy_lock = asyncio.Lock()
 USER_RE = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 
 
@@ -166,9 +172,10 @@ TOOLS = [
     _fn("read_file", "Read a file from the workspace.", {"path": {"type": "string"}}, ["path"]),
     _fn("list_files", "List files in the workspace (optionally under a folder).", {"path": {"type": "string"}}, []),
     _fn("browser_action", "Control the user's isolated Chromium browser session. Start with action=open. "
-        "Actions: open|get_text|click|type|screenshot|scroll|wait_for.",
+        "Actions: open|get_text|click|type|screenshot|scroll|wait_for|press|select|check|uncheck|submit|upload. " 
+        "Use submit for explicit form submission and upload only for files in the user workspace.",
         {"action": {"type": "string", "enum": sorted(BROWSER_ACTIONS)},
-         "url": {"type": "string"}, "selector": {"type": "string"}, "text": {"type": "string"}}, ["action"]),
+         "url": {"type": "string"}, "selector": {"type": "string"}, "text": {"type": "string"},\n         "value": {"type": "string"}, "key": {"type": "string"}, "path": {"type": "string"}}, ["action"]),
 ]
 if ENABLE_SHELL:
     TOOLS.append(_fn("run_shell", "Run a shell command in the sandbox (admin only).", {"command": {"type": "string"}}, ["command"]))
@@ -253,13 +260,100 @@ def clean_browser_args(args: dict) -> dict:
     out = {"action": action}
     if action == "open":
         out["url"] = validate_public_http_url(str(args.get("url", ""))[:2000])
-    if action in ("click", "type", "wait_for"):
+    if action in ("click", "type", "wait_for", "press", "select", "check", "uncheck", "submit", "upload"):
         out["selector"] = str(args.get("selector", ""))[:500]
         if not out["selector"]:
             raise ValueError("selector required")
     if action == "type":
         out["text"] = str(args.get("text", ""))[:5000]
+    if action == "press":
+        key = str(args.get("key", "Enter"))[:40]
+        allowed = {"Enter", "Tab", "Shift+Tab", "Escape", "Space", "Backspace", "Delete", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Home", "End", "PageUp", "PageDown", "Control+A", "Meta+A"}
+        if key not in allowed:
+            raise ValueError("keyboard key is not allowed")
+        out["key"] = key
+    if action == "select":
+        out["value"] = str(args.get("value", ""))[:1000]
+    if action == "upload":
+        out["path"] = str(args.get("path", ""))[:500]
+        if not out["path"]:
+            raise ValueError("workspace file path required")
     return out
+
+
+async def _is_public_browser_url(raw: str) -> bool:
+    try:
+        parsed = urlparse(raw)
+        if parsed.scheme in ("about", "data", "blob"):
+            return True
+        if parsed.scheme not in ("http", "https") or not parsed.hostname or parsed.username or parsed.password:
+            return False
+        host = parsed.hostname.rstrip(".").lower()
+        if host == "localhost" or host.endswith((".localhost", ".local", ".internal", ".svc", ".cluster.local")):
+            return False
+        if host in {"metadata", "metadata.google.internal", "kubernetes.default"}:
+            return False
+        try:
+            address = ipaddress.ip_address(host)
+            return address.is_global
+        except ValueError:
+            pass
+        now = time.monotonic()
+        async with _dns_policy_lock:
+            cached = _dns_policy_cache.get(host)
+            if cached and cached[0] > now:
+                return cached[1]
+        try:
+            records = await asyncio.wait_for(
+                asyncio.to_thread(socket.getaddrinfo, host, parsed.port or (443 if parsed.scheme == "https" else 80), 0, socket.SOCK_STREAM),
+                timeout=3,
+            )
+            addresses = {ipaddress.ip_address(record[4][0]) for record in records}
+            allowed = bool(addresses) and all(address.is_global for address in addresses)
+        except (OSError, ValueError, asyncio.TimeoutError):
+            allowed = False
+        async with _dns_policy_lock:
+            _dns_policy_cache[host] = (time.monotonic() + 20, allowed)
+        return allowed
+    except (ValueError, TypeError):
+        return False
+
+
+async def browser_action_requires_approval(user: str, args: dict) -> bool:
+    action = args["action"]
+    if action in ALWAYS_APPROVE_BROWSER:
+        return True
+    if action not in {"click", "type", "select", "check", "uncheck"}:
+        return False
+    selector = args.get("selector", "")
+    if SENSITIVE_TARGET_RE.search(selector):
+        return True
+    session = browser_sessions.get(user)
+    if not BROWSER_WS_ENDPOINT or not session:
+        # Extension mode cannot inspect target semantics, so unknown mutations fail closed.
+        return True
+    try:
+        metadata = await session["page"].locator(selector).first.evaluate("""el => {
+          const labels = Array.from(el.labels || []).map(label => label.innerText || '').join(' ');
+          const form = el.closest('form');
+          return {
+            tag: el.tagName.toLowerCase(), type: (el.getAttribute('type') || '').toLowerCase(),
+            role: (el.getAttribute('role') || '').toLowerCase(),
+            text: (el.innerText || el.value || '').slice(0, 500),
+            aria: el.getAttribute('aria-label') || '', title: el.getAttribute('title') || '',
+            name: el.getAttribute('name') || '', id: el.id || '',
+            placeholder: el.getAttribute('placeholder') || '', labels,
+            formAction: form ? (form.getAttribute('action') || '') : ''
+          };
+        }""")
+    except Exception:
+        return True
+    description = " ".join(str(value) for value in metadata.values())
+    if metadata.get("type") in {"submit", "password", "file"}:
+        return True
+    if action == "click" and metadata.get("tag") == "button" and not description.strip():
+        return True
+    return bool(SENSITIVE_TARGET_RE.search(description))
 
 
 async def _get_browser_session(user: str) -> dict:
@@ -282,6 +376,12 @@ async def _get_browser_session(user: str) -> dict:
             accept_downloads=True,
             viewport={"width": 1440, "height": 900},
         )
+        async def guard_browser_request(route):
+            if await _is_public_browser_url(route.request.url):
+                await route.continue_()
+            else:
+                await route.abort("blockedbyclient")
+        await context.route("**/*", guard_browser_request)
         page = await context.new_page()
         session = {"playwright": playwright, "browser": browser, "context": context, "page": page}
         browser_sessions[user] = session
