@@ -499,7 +499,7 @@ async def browser_action(user: str, ui: WebSocket, args: dict) -> str:
     return json.dumps(result)[:8000]
 
 
-async def call_tool(claims: dict, ui: WebSocket, name: str, args: dict) -> str:
+async def call_tool(claims: dict, ui: WebSocket, name: str, args: dict, mode: str = "manual") -> str:
     user = claims["sub"]
     try:
         if name == "update_plan":
@@ -550,7 +550,13 @@ async def call_tool(claims: dict, ui: WebSocket, name: str, args: dict) -> str:
             return await create_manus_task(goal, report_manus_progress)
         if name == "browser_action":
             clean = clean_browser_args(args)
-            if clean["action"] in SENSITIVE_BROWSER:
+            action = clean["action"]
+            needs_approval = mode == "manual" and action not in READ_ONLY_BROWSER
+            if mode == "hybrid" and action in BROWSER_MUTATING:
+                needs_approval = True
+            if mode == "auto" and await browser_action_requires_approval(user, clean):
+                needs_approval = True
+            if needs_approval:
                 if not await ask_approval(ui, name, clean):
                     return "user denied this action"
             return await browser_action(user, ui, clean)
@@ -706,7 +712,7 @@ sinks: dict[str, TaskSink] = {}
 TASK_MAX_SECONDS = int(os.environ.get("TASK_MAX_SECONDS", "1800"))
 
 
-async def run_task(claims: dict, sink: TaskSink, goal: str, model: str, catalog: list):
+async def run_task(claims: dict, sink: TaskSink, goal: str, model: str, catalog: list, mode: str = "hybrid"):
     user = claims["sub"]
     hist = histories.setdefault(user, [])
     failed_models: set[str] = set()
@@ -718,8 +724,13 @@ async def run_task(claims: dict, sink: TaskSink, goal: str, model: str, catalog:
             hist.append({"role": "user", "content": goal})
             await sink.send_json({"type": "user", "text": goal})
             for _ in range(MAX_STEPS):
+                mode_policy = {
+                    "auto": "AUTO mode: run routine user-requested navigation and non-sensitive interactions without pausing. Always ask before submit, upload, Enter/shortcut actions, or controls identified as sensitive.",
+                    "hybrid": "HYBRID mode: inspect and research autonomously; ask for approval before every browser mutation.",
+                    "manual": "MANUAL mode: ask for approval before every browser action that changes navigation or page state; read-only inspection can proceed.",
+                }[mode]
                 reply, active_model = await llm_with_failover(
-                    [{"role": "system", "content": SYSTEM}] + hist, model, active_model, catalog, failed_models, sink)
+                    [{"role": "system", "content": SYSTEM + "\\n" + mode_policy}] + hist, model, active_model, catalog, failed_models, sink)
                 hist.append(reply)
                 if reply.get("content"): await sink.send_json({"type": "text", "text": reply["content"]})
                 calls = reply.get("tool_calls") or []
@@ -733,7 +744,7 @@ async def run_task(claims: dict, sink: TaskSink, goal: str, model: str, catalog:
                         result = "invalid tool arguments: must be a JSON object"
                     else:
                         await sink.send_json({"type": "tool", "name": tname, "args": args})
-                        result = await call_tool(claims, sink, tname, args)
+                        result = await call_tool(claims, sink, tname, args, mode)
                     await sink.send_json({"type": "result", "name": tname, "result": result[:2000]})
                     hist.append({"role": "tool", "tool_call_id": tc["id"], "content": result})
         await asyncio.wait_for(loop(), timeout=TASK_MAX_SECONDS)
@@ -791,6 +802,9 @@ async def ui_socket(ws: WebSocket):
                 continue
             goal = str(msg.get("goal", "")).strip()[:4000]
             model = str(msg.get("model") or DEFAULT_MODEL)
+            mode = str(msg.get("mode") or "hybrid").lower()
+            if mode not in AGENT_MODES:
+                await ws.send_json({"type": "error", "text": "invalid execution mode"}); continue
             if not goal:
                 continue
             catalog = await get_model_catalog(claims)
@@ -806,7 +820,7 @@ async def ui_socket(ws: WebSocket):
             sink = TaskSink(user)
             sinks[user] = sink
             await sink.attach(ws); attached = sink
-            sink.task = asyncio.create_task(run_task(claims, sink, goal, model, catalog))
+            sink.task = asyncio.create_task(run_task(claims, sink, goal, model, catalog, mode))
     except (WebSocketDisconnect, RuntimeError):
         pass
     finally:
