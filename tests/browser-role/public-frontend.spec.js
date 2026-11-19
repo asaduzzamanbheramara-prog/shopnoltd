@@ -21,6 +21,46 @@ const publicRoutes = [
   '/create-website?type=hr',
 ]
 
+async function dismissConsentBanner(page) {
+  const rejectAll = page.getByRole('button', { name: 'Reject all', exact: true })
+  try {
+    await rejectAll.waitFor({ state: 'visible', timeout: 4000 })
+    await rejectAll.click()
+  } catch {
+    // A saved choice means no first-visit banner is expected.
+  }
+}
+
+test('privacy choices gate optional tags and can be reopened', async ({ page }) => {
+  const response = await page.goto(baseURL, { waitUntil: 'domcontentloaded' })
+  expect(response?.status()).toBeLessThan(400)
+
+  const dialog = page.getByRole('dialog', { name: 'Privacy & cookie preferences' })
+  await expect(dialog).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Reject all', exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Customize', exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Accept all', exact: true })).toBeVisible()
+
+  await expect(page.locator('script[src*="googletagmanager.com/gtag"]')).toHaveCount(0)
+  await expect(page.locator('script[src*="adsbygoogle.js"]')).toHaveCount(0)
+  await expect(page.locator('script[src*="bicea.org"]')).toHaveCount(0)
+  await expect(page.locator('img[src*="adsterratech.com"]')).toHaveCount(0)
+
+  await page.getByRole('button', { name: 'Reject all', exact: true }).click()
+  await expect(dialog).toBeHidden()
+  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('shopno_consent_preferences') || 'null'))
+  expect(saved).toEqual({ analytics: false, advertising: false })
+  await expect(page.locator('script[src*="googletagmanager.com/gtag"]')).toHaveCount(0)
+  await expect(page.locator('script[src*="adsbygoogle.js"]')).toHaveCount(0)
+  await expect(page.locator('script[src*="bicea.org"]')).toHaveCount(0)
+
+  await page.getByRole('button', { name: 'Open privacy settings' }).click()
+  await expect(dialog).toBeVisible()
+  await expect(page.getByRole('checkbox', { name: 'Allow analytics' })).not.toBeChecked()
+  await expect(page.getByRole('checkbox', { name: 'Allow advertising' })).not.toBeChecked()
+})
+
+
 test('public frontend routes render in a real browser without uncaught JavaScript errors', async ({ page }) => {
   const pageErrors = []
   page.on('pageerror', error => pageErrors.push(error.message))
@@ -43,6 +83,7 @@ test('homepage navigation remains usable on a narrow mobile viewport', async ({ 
   page.on('pageerror', error => pageErrors.push(error.message))
 
   const response = await page.goto(baseURL, { waitUntil: 'domcontentloaded' })
+  await dismissConsentBanner(page)
   expect(response?.status()).toBeLessThan(400)
   await expect(page.locator('nav a[href="/"]').first()).toBeVisible()
   const openMenu = page.getByRole('button', { name: 'Open navigation menu' })
@@ -105,6 +146,7 @@ test('AI Agent controls remain visible and reachable on mobile and desktop', asy
   for (const width of [320, 360, 390, 430, 1280]) {
     await page.setViewportSize({ width, height: 844 })
     const response = await page.goto(`${baseURL}/ai`, { waitUntil: 'domcontentloaded' })
+    if (width === 320) await dismissConsentBanner(page)
     expect(response?.status(), `AI page at ${width}px should load`).toBeLessThan(400)
     const agent = page.getByRole('button', { name: 'Agent', exact: true })
     await expect(agent, `Agent control should be visible at ${width}px`).toBeVisible()
@@ -162,6 +204,7 @@ test('Agent mode stays inside mobile and desktop viewports with long model label
   for (const width of [320, 360, 390, 430, 1280]) {
     await page.setViewportSize({ width, height: 844 })
     const response = await page.goto(`${baseURL}/ai`, { waitUntil: 'domcontentloaded' })
+    if (width === 320) await dismissConsentBanner(page)
     expect(response?.status(), `AI page at ${width}px should load`).toBeLessThan(400)
     const agent = page.getByRole('button', { name: 'Agent', exact: true })
     await expect(agent).toBeVisible()
