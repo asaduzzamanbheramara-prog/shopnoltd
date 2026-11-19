@@ -10,13 +10,15 @@ bearer = HTTPBearer(auto_error=False)
 
 @lru_cache(maxsize=1)
 def _jwks_client():
-    url = os.getenv("KEYCLOAK_JWKS_URL")
+    issuer = os.getenv("KEYCLOAK_ISSUER", "https://auth.shopnoltd.dpdns.org/realms/shopnoltd")
+    url = os.getenv("KEYCLOAK_JWKS_URL", f"{issuer}/protocol/openid-connect/certs")
     if not url:
         raise RuntimeError("KEYCLOAK_JWKS_URL is not configured")
     return PyJWKClient(url, cache_jwk_set=True, lifespan=300)
 
 def require_user(credentials: HTTPAuthorizationCredentials | None = Depends(bearer)):
-    issuer, audience = os.getenv("KEYCLOAK_ISSUER"), os.getenv("KEYCLOAK_AUDIENCE")
+    issuer = os.getenv("KEYCLOAK_ISSUER", "https://auth.shopnoltd.dpdns.org/realms/shopnoltd")
+    audience = os.getenv("KEYCLOAK_AUDIENCE", "api-service")
     if not issuer or not audience:
         raise HTTPException(503, "Session Manager authentication is not configured")
     if credentials is None or credentials.scheme.lower() != "bearer":
