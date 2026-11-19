@@ -136,7 +136,6 @@ class SessionPool:
                 page = next((p for p in tabs.values() if not p.is_closed()), None)
                 if page is None:
                     page = await existing.new_page()
-                    self._watch_page(profile_id, page, download_dir)
                 tab_id = self._remember_tab(profile_id, page)
                 await page.goto(target_url)
                 self._meta[profile_id]["last_used_at"] = datetime.utcnow().isoformat()
