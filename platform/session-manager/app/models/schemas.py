@@ -25,7 +25,6 @@ class ProxyOut(BaseModel):
 class ProfileCreate(BaseModel):
     name: str
     purpose: str = Field("qa", description="qa | staff | scraping")
-    owner: str | None = None
     notes: str | None = None
     proxy_id: UUID | None = None
 
