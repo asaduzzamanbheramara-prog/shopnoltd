@@ -1,6 +1,22 @@
 <!doctype html>
 <html lang="en">
 <head>
+  <!-- Google tag (gtag.js): Shopnoltd GA4. Keep one site-wide installation. -->
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){window.dataLayer.push(arguments);}
+    (function () {
+      let analyticsConsent = 'granted';
+      try {
+        if (localStorage.getItem('shopno_analytics_consent') === 'denied') analyticsConsent = 'denied';
+      } catch {}
+      gtag('consent', 'default', { analytics_storage: analyticsConsent });
+    })();
+    gtag('js', new Date());
+    gtag('config', 'G-JMMVDQQ08Z', { send_page_view: false });
+  </script>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-JMMVDQQ08Z"></script>
+
   <meta name="facebook-domain-verification" content="mhuetgqknf1ak9iquez50bkpmlqf3n" />
   <meta charset="UTF-8" />
   <link rel="icon" type="image/png" href="/favicon.png" />
