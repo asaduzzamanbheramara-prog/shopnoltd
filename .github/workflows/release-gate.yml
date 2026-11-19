@@ -418,16 +418,32 @@ jobs:
           grep -Fxq "$expected" /tmp/shopnoltd-ads.txt
           echo 'Live ads.txt serves the expected AdSense publisher record.'
 
-      - name: Verify live homepage AdSense script is present exactly once
+      - name: Verify live AdSense loader is held behind visitor consent
         shell: bash
         run: |
           set -euo pipefail
           curl --retry 4 --retry-all-errors --retry-delay 5 --connect-timeout 10 --max-time 30 -fsSL https://shopnoltd.dpdns.org/ -o /tmp/shopnoltd-homepage.html
-          script='https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4532970890139771'
-          count="$(grep -oF "$script" /tmp/shopnoltd-homepage.html | wc -l)"
-          echo "Live AdSense script occurrences: $count"
-          test "$count" -eq 1
           grep -Fq 'google-adsense-account' /tmp/shopnoltd-homepage.html
+          grep -Fq "analytics_storage: 'denied'" /tmp/shopnoltd-homepage.html
+          grep -Fq "ad_storage: 'denied'" /tmp/shopnoltd-homepage.html
+          script='https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4532970890139771'
+          if grep -Fq "$script" /tmp/shopnoltd-homepage.html; then
+            echo 'AdSense must not load in the first-visit HTML before advertising consent.'
+            exit 1
+          fi
+          bundle_path="$(grep -oE 'src="[^"]+\.js[^"]*"' /tmp/shopnoltd-homepage.html | head -n1 | sed -E 's/^src="([^"]+)"$/\1/')"
+          test -n "$bundle_path"
+          case "$bundle_path" in
+            http://*|https://*) bundle_url="$bundle_path" ;;
+            /*) bundle_url="https://shopnoltd.dpdns.org$bundle_path" ;;
+            *) bundle_url="https://shopnoltd.dpdns.org/$bundle_path" ;;
+          esac
+          curl --retry 4 --retry-all-errors --retry-delay 5 --connect-timeout 10 --max-time 30 -fsSL "$bundle_url" -o /tmp/shopnoltd-web-portal.js
+          grep -Fq 'adsbygoogle.js' /tmp/shopnoltd-web-portal.js
+          grep -Fq 'G-JMMVDQQ08Z' /tmp/shopnoltd-web-portal.js
+          grep -Fq 'shopno_consent_preferences' /tmp/shopnoltd-web-portal.js
+          grep -Fq 'Allow advertising' /tmp/shopnoltd-web-portal.js
+          echo 'AdSense publisher metadata is present; its loader is deferred until advertising consent.'
 
   release-summary:
     name: Release gate summary
