@@ -542,7 +542,7 @@ class _ScrapeParser(HTMLParser):
             self.links.append(self.current_link)
             self.current_link = None
         if tag in {"p", "div", "li", "h1", "h2", "h3", "tr"}:
-            self.text_parts.append("\\n")
+            self.text_parts.append("\n")
 
     def handle_data(self, data):
         if self.skip_depth:
