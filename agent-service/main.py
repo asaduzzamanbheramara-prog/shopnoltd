@@ -457,6 +457,33 @@ async def browser_action(user: str, ui: WebSocket, args: dict) -> str:
     elif action == "type":
         await page.locator(args["selector"]).first.fill(args["text"], timeout=15000)
         result = {"typed": True, "selector": args["selector"]}
+    elif action == "press":
+        await page.locator(args["selector"]).first.press(args["key"], timeout=15000)
+        result = {"pressed": args["key"], "selector": args["selector"]}
+    elif action == "select":
+        selected = await page.locator(args["selector"]).first.select_option(args["value"], timeout=15000)
+        result = {"selected": selected, "selector": args["selector"]}
+    elif action == "check":
+        await page.locator(args["selector"]).first.check(timeout=15000)
+        result = {"checked": True, "selector": args["selector"]}
+    elif action == "uncheck":
+        await page.locator(args["selector"]).first.uncheck(timeout=15000)
+        result = {"unchecked": True, "selector": args["selector"]}
+    elif action == "submit":
+        await page.locator(args["selector"]).first.evaluate("""element => {
+          if (element.tagName === "FORM") { element.requestSubmit(); return true; }
+          if (element.matches('button[type="submit"],input[type="submit"]')) { element.click(); return true; }
+          throw new Error("submit selector must target a form or submit control");
+        }""")
+        result = {"submission_requested": True, "selector": args["selector"], "url": page.url,
+                  "verification": "submission was triggered; destination acceptance is not confirmed"}
+    elif action == "upload":
+        file_path = user_path(user, args["path"])
+        if not os.path.isfile(file_path):
+            raise ValueError("upload file not found in your isolated workspace")
+        await page.locator(args["selector"]).first.set_input_files(file_path, timeout=15000)
+        result = {"file_selected": os.path.basename(file_path), "selector": args["selector"],
+                  "verification": "file was selected; server-side upload is not confirmed"}
     elif action == "scroll":
         await page.evaluate("window.scrollBy(0, Math.max(300, window.innerHeight * 0.8))")
         result = {"scrolled": True, "url": page.url}
@@ -470,6 +497,7 @@ async def browser_action(user: str, ui: WebSocket, args: dict) -> str:
     if isinstance(result.get("text"), str):
         result["text"] = "<untrusted_web_content>\n" + result["text"][:7000] + "\n</untrusted_web_content>"
     return json.dumps(result)[:8000]
+
 
 async def call_tool(claims: dict, ui: WebSocket, name: str, args: dict) -> str:
     user = claims["sub"]
