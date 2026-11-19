@@ -179,8 +179,6 @@ class WebSocketAuthenticationDisconnectTests(unittest.IsolatedAsyncioTestCase):
         self.assertIsNone(claims)
 
 
-if __name__ == "__main__":
-    unittest.main()
 
 
 class BrowserApprovalModeTests(unittest.IsolatedAsyncioTestCase):
@@ -312,3 +310,7 @@ class BrowserURLPolicyTests(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(ValueError):
             main.clean_browser_args({"action": "press", "selector": "body", "key": "Alt+F4"})
         self.assertEqual(main.clean_browser_args({"action": "press", "selector": "body", "key": "Enter"})["key"], "Enter")
+
+
+if __name__ == "__main__":
+    unittest.main()
