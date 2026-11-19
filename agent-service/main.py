@@ -570,11 +570,11 @@ class _ScrapeParser(HTMLParser):
 
 async def smart_scrape(user: str, ui: WebSocket, args: dict, mode: str) -> str:
     url = validate_public_http_url(str(args.get("url", ""))[:2000])
-    if not await _is_public_browser_url(url):
-        raise ValueError("Smart Scrape blocks private or local destinations.")
     output_format = str(args.get("format") or "markdown").lower()
     if output_format not in {"markdown", "text", "html", "links"}:
         raise ValueError("unsupported Smart Scrape format")
+    if not await _is_public_browser_url(url):
+        raise ValueError("Smart Scrape blocks private or local destinations.")
 
     current_url = url
     status_code = 0
