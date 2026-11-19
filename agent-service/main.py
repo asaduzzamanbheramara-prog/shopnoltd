@@ -592,7 +592,7 @@ async def smart_scrape(user: str, ui: WebSocket, args: dict, mode: str) -> str:
                 if status_code in {301, 302, 303, 307, 308}:
                     location = response.headers.get("location")
                     if not location:
-                        break
+                        return f"Smart Scrape stopped: HTTP {status_code} redirect did not include a Location header."
                     current_url = urljoin(current_url, location)
                     continue
                 content_type = response.headers.get("content-type", "").lower()
@@ -645,13 +645,17 @@ async def smart_scrape(user: str, ui: WebSocket, args: dict, mode: str) -> str:
             return "HTTP scrape returned little content and the browser fallback did not produce readable text."
 
     if output_format == "html":
-        return f"URL: {current_url}\nHTTP: {status_code}\n<untrusted_web_content>\n{raw[:12000]}\n</untrusted_web_content>"
+        payload = f"URL: {current_url}\nHTTP: {status_code}\n{raw[:12000]}"
+        return f"<untrusted_web_content>\n{payload}\n</untrusted_web_content>"[:12000]
     if output_format == "links":
-        return json.dumps({"url": current_url, "source": source, "links": links}, ensure_ascii=False)[:12000]
+        payload = json.dumps({"url": current_url, "source": source, "links": links}, ensure_ascii=False)
+        return f"<untrusted_web_content>\n{payload}\n</untrusted_web_content>"[:12000]
     if output_format == "text":
-        return f"URL: {current_url}\nTitle: {title}\nSource: {source}\n<untrusted_web_content>\n{extracted_text}\n</untrusted_web_content>"[:12000]
+        payload = f"URL: {current_url}\nTitle: {title}\nSource: {source}\n{extracted_text}"
+        return f"<untrusted_web_content>\n{payload}\n</untrusted_web_content>"[:12000]
     link_lines = "\n".join(f"- [{item['text'] or item['url']}]({item['url']})" for item in links[:50])
-    return f"# {title or current_url}\nSource: {source} · HTTP {status_code}\n\n<untrusted_web_content>\n{extracted_text}\n</untrusted_web_content>\n\n## Links\n{link_lines}[:12000]
+    payload = f"# {title or current_url}\nSource: {source} · HTTP {status_code}\n\n{extracted_text}\n\n## Links\n{link_lines}"
+    return f"<untrusted_web_content>\n{payload}\n</untrusted_web_content>"[:12000]
 
 async def call_tool(claims: dict, ui: WebSocket, name: str, args: dict, mode: str = "manual") -> str:
     if mode not in AGENT_MODES:
