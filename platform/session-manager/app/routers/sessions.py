@@ -3,6 +3,7 @@ from datetime import datetime
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from app.auth import require_user
@@ -27,10 +28,18 @@ def _owned_profile(profile_id: str, owner: str, db: Session) -> Profile:
     return profile
 
 
+def _profile_storage_path(profile: Profile) -> Path:
+    root = STORAGE_ROOT.resolve()
+    path = (root / profile.user_data_dir).resolve()
+    if path == root or root not in path.parents:
+        raise HTTPException(409, "Profile storage path is outside the managed data directory")
+    return path
+
+
 @router.post("/launch", response_model=SessionLaunchResponse)
 async def launch_session(payload: SessionLaunchRequest, user=Depends(require_user), db: Session = Depends(get_db)):
     profile = _owned_profile(str(payload.profile_id), user["sub"], db)
-    profile_path = STORAGE_ROOT / profile.user_data_dir
+    profile_path = _profile_storage_path(profile)
     profile_path.mkdir(parents=True, exist_ok=True)
     try:
         result = await pool.get_or_launch(
@@ -96,6 +105,22 @@ async def close_tab(profile_id: str, tab_id: str, user=Depends(require_user), db
         raise HTTPException(404, "Browser tab not found")
     revoke_profile_viewers(profile_id)
     return {"closed": True}
+
+
+@router.get("/{profile_id}/downloads")
+def list_downloads(profile_id: str, user=Depends(require_user), db: Session = Depends(get_db)):
+    profile = _owned_profile(profile_id, user["sub"], db)
+    return {"downloads": pool.list_downloads(str(_profile_storage_path(profile)))}
+
+
+@router.get("/{profile_id}/downloads/{download_id}")
+def get_download(profile_id: str, download_id: str, user=Depends(require_user), db: Session = Depends(get_db)):
+    profile = _owned_profile(profile_id, user["sub"], db)
+    try:
+        path, filename = pool.get_download(str(_profile_storage_path(profile)), download_id)
+    except FileNotFoundError:
+        raise HTTPException(404, "Download not found")
+    return FileResponse(path, filename=filename, media_type="application/octet-stream")
 
 
 @router.post("/{profile_id}/close")
