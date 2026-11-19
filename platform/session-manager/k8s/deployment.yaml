@@ -40,7 +40,6 @@ spec:
           imagePullPolicy: Always
           ports:
             - containerPort: 8000
-            - containerPort: 6080
           env:
             - name: DATABASE_URL
               valueFrom:
@@ -89,9 +88,6 @@ spec:
     - name: api
       port: 80
       targetPort: 8000
-    - name: vnc
-      port: 6080
-      targetPort: 6080
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -117,33 +113,6 @@ spec:
                 port:
                   number: 80
 ---
-# Separate ingress + path rewrite for the noVNC web bridge, so the
-# rewrite-target annotation doesn't affect the main API path above.
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: session-manager-vnc
-  namespace: shopno-tools
-  annotations:
-    cert-manager.io/cluster-issuer: letsencrypt-prod
-    nginx.ingress.kubernetes.io/rewrite-target: /$2
-spec:
-  ingressClassName: nginx
-  tls:
-    - hosts: ["sessions.shopnoltd.dpdns.org"]
-      secretName: session-manager-tls
-  rules:
-    - host: sessions.shopnoltd.dpdns.org
-      http:
-        paths:
-          - path: /vnc(/|$)(.*)
-            pathType: ImplementationSpecific
-            backend:
-              service:
-                name: session-manager
-                port:
-                  number: 6080
----
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -162,5 +131,3 @@ spec:
       ports:
         - protocol: TCP
           port: 8000
-        - protocol: TCP
-          port: 6080
