@@ -251,7 +251,6 @@ export default function BrowserWorkspace() {
         <button disabled={busy || !activeProfile} type="submit" style={{ ...buttonStyle, background: '#0ea5e9', color: '#fff', borderColor: '#0ea5e9', opacity: busy || !activeProfile ? .55 : 1 }}><Globe size={15} /> {busy ? 'Working…' : 'Go'}</button>
         <button disabled={busy || !activeProfile || !sessionActive} type="button" onClick={newTab} style={buttonStyle}><Plus size={15} /> New tab</button>
         <button disabled={busy || !sessionActive} type="button" onClick={() => refreshViewer()} style={buttonStyle}><RefreshCw size={15} /> Refresh view</button>
-        <button disabled={busy || !viewerUrl} type="button" onClick={() => window.open(viewerUrl, '_blank', 'noopener,noreferrer')} style={buttonStyle}>Open tab</button>
         <button disabled={busy || !sessionActive} type="button" onClick={closeBrowser} style={buttonStyle}><X size={15} /> Close session</button>
       </form>
 
