@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Bot, Globe, Lock, Plus, RefreshCw, ShieldCheck, X } from 'lucide-react'
+import { Bot, Download, Globe, Lock, Plus, RefreshCw, ShieldCheck, X } from 'lucide-react'
 import { tryRefresh } from '../lib/tokenRefresh'
 import AgentWorkspace from './AgentWorkspace'
 
@@ -56,6 +56,7 @@ export default function BrowserWorkspace() {
   const [profiles, setProfiles] = useState([])
   const [activeId, setActiveId] = useState('')
   const [tabs, setTabs] = useState([])
+  const [downloads, setDownloads] = useState([])
   const [activeTabId, setActiveTabId] = useState('')
   const [targetUrl, setTargetUrl] = useState('https://shopnoltd.dpdns.org/')
   const [profileName, setProfileName] = useState('')
@@ -63,6 +64,7 @@ export default function BrowserWorkspace() {
   const [viewerUrl, setViewerUrl] = useState('')
   const [sessionActive, setSessionActive] = useState(false)
   const [agentOpen, setAgentOpen] = useState(false)
+  const [downloadsOpen, setDownloadsOpen] = useState(true)
   const [busy, setBusy] = useState(false)
   const [status, setStatus] = useState('Loading your private browser profiles…')
   const [error, setError] = useState('')
@@ -86,6 +88,7 @@ export default function BrowserWorkspace() {
   useEffect(() => {
     let mounted = true
     setTabs([])
+    setDownloads([])
     setActiveTabId('')
     setViewerUrl('')
     setSessionActive(false)
@@ -93,12 +96,14 @@ export default function BrowserWorkspace() {
     Promise.all([
       sessionRequest(`/api/sessions/${activeId}/tabs`),
       sessionRequest('/api/sessions/active'),
+      sessionRequest(`/api/sessions/${activeId}/downloads`),
     ])
-      .then(([result, active]) => {
+      .then(([result, active, downloadResult]) => {
         if (!mounted) return
         const next = Array.isArray(result.tabs) ? result.tabs : []
         setTabs(next)
         setSessionActive(Boolean(active && active[activeId]))
+        setDownloads(Array.isArray(downloadResult.downloads) ? downloadResult.downloads : [])
         setActiveTabId(next[0]?.id || '')
         setStatus(next.length ? 'Active browser session restored.' : 'Select a profile and press Go to launch its isolated browser.')
       })
@@ -112,6 +117,33 @@ export default function BrowserWorkspace() {
     setTabs(next)
     if (!next.some((tab) => tab.id === activeTabId)) setActiveTabId(next[0]?.id || '')
     return next
+  }
+
+  async function refreshDownloads(profileId = activeId) {
+    if (!profileId) return []
+    const result = await sessionRequest(`/api/sessions/${profileId}/downloads`)
+    const next = Array.isArray(result.downloads) ? result.downloads : []
+    setDownloads(next)
+    return next
+  }
+
+  async function downloadFile(file) {
+    if (!activeId) return
+    setBusy(true); setError('')
+    try {
+      const token = await accessToken()
+      if (!token) throw new Error('Your Shopnoltd session expired. Sign in again.')
+      const response = await fetch(`${SESSION_API}/api/sessions/${activeId}/downloads/${file.id}`, { headers: { Authorization: `Bearer ${token}` } })
+      if (!response.ok) throw new Error(`Download failed (HTTP ${response.status}).`)
+      const objectUrl = URL.createObjectURL(await response.blob())
+      const anchor = document.createElement('a')
+      anchor.href = objectUrl
+      anchor.download = file.filename
+      document.body.appendChild(anchor)
+      anchor.click()
+      anchor.remove()
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 30000)
+    } catch (err) { setError(err.message) } finally { setBusy(false) }
   }
 
   async function refreshViewer(profileId = activeId) {
@@ -157,6 +189,7 @@ export default function BrowserWorkspace() {
       if (result.tab_id) setActiveTabId(result.tab_id)
       setSessionActive(true)
       await refreshTabs(activeProfile.id)
+      await refreshDownloads(activeProfile.id)
       await refreshViewer(activeProfile.id)
       setStatus(`Connected to ${activeProfile.name}. Browser navigation is restricted to public HTTP(S) destinations.`)
     } catch (err) { setError(err.message); setStatus('Unable to start or navigate this browser session.') } finally { setBusy(false) }
@@ -171,6 +204,7 @@ export default function BrowserWorkspace() {
         method: 'POST', body: JSON.stringify({ target_url: url }),
       })
       await refreshTabs(activeProfile.id)
+      await refreshDownloads(activeProfile.id)
       setSessionActive(true)
       setActiveTabId(tab.tab_id)
       setTargetUrl(tab.url || url)
@@ -230,8 +264,8 @@ export default function BrowserWorkspace() {
       await sessionRequest(`/api/profiles/${activeProfile.id}`, { method: 'DELETE' })
       setProfiles((current) => current.filter((profile) => profile.id !== activeProfile.id))
       setActiveId('')
-      setTabs([]); setActiveTabId(''); setViewerUrl(''); setSessionActive(false)
-      setStatus('Profile and its browser storage deleted.')
+      setTabs([]); setDownloads([]); setActiveTabId(''); setViewerUrl(''); setSessionActive(false)
+      setStatus('Profile, browser storage and its downloads deleted.')
     } catch (err) { setError(err.message) } finally { setBusy(false) }
   }
 
@@ -284,6 +318,22 @@ export default function BrowserWorkspace() {
               </button>
             ))}
             {!profiles.length && <p style={{ color: '#64748b', fontSize: 13 }}>No browser profiles yet.</p>}
+          </div>
+          <div style={{ marginTop: 18, borderTop: '1px solid #e2e8f0', paddingTop: 12 }}>
+            <button type="button" onClick={() => setDownloadsOpen((value) => !value)} style={{ ...buttonStyle, width: '100%', justifyContent: 'space-between' }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}><Download size={15} /> Downloads ({downloads.length})</span>
+              <span>{downloadsOpen ? '−' : '+'}</span>
+            </button>
+            {downloadsOpen && <div style={{ display: 'grid', gap: 6, marginTop: 8 }}>
+              <button type="button" onClick={() => refreshDownloads()} disabled={busy || !activeProfile} style={{ ...buttonStyle, justifyContent: 'center', fontSize: 12 }}><RefreshCw size={13} /> Refresh downloads</button>
+              {downloads.map((file) => (
+                <button key={file.id} type="button" onClick={() => downloadFile(file)} disabled={busy} style={{ border: '1px solid #e2e8f0', borderRadius: 8, padding: 8, background: '#fff', color: '#0f172a', textAlign: 'left', cursor: 'pointer' }}>
+                  <div style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 12, fontWeight: 700, overflowWrap: 'anywhere' }}><Download size={13} /> {file.filename}</div>
+                  <div style={{ color: '#64748b', fontSize: 11, marginTop: 3 }}>{(file.size / 1024).toFixed(1)} KB · {new Date(file.modified_at).toLocaleString()}</div>
+                </button>
+              ))}
+              {!downloads.length && <div style={{ color: '#64748b', fontSize: 12 }}>No downloads for this profile yet.</div>}
+            </div>}
           </div>
           {activeProfile && <button type="button" onClick={deleteProfile} disabled={busy} style={{ ...buttonStyle, width: '100%', justifyContent: 'center', marginTop: 14, color: '#b91c1c' }}>Delete selected profile</button>}
         </aside>
