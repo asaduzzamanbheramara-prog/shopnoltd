@@ -641,7 +641,7 @@ async def run_task(claims: dict, sink: TaskSink, goal: str, model: str, catalog:
                     "manual": "MANUAL mode: request approval before every browser interaction that changes navigation or page state; read-only inspection can proceed.",
                 }[mode]
                 reply, active_model = await llm_with_failover(
-                    [{"role": "system", "content": SYSTEM + "\\n" + mode_policy}] + hist, model, active_model, catalog, failed_models, sink)
+                    [{"role": "system", "content": SYSTEM + "\n" + mode_policy}] + hist, model, active_model, catalog, failed_models, sink)
                 hist.append(reply)
                 if reply.get("content"): await sink.send_json({"type": "text", "text": reply["content"]})
                 calls = reply.get("tool_calls") or []
