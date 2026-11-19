@@ -501,6 +501,8 @@ async def browser_action(user: str, ui: WebSocket, args: dict) -> str:
 
 
 async def call_tool(claims: dict, ui: WebSocket, name: str, args: dict, mode: str = "manual") -> str:
+    if mode not in AGENT_MODES:
+        return "invalid execution mode"
     user = claims["sub"]
     try:
         if name == "update_plan":
