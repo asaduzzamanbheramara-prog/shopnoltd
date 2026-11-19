@@ -55,18 +55,22 @@ function createWindow() {
   });
 
   // Every download requires a user-selected destination; never silently write files.
-  mainWindow.webContents.session.on('will-download', async (event, item) => {
+  mainWindow.webContents.session.on('will-download', async (_event, item) => {
     item.pause();
-    const { canceled, filePath } = await dialog.showSaveDialog(mainWindow, {
-      defaultPath: path.join(app.getPath('downloads'), path.basename(item.getFilename())),
-      title: 'Save download',
-    });
-    if (canceled || !filePath) {
+    try {
+      const { canceled, filePath } = await dialog.showSaveDialog(mainWindow, {
+        defaultPath: path.join(app.getPath('downloads'), path.basename(item.getFilename())),
+        title: 'Save download',
+      });
+      if (canceled || !filePath) {
+        item.cancel();
+        return;
+      }
+      item.setSavePath(filePath);
+      item.resume();
+    } catch {
       item.cancel();
-      return;
     }
-    item.setSavePath(filePath);
-    item.resume();
   });
 
   Menu.setApplicationMenu(buildMenu());
