@@ -61,6 +61,9 @@ import Affiliate from './pages/Affiliate'
 import AffiliateOffers from './pages/AffiliateOffers'
 import AdNetwork from './pages/AdNetwork'
 import { trackPageView } from './lib/analytics'
+import ConsentManager from './components/ConsentManager'
+import GoogleAdSenseLoader from './components/GoogleAdSenseLoader'
+import GoogleTagLoader from './components/GoogleTagLoader'
 import ProfitOnContentAds from './components/ProfitOnContentAds'
 import { KEYCLOAK_CLIENT_ID, KEYCLOAK_REALM, KEYCLOAK_URL } from './config'
 
@@ -362,7 +365,7 @@ function RouteMetadata() {
 }
 
 function App() {
-  return <BrowserRouter basename={import.meta.env.BASE_URL}><AnalyticsTracker /><ProfileProvisioner /><RouteMetadata /><Nav /><SubdomainRedirect /><ProfitOnContentAds /><Routes>
+  return <BrowserRouter basename={import.meta.env.BASE_URL}><AnalyticsTracker /><ProfileProvisioner /><RouteMetadata /><Nav /><SubdomainRedirect /><ProfitOnContentAds /><ConsentManager /><GoogleTagLoader /><GoogleAdSenseLoader /><Routes>
     <Route path="/" element={<Home />} /><Route path="/pricing" element={<Pricing />} /><Route path="/privacy" element={<Privacy />} /><Route path="/about" element={<About />} /><Route path="/contact" element={<Contact />} /><Route path="/terms" element={<Terms />} /><Route path="/create-website" element={<ProtectedRoute><WebsiteBuilder /></ProtectedRoute>} /><Route path="/discover" element={<ProtectedRoute><Discover /></ProtectedRoute>} /><Route path="/feed" element={<ProtectedRoute><SocialFeed /></ProtectedRoute>} /><Route path="/saved-posts" element={<ProtectedRoute><SavedPosts /></ProtectedRoute>} /><Route path="/post/:id" element={<ProtectedRoute><PostDetail /></ProtectedRoute>} />
     <Route path="/work" element={<ProtectedRoute><WorkHub /></ProtectedRoute>} /><Route path="/referrals" element={<ProtectedRoute><ReferralHub /></ProtectedRoute>} /><Route path="/work/:id" element={<ProtectedRoute><WorkDetail /></ProtectedRoute>} /><Route path="/create-work" element={<ProtectedRoute><WorkHub /></ProtectedRoute>} /><Route path="/my-created-work" element={<ProtectedRoute><WorkHub /></ProtectedRoute>} /><Route path="/my-active-work" element={<ProtectedRoute><WorkHub /></ProtectedRoute>} /><Route path="/my-submission" element={<ProtectedRoute><WorkHub /></ProtectedRoute>} /><Route path="/work-review" element={<ProtectedRoute><WorkHub /></ProtectedRoute>} />
     <Route path="/account" element={<ProtectedRoute><AccountHub /></ProtectedRoute>} /><Route path="/notifications" element={<ProtectedRoute><AccountHub /></ProtectedRoute>} /><Route path="/my-professional-profile" element={<ProtectedRoute><MyProfessionalProfile /></ProtectedRoute>} />

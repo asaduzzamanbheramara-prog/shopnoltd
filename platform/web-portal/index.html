@@ -6,16 +6,29 @@
     window.dataLayer = window.dataLayer || [];
     function gtag(){window.dataLayer.push(arguments);}
     (function () {
-      let analyticsConsent = 'granted';
+      // Fail closed: optional storage stays denied until the visitor makes a choice.
+      gtag('consent', 'default', {
+        analytics_storage: 'denied',
+        ad_storage: 'denied',
+        ad_user_data: 'denied',
+        ad_personalization: 'denied'
+      });
+      // Restore a previously saved choice before any optional Google script loads.
       try {
-        if (localStorage.getItem('shopno_analytics_consent') === 'denied') analyticsConsent = 'denied';
+        const saved = JSON.parse(localStorage.getItem('shopno_consent_preferences') || 'null');
+        if (saved) {
+          const granted = value => value === true ? 'granted' : 'denied';
+          gtag('consent', 'update', {
+            analytics_storage: granted(saved.analytics),
+            ad_storage: granted(saved.advertising),
+            ad_user_data: granted(saved.advertising),
+            ad_personalization: granted(saved.advertising)
+          });
+        }
       } catch {}
-      gtag('consent', 'default', { analytics_storage: analyticsConsent });
     })();
     gtag('js', new Date());
-    gtag('config', 'G-JMMVDQQ08Z', { send_page_view: false });
   </script>
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-JMMVDQQ08Z"></script>
 
   <meta name="facebook-domain-verification" content="mhuetgqknf1ak9iquez50bkpmlqf3n" />
   <meta charset="UTF-8" />
@@ -28,7 +41,6 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="Shopnoltd" />
   <meta name="google-adsense-account" content="ca-pub-4532970890139771" />
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4532970890139771" crossorigin="anonymous"></script>
   <link rel="apple-touch-icon" href="/logo.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Shopnoltd | Digital Services, Domains &amp; Business Tools</title>

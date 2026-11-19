@@ -128,6 +128,7 @@ export default function SocialFeed() {
   const [mediaUrl, setMediaUrl] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [feedNotice, setFeedNotice] = useState('')
   const [following, setFollowing] = useState(new Set())
   const loadInFlight = useRef(false)
 
@@ -137,26 +138,35 @@ export default function SocialFeed() {
     if (!silent) {
       setLoading(true)
       setError('')
+      setFeedNotice('')
     }
     try {
-      // Global is the canonical discovery feed. If an older deployment still
-      // lacks that facade, fall back to the authenticated personal feed rather
-      // than rendering a confusing raw "Not Found" page/message.
-      let feed
-      try {
-        feed = await platformApi.globalFeed()
-      } catch (globalError) {
-        if (!/404|not found/i.test(globalError.message || '')) throw globalError
-        feed = await platformApi.feed()
-      }
-      const [articles, followed] = await Promise.all([
-        platformApi.blog().catch(() => []),
-        platformApi.following().catch(() => []),
+      // Load the public blog independently from authenticated social endpoints.
+      // A social API 401/403 must not hide published blog articles from the feed.
+      const [feedResult, articlesResult, followedResult] = await Promise.allSettled([
+        (async () => {
+          try { return await platformApi.globalFeed() }
+          catch (globalError) {
+            if (!/401|403|404|not authenticated|forbidden|not found/i.test(globalError.message || '')) throw globalError
+            return platformApi.feed()
+          }
+        })(),
+        platformApi.blog(),
+        platformApi.following(),
       ])
+      const feed = feedResult.status === 'fulfilled' ? feedResult.value : []
+      const articles = articlesResult.status === 'fulfilled' ? articlesResult.value : []
+      const followed = followedResult.status === 'fulfilled' ? followedResult.value : []
       const socialPosts = (Array.isArray(feed) ? feed : (feed?.items || [])).map(item => ({ ...item, feed_kind: 'social' }))
       const blogPosts = (Array.isArray(articles) ? articles : (articles?.items || []))
         .filter(item => item?.slug && (item.status === undefined || item.status === 'published' || item.published === true))
         .map(item => ({ ...item, feed_kind: 'blog' }))
+      if (feedResult.status === 'rejected' && articlesResult.status === 'rejected') {
+        throw new Error(feedResult.reason?.message || articlesResult.reason?.message || 'Social feed and blog are unavailable.')
+      }
+      if (feedResult.status === 'rejected') setFeedNotice('Community posts are temporarily unavailable. Published blog articles are still shown below.')
+      else if (articlesResult.status === 'rejected') setFeedNotice('Blog articles are temporarily unavailable. Community posts are still shown below.')
+      else setFeedNotice('')
       const combined = [...socialPosts, ...blogPosts].sort((a, b) => {
         const aDate = new Date(a.published_at || a.created_at || 0).getTime()
         const bDate = new Date(b.published_at || b.created_at || 0).getTime()
@@ -250,6 +260,7 @@ export default function SocialFeed() {
     </section>
     {loading && <p>Loading feed…</p>}
     {error && <div role="alert" style={{ ...card, color: '#b91c1c' }}>{error} <button onClick={load} style={{ marginLeft: 8 }}>Retry</button></div>}
+    {feedNotice && <p role="status" style={{ color: '#64748b', fontSize: 13 }}>{feedNotice}</p>}
     {!loading && !error && posts.length === 0 && <div style={card}>No posts yet. Be the first to publish.</div>}
     {posts.map((post, index) => <React.Fragment key={post.feed_kind === 'blog' ? `blog-${post.slug}` : `social-${post.id}`}>
       {post.feed_kind === 'blog'

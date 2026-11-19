@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
+import { useAdvertisingConsent } from '../lib/useAdvertisingConsent'
 
 const ZONES = {
   '468x60': { key: '7747061d0c5ae776f68405dbeeab89fd', width: 468, height: 60, scriptUrl: 'https://bicea.org/22/7747061d0c5ae776f68405dbeeab89fd' },
@@ -81,17 +82,18 @@ function AdLabel() {
 }
 
 export function AdsterraBannerZone({ name, maxWidth = 760 }) {
+  const allowed = useAdvertisingConsent()
   const zone = ZONES[name]
   const containerRef = useRef(null)
 
   useEffect(() => {
     const container = containerRef.current
-    if (!container || !zone) return undefined
+    if (!allowed || !container || !zone) return undefined
     const job = { name, zone, container }
     return enqueueZoneLoad(job)
-  }, [name, zone])
+  }, [allowed, name, zone])
 
-  if (!zone) return null
+  if (!allowed || !zone) return null
   return <section aria-label={`Advertisement ${name}`} style={{ ...shellStyle, width: '100%', maxWidth }}>
     <AdLabel />
     <div ref={containerRef} style={{ width: zone.width, maxWidth: '100%', minHeight: zone.height, overflow: 'hidden', display: 'flex', justifyContent: 'center' }} />
@@ -99,10 +101,11 @@ export function AdsterraBannerZone({ name, maxWidth = 760 }) {
 }
 
 export function AdsterraNativeBanner() {
+  const allowed = useAdvertisingConsent()
   const containerRef = useRef(null)
   useEffect(() => {
     const container = containerRef.current
-    if (!container || container.querySelector('script[data-shopnoltd-native]')) return undefined
+    if (!allowed || !container || container.querySelector('script[data-shopnoltd-native]')) return undefined
     const host = document.createElement('div')
     host.id = NATIVE.containerId
     host.style.minHeight = '100px'
@@ -117,7 +120,8 @@ export function AdsterraNativeBanner() {
       script.remove()
       host.remove()
     }
-  }, [])
+  }, [allowed])
+  if (!allowed) return null
   return <section aria-label="Native advertisement" style={{ ...shellStyle, maxWidth: 760, alignItems: 'stretch' }}>
     <AdLabel />
     <div ref={containerRef} style={{ width: '100%', minHeight: 100 }} />
@@ -125,8 +129,10 @@ export function AdsterraNativeBanner() {
 }
 
 export function AdsterraGlobalFormats() {
+  const allowed = useAdvertisingConsent()
   useEffect(() => {
-    // Google AdSense is loaded site-wide. Do not enable Adsterra Popunder here:
+    if (!allowed) return undefined
+    // Google AdSense is loaded only after advertising consent. Do not enable Adsterra Popunder here:
     // Google's publisher policies prohibit AdSense on sites that contain or trigger pop-unders.
     // Keep the non-popunder Social Bar format; only add formats after policy compatibility is verified.
     const scripts = [
@@ -144,14 +150,15 @@ export function AdsterraGlobalFormats() {
       added.push(script)
     }
     return () => {
-      // Keep global-format scripts alive for the browser session. Removing the
-      // element does not reliably undo listeners already registered by a provider.
+      added.forEach(script => script.remove())
     }
-  }, [])
+  }, [allowed])
   return null
 }
 
 export function AdsterraSmartlink() {
+  const allowed = useAdvertisingConsent()
+  if (!allowed) return null
   return <section aria-label="Sponsored link" style={{ ...shellStyle, maxWidth: 760, alignItems: 'flex-start', padding: 16 }}>
     <AdLabel />
     <p style={{ margin: 0, color: '#475569', lineHeight: 1.5 }}>Sponsored link. Opening it takes you to an external advertiser destination.</p>
@@ -181,6 +188,8 @@ export function AdsterraResponsiveBanner() {
 }
 
 export function AdsterraTallBannerPair() {
+  const allowed = useAdvertisingConsent()
+  if (!allowed) return null
   return <section aria-label="Additional advertisements" style={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-start', gap: 24, flexWrap: 'wrap', margin: '32px auto', maxWidth: 520 }}>
     <AdsterraBannerZone name="160x300" maxWidth={190} />
     <AdsterraBannerZone name="160x600" maxWidth={190} />
