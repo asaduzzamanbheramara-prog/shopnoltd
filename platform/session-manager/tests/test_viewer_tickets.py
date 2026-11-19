@@ -1,10 +1,14 @@
 import os
+import tempfile
 import unittest
+import uuid
+from pathlib import Path
 from unittest.mock import patch
 
 os.environ.setdefault("DATABASE_URL", "sqlite:///./session-manager-viewer-tests.db")
 
 from app.services.url_policy import PublicURLPolicy
+from app.services.session_pool import pool
 from app.routers.viewer import (
     TICKET_TTL_SECONDS,
     _consume_ticket,
@@ -69,6 +73,29 @@ class BrowserURLPolicyTests(unittest.IsolatedAsyncioTestCase):
         public_record = [(2, 1, 6, "", ("1.1.1.1", 443))]
         with patch("app.services.url_policy.socket.getaddrinfo", return_value=public_record):
             self.assertTrue(await policy.is_allowed("https://public.example/"))
+
+
+class BrowserDownloadStorageTests(unittest.TestCase):
+    def test_download_listing_and_retrieval_stay_inside_profile_storage(self):
+        with tempfile.TemporaryDirectory() as root:
+            download_dir = Path(root) / "downloads"
+            download_dir.mkdir()
+            download_id = str(uuid.uuid4())
+            saved_file = download_dir / f"{download_id}__report.pdf"
+            saved_file.write_bytes(b"safe test content")
+
+            entries = pool.list_downloads(root)
+            self.assertEqual(len(entries), 1)
+            self.assertEqual(entries[0]["id"], download_id)
+            self.assertEqual(entries[0]["filename"], "report.pdf")
+            path, filename = pool.get_download(root, download_id)
+            self.assertEqual(path, saved_file.resolve())
+            self.assertEqual(filename, "report.pdf")
+
+    def test_download_id_cannot_escape_profile_storage(self):
+        with tempfile.TemporaryDirectory() as root:
+            with self.assertRaises(FileNotFoundError):
+                pool.get_download(root, "../../etc/passwd")
 
 
 if __name__ == "__main__":
