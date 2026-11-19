@@ -459,7 +459,7 @@ async def call_tool(claims: dict, ui: WebSocket, name: str, args: dict, mode: st
             needs_approval = mode == "manual" or action in ALWAYS_APPROVE_BROWSER
             if mode == "hybrid" and action in BROWSER_MUTATING:
                 needs_approval = True
-            if needs_approval and action not in {"get_text", "screenshot", "scroll", "wait_for"}:
+            if needs_approval and action not in {"get_text", "screenshot", "wait_for"}:
                 if not await ask_approval(ui, name, clean):
                     return "user denied this action"
             return await browser_action(user, ui, clean)
