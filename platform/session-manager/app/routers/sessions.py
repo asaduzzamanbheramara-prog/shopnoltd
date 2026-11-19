@@ -22,7 +22,7 @@ async def launch_session(payload: SessionLaunchRequest, user=Depends(require_use
     result = await pool.get_or_launch(profile_id=str(profile.id), user_data_dir=str(profile_path), target_url=payload.target_url, proxy=profile.proxy)
     profile.last_used_at = datetime.utcnow()
     db.commit()
-    return SessionLaunchResponse(profile_id=profile.id, status=result["status"], message="Browser session launched. Live viewing is disabled until an authenticated viewer is available.")
+    return SessionLaunchResponse(profile_id=profile.id, status=result["status"], message="Browser session launched. Request a short-lived owner-bound viewer ticket to open the live browser.")
 
 @router.post("/{profile_id}/close")
 async def close_session(profile_id: str, user=Depends(require_user), db: Session = Depends(get_db)):
