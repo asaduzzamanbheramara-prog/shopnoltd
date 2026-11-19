@@ -1,11 +1,11 @@
 import { useEffect } from 'react'
 import { ensureGoogleAnalyticsConfigured, getConsentPreferences } from '../lib/analytics'
-import { useGoogleTagConsent } from '../lib/useAdvertisingConsent'
+import { useAnalyticsConsent } from '../lib/useAdvertisingConsent'
 
 const MEASUREMENT_ID = 'G-JMMVDQQ08Z'
 
 export default function GoogleTagLoader() {
-  const allowed = useGoogleTagConsent()
+  const allowed = useAnalyticsConsent()
 
   useEffect(() => {
     const selector = 'script[data-shopnoltd-gtag="true"]'

@@ -224,3 +224,44 @@ test('Agent mode stays inside mobile and desktop viewports with long model label
       .toBeLessThanOrEqual(dimensions.viewport + 2)
   }
 })
+
+
+test('GA4 script requires analytics consent while GTM follows either optional consent', async ({ page }) => {
+  await page.goto(baseURL, { waitUntil: 'domcontentloaded' })
+  await expect(page.getByRole('dialog', { name: 'Privacy & cookie preferences' })).toBeVisible()
+  await expect(page.locator('script[src*="googletagmanager.com/gtag/js"]')).toHaveCount(0)
+  await expect(page.locator('script[src*="googletagmanager.com/gtm.js"]')).toHaveCount(0)
+
+  await page.getByRole('button', { name: 'Customize', exact: true }).click()
+  await page.getByRole('checkbox', { name: 'Allow analytics' }).check()
+  await page.getByRole('checkbox', { name: 'Allow advertising' }).uncheck()
+  await page.getByRole('button', { name: 'Save my choices', exact: true }).click()
+
+  await expect(page.locator('script[data-shopnoltd-gtag="true"]')).toHaveCount(1)
+  await expect(page.locator('script[data-shopnoltd-gtm="true"]')).toHaveCount(1)
+  await expect.poll(() => page.evaluate(() => window.__shopnoltdGaConfigured === true)).toBe(true)
+
+  const beforeNavigation = await page.evaluate(() => window.dataLayer.filter(
+    item => item && item[0] === 'event' && item[1] === 'page_view',
+  ).length)
+  await page.getByRole('link', { name: 'About', exact: true }).click()
+  await expect(page).toHaveURL(/\/about$/)
+  await expect.poll(() => page.evaluate(() => window.dataLayer.filter(
+    item => item && item[0] === 'event' && item[1] === 'page_view',
+  ).length)).toBe(beforeNavigation + 1)
+})
+
+test('advertising-only consent does not load or configure the GA4 library', async ({ page }) => {
+  await page.goto(baseURL, { waitUntil: 'domcontentloaded' })
+  await page.getByRole('button', { name: 'Customize', exact: true }).click()
+  await page.getByRole('checkbox', { name: 'Allow analytics' }).uncheck()
+  await page.getByRole('checkbox', { name: 'Allow advertising' }).check()
+  await page.getByRole('button', { name: 'Save my choices', exact: true }).click()
+
+  await expect(page.locator('script[data-shopnoltd-gtm="true"]')).toHaveCount(1)
+  await expect(page.locator('script[src*="googletagmanager.com/gtag/js"]')).toHaveCount(0)
+  await expect.poll(() => page.evaluate(() => JSON.parse(
+    localStorage.getItem('shopno_consent_preferences') || 'null',
+  ))).toEqual({ analytics: false, advertising: true })
+  await expect.poll(() => page.evaluate(() => window.__shopnoltdGaConfigured === true)).toBe(false)
+})

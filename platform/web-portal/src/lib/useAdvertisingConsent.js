@@ -30,3 +30,15 @@ export function useGoogleTagConsent() {
 
   return allowed
 }
+
+export function useAnalyticsConsent() {
+  const [allowed, setAllowed] = useState(() => getConsentPreferences()?.analytics === true)
+
+  useEffect(() => {
+    const refresh = () => setAllowed(getConsentPreferences()?.analytics === true)
+    window.addEventListener('shopno:consent-updated', refresh)
+    return () => window.removeEventListener('shopno:consent-updated', refresh)
+  }, [])
+
+  return allowed
+}
