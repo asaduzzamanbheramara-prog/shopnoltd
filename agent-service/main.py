@@ -71,7 +71,7 @@ BROWSER_MUTATING = {"click", "type", "press", "select", "check", "uncheck", "sub
 ALWAYS_APPROVE_BROWSER = {"submit", "upload", "press"}
 READ_ONLY_BROWSER = {"get_text", "screenshot", "wait_for"}
 AGENT_MODES = {"auto", "manual", "hybrid"}
-SENSITIVE_TARGET_RE = re.compile(r"\b(delete|remove|submit|send|post|publish|like|follow|unfollow|share|comment|invite|accept|reject|confirm|continue|next|agree|purchase|buy|checkout|pay|transfer|withdraw|live|create|update|save|edit|upload|subscribe|unsubscribe|block|report|approve|authorize|consent|permission|password|email|phone|address|card|bank|otp|verification|security code|terms|sign in|log in|login|register|join|leave|activate|deactivate|grant|revoke|decline)\b", re.I)
+SENSITIVE_TARGET_RE = re.compile(r"\b(delete|remove|submit|send|post|publish|like|likes|follow|following|unfollow|share|comment|invite|accept|reject|confirm|continue|next|agree|purchase|buy|checkout|pay|transfer|withdraw|live|create|update|save|edit|add|adding|upload|subscribe|unsubscribe|block|report|approve|authorize|consent|permission|marketing|privacy|public|private|password|email|phone|address|card|bank|otp|verification|security code|terms|sign in|log in|login|register|join|leave|activate|deactivate|grant|revoke|decline)\b", re.I)
 _dns_policy_cache: dict[str, tuple[float, bool]] = {}
 _dns_policy_lock = asyncio.Lock()
 USER_RE = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
@@ -175,7 +175,8 @@ TOOLS = [
         "Actions: open|get_text|click|type|screenshot|scroll|wait_for|press|select|check|uncheck|submit|upload. " 
         "Use submit for explicit form submission and upload only for files in the user workspace.",
         {"action": {"type": "string", "enum": sorted(BROWSER_ACTIONS)},
-         "url": {"type": "string"}, "selector": {"type": "string"}, "text": {"type": "string"},\n         "value": {"type": "string"}, "key": {"type": "string"}, "path": {"type": "string"}}, ["action"]),
+         "url": {"type": "string"}, "selector": {"type": "string"}, "text": {"type": "string"},
+         "value": {"type": "string"}, "key": {"type": "string"}, "path": {"type": "string"}}, ["action"]),
 ]
 if ENABLE_SHELL:
     TOOLS.append(_fn("run_shell", "Run a shell command in the sandbox (admin only).", {"command": {"type": "string"}}, ["command"]))
@@ -351,7 +352,7 @@ async def browser_action_requires_approval(user: str, args: dict) -> bool:
     description = " ".join(str(value) for value in metadata.values())
     if metadata.get("type") in {"submit", "password", "file"}:
         return True
-    if action == "click" and metadata.get("tag") == "button" and not description.strip():
+    if action == "click" and metadata.get("tag") in {"button", "input"} and not any(metadata.get(key) for key in ("text", "aria", "title", "labels", "name", "id")):
         return True
     return bool(SENSITIVE_TARGET_RE.search(description))
 
@@ -730,7 +731,7 @@ async def run_task(claims: dict, sink: TaskSink, goal: str, model: str, catalog:
                     "manual": "MANUAL mode: ask for approval before every browser action that changes navigation or page state; read-only inspection can proceed.",
                 }[mode]
                 reply, active_model = await llm_with_failover(
-                    [{"role": "system", "content": SYSTEM + "\\n" + mode_policy}] + hist, model, active_model, catalog, failed_models, sink)
+                    [{"role": "system", "content": SYSTEM + "\n" + mode_policy}] + hist, model, active_model, catalog, failed_models, sink)
                 hist.append(reply)
                 if reply.get("content"): await sink.send_json({"type": "text", "text": reply["content"]})
                 calls = reply.get("tool_calls") or []
