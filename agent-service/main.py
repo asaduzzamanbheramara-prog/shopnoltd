@@ -383,13 +383,13 @@ async def browser_action(user: str, ui: WebSocket, args: dict) -> str:
         result = {"unchecked": True, "selector": args["selector"]}
     elif action == "submit":
         await page.locator(args["selector"]).first.evaluate("element => { if (element.tagName === 'FORM') element.requestSubmit(); else element.click(); }")
-        result = {"submitted": True, "selector": args["selector"], "url": page.url}
+        result = {"submission_requested": True, "selector": args["selector"], "url": page.url, "verification": "form submission was triggered; destination acceptance is not confirmed"}
     elif action == "upload":
         file_path = user_path(user, args["path"])
         if not os.path.isfile(file_path):
             raise ValueError("upload file not found in your workspace")
         await page.locator(args["selector"]).first.set_input_files(file_path, timeout=15000)
-        result = {"uploaded": os.path.basename(file_path), "selector": args["selector"]}
+        result = {"file_selected": os.path.basename(file_path), "selector": args["selector"], "verification": "file was selected in the browser; server-side upload is not confirmed"}
     elif action == "scroll":
         await page.evaluate("window.scrollBy(0, Math.max(300, window.innerHeight * 0.8))")
         result = {"scrolled": True, "url": page.url}
