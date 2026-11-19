@@ -85,7 +85,7 @@ class SessionPool:
 
             context = await self._playwright.chromium.launch_persistent_context(**launch_kwargs)
             await context.route("**/*", self._guard_request)
-            page = await context.new_page()
+            page = context.pages[0] if context.pages else await context.new_page()
             tab_id = self._remember_tab(profile_id, page)
             try:
                 await page.goto(target_url)
