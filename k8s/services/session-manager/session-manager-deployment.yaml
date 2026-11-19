@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
         - name: session-manager
-          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/session-manager:7710c740f1216c99388adc5641c1808a47793b0c
+          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/session-manager:6b13aab405e81f9bf1c97497bd6d9f9aad2f97e6
           imagePullPolicy: Always
           env:
             - name: DATABASE_URL
