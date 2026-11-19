@@ -118,6 +118,15 @@ export default function BrowserWorkspace() {
     } catch (err) { setError(err.message); setStatus('Unable to start this browser session.') } finally { setBusy(false) }
   }
 
+  async function refreshViewer() {
+    if (!activeProfile) return
+    setBusy(true); setError('')
+    try {
+      const ticket = await sessionRequest(`/api/sessions/${activeProfile.id}/viewer-ticket`, { method: 'POST' })
+      setViewerUrl(ticket.viewer_url)
+    } catch (err) { setError(err.message) } finally { setBusy(false) }
+  }
+
   async function closeBrowser() {
     if (!activeProfile) return
     setBusy(true); setError('')
@@ -154,7 +163,8 @@ export default function BrowserWorkspace() {
         <Lock size={17} color="#64748b" />
         <input aria-label="Browser address" value={targetUrl} onChange={(event) => setTargetUrl(event.target.value)} placeholder="Enter a website address" style={inputStyle} />
         <button disabled={busy || !activeProfile} type="submit" style={{ ...buttonStyle, background: '#0ea5e9', color: '#fff', borderColor: '#0ea5e9', opacity: busy || !activeProfile ? .55 : 1 }}><Globe size={15} /> {busy ? 'Working…' : 'Go'}</button>
-        <button disabled={busy || !viewerUrl} type="button" onClick={() => setViewerUrl((value) => value ? `${value.split('#')[0]}#${value.split('#')[1] || ''}` : '')} style={buttonStyle}><RefreshCw size={15} /> Refresh view</button>
+        <button disabled={busy || !viewerUrl} type="button" onClick={refreshViewer} style={buttonStyle}><RefreshCw size={15} /> Refresh view</button>
+        <button disabled={busy || !viewerUrl} type="button" onClick={() => window.open(viewerUrl, '_blank', 'noopener,noreferrer')} style={buttonStyle}>Open tab</button>
         <button disabled={busy || !viewerUrl} type="button" onClick={closeBrowser} style={buttonStyle}><X size={15} /> Close</button>
       </form>
 
