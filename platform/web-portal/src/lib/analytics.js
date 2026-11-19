@@ -39,25 +39,71 @@ function osName() {
   return 'Other'
 }
 
-function consentAllowed() {
+const CONSENT_KEY = 'shopno_consent_preferences'
+
+export function getConsentPreferences() {
   try {
-    const value = localStorage.getItem('shopno_analytics_consent')
-    return value !== 'denied'
+    const raw = localStorage.getItem(CONSENT_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    return {
+      analytics: parsed?.analytics === true,
+      advertising: parsed?.advertising === true,
+    }
   } catch {
-    return true
+    return null
   }
 }
 
-export function setAnalyticsConsent(value) {
-  try { localStorage.setItem('shopno_analytics_consent', value ? 'granted' : 'denied') } catch {}
-  if (typeof window.gtag === 'function') {
-    window.gtag('consent', 'update', { analytics_storage: value ? 'granted' : 'denied' })
+function consentAllowed() {
+  return getConsentPreferences()?.analytics === true
+}
+
+export function hasAdvertisingConsent() {
+  return getConsentPreferences()?.advertising === true
+}
+
+export function ensureGoogleAnalyticsConfigured() {
+  if (typeof window.gtag !== 'function' || window.__shopnoltdGaConfigured) return
+  window.gtag('config', 'G-JMMVDQQ08Z', { send_page_view: false })
+  window.__shopnoltdGaConfigured = true
+}
+
+export function setConsentPreferences(preferences = {}) {
+  const normalized = {
+    analytics: preferences.analytics === true,
+    advertising: preferences.advertising === true,
   }
+
+  try {
+    localStorage.setItem(CONSENT_KEY, JSON.stringify(normalized))
+    localStorage.setItem('shopno_analytics_consent', normalized.analytics ? 'granted' : 'denied')
+  } catch {}
+
+  if (typeof window.gtag === 'function') {
+    const granted = value => value ? 'granted' : 'denied'
+    window.gtag('consent', 'update', {
+      analytics_storage: granted(normalized.analytics),
+      ad_storage: granted(normalized.advertising),
+      ad_user_data: granted(normalized.advertising),
+      ad_personalization: granted(normalized.advertising),
+    })
+  }
+
+  if (normalized.analytics) ensureGoogleAnalyticsConfigured()
+  window.dispatchEvent(new Event('shopno:consent-updated'))
+  if (normalized.analytics) trackPageView(window.location.pathname + window.location.search)
+}
+
+export function setAnalyticsConsent(value) {
+  const current = getConsentPreferences() || { analytics: false, advertising: false }
+  setConsentPreferences({ ...current, analytics: Boolean(value) })
 }
 
 export function trackPageView(path = window.location.pathname) {
   if (!consentAllowed()) return
-  // React Router owns navigation; disable GA automatic page_view to avoid duplicates.
+  // Configure only after explicit analytics consent; React Router owns page_view events.
+  ensureGoogleAnalyticsConfigured()
   if (typeof window.gtag === 'function') {
     window.gtag('event', 'page_view', { page_path: path, page_location: window.location.href, page_title: document.title || 'Shopnoltd' })
   }

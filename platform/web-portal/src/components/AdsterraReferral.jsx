@@ -1,6 +1,10 @@
+import { useAdvertisingConsent } from '../lib/useAdvertisingConsent'
+
 const REFERRAL_URL = 'https://beta.publishers.adsterra.com/referral/R3sEyBaL51'
 
 export default function AdsterraReferral() {
+  const allowed = useAdvertisingConsent()
+  if (!allowed) return null
   return (
     <section
       aria-labelledby="adsterra-referral-title"

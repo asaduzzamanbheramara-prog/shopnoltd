@@ -15,7 +15,7 @@ const sections = [
   },
   {
     title: '4. Cookies, analytics, and advertising',
-    body: 'Shopnoltd may use essential cookies or similar technologies for authentication, security, preferences, and service functionality. We may also use privacy-conscious analytics to understand aggregate site usage and improve the service. If advertising is enabled, Google AdSense and related advertising technologies may process information according to applicable consent choices and Google policies. Where required, Shopnoltd uses consent controls for users in the EEA, UK, and Switzerland. You can manage applicable consent choices through the consent message and privacy/cookie controls provided on the site.'
+    body: 'Shopnoltd uses essential storage for authentication, security, preferences, and service functionality. Optional analytics and advertising are controlled separately through Shopnoltd privacy settings; site-controlled analytics and advertising tags are held back until the relevant choice is saved. Third-party advertising providers may process information under their own policies. Some providers and regions require additional certified consent frameworks; this preference interface alone is not a guarantee of compliance with every local law or advertising-provider requirement. You can reopen and change your choices at any time through Privacy settings.'
   },
   {
     title: '5. Service providers and sharing',
