@@ -53,5 +53,14 @@ class SessionLaunchRequest(BaseModel):
 class SessionLaunchResponse(BaseModel):
     profile_id: UUID
     status: str
+    tab_id: str | None = None
     debug_ws_endpoint: str | None = None
     message: str | None = None
+
+
+class TabOpenRequest(BaseModel):
+    target_url: str = "about:blank"
+
+
+class TabNavigateRequest(BaseModel):
+    target_url: str
