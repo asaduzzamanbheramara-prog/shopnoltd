@@ -5,6 +5,7 @@ from app.auth import require_user
 from app.models.db import Profile, get_db
 from app.models.schemas import SessionLaunchRequest, SessionLaunchResponse
 from app.services.session_pool import pool
+from app.routers.viewer import revoke_profile_viewers
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
@@ -30,6 +31,7 @@ async def close_session(profile_id: str, user=Depends(require_user), db: Session
         raise HTTPException(404, "Profile not found")
     if not await pool.close(profile_id):
         raise HTTPException(404, "No active session for this profile")
+    revoke_profile_viewers(profile_id)
     return {"closed": True}
 
 @router.get("/active")
