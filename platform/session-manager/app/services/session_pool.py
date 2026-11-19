@@ -3,6 +3,7 @@ Keeps one persistent Playwright context per profile. The service is deliberately
 single-replica; profile tabs and viewer sessions are local to this process.
 """
 import asyncio
+import logging
 import re
 import uuid
 from datetime import datetime
@@ -12,6 +13,8 @@ from playwright.async_api import BrowserContext, Page, Route, Download, async_pl
 
 from app.services.crypto import decrypt_secret
 from app.services.url_policy import PublicURLPolicy
+
+logger = logging.getLogger(__name__)
 
 
 class SessionPool:
@@ -54,7 +57,15 @@ class SessionPool:
             task = asyncio.create_task(save_download(download))
             tasks = self._download_tasks.setdefault(profile_id, set())
             tasks.add(task)
-            task.add_done_callback(lambda finished: tasks.discard(finished))
+            def finish_download(finished: asyncio.Task):
+                tasks.discard(finished)
+                if finished.cancelled():
+                    return
+                error = finished.exception()
+                if error is not None:
+                    logger.warning("Browser download save failed (%s)", type(error).__name__)
+
+            task.add_done_callback(finish_download)
 
         page.on("download", on_download)
 
