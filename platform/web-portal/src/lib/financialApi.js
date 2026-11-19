@@ -193,6 +193,10 @@ export function getPaymentGateways() {
   return authenticatedRequest('/api/v1/billing/gateways')
 }
 
+export function getDeposit(transactionId) {
+  return authenticatedRequest('/api/v1/deposits/' + encodeURIComponent(String(transactionId)))
+}
+
 export function createCheckout({ gateway, amount, currency, reference, customer_phone, customer_email, customer_name, idempotency_key }) {
   const key = idempotency_key || (reference ? `checkout:${String(reference).slice(0, 112)}` : crypto.randomUUID())
   return authenticatedRequest('/api/v1/deposits', {

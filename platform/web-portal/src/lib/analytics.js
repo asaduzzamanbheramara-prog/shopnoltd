@@ -100,6 +100,52 @@ export function setAnalyticsConsent(value) {
   setConsentPreferences({ ...current, analytics: Boolean(value) })
 }
 
+
+const SAFE_EVENT_PARAM_KEYS = new Set([
+  'method', 'currency', 'value', 'transaction_id', 'items', 'item_id', 'item_name', 'item_category',
+  'quantity', 'coupon', 'shipping', 'tax', 'payment_type', 'content_type',
+  'content_id', 'search_term', 'years',
+])
+
+function safeEventParams(params = {}) {
+  const output = {}
+  for (const [key, value] of Object.entries(params || {})) {
+    if (!SAFE_EVENT_PARAM_KEYS.has(key)) continue
+    if (key === 'items' && Array.isArray(value)) {
+      output.items = value.slice(0, 10).map(item => {
+        const safe = {}
+        for (const [itemKey, itemValue] of Object.entries(item || {})) {
+          if (!['item_id', 'item_name', 'item_category', 'quantity', 'price'].includes(itemKey)) continue
+          if (typeof itemValue === 'string' || (typeof itemValue === 'number' && Number.isFinite(itemValue))) safe[itemKey] = itemValue
+        }
+        return safe
+      })
+      continue
+    }
+    if (typeof value === 'string' && value.length <= 100) output[key] = value
+    else if (typeof value === 'number' && Number.isFinite(value)) output[key] = value
+  }
+  return output
+}
+
+export function trackEvent(name, params = {}, options = {}) {
+  if (!consentAllowed() || typeof window.gtag !== 'function') return false
+  if (!/^[a-z][a-z0-9_]{0,39}$/.test(String(name))) return false
+
+  const dedupeKey = options?.dedupeKey
+  if (dedupeKey) {
+    const storageKey = 'shopno_ga_event_' + name + '_' + String(dedupeKey).slice(0, 100)
+    try {
+      if (sessionStorage.getItem(storageKey)) return false
+      sessionStorage.setItem(storageKey, '1')
+    } catch {}
+  }
+
+  ensureGoogleAnalyticsConfigured()
+  window.gtag('event', name, safeEventParams(params))
+  return true
+}
+
 export function trackPageView(path = window.location.pathname) {
   if (!consentAllowed()) return
   // Configure only after explicit analytics consent; React Router owns page_view events.

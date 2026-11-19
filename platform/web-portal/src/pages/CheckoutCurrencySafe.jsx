@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { createCheckout, getExchangeRate, getPaymentGateways } from '../lib/financialApi'
+import { trackEvent } from '../lib/analytics'
 
 const PLAN_PRICES_USD = { free: 0, starter: 9, pro: 29, business: 99, enterprise: 299 }
 const PLAN_NAMES = { free: 'Free', starter: 'Starter', pro: 'Pro', business: 'Business', enterprise: 'Enterprise' }
@@ -119,6 +120,22 @@ export default function CheckoutCurrencySafe() {
         customer_phone: phone || undefined,
       })
       setResult(data)
+      if (data?.id) {
+        try {
+          sessionStorage.setItem('shopno_pending_checkout', JSON.stringify({
+            transaction_id: String(data.id),
+            plan,
+            currency,
+            value: numeric,
+            gateway,
+          }))
+        } catch {}
+      }
+      trackEvent('begin_checkout', {
+        currency,
+        value: numeric,
+        items: [{ item_id: plan, item_name: PLAN_NAMES[plan], quantity: 1, price: numeric }],
+      }, { dedupeKey: data?.id || data?.deposit_id || data?.reference || (plan + ':' + currency + ':' + numeric) })
       const redirect = data?.redirect_url || data?.checkout_url
       if (redirect) window.location.assign(redirect)
     } catch (e) {

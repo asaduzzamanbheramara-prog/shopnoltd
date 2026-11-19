@@ -8,6 +8,8 @@ const PROVIDERS = [
 ].filter((provider) => SOCIAL_LOGIN_PROVIDERS[provider.id])
 
 async function startSocialSignup(provider) {
+  sessionStorage.setItem('shopno_auth_intent', 'sign_up')
+  sessionStorage.setItem('shopno_auth_method', provider)
   const verifier = randomString(64)
   const challenge = await codeChallengeFor(verifier)
   const state = randomString(32)
@@ -54,6 +56,8 @@ async function startSocialSignup(provider) {
 }
 
 async function startLocalSignup() {
+  sessionStorage.setItem('shopno_auth_intent', 'sign_up')
+  sessionStorage.setItem('shopno_auth_method', 'shopnoltd')
   const searchParams = new URLSearchParams(window.location.search)
   const incomingReferral = searchParams.get('ref')
   const incomingProfileCategory = searchParams.get('category')
