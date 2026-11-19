@@ -312,5 +312,38 @@ class BrowserURLPolicyTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(main.clean_browser_args({"action": "press", "selector": "body", "key": "Enter"})["key"], "Enter")
 
 
+class SmartScrapeTests(unittest.IsolatedAsyncioTestCase):
+    def test_html_parser_extracts_readable_text_and_links_without_scripts(self):
+        parser = main._ScrapeParser()
+        parser.feed(
+            '<html><head><title>Shopnoltd demo</title><script>stealSecrets()</script></head>'
+            '<body><h1>Welcome</h1><p>Hello <a href="/docs">Docs</a></p>'
+            '<style>.hidden{display:none}</style></body></html>'
+        )
+        title, text, links = parser.result("https://example.com/start")
+        self.assertEqual(title, "Shopnoltd demo")
+        self.assertIn("Welcome", text)
+        self.assertIn("Hello", text)
+        self.assertNotIn("stealSecrets", text)
+        self.assertEqual(links[0]["url"], "https://example.com/docs")
+        self.assertEqual(links[0]["text"], "Docs")
+
+    async def test_smart_scrape_rejects_private_destinations_before_network_access(self):
+        with self.assertRaises(ValueError):
+            await main.smart_scrape(
+                "user-a", mock.AsyncMock(),
+                {"url": "http://127.0.0.1:8080/admin", "format": "markdown"},
+                "auto",
+            )
+
+    async def test_smart_scrape_rejects_unsupported_output_formats(self):
+        with self.assertRaises(ValueError):
+            await main.smart_scrape(
+                "user-a", mock.AsyncMock(),
+                {"url": "https://example.com/", "format": "pdf"},
+                "auto",
+            )
+
+
 if __name__ == "__main__":
     unittest.main()
