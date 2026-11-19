@@ -56,8 +56,9 @@ function createWindow() {
 
   // Every download requires a user-selected destination; never silently write files.
   mainWindow.webContents.session.on('will-download', async (event, item) => {
+    item.pause();
     const { canceled, filePath } = await dialog.showSaveDialog(mainWindow, {
-      defaultPath: path.join(app.getPath('downloads'), item.getFilename()),
+      defaultPath: path.join(app.getPath('downloads'), path.basename(item.getFilename())),
       title: 'Save download',
     });
     if (canceled || !filePath) {
@@ -65,6 +66,7 @@ function createWindow() {
       return;
     }
     item.setSavePath(filePath);
+    item.resume();
   });
 
   Menu.setApplicationMenu(buildMenu());
