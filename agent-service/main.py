@@ -19,6 +19,8 @@ UI protocol (client -> server):
   {"goal":"...","model":"claude-sonnet"}   start a task
 """
 import asyncio, base64, ipaddress, json, os, re, socket, time, uuid
+from html.parser import HTMLParser
+from urllib.parse import urljoin
 from collections import deque
 from urllib.parse import urlparse
 import httpx
@@ -171,6 +173,7 @@ TOOLS = [
     _fn("write_file", "Write a file in the workspace.", {"path": {"type": "string"}, "content": {"type": "string"}}, ["path", "content"]),
     _fn("read_file", "Read a file from the workspace.", {"path": {"type": "string"}}, ["path"]),
     _fn("list_files", "List files in the workspace (optionally under a folder).", {"path": {"type": "string"}}, []),
+    _fn("smart_scrape", "Read-only self-hosted Smart Scrape: try safe public HTTP fetch first, then use the isolated browser only for JavaScript-rendered pages. Never bypass access controls or CAPTCHA.", {"type": "object", "properties": {"url": {"type": "string"}, "format": {"type": "string", "enum": ["markdown", "text", "html", "links"]}}, "required": ["url"]}),
     _fn("browser_action", "Control the user's isolated Chromium browser session. Start with action=open. "
         "Actions: open|get_text|click|type|screenshot|scroll|wait_for|press|select|check|uncheck|submit|upload. " 
         "Use submit for explicit form submission and upload only for files in the user workspace.",
