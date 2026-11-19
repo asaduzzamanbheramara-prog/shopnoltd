@@ -75,6 +75,8 @@ jobs:
           done
           echo "npm ci failed after 3 attempts"
           exit 1
+      - name: Test desktop shell and main-process syntax
+        run: npm test && node --check src/main.js
       - name: Select desktop application configuration
         run: node scripts/select-config.js ${{ matrix.app_config }}
       - name: Package Shopnoltd desktop application
@@ -191,6 +193,8 @@ jobs:
           cache-dependency-path: apps/desktop-shell/package-lock.json
       - name: Install dependencies
         run: npm ci
+      - name: Test Browser shell and main-process syntax
+        run: npm test && node --check src/main.js
       - name: Select Browser configuration
         run: node scripts/select-config.js browser
       - name: Package Shopnoltd Browser
