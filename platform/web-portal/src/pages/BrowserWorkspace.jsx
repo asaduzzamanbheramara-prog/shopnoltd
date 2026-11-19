@@ -88,6 +88,7 @@ export default function BrowserWorkspace() {
     setTabs([])
     setActiveTabId('')
     setViewerUrl('')
+    setSessionActive(false)
     if (!activeId) return () => { mounted = false }
     Promise.all([
       sessionRequest(`/api/sessions/${activeId}/tabs`),
@@ -229,7 +230,7 @@ export default function BrowserWorkspace() {
       await sessionRequest(`/api/profiles/${activeProfile.id}`, { method: 'DELETE' })
       setProfiles((current) => current.filter((profile) => profile.id !== activeProfile.id))
       setActiveId('')
-      setTabs([]); setActiveTabId(''); setViewerUrl('')
+      setTabs([]); setActiveTabId(''); setViewerUrl(''); setSessionActive(false)
       setStatus('Profile and its browser storage deleted.')
     } catch (err) { setError(err.message) } finally { setBusy(false) }
   }
