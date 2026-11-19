@@ -503,6 +503,155 @@ async def browser_action(user: str, ui: WebSocket, args: dict) -> str:
     return json.dumps(result)[:8000]
 
 
+
+class _ScrapeParser(HTMLParser):
+    SKIP_TAGS = {"script", "style", "noscript", "svg"}
+
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.skip_depth = 0
+        self.in_title = False
+        self.current_link = None
+        self.text_parts = []
+        self.title_parts = []
+        self.links = []
+
+    def handle_starttag(self, tag, attrs):
+        if tag in self.SKIP_TAGS:
+            self.skip_depth += 1
+            return
+        if self.skip_depth:
+            return
+        if tag == "title":
+            self.in_title = True
+        if tag == "a":
+            href = dict(attrs).get("href")
+            self.current_link = {"href": href, "text": []}
+        if tag in {"p", "div", "br", "li", "h1", "h2", "h3", "tr"}:
+            self.text_parts.append("\\n")
+
+    def handle_endtag(self, tag):
+        if tag in self.SKIP_TAGS and self.skip_depth:
+            self.skip_depth -= 1
+            return
+        if self.skip_depth:
+            return
+        if tag == "title":
+            self.in_title = False
+        if tag == "a" and self.current_link:
+            self.links.append(self.current_link)
+            self.current_link = None
+        if tag in {"p", "div", "li", "h1", "h2", "h3", "tr"}:
+            self.text_parts.append("\\n")
+
+    def handle_data(self, data):
+        if self.skip_depth:
+            return
+        self.text_parts.append(data)
+        if self.in_title:
+            self.title_parts.append(data)
+        if self.current_link is not None:
+            self.current_link["text"].append(data)
+
+    def result(self, base_url: str):
+        text = re.sub(r"[ \\t]+", " ", "".join(self.text_parts))
+        text = re.sub(r"\\n[ \\n]+", "\\n", text).strip()
+        links = []
+        for item in self.links[:100]:
+            href = item.get("href")
+            if not href:
+                continue
+            absolute = urljoin(base_url, href)
+            if urlparse(absolute).scheme not in {"http", "https"}:
+                continue
+            links.append({"text": " ".join(item["text"]).strip()[:200], "url": absolute[:2000]})
+        return " ".join(self.title_parts).strip()[:300], text[:12000], links
+
+
+async def smart_scrape(user: str, ui: WebSocket, args: dict, mode: str) -> str:
+    url = validate_public_http_url(str(args.get("url", ""))[:2000])
+    if not await _is_public_browser_url(url):
+        raise ValueError("Smart Scrape blocks private or local destinations.")
+    output_format = str(args.get("format") or "markdown").lower()
+    if output_format not in {"markdown", "text", "html", "links"}:
+        raise ValueError("unsupported Smart Scrape format")
+
+    current_url = url
+    status_code = 0
+    content_type = ""
+    body = b""
+    async with httpx.AsyncClient(timeout=20, follow_redirects=False, headers={
+        "User-Agent": "Shopnoltd-SmartScrape/1.0 (+https://shopnoltd.dpdns.org)"
+    }) as client:
+        for _ in range(6):
+            if not await _is_public_browser_url(current_url):
+                raise ValueError("Redirect to a private or local destination was blocked.")
+            async with client.stream("GET", current_url) as response:
+                status_code = response.status_code
+                if status_code in {301, 302, 303, 307, 308}:
+                    location = response.headers.get("location")
+                    if not location:
+                        break
+                    current_url = urljoin(current_url, location)
+                    continue
+                content_type = response.headers.get("content-type", "").lower()
+                if status_code in {401, 403, 407, 429, 451}:
+                    return f"Smart Scrape stopped: destination returned HTTP {status_code}. No proxy, CAPTCHA solving, or access-control bypass was attempted."
+                if status_code >= 400:
+                    return f"Smart Scrape failed with HTTP {status_code}."
+                chunks = []
+                total = 0
+                async for chunk in response.aiter_bytes():
+                    remaining = 2 * 1024 * 1024 - total
+                    if remaining <= 0:
+                        break
+                    chunks.append(chunk[:remaining])
+                    total += min(len(chunk), remaining)
+                    if total >= 2 * 1024 * 1024:
+                        break
+                body = b"".join(chunks)
+                encoding = response.encoding or "utf-8"
+                break
+        else:
+            return "Smart Scrape stopped after too many redirects."
+
+    raw = body.decode(encoding, errors="replace")
+    if re.search(r"(?i)(captcha|verify you are human|access denied|cf-chl-|challenge-platform)", raw[:200000]):
+        return "The destination requires verification or blocks automated access. Shopnoltd did not attempt CAPTCHA solving or bypass."
+
+    is_html = "text/html" in content_type or "<html" in raw[:1000].lower()
+    if is_html:
+        parser = _ScrapeParser()
+        parser.feed(raw)
+        title, extracted_text, links = parser.result(current_url)
+    else:
+        title, extracted_text, links = "", raw[:12000], []
+
+    # Safe cascade: HTTP first, then the Shopnoltd-owned browser only for JS-heavy pages.
+    needs_browser = is_html and len(extracted_text) < 120 and bool(re.search(r"(?i)<script|__next_data__|webpack|vite", raw[:200000]))
+    source = "http"
+    if needs_browser:
+        if mode == "manual" and not await ask_approval(ui, "smart_scrape_browser_fallback", {"url": current_url}):
+            return "User denied the browser fallback; HTTP-only scrape result is empty."
+        await browser_action(user, ui, {"action": "open", "url": current_url})
+        browser_result = await browser_action(user, ui, {"action": "get_text"})
+        try:
+            browser_payload = json.loads(browser_result)
+            extracted_text = str(browser_payload.get("text") or "")[:12000]
+            title = str(browser_payload.get("title") or title)
+            source = "self-hosted-browser"
+        except Exception:
+            return "HTTP scrape returned little content and the browser fallback did not produce readable text."
+
+    if output_format == "html":
+        return f"URL: {current_url}\\nHTTP: {status_code}\\n<untrusted_web_content>\\n{raw[:12000]}\\n</untrusted_web_content>"
+    if output_format == "links":
+        return json.dumps({"url": current_url, "source": source, "links": links}, ensure_ascii=False)[:12000]
+    if output_format == "text":
+        return f"URL: {current_url}\\nTitle: {title}\\nSource: {source}\\n<untrusted_web_content>\\n{extracted_text}\\n</untrusted_web_content>"[:12000]
+    link_lines = "\\n".join(f"- [{item['text'] or item['url']}]({item['url']})" for item in links[:50])
+    return f"# {title or current_url}\\nSource: {source} · HTTP {status_code}\\n\\n<untrusted_web_content>\\n{extracted_text}\\n</untrusted_web_content>\\n\\n## Links\\n{link_lines}"[:12000]
+
 async def call_tool(claims: dict, ui: WebSocket, name: str, args: dict, mode: str = "manual") -> str:
     if mode not in AGENT_MODES:
         return "invalid execution mode"
@@ -554,6 +703,8 @@ async def call_tool(claims: dict, ui: WebSocket, name: str, args: dict, mode: st
             async def report_manus_progress(event: dict):
                 await ui.send_json(event)
             return await create_manus_task(goal, report_manus_progress)
+        if name == "smart_scrape":
+            return await smart_scrape(user, ui, args, mode)
         if name == "browser_action":
             clean = clean_browser_args(args)
             action = clean["action"]
