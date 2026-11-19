@@ -249,10 +249,10 @@ export default function BrowserWorkspace() {
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, overflowX: 'auto', padding: '7px 10px', background: '#e2e8f0', borderBottom: '1px solid #cbd5e1' }}>
         {tabs.map((tab) => (
-          <button key={tab.id} type="button" onClick={() => selectTab(tab)} disabled={busy} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, maxWidth: 240, minWidth: 120, border: activeTabId === tab.id ? '1px solid #0ea5e9' : '1px solid #cbd5e1', borderRadius: 9, padding: '7px 9px', background: activeTabId === tab.id ? '#fff' : '#f8fafc', cursor: 'pointer', color: '#0f172a' }}>
-            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, textAlign: 'left' }}>{tab.title || tab.url || 'New tab'}</span>
-            <span role="button" aria-label="Close browser tab" onClick={(event) => closeTab(tab, event)} style={{ fontWeight: 700, color: '#64748b' }}>×</span>
-          </button>
+          <div key={tab.id} style={{ display: 'inline-flex', alignItems: 'center', maxWidth: 240, minWidth: 120, border: activeTabId === tab.id ? '1px solid #0ea5e9' : '1px solid #cbd5e1', borderRadius: 9, background: activeTabId === tab.id ? '#fff' : '#f8fafc' }}>
+            <button type="button" onClick={() => selectTab(tab)} disabled={busy} style={{ minWidth: 0, flex: 1, border: 0, background: 'transparent', padding: '7px 9px', cursor: 'pointer', color: '#0f172a', textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tab.title || tab.url || 'New tab'}</button>
+            <button type="button" aria-label="Close browser tab" onClick={(event) => closeTab(tab, event)} disabled={busy} style={{ border: 0, background: 'transparent', padding: '6px 8px', cursor: 'pointer', color: '#64748b', fontWeight: 700 }}>×</button>
+          </div>
         ))}
         {!tabs.length && <span style={{ color: '#64748b', fontSize: 12, padding: '4px 6px' }}>No active browser tabs</span>}
       </div>
