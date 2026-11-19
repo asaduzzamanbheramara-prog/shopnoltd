@@ -42,7 +42,9 @@ async def delete_profile(profile_id: str, user=Depends(require_user), db: Sessio
         revoke_profile_viewers(profile_id)
         storage_root = Path(os.getenv("PROFILE_STORAGE_ROOT", "/data")).resolve()
         profile_path = (storage_root / profile.user_data_dir).resolve()
-        if profile_path != storage_root and storage_root in profile_path.parents and profile_path.exists():
+        if profile_path == storage_root or storage_root not in profile_path.parents:
+            raise HTTPException(409, "Profile storage path is outside the managed data directory")
+        if profile_path.exists():
             shutil.rmtree(profile_path)
         db.delete(profile)
         db.commit()
