@@ -567,6 +567,8 @@ async def call_tool(claims: dict, ui: WebSocket, name: str, args: dict, mode: st
 
 
 async def llm(messages: list, model: str) -> dict:
+    if not LITELLM_KEY:
+        raise RuntimeError("AI gateway is not configured: set LITELLM_KEY or LITELLM_MASTER_KEY.")
     async with httpx.AsyncClient(timeout=120) as c:
         r = await c.post(f"{LITELLM_URL}/chat/completions", headers={"Authorization": f"Bearer {LITELLM_KEY}"},
                          json={"model": model, "messages": messages, "tools": TOOLS})
@@ -576,6 +578,8 @@ async def llm(messages: list, model: str) -> dict:
 
 async def get_model_catalog(claims: dict) -> list[dict]:
     """Return active models from the authenticated AI catalog; free_tier is admin-controlled."""
+    if not LITELLM_KEY:
+        return []
     token = claims.get("_access_token")
     if not token:
         return []
