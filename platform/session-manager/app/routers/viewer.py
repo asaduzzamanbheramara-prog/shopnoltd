@@ -173,7 +173,7 @@ async def exchange_viewer_ticket(profile_id: str, request: Request):
         value=viewer_id,
         max_age=VIEWER_TTL_SECONDS,
         path=f"/viewer/{profile_uuid}/",
-        secure=request.url.scheme == "https",
+        secure=os.getenv("SESSION_MANAGER_COOKIE_SECURE", "true").lower() == "true",
         httponly=True,
         samesite="strict",
     )
