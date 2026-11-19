@@ -1,4 +1,5 @@
 import httpx
+from fastapi import HTTPException
 from shopno_core.security.jwt import JWTError, jwt
 
 from app.core.config import settings
@@ -63,6 +64,21 @@ async def require_roles(token: str, allowed: set) -> dict:
     if not (_roles(u) & allowed):
         raise PermissionError(f"requires one of: {sorted(allowed)}")
     return u
+
+
+async def require_tenant_owner_access(token: str, tenant_id: str) -> dict:
+    """Require a platform administrator or owner of the requested tenant.
+
+    Customer role is intentionally excluded from tenant-wide management and
+    listing endpoints; customers must use self-scoped resource endpoints.
+    """
+    u = await verify_token(token)
+    roles = _roles(u)
+    if "platform_admin" in roles or "admin" in roles:
+        return u
+    if "tenant_owner" in roles and u.get("tenant_id") == tenant_id:
+        return u
+    raise HTTPException(status_code=403, detail="tenant owner or platform admin required")
 
 
 async def require_tenant_access(token: str, tenant_id: str) -> dict:

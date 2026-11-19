@@ -62,6 +62,7 @@ import AffiliateOffers from './pages/AffiliateOffers'
 import AdNetwork from './pages/AdNetwork'
 import { trackPageView } from './lib/analytics'
 import ProfitOnContentAds from './components/ProfitOnContentAds'
+import { KEYCLOAK_CLIENT_ID, KEYCLOAK_REALM, KEYCLOAK_URL } from './config'
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
@@ -109,11 +110,18 @@ function Nav() {
   React.useEffect(() => { setMenuOpen(false) }, [location.pathname])
 
   function handleLogout() {
+    const idToken = localStorage.getItem('shopno_id_token')
     localStorage.removeItem('shopno_token')
     localStorage.removeItem('shopno_refresh_token')
+    localStorage.removeItem('shopno_id_token')
     sessionStorage.removeItem('shopno_profile_provisioned')
-    navigate('/')
     setMenuOpen(false)
+
+    const logoutUrl = new URL(`${KEYCLOAK_URL}/realms/${KEYCLOAK_REALM}/protocol/openid-connect/logout`)
+    logoutUrl.searchParams.set('client_id', KEYCLOAK_CLIENT_ID)
+    logoutUrl.searchParams.set('post_logout_redirect_uri', `${window.location.origin}/`)
+    if (idToken) logoutUrl.searchParams.set('id_token_hint', idToken)
+    window.location.assign(logoutUrl.toString())
   }
 
   function renderPublicLink(label, path) {

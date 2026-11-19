@@ -37,6 +37,8 @@ async function startLogin(provider = '') {
     redirect_uri: REDIRECT_URI,
     response_type: 'code',
     scope: 'openid profile email',
+    // Require fresh authentication on shared browsers instead of silently reusing the prior SSO user.
+    prompt: 'login',
     state,
     code_challenge: challenge,
     code_challenge_method: 'S256',

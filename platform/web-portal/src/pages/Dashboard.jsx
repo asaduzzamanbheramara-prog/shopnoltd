@@ -100,6 +100,7 @@ export default function Dashboard() {
       if (message === 'Your session has expired. Please log in again.') {
         localStorage.removeItem('shopno_token')
         localStorage.removeItem('shopno_refresh_token')
+        localStorage.removeItem('shopno_id_token')
         setError('Your session has expired. Please sign in again.')
       } else {
         setError(message)

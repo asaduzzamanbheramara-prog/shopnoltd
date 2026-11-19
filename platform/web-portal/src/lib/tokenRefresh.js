@@ -1,18 +1,27 @@
-import { KEYCLOAK_CLIENT_ID, KEYCLOAK_REALM, KEYCLOAK_URL } from '../config'
+import { KEYCLOAK_CLIENT_ID, KEYCLOAK_REALM, KEYCLOAK_URL } from '../config.js'
+import { isRefreshSessionCurrent } from './authSession.js'
 
 const TOKEN_URL = `${KEYCLOAK_URL}/realms/${KEYCLOAK_REALM}/protocol/openid-connect/token`
 
 // Keycloak refresh-token rotation means concurrent refresh requests can invalidate
 // each other. Keep one refresh request in flight and let all callers share it.
 let refreshPromise = null
+let refreshPromiseToken = null
 
 export async function tryRefresh() {
-  if (refreshPromise) return refreshPromise
+  const refreshToken = localStorage.getItem('shopno_refresh_token')
+  if (!refreshToken) return null
+  if (refreshPromise && refreshPromiseToken === refreshToken) return refreshPromise
 
-  refreshPromise = (async () => {
+  const requestRefreshToken = refreshToken
+  refreshPromiseToken = requestRefreshToken
+  const requestPromise = (async () => {
     try {
-      const refreshToken = localStorage.getItem('shopno_refresh_token')
-      if (!refreshToken) return null
+
+      // A refresh can finish after logout or after another user signs in on the
+      // same browser. Never let an older session overwrite the newer session.
+      const isStillCurrentSession = () =>
+        isRefreshSessionCurrent(refreshToken, localStorage.getItem('shopno_refresh_token'))
 
       const res = await fetch(TOKEN_URL, {
         method: 'POST',
@@ -29,13 +38,15 @@ export async function tryRefresh() {
         // A revoked/expired refresh token is terminal; clear stale local auth.
         // Preserve tokens on transient server/network errors so users can retry.
         if ((res.status === 400 || res.status === 401) &&
-            ['invalid_grant', 'invalid_token'].includes(data.error)) {
+            ['invalid_grant', 'invalid_token'].includes(data.error) &&
+            isStillCurrentSession()) {
           localStorage.removeItem('shopno_token')
           localStorage.removeItem('shopno_refresh_token')
+          localStorage.removeItem('shopno_id_token')
         }
         return null
       }
-      if (!data.access_token) return null
+      if (!data.access_token || !isStillCurrentSession()) return null
 
       localStorage.setItem('shopno_token', data.access_token)
 
@@ -44,16 +55,24 @@ export async function tryRefresh() {
       if (data.refresh_token) {
         localStorage.setItem('shopno_refresh_token', data.refresh_token)
       }
+      if (data.id_token) {
+        localStorage.setItem('shopno_id_token', data.id_token)
+      }
 
       return data.access_token
     } catch {
       return null
     } finally {
-      refreshPromise = null
+      // Do not clear a newer user's in-flight refresh promise.
+      if (refreshPromiseToken === requestRefreshToken) {
+        refreshPromise = null
+        refreshPromiseToken = null
+      }
     }
   })()
 
-  return refreshPromise
+  refreshPromise = requestPromise
+  return requestPromise
 }
 
 export function scheduleTokenRefresh() {
