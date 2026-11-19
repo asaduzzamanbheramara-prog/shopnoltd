@@ -30,6 +30,7 @@ on:
           - ai-platform
           - android-cloud-controller
           - android-cloud-gateway
+          - session-manager
 
 permissions:
   contents: write
