@@ -61,6 +61,7 @@ export default function BrowserWorkspace() {
   const [profileName, setProfileName] = useState('')
   const [purpose, setPurpose] = useState('qa')
   const [viewerUrl, setViewerUrl] = useState('')
+  const [sessionActive, setSessionActive] = useState(false)
   const [agentOpen, setAgentOpen] = useState(false)
   const [busy, setBusy] = useState(false)
   const [status, setStatus] = useState('Loading your private browser profiles…')
@@ -88,11 +89,15 @@ export default function BrowserWorkspace() {
     setActiveTabId('')
     setViewerUrl('')
     if (!activeId) return () => { mounted = false }
-    sessionRequest(`/api/sessions/${activeId}/tabs`)
-      .then((result) => {
+    Promise.all([
+      sessionRequest(`/api/sessions/${activeId}/tabs`),
+      sessionRequest('/api/sessions/active'),
+    ])
+      .then(([result, active]) => {
         if (!mounted) return
         const next = Array.isArray(result.tabs) ? result.tabs : []
         setTabs(next)
+        setSessionActive(Boolean(active && active[activeId]))
         setActiveTabId(next[0]?.id || '')
         setStatus(next.length ? 'Active browser session restored.' : 'Select a profile and press Go to launch its isolated browser.')
       })
@@ -149,6 +154,7 @@ export default function BrowserWorkspace() {
       }
       setTargetUrl(result.url || url)
       if (result.tab_id) setActiveTabId(result.tab_id)
+      setSessionActive(true)
       await refreshTabs(activeProfile.id)
       await refreshViewer(activeProfile.id)
       setStatus(`Connected to ${activeProfile.name}. Browser navigation is restricted to public HTTP(S) destinations.`)
@@ -164,6 +170,7 @@ export default function BrowserWorkspace() {
         method: 'POST', body: JSON.stringify({ target_url: url }),
       })
       await refreshTabs(activeProfile.id)
+      setSessionActive(true)
       setActiveTabId(tab.tab_id)
       setTargetUrl(tab.url || url)
       await refreshViewer(activeProfile.id)
@@ -210,7 +217,7 @@ export default function BrowserWorkspace() {
     setBusy(true); setError('')
     try {
       await sessionRequest(`/api/sessions/${activeProfile.id}/close`, { method: 'POST' })
-      setTabs([]); setActiveTabId(''); setViewerUrl('')
+      setTabs([]); setActiveTabId(''); setViewerUrl(''); setSessionActive(false)
       setStatus('Browser session closed and viewer access revoked.')
     } catch (err) { setError(err.message) } finally { setBusy(false) }
   }
@@ -241,10 +248,10 @@ export default function BrowserWorkspace() {
         <Lock size={17} color="#64748b" />
         <input aria-label="Browser address" value={targetUrl} onChange={(event) => setTargetUrl(event.target.value)} placeholder="Enter a website address" style={inputStyle} />
         <button disabled={busy || !activeProfile} type="submit" style={{ ...buttonStyle, background: '#0ea5e9', color: '#fff', borderColor: '#0ea5e9', opacity: busy || !activeProfile ? .55 : 1 }}><Globe size={15} /> {busy ? 'Working…' : 'Go'}</button>
-        <button disabled={busy || !activeProfile || !tabs.length} type="button" onClick={newTab} style={buttonStyle}><Plus size={15} /> New tab</button>
-        <button disabled={busy || !viewerUrl} type="button" onClick={() => refreshViewer()} style={buttonStyle}><RefreshCw size={15} /> Refresh view</button>
+        <button disabled={busy || !activeProfile || !sessionActive} type="button" onClick={newTab} style={buttonStyle}><Plus size={15} /> New tab</button>
+        <button disabled={busy || !sessionActive} type="button" onClick={() => refreshViewer()} style={buttonStyle}><RefreshCw size={15} /> Refresh view</button>
         <button disabled={busy || !viewerUrl} type="button" onClick={() => window.open(viewerUrl, '_blank', 'noopener,noreferrer')} style={buttonStyle}>Open tab</button>
-        <button disabled={busy || !viewerUrl} type="button" onClick={closeBrowser} style={buttonStyle}><X size={15} /> Close session</button>
+        <button disabled={busy || !sessionActive} type="button" onClick={closeBrowser} style={buttonStyle}><X size={15} /> Close session</button>
       </form>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, overflowX: 'auto', padding: '7px 10px', background: '#e2e8f0', borderBottom: '1px solid #cbd5e1' }}>
