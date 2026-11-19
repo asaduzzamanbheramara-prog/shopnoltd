@@ -65,6 +65,7 @@ All `/api/profiles/*` and `/api/sessions/*` endpoints require a Keycloak RS256 a
 - `POST /api/sessions/{profile_id}/viewer-ticket` — issue a one-time, short-lived viewer URL for an active owned session.
 - `GET/POST /api/sessions/{profile_id}/tabs` — list or open a tab in an owned active browser.
 - `POST /api/sessions/{profile_id}/tabs/{tab_id}/navigate` and `/focus`, `DELETE .../{tab_id}` — navigate, focus, or close an owned tab.
+- `GET /api/sessions/{profile_id}/downloads` and `GET .../downloads/{download_id}` — list and retrieve only the caller's browser downloads; files are stored under that profile's managed data directory and removed with the profile.
 - `POST /api/sessions/{profile_id}/close` and `GET /api/sessions/active` — operate on/list only the caller's sessions.
 - Proxy CRUD and profile proxy assignment are disabled until proxy records have equivalent tenant ownership.
 
