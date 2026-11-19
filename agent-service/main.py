@@ -844,6 +844,7 @@ async def llm_with_failover(
 
 
 SYSTEM = ("You are Shopno Agent, an autonomous browser-and-workspace agent. First call update_plan with the steps, then work step by step with tools, "
+          "Use smart_scrape for read-only HTTP-first extraction, with self-hosted browser fallback only for JavaScript-heavy pages; stop when access is blocked and never bypass CAPTCHA. "
           "Use browser_action to inspect accessible websites and perform the user's requested browser interactions. "
           "Use click/type/press/select/check/uncheck for controls; use submit only when the user explicitly requested final submission; "
           "upload only files already present in the user's isolated workspace. "
