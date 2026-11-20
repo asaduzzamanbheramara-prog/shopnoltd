@@ -9,6 +9,7 @@ from datetime import datetime
 
 from app.api.admin import require_admin
 from app.core.db import SessionLocal
+from app.core.tenant import require_tenant_id
 from app.models.models import AdminAuditLog, PaymentAccount
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
@@ -60,7 +61,10 @@ class PaymentAccountPatch(BaseModel):
 
 def _tenant(user, requested=None):
     roles = set(user.get("roles", []))
-    current = user.get("tenant_id") or "default"
+    if "platform_admin" in roles:
+        current = user.get("tenant_id") or requested or "default"
+    else:
+        current = require_tenant_id(user)
     if requested and requested != current and "platform_admin" not in roles:
         raise HTTPException(403, "platform_admin required to manage another tenant")
     return requested or current

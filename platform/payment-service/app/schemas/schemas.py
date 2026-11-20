@@ -16,7 +16,7 @@ class WalletOut(BaseModel):
 
 class DepositIn(BaseModel):
     currency: str = Field(min_length=3, max_length=8)
-    amount: float = Field(gt=0)
+    amount: float = Field(gt=0, allow_inf_nan=False)
     method: PaymentMethod
     return_url: str | None = None
     idempotency_key: str = Field(min_length=8, max_length=128)
@@ -25,16 +25,17 @@ class DepositIn(BaseModel):
 
 class WithdrawalIn(BaseModel):
     currency: str = Field(min_length=3, max_length=8)
-    amount: float = Field(gt=0)
+    amount: float = Field(gt=0, allow_inf_nan=False)
     method: PaymentMethod
-    destination: str
+    destination: str = Field(min_length=1, max_length=256)
+    idempotency_key: str = Field(min_length=8, max_length=128)
     metadata: dict = Field(default_factory=dict)
 
 
 class TransferIn(BaseModel):
     to_user_id: str
     currency: str = Field(min_length=3, max_length=8)
-    amount: float = Field(gt=0)
+    amount: float = Field(gt=0, allow_inf_nan=False)
     note: str | None = None
     idempotency_key: str = Field(min_length=8, max_length=128)
 
@@ -59,7 +60,7 @@ class TxOut(BaseModel):
 
 class DirectPaymentIntentIn(BaseModel):
     provider: str = Field(pattern=r"^(bkash|nagad|rocket)$")
-    amount: float = Field(gt=0)
+    amount: float = Field(gt=0, allow_inf_nan=False)
     currency: str = Field(default="BDT", min_length=3, max_length=8)
     account_id: str | None = None
     order_id: str | None = Field(default=None, max_length=128)
@@ -68,7 +69,7 @@ class DirectPaymentIntentIn(BaseModel):
 class DirectPaymentSubmissionIn(BaseModel):
     txid: str = Field(min_length=4, max_length=128)
     sender_number: str | None = Field(default=None, max_length=32)
-    amount: float | None = Field(default=None, gt=0)
+    amount: float | None = Field(default=None, gt=0, allow_inf_nan=False)
     reference: str | None = Field(default=None, max_length=128)
 
 
@@ -82,7 +83,7 @@ class DirectPaymentVerificationIn(BaseModel):
 
     manual_review_reason: str = Field(min_length=8, max_length=500)
     txid: str | None = Field(default=None, min_length=4, max_length=128)
-    amount: float = Field(gt=0)
+    amount: float = Field(gt=0, allow_inf_nan=False)
     receiver_number: str = Field(min_length=5, max_length=32)
     provider_transaction_id: str | None = Field(default=None, min_length=4, max_length=128)
     evidence: dict = Field(default_factory=dict)

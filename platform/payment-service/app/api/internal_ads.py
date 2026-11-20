@@ -29,6 +29,25 @@ class AdWalletOperation(BaseModel):
     reference: str = Field(min_length=1, max_length=128)
 
 
+def _existing_operation_result(existing: Transaction, body: AdWalletOperation, currency: str):
+    expected_type = TxType.deposit if body.operation == "credit" else TxType.withdrawal
+    if (
+        existing.type != expected_type
+        or existing.currency != currency
+        or Decimal(str(existing.amount)) != body.amount
+        or existing.reference != body.reference
+    ):
+        raise HTTPException(409, "idempotency key already belongs to a different operation")
+    return {
+        "transaction_id": str(existing.id),
+        "status": existing.status.value,
+        "amount": str(existing.amount),
+        "currency": existing.currency,
+        "operation": body.operation,
+        "reference": existing.reference,
+    }
+
+
 @router.post("/wallet-operation")
 async def ad_wallet_operation(body: AdWalletOperation, s: AsyncSession = Depends(db)):
     currency = body.currency.upper()
@@ -41,16 +60,7 @@ async def ad_wallet_operation(body: AdWalletOperation, s: AsyncSession = Depends
         )
     )
     if existing:
-        if existing.type not in {TxType.deposit, TxType.withdrawal} or existing.currency != currency:
-            raise HTTPException(409, "idempotency key already belongs to a different operation")
-        return {
-            "transaction_id": str(existing.id),
-            "status": existing.status.value,
-            "amount": str(existing.amount),
-            "currency": existing.currency,
-            "operation": "credit" if existing.type == TxType.deposit else "debit",
-            "reference": existing.reference,
-        }
+        return _existing_operation_result(existing, body, currency)
 
     wallet = await s.scalar(
         select(Wallet)
@@ -123,14 +133,7 @@ async def ad_wallet_operation(body: AdWalletOperation, s: AsyncSession = Depends
             )
         )
         if existing:
-            return {
-                "transaction_id": str(existing.id),
-                "status": existing.status.value,
-                "amount": str(existing.amount),
-                "currency": existing.currency,
-                "operation": "credit" if existing.type == TxType.deposit else "debit",
-                "reference": existing.reference,
-            }
+            return _existing_operation_result(existing, body, currency)
         raise HTTPException(409, "idempotency conflict")
     return {
         "transaction_id": str(tx.id),

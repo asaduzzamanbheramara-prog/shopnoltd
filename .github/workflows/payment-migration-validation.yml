@@ -63,7 +63,7 @@ jobs:
           PG_CONTAINER: ${{ steps.postgres.outputs.container_id }}
         run: |
           version="$(docker exec "$PG_CONTAINER" psql -U postgres -d payment_migration_ci -Atqc "SELECT version_num FROM alembic_version")"
-          test "$version" = "0007_wallet_tenant_user_currency"
+          test "$version" = "0008_payment_external_identity"
 
           old_constraint="$(docker exec "$PG_CONTAINER" psql -U postgres -d payment_migration_ci -Atqc "SELECT count(*) FROM pg_constraint WHERE conname='ix_wallet_user_currency' AND contype='u'")"
           test "$old_constraint" = "0"
@@ -104,6 +104,25 @@ jobs:
           test -n "$tenant_wallet_index"
           grep -q "CREATE UNIQUE INDEX" <<<"$tenant_wallet_index"
           grep -q "(tenant_id, user_id, currency)" <<<"$tenant_wallet_index"
+
+      - name: Simulate legacy JWT-subject foreign keys and apply identity reconciliation
+        working-directory: platform/payment-service
+        env:
+          DATABASE_URL: postgresql+asyncpg://postgres:ci-only-password@127.0.0.1:5432/payments
+          PG_CONTAINER: ${{ steps.postgres.outputs.container_id }}
+        run: |
+          docker exec "$PG_CONTAINER" psql -U postgres -d payments -v ON_ERROR_STOP=1 <<'SQL'
+          CREATE TABLE public.users (id VARCHAR(64) PRIMARY KEY);
+          ALTER TABLE public.wallets ADD CONSTRAINT wallets_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id);
+          ALTER TABLE public.transactions ADD CONSTRAINT transactions_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id);
+          CREATE TABLE public.wallet_ledger_entries (id VARCHAR(64) PRIMARY KEY, user_id VARCHAR(64) REFERENCES public.users(id));
+          CREATE TABLE public.payment_methods (id VARCHAR(64) PRIMARY KEY, user_id VARCHAR(64) REFERENCES public.users(id));
+          SQL
+          alembic upgrade head
+          version="$(docker exec "$PG_CONTAINER" psql -U postgres -d payments -Atqc "SELECT version_num FROM alembic_version")"
+          test "$version" = "0008_payment_external_identity"
+          remaining_fks="$(docker exec "$PG_CONTAINER" psql -U postgres -d payments -Atqc "SELECT count(*) FROM pg_constraint WHERE conname IN ('wallets_user_id_fkey','transactions_user_id_fkey','wallet_ledger_entries_user_id_fkey','payment_methods_user_id_fkey')")"
+          test "$remaining_fks" = "0"
 
       - name: Downgrade through wallet ownership migration
         working-directory: platform/payment-service

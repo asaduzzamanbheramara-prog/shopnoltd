@@ -1,9 +1,11 @@
 import uuid
+from decimal import Decimal
 from urllib.parse import urlparse
 
 from app.core.config import settings
 from app.core.db import SessionLocal
 from app.core.security import verify_token
+from app.core.tenant import require_tenant_id
 from app.models.models import Transaction, TxStatus, TxType, Wallet
 from app.providers.registry import get_provider, supports_deposit
 from app.schemas.schemas import DepositIn, TxOut
@@ -24,6 +26,15 @@ async def db():
 
 async def current_user(creds: HTTPAuthorizationCredentials = Depends(bearer)):
     return await verify_token(creds.credentials)
+
+
+def _validate_existing_deposit(existing: Transaction, body: DepositIn, currency: str) -> None:
+    if (
+        Decimal(str(existing.amount)) != Decimal(str(body.amount))
+        or existing.currency.upper() != currency
+        or existing.method != body.method
+    ):
+        raise HTTPException(409, "Idempotency key was already used for a different deposit")
 
 
 def tx_out(tx: Transaction) -> TxOut:
@@ -49,7 +60,7 @@ def tx_out(tx: Transaction) -> TxOut:
 @router.post("", response_model=TxOut, status_code=201)
 async def create_deposit(body: DepositIn, user=Depends(current_user), s: AsyncSession = Depends(db)):
     currency = body.currency.upper()
-    tenant_id = user.get("tenant_id", "default")
+    tenant_id = require_tenant_id(user)
     user_id = user["sub"]
 
     if body.amount < settings.min_deposit or body.amount > settings.max_deposit:
@@ -87,7 +98,11 @@ async def create_deposit(body: DepositIn, user=Depends(current_user), s: AsyncSe
         return tx_out(existing)
 
     res = await s.execute(
-        select(Wallet).where(Wallet.user_id == user_id, Wallet.currency == currency)
+        select(Wallet).where(
+            Wallet.tenant_id == tenant_id,
+            Wallet.user_id == user_id,
+            Wallet.currency == currency,
+        )
     )
     w = res.scalar_one_or_none()
     if not w:
@@ -127,6 +142,7 @@ async def create_deposit(body: DepositIn, user=Depends(current_user), s: AsyncSe
             )
         )
         if existing:
+            _validate_existing_deposit(existing, body, currency)
             return tx_out(existing)
         raise HTTPException(409, "deposit idempotency conflict")
 
@@ -145,30 +161,27 @@ async def create_deposit(body: DepositIn, user=Depends(current_user), s: AsyncSe
             customer_postcode=metadata.get("customer_postcode"),
             description=metadata.get("description"),
         )
-    except NotImplementedError as exc:
+    except NotImplementedError:
         tx.status = TxStatus.failed
-        tx.meta = {**(tx.meta or {}), "_error": str(exc)}
+        tx.meta = {**(tx.meta or {}), "_error": "payment method operation is not supported"}
         await s.commit()
-        raise HTTPException(400, str(exc)) from exc
-    except (ValueError, RuntimeError) as exc:
+        raise HTTPException(400, "payment method operation is not supported") from None
+    except (ValueError, RuntimeError):
         tx.status = TxStatus.failed
-        tx.meta = {**(tx.meta or {}), "_error": str(exc)}
+        tx.meta = {**(tx.meta or {}), "_error": "payment provider is unavailable"}
         await s.commit()
-        raise HTTPException(503, str(exc)) from exc
-    except Exception as exc:
+        raise HTTPException(503, "payment provider is unavailable") from None
+    except Exception:
         tx.status = TxStatus.failed
         tx.meta = {**(tx.meta or {}), "_error": "payment provider request failed"}
         await s.commit()
-        raise HTTPException(502, "payment provider request failed") from exc
+        raise HTTPException(502, "payment provider request failed") from None
 
     if out.get("status") in {"failed", "unavailable"}:
         tx.status = TxStatus.failed
-        tx.meta = {
-            **(tx.meta or {}),
-            "_error": out.get("note") or "Payment provider is unavailable",
-        }
+        tx.meta = {**(tx.meta or {}), "_error": "payment provider is unavailable"}
         await s.commit()
-        raise HTTPException(503, out.get("note") or "Payment provider is unavailable")
+        raise HTTPException(503, "payment provider is unavailable")
 
     tx.external_id = out.get("external_id")
     tx.meta = {
@@ -181,6 +194,7 @@ async def create_deposit(body: DepositIn, user=Depends(current_user), s: AsyncSe
 
 @router.get("/{tx_id}", response_model=TxOut)
 async def get_deposit(tx_id: str, user=Depends(current_user), s: AsyncSession = Depends(db)):
+    tenant_id = require_tenant_id(user)
     try:
         transaction_id = uuid.UUID(tx_id)
     except ValueError as exc:
@@ -188,7 +202,7 @@ async def get_deposit(tx_id: str, user=Depends(current_user), s: AsyncSession = 
     res = await s.execute(
         select(Transaction).where(
             Transaction.id == transaction_id,
-            Transaction.tenant_id == user.get("tenant_id", "default"),
+            Transaction.tenant_id == tenant_id,
             Transaction.user_id == user["sub"],
         )
     )

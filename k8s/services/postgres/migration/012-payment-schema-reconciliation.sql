@@ -1,4 +1,7 @@
 -- Shopnoltd payment schema reconciliation.
+-- Payment user_id values are verified Keycloak JWT subjects, not OAuth users.id UUIDs.
+-- OAuth and payments are separate databases, so these ownership keys must not
+-- declare cross-service user foreign keys in the payments database.
 --
 -- This file is executed by an Argo Sync hook, so it must be safe to run again
 -- after the payment schema has already reached 0005. psql conditionals keep a
@@ -58,7 +61,7 @@ DROP TABLE public.payment_methods RESTRICT;
 CREATE TABLE public.wallets (
     id UUID PRIMARY KEY,
     tenant_id VARCHAR(64) NOT NULL DEFAULT 'default',
-    user_id VARCHAR(64) NOT NULL REFERENCES public.users(id),
+    user_id VARCHAR(64) NOT NULL,
     currency VARCHAR(8) NOT NULL,
     balance NUMERIC(20,8) NOT NULL DEFAULT 0,
     frozen NUMERIC(20,8) NOT NULL DEFAULT 0,
@@ -73,7 +76,7 @@ CREATE INDEX ix_wallets_user_id ON public.wallets (user_id);
 CREATE TABLE public.transactions (
     id UUID PRIMARY KEY,
     tenant_id VARCHAR(64) NOT NULL DEFAULT 'default',
-    user_id VARCHAR(64) NOT NULL REFERENCES public.users(id),
+    user_id VARCHAR(64) NOT NULL,
     wallet_id UUID NOT NULL REFERENCES public.wallets(id),
     type VARCHAR(32) NOT NULL DEFAULT 'deposit',
     method VARCHAR(32) NOT NULL DEFAULT 'manual',
@@ -107,7 +110,7 @@ CREATE UNIQUE INDEX uq_transaction_deposit_idempotency
 
 CREATE TABLE public.wallet_ledger_entries (
     id VARCHAR(64) PRIMARY KEY,
-    user_id VARCHAR(64) NOT NULL REFERENCES public.users(id),
+    user_id VARCHAR(64) NOT NULL,
     currency VARCHAR(8) NOT NULL,
     entry_type VARCHAR NOT NULL,
     amount NUMERIC(20,8) NOT NULL,
@@ -125,7 +128,7 @@ CREATE INDEX ix_wallet_ledger_entries_user_currency_created
 
 CREATE TABLE public.payment_methods (
     id VARCHAR PRIMARY KEY,
-    user_id VARCHAR(64) REFERENCES public.users(id),
+    user_id VARCHAR(64),
     gateway VARCHAR,
     label TEXT,
     gateway_token TEXT,

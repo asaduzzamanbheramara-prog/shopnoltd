@@ -15,11 +15,13 @@ Two changes from the original:
 
 from app.core.db import SessionLocal
 from app.core.security import verify_token
+from app.core.tenant import require_tenant_id
 from app.models.models import Transaction, TxStatus, Wallet
 from app.schemas.schemas import WalletOut
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter()
@@ -37,10 +39,11 @@ async def current_user(creds: HTTPAuthorizationCredentials = Depends(bearer)):
 
 @router.get("", response_model=list[WalletOut])
 async def list_wallets(user=Depends(current_user), s: AsyncSession = Depends(db)):
+    tenant_id = require_tenant_id(user)
     res = await s.execute(
         select(Wallet).where(
             Wallet.user_id == user["sub"],
-            Wallet.tenant_id == user.get("tenant_id", "default"),
+            Wallet.tenant_id == tenant_id,
         )
     )
     return res.scalars().all()
@@ -48,18 +51,19 @@ async def list_wallets(user=Depends(current_user), s: AsyncSession = Depends(db)
 
 @router.get("/{currency}", response_model=WalletOut)
 async def get_wallet(currency: str, user=Depends(current_user), s: AsyncSession = Depends(db)):
+    tenant_id = require_tenant_id(user)
     currency = currency.upper()
     res = await s.execute(
         select(Wallet).where(
             Wallet.user_id == user["sub"],
-            Wallet.tenant_id == user.get("tenant_id", "default"),
+            Wallet.tenant_id == tenant_id,
             Wallet.currency == currency,
         )
     )
     w = res.scalar_one_or_none()
     if not w:
         w = Wallet(
-            tenant_id=user.get("tenant_id", "default"),
+            tenant_id=tenant_id,
             user_id=user["sub"],
             currency=currency,
             balance=0,
@@ -68,14 +72,14 @@ async def get_wallet(currency: str, user=Depends(current_user), s: AsyncSession 
         s.add(w)
         try:
             await s.commit()
-        except Exception:
-            # Another request created it concurrently (unique index on
-            # user_id+currency) — fetch the row that won instead of erroring.
+        except IntegrityError:
+            # Another request created this tenant/user/currency row concurrently;
+            # fetch the row that won without hiding unrelated database failures.
             await s.rollback()
             res = await s.execute(
                 select(Wallet).where(
                     Wallet.user_id == user["sub"],
-                    Wallet.tenant_id == user.get("tenant_id", "default"),
+                    Wallet.tenant_id == tenant_id,
                     Wallet.currency == currency,
                 )
             )
@@ -92,11 +96,12 @@ async def get_wallet_ledger(
     s: AsyncSession = Depends(db),
     limit: int = Query(50, le=200),
 ):
+    tenant_id = require_tenant_id(user)
     currency = currency.upper()
     wres = await s.execute(
         select(Wallet).where(
             Wallet.user_id == user["sub"],
-            Wallet.tenant_id == user.get("tenant_id", "default"),
+            Wallet.tenant_id == tenant_id,
             Wallet.currency == currency,
         )
     )
@@ -107,7 +112,11 @@ async def get_wallet_ledger(
 
     tres = await s.execute(
         select(Transaction)
-        .where(Transaction.wallet_id == w.id, Transaction.status == TxStatus.completed)
+        .where(
+            Transaction.wallet_id == w.id,
+            Transaction.tenant_id == tenant_id,
+            Transaction.status == TxStatus.completed,
+        )
         .order_by(Transaction.created_at.asc())
     )
     txs = tres.scalars().all()
@@ -117,7 +126,9 @@ async def get_wallet_ledger(
     for t in txs:
         amount = float(t.amount)
         if t.type.value == "withdrawal":
-            amount = -amount
+            amount = -(amount + float(t.fee or 0))
+        elif t.type.value == "exchange" and amount < 0:
+            amount -= float(t.fee or 0)
         running += amount
         entries.append(
             {

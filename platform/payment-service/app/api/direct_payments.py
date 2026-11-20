@@ -7,10 +7,11 @@ admin review with an audit reason.
 
 import uuid
 from datetime import datetime, timedelta
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 
 from app.core.db import SessionLocal
 from app.core.security import verify_token
+from app.core.tenant import require_tenant_id
 from app.models.models import (
     DirectPaymentAccount,
     DirectPaymentIntent,
@@ -21,7 +22,7 @@ from app.models.models import (
     TxType,
     Wallet,
 )
-from app.schemas.schemas import DirectPaymentVerificationIn
+from app.schemas.schemas import DirectPaymentIntentIn, DirectPaymentSubmissionIn, DirectPaymentVerificationIn
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
@@ -46,6 +47,16 @@ async def require_admin(creds: HTTPAuthorizationCredentials = Depends(bearer)):
     if not ({"platform_admin", "admin"} & set(user.get("roles", []))):
         raise HTTPException(403, "admin only")
     return user
+
+
+def _positive_decimal(value: object, detail: str) -> Decimal:
+    try:
+        amount = Decimal(str(value))
+    except (InvalidOperation, TypeError, ValueError):
+        raise HTTPException(422, detail) from None
+    if not amount.is_finite() or amount <= 0:
+        raise HTTPException(422, detail)
+    return amount
 
 
 def intent_out(i: DirectPaymentIntent, account: DirectPaymentAccount | None = None):
@@ -77,9 +88,10 @@ def intent_out(i: DirectPaymentIntent, account: DirectPaymentAccount | None = No
 
 @router.get("/accounts")
 async def accounts(provider: str | None = None, user=Depends(current_user), s: AsyncSession = Depends(db)):
+    tenant_id = require_tenant_id(user)
     q = select(DirectPaymentAccount).where(
         DirectPaymentAccount.status == "active",
-        DirectPaymentAccount.tenant_id == user.get("tenant_id", "default"),
+        DirectPaymentAccount.tenant_id == tenant_id,
     )
     if provider:
         q = q.where(DirectPaymentAccount.provider == provider.lower())
@@ -113,7 +125,11 @@ async def create_account(body: dict, user=Depends(require_admin), s: AsyncSessio
         raise HTTPException(400, "account_number and BDT currency are required")
     if verification_mode not in {"manual", "authorized_feed"}:
         raise HTTPException(400, "verification_mode must be manual or authorized_feed")
-    tenant_id = user.get("tenant_id", "default")
+    roles = set(user.get("roles", []))
+    if "platform_admin" in roles:
+        tenant_id = str(user.get("tenant_id") or "default").strip()
+    else:
+        tenant_id = require_tenant_id(user)
     exists = await s.scalar(
         select(DirectPaymentAccount).where(
             DirectPaymentAccount.tenant_id == tenant_id,
@@ -145,11 +161,16 @@ async def create_account(body: dict, user=Depends(require_admin), s: AsyncSessio
 
 @router.get("/admin/submissions")
 async def admin_submissions(user=Depends(require_admin), s: AsyncSession = Depends(db)):
+    query = (
+        select(DirectPaymentSubmission)
+        .join(DirectPaymentIntent, DirectPaymentSubmission.intent_id == DirectPaymentIntent.id)
+    )
+    if "platform_admin" not in set(user.get("roles", [])):
+        tenant_id = require_tenant_id(user)
+        query = query.where(DirectPaymentIntent.tenant_id == tenant_id)
     rows = (
         await s.execute(
-            select(DirectPaymentSubmission)
-            .order_by(DirectPaymentSubmission.created_at.desc())
-            .limit(200)
+            query.order_by(DirectPaymentSubmission.created_at.desc()).limit(200)
         )
     ).scalars().all()
     return {
@@ -172,25 +193,26 @@ async def admin_submissions(user=Depends(require_admin), s: AsyncSession = Depen
 
 
 @router.post("/intents", status_code=201)
-async def create_intent(body: dict, user=Depends(current_user), s: AsyncSession = Depends(db)):
-    provider = str(body.get("provider", "")).lower()
-    currency = str(body.get("currency", "BDT")).upper()
-    amount = Decimal(str(body.get("amount", "0")))
+async def create_intent(body: DirectPaymentIntentIn, user=Depends(current_user), s: AsyncSession = Depends(db)):
+    tenant_id = require_tenant_id(user)
+    provider = body.provider.lower()
+    currency = body.currency.upper()
+    amount = _positive_decimal(body.amount, "direct payment requires a positive finite amount")
     if provider not in {"bkash", "nagad", "rocket"}:
         raise HTTPException(400, "direct payment supports bKash, Nagad and Rocket")
-    if currency != "BDT" or amount <= 0:
-        raise HTTPException(400, "direct payment currently requires a positive BDT amount")
-    account_id = body.get("account_id")
+    if currency != "BDT":
+        raise HTTPException(400, "direct payment currently requires BDT currency")
+    account_id = body.account_id
     account = None
     if account_id:
         try:
             aid = uuid.UUID(account_id)
-        except ValueError as exc:
+        except (ValueError, TypeError, AttributeError) as exc:
             raise HTTPException(400, "invalid account_id") from exc
         account = await s.scalar(
             select(DirectPaymentAccount).where(
                 DirectPaymentAccount.id == aid,
-                DirectPaymentAccount.tenant_id == user.get("tenant_id", "default"),
+                DirectPaymentAccount.tenant_id == tenant_id,
                 DirectPaymentAccount.status == "active",
             )
         )
@@ -200,7 +222,7 @@ async def create_intent(body: dict, user=Depends(current_user), s: AsyncSession 
             .where(
                 DirectPaymentAccount.provider == provider,
                 DirectPaymentAccount.currency == currency,
-                DirectPaymentAccount.tenant_id == user.get("tenant_id", "default"),
+                DirectPaymentAccount.tenant_id == tenant_id,
                 DirectPaymentAccount.status == "active",
             )
             .order_by(DirectPaymentAccount.created_at.asc())
@@ -212,9 +234,9 @@ async def create_intent(body: dict, user=Depends(current_user), s: AsyncSession 
     iid = uuid.uuid4()
     intent = DirectPaymentIntent(
         id=iid,
-        tenant_id=user.get("tenant_id", "default"),
+        tenant_id=tenant_id,
         user_id=user["sub"],
-        order_id=body.get("order_id"),
+        order_id=body.order_id,
         account_id=account.id,
         provider=provider,
         amount=amount,
@@ -230,6 +252,7 @@ async def create_intent(body: dict, user=Depends(current_user), s: AsyncSession 
 
 @router.get("/intents/{intent_id}")
 async def get_intent(intent_id: str, user=Depends(current_user), s: AsyncSession = Depends(db)):
+    tenant_id = require_tenant_id(user)
     try:
         iid = uuid.UUID(intent_id)
     except ValueError as exc:
@@ -237,18 +260,24 @@ async def get_intent(intent_id: str, user=Depends(current_user), s: AsyncSession
     intent = await s.scalar(
         select(DirectPaymentIntent).where(
             DirectPaymentIntent.id == iid,
-            DirectPaymentIntent.tenant_id == user.get("tenant_id", "default"),
+            DirectPaymentIntent.tenant_id == tenant_id,
             DirectPaymentIntent.user_id == user["sub"],
         )
     )
     if not intent:
         raise HTTPException(404, "payment intent not found")
-    account = await s.scalar(select(DirectPaymentAccount).where(DirectPaymentAccount.id == intent.account_id))
+    account = await s.scalar(
+        select(DirectPaymentAccount).where(
+            DirectPaymentAccount.id == intent.account_id,
+            DirectPaymentAccount.tenant_id == tenant_id,
+        )
+    )
     return intent_out(intent, account)
 
 
 @router.post("/intents/{intent_id}/submit", status_code=201)
-async def submit_evidence(intent_id: str, body: dict, user=Depends(current_user), s: AsyncSession = Depends(db)):
+async def submit_evidence(intent_id: str, body: DirectPaymentSubmissionIn, user=Depends(current_user), s: AsyncSession = Depends(db)):
+    tenant_id = require_tenant_id(user)
     try:
         iid = uuid.UUID(intent_id)
     except ValueError as exc:
@@ -256,7 +285,7 @@ async def submit_evidence(intent_id: str, body: dict, user=Depends(current_user)
     intent = await s.scalar(
         select(DirectPaymentIntent).where(
             DirectPaymentIntent.id == iid,
-            DirectPaymentIntent.tenant_id == user.get("tenant_id", "default"),
+            DirectPaymentIntent.tenant_id == tenant_id,
             DirectPaymentIntent.user_id == user["sub"],
         )
     )
@@ -268,22 +297,22 @@ async def submit_evidence(intent_id: str, body: dict, user=Depends(current_user)
         intent.status = "expired"
         await s.commit()
         raise HTTPException(400, "payment intent expired")
-    txid = str(body.get("txid", "")).strip()
-    sender = str(body.get("sender_number", "")).strip()
-    if len(txid) < 4 or len(txid) > 128:
-        raise HTTPException(422, "txid is required")
+    txid = body.txid.strip()
+    sender = (body.sender_number or "").strip()
     if await s.scalar(select(DirectPaymentSubmission).where(DirectPaymentSubmission.txid == txid)):
         raise HTTPException(409, "this TxID has already been submitted")
-    claimed_amount = Decimal(str(body.get("amount", intent.amount)))
-    if claimed_amount <= 0:
-        raise HTTPException(422, "amount must be positive")
+    claimed_amount = _positive_decimal(
+        body.amount if body.amount is not None else intent.amount, "amount must be a positive finite number"
+    )
+    if claimed_amount != Decimal(str(intent.amount)):
+        raise HTTPException(400, "submitted amount does not match the payment intent")
     submission = DirectPaymentSubmission(
         intent_id=intent.id,
         provider=intent.provider,
         txid=txid,
         sender_number=sender or None,
         amount_claimed=claimed_amount,
-        raw_evidence={"reference": body.get("reference"), "sender_number": sender or None},
+        raw_evidence={"reference": body.reference, "sender_number": sender or None},
         status="submitted",
     )
     s.add(submission)
@@ -319,20 +348,29 @@ async def verify_submission(
         sid = uuid.UUID(submission_id)
     except ValueError as exc:
         raise HTTPException(400, "invalid submission id") from exc
-    sub = await s.scalar(select(DirectPaymentSubmission).where(DirectPaymentSubmission.id == sid).with_for_update())
+    submission_query = (
+        select(DirectPaymentSubmission)
+        .join(DirectPaymentIntent, DirectPaymentSubmission.intent_id == DirectPaymentIntent.id)
+        .where(DirectPaymentSubmission.id == sid)
+    )
+    if "platform_admin" not in set(user.get("roles", [])):
+        tenant_id = require_tenant_id(user)
+        submission_query = submission_query.where(DirectPaymentIntent.tenant_id == tenant_id)
+    sub = await s.scalar(submission_query.with_for_update())
     if not sub:
         raise HTTPException(404, "submission not found")
     if sub.status == "verified":
         return {"ok": True, "status": "verified", "transaction_id": str(sub.transaction_id) if sub.transaction_id else None}
+    if sub.status != "submitted":
+        raise HTTPException(409, "only submitted payment evidence can be verified")
 
-    intent = await s.scalar(
-        select(DirectPaymentIntent)
-        .where(DirectPaymentIntent.id == sub.intent_id)
-        .with_for_update()
-    )
-    if not intent or intent.status == "expired":
-        raise HTTPException(400, "payment intent is not valid")
-    if datetime.utcnow() >= intent.expires_at and intent.status != "verified":
+    intent_query = select(DirectPaymentIntent).where(DirectPaymentIntent.id == sub.intent_id)
+    if "platform_admin" not in set(user.get("roles", [])):
+        intent_query = intent_query.where(DirectPaymentIntent.tenant_id == tenant_id)
+    intent = await s.scalar(intent_query.with_for_update())
+    if not intent or intent.status != "submitted":
+        raise HTTPException(409, "payment intent is not awaiting verification")
+    if datetime.utcnow() >= intent.expires_at:
         intent.status = "expired"
         await s.commit()
         raise HTTPException(400, "payment intent expired")
@@ -346,13 +384,19 @@ async def verify_submission(
         await s.commit()
         raise HTTPException(400, "amount mismatch")
 
-    account = await s.scalar(select(DirectPaymentAccount).where(DirectPaymentAccount.id == intent.account_id))
+    account = await s.scalar(
+        select(DirectPaymentAccount).where(
+            DirectPaymentAccount.id == intent.account_id,
+            DirectPaymentAccount.tenant_id == intent.tenant_id,
+        )
+    )
     receiver = body.receiver_number.strip()
     if not account or receiver != account.account_number:
         raise HTTPException(400, "receiver account mismatch")
 
     existing_tx = await s.scalar(
         select(Transaction).where(
+            Transaction.tenant_id == intent.tenant_id,
             Transaction.external_id == txid,
             Transaction.method == PaymentMethod(intent.provider),
         ).with_for_update()
@@ -435,6 +479,7 @@ async def verify_submission(
         await s.rollback()
         existing_tx = await s.scalar(
             select(Transaction).where(
+                Transaction.tenant_id == intent.tenant_id,
                 Transaction.external_id == txid,
                 Transaction.method == PaymentMethod(intent.provider),
             )

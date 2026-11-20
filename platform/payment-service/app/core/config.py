@@ -1,5 +1,6 @@
 """Configuration loaded from env."""
 
+from pydantic import Field
 from pydantic_settings import BaseSettings
 
 
@@ -66,7 +67,7 @@ class Settings(BaseSettings):
     max_deposit: float = 100000.0
     min_withdrawal: float = 5.0
     max_withdrawal: float = 50000.0
-    platform_fee_pct: float = 1.5
+    platform_fee_pct: float = Field(default=1.5, ge=0, le=100, allow_inf_nan=False)
 
     @property
     def cors_origins_list(self) -> list[str]:

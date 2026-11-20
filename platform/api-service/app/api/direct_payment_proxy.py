@@ -25,11 +25,10 @@ async def proxy(method: str, path: str, access_token: str, **kwargs):
             response = await client.request(method, f"{PAYMENT}{path}", headers={"Authorization": f"Bearer {access_token}"}, **kwargs)
     except (httpx.ConnectError, httpx.ConnectTimeout, httpx.ReadTimeout) as exc:
         raise HTTPException(503, "Payment service unavailable") from exc
-    detail = response.text
+    if response.status_code >= 500:
+        raise HTTPException(response.status_code, "Payment service is temporarily unavailable")
     if response.status_code >= 400:
-        try: detail = response.json()
-        except Exception: pass
-        raise HTTPException(response.status_code, detail)
+        raise HTTPException(response.status_code, "Payment request was rejected")
     return response.json() if response.text else None
 
 
@@ -61,3 +60,17 @@ async def direct_payment_intent_detail(intent_id: str, access_token: str = Depen
 @router.post("/direct-payments/intents/{intent_id}/submit", status_code=201)
 async def direct_payment_submit(intent_id: str, body: dict, access_token: str = Depends(token)):
     return await proxy("POST", f"/api/v1/direct-payments/intents/{intent_id}/submit", access_token, json=body)
+
+
+@router.post("/direct-payments/submissions/{submission_id}/verify")
+async def direct_payment_verify_submission(
+    submission_id: str,
+    body: dict,
+    access_token: str = Depends(token),
+):
+    return await proxy(
+        "POST",
+        f"/api/v1/direct-payments/submissions/{submission_id}/verify",
+        access_token,
+        json=body,
+    )
