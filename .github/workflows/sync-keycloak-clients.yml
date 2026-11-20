@@ -36,27 +36,30 @@ jobs:
           kubectl --request-timeout=20s cluster-info >/dev/null
           kubectl -n shopno-identity get secret keycloak-secret >/dev/null
 
-      - name: Mirror the existing mail relay secret into the Keycloak namespace
+      - name: Mirror the configured SMTP relay settings into the Keycloak namespace
         shell: bash
         run: |
           set -euo pipefail
-          source_secret="$(kubectl -n shopno-mail get secret mail-service-smtp -o json)"
-          jq -e '.data.SMTP_USERNAME and .data.SMTP_PASSWORD and .data.SMTP_ENVELOPE_FROM' <<<"$source_secret" >/dev/null || {
-            echo 'ERROR: mail-service-smtp is missing a required SMTP credential; refusing to configure Keycloak with incomplete mail settings.'
-            exit 1
-          }
-          jq -n --argjson source "$source_secret" '{
-            apiVersion: "v1",
-            kind: "Secret",
-            metadata: {name: "keycloak-smtp-secret", namespace: "shopno-identity"},
-            type: "Opaque",
-            data: {
-              SMTP_USERNAME: $source.data.SMTP_USERNAME,
-              SMTP_PASSWORD: $source.data.SMTP_PASSWORD,
-              SMTP_ENVELOPE_FROM: $source.data.SMTP_ENVELOPE_FROM
-            }
-          }' | kubectl apply -f -
-          echo 'Existing SMTP relay credentials mirrored into the Keycloak namespace without printing secret values.'
+          kubectl -n shopno-mail get configmap mail-service-config -o json |
+            jq -e 'select(.data.SMTP_HOST and .data.SMTP_PORT) | {
+              apiVersion: "v1",
+              kind: "ConfigMap",
+              metadata: {name: "keycloak-smtp-config", namespace: "shopno-identity"},
+              data: {SMTP_HOST: .data.SMTP_HOST, SMTP_PORT: .data.SMTP_PORT}
+            }' | kubectl apply -f -
+          kubectl -n shopno-mail get secret mail-service-smtp -o json |
+            jq -e 'select(.data.SMTP_USERNAME and .data.SMTP_PASSWORD and .data.SMTP_ENVELOPE_FROM) | {
+              apiVersion: "v1",
+              kind: "Secret",
+              metadata: {name: "keycloak-smtp-secret", namespace: "shopno-identity"},
+              type: "Opaque",
+              data: {
+                SMTP_USERNAME: .data.SMTP_USERNAME,
+                SMTP_PASSWORD: .data.SMTP_PASSWORD,
+                SMTP_ENVELOPE_FROM: .data.SMTP_ENVELOPE_FROM
+              }
+            }' | kubectl apply -f -
+          echo 'Configured SMTP relay settings mirrored into the Keycloak namespace without printing secret values.'
 
       - name: Apply only the Keycloak client-sync script
         shell: bash
