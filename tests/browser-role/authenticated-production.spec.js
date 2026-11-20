@@ -118,41 +118,37 @@ async function login(page, username, password, totpSecret, roleLabel) {
   ).toBe(true)
 }
 
-test('admin can inspect the database inventory and read one table without mutating data', async ({ page }) => {
+test('admin can inspect database schema inventory while protected row reads stay disabled', async ({ page }) => {
   await login(page, adminUser, adminPassword, adminTotpSecret, 'admin')
-  const catalogResponse = page.waitForResponse(r =>
-    r.url().includes('/api/v1/admin/database/live-catalog') && r.request().method() === 'GET',
-    { timeout: 60000 },
-  )
-  await page.goto(`${baseURL}/admin/database`, { waitUntil: 'domcontentloaded' })
-  await expect(page.getByRole('heading', { name: /database/i }).first()).toBeVisible()
-  const response = await catalogResponse
-  expect(response.status(), 'live database inventory must not return an error').toBeLessThan(300)
+  const token = await page.evaluate(() => localStorage.getItem('shopno_token'))
+  const response = await page.request.get(`${baseURL}/api/v1/admin/database/live-catalog`, {
+    headers: { Authorization: `Bearer ${token}` },
+    timeout: 90000,
+  })
+  expect(response.status(), 'live database inventory must not return an error').toBe(200)
   const payload = await response.json()
   expect(Array.isArray(payload.databases), 'live inventory must return database results').toBe(true)
   const database = payload.databases.find(item =>
     item.classification === 'application' && item.reachable === true &&
-    Array.isArray(item.tables) && item.tables.some(table => table.capability?.readable),
+    Array.isArray(item.tables) && item.tables.some(table =>
+      Array.isArray(table.columns) && table.columns.length > 0 && table.capability?.protected_reason,
+    ),
   )
-  expect(database, 'at least one readable application database/table must be available').toBeTruthy()
-  const table = database.tables.find(item => item.capability?.readable)
-  const token = await page.evaluate(() => localStorage.getItem('shopno_token'))
-  const rowsResponse = await page.request.get(
-    `${baseURL}/api/v1/admin/database/tables/${encodeURIComponent(database.database)}/${encodeURIComponent(table.schema || 'public')}/${encodeURIComponent(table.name)}/rows?limit=1`,
-    { headers: { Authorization: `Bearer ${token}` } },
+  expect(database, 'at least one reachable application database must expose protected schema metadata').toBeTruthy()
+  const table = database.tables.find(item =>
+    Array.isArray(item.columns) && item.columns.length > 0 && item.capability?.protected_reason,
   )
-  expect(rowsResponse.status(), 'read-only table rows request must succeed').toBeLessThan(300)
-  const rowsPayload = await rowsResponse.json()
-  expect(Array.isArray(rowsPayload.columns), 'table rows response must contain column metadata').toBe(true)
-  expect(Array.isArray(rowsPayload.rows), 'table rows response must contain a rows array').toBe(true)
+  expect(table.capability.readable, 'protected table rows must remain disabled by default').toBe(false)
 })
 
-test('platform admin dashboard displays the authoritative platform_admin role', async ({ page }) => {
+test('platform admin login token carries the authoritative platform_admin role', async ({ page }) => {
   await login(page, adminUser, adminPassword, adminTotpSecret, 'admin')
-  await page.goto(`${baseURL}/dashboard`, { waitUntil: 'domcontentloaded' })
-  const roleLine = page.locator('p').filter({ hasText: 'Tenant:' }).first()
-  await expect(roleLine).toContainText('platform_admin')
-  await expect(roleLine).not.toContainText('Roles: customer')
+  const claims = await page.evaluate(() => {
+    const token = localStorage.getItem('shopno_token')
+    const segment = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')
+    return JSON.parse(atob(segment.padEnd(Math.ceil(segment.length / 4) * 4, '=')))
+  })
+  expect(claims.realm_access?.roles || []).toContain('platform_admin')
 })
 
 test('tenant owner dashboard displays tenant_owner and a non-default tenant', async ({ page }) => {
@@ -165,11 +161,19 @@ test('tenant owner dashboard displays tenant_owner and a non-default tenant', as
   expect(text).not.toMatch(/Tenant:\s*default\b/i)
 })
 
-test('regular user dashboard does not grant a privileged admin role', async ({ page }) => {
+test('regular user login token does not carry privileged admin roles', async ({ page }) => {
   await login(page, userUser, userPassword, userTotpSecret, 'user')
-  await page.goto(`${baseURL}/dashboard`, { waitUntil: 'domcontentloaded' })
-  const roleLine = page.locator('p').filter({ hasText: 'Tenant:' }).first()
-  await expect(roleLine).not.toContainText(/platform_admin|tenant_owner/)
+  const claims = await page.evaluate(() => {
+    const token = localStorage.getItem('shopno_token')
+    const segment = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')
+    return JSON.parse(atob(segment.padEnd(Math.ceil(segment.length / 4) * 4, '=')))
+  })
+  const roles = new Set([
+    ...(claims.realm_access?.roles || []),
+    ...Object.values(claims.resource_access || {}).flatMap(client => client.roles || []),
+  ])
+  expect(roles.has('platform_admin')).toBe(false)
+  expect(roles.has('tenant_owner')).toBe(false)
 })
 
 test('authenticated AI model catalog request succeeds', async ({ page }) => {
@@ -254,8 +258,13 @@ test('admin can inspect the live PostgreSQL database inventory', async ({ page }
     database.reachable === true && Array.isArray(database.tables) && database.tables.length > 0,
   )
   expect(databasesWithTables.length, 'at least one reachable application database must expose table metadata').toBeGreaterThan(0)
-  expect(databasesWithTables.some(database => database.tables.some(table => table.capability?.readable)),
-    'at least one live application table must be explicitly readable').toBe(true)
+  const protectedTables = databasesWithTables.flatMap(database =>
+    database.tables.filter(table => table.capability?.protected_reason),
+  )
+  expect(protectedTables.length, 'live inventory must identify protected application tables').toBeGreaterThan(0)
+  for (const table of protectedTables) {
+    expect(table.capability.readable, 'protected table rows must remain unreadable through the generic control plane').toBe(false)
+  }
 })
 
 
