@@ -662,6 +662,10 @@ async def smart_scrape(user: str, ui: WebSocket, args: dict, mode: str, workspac
     return f"<untrusted_web_content>\n{payload}\n</untrusted_web_content>"[:12000]
 
 
+class WorkspaceSessionUnavailable(RuntimeError):
+    """Stop a workspace-bound task when its selected session is no longer valid."""
+
+
 async def workspace_browser_action(claims: dict, ui: WebSocket, args: dict, workspace: dict) -> str:
     """Operate only the profile/tab selected in Shopnoltd Browser.
 
@@ -693,11 +697,11 @@ async def workspace_browser_action(claims: dict, ui: WebSocket, args: dict, work
         async with httpx.AsyncClient(timeout=60, trust_env=False) as client:
             response = await client.post(url, headers={"Authorization": f"Bearer {token}"}, json=payload)
         if response.status_code == 401:
-            return "Session Manager rejected the Agent token. Refresh your Shopnoltd sign-in and reconnect."
+            raise WorkspaceSessionUnavailable("Session Manager rejected the Agent token. Sign in again.")
         if response.status_code == 404:
-            return "The selected browser profile or tab is no longer available to this account. Select it again."
+            raise WorkspaceSessionUnavailable("The selected browser profile or tab is no longer available to this account.")
         if response.status_code == 409:
-            return "The selected browser session is closed. Launch it in Shopnoltd Browser first."
+            raise WorkspaceSessionUnavailable("The selected browser session is closed. Launch it in Shopnoltd Browser first.")
         if not response.is_success:
             detail = response.json().get("detail", "Browser action rejected") if "application/json" in response.headers.get("content-type", "") else "Browser action rejected"
             return f"Shared Browser action failed (HTTP {response.status_code}): {str(detail)[:300]}"
@@ -786,6 +790,8 @@ async def call_tool(claims: dict, ui: WebSocket, name: str, args: dict, mode: st
             if workspace is not None:
                 return await workspace_browser_action(claims, ui, clean, workspace)
             return await browser_action(user, ui, clean)
+    except WorkspaceSessionUnavailable:
+        raise
     except Exception as e:
         return f"tool error: {e}"
     return f"unknown tool {name}"
