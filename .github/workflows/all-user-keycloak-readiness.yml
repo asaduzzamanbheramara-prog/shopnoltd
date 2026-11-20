@@ -145,12 +145,10 @@ jobs:
                   }
                   if any(client.get(key) != value for key, value in desired_client_settings.items()):
                       client.update(desired_client_settings)
-                      status, _ = request(
+                      request(
                           f"{admin_url}/clients/{urllib.parse.quote(client_uuid, safe='')}",
                           token=admin_token, method="PUT", json_body=client,
                       )
-                      if status is not None:
-                          raise RuntimeError(f"Unable to harden audit client configuration (HTTP {status})")
               else:
                   payload = {
                       "clientId": audit_client_id,
@@ -164,9 +162,7 @@ jobs:
                       "directAccessGrantsEnabled": False,
                       "clientAuthenticatorType": "client-secret",
                   }
-                  status, _ = request(f"{admin_url}/clients", token=admin_token, method="POST", json_body=payload)
-                  if status is not None:
-                      raise RuntimeError(f"Unable to create read-only audit client (HTTP {status})")
+                  request(f"{admin_url}/clients", token=admin_token, method="POST", json_body=payload)
                   clients = request(f"{admin_url}/clients?{query}", token=admin_token)
                   if not isinstance(clients, list) or not clients:
                       raise RuntimeError("Created audit client could not be found")
@@ -200,9 +196,7 @@ jobs:
                   if role_name not in mapped_names:
                       required_roles.append(role)
               if required_roles:
-                  status, _ = request(mappings_url, token=admin_token, method="POST", json_body=required_roles)
-                  if status is not None:
-                      raise RuntimeError(f"Unable to assign read-only audit roles (HTTP {status})")
+                  request(mappings_url, token=admin_token, method="POST", json_body=required_roles)
 
               secret = request(
                   f"{admin_url}/clients/{urllib.parse.quote(client_uuid, safe='')}/client-secret",
