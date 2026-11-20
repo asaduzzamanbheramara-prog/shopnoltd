@@ -274,8 +274,8 @@ export default function AgentWorkspace({ workspaceMode = false, workspaceProfile
           <div style={{ textAlign: 'center', padding: '40px 10px', color: '#6b7280' }}>
             <div style={{ width: 54, height: 54, margin: '0 auto 16px', borderRadius: 16, display: 'grid', placeItems: 'center', background: '#10a37f', color: '#fff' }}><Bot size={28} /></div>
             <h2 style={{ margin: '0 0 8px', color: '#111827' }}>Give the agent a goal</h2>
-            <p style={{ margin: 0 }}>It plans the steps and works in its isolated Shopnoltd browser and workspace. Choose Auto, Hybrid or Manual from the toolbar.</p>
-            <p style={{ margin: '10px 0 0', fontSize: 13 }}>Auto performs routine actions; sensitive controls, final submissions and uploads still require approval. Hybrid asks before changes. Manual asks before each state-changing browser action; read-only inspection remains available.</p>
+            <p style={{ margin: 0 }}>{workspaceMode ? 'It plans the steps and works in the selected Shopnoltd Browser profile and active tab.' : 'It plans the steps and works in its isolated Shopnoltd browser and workspace.'} Choose Auto, Hybrid or Manual from the toolbar.</p>
+            <p style={{ margin: '10px 0 0', fontSize: 13 }}>{workspaceMode ? 'Auto currently allows navigation and read-only inspection; state-changing actions still ask for approval until shared-tab target inspection is available. Hybrid asks before changes. Manual asks before each state-changing action.' : 'Auto performs routine actions; sensitive controls, final submissions and uploads still require approval. Hybrid asks before changes. Manual asks before each state-changing browser action; read-only inspection remains available.'}</p>
           </div>
         )}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
