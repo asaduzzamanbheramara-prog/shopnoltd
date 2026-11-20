@@ -38,12 +38,12 @@ spec:
             - name: SMTP_HOST
               valueFrom:
                 configMapKeyRef:
-                  name: mail-service-config
+                  name: keycloak-smtp-config
                   key: SMTP_HOST
             - name: SMTP_PORT
               valueFrom:
                 configMapKeyRef:
-                  name: mail-service-config
+                  name: keycloak-smtp-config
                   key: SMTP_PORT
             - name: SMTP_USERNAME
               valueFrom:
