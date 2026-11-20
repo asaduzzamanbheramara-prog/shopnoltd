@@ -24,27 +24,28 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Check required audit configuration
+      - name: Check cluster-held Keycloak bootstrap access
         shell: bash
-        env:
-          AUDIT_CLIENT_ID: ${{ secrets.KEYCLOAK_AUDIT_CLIENT_ID }}
-          AUDIT_CLIENT_SECRET: ${{ secrets.KEYCLOAK_AUDIT_CLIENT_SECRET }}
         run: |
           set -euo pipefail
-          if [[ -z "$AUDIT_CLIENT_ID" || -z "$AUDIT_CLIENT_SECRET" ]]; then
-            echo "::error::Configure KEYCLOAK_AUDIT_CLIENT_ID and KEYCLOAK_AUDIT_CLIENT_SECRET in repository Settings > Secrets and variables > Actions. Use a dedicated Keycloak confidential client with service-account authentication and the realm-management roles view-users, query-users, and view-realm; do not use an administrator's personal password."
+          command -v kubectl >/dev/null || { echo "::error::kubectl is required on the trusted self-hosted runner."; exit 1; }
+          test -s "${KUBECONFIG:-$HOME/.kube/config}" || { echo "::error::Runner kubeconfig is missing."; exit 1; }
+          kubectl --request-timeout=15s -n shopno-identity get secret keycloak-secret -o jsonpath='{.data.KC_BOOTSTRAP_ADMIN_PASSWORD}' | base64 -d | grep -q . || {
+            echo "::error::Keycloak bootstrap password is unavailable from the cluster secret; no credentials will be guessed."
             exit 1
-          fi
+          }
+          echo "Cluster access and the existing Keycloak bootstrap secret are present. The workflow will provision/use a separate read-only audit client; no customer account will be modified."
 
       - name: Audit all users without changing accounts
         env:
           KEYCLOAK_REALM: ${{ vars.KEYCLOAK_REALM || 'shopnoltd' }}
-          KEYCLOAK_AUDIT_CLIENT_ID: ${{ secrets.KEYCLOAK_AUDIT_CLIENT_ID }}
-          KEYCLOAK_AUDIT_CLIENT_SECRET: ${{ secrets.KEYCLOAK_AUDIT_CLIENT_SECRET }}
         run: |
           set -euo pipefail
           command -v kubectl >/dev/null || { echo "::error::kubectl is required on the trusted self-hosted runner."; exit 1; }
           command -v curl >/dev/null || { echo "::error::curl is required on the trusted self-hosted runner."; exit 1; }
+          export KEYCLOAK_ADMIN_USER="admin"
+          export KEYCLOAK_ADMIN_PASSWORD="$(kubectl -n shopno-identity get secret keycloak-secret -o jsonpath='{.data.KC_BOOTSTRAP_ADMIN_PASSWORD}' | base64 -d)"
+          test -n "$KEYCLOAK_ADMIN_PASSWORD" || { echo "::error::Keycloak bootstrap credential is empty."; exit 1; }
           pf_log="${RUNNER_TEMP:-/tmp}/shopnoltd-keycloak-port-forward.log"
           kubectl -n shopno-identity port-forward --address 127.0.0.1 svc/keycloak 18080:80 >"$pf_log" 2>&1 &
           pf_pid=$!
@@ -69,18 +70,24 @@ jobs:
 
           base = os.environ["KEYCLOAK_BASE_URL"].rstrip("/")
           realm = os.environ.get("KEYCLOAK_REALM", "shopnoltd")
-          client_id = os.environ["KEYCLOAK_AUDIT_CLIENT_ID"]
-          client_secret = os.environ["KEYCLOAK_AUDIT_CLIENT_SECRET"]
+          admin_user = os.environ["KEYCLOAK_ADMIN_USER"]
+          admin_password = os.environ["KEYCLOAK_ADMIN_PASSWORD"]
           token_url = f"{base}/realms/{urllib.parse.quote(realm, safe='')}/protocol/openid-connect/token"
           admin_url = f"{base}/admin/realms/{urllib.parse.quote(realm, safe='')}"
+          audit_client_id = "shopnoltd-keycloak-readiness-audit"
+          audit_secret_name = "shopnoltd-keycloak-audit-client"
 
-          def request(url, data=None, token=None):
+          def request(url, data=None, token=None, method=None, json_body=None):
               headers = {"Accept": "application/json"}
-              if data is not None:
+              if json_body is not None:
+                  data = json.dumps(json_body).encode()
+                  headers["Content-Type"] = "application/json"
+                  method = method or "POST"
+              elif data is not None:
                   headers["Content-Type"] = "application/x-www-form-urlencoded"
               if token:
                   headers["Authorization"] = "Bearer " + token
-              req = urllib.request.Request(url, data=data, headers=headers)
+              req = urllib.request.Request(url, data=data, headers=headers, method=method)
               try:
                   with urllib.request.urlopen(req, timeout=30) as resp:
                       raw = resp.read()
@@ -104,14 +111,138 @@ jobs:
               except Exception as e:
                   raise RuntimeError(f"Request failed for {urllib.parse.urlsplit(url).path}: {type(e).__name__}") from None
 
-          form = urllib.parse.urlencode({
-              "grant_type": "client_credentials",
-              "client_id": client_id,
-              "client_secret": client_secret,
-          }).encode()
+          def get_admin_token():
+              form = urllib.parse.urlencode({
+                  "grant_type": "password",
+                  "client_id": "admin-cli",
+                  "username": admin_user,
+                  "password": admin_password,
+              }).encode()
+              payload = request(f"{base}/realms/master/protocol/openid-connect/token", data=form)
+              if not isinstance(payload, dict) or not payload.get("access_token"):
+                  raise RuntimeError("Keycloak bootstrap authentication failed; check the cluster-held bootstrap credential")
+              return payload["access_token"]
+
+          def ensure_audit_client(admin_token):
+              # Create/update one dedicated confidential client; its service account
+              # receives only view-users, query-users, and view-realm.
+              query = urllib.parse.urlencode({"clientId": audit_client_id})
+              clients = request(f"{admin_url}/clients?{query}", token=admin_token)
+              if not isinstance(clients, list):
+                  raise RuntimeError("Unexpected Keycloak clients API response")
+              if clients:
+                  client = clients[0]
+                  client_uuid = client["id"]
+                  if not client.get("serviceAccountsEnabled") or client.get("publicClient"):
+                      client.update({
+                          "serviceAccountsEnabled": True,
+                          "publicClient": False,
+                          "protocol": "openid-connect",
+                          "standardFlowEnabled": False,
+                          "directAccessGrantsEnabled": False,
+                          "enabled": True,
+                          "clientAuthenticatorType": "client-secret",
+                      })
+                      status, _ = request(
+                          f"{admin_url}/clients/{urllib.parse.quote(client_uuid, safe='')}",
+                          token=admin_token, method="PUT", json_body=client,
+                      )
+                      if status is not None:
+                          raise RuntimeError(f"Unable to harden audit client configuration (HTTP {status})")
+              else:
+                  payload = {
+                      "clientId": audit_client_id,
+                      "name": "Shopnoltd read-only account readiness audit",
+                      "enabled": True,
+                      "protocol": "openid-connect",
+                      "publicClient": False,
+                      "serviceAccountsEnabled": True,
+                      "standardFlowEnabled": False,
+                      "implicitFlowEnabled": False,
+                      "directAccessGrantsEnabled": False,
+                      "clientAuthenticatorType": "client-secret",
+                  }
+                  status, _ = request(f"{admin_url}/clients", token=admin_token, method="POST", json_body=payload)
+                  if status is not None:
+                      raise RuntimeError(f"Unable to create read-only audit client (HTTP {status})")
+                  clients = request(f"{admin_url}/clients?{query}", token=admin_token)
+                  if not isinstance(clients, list) or not clients:
+                      raise RuntimeError("Created audit client could not be found")
+                  client_uuid = clients[0]["id"]
+
+              realm_clients = request(f"{admin_url}/clients?clientId=realm-management", token=admin_token)
+              if not isinstance(realm_clients, list) or not realm_clients:
+                  raise RuntimeError("Keycloak realm-management client was not found")
+              realm_management_uuid = realm_clients[0]["id"]
+              service_account = request(
+                  f"{admin_url}/clients/{urllib.parse.quote(client_uuid, safe='')}/service-account-user",
+                  token=admin_token,
+              )
+              if not isinstance(service_account, dict) or not service_account.get("id"):
+                  raise RuntimeError("Audit client service account is unavailable")
+              mappings_url = (
+                  f"{admin_url}/users/{urllib.parse.quote(service_account['id'], safe='')}"
+                  f"/role-mappings/clients/{urllib.parse.quote(realm_management_uuid, safe='')}"
+              )
+              mapped = request(mappings_url, token=admin_token)
+              mapped_names = {role.get("name") for role in mapped or []}
+              required_roles = []
+              for role_name in ("view-users", "query-users", "view-realm"):
+                  role = request(
+                      f"{admin_url}/clients/{urllib.parse.quote(realm_management_uuid, safe='')}"
+                      f"/roles/{urllib.parse.quote(role_name, safe='')}",
+                      token=admin_token,
+                  )
+                  if not isinstance(role, dict) or not role.get("id"):
+                      raise RuntimeError(f"Required read-only Keycloak role is missing: {role_name}")
+                  if role_name not in mapped_names:
+                      required_roles.append(role)
+              if required_roles:
+                  status, _ = request(mappings_url, token=admin_token, method="POST", json_body=required_roles)
+                  if status is not None:
+                      raise RuntimeError(f"Unable to assign read-only audit roles (HTTP {status})")
+
+              secret = request(
+                  f"{admin_url}/clients/{urllib.parse.quote(client_uuid, safe='')}/client-secret",
+                  token=admin_token,
+              )
+              if not isinstance(secret, dict) or not secret.get("value"):
+                  raise RuntimeError("Keycloak did not return the audit client secret")
+              # Keep the secret in the cluster, not in Git, Actions logs, or artifacts.
+              import base64, subprocess
+              secret_yaml = (
+                  "apiVersion: v1\\nkind: Secret\\nmetadata:\\n"
+                  f"  name: {audit_secret_name}\\n  namespace: shopno-identity\\n"
+                  "type: Opaque\\ndata:\\n"
+                  f"  client-id: {base64.b64encode(audit_client_id.encode()).decode()}\\n"
+                  f"  client-secret: {base64.b64encode(secret['value'].encode()).decode()}\\n"
+              )
+              subprocess.run(
+                  ["kubectl", "apply", "-f", "-"],
+                  input=secret_yaml.encode(),
+                  stdout=subprocess.DEVNULL,
+                  stderr=subprocess.PIPE,
+                  check=True,
+              )
+              return secret["value"]
+
+          def get_audit_token(secret_value):
+              form = urllib.parse.urlencode({
+                  "grant_type": "client_credentials",
+                  "client_id": audit_client_id,
+                  "client_secret": secret_value,
+              }).encode()
+              payload = request(token_url, data=form)
+              if not isinstance(payload, dict) or not payload.get("access_token"):
+                  raise RuntimeError("Dedicated read-only audit client authentication failed")
+              return payload["access_token"]
+
           try:
-              token_data = request(token_url, data=form)
-              token = token_data["access_token"]
+              bootstrap_token = get_admin_token()
+              client_secret = ensure_audit_client(bootstrap_token)
+              token = get_audit_token(client_secret)
+              # From this point onward, every Keycloak call is read-only and uses
+              # the dedicated service account with only the three read roles.
               realm_settings = request(admin_url, token=token)
               if not isinstance(realm_settings, dict):
                   raise RuntimeError("Unexpected realm settings API response")
@@ -198,7 +329,9 @@ jobs:
                   "",
                   "This is a credential/readiness inventory, NOT a successful login test or a mail-delivery test. SMTP configured means only that the live realm has a host and sender value; it does not prove relay reachability or inbox delivery. It never attempts login as real users, resets passwords, or changes account settings. Email verification and OTP requirements depend on the configured realm policy. Review the CSV using pseudonymous references only; no names, usernames, or email addresses are included.",
                   "",
-                  "New accounts are included automatically on the next scheduled or manually triggered run.",
+                  "A dedicated confidential audit client is provisioned idempotently with only view-users, query-users, and view-realm. Its client secret is stored only in the shopno-identity Kubernetes Secret; the per-account audit then uses this read-only service account.",
+              "",
+              "New accounts are included automatically on the next scheduled or manually triggered run.",
               ]
               with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as f:
                   f.write("\n".join(summary) + "\n")
