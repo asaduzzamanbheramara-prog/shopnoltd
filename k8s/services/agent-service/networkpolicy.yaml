@@ -34,6 +34,11 @@ spec:
           podSelector: {matchLabels: {app.kubernetes.io/name: agent-browser}}
       ports:
         - {port: 3000, protocol: TCP}
+    - to:   # Owner-authorized shared browser actions via Session Manager
+        - namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: shopno-tools}}
+          podSelector: {matchLabels: {app: session-manager}}
+      ports:
+        - {port: 8000, protocol: TCP}
     - to:   # Keycloak JWKS (public HTTPS; private ranges excluded so the agent cannot reach cluster services)
         - ipBlock:
             cidr: 0.0.0.0/0

@@ -88,9 +88,10 @@ function ApprovalCard({ item, onRespond }) {
   )
 }
 
-export default function AgentWorkspace() {
+export default function AgentWorkspace({ workspaceMode = false, workspaceProfileId = '', workspaceTabId = '', workspaceSessionActive = false } = {}) {
   const [status, setStatus] = useState('connecting')
   const [model, setModel] = useState('auto')
+  const [mode, setMode] = useState('hybrid')
   const [modelCatalog, setModelCatalog] = useState([])
   const [goal, setGoal] = useState('')
   const [running, setRunning] = useState(false)
@@ -224,11 +225,21 @@ export default function AgentWorkspace() {
     const text = goal.trim()
     const ws = wsRef.current
     if (!text || running || status !== 'connected' || ws?.readyState !== 1) return
+    if (workspaceMode && (!workspaceSessionActive || !workspaceProfileId || !workspaceTabId)) {
+      push({ kind: 'error', text: 'Launch a browser session and select an active tab before using the shared Browser Agent.' })
+      return
+    }
     setPlan([])
     setRunning(true)
-    ws.send(JSON.stringify({ goal: text, model }))
+    ws.send(JSON.stringify({ goal: text, model, mode, workspace_mode: workspaceMode, workspace: workspaceMode ? { profile_id: workspaceProfileId, tab_id: workspaceTabId } : undefined }))
     setGoal('')
   }
+
+  useEffect(() => {
+    if (!workspaceMode) return
+    const ws = wsRef.current
+    if (running && ws?.readyState === 1) ws.send(JSON.stringify({ type: 'cancel' }))
+  }, [workspaceMode, workspaceProfileId, workspaceTabId, workspaceSessionActive])
 
   const connected = status === 'connected'
 
@@ -248,6 +259,13 @@ export default function AgentWorkspace() {
             ))}
           </select>
         </label>
+        <label className="shopno-agent-model-label" style={{ fontSize: 13, color: '#4b5563', minWidth: 0, maxWidth: '100%', flex: '0 1 auto' }}>Mode
+          <select value={mode} onChange={(event) => setMode(event.target.value)} disabled={running} aria-label="Agent execution mode" style={{ padding: '6px 10px', border: '1px solid #d1d5db', borderRadius: 8, background: '#fff', fontWeight: 600, maxWidth: 'min(38vw, 180px)' }}>
+            <option value="auto">Auto</option>
+            <option value="hybrid">Hybrid · approve changes</option>
+            <option value="manual">Manual · approve changes</option>
+          </select>
+        </label>
         {(status === 'disconnected' || status === 'auth_failed') && <button type="button" onClick={() => { retryRef.current = 0; clearTimeout(timerRef.current); connect() }} style={{ ...smallBtn, display: 'inline-flex', alignItems: 'center', gap: 5 }}><RefreshCw size={13} /> Reconnect</button>}
       </div>
 
@@ -256,8 +274,8 @@ export default function AgentWorkspace() {
           <div style={{ textAlign: 'center', padding: '40px 10px', color: '#6b7280' }}>
             <div style={{ width: 54, height: 54, margin: '0 auto 16px', borderRadius: 16, display: 'grid', placeItems: 'center', background: '#10a37f', color: '#fff' }}><Bot size={28} /></div>
             <h2 style={{ margin: '0 0 8px', color: '#111827' }}>Give the agent a goal</h2>
-            <p style={{ margin: 0 }}>It plans the steps, works in its own workspace, and asks before it opens pages or clicks in your browser.</p>
-            <p style={{ margin: '10px 0 0', fontSize: 13 }}>Browser actions run in an isolated Shopnoltd Chromium session. Opening pages, clicking and typing require your approval.</p>
+            <p style={{ margin: 0 }}>{workspaceMode ? 'It plans the steps and works in the selected Shopnoltd Browser profile and active tab.' : 'It plans the steps and works in its isolated Shopnoltd browser and workspace.'} Choose Auto, Hybrid or Manual from the toolbar.</p>
+            <p style={{ margin: '10px 0 0', fontSize: 13 }}>{workspaceMode ? 'Auto currently allows navigation and read-only inspection; state-changing actions still ask for approval until shared-tab target inspection is available. Hybrid asks before changes. Manual asks before each state-changing action.' : 'Auto performs routine actions; sensitive controls, final submissions and uploads still require approval. Hybrid asks before changes. Manual asks before each state-changing browser action; read-only inspection remains available.'}</p>
           </div>
         )}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -281,7 +299,7 @@ export default function AgentWorkspace() {
           <textarea value={goal} onChange={(event) => setGoal(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); send() } }} rows={2} maxLength={4000} placeholder={connected ? 'Describe what the agent should do…' : 'Waiting for connection…'} disabled={!connected || running} style={{ display: 'block', width: '100%', boxSizing: 'border-box', border: 0, outline: 0, resize: 'none', borderRadius: 16, padding: '14px 56px 14px 16px', font: 'inherit', lineHeight: 1.45 }} />
           <button type="submit" disabled={!connected || running || !goal.trim()} aria-label="Send goal" title="Send" style={{ position: 'absolute', right: 9, bottom: 9, width: 36, height: 36, border: 0, borderRadius: 10, display: 'grid', placeItems: 'center', background: !connected || running || !goal.trim() ? '#d1d5db' : '#111827', color: '#fff', cursor: 'pointer' }}><Send size={17} /></button>
         </form>
-        <div style={{ textAlign: 'center', fontSize: 11, color: '#9ca3af', marginTop: 8 }}>Enter to send · Auto uses active free-tier models first and switches on quota or provider failures · Opening pages, clicking and typing always ask first</div>
+        <div style={{ textAlign: 'center', fontSize: 11, color: '#9ca3af', marginTop: 8 }}>Enter to send · Auto prefers active free-tier models · Sensitive actions, submissions and uploads require approval · Hybrid approves changes · Manual approves state-changing actions</div>
       </div>
     </div>
   )

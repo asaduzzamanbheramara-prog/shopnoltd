@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { AdsterraResponsiveBanner } from '../components/AdsterraAds'
 
 const GITHUB = 'https://github.com/asaduzzamanbheramara-prog/shopnoltd/releases/download/shopnoltd-desktop-latest'
+const BROWSER_RELEASE = 'https://github.com/asaduzzamanbheramara-prog/shopnoltd/releases/download/shopnoltd-browser-latest'
 
 const desktop = [
   { icon: '🪟', name: 'Windows', file: 'Shopnoltd-Setup.exe', note: 'NSIS installer for 64-bit Windows.' },
@@ -37,6 +38,17 @@ export default function Downloads() {
         <div style={{ fontSize: 42 }}>⬇️</div>
         <h1 style={{ fontSize: 'clamp(34px,5vw,52px)', margin: '8px 0 12px' }}>Shopnoltd Downloads</h1>
         <p style={{ maxWidth: 800, lineHeight: 1.7, margin: 0, opacity: .96 }}>Official Shopnoltd installers and native applications. Release assets are published from GitHub Actions so the website does not depend on files stored on the local server.</p>
+      </section>
+
+      <section style={{ marginTop: 40 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'end', flexWrap: 'wrap' }}>
+          <div><h2 style={{ marginBottom: 6 }}>Shopnoltd Browser for Windows</h2><p style={{ color: '#64748b', marginTop: 0 }}>Install the Shopnoltd-branded browser workspace with your Shopnoltd sign-in, isolated browser profiles, live remote Chromium and AI Agent panel.</p></div>
+          <a href="https://github.com/asaduzzamanbheramara-prog/shopnoltd/releases/tag/shopnoltd-browser-latest" target="_blank" rel="noopener noreferrer" style={{ color: '#0369a1', fontWeight: 800 }}>View Browser release →</a>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,245px),1fr))', gap: 18 }}>
+          <Card icon="🌐" name="Shopnoltd Browser · Windows" href={BROWSER_RELEASE + '/Shopnoltd-Browser-Setup.exe'} note="Windows 64-bit NSIS installer. Verify SHA256SUMS.txt from the same release before installing. The installer is currently unsigned." />
+          <Card icon="🔐" name="Browser installer checksum" href={BROWSER_RELEASE + '/SHA256SUMS.txt'} note="SHA-256 manifest for the Windows Browser installer." />
+        </div>
       </section>
 
       <section style={{ marginTop: 40 }}>
@@ -91,7 +103,7 @@ export default function Downloads() {
 
       <section style={{ marginTop: 42, padding: 20, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 16 }}>
         <h2 style={{ marginTop: 0 }}>Integrity and release status</h2>
-        <p style={{ color: '#475569', lineHeight: 1.65, marginBottom: 8 }}>Desktop releases include a SHA-256 checksum manifest. Android releases also publish checksum files. Verify a downloaded installer against the published SHA-256 value when distributing builds outside the browser.</p>
+        <p style={{ color: '#475569', lineHeight: 1.65, marginBottom: 8 }}>Desktop and Shopnoltd Browser releases include SHA-256 checksum manifests. Android releases also publish checksum files. Verify a downloaded installer against the published SHA-256 value when distributing builds outside the browser.</p>
         <p style={{ color: '#475569', lineHeight: 1.65, marginBottom: 0 }}>iPhone/iPad CI currently validates the unsigned simulator build. No public iOS distribution download is shown until a signed distribution artifact exists.</p>
       </section>
     </main>

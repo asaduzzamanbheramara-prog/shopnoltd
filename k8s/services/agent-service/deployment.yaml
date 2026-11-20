@@ -75,6 +75,8 @@ spec:
                   optional: true
             - name: BROWSER_WS_ENDPOINT
               value: ws://agent-browser.shopno-apps.svc.cluster.local:3000
+            - name: SESSION_MANAGER_URL
+              value: http://session-manager.shopno-tools.svc.cluster.local
             - name: AI_MODEL_CATALOG_URL
               value: http://ai-platform.shopno-platform.svc.cluster.local/api/v1/inference/models
             - name: KEYCLOAK_ISSUER

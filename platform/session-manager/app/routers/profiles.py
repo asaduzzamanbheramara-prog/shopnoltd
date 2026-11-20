@@ -1,7 +1,12 @@
+import os
+import shutil
 import uuid
+from pathlib import Path
 from app.auth import require_user
 from app.models.db import Profile, get_db
 from app.models.schemas import ProfileCreate, ProfileOut
+from app.services.session_pool import pool
+from app.routers.viewer import revoke_profile_viewers
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
@@ -30,9 +35,17 @@ def get_profile(profile_id: str, user=Depends(require_user), db: Session = Depen
     return profile
 
 @router.delete("/{profile_id}")
-def delete_profile(profile_id: str, user=Depends(require_user), db: Session = Depends(get_db)):
+async def delete_profile(profile_id: str, user=Depends(require_user), db: Session = Depends(get_db)):
     profile = db.query(Profile).filter(Profile.id == profile_id, Profile.owner == user["sub"]).first()
     if profile:
+        await pool.close(profile_id)
+        revoke_profile_viewers(profile_id)
+        storage_root = Path(os.getenv("PROFILE_STORAGE_ROOT", "/data")).resolve()
+        profile_path = (storage_root / profile.user_data_dir).resolve()
+        if profile_path == storage_root or storage_root not in profile_path.parents:
+            raise HTTPException(409, "Profile storage path is outside the managed data directory")
+        if profile_path.exists():
+            shutil.rmtree(profile_path)
         db.delete(profile)
         db.commit()
     return {"deleted": bool(profile)}

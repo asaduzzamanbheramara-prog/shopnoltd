@@ -30,6 +30,7 @@ on:
           - ai-platform
           - android-cloud-controller
           - android-cloud-gateway
+          - session-manager
 
 permissions:
   contents: write
@@ -240,6 +241,21 @@ jobs:
           if [ '${{ matrix.service }}' = 'shopnoltd-web' ]; then
             python3 -c "import json; from pathlib import Path; root=Path('platform/shopnoltd-web/public'); page=(root/'software-os-center.html').read_text(encoding='utf-8'); guide=root/'offline-recovery-guide.html'; entries=json.loads((root/'catalogue.json').read_text(encoding='utf-8')); ids=[entry['id'] for entry in entries]; assert isinstance(entries,list) and entries, 'catalogue must be a non-empty JSON array'; assert len(ids)==len(set(ids)), 'catalogue IDs must be unique'; assert \"fetch('/catalogue.json'\" in page, 'catalogue page must load the packaged JSON'; assert guide.is_file() and guide.stat().st_size>0, 'offline recovery guide must be packaged'; print(f'Validated {len(entries)} catalogue entries and both recovery pages')"
           fi
+
+      - name: Set up Python for Session Manager contract tests
+        if: matrix.service == 'session-manager'
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Test authenticated Session Manager viewer contracts
+        if: matrix.service == 'session-manager'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check -r platform/session-manager/requirements.txt
+          PYTHONPATH=platform/session-manager python3 -m compileall -q platform/session-manager/app
+          PYTHONPATH=platform/session-manager python3 -m unittest discover -s platform/session-manager/tests -v
 
       - uses: docker/login-action@v3
         with:
