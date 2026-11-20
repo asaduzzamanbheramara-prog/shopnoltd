@@ -126,7 +126,7 @@ class AgentBridgeAuthorizationTests(unittest.IsolatedAsyncioTestCase):
                 {"sub": "user-a"}, db
             )
         self.assertTrue(result["uploaded"])
-        self.assertEqual(result["filename"], ".._my report.txt")
+        self.assertEqual(result["filename"], "_my report.txt")
         self.assertEqual(locator.file_payload["buffer"], b"safe file")
 
     async def test_keyboard_shortcuts_are_limited(self):
