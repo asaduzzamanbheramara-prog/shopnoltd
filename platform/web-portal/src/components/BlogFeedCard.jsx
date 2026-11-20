@@ -7,6 +7,7 @@ const actionStyle = { border: '1px solid #cbd5e1', background: '#fff', color: '#
 export default function BlogFeedCard({ post }) {
   const [like, setLike] = useState({ count: Number(post.like_count || 0), liked: false })
   const [shareCount, setShareCount] = useState(Number(post.share_count || 0))
+  const [saved, setSaved] = useState(false)
   const [comments, setComments] = useState([])
   const [commentText, setCommentText] = useState('')
   const [busy, setBusy] = useState(false)
@@ -19,11 +20,13 @@ export default function BlogFeedCard({ post }) {
       platformApi.blogLikes(post.slug),
       platformApi.blogComments(post.slug),
       platformApi.blogShares(post.slug),
-    ]).then(([likes, rows, shares]) => {
+      platformApi.blogSaved(post.slug),
+    ]).then(([likes, rows, shares, savedState]) => {
       if (!active) return
       setLike({ count: Number(likes?.count || 0), liked: Boolean(likes?.liked) })
       setComments(Array.isArray(rows) ? rows : [])
       setShareCount(Number(shares?.count || 0))
+      setSaved(Boolean(savedState?.saved))
     }).catch(() => {})
     return () => { active = false }
   }, [post.slug])
@@ -55,6 +58,15 @@ export default function BlogFeedCard({ post }) {
     }
   }
 
+  async function toggleSave() {
+    setBusy(true); setMessage('')
+    try {
+      const result = saved ? await platformApi.unsaveBlog(post.slug) : await platformApi.saveBlog(post.slug)
+      setSaved(Boolean(result?.saved))
+    } catch (error) { setMessage(error?.message || 'Please sign in to save this article.') }
+    finally { setBusy(false) }
+  }
+
   async function submitComment(event) {
     event.preventDefault()
     const body = commentText.trim()
@@ -81,6 +93,7 @@ export default function BlogFeedCard({ post }) {
       <button type="button" disabled={busy} onClick={toggleLike} style={{ ...actionStyle, background: like.liked ? '#e0f2fe' : '#fff', borderColor: like.liked ? '#0284c7' : '#cbd5e1' }}>{like.liked ? '♥ Liked' : '♡ Like'} · {like.count}</button>
       <button type="button" onClick={() => setExpanded(value => !value)} style={actionStyle}>Comment · {comments.length}</button>
       <button type="button" onClick={shareArticle} style={actionStyle}>↗ Share · {shareCount}</button>
+      <button type="button" disabled={busy} onClick={toggleSave} style={{ ...actionStyle, background: saved ? '#e0f2fe' : '#fff', borderColor: saved ? '#0284c7' : '#cbd5e1' }}>{saved ? '🔖 Saved' : '🔖 Save'}</button>
     </div>
     {post.cover_image && <Link to={'/blog/' + encodeURIComponent(post.slug)}><img src={post.cover_image} alt="" loading="lazy" style={{ display: 'block', width: '100%', maxHeight: 420, objectFit: 'cover', borderRadius: 10, marginBottom: 12 }} /></Link>}
     <p style={{ color: '#475569', lineHeight: 1.7, whiteSpace: 'pre-wrap', margin: '0 0 12px' }}>{post.excerpt || String(post.content || '').slice(0, 280)}</p>
