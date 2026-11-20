@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Runtime OIDC client reconciliation is performed by the dedicated Keycloak sync workflow.
 
 import json
 import os
