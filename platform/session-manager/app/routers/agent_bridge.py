@@ -91,29 +91,29 @@ async def agent_browser_action(
             elif action == "click":
                 selector = _require_selector(payload)
                 await page.locator(selector).first.click(timeout=15000)
-                result = {"clicked": True, "url": page.url, "title": await page.title()}
+                result = {"clicked": True, "url": page.url, "title": await page.title(), "verification": "click dispatched; website-side state change is not confirmed"}
             elif action == "type":
                 selector = _require_selector(payload)
                 if payload.text is None:
                     raise HTTPException(400, "Text is required")
                 await page.locator(selector).first.fill(payload.text, timeout=15000)
-                result = {"typed": True, "selector": selector}
+                result = {"typed": True, "selector": selector, "verification": "field value set in the browser; website-side save is not confirmed"}
             elif action == "press":
                 selector = _require_selector(payload)
                 if payload.key not in ALLOWED_KEYS:
                     raise HTTPException(400, "Keyboard key is not allowed")
                 await page.locator(selector).first.press(payload.key, timeout=15000)
-                result = {"pressed": payload.key, "selector": selector}
+                result = {"pressed": payload.key, "selector": selector, "verification": "key dispatched; website-side effect is not confirmed"}
             elif action == "select":
                 selector = _require_selector(payload)
                 if payload.value is None:
                     raise HTTPException(400, "A select value is required")
                 selected = await page.locator(selector).first.select_option(value=payload.value, timeout=15000)
-                result = {"selected": selected, "selector": selector}
+                result = {"selected": selected, "selector": selector, "verification": "option selected locally; website-side save is not confirmed"}
             elif action in {"check", "uncheck"}:
                 selector = _require_selector(payload)
                 await getattr(page.locator(selector).first, action)(timeout=15000)
-                result = {action + "ed": True, "selector": selector}
+                result = {action + "ed": True, "selector": selector, "verification": "control state changed locally; website-side save is not confirmed"}
             elif action == "submit":
                 selector = _require_selector(payload)
                 locator = page.locator(selector).first
@@ -124,7 +124,7 @@ async def agent_browser_action(
                 if metadata.get("tag") not in {"button", "input"} or metadata.get("type") not in {"submit", "image"}:
                     raise HTTPException(400, "Only an actual form submit control may be submitted")
                 await locator.click(timeout=15000)
-                result = {"submitted": True, "url": page.url, "title": await page.title()}
+                result = {"submitted": True, "url": page.url, "title": await page.title(), "verification": "submit control clicked; server acceptance is not confirmed"}
             elif action == "upload":
                 selector = _require_selector(payload)
                 if not payload.file_name or not payload.content_base64:
@@ -143,7 +143,7 @@ async def agent_browser_action(
                     "mimeType": payload.mime_type or "application/octet-stream",
                     "buffer": content,
                 }, timeout=15000)
-                result = {"uploaded": True, "filename": safe_name, "size": len(content)}
+                result = {"uploaded": True, "filename": safe_name, "size": len(content), "verification": "file selected in browser; server acceptance is not confirmed"}
         except HTTPException:
             raise
         except Exception as exc:
