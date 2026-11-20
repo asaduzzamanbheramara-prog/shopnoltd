@@ -19,7 +19,7 @@ concurrency:
 
 jobs:
   authenticated-smoke:
-    name: Read-only three-role browser checks
+    name: Read-only admin and regular-user browser checks
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
@@ -70,7 +70,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: shopnoltd-three-role-authenticated-report
+          name: shopnoltd-authenticated-smoke-report
           path: |
             tests/browser-role/playwright-report/
             tests/browser-role/test-results/
