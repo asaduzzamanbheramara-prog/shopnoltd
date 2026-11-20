@@ -243,6 +243,54 @@ def sync_client(token, client_id):
 
 
 
+def sync_realm_smtp(token):
+    """Configure Keycloak password-recovery email through Shopnoltd's existing Brevo relay."""
+    smtp_host = os.environ.get("SMTP_HOST", "").strip()
+    smtp_port = os.environ.get("SMTP_PORT", "").strip()
+    smtp_user = os.environ.get("SMTP_USERNAME", "").strip()
+    smtp_password = os.environ.get("SMTP_PASSWORD", "")
+    sender = os.environ.get("SMTP_ENVELOPE_FROM", "").strip()
+    if not all((smtp_host, smtp_port, smtp_user, smtp_password, sender)):
+        raise RuntimeError("SMTP relay configuration is incomplete; refusing to enable password recovery without mail delivery settings")
+
+    expected = {
+        "host": smtp_host,
+        "port": smtp_port,
+        "from": sender,
+        "envelopeFrom": sender,
+        "auth": "true",
+        "user": smtp_user,
+        "password": smtp_password,
+        "starttls": "true",
+        "ssl": "false",
+    }
+    code, realm = request("GET", f"/admin/realms/{REALM}", token=token)
+    if code != 200 or not isinstance(realm, dict):
+        raise RuntimeError(f"Unable to read Keycloak realm settings before SMTP reconciliation (HTTP {code})")
+
+    # Preserve all existing realm settings; change only password-recovery enablement
+    # and the SMTP transport configuration required to deliver reset/action emails.
+    realm["resetPasswordAllowed"] = True
+    realm["smtpServer"] = expected
+    code, _ = request("PUT", f"/admin/realms/{REALM}", token=token, body=realm)
+    if code not in (200, 204):
+        raise RuntimeError(f"Unable to configure Keycloak password-recovery SMTP (HTTP {code})")
+
+    verify_code, verified_realm = request("GET", f"/admin/realms/{REALM}", token=token)
+    if verify_code != 200 or not isinstance(verified_realm, dict):
+        raise RuntimeError(f"Unable to verify persisted Keycloak SMTP settings (HTTP {verify_code})")
+    persisted = verified_realm.get("smtpServer") or {}
+    public_fields = ("host", "port", "from", "envelopeFrom", "auth", "user", "starttls", "ssl")
+    mismatches = [field for field in public_fields if str(persisted.get(field, "")) != expected[field]]
+    if mismatches or not verified_realm.get("resetPasswordAllowed"):
+        raise RuntimeError(
+            "Keycloak password-recovery SMTP settings did not persist as expected "
+            f"(mismatched fields: {mismatches}, reset_password_allowed={bool(verified_realm.get('resetPasswordAllowed'))})"
+        )
+    print("[OK] verified persisted Keycloak password-recovery SMTP settings (relay, sender, authentication, STARTTLS)")
+    print("[OK] Keycloak Forgot Password is enabled; no user accounts or credentials were changed")
+
+
 def sync_social_provider(token, alias, provider):
     client_id = os.environ.get(provider["clientIdEnv"], "").strip()
     client_secret = os.environ.get(provider["clientSecretEnv"], "").strip()
@@ -293,6 +341,7 @@ def main():
         try:
             print(f"[INFO] Keycloak client sync attempt {attempt}/{max_attempts}", flush=True)
             token = get_admin_token()
+            sync_realm_smtp(token)
             for client_id in CLIENT_IDS:
                 sync_client(token, client_id)
             sync_social_providers(token)
