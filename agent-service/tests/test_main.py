@@ -213,6 +213,20 @@ class SharedBrowserWorkspaceTests(unittest.IsolatedAsyncioTestCase):
         approval.assert_awaited_once()
         shared.assert_not_awaited()
 
+    async def test_closed_shared_session_aborts_the_agent_task(self):
+        ui = mock.AsyncMock()
+        claims = {"sub": "user-a", "_access_token": "test-token"}
+        workspace = {"profile_id": "profile-a", "tab_id": "tab-a"}
+        with mock.patch.object(
+            main, "workspace_browser_action",
+            new=mock.AsyncMock(side_effect=main.WorkspaceSessionUnavailable("session closed")),
+        ):
+            with self.assertRaises(main.WorkspaceSessionUnavailable):
+                await main.call_tool(
+                    claims, ui, "browser_action", {"action": "get_text"},
+                    "auto", workspace,
+                )
+
     async def test_shared_browser_upload_does_not_use_an_agent_container_path(self):
         ui = mock.AsyncMock()
         claims = {"sub": "user-a", "_access_token": "test-token"}
