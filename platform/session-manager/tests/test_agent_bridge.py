@@ -76,6 +76,59 @@ class AgentBridgeAuthorizationTests(unittest.IsolatedAsyncioTestCase):
                 )
         self.assertEqual(caught.exception.status_code, 400)
 
+    async def test_screenshot_is_returned_from_the_selected_tab(self):
+        profile = SimpleNamespace(owner="user-a")
+        db = FakeDB(profile)
+
+        class FakePage:
+            url = "https://example.com/"
+
+            async def screenshot(self, **_kwargs):
+                return b"jpeg-bytes"
+
+        with (
+            patch.object(agent_bridge.pool, "_contexts", {"profile-a": object()}),
+            patch.object(agent_bridge.pool, "_get_tab", return_value=FakePage()),
+        ):
+            result = await agent_bridge.agent_browser_action(
+                "profile-a", "tab-a", agent_bridge.AgentBrowserAction(action="screenshot"),
+                {"sub": "user-a"}, db
+            )
+        self.assertTrue(result["image"].startswith("data:image/jpeg;base64,"))
+
+    async def test_upload_payload_is_size_limited_and_sanitized(self):
+        profile = SimpleNamespace(owner="user-a")
+        db = FakeDB(profile)
+
+        class FakeLocator:
+            first = None
+
+            async def set_input_files(self, file_payload, **_kwargs):
+                self.file_payload = file_payload
+
+        locator = FakeLocator()
+        locator.first = locator
+
+        class FakePage:
+            def locator(self, _selector):
+                return locator
+
+        with (
+            patch.object(agent_bridge.pool, "_contexts", {"profile-a": object()}),
+            patch.object(agent_bridge.pool, "_get_tab", return_value=FakePage()),
+        ):
+            result = await agent_bridge.agent_browser_action(
+                "profile-a", "tab-a",
+                agent_bridge.AgentBrowserAction(
+                    action="upload", selector="input[type=file]", file_name="../my report.txt",
+                    content_base64="c2FmZSBmaWxl"
+                ),
+                {"sub": "user-a"}, db
+            )
+        self.assertTrue(result["uploaded"])
+        self.assertEqual(result["filename"], ".._my report.txt")
+        self.assertEqual(locator.file_payload["buffer"], b"safe file")
+
     async def test_keyboard_shortcuts_are_limited(self):
         profile = SimpleNamespace(owner="user-a")
         db = FakeDB(profile)
