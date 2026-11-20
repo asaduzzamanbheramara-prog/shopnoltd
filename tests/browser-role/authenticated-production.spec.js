@@ -44,6 +44,15 @@ function generateTotp(secret, now = Date.now()) {
 
 async function login(page, username, password, totpSecret, roleLabel) {
   await page.goto(`${baseURL}/login`, { waitUntil: 'domcontentloaded' })
+
+  // The privacy dialog is modal and intercepts pointer events until a choice is made.
+  // Reject optional analytics/advertising for this ephemeral test browser session.
+  const consentDialog = page.getByRole('dialog', { name: /Privacy & cookie preferences/i })
+  if (await consentDialog.isVisible().catch(() => false)) {
+    await consentDialog.getByRole('button', { name: /Reject all/i }).click()
+    await expect(consentDialog).toBeHidden()
+  }
+
   await page.getByRole('button', { name: 'Continue with Shopnoltd' }).click()
   await page.locator('#username').fill(username)
   await page.locator('#password').fill(password)
