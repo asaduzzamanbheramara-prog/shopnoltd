@@ -67,6 +67,7 @@ All `/api/profiles/*` and `/api/sessions/*` endpoints require a Keycloak RS256 a
 - `POST /api/sessions/{profile_id}/tabs/{tab_id}/navigate` and `/focus`, `DELETE .../{tab_id}` — navigate, focus, or close an owned tab.
 - `GET /api/sessions/{profile_id}/downloads` and `GET .../downloads/{download_id}` — list and retrieve only the caller's browser downloads; files are stored under that profile's managed data directory and removed with the profile.
 - `POST /api/sessions/{profile_id}/close` and `GET /api/sessions/active` — operate on/list only the caller's sessions.
+- `POST /api/agent/profiles/{profile_id}/tabs/{tab_id}/actions` — authenticated Agent bridge into the same owner-scoped Playwright tab. The Agent token is revalidated on every action; only the Agent Service pods may reach this route through the in-cluster NetworkPolicy. File uploads are capped at 4 MiB and keyboard keys are allow-listed. A browser click, form submit, or file selection is reported as dispatched/selected, not as proof that the destination website accepted it.
 - Proxy CRUD and profile proxy assignment are disabled until proxy records have equivalent tenant ownership.
 
 ## Live session viewing
