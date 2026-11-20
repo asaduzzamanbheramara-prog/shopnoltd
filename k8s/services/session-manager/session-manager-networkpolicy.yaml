@@ -23,6 +23,17 @@ spec:
       ports:
         - protocol: TCP
           port: 8000
+    # The authenticated Agent bridge uses the in-cluster Service, not public ingress.
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: shopno-apps
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: agent-service
+      ports:
+        - protocol: TCP
+          port: 8000
   egress:
     # Cluster DNS only; no broad access to other in-cluster services.
     - to:
