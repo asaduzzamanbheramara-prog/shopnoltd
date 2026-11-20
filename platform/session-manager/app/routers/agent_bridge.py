@@ -17,8 +17,8 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 url_policy = PublicURLPolicy()
 MAX_UPLOAD_BYTES = 4 * 1024 * 1024
-ALLOWED_KEYS = {"Enter", "Tab", "Escape", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight",
-                "PageUp", "PageDown", "Home", "End", "Space"}
+ALLOWED_KEYS = {"Enter", "Tab", "Shift+Tab", "Escape", "Backspace", "Delete", "ArrowUp", "ArrowDown",
+                "ArrowLeft", "ArrowRight", "PageUp", "PageDown", "Home", "End", "Space", "Control+A", "Meta+A"}
 
 
 class AgentBrowserAction(BaseModel):
