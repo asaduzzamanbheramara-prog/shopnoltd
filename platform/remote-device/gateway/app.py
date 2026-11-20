@@ -362,7 +362,7 @@ async def connect(device_id: str, request: Request):
     connect_url = (
         f"{MESH_URL}/?"
         + urlencode({
-            "node": node_id,
+            "gotonode": node_id,
             "viewmode": "11",
             "hide": "15",
         })
@@ -421,7 +421,7 @@ async def browser_connect(device_id: str, request: Request):
     connect_url = (
         f"{MESH_URL}/?"
         + urlencode({
-            "node": node_id,
+            "gotonode": node_id,
             "viewmode": "11",
             "hide": "15",
         })
@@ -496,6 +496,31 @@ async def create_device(
         body,
     )
 
+
+@app.post("/api/devices/{device_id}/meshcentral-link")
+async def link_meshcentral_device(device_id: str, request: Request):
+    identity = await verify_user(request)
+    devices = await registry_control_request("GET", "/api/devices", parse_json=True)
+    device = next((item for item in devices if isinstance(item, dict) and item.get("id") == device_id), None)
+    if device is None or (not identity["is_platform_admin"] and device.get("owner_id") != identity["subject"]):
+        raise HTTPException(status_code=404, detail="device not found")
+    try:
+        payload = await request.json()
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="invalid JSON body") from exc
+    if not isinstance(payload, dict):
+        raise HTTPException(status_code=400, detail="JSON object required")
+    node_id = payload.get("meshcentral_node_id")
+    if not isinstance(node_id, str) or not node_id.strip() or len(node_id.strip()) > 500:
+        raise HTTPException(status_code=400, detail="a valid MeshCentral node ID is required")
+    link_payload = {"meshcentral_node_id": node_id.strip()}
+    mesh_id = payload.get("meshcentral_mesh_id")
+    if isinstance(mesh_id, str) and mesh_id.strip():
+        if len(mesh_id.strip()) > 500:
+            raise HTTPException(status_code=400, detail="MeshCentral mesh ID is too long")
+        link_payload["meshcentral_mesh_id"] = mesh_id.strip()
+    body = json.dumps(link_payload, separators=(",", ":"), sort_keys=True).encode()
+    return await registry_control_request("POST", f"/api/devices/{device_id}/meshcentral-link", body)
 
 @app.post("/api/devices/{device_id}/enrollment-token")
 async def regenerate_enrollment_token(
