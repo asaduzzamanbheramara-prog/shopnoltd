@@ -3,6 +3,7 @@ import base64
 import binascii
 import logging
 import re
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ConfigDict, Field
@@ -49,7 +50,12 @@ async def agent_browser_action(
     user=Depends(require_user),
     db: Session = Depends(get_db),
 ):
-    profile = db.query(Profile).filter(Profile.id == profile_id, Profile.owner == user["sub"]).first()
+    try:
+        profile_key = str(UUID(profile_id))
+        tab_key = str(UUID(tab_id))
+    except (TypeError, ValueError):
+        raise HTTPException(404, "Browser profile or tab not found")
+    profile = db.query(Profile).filter(Profile.id == UUID(profile_key), Profile.owner == user["sub"]).first()
     if not profile:
         raise HTTPException(404, "Browser profile not found")
 
@@ -59,9 +65,9 @@ async def agent_browser_action(
         raise HTTPException(400, "Unsupported browser action")
 
     async with pool._lock:
-        if profile_id not in pool._contexts:
+        if profile_key not in pool._contexts:
             raise HTTPException(409, "Browser session is closed")
-        page = pool._get_tab(profile_id, tab_id)
+        page = pool._get_tab(profile_key, tab_key)
         if page is None:
             raise HTTPException(404, "Browser tab not found")
 
