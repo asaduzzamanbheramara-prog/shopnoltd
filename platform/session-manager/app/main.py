@@ -1,7 +1,7 @@
 """Shopnoltd Session Manager with fail-closed authentication for browser APIs."""
 import os
 from app.models.db import init_db
-from app.routers import health, profiles, sessions, viewer
+from app.routers import agent_bridge, health, profiles, sessions, viewer
 from app.services.session_pool import pool
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -23,6 +23,7 @@ app.include_router(health.router, tags=["health"])
 app.include_router(profiles.router, prefix="/api/profiles", tags=["profiles"])
 app.include_router(sessions.router, prefix="/api/sessions", tags=["sessions"])
 app.include_router(viewer.router, tags=["authenticated-viewer"])
+app.include_router(agent_bridge.router, tags=["agent-browser-bridge"])
 # noVNC assets are public static files; all WebSocket access is protected by the viewer gateway.
 app.mount("/viewer-assets", StaticFiles(directory="/usr/share/novnc"), name="viewer-assets")
 # Proxy CRUD is withheld until proxy records have tenant ownership.
