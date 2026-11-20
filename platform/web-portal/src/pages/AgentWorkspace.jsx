@@ -253,7 +253,7 @@ export default function AgentWorkspace() {
           <select value={mode} onChange={(event) => setMode(event.target.value)} disabled={running} aria-label="Agent execution mode" style={{ padding: '6px 10px', border: '1px solid #d1d5db', borderRadius: 8, background: '#fff', fontWeight: 600, maxWidth: 'min(38vw, 180px)' }}>
             <option value="auto">Auto</option>
             <option value="hybrid">Hybrid · approve changes</option>
-            <option value="manual">Manual · approve each action</option>
+            <option value="manual">Manual · approve changes</option>
           </select>
         </label>
         {(status === 'disconnected' || status === 'auth_failed') && <button type="button" onClick={() => { retryRef.current = 0; clearTimeout(timerRef.current); connect() }} style={{ ...smallBtn, display: 'inline-flex', alignItems: 'center', gap: 5 }}><RefreshCw size={13} /> Reconnect</button>}
@@ -265,7 +265,7 @@ export default function AgentWorkspace() {
             <div style={{ width: 54, height: 54, margin: '0 auto 16px', borderRadius: 16, display: 'grid', placeItems: 'center', background: '#10a37f', color: '#fff' }}><Bot size={28} /></div>
             <h2 style={{ margin: '0 0 8px', color: '#111827' }}>Give the agent a goal</h2>
             <p style={{ margin: 0 }}>It plans the steps and works in its isolated Shopnoltd browser and workspace. Choose Auto, Hybrid or Manual from the toolbar.</p>
-            <p style={{ margin: '10px 0 0', fontSize: 13 }}>Auto performs routine actions; sensitive controls, final submissions and uploads still require approval. Hybrid asks before changes. Manual asks before every browser interaction.</p>
+            <p style={{ margin: '10px 0 0', fontSize: 13 }}>Auto performs routine actions; sensitive controls, final submissions and uploads still require approval. Hybrid asks before changes. Manual asks before each state-changing browser action; read-only inspection remains available.</p>
           </div>
         )}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -289,7 +289,7 @@ export default function AgentWorkspace() {
           <textarea value={goal} onChange={(event) => setGoal(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); send() } }} rows={2} maxLength={4000} placeholder={connected ? 'Describe what the agent should do…' : 'Waiting for connection…'} disabled={!connected || running} style={{ display: 'block', width: '100%', boxSizing: 'border-box', border: 0, outline: 0, resize: 'none', borderRadius: 16, padding: '14px 56px 14px 16px', font: 'inherit', lineHeight: 1.45 }} />
           <button type="submit" disabled={!connected || running || !goal.trim()} aria-label="Send goal" title="Send" style={{ position: 'absolute', right: 9, bottom: 9, width: 36, height: 36, border: 0, borderRadius: 10, display: 'grid', placeItems: 'center', background: !connected || running || !goal.trim() ? '#d1d5db' : '#111827', color: '#fff', cursor: 'pointer' }}><Send size={17} /></button>
         </form>
-        <div style={{ textAlign: 'center', fontSize: 11, color: '#9ca3af', marginTop: 8 }}>Enter to send · Auto prefers active free-tier models · Sensitive actions, submissions and uploads require approval · Hybrid approves changes · Manual approves each interaction</div>
+        <div style={{ textAlign: 'center', fontSize: 11, color: '#9ca3af', marginTop: 8 }}>Enter to send · Auto prefers active free-tier models · Sensitive actions, submissions and uploads require approval · Hybrid approves changes · Manual approves state-changing actions</div>
       </div>
     </div>
   )
