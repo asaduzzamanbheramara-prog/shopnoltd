@@ -88,7 +88,7 @@ function ApprovalCard({ item, onRespond }) {
   )
 }
 
-export default function AgentWorkspace({ workspaceMode = false, workspaceProfileId = '', workspaceTabId = '' } = {}) {
+export default function AgentWorkspace({ workspaceMode = false, workspaceProfileId = '', workspaceTabId = '', workspaceSessionActive = false } = {}) {
   const [status, setStatus] = useState('connecting')
   const [model, setModel] = useState('auto')
   const [mode, setMode] = useState('hybrid')
@@ -225,7 +225,7 @@ export default function AgentWorkspace({ workspaceMode = false, workspaceProfile
     const text = goal.trim()
     const ws = wsRef.current
     if (!text || running || status !== 'connected' || ws?.readyState !== 1) return
-    if (workspaceMode && (!workspaceProfileId || !workspaceTabId)) {
+    if (workspaceMode && (!workspaceSessionActive || !workspaceProfileId || !workspaceTabId)) {
       push({ kind: 'error', text: 'Launch a browser session and select an active tab before using the shared Browser Agent.' })
       return
     }
@@ -239,7 +239,7 @@ export default function AgentWorkspace({ workspaceMode = false, workspaceProfile
     if (!workspaceMode) return
     const ws = wsRef.current
     if (running && ws?.readyState === 1) ws.send(JSON.stringify({ type: 'cancel' }))
-  }, [workspaceMode, workspaceProfileId, workspaceTabId])
+  }, [workspaceMode, workspaceProfileId, workspaceTabId, workspaceSessionActive])
 
   const connected = status === 'connected'
 
