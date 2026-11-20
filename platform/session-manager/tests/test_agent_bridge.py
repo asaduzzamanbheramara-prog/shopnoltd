@@ -35,7 +35,7 @@ class AgentBridgeAuthorizationTests(unittest.IsolatedAsyncioTestCase):
         payload = agent_bridge.AgentBrowserAction(action="get_text")
         with self.assertRaises(HTTPException) as caught:
             await agent_bridge.agent_browser_action(
-                "profile-a", "tab-a", payload, {"sub": "user-b"}, db
+                "00000000-0000-4000-8000-000000000001", "00000000-0000-4000-8000-000000000002", payload, {"sub": "user-b"}, db
             )
         self.assertEqual(caught.exception.status_code, 404)
 
@@ -46,7 +46,7 @@ class AgentBridgeAuthorizationTests(unittest.IsolatedAsyncioTestCase):
         with patch.object(agent_bridge.pool, "_contexts", {}):
             with self.assertRaises(HTTPException) as caught:
                 await agent_bridge.agent_browser_action(
-                    "profile-a", "tab-a", payload, {"sub": "user-a"}, db
+                    "00000000-0000-4000-8000-000000000001", "00000000-0000-4000-8000-000000000002", payload, {"sub": "user-a"}, db
                 )
         self.assertEqual(caught.exception.status_code, 409)
 
@@ -55,12 +55,12 @@ class AgentBridgeAuthorizationTests(unittest.IsolatedAsyncioTestCase):
         db = FakeDB(profile)
         payload = agent_bridge.AgentBrowserAction(action="get_text")
         with (
-            patch.object(agent_bridge.pool, "_contexts", {"profile-a": object()}),
+            patch.object(agent_bridge.pool, "_contexts", {"00000000-0000-4000-8000-000000000001": object()}),
             patch.object(agent_bridge.pool, "_get_tab", return_value=None),
         ):
             with self.assertRaises(HTTPException) as caught:
                 await agent_bridge.agent_browser_action(
-                    "profile-a", "missing-tab", payload, {"sub": "user-a"}, db
+                    "00000000-0000-4000-8000-000000000001", "00000000-0000-4000-8000-000000000003", payload, {"sub": "user-a"}, db
                 )
         self.assertEqual(caught.exception.status_code, 404)
 
@@ -70,12 +70,12 @@ class AgentBridgeAuthorizationTests(unittest.IsolatedAsyncioTestCase):
         payload = agent_bridge.AgentBrowserAction(action="open", url="http://127.0.0.1/")
         fake_page = SimpleNamespace()
         with (
-            patch.object(agent_bridge.pool, "_contexts", {"profile-a": object()}),
+            patch.object(agent_bridge.pool, "_contexts", {"00000000-0000-4000-8000-000000000001": object()}),
             patch.object(agent_bridge.pool, "_get_tab", return_value=fake_page),
         ):
             with self.assertRaises(HTTPException) as caught:
                 await agent_bridge.agent_browser_action(
-                    "profile-a", "tab-a", payload, {"sub": "user-a"}, db
+                    "00000000-0000-4000-8000-000000000001", "00000000-0000-4000-8000-000000000002", payload, {"sub": "user-a"}, db
                 )
         self.assertEqual(caught.exception.status_code, 400)
 
@@ -90,11 +90,11 @@ class AgentBridgeAuthorizationTests(unittest.IsolatedAsyncioTestCase):
                 return b"jpeg-bytes"
 
         with (
-            patch.object(agent_bridge.pool, "_contexts", {"profile-a": object()}),
+            patch.object(agent_bridge.pool, "_contexts", {"00000000-0000-4000-8000-000000000001": object()}),
             patch.object(agent_bridge.pool, "_get_tab", return_value=FakePage()),
         ):
             result = await agent_bridge.agent_browser_action(
-                "profile-a", "tab-a", agent_bridge.AgentBrowserAction(action="screenshot"),
+                "00000000-0000-4000-8000-000000000001", "00000000-0000-4000-8000-000000000002", agent_bridge.AgentBrowserAction(action="screenshot"),
                 {"sub": "user-a"}, db
             )
         self.assertTrue(result["image"].startswith("data:image/jpeg;base64,"))
@@ -117,11 +117,11 @@ class AgentBridgeAuthorizationTests(unittest.IsolatedAsyncioTestCase):
                 return locator
 
         with (
-            patch.object(agent_bridge.pool, "_contexts", {"profile-a": object()}),
+            patch.object(agent_bridge.pool, "_contexts", {"00000000-0000-4000-8000-000000000001": object()}),
             patch.object(agent_bridge.pool, "_get_tab", return_value=FakePage()),
         ):
             result = await agent_bridge.agent_browser_action(
-                "profile-a", "tab-a",
+                "00000000-0000-4000-8000-000000000001", "00000000-0000-4000-8000-000000000002",
                 agent_bridge.AgentBrowserAction(
                     action="upload", selector="input[type=file]", file_name="../my report.txt",
                     content_base64="c2FmZSBmaWxl"
@@ -140,12 +140,12 @@ class AgentBridgeAuthorizationTests(unittest.IsolatedAsyncioTestCase):
         )
         fake_page = SimpleNamespace()
         with (
-            patch.object(agent_bridge.pool, "_contexts", {"profile-a": object()}),
+            patch.object(agent_bridge.pool, "_contexts", {"00000000-0000-4000-8000-000000000001": object()}),
             patch.object(agent_bridge.pool, "_get_tab", return_value=fake_page),
         ):
             with self.assertRaises(HTTPException) as caught:
                 await agent_bridge.agent_browser_action(
-                    "profile-a", "tab-a", payload, {"sub": "user-a"}, db
+                    "00000000-0000-4000-8000-000000000001", "00000000-0000-4000-8000-000000000002", payload, {"sub": "user-a"}, db
                 )
         self.assertEqual(caught.exception.status_code, 400)
 
