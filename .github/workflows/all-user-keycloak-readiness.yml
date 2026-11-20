@@ -133,16 +133,18 @@ jobs:
               if clients:
                   client = clients[0]
                   client_uuid = client["id"]
-                  if not client.get("serviceAccountsEnabled") or client.get("publicClient"):
-                      client.update({
-                          "serviceAccountsEnabled": True,
-                          "publicClient": False,
-                          "protocol": "openid-connect",
-                          "standardFlowEnabled": False,
-                          "directAccessGrantsEnabled": False,
-                          "enabled": True,
-                          "clientAuthenticatorType": "client-secret",
-                      })
+                  desired_client_settings = {
+                      "serviceAccountsEnabled": True,
+                      "publicClient": False,
+                      "protocol": "openid-connect",
+                      "standardFlowEnabled": False,
+                      "implicitFlowEnabled": False,
+                      "directAccessGrantsEnabled": False,
+                      "enabled": True,
+                      "clientAuthenticatorType": "client-secret",
+                  }
+                  if any(client.get(key) != value for key, value in desired_client_settings.items()):
+                      client.update(desired_client_settings)
                       status, _ = request(
                           f"{admin_url}/clients/{urllib.parse.quote(client_uuid, safe='')}",
                           token=admin_token, method="PUT", json_body=client,
@@ -211,11 +213,11 @@ jobs:
               # Keep the secret in the cluster, not in Git, Actions logs, or artifacts.
               import base64, subprocess
               secret_yaml = (
-                  "apiVersion: v1\\nkind: Secret\\nmetadata:\\n"
-                  f"  name: {audit_secret_name}\\n  namespace: shopno-identity\\n"
-                  "type: Opaque\\ndata:\\n"
-                  f"  client-id: {base64.b64encode(audit_client_id.encode()).decode()}\\n"
-                  f"  client-secret: {base64.b64encode(secret['value'].encode()).decode()}\\n"
+                  "apiVersion: v1\nkind: Secret\nmetadata:\n"
+                  f"  name: {audit_secret_name}\n  namespace: shopno-identity\n"
+                  "type: Opaque\ndata:\n"
+                  f"  client-id: {base64.b64encode(audit_client_id.encode()).decode()}\n"
+                  f"  client-secret: {base64.b64encode(secret['value'].encode()).decode()}\n"
               )
               subprocess.run(
                   ["kubectl", "apply", "-f", "-"],
