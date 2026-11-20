@@ -121,7 +121,10 @@ async def ensure_keycloak_user(email, name, tok, client):
     r = await client.get(f"{base}/users", params={"email": email, "exact": "true"}, headers=headers)
     r.raise_for_status()
     matches = r.json()
-    if matches: return matches[0]["id"], False
+    if matches:
+        # Existing Keycloak identity is authoritative: preserve its password,
+        # email-verification state, and requiredActions exactly as they are.
+        return matches[0]["id"], False
     r = await client.post(
         f"{base}/users",
         json={"username": email, "email": email, "firstName": name, "enabled": True,
