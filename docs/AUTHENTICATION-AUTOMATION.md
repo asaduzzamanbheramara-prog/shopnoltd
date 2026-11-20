@@ -29,11 +29,7 @@ This test should be added only after the UI signup/login contract and safe synth
 
 ## Required configuration
 
-Repository Actions secrets for the read-only inventory:
-- `KEYCLOAK_AUDIT_CLIENT_ID`
-- `KEYCLOAK_AUDIT_CLIENT_SECRET`
-
-Use a dedicated Keycloak confidential client with service-account authentication and assign only these read-only `realm-management` client roles in the `shopnoltd` realm: `view-users`, `query-users`, and `view-realm`. `view-users` permits user/credential inspection, `query-users` permits listing and searching all users, and `view-realm` permits reading realm settings. Do not grant `manage-users`, `manage-realm`, or other write roles. Do not use an administrator's personal password.
+The trusted self-hosted Linux runner reads the existing Keycloak bootstrap credential from the Kubernetes Secret `shopno-identity/keycloak-secret` only to provision/repair one dedicated confidential audit client. The workflow creates or reconciles `shopnoltd-keycloak-readiness-audit`, disables browser/direct-grant flows, enables its service account, and assigns only these read-only `realm-management` client roles: `view-users`, `query-users`, and `view-realm`. The generated client ID/secret is stored in the Kubernetes Secret `shopno-identity/shopnoltd-keycloak-audit-client`; it is never printed or uploaded. All per-account reads then use that restricted service-account token. No GitHub Actions client-secret values are required. The bootstrap credential is never placed in source files, artifacts, or logs.
 
 The audit also checks the live realm's `resetPasswordAllowed` flag and whether its SMTP configuration contains a host and sender. This is configuration presence only, not a test email or proof of delivery. The realm import currently does not define an SMTP server. The separate `shopno-mail` SMTP relay secret is not automatically proof that Keycloak is configured to use that relay. Configure Keycloak's realm SMTP settings only after confirming the actual internal SMTP service endpoint, TLS mode, sender address, and credentials; never copy SMTP passwords into Git.
 
