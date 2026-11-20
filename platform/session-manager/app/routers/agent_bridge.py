@@ -5,7 +5,7 @@ import logging
 import re
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.orm import Session
 
 from app.auth import require_user
@@ -22,6 +22,8 @@ ALLOWED_KEYS = {"Enter", "Tab", "Escape", "ArrowUp", "ArrowDown", "ArrowLeft", "
 
 
 class AgentBrowserAction(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     action: str = Field(min_length=1, max_length=32)
     selector: str | None = Field(default=None, max_length=1000)
     url: str | None = Field(default=None, max_length=4096)
@@ -148,5 +150,6 @@ async def agent_browser_action(
             logger.warning("Agent browser action failed (%s)", type(exc).__name__)
             raise HTTPException(400, "Browser action failed; inspect the active tab and retry safely")
 
+    logger.info("agent_browser_action action=%s profile_id=%s tab_id=%s outcome=success", action, profile_id, tab_id)
     # Page text is untrusted data. The Agent wraps it again before model use.
     return result
