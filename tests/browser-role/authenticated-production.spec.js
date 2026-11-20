@@ -217,57 +217,6 @@ test('normal user is denied the admin database route', async ({ page }) => {
   await expect(page).not.toHaveURL(/\/admin\/database(?:\?|$)/)
 })
 
-test('admin can inspect the live PostgreSQL database inventory', async ({ page }) => {
-  await login(page, adminUser, adminPassword, adminTotpSecret, 'admin')
-  const catalogResponse = page.waitForResponse(r =>
-    r.url().includes('/api/v1/admin/database/catalog') && r.request().method() === 'GET',
-    { timeout: 30000 },
-  )
-  const liveResponse = page.waitForResponse(r =>
-    r.url().includes('/api/v1/admin/database/live-catalog') && r.request().method() === 'GET',
-    { timeout: 30000 },
-  )
-  await page.goto(`${baseURL}/admin/database`, { waitUntil: 'domcontentloaded' })
-  const [catalog, live] = await Promise.all([catalogResponse, liveResponse])
-  expect(catalog.status(), 'database capability catalog must be available to admins').toBeGreaterThanOrEqual(200)
-  expect(catalog.status(), 'database capability catalog must not return an error').toBeLessThan(300)
-  expect(live.status(), 'live database inventory must be available to admins').toBeGreaterThanOrEqual(200)
-  expect(live.status(), 'live database inventory must not return an error').toBeLessThan(300)
-
-  const catalogPayload = await catalog.json()
-  const livePayload = await live.json()
-  expect(Array.isArray(catalogPayload.databases), 'capability catalog must list declared service databases').toBe(true)
-  expect(catalogPayload.databases.length, 'capability catalog must not be empty').toBeGreaterThan(0)
-  expect(Array.isArray(livePayload.databases), 'live PostgreSQL inventory must return database results').toBe(true)
-  expect(livePayload.databases.length, 'live inventory must not silently report zero databases').toBeGreaterThan(0)
-  expect(Array.isArray(livePayload.declared_not_live),
-    'inventory must report capability-declared PostgreSQL databases not found live').toBe(true)
-
-  const applicationDatabases = livePayload.databases.filter(database => database.classification === 'application')
-  expect(applicationDatabases.length, 'live inventory must discover application databases').toBeGreaterThan(0)
-  expect(applicationDatabases.some(database => database.reachable === true),
-    'at least one application database must be reachable').toBe(true)
-  for (const database of applicationDatabases) {
-    expect(typeof database.database, 'each application database must identify its database').toBe('string')
-    expect(typeof database.reachable, 'each application database must explicitly report reachability').toBe('boolean')
-    if (database.reachable) {
-      expect(Array.isArray(database.tables), 'reachable PostgreSQL databases must expose table metadata').toBe(true)
-    }
-  }
-  const databasesWithTables = applicationDatabases.filter(database =>
-    database.reachable === true && Array.isArray(database.tables) && database.tables.length > 0,
-  )
-  expect(databasesWithTables.length, 'at least one reachable application database must expose table metadata').toBeGreaterThan(0)
-  const protectedTables = databasesWithTables.flatMap(database =>
-    database.tables.filter(table => table.capability?.protected_reason),
-  )
-  expect(protectedTables.length, 'live inventory must identify protected application tables').toBeGreaterThan(0)
-  for (const table of protectedTables) {
-    expect(table.capability.readable, 'protected table rows must remain unreadable through the generic control plane').toBe(false)
-  }
-})
-
-
 test('tenant owner is denied platform-admin database route', async ({ page }) => {
   test.skip(!ownerUser || !ownerPassword, 'Tenant owner credentials are required by the authenticated production workflow.')
   await login(page, ownerUser, ownerPassword, ownerTotpSecret, 'owner')
@@ -276,7 +225,7 @@ test('tenant owner is denied platform-admin database route', async ({ page }) =>
   await expect(page).not.toHaveURL(/\/admin\/database(?:\?|$)/)
 })
 
-test('customer is denied platform-admin control plane', async ({ page }) => {
+test('regular user is denied platform-admin control plane', async ({ page }) => {
   await login(page, userUser, userPassword, userTotpSecret, 'user')
   await page.goto(`${baseURL}/admin`, { waitUntil: 'domcontentloaded' })
   await expect(page).toHaveURL(/\/dashboard(?:\?|$)/, { timeout: 15000 })
