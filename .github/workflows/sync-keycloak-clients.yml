@@ -1,0 +1,54 @@
+name: Sync Keycloak OIDC Clients
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "k8s/services/keycloak/client-sync.py"
+      - "k8s/services/keycloak/client-sync-job.yaml"
+      - ".github/workflows/sync-keycloak-clients.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: keycloak-oidc-client-sync
+  cancel-in-progress: false
+
+jobs:
+  sync-keycloak-clients:
+    runs-on: [self-hosted, linux]
+    timeout-minutes: 15
+    steps:
+      - name: Checkout trusted main revision
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Verify runner and cluster access
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v kubectl
+          test -s "${KUBECONFIG:-$HOME/.kube/config}"
+          kubectl --request-timeout=20s cluster-info >/dev/null
+          kubectl -n shopno-identity get secret keycloak-secret >/dev/null
+
+      - name: Apply only the Keycloak client-sync script
+        shell: bash
+        run: |
+          set -euo pipefail
+          kubectl -n shopno-identity create configmap keycloak-client-sync-script \
+            --from-file=client-sync.py=k8s/services/keycloak/client-sync.py \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Run and verify the Keycloak OIDC client sync
+        shell: bash
+        run: |
+          set -euo pipefail
+          kubectl -n shopno-identity delete job keycloak-client-sync --ignore-not-found=true --wait=true
+          kubectl -n shopno-identity apply -f k8s/services/keycloak/client-sync-job.yaml
+          kubectl -n shopno-identity wait --for=condition=complete job/keycloak-client-sync --timeout=10m
+          kubectl -n shopno-identity logs job/keycloak-client-sync
