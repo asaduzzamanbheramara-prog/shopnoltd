@@ -10,6 +10,12 @@ The workflow `.github/workflows/all-user-keycloak-readiness.yml` inventories eve
 
 A Keycloak password credential is a verifier/hash, not a recoverable plaintext password. An account with no password credential must complete an approved password-setup/reset flow; automation must not assign a shared password.
 
+## Current production readiness finding (2026-11-20)
+
+The successful all-user audit inspected 584 Keycloak accounts without changing any account. It found 581 enabled accounts with the `UPDATE_PASSWORD` required action, one enabled account without a password credential, and two enabled accounts with a password credential and no required action. The CSV contains only pseudonymous user references. Do not remove `UPDATE_PASSWORD` in bulk: imported legacy password hashes are not reused, and each affected account must complete its own password setup/reset.
+
+The Keycloak realm's password-recovery email path is configured by the targeted Keycloak client-sync job. That job mirrors the existing `shopno-mail/mail-service-config` SMTP host/port and `shopno-mail/mail-service-smtp` credentials into namespace-local Keycloak config/secret objects, then reconciles the realm's SMTP settings and `resetPasswordAllowed=true`. The Keycloak egress policy permits the Brevo relay IP on SMTP submission port 587. The sync verifies the persisted non-secret SMTP settings and never logs credentials. It does not send reset emails to customers; users must initiate their own reset or required-action flow.
+
 ## Real login tests
 
 A real password login can only be verified with the current password (and MFA factor if required) or by having the account owner complete a user-mediated test. Do not attempt to bypass MFA, enumerate passwords, or use the Keycloak Admin API to impersonate users.
