@@ -179,5 +179,56 @@ class WebSocketAuthenticationDisconnectTests(unittest.IsolatedAsyncioTestCase):
         self.assertIsNone(claims)
 
 
+class SharedBrowserWorkspaceTests(unittest.IsolatedAsyncioTestCase):
+    async def test_hybrid_mutation_uses_the_selected_shared_tab_after_approval(self):
+        ui = mock.AsyncMock()
+        claims = {"sub": "user-a", "_access_token": "test-token"}
+        workspace = {"profile_id": "profile-a", "tab_id": "tab-a"}
+        with (
+            mock.patch.object(main, "ask_approval", new=mock.AsyncMock(return_value=True)),
+            mock.patch.object(main, "workspace_browser_action", new=mock.AsyncMock(return_value='{"clicked":true}')) as shared,
+            mock.patch.object(main, "browser_action", new=mock.AsyncMock()) as isolated,
+        ):
+            result = await main.call_tool(
+                claims, ui, "browser_action", {"action": "click", "selector": "#continue"},
+                "hybrid", workspace,
+            )
+        self.assertEqual(result, '{"clicked":true}')
+        shared.assert_awaited_once_with(claims, ui, {"action": "click", "selector": "#continue"}, workspace)
+        isolated.assert_not_awaited()
+
+    async def test_auto_workspace_mutation_fails_closed_when_not_approved(self):
+        ui = mock.AsyncMock()
+        claims = {"sub": "user-a", "_access_token": "test-token"}
+        workspace = {"profile_id": "profile-a", "tab_id": "tab-a"}
+        with (
+            mock.patch.object(main, "ask_approval", new=mock.AsyncMock(return_value=False)) as approval,
+            mock.patch.object(main, "workspace_browser_action", new=mock.AsyncMock()) as shared,
+        ):
+            result = await main.call_tool(
+                claims, ui, "browser_action", {"action": "click", "selector": "#delete"},
+                "auto", workspace,
+            )
+        self.assertEqual(result, "user denied this action")
+        approval.assert_awaited_once()
+        shared.assert_not_awaited()
+
+    async def test_shared_browser_upload_does_not_use_an_agent_container_path(self):
+        ui = mock.AsyncMock()
+        claims = {"sub": "user-a", "_access_token": "test-token"}
+        workspace = {"profile_id": "profile-a", "tab_id": "tab-a"}
+        with (
+            mock.patch.object(main, "ask_approval", new=mock.AsyncMock(return_value=True)),
+            mock.patch.object(main, "workspace_browser_action", new=mock.AsyncMock(return_value="upload complete")) as shared,
+        ):
+            result = await main.call_tool(
+                claims, ui, "browser_action",
+                {"action": "upload", "selector": "input[type=file]", "path": "report.pdf"},
+                "hybrid", workspace,
+            )
+        self.assertEqual(result, "upload complete")
+        shared.assert_awaited_once()
+
+
 if __name__ == "__main__":
     unittest.main()
