@@ -23,6 +23,8 @@ REQUIRED_REDIRECT_URIS = [
     "https://admin-portal.shopnoltd.dpdns.org/callback",
     "https://devices.shopnoltd.dpdns.org/",
     "https://devices.shopnoltd.dpdns.org/callback",
+    "https://device.shopnoltd.dpdns.org/",
+    "https://device.shopnoltd.dpdns.org/callback",
     "https://android.shopnoltd.dpdns.org/",
     "https://android.shopnoltd.dpdns.org/callback",
     "shopnoltdcollect://oauth/callback",
@@ -34,6 +36,7 @@ REQUIRED_WEB_ORIGINS = [
     "https://web-portal.shopnoltd.dpdns.org",
     "https://admin-portal.shopnoltd.dpdns.org",
     "https://devices.shopnoltd.dpdns.org",
+    "https://device.shopnoltd.dpdns.org",
     "https://android.shopnoltd.dpdns.org",
 ]
 
