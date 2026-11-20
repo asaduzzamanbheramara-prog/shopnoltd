@@ -357,7 +357,7 @@ export default function BrowserWorkspace() {
           )}
         </section>
 
-        {agentOpen && <aside style={{ minWidth: 0, minHeight: 0, overflow: 'hidden', borderLeft: '1px solid #e2e8f0', background: '#fff' }}><AgentWorkspace workspaceMode workspaceProfileId={activeId} workspaceTabId={activeTabId} /></aside>}
+        {agentOpen && <aside style={{ minWidth: 0, minHeight: 0, overflow: 'hidden', borderLeft: '1px solid #e2e8f0', background: '#fff' }}><AgentWorkspace workspaceMode workspaceProfileId={activeId} workspaceTabId={activeTabId} workspaceSessionActive={sessionActive} /></aside>}
       </div>
     </main>
   )
