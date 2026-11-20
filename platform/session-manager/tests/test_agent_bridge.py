@@ -1,6 +1,9 @@
+import os
 import unittest
 from types import SimpleNamespace
 from unittest.mock import patch
+
+os.environ.setdefault("DATABASE_URL", "sqlite:///./session-manager-agent-bridge-tests.db")
 
 from fastapi import HTTPException
 
