@@ -1,4 +1,5 @@
 name: All-user Keycloak readiness audit
+# The targeted Keycloak sync workflow reconciles password-recovery SMTP before this read-only inventory runs.
 
 on:
   workflow_dispatch:
