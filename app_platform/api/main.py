@@ -6,6 +6,8 @@ import stripe
 from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 
+from app_platform.api.state_store import PostgresStateStore, STATE_KEYS, serialize_state
+
 app = FastAPI(
     title="Shopnoltd Complete Platform",
     description="Multi-currency payment platform with exchange",
@@ -26,6 +28,46 @@ users_db = {}
 payment_methods_db = {}
 audit_log_db = []
 exchange_orders_db = {}
+state_store = PostgresStateStore()
+
+
+@app.on_event("startup")
+def load_persistent_state():
+    """Load the standalone API state when DATABASE_URL is configured."""
+    if not state_store.enabled:
+        return
+    state_store.initialize()
+    loaded = state_store.load(STATE_KEYS)
+    wallets_db.update(loaded.get("wallets", {}))
+    transactions_db.update(loaded.get("transactions", {}))
+    users_db.update(loaded.get("users", {}))
+    payment_methods_db.update(loaded.get("payment_methods", {}))
+    audit_log_db.extend(loaded.get("audit_log", []))
+    exchange_orders_db.update(loaded.get("exchange_orders", {}))
+
+
+@app.middleware("http")
+async def persist_state_after_request(request: Request, call_next):
+    response = await call_next(request)
+    if state_store.enabled:
+        try:
+            state_store.save(
+                serialize_state(
+                    {
+                        "wallets": wallets_db,
+                        "transactions": transactions_db,
+                        "users": users_db,
+                        "payment_methods": payment_methods_db,
+                        "audit_log": audit_log_db,
+                        "exchange_orders": exchange_orders_db,
+                    }
+                )
+            )
+        except Exception:
+            # A transient database outage must not turn a successful API response
+            # into a 500. The next request retries the state snapshot.
+            pass
+    return response
 
 # ==================== EXCHANGE RATES (Updated) ====================
 EXCHANGE_RATES = {
@@ -120,6 +162,7 @@ def health():
     return {
         "status": "healthy",
         "service": "shopnoltd-platform",
+        "persistence": state_store.health(),
         "wallets": len(wallets_db),
         "transactions": len(transactions_db),
         "users": len(users_db),
