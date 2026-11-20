@@ -226,6 +226,21 @@ def sync_client(token, client_id):
 
 
 
+    # Read the persisted client back from Keycloak so a successful PUT is not
+    # mistaken for a completed redirect-URI repair.
+    verify_code, verified_client = request("GET", f"/admin/realms/{REALM}/clients/{client_uuid}", token=token)
+    if verify_code != 200 or not isinstance(verified_client, dict):
+        raise RuntimeError(f"Unable to verify persisted Keycloak client {client_id} (HTTP {verify_code})")
+    missing_redirects = sorted(set(required_redirect_uris) - set(verified_client.get("redirectUris") or []))
+    missing_origins = sorted(set(required_web_origins) - set(verified_client.get("webOrigins") or []))
+    if missing_redirects or missing_origins:
+        raise RuntimeError(
+            f"Keycloak client {client_id} is missing redirect URIs {missing_redirects} "
+            f"or web origins {missing_origins}"
+        )
+    print(f"[OK] verified persisted redirect URIs and web origins for {client_id}")
+
+
 
 def sync_social_provider(token, alias, provider):
     client_id = os.environ.get(provider["clientIdEnv"], "").strip()
