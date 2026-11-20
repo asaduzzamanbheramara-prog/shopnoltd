@@ -62,6 +62,7 @@ pending: dict[str, asyncio.Future] = {}    # request id -> future
 browser_sessions: dict[str, dict] = {}    # one isolated browser context per active user task
 browser_semaphore = asyncio.Semaphore(max(1, int(os.environ.get("BROWSER_CONCURRENCY", "1"))))
 running: set[str] = set()                  # users with an active run (one at a time)
+workspace_bound_users: set[str] = set()    # workspace tasks require a live authenticated UI socket
 histories: dict[str, list] = {}            # user id -> conversation (memory only)
 recent_goals: dict[str, deque] = {}        # user id -> timestamps of started goals
 _jwks_cache: dict | None = None
@@ -992,6 +993,7 @@ async def run_task(claims: dict, sink: TaskSink, goal: str, model: str, catalog:
         await sink.send_json({"type": "error", "text": f"{type(e).__name__}: {str(e)[:300]}"})
     finally:
         running.discard(user)
+        workspace_bound_users.discard(user)
         if workspace is None:
             await close_browser_session(user)
         trim(hist)
@@ -1063,11 +1065,18 @@ async def ui_socket(ws: WebSocket):
             sink = TaskSink(user)
             sinks[user] = sink
             await sink.attach(ws); attached = sink
+            if workspace is not None:
+                workspace_bound_users.add(user)
             sink.task = asyncio.create_task(run_task(claims, sink, goal, model, catalog, mode, workspace))
     except (WebSocketDisconnect, RuntimeError):
         pass
     finally:
-        if attached: attached.detach(ws)
+        if attached:
+            attached.detach(ws)
+            # A shared browser task must not outlive its authenticated UI connection.
+            # Non-workspace Agent tasks retain their existing reconnectable behavior.
+            if user in workspace_bound_users and not attached.watchers and attached.task and not attached.task.done():
+                attached.task.cancel()
         dog.cancel()
 
 
