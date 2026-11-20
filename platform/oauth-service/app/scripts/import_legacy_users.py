@@ -324,6 +324,9 @@ async def run(path, apply, send_reset_emails=False):
                     # Sending reset emails is deferred until identity/profile
                     # reconciliation commits and only happens with explicit opt-in.
                 else:
+                    # Existing Keycloak credentials and requiredActions are canonical.
+                    # Never overwrite a real password or clear/change an account action
+                    # merely because a legacy source row was imported.
                     report["keycloak_matched"] += 1
 
                 keycloak_id = kc["id"]
