@@ -273,7 +273,17 @@ jobs:
                   types = {c.get("type") for c in credentials}
                   actions = sorted(user.get("requiredActions") or [])
                   enabled = bool(user.get("enabled"))
-                  has_password = "password" in types
+                  password_credentials = [c for c in credentials if c.get("type") == "password"]
+                  has_password = bool(password_credentials)
+                  # Keycloak versions/providers may omit the temporary flag.
+                  # Treat missing/malformed metadata as unknown; never infer that
+                  # a password is permanent merely because a credential exists.
+                  temporary_values = [c.get("temporary") for c in password_credentials]
+                  password_temporary = (
+                      "true" if any(value is True for value in temporary_values)
+                      else "false" if password_credentials and all(value is False for value in temporary_values)
+                      else "unknown"
+                  )
                   has_otp = "otp" in types
                   status = "ready_review" if enabled and has_password and not actions else "needs_attention"
                   if not enabled:
@@ -282,6 +292,7 @@ jobs:
                   counts["enabled" if enabled else "disabled"] += 1
                   counts["email_verified" if user.get("emailVerified") else "email_unverified"] += 1
                   counts["has_password" if has_password else "no_password"] += 1
+                  counts["password_temporary_" + password_temporary] += 1
                   counts["has_otp" if has_otp else "no_otp"] += 1
                   counts["has_required_actions" if actions else "no_required_actions"] += 1
                   if status == "disabled":
@@ -293,6 +304,7 @@ jobs:
                       "enabled": str(enabled).lower(),
                       "email_verified": str(bool(user.get("emailVerified"))).lower(),
                       "has_password_credential": str(has_password).lower(),
+                      "password_credential_temporary": password_temporary,
                       "has_otp_credential": str(has_otp).lower(),
                       "required_actions": ",".join(actions),
                       "readiness": status,
@@ -303,7 +315,7 @@ jobs:
               with open("keycloak-readiness.csv", "w", newline="", encoding="utf-8") as f:
                   writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()) if rows else [
                       "user_ref","enabled","email_verified","has_password_credential",
-                      "has_otp_credential","required_actions","readiness"
+                      "password_credential_temporary","has_otp_credential","required_actions","readiness"
                   ])
                   writer.writeheader()
                   writer.writerows(rows)
@@ -318,13 +330,14 @@ jobs:
                   f"- Accounts audited: **{counts['total']}**",
                   f"- Enabled: **{counts['enabled']}**; disabled: **{counts['disabled']}**",
                   f"- Password credential present: **{counts['has_password']}**; missing: **{counts['no_password']}**",
+                  f"- Password temporary status: **{counts['password_temporary_true']} temporary**, **{counts['password_temporary_false']} permanent**, **{counts['password_temporary_unknown']} unknown/not exposed by Keycloak**.",
                   f"- OTP credential present: **{counts['has_otp']}**; missing: **{counts['no_otp']}**",
                   f"- Required actions present: **{counts['has_required_actions']}**; none: **{counts['no_required_actions']}**",
                   f"- Email verified: **{counts['email_verified']}**; unverified: **{counts['email_unverified']}**",
                   f"- Enabled with password and no required actions (readiness indicator only): **{counts['ready_review']}**",
                   f"- Needs attention by readiness rules: **{counts['needs_attention']}**",
                   "",
-                  "This is a credential/readiness inventory, NOT a successful login test or a mail-delivery test. SMTP configured means only that the live realm has a host and sender value; it does not prove relay reachability or inbox delivery. It never attempts login as real users, resets passwords, or changes account settings. Email verification and OTP requirements depend on the configured realm policy. Review the CSV using pseudonymous references only; no names, usernames, or email addresses are included.",
+                  "This is a credential/readiness inventory, NOT a successful login test or a mail-delivery test. It now records Keycloak's password credential temporary flag when the API exposes it; unknown is fail-closed and must not be treated as permanent. Do not remove UPDATE_PASSWORD unless the credential is confirmed permanent and the account owner is expected to use it. The audit never attempts login as real users, resets passwords, or changes account settings. Email verification and OTP requirements depend on the configured realm policy. Review the CSV using pseudonymous references only; no names, usernames, or email addresses are included.",
                   "",
                   "A dedicated confidential audit client is provisioned idempotently with only view-users, query-users, and view-realm. Its client secret is stored only in the shopno-identity Kubernetes Secret; the per-account audit then uses this read-only service account.",
               "",
