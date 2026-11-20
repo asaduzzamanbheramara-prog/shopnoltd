@@ -32,7 +32,7 @@ jobs:
         run: |
           set -euo pipefail
           if [[ -z "$AUDIT_CLIENT_ID" || -z "$AUDIT_CLIENT_SECRET" ]]; then
-            echo "::error::Configure KEYCLOAK_AUDIT_CLIENT_ID and KEYCLOAK_AUDIT_CLIENT_SECRET in repository Settings > Secrets and variables > Actions. Use a dedicated Keycloak service account with read-only view-users and view-realm permissions; do not use an administrator's personal password."
+            echo "::error::Configure KEYCLOAK_AUDIT_CLIENT_ID and KEYCLOAK_AUDIT_CLIENT_SECRET in repository Settings > Secrets and variables > Actions. Use a dedicated Keycloak confidential client with service-account authentication and the realm-management roles view-users, query-users, and view-realm; do not use an administrator's personal password."
             exit 1
           fi
 
@@ -112,6 +112,13 @@ jobs:
           try:
               token_data = request(token_url, data=form)
               token = token_data["access_token"]
+              realm_settings = request(admin_url, token=token)
+              if not isinstance(realm_settings, dict):
+                  raise RuntimeError("Unexpected realm settings API response")
+              smtp_settings = realm_settings.get("smtpServer") or {}
+              smtp_configured = bool(smtp_settings.get("host") and smtp_settings.get("from"))
+              reset_password_allowed = bool(realm_settings.get("resetPasswordAllowed"))
+
               users = []
               first = 0
               page_size = 100
@@ -177,6 +184,9 @@ jobs:
                   "# Shopnoltd all-user Keycloak readiness audit",
                   "",
                   f"- Realm: `{realm}`",
+                  f"- Password reset enabled in realm: **{str(reset_password_allowed).lower()}**",
+                  f"- SMTP configured in Keycloak realm: **{str(smtp_configured).lower()}**",
+                  f"- SMTP host present: **{str(bool(smtp_settings.get('host'))).lower()}**; sender present: **{str(bool(smtp_settings.get('from'))).lower()}**; port present: **{str(bool(smtp_settings.get('port'))).lower()}**",
                   f"- Accounts audited: **{counts['total']}**",
                   f"- Enabled: **{counts['enabled']}**; disabled: **{counts['disabled']}**",
                   f"- Password credential present: **{counts['has_password']}**; missing: **{counts['no_password']}**",
@@ -186,7 +196,7 @@ jobs:
                   f"- Enabled with password and no required actions (readiness indicator only): **{counts['ready_review']}**",
                   f"- Needs attention by readiness rules: **{counts['needs_attention']}**",
                   "",
-                  "This is a credential/readiness inventory, NOT a successful login test. It never attempts login as real users, resets passwords, or changes account settings. Email verification and OTP requirements depend on the configured realm policy. Review the CSV using pseudonymous references only; no names, usernames, or email addresses are included.",
+                  "This is a credential/readiness inventory, NOT a successful login test or a mail-delivery test. SMTP configured means only that the live realm has a host and sender value; it does not prove relay reachability or inbox delivery. It never attempts login as real users, resets passwords, or changes account settings. Email verification and OTP requirements depend on the configured realm policy. Review the CSV using pseudonymous references only; no names, usernames, or email addresses are included.",
                   "",
                   "New accounts are included automatically on the next scheduled or manually triggered run.",
               ]
