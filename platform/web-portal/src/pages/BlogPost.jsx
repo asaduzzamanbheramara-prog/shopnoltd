@@ -59,18 +59,21 @@ export default function BlogPost() {
   const loadInteractions = useCallback(async () => {
     if (!slug) return
     try {
-      const [likes, rows, shares, savedState] = await Promise.all([
-        platformApi.blogLikes(slug),
-        platformApi.blogComments(slug),
-        platformApi.blogShares(slug),
-        platformApi.blogSaved(slug),
-      ])
-      setLike({ count: Number(likes?.count || 0), liked: Boolean(likes?.liked) })
-      setShareCount(Number(shares?.count || 0))
-      setSaved(Boolean(savedState?.saved))
-      setComments(Array.isArray(rows) ? rows : [])
-    } catch (e) {
-      setInteractionMessage(e?.message || 'Could not load article interactions.')
+    const results = await Promise.allSettled([
+      platformApi.blogLikes(slug),
+      platformApi.blogComments(slug),
+      platformApi.blogShares(slug),
+      platformApi.blogSaved(slug),
+    ])
+    const [likes, rows, shares, savedState] = results
+    if (likes.status === 'fulfilled') {
+      setLike({ count: Number(likes.value?.count || 0), liked: Boolean(likes.value?.liked) })
+    }
+    if (rows.status === 'fulfilled') setComments(Array.isArray(rows.value) ? rows.value : [])
+    if (shares.status === 'fulfilled') setShareCount(Number(shares.value?.count || 0))
+    if (savedState.status === 'fulfilled') setSaved(Boolean(savedState.value?.saved))
+    if (results.some(result => result.status === 'rejected')) {
+      setInteractionMessage('Some article interaction details are temporarily unavailable.')
     }
   }, [slug])
 
