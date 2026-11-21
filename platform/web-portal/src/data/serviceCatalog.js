@@ -21,6 +21,7 @@ export const SERVICES = [
   SERVICE('💱', 'Exchange', 'Supported currency and exchange operations with ledger-backed settlement.', '/exchange', 'Business'),
   SERVICE('🤖', 'AI Workspace', 'Authenticated Shopnoltd AI chat with active-model routing.', '/app?panel=ai', 'AI'),
   SERVICE('⬇️', 'Downloads', 'Official Shopnoltd installers and native applications for Windows, Linux, macOS and Android.', '/downloads', 'Downloads'),
+  SERVICE('🖥️', 'Software & OS Installation', 'Find official software, drivers and operating-system resources for supported PCs and devices. Get online installation guidance and offline bootable-USB preparation guidance; device compatibility and vendor support apply.', '/software-os-center.html', 'Software & OS'),
   SERVICE('📱', 'Android Cloud', 'Browser-accessible Android Cloud workspace integrated directly into the main Shopnoltd domain.', '/android-cloud', 'Cloud Devices'),
   SERVICE('💻', 'Code Server', 'Browser-based development environment in the isolated Shopnoltd app workspace.', '/app?panel=code', 'Developer'),
   SERVICE('🔗', 'API', 'Platform APIs for applications, services, automation and integrations.', 'https://api.shopnoltd.dpdns.org/openapi.json', 'Developer'),
