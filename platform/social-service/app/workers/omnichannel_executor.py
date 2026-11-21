@@ -9,7 +9,7 @@ import asyncio
 import base64
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from email.message import EmailMessage
 from typing import Any
 
@@ -49,6 +49,66 @@ def _fernet() -> Fernet:
     if not key:
         raise RuntimeError("provider OAuth encryption is not configured")
     return Fernet(key.encode())
+
+
+async def _refresh_access_token(provider: str, refresh_token: str) -> dict[str, Any]:
+    """Refresh OAuth credentials using each provider's confidential-client contract."""
+    cfg = {
+        "google": (
+            "https://oauth2.googleapis.com/token",
+            {"grant_type": "refresh_token", "refresh_token": refresh_token,
+             "client_id": settings.google_client_id, "client_secret": settings.google_client_secret},
+            None,
+        ),
+        "microsoft": (
+            "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+            {"grant_type": "refresh_token", "refresh_token": refresh_token,
+             "client_id": settings.microsoft_client_id, "client_secret": settings.microsoft_client_secret},
+            None,
+        ),
+        "linkedin": (
+            "https://www.linkedin.com/oauth/v2/accessToken",
+            {"grant_type": "refresh_token", "refresh_token": refresh_token,
+             "client_id": settings.linkedin_client_id, "client_secret": settings.linkedin_client_secret},
+            None,
+        ),
+        "x": (
+            "https://api.x.com/2/oauth2/token",
+            {"grant_type": "refresh_token", "refresh_token": refresh_token},
+            (settings.x_client_id, settings.x_client_secret),
+        ),
+    }
+    if provider == "tiktok":
+        url = "https://open.tiktokapis.com/v2/oauth/token/"
+        if not all((settings.tiktok_client_key, settings.tiktok_client_secret)):
+            raise RuntimeError("provider refresh credentials are not configured")
+        data = {"client_key": settings.tiktok_client_key,
+                "client_secret": settings.tiktok_client_secret,
+                "grant_type": "refresh_token", "refresh_token": refresh_token}
+        auth = None
+    elif provider in cfg:
+        url, data, auth = cfg[provider]
+        if provider != "x" and not all((data.get("client_id"), data.get("client_secret"))):
+            raise RuntimeError("provider refresh credentials are not configured")
+        if provider == "x" and not all(auth or ()):
+            raise RuntimeError("provider refresh credentials are not configured")
+    else:
+        raise RuntimeError("provider refresh is not supported")
+    async with httpx.AsyncClient(timeout=httpx.Timeout(20.0, connect=5.0)) as http:
+        response = await http.post(
+            url, data=data, auth=auth,
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+        )
+    if response.status_code >= 400:
+        raise RuntimeError("provider refresh was rejected")
+    payload = response.json()
+    if provider == "tiktok":
+        payload = payload.get("data") or {}
+        if payload.get("error_code") not in (None, 0):
+            raise RuntimeError("TikTok token refresh was rejected")
+    if not payload.get("access_token"):
+        raise RuntimeError("provider refresh did not return an access token")
+    return payload
 
 
 def _response_disposition(status_code: int) -> str:
@@ -178,6 +238,35 @@ async def _finish(action_id: str, status: str, *, result: dict[str, Any] | None 
         await session.commit()
 
 
+async def session_refresh_credentials(
+    *, tenant_id: str, user_id: str, platform: str, account_id: str,
+    encrypted_access: str, encrypted_refresh: str | None, expires_at: datetime,
+) -> None:
+    async with SessionLocal() as session:
+        await session.execute(text("""
+            UPDATE omnichannel_oauth_tokens
+            SET encrypted_access_token=:access,
+                encrypted_refresh_token=COALESCE(:refresh, encrypted_refresh_token),
+                token_expires_at=:expires, updated_at=NOW()
+            WHERE tenant_id=:tenant AND user_id=:user
+              AND platform=:platform AND provider_account_id=:account
+              AND status='connected'
+        """), {
+            "access": encrypted_access, "refresh": encrypted_refresh,
+            "expires": expires_at, "tenant": tenant_id, "user": user_id,
+            "platform": platform, "account": account_id,
+        })
+        await session.execute(text("""
+            UPDATE social_connections
+            SET token_expires_at=:expires, updated_at=NOW()
+            WHERE tenant_id=:tenant AND platform=:platform AND platform_account_id=:account
+        """), {
+            "expires": expires_at, "tenant": tenant_id,
+            "platform": platform, "account": account_id,
+        })
+        await session.commit()
+
+
 async def process_action(action: dict[str, Any], *, client: httpx.AsyncClient | None = None) -> None:
     action_id = str(action["id"])
     platform = str(action["platform"])
@@ -206,7 +295,8 @@ async def process_action(action: dict[str, Any], *, client: httpx.AsyncClient | 
         row = (await session.execute(text("""
             SELECT c.status AS connection_status, c.platform_account_id, c.scopes,
                    COALESCE(t.token_expires_at, c.token_expires_at) AS token_expires_at,
-                   t.provider, t.encrypted_access_token, t.status AS token_status
+                   t.provider, t.encrypted_access_token, t.encrypted_refresh_token,
+                   t.status AS token_status
             FROM social_connections c
             JOIN omnichannel_oauth_tokens t
               ON t.tenant_id=c.tenant_id
@@ -232,10 +322,6 @@ async def process_action(action: dict[str, Any], *, client: httpx.AsyncClient | 
                       error_message="The stored OAuth provider does not match the requested platform.")
         return
     expiry = row["token_expires_at"]
-    if expiry and expiry <= datetime.now(timezone.utc):
-        await _finish(action_id, "failed", error_code="token_expired",
-                      error_message="The provider token expired; reconnect the account before retrying.")
-        return
     scopes = row["scopes"] or []
     if isinstance(scopes, str):
         try:
@@ -248,11 +334,37 @@ async def process_action(action: dict[str, Any], *, client: httpx.AsyncClient | 
                       error_message="The connected account did not grant the required provider scope.")
         return
     try:
-        token = _fernet().decrypt(str(row["encrypted_access_token"]).encode()).decode()
+        f = _fernet()
+        token = f.decrypt(str(row["encrypted_access_token"]).encode()).decode()
     except (InvalidToken, RuntimeError, ValueError):
         await _finish(action_id, "failed", error_code="token_decryption_failed",
                       error_message="The stored token could not be decrypted; reconnect the account.")
         return
+
+    # Refresh slightly before expiry so an approved action does not fail mid-flight.
+    if expiry and expiry <= datetime.now(timezone.utc) + timedelta(minutes=5):
+        encrypted_refresh = row["encrypted_refresh_token"]
+        if not encrypted_refresh:
+            await _finish(action_id, "failed", error_code="token_expired",
+                          error_message="The provider token expired and no refresh token is available; reconnect the account.")
+            return
+        try:
+            refresh_token = f.decrypt(str(encrypted_refresh).encode()).decode()
+            refreshed = await _refresh_access_token(str(row["provider"]), refresh_token)
+            token = str(refreshed["access_token"])
+            new_refresh = refreshed.get("refresh_token")
+            new_expiry = datetime.now(timezone.utc) + timedelta(seconds=int(refreshed.get("expires_in") or 3600))
+            await session_refresh_credentials(
+                tenant_id=str(action["tenant_id"]), user_id=requested_by,
+                platform=platform, account_id=str(row["platform_account_id"]),
+                encrypted_access=f.encrypt(token.encode()).decode(),
+                encrypted_refresh=f.encrypt(str(new_refresh).encode()).decode() if new_refresh else None,
+                expires_at=new_expiry,
+            )
+        except (InvalidToken, RuntimeError, ValueError, httpx.HTTPError):
+            await _finish(action_id, "failed", error_code="token_refresh_failed",
+                          error_message="Provider token refresh failed; reconnect the account before retrying.")
+            return
 
     try:
         method, url, headers, request_body = _provider_request(

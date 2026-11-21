@@ -65,11 +65,27 @@ export default function OmnichannelConnections() {
   const [capabilities, setCapabilities] = useState([])
   const [providers, setProviders] = useState([])
   const [oauthProfiles, setOauthProfiles] = useState([])
+  const [pendingSelection, setPendingSelection] = useState(null)
   const [form, setForm] = useState(EMPTY)
   const [editing, setEditing] = useState(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
+
+  async function beginOAuth(provider, platform) {
+    setError('')
+    setBusy(true)
+    try {
+      const result = await platformApi.omnichannelOAuthAuthorizeUrl(provider, platform)
+      if (!result?.authorization_url || !/^https:\/\//i.test(result.authorization_url)) {
+        throw new Error('The provider did not return a valid authorization URL.')
+      }
+      window.location.assign(result.authorization_url)
+    } catch (e) {
+      setError(e.message || 'Could not start provider authorization.')
+      setBusy(false)
+    }
+  }
 
   async function load() {
     setError('')
@@ -89,7 +105,43 @@ export default function OmnichannelConnections() {
     }
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    const query = new URLSearchParams(window.location.search)
+    const oauthResult = query.get('oauth')
+    const provider = query.get('provider')
+    const reason = query.get('reason')
+    const pendingId = query.get('pending_id')
+    if (oauthResult) {
+      query.delete('oauth')
+      query.delete('provider')
+      query.delete('connection_id')
+      query.delete('reason')
+      if (oauthResult !== 'pending') query.delete('pending_id')
+      const remaining = query.toString()
+      window.history.replaceState({}, '', `${window.location.pathname}${remaining ? `?${remaining}` : ''}`)
+    }
+    load().then(async () => {
+      if (pendingId) {
+        try {
+          const pending = await platformApi.omnichannelOAuthPending(pendingId)
+          setPendingSelection({ ...pending, pendingId })
+        } catch (e) {
+          setError(e.message || 'The account selection expired. Please reconnect the provider.')
+        }
+      }
+      if (oauthResult === 'success') setNotice(`${provider || 'Provider'} account connected successfully.`)
+      if (oauthResult === 'error') {
+        const messages = {
+          access_denied: 'You cancelled the provider authorization.',
+          temporarily_unavailable: 'The provider is temporarily unavailable. Please try again.',
+          server_error: 'The provider could not complete authorization. Please try again.',
+          multiple_accounts: 'This login has multiple Pages or channels. Account selection is required; no account was connected.',
+          no_eligible_account: 'No eligible Page, channel, or professional account was found. Check provider permissions and account type.',
+        }
+        setError(messages[reason] || 'Provider authorization failed. Check the provider app permissions and try again.')
+      }
+    })
+  }, [])
 
   const capabilityMap = useMemo(() => {
     const map = {}
@@ -139,6 +191,26 @@ export default function OmnichannelConnections() {
     setError('')
     setNotice('')
     window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  async function chooseOAuthAccount(accountId) {
+    if (!pendingSelection?.pendingId) return
+    setBusy(true)
+    setError('')
+    try {
+      const result = await platformApi.omnichannelOAuthSelect(pendingSelection.pendingId, accountId)
+      setPendingSelection(null)
+      const currentQuery = new URLSearchParams(window.location.search)
+      currentQuery.delete('pending_id')
+      const remaining = currentQuery.toString()
+      window.history.replaceState({}, '', window.location.pathname + (remaining ? '?' + remaining : ''))
+      setNotice(result.provider + ' account connected successfully.')
+      await load()
+    } catch (e) {
+      setError(e.message || 'Could not connect the selected account.')
+    } finally {
+      setBusy(false)
+    }
   }
 
   async function remove(item) {
@@ -235,6 +307,25 @@ export default function OmnichannelConnections() {
       </div>
     </section>
 
+    {pendingSelection && <section style={{ ...styles.card, marginBottom: 20 }} aria-live="polite">
+      <h2 style={{ margin: '0 0 8px', fontSize: 18 }}>Choose the account to connect</h2>
+      <p style={{ margin: '0 0 12px', color: '#6b7280' }}>
+        Select one {pendingSelection.platform} account authorized by {pendingSelection.provider}. Provider credentials remain encrypted on the server.
+      </p>
+      <div style={{ display: 'grid', gap: 8 }}>
+        {pendingSelection.choices.map(choice => <button
+          key={choice.id}
+          type="button"
+          disabled={busy}
+          onClick={() => chooseOAuthAccount(choice.id)}
+          style={{ ...styles.button, justifyContent: 'space-between', width: '100%' }}
+        >
+          <span>{choice.name}{choice.username ? ' (@' + choice.username + ')' : ''}</span>
+          <span>Connect</span>
+        </button>)}
+      </div>
+    </section>}
+
     <section style={{ ...styles.card, marginBottom: 20 }}>
       <h2 style={{ margin: '0 0 12px', fontSize: 18 }}>Authorize provider accounts</h2>
       <p style={{ margin: '0 0 12px', color: '#6b7280', lineHeight: 1.5 }}>
@@ -251,7 +342,7 @@ export default function OmnichannelConnections() {
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 9 }}>
             {provider.platforms.map(platform => (
               provider.configured && provider.authorization_supported
-                ? <button key={platform} type="button" onClick={() => { window.location.href = platformApi.omnichannelOAuthStart(provider.provider, platform) }} style={styles.button}>
+                ? <button key={platform} type="button" onClick={() => beginOAuth(provider.provider, platform)} disabled={busy} style={styles.button}>
                     <Link2 size={14} /> Connect {platform}
                   </button>
                 : <span key={platform} style={{ ...styles.button, color: '#92400e', cursor: 'default' }}>

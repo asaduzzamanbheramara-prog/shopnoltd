@@ -94,15 +94,21 @@ SOCIAL_PROVIDERS = {
     },
     "facebook": {
         "providerId": "facebook",
-        "clientIdEnv": "FACEBOOK_APP_ID",
-        "clientSecretEnv": "FACEBOOK_APP_SECRET",
+        "clientIdEnv": "FACEBOOK_LOGIN_APP_ID",
+        "clientSecretEnv": "FACEBOOK_LOGIN_APP_SECRET",
         "scope": "email public_profile",
+        # Meta's Facebook profile response exposes an email field but does not
+        # provide a standard email_verified claim for Keycloak to validate.
+        "trustEmail": False,
     },
     "github": {
         "providerId": "github",
         "clientIdEnv": "GITHUB_CLIENT_ID",
         "clientSecretEnv": "GITHUB_CLIENT_SECRET",
         "scope": "user:email read:user",
+        # The Keycloak GitHub provider imports the primary email but not its
+        # verified flag, so require Shopnoltd-side verification.
+        "trustEmail": False,
     },
 }
 
@@ -296,7 +302,7 @@ LOGIN_ONLY_AUTHENTICATORS = {"idp-create-user-if-unique", "idp-confirm-link"}
 
 
 def ensure_login_first_broker_flow(token):
-    """Copy the standard broker flow and prevent social Login from creating users."""
+    """Copy the standard broker flow and disable account creation/linking at every level."""
     code, flows = request("GET", f"/admin/realms/{REALM}/authentication/flows", token=token)
     if code != 200 or not isinstance(flows, list):
         raise RuntimeError(f"Unable to inspect Keycloak authentication flows (HTTP {code})")
@@ -327,15 +333,17 @@ def ensure_login_first_broker_flow(token):
     if code != 200 or not isinstance(executions, list):
         raise RuntimeError(f"Unable to inspect social Login first-broker flow (HTTP {code})")
 
+    # Keycloak's executions endpoint returns nested subflow executions recursively.
     found_authenticators = set()
-    changed = False
+    updates = []
     for execution in executions:
         provider_id = execution.get("providerId")
         if provider_id in LOGIN_ONLY_AUTHENTICATORS:
             found_authenticators.add(provider_id)
             if execution.get("requirement") != "DISABLED":
-                execution["requirement"] = "DISABLED"
-                changed = True
+                updated = dict(execution)
+                updated["requirement"] = "DISABLED"
+                updates.append(updated)
 
     missing = LOGIN_ONLY_AUTHENTICATORS - found_authenticators
     if missing:
@@ -344,18 +352,22 @@ def ensure_login_first_broker_flow(token):
             + ", ".join(sorted(missing))
         )
 
-    if changed:
+    # Keycloak expects one AuthenticationExecutionInfoRepresentation per PUT,
+    # not the complete list returned by GET.
+    for execution in updates:
         code, _ = request(
             "PUT",
             f"/admin/realms/{REALM}/authentication/flows/{encoded_alias}/executions",
             token=token,
-            body=executions,
+            body=execution,
         )
         if code not in (200, 204):
-            raise RuntimeError(f"Unable to enforce Login-only flow policy (HTTP {code})")
+            raise RuntimeError(
+                "Unable to enforce Login-only policy for execution "
+                f"'{execution.get('id')}' (HTTP {code})"
+            )
 
-    print("[OK] social Login flow disables automatic user creation and unverified link confirmation")
-
+    print("[OK] social Login flow disables automatic user creation and unverified link confirmation across nested subflows")
 
 def sync_social_provider(token, alias, provider, first_broker_flow_alias="first broker login"):
     client_id = os.environ.get(provider["clientIdEnv"], "").strip()
@@ -366,7 +378,7 @@ def sync_social_provider(token, alias, provider, first_broker_flow_alias="first 
         "alias": alias,
         "providerId": provider["providerId"],
         "enabled": True,
-        "trustEmail": True,
+        "trustEmail": provider.get("trustEmail", True),
         "storeToken": False,
         "firstBrokerLoginFlowAlias": first_broker_flow_alias,
         "config": {

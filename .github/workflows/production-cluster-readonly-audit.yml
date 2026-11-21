@@ -195,7 +195,7 @@ jobs:
           admin_data = read_secret("keycloak-secret")
           expected = {
               "google": ("GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET"),
-              "facebook": ("FACEBOOK_APP_ID", "FACEBOOK_APP_SECRET"),
+              "facebook": ("FACEBOOK_LOGIN_APP_ID", "FACEBOOK_LOGIN_APP_SECRET"),
               "github": ("GITHUB_CLIENT_ID", "GITHUB_CLIENT_SECRET"),
           }
           print("Keycloak social Secret:")

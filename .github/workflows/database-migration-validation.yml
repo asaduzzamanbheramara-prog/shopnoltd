@@ -52,6 +52,7 @@ jobs:
           docker exec -i "$PG_CONTAINER" psql -U postgres -d postgres -v ON_ERROR_STOP=1 < k8s/services/postgres/migration/016-omnichannel-crm.sql
           docker exec -i "$PG_CONTAINER" psql -U postgres -d postgres -v ON_ERROR_STOP=1 < k8s/services/postgres/migration/017-omnichannel-provider-oauth.sql
           docker exec -i "$PG_CONTAINER" psql -U postgres -d postgres -v ON_ERROR_STOP=1 < k8s/services/postgres/migration/023-exchange-social-model-tables.sql
+          docker exec -i "$PG_CONTAINER" psql -U postgres -d postgres -v ON_ERROR_STOP=1 < k8s/services/postgres/migration/025-omnichannel-oauth-pending-selection.sql
 
       - name: Verify schema completeness and least-privilege grants
         env:
@@ -61,7 +62,16 @@ jobs:
           test "$payment_tables" = "conversions,rates"
 
           social_count="$(docker exec "$PG_CONTAINER" psql -U postgres -d social -Atqc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE'")"
-          test "$social_count" = "26"
+          test "$social_count" = "27"
+
+          pending_columns="$(docker exec "$PG_CONTAINER" psql -U postgres -d social -Atqc "SELECT count(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='omnichannel_oauth_pending' AND column_name IN ('id','tenant_id','user_id','provider','platform','encrypted_payload','expires_at','created_at')")"
+          test "$pending_columns" = "8"
+
+          pending_index="$(docker exec "$PG_CONTAINER" psql -U postgres -d social -Atqc "SELECT count(*) FROM pg_indexes WHERE schemaname='public' AND indexname='idx_omnichannel_oauth_pending_owner_expiry'")"
+          test "$pending_index" = "1"
+
+          pending_grants="$(docker exec "$PG_CONTAINER" psql -U postgres -d social -Atqc "SELECT has_table_privilege('shopno','public.omnichannel_oauth_pending','SELECT') AND has_table_privilege('shopno','public.omnichannel_oauth_pending','INSERT') AND has_table_privilege('shopno','public.omnichannel_oauth_pending','UPDATE') AND has_table_privilege('shopno','public.omnichannel_oauth_pending','DELETE')")"
+          test "$pending_grants" = "t"
 
           media_type="$(docker exec "$PG_CONTAINER" psql -U postgres -d social -Atqc "SELECT data_type FROM information_schema.columns WHERE table_schema='public' AND table_name='posts' AND column_name='media'")"
           test "$media_type" = "jsonb"
@@ -74,5 +84,6 @@ jobs:
           PG_CONTAINER: ${{ steps.postgres.outputs.container_id }}
         run: |
           docker exec -i "$PG_CONTAINER" psql -U postgres -d postgres -v ON_ERROR_STOP=1 < k8s/services/postgres/migration/023-exchange-social-model-tables.sql
+          docker exec -i "$PG_CONTAINER" psql -U postgres -d postgres -v ON_ERROR_STOP=1 < k8s/services/postgres/migration/025-omnichannel-oauth-pending-selection.sql
           social_count="$(docker exec "$PG_CONTAINER" psql -U postgres -d social -Atqc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE'")"
-          test "$social_count" = "26"
+          test "$social_count" = "27"

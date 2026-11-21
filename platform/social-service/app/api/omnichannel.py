@@ -33,9 +33,9 @@ PROVIDER_CONFIG = {
     "google": {"platforms": ["gmail", "youtube"], "client_id": settings.google_client_id, "client_secret": settings.google_client_secret, "auth_url": "https://accounts.google.com/o/oauth2/v2/auth", "token_url": "https://oauth2.googleapis.com/token", "scopes": ["openid", "email", "profile"]},
     "microsoft": {"platforms": ["outlook"], "client_id": settings.microsoft_client_id, "client_secret": settings.microsoft_client_secret, "auth_url": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize", "token_url": "https://login.microsoftonline.com/common/oauth2/v2.0/token", "scopes": ["openid", "profile", "email", "offline_access", "https://graph.microsoft.com/User.Read"]},
     "linkedin": {"platforms": ["linkedin"], "client_id": settings.linkedin_client_id, "client_secret": settings.linkedin_client_secret, "auth_url": "https://www.linkedin.com/oauth/v2/authorization", "token_url": "https://www.linkedin.com/oauth/v2/accessToken", "scopes": ["openid", "profile", "email"]},
-    "x": {"platforms": ["x"], "client_id": settings.x_client_id, "client_secret": settings.x_client_secret, "auth_url": "https://twitter.com/i/oauth2/authorize", "token_url": "https://api.x.com/2/oauth2/token", "scopes": ["tweet.read", "users.read", "offline.access"]},
-    "facebook": {"platforms": ["facebook", "instagram"], "client_id": settings.facebook_client_id, "client_secret": settings.facebook_client_secret, "auth_url": "https://www.facebook.com/v24.0/dialog/oauth", "token_url": "https://graph.facebook.com/v24.0/oauth/access_token", "scopes": []},
-    "instagram": {"platforms": ["instagram"], "client_id": settings.instagram_client_id, "client_secret": settings.instagram_client_secret, "auth_url": "https://www.facebook.com/v24.0/dialog/oauth", "token_url": "https://graph.facebook.com/v24.0/oauth/access_token", "scopes": []},
+    "x": {"platforms": ["x"], "client_id": settings.x_client_id, "client_secret": settings.x_client_secret, "auth_url": "https://x.com/i/oauth2/authorize", "token_url": "https://api.x.com/2/oauth2/token", "scopes": ["tweet.read", "users.read", "offline.access"]},
+    "facebook": {"platforms": ["facebook"], "client_id": settings.facebook_client_id, "client_secret": settings.facebook_client_secret, "auth_url": "https://www.facebook.com/v24.0/dialog/oauth", "token_url": "https://graph.facebook.com/v24.0/oauth/access_token", "scopes": []},
+    "instagram": {"platforms": ["instagram"], "client_id": settings.instagram_client_id or settings.facebook_client_id, "client_secret": settings.instagram_client_secret or settings.facebook_client_secret, "auth_url": "https://www.facebook.com/v24.0/dialog/oauth", "token_url": "https://graph.facebook.com/v24.0/oauth/access_token", "scopes": []},
     "tiktok": {"platforms": ["tiktok"], "client_id": settings.tiktok_client_key, "client_secret": settings.tiktok_client_secret, "auth_url": "https://www.tiktok.com/v2/auth/authorize/", "token_url": "https://open.tiktokapis.com/v2/oauth/token/", "scopes": ["user.info.basic"]},
     "telegram": {"platforms": ["telegram"], "client_id": None, "client_secret": None, "auth_url": None, "token_url": None, "scopes": [], "mode": "bot"},
     "whatsapp": {"platforms": ["whatsapp"], "client_id": settings.whatsapp_client_id, "client_secret": settings.whatsapp_client_secret, "auth_url": None, "token_url": None, "scopes": [], "mode": "business_cloud"},
@@ -214,11 +214,34 @@ async def update_connection(connection_id: str, body: ConnectionPatch, user=Depe
 @router.delete("/connections/{connection_id}", status_code=204)
 async def delete_connection(connection_id: str, user=Depends(current_user), s: AsyncSession = Depends(db)):
     tenant_id = user.get("tenant_id", "default")
-    result = await s.execute(text(
-        "DELETE FROM social_connections WHERE tenant_id=:tenant AND id=:id RETURNING id"
-    ), {"tenant": tenant_id, "id": connection_id})
-    if result.scalar_one_or_none() is None:
+    user_id = str(user.get("sub") or user.get("user_id") or "")
+    row = (await s.execute(text(
+        """SELECT c.platform, c.platform_account_id, t.user_id
+           FROM social_connections c
+           LEFT JOIN omnichannel_oauth_tokens t
+             ON t.tenant_id=c.tenant_id
+            AND t.platform=c.platform
+            AND t.provider_account_id=c.platform_account_id
+            AND t.provider=COALESCE(c.metadata->>'provider', t.provider)
+           WHERE c.tenant_id=:tenant AND c.id=:id"""
+    ), {"tenant": tenant_id, "id": connection_id})).mappings().one_or_none()
+    if row is None or (row["user_id"] and row["user_id"] != user_id):
         raise HTTPException(404, "connection not found")
+    # Remove the encrypted credentials as part of disconnect; do not leave an
+    # orphaned OAuth profile/token that can still be selected by the executor.
+    await s.execute(text(
+        """DELETE FROM omnichannel_oauth_tokens
+           WHERE tenant_id=:tenant AND platform=:platform AND provider_account_id=:account_id
+             AND provider=COALESCE((SELECT metadata->>'provider' FROM social_connections
+                                    WHERE tenant_id=:tenant AND id=:id), provider)
+             AND user_id=:user"""
+    ), {
+        "tenant": tenant_id, "platform": row["platform"],
+        "account_id": row["platform_account_id"], "user": user_id,
+    })
+    await s.execute(text(
+        "DELETE FROM social_connections WHERE tenant_id=:tenant AND id=:id"
+    ), {"tenant": tenant_id, "id": connection_id})
     await s.commit()
     return None
 
@@ -226,7 +249,6 @@ async def delete_connection(connection_id: str, user=Depends(current_user), s: A
 @router.post("/connections", status_code=201)
 async def add_connection(body: ConnectionIn, user=Depends(registration_user), s: AsyncSession = Depends(db)):
     platform = body.platform.lower().strip()
-    action = body.action.lower().strip()
     if platform not in PLATFORMS:
         raise HTTPException(400, f"unsupported platform: {platform}")
     tenant_id = user.get("tenant_id", "default")
@@ -286,6 +308,7 @@ async def search_clients(q: str = Query(min_length=2, max_length=200), user=Depe
 @router.post("/actions", status_code=202)
 async def queue_action(body: ActionIn, user=Depends(action_user), s: AsyncSession = Depends(db)):
     platform = body.platform.lower().strip()
+    action = body.action.lower().strip()
     if platform not in PLATFORMS:
         raise HTTPException(400, f"unsupported platform: {platform}")
     tenant_id = user.get("tenant_id", "default")

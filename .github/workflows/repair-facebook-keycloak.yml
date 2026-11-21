@@ -8,6 +8,7 @@ permissions:
 
 jobs:
   repair-facebook-provider:
+    if: ${{ false }} # Disabled until Integration validation is complete.
     runs-on: [self-hosted, linux]
     timeout-minutes: 15
     steps:
@@ -30,19 +31,19 @@ jobs:
       - name: Preserve provider settings and add Facebook credentials
         shell: bash
         env:
-          FACEBOOK_APP_SECRET: ${{ secrets.FACEBOOK_APP_SECRET }}
+          FACEBOOK_LOGIN_APP_SECRET: ${{ secrets.FACEBOOK_LOGIN_APP_SECRET }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           GITHUB_CLIENT_ID: ${{ secrets.SHOPNOLTD_GITHUB_CLIENT_ID }}
           GITHUB_CLIENT_SECRET: ${{ secrets.SHOPNOLTD_GITHUB_CLIENT_SECRET }}
         run: |
           set -euo pipefail
-          test -n "${FACEBOOK_APP_SECRET:-}" || { echo 'FACEBOOK_APP_SECRET is not configured.' >&2; exit 1; }
+          test -n "${FACEBOOK_LOGIN_APP_SECRET:-}" || { echo 'FACEBOOK_LOGIN_APP_SECRET is not configured.' >&2; exit 1; }
           test -n "${GOOGLE_CLIENT_SECRET:-}" || { echo 'GOOGLE_CLIENT_SECRET is not configured.' >&2; exit 1; }
           test -n "${GITHUB_CLIENT_ID:-}" || { echo 'GITHUB_CLIENT_ID is not configured.' >&2; exit 1; }
           test -n "${GITHUB_CLIENT_SECRET:-}" || { echo 'GITHUB_CLIENT_SECRET is not configured.' >&2; exit 1; }
           existing="$(kubectl -n shopno-identity get secret keycloak-social-providers -o json 2>/dev/null || printf '%s' '{"apiVersion":"v1","kind":"Secret","metadata":{}}')"
           facebook_app_id_b64="$(printf '%s' '1239063184913011' | base64 -w0)"
-          facebook_app_secret_b64="$(printf '%s' "$FACEBOOK_APP_SECRET" | base64 -w0)"
+          facebook_app_secret_b64="$(printf '%s' "$FACEBOOK_LOGIN_APP_SECRET" | base64 -w0)"
           google_client_id_b64="$(printf '%s' '530228436303-2k8sl5mdjfotsvkcqgtcktcb7q2b78fn.apps.googleusercontent.com' | base64 -w0)"
           google_client_secret_b64="$(printf '%s' "$GOOGLE_CLIENT_SECRET" | base64 -w0)"
           github_client_id_b64="$(printf '%s' "$GITHUB_CLIENT_ID" | base64 -w0)"
@@ -57,8 +58,8 @@ jobs:
               .metadata.name="keycloak-social-providers" |
               .type="Opaque" |
               .data=((.data // {}) + {
-                FACEBOOK_APP_ID:$facebook_app_id,
-                FACEBOOK_APP_SECRET:$facebook_app_secret,
+                FACEBOOK_LOGIN_APP_ID:$facebook_app_id,
+                FACEBOOK_LOGIN_APP_SECRET:$facebook_app_secret,
                 GOOGLE_CLIENT_ID:$google_client_id,
                 GOOGLE_CLIENT_SECRET:$google_client_secret,
                 GITHUB_CLIENT_ID:$github_client_id,
@@ -66,7 +67,7 @@ jobs:
               })
             ' |
             kubectl apply -f -
-          unset FACEBOOK_APP_SECRET
+          unset FACEBOOK_LOGIN_APP_SECRET
           unset GOOGLE_CLIENT_SECRET
           unset GITHUB_CLIENT_ID
           unset GITHUB_CLIENT_SECRET
