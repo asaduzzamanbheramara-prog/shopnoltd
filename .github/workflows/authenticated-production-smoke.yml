@@ -75,4 +75,4 @@ jobs:
             tests/browser-role/playwright-report/
             tests/browser-role/test-results/
           if-no-files-found: ignore
-          retention-days: 14
+          retention-days: 1
