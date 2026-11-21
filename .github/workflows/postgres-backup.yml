@@ -114,6 +114,10 @@ jobs:
             -out "$BACKUP_WORKDIR/latest.kubernetes-secrets.json.enc" -pass env:BACKUP_ENCRYPTION_KEY
           rm -f "$raw_db" "$raw_secrets" "$raw_all_databases" "$BACKUP_WORKDIR/globals.sql" "$BACKUP_WORKDIR/database-list.txt"
           rm -rf "$BACKUP_WORKDIR/all-databases"
+          python3 "$GITHUB_WORKSPACE/ops/backup/authenticated_backup.py" create \
+            "$BACKUP_WORKDIR/latest.dump.enc" \
+            "$BACKUP_WORKDIR/latest.all-databases.tar.gz.enc" \
+            "$BACKUP_WORKDIR/latest.kubernetes-secrets.json.enc"
           cd "$BACKUP_WORKDIR"
           sha256sum latest.dump.enc > latest.dump.enc.sha256
           sha256sum latest.all-databases.tar.gz.enc > latest.all-databases.tar.gz.enc.sha256
@@ -133,6 +137,8 @@ jobs:
           sha256sum -c latest.dump.enc.sha256
           sha256sum -c latest.all-databases.tar.gz.enc.sha256
           sha256sum -c latest.kubernetes-secrets.json.enc.sha256
+          python3 "$GITHUB_WORKSPACE/ops/backup/authenticated_backup.py" verify \
+            latest.dump.enc latest.all-databases.tar.gz.enc latest.kubernetes-secrets.json.enc
 
           openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 -in latest.dump.enc \
             -out database-restore-check.dump -pass env:BACKUP_ENCRYPTION_KEY
@@ -183,6 +189,9 @@ jobs:
           cp "$BACKUP_WORKDIR/latest.all-databases.tar.gz.enc.sha256" backup/
           cp "$BACKUP_WORKDIR/latest.kubernetes-secrets.json.enc" backup/
           cp "$BACKUP_WORKDIR/latest.kubernetes-secrets.json.enc.sha256" backup/
+          cp "$BACKUP_WORKDIR/latest.dump.enc.hmac" backup/
+          cp "$BACKUP_WORKDIR/latest.all-databases.tar.gz.enc.hmac" backup/
+          cp "$BACKUP_WORKDIR/latest.kubernetes-secrets.json.enc.hmac" backup/
           cp "$BACKUP_WORKDIR/timestamp.txt" backup/
           cp "$BACKUP_WORKDIR/source-revision.txt" backup/
           cat > backup/README.md <<'EOF'
@@ -190,7 +199,8 @@ jobs:
 
           This branch contains an encrypted primary PostgreSQL dump, an encrypted
           archive of every connectable non-template database plus global roles, and
-          the all-namespace Kubernetes Secret export. The encryption key is supplied at
+          the all-namespace Kubernetes Secret export. Each encrypted artifact has a
+          keyed HMAC-SHA256 sidecar verified before decryption. The encryption key is supplied at
           runtime through BACKUP_ENCRYPTION_KEY and is never stored here.
 
           Never publish or apply decrypted files casually. Restore is a manual,

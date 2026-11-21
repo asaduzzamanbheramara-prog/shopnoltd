@@ -77,3 +77,16 @@ works today":
 4. If it was committed to git history (not just the working tree), scrub it
    with `git filter-repo` or BFG Repo-Cleaner -- a later commit that deletes
    the file does not remove it from history.
+
+
+## GitHub disaster-recovery backup contract
+
+The scheduled postgres-backup.yml workflow publishes encrypted snapshots to the private database-backups branch. It includes the primary PostgreSQL dump, every connectable non-template database plus global roles, and an all-namespace Kubernetes Secret export. The workflow decrypts and parses each snapshot before publishing it. A keyed HMAC-SHA256 sidecar is generated for every encrypted artifact and verified before any decryption, so ciphertext tampering is detected (a plain SHA-256 checksum alone is not an authenticity check).
+
+BACKUP_ENCRYPTION_KEY is a GitHub Actions repository secret and must remain outside Git. Keep an independently recoverable copy in an approved password manager or offline secret vault; do not store the only decryption key in the same GitHub account/repository as the encrypted backup. Rotate it only with a planned re-encryption of retained backups. Restrict write access to the backup branch and Actions workflow.
+
+GitHub Actions secret values cannot be read back by workflows or exported by GitHub. Therefore GitHub repository/environment secret names and their values must be maintained in an external secret inventory/password manager and restored manually through the GitHub Settings UI or API. The encrypted Kubernetes Secret snapshot does not contain GitHub Actions secrets, external provider-console credentials that were never installed in Kubernetes, or user passwords.
+
+The platform account registry and each user's profile/connection metadata live in PostgreSQL, with encrypted provider tokens in the social database. GitHub stores code, migrations, provider capability/configuration templates and encrypted disaster-recovery snapshots—not live plaintext user profiles or provider tokens. The Platform Accounts UI is user-scoped; administrative cross-user operations must use a separately authorized admin view with audit logging and must never weaken tenant/owner isolation.
+
+Restore remains a deliberate, reviewed operation: retrieve the backup branch, verify HMAC and checksum, decrypt with the separately held key, restore into an isolated target first, validate row counts/ownership and service compatibility, then approve any production recovery. The scheduled backup is not proof of a successful full restore until a periodic isolated restore drill passes.
