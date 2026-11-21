@@ -219,9 +219,8 @@ jobs:
           - name: android-cloud
             url: https://android.shopnoltd.dpdns.org
             mode: web
-          - name: chat
-            url: https://chat.shopnoltd.dpdns.org
-            mode: web
+          # Chatwoot/chat alias is intentionally retired and scaled to zero; see commit 6ceffdfb4fc9276e7ef0636ba82e61b3d8491e64.
+          # Do not gate active production readiness on this retired endpoint.
           - name: social
             url: https://social.shopnoltd.dpdns.org/healthz
             mode: health
