@@ -22,7 +22,7 @@ export function adPlacementForPath(pathname) {
 
 async function readPolicy(hostname) {
   if (!POLICY_CACHE.has(hostname)) {
-    const request = fetch('/api/v1/ads/config?domain=' + encodeURIComponent(hostname), {
+    const request = fetch('https://api.shopnoltd.dpdns.org/api/v1/ads/config?domain=' + encodeURIComponent(hostname), {
       headers: { Accept: 'application/json' },
       credentials: 'same-origin',
     }).then(async response => {
