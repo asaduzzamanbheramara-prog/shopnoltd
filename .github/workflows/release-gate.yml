@@ -348,7 +348,6 @@ jobs:
           - { name: api, url: 'https://api.shopnoltd.dpdns.org/healthz' }
           - { name: auth, url: 'https://auth.shopnoltd.dpdns.org' }
           - { name: kobo, url: 'https://kobo.shopnoltd.dpdns.org' }
-          - { name: chat, url: 'https://chat.shopnoltd.dpdns.org' }
           # The Meet backend is deployed, but its current public ingress exposes
           # only authenticated application routes; there is no public unauthenticated
           # Meet health route or Jitsi frontend hostname. The API gateway health check
@@ -358,7 +357,8 @@ jobs:
           # therefore are not mandatory production endpoints.
           - { name: mail, url: 'https://mail-api.shopnoltd.dpdns.org/healthz' }
           - { name: enketo, url: 'https://enketo.shopnoltd.dpdns.org' }
-          - { name: chatwoot, url: 'https://chatwoot.shopnoltd.dpdns.org' }
+          # Chatwoot and its chat alias were retired and scaled to zero (commit 6ceffdfb4fc9276e7ef0636ba82e61b3d8491e64).
+          # They are intentionally excluded from mandatory active-production endpoint checks.
           - { name: remote, url: 'https://remote.shopnoltd.dpdns.org' }
           - { name: vpn, url: 'https://vpn.shopnoltd.dpdns.org/healthz' }
           - { name: webmail, url: 'https://webmail.shopnoltd.dpdns.org' }
