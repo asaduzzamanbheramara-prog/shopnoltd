@@ -17,10 +17,10 @@ function Card({ service, admin = false }) {
   const action = admin ? 'Open administration →' : businessApp ? 'Create application →' : integration ? 'Configure integration →' : internal ? 'Open workspace →' : 'Open service →'
   const cardStyle = { display: 'flex', flexDirection: 'column', textDecoration: 'none', color: 'inherit', padding: 20, background: 'white', borderRadius: 16, border: '1px solid #e2e8f0', boxShadow: '0 3px 12px rgba(15,23,42,.06)', minHeight: 175 }
   const content = <><div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}><span style={{ fontSize: 32 }}>{service.icon}</span><span style={{ fontSize: 11, fontWeight: 700, color: businessApp ? '#b45309' : integration ? '#7c3aed' : internal ? '#047857' : '#0369a1' }}>{badge}</span></div><h3 style={{ margin: '12px 0 7px' }}>{service.name}</h3><p style={{ margin: 0, color: '#64748b', lineHeight: 1.5, flex: 1 }}>{service.description}</p><span style={{ marginTop: 14, color: '#0284c7', fontWeight: 700 }}>{action}</span></>
-  if (internal) {
+  if (internal && !service.url.endsWith('.html')) {
     return <Link to={service.url} style={cardStyle}>{content}</Link>
   }
-  return <a href={service.url} target="_blank" rel="noopener noreferrer" style={cardStyle}>{content}</a>
+  return <a href={service.url} target={internal ? undefined : '_blank'} rel={internal ? undefined : 'noopener noreferrer'} style={cardStyle}>{content}</a>
 }
 
 function PreviewSection({ title, description, items, limit = 6, admin = false, href = '/services' }) {
