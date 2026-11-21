@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { adPlacementForPath } from '../src/lib/useExternalAdPolicy.js'
+import { adPlacementForPath } from '../src/lib/adPlacement.js'
 
 test('maps supported public routes to their advertising placement', () => {
   assert.equal(adPlacementForPath('/'), 'home')
