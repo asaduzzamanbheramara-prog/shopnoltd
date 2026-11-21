@@ -1,4 +1,5 @@
 from decimal import Decimal
+import ipaddress
 import json
 import re
 from uuid import UUID
@@ -428,6 +429,12 @@ def normalize_ad_hostname(value: str) -> str:
         raise HTTPException(422, "Invalid internationalized hostname") from None
     if len(host) > 253 or "." not in host:
         raise HTTPException(422, "Enter a fully-qualified domain or subdomain")
+    try:
+        ipaddress.ip_address(host)
+    except ValueError:
+        pass
+    else:
+        raise HTTPException(422, "IP addresses cannot be registered as advertising hosts")
     labels = host.split(".")
     if any(not label or len(label) > 63 or not re.fullmatch(r"[a-z0-9](?:[a-z0-9-]*[a-z0-9])?", label) for label in labels):
         raise HTTPException(422, "Invalid hostname")
