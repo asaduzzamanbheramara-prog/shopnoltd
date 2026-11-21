@@ -21,7 +21,7 @@ jobs:
     timeout-minutes: 30
     services:
       postgres:
-        image: postgres:16
+        image: postgres:17
         env:
           POSTGRES_USER: restore_drill
           POSTGRES_HOST_AUTH_METHOD: trust
@@ -50,7 +50,7 @@ jobs:
           test -n "${BACKUP_ENCRYPTION_KEY:-}" || { echo "::error::BACKUP_ENCRYPTION_KEY is missing."; exit 1; }
           [[ "$BACKUP_REPOSITORY" != "$GITHUB_REPOSITORY" ]] || { echo "::error::Refusing to use the source repository as backup."; exit 1; }
           echo "::add-mask::$BACKUP_ENCRYPTION_KEY"
-          echo "PASS: restore target is an ephemeral GitHub Actions PostgreSQL service, not production."
+          echo "PASS: restore target is an ephemeral GitHub Actions PostgreSQL 17 service, not production."
 
       - name: Fetch latest encrypted snapshot from private backup repository
         shell: bash
@@ -83,27 +83,27 @@ jobs:
           pg_restore --list "$RUNNER_TEMP/shopnoltd-restore.dump" > "$RUNNER_TEMP/restore-toc.txt"
           grep -q "TABLE DATA" "$RUNNER_TEMP/restore-toc.txt"
 
-      - name: Restore into isolated PostgreSQL and validate
+      - name: Restore with matching PostgreSQL 17 tools and validate
         shell: bash
         run: |
           set -euo pipefail
-          export PGHOST=127.0.0.1 PGPORT=5432 PGUSER=restore_drill
-          for attempt in $(seq 1 30); do
-            pg_isready -d postgres && break
-            sleep 2
-          done
-          pg_isready -d postgres
-          psql -v ON_ERROR_STOP=1 -d postgres -c 'CREATE DATABASE shopnoltd_restore_drill'
-          pg_restore --exit-on-error --no-owner --no-acl \
-            --dbname=shopnoltd_restore_drill "$RUNNER_TEMP/shopnoltd-restore.dump"
-          table_count="$(psql -v ON_ERROR_STOP=1 -d shopnoltd_restore_drill -Atc \
+          PG_CONTAINER="$(docker ps --filter ancestor=postgres:17 --format '{{.ID}}' | head -n 1)"
+          test -n "$PG_CONTAINER" || { echo "::error::Disposable PostgreSQL 17 container not found."; exit 1; }
+          docker exec "$PG_CONTAINER" pg_restore --version
+          docker cp "$RUNNER_TEMP/shopnoltd-restore.dump" "$PG_CONTAINER:/tmp/shopnoltd-restore.dump"
+          docker exec "$PG_CONTAINER" psql -U restore_drill -d postgres -v ON_ERROR_STOP=1 \
+            -c 'CREATE DATABASE shopnoltd_restore_drill'
+          docker exec "$PG_CONTAINER" pg_restore --exit-on-error --no-owner --no-acl \
+            --dbname=shopnoltd_restore_drill /tmp/shopnoltd-restore.dump
+          table_count="$(docker exec "$PG_CONTAINER" psql -U restore_drill -d shopnoltd_restore_drill -Atc \
             "SELECT count(*) FROM information_schema.tables WHERE table_schema NOT IN ('pg_catalog','information_schema') AND table_type='BASE TABLE'")"
           [[ "$table_count" =~ ^[0-9]+$ ]] && (( table_count > 0 )) || {
             echo "::error::Restore completed but no user tables were found."; exit 1;
           }
-          psql -v ON_ERROR_STOP=1 -d shopnoltd_restore_drill -c \
+          docker exec "$PG_CONTAINER" psql -U restore_drill -d shopnoltd_restore_drill -v ON_ERROR_STOP=1 -c \
             "SELECT current_database() AS restored_database, count(*) AS restored_tables FROM information_schema.tables WHERE table_schema NOT IN ('pg_catalog','information_schema') AND table_type='BASE TABLE'"
-          echo "PASS: isolated restore validated with $table_count user tables."
+          docker exec "$PG_CONTAINER" rm -f /tmp/shopnoltd-restore.dump
+          echo "PASS: isolated PostgreSQL 17 restore validated with $table_count user tables."
 
       - name: Remove decrypted snapshot and temporary clone
         if: always()
