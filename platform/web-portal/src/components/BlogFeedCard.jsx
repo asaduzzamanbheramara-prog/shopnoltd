@@ -16,18 +16,22 @@ export default function BlogFeedCard({ post }) {
 
   useEffect(() => {
     let active = true
-    Promise.all([
+    Promise.allSettled([
       platformApi.blogLikes(post.slug),
       platformApi.blogComments(post.slug),
       platformApi.blogShares(post.slug),
       platformApi.blogSaved(post.slug),
     ]).then(([likes, rows, shares, savedState]) => {
       if (!active) return
-      setLike({ count: Number(likes?.count || 0), liked: Boolean(likes?.liked) })
-      setComments(Array.isArray(rows) ? rows : [])
-      setShareCount(Number(shares?.count || 0))
-      setSaved(Boolean(savedState?.saved))
-    }).catch(() => {})
+      // Each interaction is independent: an unavailable saved-state endpoint
+      // must not hide public likes, comments, or share totals.
+      if (likes.status === 'fulfilled') {
+        setLike({ count: Number(likes.value?.count || 0), liked: Boolean(likes.value?.liked) })
+      }
+      if (rows.status === 'fulfilled') setComments(Array.isArray(rows.value) ? rows.value : [])
+      if (shares.status === 'fulfilled') setShareCount(Number(shares.value?.count || 0))
+      if (savedState.status === 'fulfilled') setSaved(Boolean(savedState.value?.saved))
+    })
     return () => { active = false }
   }, [post.slug])
 
