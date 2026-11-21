@@ -45,5 +45,6 @@ export default function Services() {
     <Section title="Connected Platforms" description="External platforms and integration workflows. Availability depends on the authorized provider/API connection." items={connected} />
     {isAdmin && <Section title="Administration" description="Privileged administration surfaces for authorized platform administrators." items={ADMIN_SERVICES} admin />}
     {!filtered.length && <div style={{ padding: 30, marginTop: 24, border: '1px dashed #cbd5e1', borderRadius: 14, textAlign: 'center', color: '#64748b' }}>No matching service. Try another search or category.</div>}
+      <AdsterraResponsiveBanner />
   </main>
 }
