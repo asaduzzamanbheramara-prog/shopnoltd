@@ -3,6 +3,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { isTrustedPortalUrl, isSafeExternalUrl } = require('../src/navigation-policy');
+const BROWSER = require('../src/configs/browser.json');
 
 const PORTAL = 'https://web-portal.shopnoltd.dpdns.org';
 
@@ -31,6 +32,13 @@ test('only permits HTTPS external links to be opened externally', () => {
   assert.equal(isSafeExternalUrl('javascript:alert(1)', PORTAL), false);
   assert.equal(isSafeExternalUrl('file:///etc/passwd', PORTAL), false);
   assert.equal(isSafeExternalUrl(PORTAL + '/help', PORTAL), false);
+});
+
+test('Shopnoltd Browser config opens the protected Browser workspace on its exact HTTPS origin', () => {
+  assert.equal(BROWSER.appId, 'org.shopnoltd.browser');
+  assert.equal(BROWSER.url, 'https://shopnoltd.dpdns.org/browser');
+  assert.equal(isTrustedPortalUrl(BROWSER.url, BROWSER.url), true);
+  assert.equal(isTrustedPortalUrl('https://sessions.shopnoltd.dpdns.org/viewer/bootstrap', BROWSER.url), false);
 });
 
 test('malformed input is rejected without throwing', () => {
