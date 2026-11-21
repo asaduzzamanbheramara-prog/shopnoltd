@@ -2,6 +2,10 @@ name: Shopnoltd isolated PostgreSQL restore drill
 
 on:
   workflow_dispatch:
+  pull_request:
+    paths:
+      - .github/workflows/postgres-restore-drill.yml
+      - ops/backup/**
 
 permissions:
   contents: read
