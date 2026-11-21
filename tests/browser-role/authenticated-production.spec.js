@@ -119,6 +119,9 @@ async function login(page, username, password, totpSecret, roleLabel) {
 }
 
 test('admin can inspect database schema inventory while protected row reads stay disabled', async ({ page }) => {
+  // The live inventory is a bounded multi-database metadata scan; allow its
+  // explicit 90s request deadline to complete before Playwright closes the context.
+  test.setTimeout(120000)
   await login(page, adminUser, adminPassword, adminTotpSecret, 'admin')
   const token = await page.evaluate(() => localStorage.getItem('shopno_token'))
   const response = await page.request.get(`${baseURL}/api/v1/admin/database/live-catalog`, {
