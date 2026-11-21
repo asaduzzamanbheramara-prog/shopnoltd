@@ -50,6 +50,16 @@ async def lifespan(app: FastAPI):
                     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
                 )
             """))
+            # CREATE TABLE IF NOT EXISTS does not add defaults to an existing table.
+            # Upgrade legacy tables so inserts that omit timestamps remain valid.
+            await conn.execute(text(
+                "ALTER TABLE referral_system_identities "
+                "ALTER COLUMN created_at SET DEFAULT CURRENT_TIMESTAMP"
+            ))
+            await conn.execute(text(
+                "ALTER TABLE referral_system_identities "
+                "ALTER COLUMN updated_at SET DEFAULT CURRENT_TIMESTAMP"
+            ))
             await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_referral_system_identities_user_id ON referral_system_identities (user_id)"))
             await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_referral_system_identities_tenant_id ON referral_system_identities (tenant_id)"))
             # Prefer an explicitly configured canonical identity ID. For deployments
