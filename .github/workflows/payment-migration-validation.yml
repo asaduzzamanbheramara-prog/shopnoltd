@@ -140,7 +140,7 @@ jobs:
         env:
           PG_CONTAINER: ${{ steps.postgres.outputs.container_id }}
         run: |
-          old_constraint="$(docker exec "$PG_CONTAINER" psql -U postgres -d payment_migration_ci -Atqc "SELECT count(*) FROM pg_constraint WHERE conname='ix_wallet_user_currency' AND contype='u')"
+          old_constraint="$(docker exec "$PG_CONTAINER" psql -U postgres -d payment_migration_ci -Atqc "SELECT count(*) FROM pg_constraint WHERE conname='ix_wallet_user_currency' AND contype='u'")"
           test "$old_constraint" = "1"
 
           tenant_wallet_index="$(docker exec "$PG_CONTAINER" psql -U postgres -d payment_migration_ci -Atqc "SELECT count(*) FROM pg_indexes WHERE schemaname='public' AND indexname='ix_wallet_tenant_user_currency'")"
