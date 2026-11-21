@@ -9,6 +9,7 @@ on:
     paths:
       - 'k8s/**'
       - '.github/workflows/post-deployment-smoke.yml'
+      - '.github/workflows/self-hosted-k3s-gitops.yml'
   workflow_dispatch:
 
 permissions:
