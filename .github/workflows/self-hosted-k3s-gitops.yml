@@ -1359,3 +1359,25 @@ jobs:
           done
           diagnostic 'PLATFORM PODS' -n "$PLATFORM_NAMESPACE" get pods -o wide
           diagnostic 'CLOUDFLARED PODS' -n "$CLOUDFLARED_NAMESPACE" get pods -o wide
+
+  verify-passive-reconciliation:
+    name: Verify Argo CD passive reconciliation
+    if: ${{ github.event_name == 'push' }}
+    runs-on: [self-hosted, linux]
+    timeout-minutes: 5
+    steps:
+      - name: Verify application matches the pushed revision
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected="${GITHUB_SHA}"
+          app_json="$(kubectl --request-timeout=20s -n argocd get application shopnoltd -o json)"
+          actual_revision="$(jq -r '.status.sync.revision // empty' <<<"$app_json")"
+          sync_status="$(jq -r '.status.sync.status // empty' <<<"$app_json")"
+          health_status="$(jq -r '.status.health.status // empty' <<<"$app_json")"
+          echo "Expected revision=$expected"
+          echo "Observed revision=${actual_revision:-missing} sync=${sync_status:-missing} health=${health_status:-missing}"
+          test "$actual_revision" = "$expected"
+          test "$sync_status" = "Synced"
+          test "$health_status" = "Healthy"
+          echo "Argo CD has already reconciled the pushed revision; no manual sync or cluster mutation was requested."
