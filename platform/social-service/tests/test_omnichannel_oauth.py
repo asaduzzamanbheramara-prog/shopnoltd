@@ -124,3 +124,149 @@ def test_meta_long_lived_exchange_uses_requested_provider_config(monkeypatch):
     assert params["client_id"] == "instagram-app-id"
     assert params["client_secret"] == "instagram-app-secret"
     assert params["fb_exchange_token"] == "short-lived-token"
+
+
+def test_youtube_requests_read_only_scope(monkeypatch):
+    monkeypatch.setitem(oauth.PROVIDER_CONFIG, "google", {
+        "platforms": ["youtube"],
+        "client_id": "google-client-id",
+        "client_secret": "google-client-secret",
+        "scopes": ["openid", "email", "profile"],
+    })
+    assert "https://www.googleapis.com/auth/youtube.readonly" in oauth._scopes("google", "youtube")
+    assert "https://www.googleapis.com/auth/youtube" not in oauth._scopes("google", "youtube")
+
+
+def test_tiktok_web_authorization_uses_client_key_and_no_pkce(monkeypatch):
+    monkeypatch.setitem(oauth.PROVIDER_CONFIG, "tiktok", {
+        "platforms": ["tiktok"],
+        "client_id": "tiktok-client-key",
+        "client_secret": "server-only-secret",
+        "auth_url": "https://www.tiktok.com/v2/auth/authorize/",
+        "token_url": "https://open.tiktokapis.com/v2/oauth/token/",
+        "scopes": ["user.info.basic"],
+    })
+    monkeypatch.setattr(oauth.settings, "provider_oauth_redirect_uri", "https://shopnoltd.example/callback")
+    monkeypatch.setattr(oauth, "_sign_state", lambda payload: "signed-tiktok-state")
+    params = parse_qs(urlparse(oauth._authorization_url("tiktok", "tiktok", {"sub": "user-1"})).query)
+    assert params["client_key"] == ["tiktok-client-key"]
+    assert params["scope"] == ["user.info.basic"]
+    assert params["state"] == ["signed-tiktok-state"]
+    assert "client_id" not in params
+    assert "code_challenge" not in params
+    assert "server-only-secret" not in str(params)
+
+
+def test_tiktok_token_exchange_unwraps_v2_data_and_checks_error_code(monkeypatch):
+    import asyncio
+    import pytest
+    from fastapi import HTTPException
+
+    class Response:
+        status_code = 200
+        def __init__(self, payload):
+            self.payload = payload
+        def json(self):
+            return self.payload
+
+    class Client:
+        def __init__(self, payload):
+            self.payload = payload
+            self.request = None
+        async def __aenter__(self):
+            return self
+        async def __aexit__(self, *args):
+            return False
+        async def post(self, url, **kwargs):
+            self.request = (url, kwargs)
+            return Response(self.payload)
+
+    monkeypatch.setitem(oauth.PROVIDER_CONFIG, "tiktok", {
+        "client_id": "client-key",
+        "client_secret": "client-secret",
+        "token_url": "https://open.tiktokapis.com/v2/oauth/token/",
+    })
+    success = Client({"data": {"error_code": 0, "access_token": "access", "refresh_token": "refresh"}, "message": "success"})
+    monkeypatch.setattr(oauth.httpx, "AsyncClient", lambda **kwargs: success)
+    result = asyncio.run(oauth._exchange("tiktok", "auth-code", "unused-verifier"))
+    assert result["access_token"] == "access"
+    assert result["refresh_token"] == "refresh"
+    assert success.request[1]["data"]["client_key"] == "client-key"
+    assert success.request[1]["data"]["client_secret"] == "client-secret"
+
+    rejected = Client({"data": {"error_code": 10001}, "message": "error"})
+    monkeypatch.setattr(oauth.httpx, "AsyncClient", lambda **kwargs: rejected)
+    with pytest.raises(HTTPException) as exc:
+        asyncio.run(oauth._exchange("tiktok", "bad-code", "unused-verifier"))
+    assert exc.value.status_code == 400
+
+
+def test_youtube_channel_discovery_follows_next_page_token(monkeypatch):
+    import asyncio
+
+    class Response:
+        status_code = 200
+        def __init__(self, payload):
+            self.payload = payload
+        def json(self):
+            return self.payload
+
+    class Client:
+        def __init__(self):
+            self.calls = []
+            self.responses = [
+                Response({"items": [{"id": "channel-1", "snippet": {"title": "First"}}], "nextPageToken": "page-2"}),
+                Response({"items": [{"id": "channel-2", "snippet": {"title": "Second"}}]}),
+            ]
+        async def __aenter__(self):
+            return self
+        async def __aexit__(self, *args):
+            return False
+        async def get(self, url, **kwargs):
+            self.calls.append(kwargs["params"].copy())
+            return self.responses.pop(0)
+
+    client = Client()
+    monkeypatch.setattr(oauth.httpx, "AsyncClient", lambda **kwargs: client)
+    result = asyncio.run(oauth._identity("google", "access-token", "youtube"))
+    assert result["_choices"][0]["id"] == "channel-1"
+    assert result["_choices"][1]["id"] == "channel-2"
+    assert client.calls[0]["maxResults"] == 50
+    assert client.calls[1]["pageToken"] == "page-2"
+
+
+def test_meta_page_discovery_follows_after_cursor(monkeypatch):
+    import asyncio
+
+    class Response:
+        status_code = 200
+        def __init__(self, payload):
+            self.payload = payload
+        def json(self):
+            return self.payload
+
+    class Client:
+        def __init__(self, responses):
+            self.responses = list(responses)
+            self.calls = []
+        async def __aenter__(self):
+            return self
+        async def __aexit__(self, *args):
+            return False
+        async def get(self, url, **kwargs):
+            self.calls.append(kwargs.get("params", {}).copy())
+            return self.responses.pop(0)
+
+    pages = Client([
+        Response({"data": [{"id": "page-1", "name": "First", "access_token": "page-token-1"}],
+                  "paging": {"cursors": {"after": "cursor-2"}}}),
+        Response({"data": [{"id": "page-2", "name": "Second", "access_token": "page-token-2"}]}),
+    ])
+    permissions = Client([Response({"data": [{"permission": "pages_show_list", "status": "granted"}]})])
+    clients = [pages, permissions]
+    monkeypatch.setattr(oauth.httpx, "AsyncClient", lambda **kwargs: clients.pop(0))
+    result = asyncio.run(oauth._identity("facebook", "user-token", "facebook"))
+    assert [item["id"] for item in result["_choices"]] == ["page-1", "page-2"]
+    assert pages.calls[0]["limit"] == 100
+    assert pages.calls[1]["after"] == "cursor-2"
+    assert result["_choices"][0]["_access_token"] == "page-token-1"

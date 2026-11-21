@@ -68,11 +68,10 @@ def _scopes(provider: str, platform: str) -> list[str]:
     base = list(PROVIDER_CONFIG[provider].get("scopes", []))
     extras = {
         ("google", "gmail"): ["https://www.googleapis.com/auth/gmail.send"],
-        ("google", "youtube"): ["https://www.googleapis.com/auth/youtube"],
+        ("google", "youtube"): ["https://www.googleapis.com/auth/youtube.readonly"],
         ("microsoft", "outlook"): ["https://graph.microsoft.com/Mail.Send"],
         ("linkedin", "linkedin"): ["w_member_social"],
         ("x", "x"): ["tweet.write"],
-        ("tiktok", "tiktok"): ["video.publish"],
         ("facebook", "facebook"): [
             "pages_show_list", "pages_read_engagement", "pages_manage_posts",
             "pages_messaging", "business_management",
@@ -146,9 +145,12 @@ async def _exchange(provider: str, code: str, verifier: str) -> dict:
         raise HTTPException(400, "provider token exchange failed")
     data = response.json()
     if provider == "tiktok":
-        if data.get("error") and data.get("error") != "ok":
+        token_data = data.get("data") or {}
+        # TikTok v2 reports token errors inside data.error_code.
+        error_code = token_data.get("error_code")
+        if (data.get("error") and data.get("error") != "ok") or error_code not in (None, 0, "0"):
             raise HTTPException(400, "TikTok token exchange was rejected")
-        return data.get("data") or {}
+        return token_data
     return data
 
 
@@ -206,15 +208,23 @@ async def _identity(provider: str, access_token: str, platform: str) -> dict:
     }
     if provider == "google" and platform == "youtube":
         # A YouTube connection must identify a channel, not merely the Google login.
+        channels = []
+        params = {"part": "id,snippet", "mine": "true", "maxResults": 50}
         async with httpx.AsyncClient(timeout=20) as client:
-            response = await client.get(
-                "https://youtube.googleapis.com/youtube/v3/channels",
-                params={"part": "id,snippet", "mine": "true"},
-                headers={"Authorization": f"Bearer {access_token}"},
-            )
-        if response.status_code >= 400:
-            raise HTTPException(400, "YouTube channel discovery failed; verify YouTube API access and granted scope")
-        channels = response.json().get("items") or []
+            for _ in range(10):
+                response = await client.get(
+                    "https://youtube.googleapis.com/youtube/v3/channels",
+                    params=params,
+                    headers={"Authorization": f"Bearer {access_token}"},
+                )
+                if response.status_code >= 400:
+                    raise HTTPException(400, "YouTube channel discovery failed; verify YouTube Data API access and granted scope")
+                page = response.json()
+                channels.extend(page.get("items") or [])
+                next_page = page.get("nextPageToken")
+                if not next_page:
+                    break
+                params["pageToken"] = next_page
         candidates = [
             {
                 "id": str(channel.get("id") or ""),
@@ -231,15 +241,24 @@ async def _identity(provider: str, access_token: str, platform: str) -> dict:
         fields = "id,name,access_token"
         if platform == "instagram":
             fields += ",instagram_business_account{id,username}"
+        pages = []
+        params = {"fields": fields, "limit": 100}
         async with httpx.AsyncClient(timeout=20) as client:
-            response = await client.get(
-                "https://graph.facebook.com/v24.0/me/accounts",
-                params={"fields": fields},
-                headers={"Authorization": f"Bearer {access_token}"},
-            )
-        if response.status_code >= 400:
-            raise HTTPException(400, "Meta Page discovery failed; verify pages_show_list and Page access")
-        pages = response.json().get("data") or []
+            # /me/accounts is cursor-paginated; include every manageable Page.
+            for _ in range(10):
+                response = await client.get(
+                    "https://graph.facebook.com/v24.0/me/accounts",
+                    params=params,
+                    headers={"Authorization": f"Bearer {access_token}"},
+                )
+                if response.status_code >= 400:
+                    raise HTTPException(400, "Meta Page discovery failed; verify pages_show_list and Page access")
+                page = response.json()
+                pages.extend(page.get("data") or [])
+                after = ((page.get("paging") or {}).get("cursors") or {}).get("after")
+                if not after:
+                    break
+                params["after"] = after
         async with httpx.AsyncClient(timeout=20) as permission_client:
             permission_response = await permission_client.get(
                 "https://graph.facebook.com/v24.0/me/permissions",
