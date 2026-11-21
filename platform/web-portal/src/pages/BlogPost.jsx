@@ -58,7 +58,6 @@ export default function BlogPost() {
 
   const loadInteractions = useCallback(async () => {
     if (!slug) return
-    try {
     const results = await Promise.allSettled([
       platformApi.blogLikes(slug),
       platformApi.blogComments(slug),
