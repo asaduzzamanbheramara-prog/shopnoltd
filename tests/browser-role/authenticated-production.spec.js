@@ -42,6 +42,19 @@ function generateTotp(secret, now = Date.now()) {
   return String((digest.readUInt32BE(offset) & 0x7fffffff) % 1_000_000).padStart(6, '0')
 }
 
+async function fillSensitive(locator, value) {
+  // Avoid locator.fill(value): Playwright records its argument in test-step titles.
+  // Setting the native input value and dispatching input/change keeps secrets out
+  // of the HTML report and trace action summaries.
+  await locator.evaluate((element, inputValue) => {
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set
+    if (!setter) throw new Error('Native input value setter unavailable')
+    setter.call(element, inputValue)
+    element.dispatchEvent(new Event('input', { bubbles: true }))
+    element.dispatchEvent(new Event('change', { bubbles: true }))
+  }, value)
+}
+
 async function login(page, username, password, totpSecret, roleLabel) {
   await page.goto(`${baseURL}/login`, { waitUntil: 'domcontentloaded' })
 
@@ -55,7 +68,7 @@ async function login(page, username, password, totpSecret, roleLabel) {
 
   await page.getByRole('button', { name: 'Continue with Shopnoltd' }).click()
   await page.locator('#username').fill(username)
-  await page.locator('#password').fill(password)
+  await fillSensitive(page.locator('#password'), password)
   await page.getByRole('button', { name: /Sign In|Log In/i }).click()
 
   if (roleLabel === 'owner') {
@@ -77,7 +90,7 @@ async function login(page, username, password, totpSecret, roleLabel) {
     const invalidOtpMessage = page.getByText(/Invalid authenticator code|Invalid one-time code|Invalid code/i)
     let verified = false
     for (const offset of [0, -1, 1]) {
-      await otpField.fill(generateTotp(totpSecret, Date.now() + offset * 30_000))
+      await fillSensitive(otpField, generateTotp(totpSecret, Date.now() + offset * 30_000))
       await page.getByRole('button', { name: /Sign In|Log In|Verify/i }).click()
       try {
         await page.waitForURL(url => new URL(url).pathname === '/dashboard', { timeout: 3000 })
