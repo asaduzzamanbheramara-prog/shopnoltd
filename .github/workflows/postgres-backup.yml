@@ -67,6 +67,41 @@ jobs:
           if repo.get("full_name", "").lower() != target.lower() or repo.get("private") is not True:
               raise SystemExit("Backup destination must exist and be private")
           print("PASS: separate private GitHub backup repository verified.")
+          # Verify Contents: write on the selected private repo before exporting production data.
+          import base64
+          probe_path = ".shopnoltd-backup-write-probe-" + os.environ["GITHUB_RUN_ID"] + ".txt"
+          api_root = "https://api.github.com/repos/" + target + "/contents/" + probe_path
+          common_headers = {
+              "Accept": "application/vnd.github+json",
+              "Authorization": "Bearer " + os.environ["BACKUP_REPOSITORY_TOKEN"],
+              "X-GitHub-Api-Version": "2022-11-28",
+              "Content-Type": "application/json",
+          }
+          create = urllib.request.Request(
+              api_root,
+              data=json.dumps({
+                  "message": "chore: verify backup token write permission",
+                  "content": base64.b64encode(b"temporary permission check").decode(),
+                  "branch": "main",
+              }).encode(),
+              headers=common_headers,
+              method="PUT",
+          )
+          with urllib.request.urlopen(create, timeout=20) as response:
+              created = json.load(response)
+          delete = urllib.request.Request(
+              api_root,
+              data=json.dumps({
+                  "message": "chore: remove backup token permission probe",
+                  "sha": created["content"]["sha"],
+                  "branch": "main",
+              }).encode(),
+              headers=common_headers,
+              method="DELETE",
+          )
+          with urllib.request.urlopen(delete, timeout=20):
+              pass
+          print("PASS: Contents: write permission verified; temporary probe file removed.")
           PY
           test -f "${KUBECONFIG:-$HOME/.kube/config}" || { echo "::error::KUBECONFIG is missing."; exit 1; }
           kubectl cluster-info >/dev/null
