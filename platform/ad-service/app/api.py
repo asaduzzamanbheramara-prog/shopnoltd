@@ -1,9 +1,11 @@
 from decimal import Decimal
+import json
+import re
 from uuid import UUID
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 import dns.asyncresolver
@@ -11,7 +13,7 @@ import dns.asyncresolver
 from .config import settings
 from .db import get_db
 from .models import AdZone, Advertiser, Campaign, CampaignFunding, Creative, Publisher, PublisherSite
-from .schemas import CampaignCreate, CreativeCreate, OwnerCreate, SiteCreate, ZoneCreate
+from .schemas import CampaignCreate, CreativeCreate, ExternalAdPolicyUpdate, OwnerCreate, SiteCreate, ZoneCreate
 from .security import current_user, require_admin
 
 router = APIRouter(prefix="/v1/ads", tags=["advertising"])
@@ -407,3 +409,112 @@ async def approve_publisher(publisher_id: UUID, user=Depends(require_admin), db=
     row.status = "approved"
     await db.commit()
     return {"id": str(row.id), "status": row.status}
+
+
+# External publisher networks are controlled per exact hostname. Wildcards are
+# intentionally unsupported: a newly-created subdomain must be reviewed before
+# any third-party script can load there.
+_ALLOWED_NETWORKS = {"adsense", "adsterra", "monetag", "profiton"}
+_ALLOWED_PLACEMENTS = {"home", "services", "blog", "feed", "downloads"}
+
+
+def normalize_ad_hostname(value: str) -> str:
+    raw = (value or "").strip().rstrip(".")
+    if "://" in raw or "/" in raw or ":" in raw or "*" in raw:
+        raise HTTPException(422, "Enter a hostname only; wildcards, schemes, ports and paths are not allowed")
+    try:
+        host = raw.encode("idna").decode("ascii").lower()
+    except UnicodeError:
+        raise HTTPException(422, "Invalid internationalized hostname") from None
+    if len(host) > 253 or "." not in host:
+        raise HTTPException(422, "Enter a fully-qualified domain or subdomain")
+    labels = host.split(".")
+    if any(not label or len(label) > 63 or not re.fullmatch(r"[a-z0-9](?:[a-z0-9-]*[a-z0-9])?", label) for label in labels):
+        raise HTTPException(422, "Invalid hostname")
+    return host
+
+
+def validate_ad_policy(body: ExternalAdPolicyUpdate) -> tuple[dict, dict]:
+    unknown_networks = set(body.networks) - _ALLOWED_NETWORKS
+    unknown_placements = set(body.placements) - _ALLOWED_PLACEMENTS
+    if unknown_networks or unknown_placements:
+        raise HTTPException(422, "Unknown advertising network or placement")
+    networks = {key: bool(body.networks.get(key, False)) for key in sorted(_ALLOWED_NETWORKS)}
+    placements = {key: bool(body.placements.get(key, False)) for key in sorted(_ALLOWED_PLACEMENTS)}
+    # Monetag remains disabled until the dedicated content-host test and
+    # publisher approval gates are explicitly completed.
+    if networks["monetag"]:
+        raise HTTPException(409, "Monetag cannot be enabled from this control until its host-specific publisher approval and browser test are recorded")
+    return networks, placements
+
+
+@router.get("/config")
+async def public_external_ad_config(domain: str, db: AsyncSession = Depends(get_db)):
+    hostname = normalize_ad_hostname(domain)
+    row = (await db.execute(text("""
+        SELECT hostname, enabled, networks, placements
+        FROM external_ad_policies WHERE hostname=:hostname
+    """), {"hostname": hostname})).mappings().first()
+    if not row:
+        return {
+            "hostname": hostname, "enabled": False,
+            "networks": {key: False for key in sorted(_ALLOWED_NETWORKS)},
+            "placements": {key: False for key in sorted(_ALLOWED_PLACEMENTS)},
+        }
+    return {
+        "hostname": row["hostname"], "enabled": bool(row["enabled"]),
+        "networks": row["networks"], "placements": row["placements"],
+    }
+
+
+@router.get("/admin/external-policies")
+async def list_external_ad_policies(user=Depends(require_admin), db: AsyncSession = Depends(get_db)):
+    rows = (await db.execute(text("""
+        SELECT hostname, enabled, networks, placements, updated_by, updated_at
+        FROM external_ad_policies ORDER BY hostname
+    """))).mappings().all()
+    return [{
+        "hostname": row["hostname"], "enabled": bool(row["enabled"]),
+        "networks": row["networks"], "placements": row["placements"],
+        "updated_by": row["updated_by"],
+        "updated_at": row["updated_at"].isoformat() if row["updated_at"] else None,
+    } for row in rows]
+
+
+@router.put("/admin/external-policies/{hostname}")
+async def upsert_external_ad_policy(
+    hostname: str,
+    body: ExternalAdPolicyUpdate,
+    user=Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    host = normalize_ad_hostname(hostname)
+    networks, placements = validate_ad_policy(body)
+    result = await db.execute(text("""
+        INSERT INTO external_ad_policies(hostname, enabled, networks, placements, updated_by, updated_at)
+        VALUES (:hostname, :enabled, CAST(:networks AS jsonb), CAST(:placements AS jsonb), :actor, now())
+        ON CONFLICT(hostname) DO UPDATE SET
+          enabled=EXCLUDED.enabled, networks=EXCLUDED.networks,
+          placements=EXCLUDED.placements, updated_by=EXCLUDED.updated_by,
+          updated_at=now()
+        RETURNING hostname, enabled, networks, placements, updated_by, updated_at
+    """), {
+        "hostname": host, "enabled": body.enabled,
+        "networks": json.dumps(networks), "placements": json.dumps(placements),
+        "actor": subject(user),
+    })
+    row = result.mappings().one()
+    await db.execute(text("""
+        INSERT INTO external_ad_policy_audit(hostname, actor_user_id, enabled, networks, placements)
+        VALUES (:hostname, :actor, :enabled, CAST(:networks AS jsonb), CAST(:placements AS jsonb))
+    """), {
+        "hostname": host, "actor": subject(user), "enabled": body.enabled,
+        "networks": json.dumps(networks), "placements": json.dumps(placements),
+    })
+    await db.commit()
+    return {
+        "hostname": row["hostname"], "enabled": bool(row["enabled"]),
+        "networks": row["networks"], "placements": row["placements"],
+        "updated_by": row["updated_by"],
+        "updated_at": row["updated_at"].isoformat() if row["updated_at"] else None,
+    }
