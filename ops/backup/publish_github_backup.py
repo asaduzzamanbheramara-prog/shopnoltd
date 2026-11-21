@@ -97,12 +97,14 @@ def main() -> int:
     entries.append({"path": "backup/README.md", "mode": "100644", "type": "blob", "sha": readme_blob["sha"]})
 
     # Keep each backup commit based on the previous backup branch; initialize from main.
+    branch_exists = True
     try:
         ref = api(token, "GET", f"/repos/{repo}/git/ref/heads/{branch}")
         parent_sha = ref["object"]["sha"]
     except GitHubAPIError as exc:
         if "(404)" not in str(exc):
             raise
+        branch_exists = False
         main_ref = api(token, "GET", f"/repos/{repo}/git/ref/heads/main")
         parent_sha = main_ref["object"]["sha"]
 
@@ -117,14 +119,12 @@ def main() -> int:
         "parents": [parent_sha],
     })
 
-    try:
+    if branch_exists:
         api(token, "PATCH", f"/repos/{repo}/git/refs/heads/{branch}", {
             "sha": commit["sha"],
             "force": True,
         })
-    except GitHubAPIError as exc:
-        if "(404)" not in str(exc):
-            raise
+    else:
         api(token, "POST", f"/repos/{repo}/git/refs", {
             "ref": f"refs/heads/{branch}",
             "sha": commit["sha"],
