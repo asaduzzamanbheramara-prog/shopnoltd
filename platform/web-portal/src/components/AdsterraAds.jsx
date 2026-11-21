@@ -23,12 +23,24 @@ function enqueueZoneLoad(job) {
     window.__shopnoltdAdsterraQueue = { jobs: [], running: false }
   }
   const queue = window.__shopnoltdAdsterraQueue
+  job.cancelled = false
   queue.jobs.push(job)
 
+  const finish = (current) => {
+    if (queue.current !== current) return
+    queue.running = false
+    queue.current = null
+    if (window.atOptions?.key === current.zone.key) delete window.atOptions
+    runNext()
+  }
+
   const runNext = () => {
-    if (queue.running || !queue.jobs.length) return
-    queue.running = true
+    if (queue.running) return
     const next = queue.jobs.shift()
+    if (!next) return
+    if (next.cancelled || !next.container.isConnected) return runNext()
+    queue.running = true
+    queue.current = next
     window.atOptions = {
       key: next.zone.key,
       format: 'iframe',
@@ -37,27 +49,28 @@ function enqueueZoneLoad(job) {
       params: {},
     }
     const script = document.createElement('script')
+    next.script = script
     script.src = next.zone.scriptUrl
     script.async = false
     script.dataset.shopnoltdAdsterra = next.name
     script.setAttribute('data-cfasync', 'false')
-    script.onload = () => {
-      queue.running = false
-      if (window.atOptions?.key === next.zone.key) delete window.atOptions
-      runNext()
-    }
-    script.onerror = () => {
-      queue.running = false
-      if (window.atOptions?.key === next.zone.key) delete window.atOptions
-      runNext()
-    }
+    script.onload = () => finish(next)
+    script.onerror = () => finish(next)
     next.container.appendChild(script)
   }
 
   runNext()
   return () => {
+    job.cancelled = true
     const index = queue.jobs.indexOf(job)
     if (index >= 0) queue.jobs.splice(index, 1)
+    if (queue.current === job) {
+      job.script?.remove()
+      queue.running = false
+      queue.current = null
+      if (window.atOptions?.key === job.zone.key) delete window.atOptions
+      runNext()
+    }
   }
 }
 
