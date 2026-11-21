@@ -61,6 +61,22 @@ jobs:
             }' | kubectl apply -f -
           echo 'Configured SMTP relay settings mirrored into the Keycloak namespace without printing secret values.'
 
+      - name: Provision permanent Keycloak master-realm admin credential
+        shell: bash
+        env:
+          KEYCLOAK_ADMIN_PASSWORD: ${{ secrets.KEYCLOAK_ADMIN_PASSWORD }}
+        run: |
+          set -euo pipefail
+          test -n "${KEYCLOAK_ADMIN_PASSWORD:-}" || { echo "::error::Set Actions secret KEYCLOAK_ADMIN_PASSWORD for the enabled master-realm account shopnoltd-admin."; exit 1; }
+          umask 077
+          password_file="$(mktemp)"
+          trap 'rm -f "$password_file"' EXIT
+          printf '%s' "$KEYCLOAK_ADMIN_PASSWORD" > "$password_file"
+          kubectl -n shopno-identity create secret generic keycloak-admin-sync-credentials \
+            --from-file=KEYCLOAK_ADMIN_PASSWORD="$password_file" \
+            --dry-run=client -o yaml | kubectl apply -f -
+          echo 'Permanent Keycloak admin sync credential provisioned without printing its value.'
+
       - name: Apply only the Keycloak client-sync script
         shell: bash
         run: |
