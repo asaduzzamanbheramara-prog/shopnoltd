@@ -19,3 +19,5 @@ data:
   KEYCLOAK_ISSUER: "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
   KEYCLOAK_JWKS_URL: "http://keycloak.shopno-identity.svc.cluster.local/realms/shopnoltd/protocol/openid-connect/certs"
   KEYCLOAK_CLIENT_ID: "api-service"
+  SHOPNOLTD_ADMIN_OFFICE_REFERRAL_USER_ID: "91b3f488-b1c7-4cda-85e3-fc874a01b45b"
+  SHOPNOLTD_ADMIN_OFFICE_REFERRAL_TENANT_ID: "default"
