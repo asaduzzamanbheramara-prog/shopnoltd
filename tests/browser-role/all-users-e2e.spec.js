@@ -7,7 +7,14 @@ const kc = (process.env.KEYCLOAK_BASE_URL || 'https://auth.shopnoltd.dpdns.org')
 const realm = process.env.KEYCLOAK_REALM || 'shopnoltd'
 const adminRole = process.env.ADMIN_ROLE || 'platform_admin'
 const authRoutes = (process.env.AUTH_ROUTES || '/dashboard').split(',').map(s => s.trim()).filter(Boolean)
-const admin = `${kc}/admin/realms/${realm}`
+const admin = kc + '/admin/realms/' + realm
+
+function writeReport(rows) {
+  fs.mkdirSync('reports', { recursive: true })
+  const header = 'user_ref,status,failed_step,detail'
+  const csv = [header, ...rows.map(r => [r.user_ref, r.status, r.failed_step, '"' + r.detail.replaceAll('"', "'") + '"'].join(','))]
+  fs.writeFileSync('reports/all-users-e2e.csv', csv.join('\n') + '\n')
+}
 
 async function getToken(request) {
   const res = await request.post(`${kc}/realms/${realm}/protocol/openid-connect/token`, {
@@ -22,7 +29,7 @@ async function getToken(request) {
 }
 
 test('every real user: login via impersonation + read-only functionality checks', async ({ browser, request }) => {
-  test.setTimeout(2 * 60 * 60 * 1000)
+  test.setTimeout(165 * 60 * 1000)
   for (const k of ['KEYCLOAK_E2E_CLIENT_ID', 'KEYCLOAK_E2E_CLIENT_SECRET']) {
     if (!process.env[k]) throw new Error(`Missing ${k}`)
   }
@@ -49,7 +56,7 @@ test('every real user: login via impersonation + read-only functionality checks'
       status: 'PASS', failed_step: '', detail: '',
     }
     rows.push(row)
-    if (!u.enabled) { row.status = 'SKIPPED_DISABLED'; continue }
+    if (!u.enabled) { row.status = 'SKIPPED_DISABLED'; writeReport(rows); continue }
 
     let step = 'start'
     const ctx = await browser.newContext()
@@ -85,6 +92,7 @@ test('every real user: login via impersonation + read-only functionality checks'
         row.status = 'NOT_TESTABLE'
         row.failed_step = ''
         row.detail = 'blocked_by_required_action:' + (u.requiredActions || []).join('|')
+        writeReport(rows)
         await ctx.close()
         await new Promise(r => setTimeout(r, 500))
         continue
@@ -135,13 +143,11 @@ test('every real user: login via impersonation + read-only functionality checks'
     } finally {
       await ctx.close()
     }
+    writeReport(rows)
     await new Promise(r => setTimeout(r, 500))
   }
 
-  fs.mkdirSync('reports', { recursive: true })
-  const header = 'user_ref,status,failed_step,detail'
-  const csv = [header, ...rows.map(r => [r.user_ref, r.status, r.failed_step, `"${r.detail.replaceAll('"', "'")}"`].join(','))]
-  fs.writeFileSync('reports/all-users-e2e.csv', csv.join('\n') + '\n')
+  writeReport(rows)
 
   const count = s => rows.filter(r => r.status === s).length
   console.log(`Total: ${rows.length} | PASS: ${count('PASS')} | FAIL: ${count('FAIL')} | SKIPPED_DISABLED: ${count('SKIPPED_DISABLED')} | NOT_TESTABLE: ${count('NOT_TESTABLE')}`)
