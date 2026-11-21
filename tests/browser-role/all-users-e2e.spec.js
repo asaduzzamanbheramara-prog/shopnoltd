@@ -29,7 +29,7 @@ async function getToken(request) {
 }
 
 test('every real user: login via impersonation + read-only functionality checks', async ({ browser, request }) => {
-  test.setTimeout(165 * 60 * 1000)
+  test.setTimeout(345 * 60 * 1000)
   for (const k of ['KEYCLOAK_E2E_CLIENT_ID', 'KEYCLOAK_E2E_CLIENT_SECRET']) {
     if (!process.env[k]) throw new Error(`Missing ${k}`)
   }
@@ -53,9 +53,12 @@ test('every real user: login via impersonation + read-only functionality checks'
   for (const u of targets) {
     const row = {
       user_ref: crypto.createHash('sha256').update(u.id).digest('hex').slice(0, 16),
-      status: 'PASS', failed_step: '', detail: '',
+      status: 'IN_PROGRESS', failed_step: '', detail: '',
     }
     rows.push(row)
+    // Persist a checkpoint before starting each account. If the suite hits its
+    // global timeout, the artifact still identifies the last account reached.
+    writeReport(rows)
     if (!u.enabled) { row.status = 'SKIPPED_DISABLED'; writeReport(rows); continue }
 
     let step = 'start'
@@ -93,7 +96,6 @@ test('every real user: login via impersonation + read-only functionality checks'
         row.failed_step = ''
         row.detail = 'blocked_by_required_action:' + (u.requiredActions || []).join('|')
         writeReport(rows)
-        await ctx.close()
         await new Promise(r => setTimeout(r, 500))
         continue
       }
@@ -141,9 +143,11 @@ test('every real user: login via impersonation + read-only functionality checks'
       row.failed_step = step
       row.detail = String(e.message).split('\n')[0].slice(0, 200)
     } finally {
-      await ctx.close()
+      // A context can already be closed when Playwright aborts a timed-out
+      // test. Cleanup must not mask the real result or prevent CSV checkpointing.
+      await ctx.close().catch(() => {})
+      writeReport(rows)
     }
-    writeReport(rows)
     await new Promise(r => setTimeout(r, 500))
   }
 

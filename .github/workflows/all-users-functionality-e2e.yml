@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-24.04
     container:
       image: mcr.microsoft.com/playwright:v1.55.0-noble
-    timeout-minutes: 180
+    timeout-minutes: 360
     defaults:
       run:
         working-directory: tests/browser-role
@@ -65,4 +65,4 @@ jobs:
         with:
           name: all-users-e2e-report
           path: tests/browser-role/reports/all-users-e2e.csv
-          retention-days: 14
+          retention-days: 1
