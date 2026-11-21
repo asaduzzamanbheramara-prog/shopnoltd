@@ -81,9 +81,16 @@ works today":
 
 ## GitHub disaster-recovery backup contract
 
-The scheduled postgres-backup.yml workflow publishes encrypted snapshots to the private database-backups branch. It includes the primary PostgreSQL dump, every connectable non-template database plus global roles, and an all-namespace Kubernetes Secret export. The workflow decrypts and parses each snapshot before publishing it. A keyed HMAC-SHA256 sidecar is generated for every encrypted artifact and verified before any decryption, so ciphertext tampering is detected (a plain SHA-256 checksum alone is not an authenticity check).
+The scheduled postgres-backup.yml workflow publishes encrypted snapshots to the database-backups branch of a separate private GitHub repository. The source Shopnoltd repository is public, so encrypted backup artifacts must never be pushed to a branch in the source repository. It includes the primary PostgreSQL dump, every connectable non-template database plus global roles, and an all-namespace Kubernetes Secret export. The workflow decrypts and parses each snapshot before publishing it. A keyed HMAC-SHA256 sidecar is generated for every encrypted artifact and verified before any decryption, so ciphertext tampering is detected (a plain SHA-256 checksum alone is not an authenticity check).
 
-BACKUP_ENCRYPTION_KEY is a GitHub Actions repository secret and must remain outside Git. Keep an independently recoverable copy in an approved password manager or offline secret vault; do not store the only decryption key in the same GitHub account/repository as the encrypted backup. Rotate it only with a planned re-encryption of retained backups. Restrict write access to the backup branch and Actions workflow.
+Configure these GitHub Actions repository secrets before enabling the backup workflow:
+- BACKUP_REPOSITORY: owner/private-repository for a dedicated private backup repository, different from the public source repository.
+- BACKUP_REPOSITORY_TOKEN: a fine-grained GitHub token restricted to that private backup repository with Contents read/write access. It is used only for the backup push.
+- BACKUP_ENCRYPTION_KEY: the high-entropy encryption passphrase used for the encrypted snapshots.
+
+The workflow verifies through the GitHub API that the destination exists and is private, and fails closed if the destination is missing, public, or the source repository. It pushes only to the separate private repository's database-backups branch.
+
+BACKUP_ENCRYPTION_KEY is a GitHub Actions repository secret and must remain outside Git. Keep an independently recoverable copy in an approved password manager or offline secret vault; do not store the only decryption key in the same GitHub account/repository as the encrypted backup. Rotate it only with a planned re-encryption of retained backups. Restrict write access to the private backup repository, its backup branch, and the Actions workflow.
 
 GitHub Actions secret values cannot be read back by workflows or exported by GitHub. Therefore GitHub repository/environment secret names and their values must be maintained in an external secret inventory/password manager and restored manually through the GitHub Settings UI or API. The encrypted Kubernetes Secret snapshot does not contain GitHub Actions secrets, external provider-console credentials that were never installed in Kubernetes, or user passwords.
 
