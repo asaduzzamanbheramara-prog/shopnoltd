@@ -197,6 +197,22 @@ jobs:
           kubectl -n "$PLATFORM_NAMESPACE" create secret generic freedomain-service-secret             --from-literal=KC_BOOTSTRAP_ADMIN_PASSWORD="$keycloak_password"             --from-literal=POSTGRES_USER=freedomain             --from-literal=POSTGRES_PASSWORD="$freedomain_password"             --from-literal=DATABASE_URL="$database_url"             --from-literal=FREEDOMAIN_INTERNAL_KEY="$internal_key"             --from-literal=DOMAIN_SERVICE_TOKEN="$domain_token"             --dry-run=client -o yaml | kubectl -n "$PLATFORM_NAMESPACE" apply -f -
           echo 'Free-domain service PostgreSQL and Keycloak credentials reconciled without exposing their values.'
 
+      - name: Provision permanent Keycloak master-realm admin credential
+        shell: bash
+        env:
+          KEYCLOAK_ADMIN_PASSWORD: ${{ secrets.KEYCLOAK_ADMIN_PASSWORD }}
+        run: |
+          set -euo pipefail
+          test -n "${KEYCLOAK_ADMIN_PASSWORD:-}" || { echo "::error::Set the repository Actions secret KEYCLOAK_ADMIN_PASSWORD to the current password for the enabled master-realm account shopnoltd-admin. Do not send the password in chat."; exit 1; }
+          umask 077
+          password_file="$(mktemp)"
+          trap 'rm -f "$password_file"' EXIT
+          printf '%s' "$KEYCLOAK_ADMIN_PASSWORD" > "$password_file"
+          kubectl -n shopno-identity create secret generic keycloak-admin-sync-credentials \
+            --from-file=KEYCLOAK_ADMIN_PASSWORD="$password_file" \
+            --dry-run=client -o yaml | kubectl apply -f -
+          echo 'Permanent Keycloak master-realm admin credential provisioned without printing its value.'
+
       - name: Provision ad-service PostgreSQL secret
         shell: bash
         run: |
