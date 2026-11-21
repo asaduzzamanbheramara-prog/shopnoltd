@@ -1,4 +1,5 @@
 import React from 'react'
+import { useLocation } from 'react-router-dom'
 import { useAdvertisingConsent } from '../lib/useAdvertisingConsent'
 import { useExternalAdPolicy } from '../lib/useExternalAdPolicy'
 
@@ -6,10 +7,12 @@ import { useExternalAdPolicy } from '../lib/useExternalAdPolicy'
 // Shuffle Box scripts remain off until vendor approval and SPA teardown are verified.
 const SMARTLINK = 'https://toughiebubo.com/iRXizaijD0Gtue7XL/162185'
 export default function ProfitOnContentAds() {
+  const location = useLocation()
+  const eligiblePath = location.pathname === '/blog' || location.pathname.startsWith('/blog/') || location.pathname === '/downloads'
   const advertisingAllowed = useAdvertisingConsent()
   const policyAllowed = useExternalAdPolicy('profiton')
 
-  if (!policyAllowed || !advertisingAllowed) return null
+  if (!eligiblePath || !policyAllowed || !advertisingAllowed) return null
 
   return <aside aria-label="Sponsored recommendation" style={{ boxSizing: 'border-box', width: '100%', maxWidth: 760, margin: '20px auto', padding: '14px 16px', border: '1px solid #e2e8f0', borderRadius: 12, background: '#fff', color: '#334155' }}>
     <div style={{ fontSize: 11, letterSpacing: '.06em', textTransform: 'uppercase', color: '#64748b', marginBottom: 6 }}>Sponsored</div>
