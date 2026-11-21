@@ -66,13 +66,11 @@ jobs:
           SHOPNOLTD_USER_TOTP_SECRET: ${{ secrets.SHOPNOLTD_USER_TOTP_SECRET }}
           PLAYWRIGHT_HTML_OPEN: never
         run: npx playwright test --config=playwright.config.js --reporter=line,html --workers=1 authenticated-production.spec.js
-      - name: Upload browser report and traces
+      - name: Upload sanitized HTML browser report only
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: shopnoltd-authenticated-smoke-report
-          path: |
-            tests/browser-role/playwright-report/
-            tests/browser-role/test-results/
+          name: shopnoltd-authenticated-smoke-html-report
+          path: tests/browser-role/playwright-report/
           if-no-files-found: ignore
           retention-days: 1
