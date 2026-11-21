@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { invalidateAdPolicyCache } from '../lib/useExternalAdPolicy'
 
-const API = '/api/v1/ads'
+const API = 'https://api.shopnoltd.dpdns.org/api/v1/ads'
 const NETWORKS = [
   ['adsense', 'Google AdSense'],
   ['adsterra', 'Adsterra'],
@@ -180,7 +180,7 @@ export default function AdvertisingControl() {
         </div>
       </div>
       <p style={{ color: '#92400e', background: '#fffbeb', borderRadius: 8, padding: 12, lineHeight: 1.5 }}>
-        Login, registration, admin, dashboard, wallet, payment, checkout and account routes are always excluded in code. Consent is still required before optional ad scripts load. Monetag stays test-only until its content-host route and publisher approval are verified.
+        Login, registration, admin, dashboard, wallet, payment, checkout and account routes are always excluded in code. Consent is still required before optional ad scripts load. Monetag stays test-only until its content-host route and publisher approval are verified. ProfitOn is restricted to the apex host; its Smartlink 162185 is a user-click link. Shuffle Box 162186 and Pops 162184 remain off until the exact vendor code and SPA cleanup are verified. AdSense currently has a publisher loader but no explicit ad-unit slot ID in this repository.
       </p>
       <button type="button" disabled={saving || !selected} onClick={() => save()} style={button}>{saving ? 'Saving…' : 'Save advertising settings'}</button>
     </section>}
