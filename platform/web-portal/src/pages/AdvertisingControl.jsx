@@ -136,7 +136,7 @@ export default function AdvertisingControl() {
       <div style={{ color: '#0369a1', fontSize: 12, fontWeight: 800, letterSpacing: '.08em' }}>PLATFORM ADMIN · ADVERTISING</div>
       <h1 style={{ margin: '6px 0' }}>Advertising Command Center</h1>
       <p style={{ color: '#475569', lineHeight: 1.6, maxWidth: 850 }}>
-        Control Google AdSense, Adsterra, Monetag and ProfitOn separately for each exact domain or subdomain. New hosts start disabled. Only enable a provider after that exact host is approved in its publisher dashboard.
+        Control Google AdSense, Adsterra, Monetag and ProfitOn separately for each exact domain or subdomain. New hosts start disabled. Shopnoltd subdomains are covered by the central API; custom domains also need their exact HTTPS origin added to the API service CORS_ORIGINS allowlist and this policy hook integrated into that site's frontend. Only enable a provider after that exact host is approved in its publisher dashboard.
       </p>
     </header>
 
