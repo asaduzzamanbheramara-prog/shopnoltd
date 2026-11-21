@@ -13,11 +13,16 @@ async function readPolicy(hostname) {
     }).then(async response => {
       if (!response.ok) throw new Error('Advertising policy unavailable')
       return response.json()
-    }).catch(() => ({
-      hostname, enabled: false,
-      networks: { adsense: false, adsterra: false, monetag: false, profiton: false },
-      placements: { home: false, services: false, blog: false, feed: false, downloads: false },
-    }))
+    }).catch(() => {
+      // Fail closed for this render, but do not permanently cache a transient
+      // network/429/5xx failure. A later mount can retry the public policy read.
+      POLICY_CACHE.delete(hostname)
+      return {
+        hostname, enabled: false,
+        networks: { adsense: false, adsterra: false, monetag: false, profiton: false },
+        placements: { home: false, services: false, blog: false, feed: false, downloads: false },
+      }
+    })
     POLICY_CACHE.set(hostname, request)
   }
   return POLICY_CACHE.get(hostname)
