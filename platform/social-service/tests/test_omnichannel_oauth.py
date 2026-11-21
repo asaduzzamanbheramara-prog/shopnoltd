@@ -347,3 +347,89 @@ def test_provider_status_reports_mode_specific_readiness(monkeypatch):
     assert by_provider["3cx"]["configured"] is False
     assert by_provider["3cx"]["setup_status"] == "needs_api_credentials_and_base_url"
     assert "app-secret" not in str(statuses)
+
+
+def test_connection_listing_is_scoped_to_authenticated_user():
+    import asyncio
+    from app.api.omnichannel import list_connections
+
+    class Result:
+        def mappings(self):
+            return self
+        def all(self):
+            return []
+
+    class Session:
+        query = None
+        params = None
+        async def execute(self, query, params):
+            self.query, self.params = str(query), params
+            return Result()
+
+    session = Session()
+    asyncio.run(list_connections(
+        user={"sub": "user-A", "tenant_id": "tenant-1"}, s=session
+    ))
+    assert "owner_user_id=:user" in session.query
+    assert session.params == {"tenant": "tenant-1", "user": "user-A"}
+
+
+def test_connection_detail_is_scoped_to_authenticated_user():
+    import asyncio
+    from app.api.omnichannel import get_connection
+
+    class Result:
+        def __init__(self, row):
+            self.row = row
+        def mappings(self):
+            return self
+        def one_or_none(self):
+            return self.row
+        def all(self):
+            return []
+
+    class Session:
+        def __init__(self):
+            self.calls = []
+        async def execute(self, query, params):
+            self.calls.append((str(query), params))
+            if len(self.calls) == 1:
+                return Result({"id": "connection-1", "platform": "facebook"})
+            return Result([])
+
+    session = Session()
+    asyncio.run(get_connection(
+        "connection-1", user={"sub": "user-A", "tenant_id": "tenant-1"}, s=session
+    ))
+    assert "owner_user_id=:user" in session.calls[0][0]
+    assert session.calls[0][1] == {
+        "tenant": "tenant-1", "user": "user-A", "id": "connection-1"
+    }
+
+
+def test_connection_update_is_scoped_to_authenticated_user():
+    import asyncio
+    from app.api.omnichannel import ConnectionPatch, update_connection
+
+    class Result:
+        def mappings(self):
+            return self
+        def one_or_none(self):
+            return {"id": "connection-1"}
+
+    class Session:
+        query = None
+        params = None
+        async def execute(self, query, params):
+            self.query, self.params = str(query), params
+            return Result()
+        async def commit(self):
+            pass
+
+    session = Session()
+    asyncio.run(update_connection(
+        "connection-1", ConnectionPatch(display_name="My Page"),
+        user={"sub": "user-A", "tenant_id": "tenant-1"}, s=session
+    ))
+    assert "owner_user_id=:user" in session.query
+    assert session.params["user"] == "user-A"

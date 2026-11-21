@@ -65,8 +65,10 @@ The social-service reads Secret values at process start. A rollout restart is ne
 3. Clicks Connect for a provider marked ready.
 4. Completes provider-hosted login and consent (Shopnoltd never sees their password).
 5. Selects the Page/channel/account if the provider returns multiple choices.
-6. Shopnoltd stores encrypted tokens and the selected account under that user's tenant.
-7. User disconnects from the same page to revoke/delete the stored connection.
+6. Shopnoltd automatically binds the connection to the authenticated Shopnoltd user ID and tenant ID, encrypts the provider tokens, and records granted scopes and expiry.
+7. The connection list, detail, update, disconnect and action-execution paths enforce that same owner ID; another user cannot see, edit, disconnect or execute against it.
+8. Token refresh, expiry tracking and reconnect status are handled by the service where the provider supports them. Users do not need to copy tokens or configure IDs manually.
+9. User disconnects from the same page to delete the stored connection and encrypted credentials.
 
 Users should not enter shared app client secrets. For Telegram, WhatsApp Business and 3CX, an administrator may need to onboard the bot/business asset/tenant first; then the user can use the asset they are authorized to manage.
 
@@ -88,5 +90,7 @@ Discord, Slack, Pinterest, Snapchat, Reddit, Twitch, Shopify, WooCommerce, Zoom 
 - Keep `OMNICHANNEL_EXECUTOR_ENABLED=false` until sandbox end-to-end tests, permissions, approval controls and token refresh/revoke tests pass.
 - Never log access tokens, refresh tokens, client secrets, authorization codes or OAuth state.
 - Never use one user's connection for another user or tenant.
+- Every social_connections row must carry owner_user_id; migration 026-omnichannel-user-ownership.sql backfills owners from existing OAuth token records. Legacy rows with no provable owner remain hidden until explicitly reconciled.
+- The database keeps provider-account ownership exclusive within a tenant by default. Shared workspace access must be a separate explicit grant model, never an OAuth token overwrite.
 - Keep app credentials server-side and encrypt per-user OAuth tokens at rest.
 - Do not enable unimplemented actions merely because they appear in a capability table.

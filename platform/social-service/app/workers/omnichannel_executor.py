@@ -303,7 +303,7 @@ async def process_action(action: dict[str, Any], *, client: httpx.AsyncClient | 
              AND t.platform=c.platform
              AND t.provider_account_id=c.platform_account_id
              AND t.user_id=:user
-            WHERE c.tenant_id=:tenant AND c.id=:connection
+            WHERE c.tenant_id=:tenant AND c.owner_user_id=:user AND c.id=:connection
         """), {"tenant": action["tenant_id"], "connection": connection_id, "user": requested_by})).mappings().one_or_none()
     if row is None:
         await _finish(action_id, "failed", error_code="connection_not_owned",

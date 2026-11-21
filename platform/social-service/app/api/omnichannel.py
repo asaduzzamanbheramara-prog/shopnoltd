@@ -148,8 +148,9 @@ async def list_connections(user=Depends(current_user), s: AsyncSession = Depends
     rows = (await s.execute(text(
         "SELECT id, platform, account_type, platform_account_id, username, display_name, "
         "status, scopes, token_expires_at, metadata, connected_at, last_sync_at "
-        "FROM social_connections WHERE tenant_id=:tenant ORDER BY platform, display_name"
-    ), {"tenant": tenant_id})).mappings().all()
+        "FROM social_connections WHERE tenant_id=:tenant AND owner_user_id=:user "
+        "ORDER BY platform, display_name"
+    ), {"tenant": tenant_id, "user": str(user.get("sub") or user.get("user_id") or "")})).mappings().all()
     return [dict(r) for r in rows]
 
 @router.get("/connections/{connection_id}")
@@ -160,8 +161,8 @@ async def get_connection(connection_id: str, user=Depends(current_user), s: Asyn
                   status, scopes, token_expires_at, metadata, connected_at, last_sync_at,
                   created_at, updated_at
            FROM social_connections
-           WHERE tenant_id=:tenant AND id=:id"""
-    ), {"tenant": tenant_id, "id": connection_id})).mappings().one_or_none()
+           WHERE tenant_id=:tenant AND owner_user_id=:user AND id=:id"""
+    ), {"tenant": tenant_id, "user": str(user.get("sub") or user.get("user_id") or ""), "id": connection_id})).mappings().one_or_none()
     if row is None:
         raise HTTPException(404, "connection not found")
     capabilities = (await s.execute(text(
@@ -194,7 +195,7 @@ async def update_connection(connection_id: str, body: ConnectionPatch, user=Depe
         raise HTTPException(422, "unsupported connection field")
 
     assignments = []
-    params = {"tenant": tenant_id, "id": connection_id}
+    params = {"tenant": tenant_id, "user": str(user.get("sub") or user.get("user_id") or ""), "id": connection_id}
     for key, column in allowed.items():
         if key not in values:
             continue
@@ -215,7 +216,7 @@ async def update_connection(connection_id: str, body: ConnectionPatch, user=Depe
     row = (await s.execute(text(
         f"""UPDATE social_connections
             SET {", ".join(assignments)}, updated_at=NOW()
-            WHERE tenant_id=:tenant AND id=:id
+            WHERE tenant_id=:tenant AND owner_user_id=:user AND id=:id
             RETURNING id, platform, account_type, platform_account_id, username, display_name,
                       status, scopes, token_expires_at, metadata, connected_at, last_sync_at,
                       created_at, updated_at"""
@@ -238,8 +239,8 @@ async def delete_connection(connection_id: str, user=Depends(current_user), s: A
             AND t.platform=c.platform
             AND t.provider_account_id=c.platform_account_id
             AND t.provider=COALESCE(c.metadata->>'provider', t.provider)
-           WHERE c.tenant_id=:tenant AND c.id=:id"""
-    ), {"tenant": tenant_id, "id": connection_id})).mappings().one_or_none()
+           WHERE c.tenant_id=:tenant AND c.owner_user_id=:user AND c.id=:id"""
+    ), {"tenant": tenant_id, "user": user_id, "id": connection_id})).mappings().one_or_none()
     if row is None or (row["user_id"] and row["user_id"] != user_id):
         raise HTTPException(404, "connection not found")
     # Remove the encrypted credentials as part of disconnect; do not leave an
@@ -270,9 +271,9 @@ async def add_connection(body: ConnectionIn, user=Depends(registration_user), s:
     connection_id = str(uuid4())
     row = (await s.execute(text(
         """INSERT INTO social_connections
-        (id, tenant_id, platform, account_type, platform_account_id, username, display_name,
+        (id, tenant_id, owner_user_id, platform, account_type, platform_account_id, username, display_name,
          status, scopes, access_token_ref, refresh_token_ref, token_expires_at, metadata, connected_at)
-        VALUES (:id, :tenant, :platform, :account_type, :account_id, :username, :display_name,
+        VALUES (:id, :tenant, :user, :platform, :account_type, :account_id, :username, :display_name,
                 :status, :scopes::jsonb, :access_ref, :refresh_ref,
                 NULLIF(:expires, '')::timestamptz, :metadata::jsonb, NOW())
         ON CONFLICT (tenant_id, platform, platform_account_id)
@@ -282,17 +283,21 @@ async def add_connection(body: ConnectionIn, user=Depends(registration_user), s:
                       refresh_token_ref=EXCLUDED.refresh_token_ref,
                       token_expires_at=EXCLUDED.token_expires_at,
                       metadata=EXCLUDED.metadata, updated_at=NOW()
+        WHERE social_connections.owner_user_id=EXCLUDED.owner_user_id
         RETURNING id, platform, account_type, platform_account_id, username, display_name,
                   status, scopes, token_expires_at, metadata, connected_at, last_sync_at"""
     ), {
-        "id": connection_id, "tenant": tenant_id, "platform": platform,
-        "account_type": body.account_type, "account_id": body.platform_account_id,
+        "id": connection_id, "tenant": tenant_id,
+        "user": str(user.get("sub") or user.get("user_id") or ""),
+        "platform": platform, "account_type": body.account_type, "account_id": body.platform_account_id,
         "username": body.username, "display_name": body.display_name, "status": body.status,
         "scopes": __import__("json").dumps(body.scopes),
         "access_ref": body.access_token_ref, "refresh_ref": body.refresh_token_ref,
         "expires": body.token_expires_at or "",
         "metadata": __import__("json").dumps(body.metadata),
-    })).mappings().one()
+    })).mappings().one_or_none()
+    if row is None:
+        raise HTTPException(409, "this platform account is already registered by another owner")
     await s.commit()
     return dict(row)
 

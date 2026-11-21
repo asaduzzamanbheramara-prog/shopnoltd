@@ -415,7 +415,7 @@ async def _save_selected_connection(payload: dict, provider: str, platform: str,
     if token_owner and token_owner != str(payload["sub"]):
         raise HTTPException(409, "this provider account is already connected by another owner")
     existing = (await s.execute(text(
-        """SELECT c.metadata->>'provider' AS existing_provider, t.user_id
+        """SELECT c.metadata->>'provider' AS existing_provider, c.owner_user_id, t.user_id
            FROM social_connections c
            LEFT JOIN omnichannel_oauth_tokens t
              ON t.tenant_id=c.tenant_id AND t.platform=c.platform
@@ -429,7 +429,7 @@ async def _save_selected_connection(payload: dict, provider: str, platform: str,
     })).mappings().first()
     if existing:
         existing_provider = existing.get("existing_provider")
-        existing_user = existing.get("user_id")
+        existing_user = existing.get("owner_user_id") or existing.get("user_id")
         if existing_provider != provider or existing_user != str(payload["sub"]):
             raise HTTPException(409, "this platform account is already connected by another owner or provider")
     proposed_connection_id = str(uuid4())
@@ -440,10 +440,10 @@ async def _save_selected_connection(payload: dict, provider: str, platform: str,
     )
     row = (await s.execute(text(
         """INSERT INTO social_connections
-           (id, tenant_id, platform, account_type, platform_account_id, username,
+           (id, tenant_id, owner_user_id, platform, account_type, platform_account_id, username,
             display_name, status, scopes, access_token_ref, refresh_token_ref,
             token_expires_at, metadata, connected_at)
-           VALUES (:id, :tenant, :platform, :account_type, :account_id, :username,
+           VALUES (:id, :tenant, :user, :platform, :account_type, :account_id, :username,
                    :display_name, 'connected', :scopes::jsonb,
                    :access_ref, :refresh_ref, :expires, :metadata::jsonb, NOW())
            ON CONFLICT (tenant_id, platform, platform_account_id)
@@ -453,10 +453,12 @@ async def _save_selected_connection(payload: dict, provider: str, platform: str,
                          refresh_token_ref=EXCLUDED.refresh_token_ref,
                          token_expires_at=EXCLUDED.token_expires_at,
                          metadata=EXCLUDED.metadata, updated_at=NOW()
+           WHERE social_connections.owner_user_id=EXCLUDED.owner_user_id
            RETURNING id"""
     ), {
         "id": proposed_connection_id,
         "tenant": payload["tenant_id"],
+        "user": payload["sub"],
         "platform": platform,
         "account_type": (
             "page" if platform == "facebook" else
@@ -483,7 +485,7 @@ async def _save_selected_connection(payload: dict, provider: str, platform: str,
                    :username, :display_name, :scopes::jsonb, :access,
                    :refresh, :expires, :metadata::jsonb)
            ON CONFLICT (tenant_id, provider, platform, provider_account_id)
-           DO UPDATE SET user_id=EXCLUDED.user_id, username=EXCLUDED.username,
+           DO UPDATE SET username=EXCLUDED.username,
                          display_name=EXCLUDED.display_name, scopes=EXCLUDED.scopes,
                          encrypted_access_token=EXCLUDED.encrypted_access_token,
                          encrypted_refresh_token=COALESCE(EXCLUDED.encrypted_refresh_token, omnichannel_oauth_tokens.encrypted_refresh_token),
