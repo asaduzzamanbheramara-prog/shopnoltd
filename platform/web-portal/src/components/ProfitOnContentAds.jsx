@@ -1,14 +1,11 @@
 import React from 'react'
-import { useLocation } from 'react-router-dom'
 import { useAdvertisingConsent } from '../lib/useAdvertisingConsent'
 import { useExternalAdPolicy } from '../lib/useExternalAdPolicy'
 
-// ProfitOn has confirmed approval for the apex publisher only. Until the
-// Shuffle Box vendor confirms SPA route teardown, use the direct sponsored
-// link only; a third-party script could keep running after route navigation.
+// ProfitOn delivery is an explicitly labelled, user-initiated sponsored link.
+// Shuffle Box scripts remain off until vendor approval and SPA teardown are verified.
 const SMARTLINK = 'https://toughiebubo.com/iRXizaijD0Gtue7XL/162185'
 export default function ProfitOnContentAds() {
-  const location = useLocation()
   const advertisingAllowed = useAdvertisingConsent()
   const policyAllowed = useExternalAdPolicy('profiton')
 
