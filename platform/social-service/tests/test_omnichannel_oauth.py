@@ -57,6 +57,7 @@ def test_google_authorization_url_is_created_for_authenticated_user(monkeypatch)
     assert params["state"] == ["signed-state"]
     assert params["code_challenge_method"] == ["S256"]
     assert params["access_type"] == ["offline"]
+    assert params["prompt"] == ["consent select_account"]
     assert captured["sub"] == "user-1"
     assert captured["tenant_id"] == "tenant-1"
     assert captured["provider"] == "google"
@@ -470,3 +471,23 @@ def test_multi_profile_selection_is_bounded():
     with pytest.raises(HTTPException) as exc:
         oauth._selected_account_ids({"account_ids": [f"profile-{i}" for i in range(101)]})
     assert exc.value.status_code == 422
+
+
+def test_microsoft_authorization_url_prompts_for_account_selection(monkeypatch):
+    monkeypatch.setitem(oauth.PROVIDER_CONFIG, "microsoft", {
+        "platforms": ["outlook"],
+        "client_id": "microsoft-client-id",
+        "client_secret": "server-only-secret",
+        "auth_url": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+        "token_url": "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+        "scopes": ["openid", "profile", "offline_access"],
+    })
+    monkeypatch.setattr(oauth.settings, "provider_oauth_redirect_uri", "https://shopnoltd.example/callback")
+    monkeypatch.setattr(oauth, "_sign_state", lambda payload: "signed-ms-state")
+
+    url = oauth._authorization_url("microsoft", "outlook", {"sub": "user-1"})
+    params = parse_qs(urlparse(url).query)
+
+    assert params["prompt"] == ["select_account"]
+    assert params["client_id"] == ["microsoft-client-id"]
+    assert "server-only-secret" not in url

@@ -379,7 +379,11 @@ def _authorization_url(provider: str, platform: str, user: dict) -> str:
             params["code_challenge_method"] = "S256"
     if provider == "google":
         params["access_type"] = "offline"
-        params["prompt"] = "consent"
+        # Reconnecting allows choosing a different Google identity.
+        params["prompt"] = "consent select_account"
+    elif provider == "microsoft":
+        # Microsoft documents select_account for multi-account sign-in.
+        params["prompt"] = "select_account"
     return f"{cfg['auth_url']}?{urlencode(params)}"
 
 

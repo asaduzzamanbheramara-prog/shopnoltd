@@ -358,15 +358,16 @@ export default function OmnichannelConnections() {
             </span>
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 9 }}>
-            {provider.platforms.map(platform => (
-              provider.configured && provider.authorization_supported
+            {provider.platforms.map(platform => {
+              const connectedCount = oauthProfiles.filter(x => x.provider === provider.provider && x.platform === platform).length
+              return provider.configured && provider.authorization_supported
                 ? <button key={platform} type="button" onClick={() => beginOAuth(provider.provider, platform)} disabled={busy} style={styles.button}>
-                    <Link2 size={14} /> Connect {platform}
+                    <Link2 size={14} /> {connectedCount ? 'Connect another ' + platform + ' account' : 'Connect ' + platform}
                   </button>
                 : <span key={platform} style={{ ...styles.button, color: '#92400e', cursor: 'default' }}>
                     {provider.mode === 'oauth2' ? 'Configure ' : 'Manual/API '} {platform}
                   </span>
-            ))}
+            })}
           </div>
         </div>
       ))}
