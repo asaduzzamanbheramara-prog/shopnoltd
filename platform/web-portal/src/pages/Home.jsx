@@ -24,7 +24,7 @@ function Card({ service, admin = false }) {
 }
 
 function PreviewSection({ title, description, items, limit = 6, admin = false, href = '/services' }) {
-  return <section style={{ marginTop: 48 }}><div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'end', gap: 12, flexWrap: 'wrap' }}><div><h2 style={{ marginBottom: 6 }}>{title}</h2><p style={{ color: '#64748b', marginTop: 0 }}>{description}</p></div>{!admin && <Link to={href} style={{ color: '#0369a1', fontWeight: 700, textDecoration: 'none' }}>View all →</Link>}</div><div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 16 }}>{items.slice(0, limit).map(item => <Card key={item.name} service={item} admin={admin} />)}</div></section>
+  return <section style={{ marginTop: 48 }}><div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'end', gap: 12, flexWrap: 'wrap' }}><div><h2 style={{ marginBottom: 6 }}>{title}</h2><p style={{ color: '#64748b', marginTop: 0 }}>{description}</p></div>{!admin && (href.endsWith('.html') ? <a href={href} style={{ color: '#0369a1', fontWeight: 700, textDecoration: 'none' }}>View all →</a> : <Link to={href} style={{ color: '#0369a1', fontWeight: 700, textDecoration: 'none' }}>View all →</Link>)}</div><div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 16 }}>{items.slice(0, limit).map(item => <Card key={item.name} service={item} admin={admin} />)}</div></section>
 }
 
 function PaymentAccounts() {
