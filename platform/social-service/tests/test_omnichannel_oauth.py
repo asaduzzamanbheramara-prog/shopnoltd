@@ -270,3 +270,80 @@ def test_meta_page_discovery_follows_after_cursor(monkeypatch):
     assert pages.calls[0]["limit"] == 100
     assert pages.calls[1]["after"] == "cursor-2"
     assert result["_choices"][0]["_access_token"] == "page-token-1"
+
+
+def test_telegram_readiness_uses_bot_token_not_oauth_client_secret(monkeypatch):
+    from app.api.omnichannel import PROVIDER_CONFIG
+
+    monkeypatch.setitem(PROVIDER_CONFIG, "telegram", {
+        "platforms": ["telegram"], "mode": "bot", "bot_token": "server-side-bot-token",
+        "credential_keys": ["TELEGRAM_BOT_TOKEN"],
+    })
+    cfg = PROVIDER_CONFIG["telegram"]
+    assert bool(cfg.get("bot_token")) is True
+    assert not cfg.get("auth_url")
+
+
+def test_whatsapp_readiness_requires_separate_business_onboarding(monkeypatch):
+    from app.api.omnichannel import PROVIDER_CONFIG
+
+    monkeypatch.setitem(PROVIDER_CONFIG, "whatsapp", {
+        "platforms": ["whatsapp"], "mode": "business_cloud",
+        "client_id": "meta-app-id", "client_secret": "server-side-secret",
+        "setup_status": "business_onboarding_required",
+    })
+    cfg = PROVIDER_CONFIG["whatsapp"]
+    assert bool(cfg.get("client_id") and cfg.get("client_secret")) is True
+    assert cfg["setup_status"] == "business_onboarding_required"
+
+
+def test_3cx_readiness_requires_api_base_url(monkeypatch):
+    from app.api.omnichannel import PROVIDER_CONFIG
+
+    monkeypatch.setitem(PROVIDER_CONFIG, "3cx", {
+        "platforms": ["3cx"], "mode": "provider_api",
+        "client_id": "client-id", "client_secret": "server-side-secret",
+        "base_url": None,
+    })
+    cfg = PROVIDER_CONFIG["3cx"]
+    assert not bool(cfg.get("client_id") and cfg.get("client_secret") and cfg.get("base_url"))
+
+
+def test_provider_status_reports_mode_specific_readiness(monkeypatch):
+    import asyncio
+    from app.api import omnichannel
+
+    monkeypatch.setattr(omnichannel, "PROVIDER_CONFIG", {
+        "google": {
+            "platforms": ["gmail", "youtube"], "client_id": "id", "client_secret": "secret",
+            "auth_url": "https://accounts.example/auth", "token_url": "https://accounts.example/token",
+            "credential_keys": ["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET"], "mode": "oauth2",
+        },
+        "telegram": {
+            "platforms": ["telegram"], "bot_token": "bot-token", "mode": "bot",
+            "credential_keys": ["TELEGRAM_BOT_TOKEN"],
+        },
+        "whatsapp": {
+            "platforms": ["whatsapp"], "client_id": "app-id", "client_secret": "app-secret",
+            "mode": "business_cloud", "setup_status": "business_onboarding_required",
+            "credential_keys": ["WHATSAPP_CLIENT_ID", "WHATSAPP_CLIENT_SECRET"],
+        },
+        "3cx": {
+            "platforms": ["3cx"], "client_id": "id", "client_secret": "secret",
+            "base_url": None, "mode": "provider_api",
+            "credential_keys": ["THREECX_CLIENT_ID", "THREECX_CLIENT_SECRET", "THREECX_BASE_URL"],
+        },
+    })
+
+    statuses = asyncio.run(omnichannel.provider_status(user={"sub": "user-1"}))
+    by_provider = {item["provider"]: item for item in statuses}
+
+    assert by_provider["google"]["configured"] is True
+    assert by_provider["google"]["setup_status"] == "ready_to_authorize"
+    assert by_provider["telegram"]["configured"] is True
+    assert by_provider["telegram"]["setup_status"] == "bot_configured"
+    assert by_provider["whatsapp"]["configured"] is True
+    assert by_provider["whatsapp"]["setup_status"] == "business_onboarding_required"
+    assert by_provider["3cx"]["configured"] is False
+    assert by_provider["3cx"]["setup_status"] == "needs_api_credentials_and_base_url"
+    assert "app-secret" not in str(statuses)

@@ -30,16 +30,16 @@ PLATFORMS = {
 # supports the same OAuth/discovery semantics. Provider credentials are supplied
 # only through Kubernetes/runtime secrets.
 PROVIDER_CONFIG = {
-    "google": {"platforms": ["gmail", "youtube"], "client_id": settings.google_client_id, "client_secret": settings.google_client_secret, "auth_url": "https://accounts.google.com/o/oauth2/v2/auth", "token_url": "https://oauth2.googleapis.com/token", "scopes": ["openid", "email", "profile"]},
-    "microsoft": {"platforms": ["outlook"], "client_id": settings.microsoft_client_id, "client_secret": settings.microsoft_client_secret, "auth_url": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize", "token_url": "https://login.microsoftonline.com/common/oauth2/v2.0/token", "scopes": ["openid", "profile", "email", "offline_access", "https://graph.microsoft.com/User.Read"]},
-    "linkedin": {"platforms": ["linkedin"], "client_id": settings.linkedin_client_id, "client_secret": settings.linkedin_client_secret, "auth_url": "https://www.linkedin.com/oauth/v2/authorization", "token_url": "https://www.linkedin.com/oauth/v2/accessToken", "scopes": ["openid", "profile", "email"]},
-    "x": {"platforms": ["x"], "client_id": settings.x_client_id, "client_secret": settings.x_client_secret, "auth_url": "https://x.com/i/oauth2/authorize", "token_url": "https://api.x.com/2/oauth2/token", "scopes": ["tweet.read", "users.read", "offline.access"]},
-    "facebook": {"platforms": ["facebook"], "client_id": settings.facebook_client_id, "client_secret": settings.facebook_client_secret, "auth_url": "https://www.facebook.com/v24.0/dialog/oauth", "token_url": "https://graph.facebook.com/v24.0/oauth/access_token", "scopes": []},
-    "instagram": {"platforms": ["instagram"], "client_id": settings.instagram_client_id or settings.facebook_client_id, "client_secret": settings.instagram_client_secret or settings.facebook_client_secret, "auth_url": "https://www.facebook.com/v24.0/dialog/oauth", "token_url": "https://graph.facebook.com/v24.0/oauth/access_token", "scopes": []},
-    "tiktok": {"platforms": ["tiktok"], "client_id": settings.tiktok_client_key, "client_secret": settings.tiktok_client_secret, "auth_url": "https://www.tiktok.com/v2/auth/authorize/", "token_url": "https://open.tiktokapis.com/v2/oauth/token/", "scopes": ["user.info.basic"]},
-    "telegram": {"platforms": ["telegram"], "client_id": None, "client_secret": None, "auth_url": None, "token_url": None, "scopes": [], "mode": "bot"},
-    "whatsapp": {"platforms": ["whatsapp"], "client_id": settings.whatsapp_client_id, "client_secret": settings.whatsapp_client_secret, "auth_url": None, "token_url": None, "scopes": [], "mode": "business_cloud"},
-    "3cx": {"platforms": ["3cx"], "client_id": settings.threecx_client_id, "client_secret": settings.threecx_client_secret, "auth_url": None, "token_url": None, "scopes": [], "mode": "provider_api"},
+    "google": {"platforms": ["gmail", "youtube"], "client_id": settings.google_client_id, "client_secret": settings.google_client_secret, "auth_url": "https://accounts.google.com/o/oauth2/v2/auth", "token_url": "https://oauth2.googleapis.com/token", "scopes": ["openid", "email", "profile"], "credential_keys": ["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET"]},
+    "microsoft": {"platforms": ["outlook"], "client_id": settings.microsoft_client_id, "client_secret": settings.microsoft_client_secret, "auth_url": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize", "token_url": "https://login.microsoftonline.com/common/oauth2/v2.0/token", "scopes": ["openid", "profile", "email", "offline_access", "https://graph.microsoft.com/User.Read"], "credential_keys": ["MICROSOFT_CLIENT_ID", "MICROSOFT_CLIENT_SECRET"]},
+    "linkedin": {"platforms": ["linkedin"], "client_id": settings.linkedin_client_id, "client_secret": settings.linkedin_client_secret, "auth_url": "https://www.linkedin.com/oauth/v2/authorization", "token_url": "https://www.linkedin.com/oauth/v2/accessToken", "scopes": ["openid", "profile", "email"], "credential_keys": ["LINKEDIN_CLIENT_ID", "LINKEDIN_CLIENT_SECRET"]},
+    "x": {"platforms": ["x"], "client_id": settings.x_client_id, "client_secret": settings.x_client_secret, "auth_url": "https://x.com/i/oauth2/authorize", "token_url": "https://api.x.com/2/oauth2/token", "scopes": ["tweet.read", "users.read", "offline.access"], "credential_keys": ["X_CLIENT_ID", "X_CLIENT_SECRET"]},
+    "facebook": {"platforms": ["facebook"], "client_id": settings.facebook_client_id, "client_secret": settings.facebook_client_secret, "auth_url": "https://www.facebook.com/v24.0/dialog/oauth", "token_url": "https://graph.facebook.com/v24.0/oauth/access_token", "scopes": [], "credential_keys": ["FACEBOOK_CLIENT_ID", "FACEBOOK_CLIENT_SECRET"]},
+    "instagram": {"platforms": ["instagram"], "client_id": settings.instagram_client_id or settings.facebook_client_id, "client_secret": settings.instagram_client_secret or settings.facebook_client_secret, "auth_url": "https://www.facebook.com/v24.0/dialog/oauth", "token_url": "https://graph.facebook.com/v24.0/oauth/access_token", "scopes": [], "credential_keys": ["INSTAGRAM_CLIENT_ID", "INSTAGRAM_CLIENT_SECRET"]},
+    "tiktok": {"platforms": ["tiktok"], "client_id": settings.tiktok_client_key, "client_secret": settings.tiktok_client_secret, "auth_url": "https://www.tiktok.com/v2/auth/authorize/", "token_url": "https://open.tiktokapis.com/v2/oauth/token/", "scopes": ["user.info.basic"], "credential_keys": ["TIKTOK_CLIENT_KEY", "TIKTOK_CLIENT_SECRET"]},
+    "telegram": {"platforms": ["telegram"], "client_id": None, "client_secret": None, "bot_token": settings.telegram_bot_token, "credential_keys": ["TELEGRAM_BOT_TOKEN"], "auth_url": None, "token_url": None, "scopes": [], "mode": "bot"},
+    "whatsapp": {"platforms": ["whatsapp"], "client_id": settings.whatsapp_client_id, "client_secret": settings.whatsapp_client_secret, "credential_keys": ["WHATSAPP_CLIENT_ID", "WHATSAPP_CLIENT_SECRET"], "auth_url": None, "token_url": None, "scopes": [], "mode": "business_cloud", "setup_status": "business_onboarding_required"},
+    "3cx": {"platforms": ["3cx"], "client_id": settings.threecx_client_id, "client_secret": settings.threecx_client_secret, "base_url": settings.threecx_base_url, "credential_keys": ["THREECX_CLIENT_ID", "THREECX_CLIENT_SECRET", "THREECX_BASE_URL"], "auth_url": None, "token_url": None, "scopes": [], "mode": "provider_api"},
 }
 
 async def db():
@@ -108,11 +108,26 @@ async def provider_status(user=Depends(current_user)):
     """Return safe provider readiness metadata; never return client secrets."""
     result = []
     for provider, cfg in PROVIDER_CONFIG.items():
+        mode = cfg.get("mode", "oauth2")
+        if mode == "bot":
+            configured = bool(cfg.get("bot_token"))
+            setup_status = "bot_configured" if configured else "needs_bot_token"
+        elif mode == "business_cloud":
+            configured = bool(cfg.get("client_id") and cfg.get("client_secret"))
+            setup_status = cfg.get("setup_status", "business_onboarding_required") if configured else "needs_app_credentials"
+        elif mode == "provider_api":
+            configured = bool(cfg.get("client_id") and cfg.get("client_secret") and cfg.get("base_url"))
+            setup_status = "api_config_present_adapter_unverified" if configured else "needs_api_credentials_and_base_url"
+        else:
+            configured = bool(cfg.get("client_id") and cfg.get("client_secret"))
+            setup_status = "ready_to_authorize" if configured else "needs_app_credentials"
         result.append({
             "provider": provider,
             "platforms": cfg["platforms"],
-            "configured": bool(cfg.get("client_id") and cfg.get("client_secret")),
-            "mode": cfg.get("mode", "oauth2"),
+            "configured": configured,
+            "mode": mode,
+            "setup_status": setup_status,
+            "required_credentials": cfg.get("credential_keys", []),
             "authorization_supported": bool(cfg.get("auth_url") and cfg.get("token_url")),
             "scopes": cfg.get("scopes", []),
             "redirect_uri": settings.provider_oauth_redirect_uri if cfg.get("auth_url") else None,

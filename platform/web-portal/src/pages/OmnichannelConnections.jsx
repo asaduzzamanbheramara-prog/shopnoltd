@@ -292,14 +292,19 @@ export default function OmnichannelConnections() {
           <div key={provider.provider} style={{ border: '1px solid #e5e7eb', borderRadius: 10, padding: 11 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
               <strong>{provider.provider}</strong>
-              <span style={{ fontSize: 12, fontWeight: 700, color: provider.configured ? '#166534' : '#92400e' }}>
-                {provider.configured ? 'Configured' : 'Not configured'}
+              <span style={{ fontSize: 12, fontWeight: 700, color: ['ready_to_authorize', 'bot_configured'].includes(provider.setup_status) ? '#166534' : '#92400e' }}>
+                {provider.setup_status === 'ready_to_authorize' ? 'Ready to authorize'
+                  : provider.setup_status === 'bot_configured' ? 'Bot configured'
+                  : provider.setup_status === 'business_onboarding_required' ? 'Business onboarding required'
+                  : provider.setup_status === 'api_config_present_adapter_unverified' ? 'API details present — validation needed'
+                  : 'Needs configuration'}
               </span>
             </div>
             <div style={{ color: '#6b7280', fontSize: 12, marginTop: 5 }}>
               {provider.platforms.join(', ')} · {provider.mode || 'oauth2'}
             </div>
             <div style={{ color: '#6b7280', fontSize: 11, marginTop: 5 }}>
+              {provider.setup_status ? provider.setup_status.replaceAll('_', ' ') + '. ' : ''}
               {provider.authorization_supported ? 'Direct authorization is available when the server credentials are configured.' : 'Uses provider-specific business/API authorization.'}
             </div>
           </div>
