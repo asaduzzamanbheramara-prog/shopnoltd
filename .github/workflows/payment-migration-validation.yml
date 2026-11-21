@@ -143,13 +143,13 @@ jobs:
           old_constraint="$(docker exec "$PG_CONTAINER" psql -U postgres -d payment_migration_ci -Atqc "SELECT count(*) FROM pg_constraint WHERE conname='ix_wallet_user_currency' AND contype='u')"
           test "$old_constraint" = "1"
 
-          tenant_wallet_index="$(docker exec "$PG_CONTAINER" psql -U postgres -d payment_migration_ci -Atqc "SELECT count(*) FROM pg_indexes WHERE schemaname='public' AND indexname='ix_wallet_tenant_user_currency')"
+          tenant_wallet_index="$(docker exec "$PG_CONTAINER" psql -U postgres -d payment_migration_ci -Atqc "SELECT count(*) FROM pg_indexes WHERE schemaname='public' AND indexname='ix_wallet_tenant_user_currency'")"
           test "$tenant_wallet_index" = "0"
 
-          idempotency_type="$(docker exec "$PG_CONTAINER" psql -U postgres -d payment_migration_ci -Atqc "SELECT data_type || ':' || character_maximum_length FROM information_schema.columns WHERE table_schema='public' AND table_name='transactions' AND column_name='idempotency_key')"
+          idempotency_type="$(docker exec "$PG_CONTAINER" psql -U postgres -d payment_migration_ci -Atqc "SELECT data_type || ':' || character_maximum_length FROM information_schema.columns WHERE table_schema='public' AND table_name='transactions' AND column_name='idempotency_key'")"
           test "$idempotency_type" = "character varying:128"
 
-          idempotency_index_count="$(docker exec "$PG_CONTAINER" psql -U postgres -d payment_migration_ci -Atqc "SELECT count(*) FROM pg_indexes WHERE schemaname='public' AND indexname='uq_transaction_deposit_idempotency')"
+          idempotency_index_count="$(docker exec "$PG_CONTAINER" psql -U postgres -d payment_migration_ci -Atqc "SELECT count(*) FROM pg_indexes WHERE schemaname='public' AND indexname='uq_transaction_deposit_idempotency'")"
           test "$idempotency_index_count" = "0"
 
       - name: Re-apply all payment migrations
