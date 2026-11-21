@@ -45,7 +45,7 @@ async function startSocialSignup(provider) {
     response_type: 'code',
     scope: 'openid profile email',
     state,
-    kc_idp_hint: provider,
+    kc_idp_hint: provider + '-signup',
     code_challenge: challenge,
     code_challenge_method: 'S256',
   })

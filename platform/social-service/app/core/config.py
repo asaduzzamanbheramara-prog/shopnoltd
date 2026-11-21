@@ -40,6 +40,7 @@ class Settings(BaseSettings):
     whatsapp_client_secret: str | None = None
     threecx_client_id: str | None = None
     threecx_client_secret: str | None = None
+    threecx_base_url: str | None = None
 
     @property
     def cors_origins_list(self) -> list[str]:

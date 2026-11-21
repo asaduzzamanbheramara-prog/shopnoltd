@@ -94,15 +94,21 @@ SOCIAL_PROVIDERS = {
     },
     "facebook": {
         "providerId": "facebook",
-        "clientIdEnv": "FACEBOOK_APP_ID",
-        "clientSecretEnv": "FACEBOOK_APP_SECRET",
+        "clientIdEnv": "FACEBOOK_LOGIN_APP_ID",
+        "clientSecretEnv": "FACEBOOK_LOGIN_APP_SECRET",
         "scope": "email public_profile",
+        # Meta's Facebook profile response exposes an email field but does not
+        # provide a standard email_verified claim for Keycloak to validate.
+        "trustEmail": False,
     },
     "github": {
         "providerId": "github",
         "clientIdEnv": "GITHUB_CLIENT_ID",
         "clientSecretEnv": "GITHUB_CLIENT_SECRET",
         "scope": "user:email read:user",
+        # The Keycloak GitHub provider imports the primary email but not its
+        # verified flag, so require Shopnoltd-side verification.
+        "trustEmail": False,
     },
 }
 
@@ -291,7 +297,79 @@ def sync_realm_smtp(token):
     print("[OK] Keycloak Forgot Password is enabled; no user accounts or credentials were changed")
 
 
-def sync_social_provider(token, alias, provider):
+LOGIN_FIRST_BROKER_FLOW = "shopnoltd social login existing users only"
+LOGIN_ONLY_AUTHENTICATORS = {"idp-create-user-if-unique", "idp-confirm-link"}
+
+
+def ensure_login_first_broker_flow(token):
+    """Copy the standard broker flow and disable account creation/linking at every level."""
+    code, flows = request("GET", f"/admin/realms/{REALM}/authentication/flows", token=token)
+    if code != 200 or not isinstance(flows, list):
+        raise RuntimeError(f"Unable to inspect Keycloak authentication flows (HTTP {code})")
+
+    if not any(flow.get("alias") == LOGIN_FIRST_BROKER_FLOW for flow in flows):
+        source = urllib.parse.quote("first broker login", safe="")
+        code, _ = request(
+            "POST",
+            f"/admin/realms/{REALM}/authentication/flows/{source}/copy",
+            token=token,
+            body={"newName": LOGIN_FIRST_BROKER_FLOW},
+        )
+        if code not in (201, 409):
+            raise RuntimeError(f"Unable to create social Login first-broker flow (HTTP {code})")
+
+    code, flows = request("GET", f"/admin/realms/{REALM}/authentication/flows", token=token)
+    if code != 200 or not isinstance(flows, list):
+        raise RuntimeError(f"Unable to verify Keycloak authentication flows (HTTP {code})")
+    if not any(flow.get("alias") == LOGIN_FIRST_BROKER_FLOW for flow in flows):
+        raise RuntimeError("Social Login first-broker flow was not created")
+
+    encoded_alias = urllib.parse.quote(LOGIN_FIRST_BROKER_FLOW, safe="")
+    code, executions = request(
+        "GET",
+        f"/admin/realms/{REALM}/authentication/flows/{encoded_alias}/executions",
+        token=token,
+    )
+    if code != 200 or not isinstance(executions, list):
+        raise RuntimeError(f"Unable to inspect social Login first-broker flow (HTTP {code})")
+
+    # Keycloak's executions endpoint returns nested subflow executions recursively.
+    found_authenticators = set()
+    updates = []
+    for execution in executions:
+        provider_id = execution.get("providerId")
+        if provider_id in LOGIN_ONLY_AUTHENTICATORS:
+            found_authenticators.add(provider_id)
+            if execution.get("requirement") != "DISABLED":
+                updated = dict(execution)
+                updated["requirement"] = "DISABLED"
+                updates.append(updated)
+
+    missing = LOGIN_ONLY_AUTHENTICATORS - found_authenticators
+    if missing:
+        raise RuntimeError(
+            "Keycloak Login-only flow is missing expected safeguards: "
+            + ", ".join(sorted(missing))
+        )
+
+    # Keycloak expects one AuthenticationExecutionInfoRepresentation per PUT,
+    # not the complete list returned by GET.
+    for execution in updates:
+        code, _ = request(
+            "PUT",
+            f"/admin/realms/{REALM}/authentication/flows/{encoded_alias}/executions",
+            token=token,
+            body=execution,
+        )
+        if code not in (200, 204):
+            raise RuntimeError(
+                "Unable to enforce Login-only policy for execution "
+                f"'{execution.get('id')}' (HTTP {code})"
+            )
+
+    print("[OK] social Login flow disables automatic user creation and unverified link confirmation across nested subflows")
+
+def sync_social_provider(token, alias, provider, first_broker_flow_alias="first broker login"):
     client_id = os.environ.get(provider["clientIdEnv"], "").strip()
     client_secret = os.environ.get(provider["clientSecretEnv"], "").strip()
     if not client_id or not client_secret:
@@ -300,9 +378,9 @@ def sync_social_provider(token, alias, provider):
         "alias": alias,
         "providerId": provider["providerId"],
         "enabled": True,
-        "trustEmail": True,
+        "trustEmail": provider.get("trustEmail", True),
         "storeToken": False,
-        "firstBrokerLoginFlowAlias": "first broker login",
+        "firstBrokerLoginFlowAlias": first_broker_flow_alias,
         "config": {
             "clientId": client_id,
             "clientSecret": client_secret,
@@ -324,14 +402,25 @@ def sync_social_provider(token, alias, provider):
 
 
 def sync_social_providers(token):
-    configured = []
-    for alias, provider in SOCIAL_PROVIDERS.items():
-        if sync_social_provider(token, alias, provider):
-            configured.append(alias)
-    if configured:
-        print(f"[OK] social identity providers synchronized: {', '.join(configured)}")
-    else:
+    configured = [
+        (alias, provider)
+        for alias, provider in SOCIAL_PROVIDERS.items()
+        if os.environ.get(provider["clientIdEnv"], "").strip()
+        and os.environ.get(provider["clientSecretEnv"], "").strip()
+    ]
+    if not configured:
         print("[INFO] no social provider credentials configured; leaving Keycloak social providers unchanged")
+        return
+
+    ensure_login_first_broker_flow(token)
+    synchronized = []
+    for alias, provider in configured:
+        if sync_social_provider(token, alias, provider, LOGIN_FIRST_BROKER_FLOW):
+            synchronized.append(alias)
+        signup_alias = "{}-signup".format(alias)
+        if sync_social_provider(token, signup_alias, provider):
+            synchronized.append(signup_alias)
+    print("[OK] social Login and direct Signup identity providers synchronized: " + ", ".join(synchronized))
 
 
 def main():

@@ -74,17 +74,17 @@ spec:
                   name: keycloak-social-providers
                   key: GOOGLE_CLIENT_SECRET
                   optional: true
-            - name: FACEBOOK_APP_ID
+            - name: FACEBOOK_LOGIN_APP_ID
               valueFrom:
                 secretKeyRef:
                   name: keycloak-social-providers
-                  key: FACEBOOK_APP_ID
+                  key: FACEBOOK_LOGIN_APP_ID
                   optional: true
-            - name: FACEBOOK_APP_SECRET
+            - name: FACEBOOK_LOGIN_APP_SECRET
               valueFrom:
                 secretKeyRef:
                   name: keycloak-social-providers
-                  key: FACEBOOK_APP_SECRET
+                  key: FACEBOOK_LOGIN_APP_SECRET
                   optional: true
             - name: GITHUB_CLIENT_ID
               valueFrom:

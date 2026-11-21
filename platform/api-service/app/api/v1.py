@@ -204,6 +204,17 @@ async def payment_exchange_convert(body: dict, creds: HTTPAuthorizationCredentia
     return await call("POST", f"{PAYMENT}/api/v1/exchanges/convert", creds.credentials, json=payload)
 
 
+@router.get("/omnichannel/oauth/authorize-url/{provider}/{platform}")
+async def omnichannel_oauth_authorize_url(provider: str, platform: str, creds: HTTPAuthorizationCredentials = Depends(bearer)):
+    """Return the provider authorization URL to an authenticated dashboard client."""
+    token = await omnichannel_user_token(creds)
+    return await call(
+        "GET",
+        f"{SOCIAL}/api/v1/omnichannel/oauth/authorize-url/{provider}/{platform}",
+        token,
+    )
+
+
 @router.get("/omnichannel/oauth/start/{provider}/{platform}")
 async def omnichannel_oauth_start(provider: str, platform: str, creds: HTTPAuthorizationCredentials = Depends(bearer)):
     token = await omnichannel_user_token(creds)
