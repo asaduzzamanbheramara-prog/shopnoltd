@@ -167,8 +167,8 @@ export default function AdvertisingControl() {
         <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, padding: 14 }}>
           <h3 style={{ marginTop: 0 }}>Ad networks</h3>
           {NETWORKS.map(([key, label]) => <label key={key} style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '12px 0' }}>
-            <input type="checkbox" checked={draft.networks[key]} disabled={key === 'monetag'} onChange={e => toggle('networks', key, e.target.checked)} />
-            <span>{label}{key === 'monetag' ? ' — locked pending host test/approval' : ''}</span>
+            <input type="checkbox" checked={draft.networks[key]} disabled={key === 'monetag' || (key === 'profiton' && selectedHost !== 'shopnoltd.dpdns.org')} onChange={e => toggle('networks', key, e.target.checked)} />
+            <span>{label}{key === 'monetag' ? ' — locked pending host test/approval' : key === 'profiton' && selectedHost !== 'shopnoltd.dpdns.org' ? ' — apex host only until vendor approval' : ''}</span>
           </label>)}
         </div>
         <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, padding: 14 }}>
