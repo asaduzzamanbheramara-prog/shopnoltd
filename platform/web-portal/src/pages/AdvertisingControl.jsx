@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { invalidateAdPolicyCache } from '../lib/useExternalAdPolicy'
+import { tryRefresh } from '../lib/tokenRefresh'
 
 const API = 'https://api.shopnoltd.dpdns.org/api/v1/ads'
 const NETWORKS = [
@@ -23,21 +24,25 @@ const EMPTY = {
 const panel = { background: '#fff', border: '1px solid #dbe3ee', borderRadius: 14, padding: 18 }
 const button = { border: 0, borderRadius: 8, padding: '10px 14px', background: '#0369a1', color: '#fff', fontWeight: 700, cursor: 'pointer' }
 
-function api(path, options = {}) {
-  const token = localStorage.getItem('shopno_token') || ''
-  return fetch(API + path, {
+async function api(path, options = {}) {
+  const run = accessToken => fetch(API + path, {
     ...options,
     headers: {
       Accept: 'application/json',
       ...(options.body ? { 'Content-Type': 'application/json' } : {}),
-      ...(token ? { Authorization: 'Bearer ' + token } : {}),
+      ...(accessToken ? { Authorization: 'Bearer ' + accessToken } : {}),
       ...(options.headers || {}),
     },
-  }).then(async response => {
-    const body = await response.json().catch(() => ({}))
-    if (!response.ok) throw new Error(body.detail || 'Advertising request failed (' + response.status + ')')
-    return body
   })
+  let response = await run(localStorage.getItem('shopno_token') || '')
+  if (response.status === 401) {
+    const refreshed = await tryRefresh()
+    if (refreshed) response = await run(refreshed)
+    else throw new Error('Your admin session expired. Sign in again.')
+  }
+  const body = await response.json().catch(() => ({}))
+  if (!response.ok) throw new Error(body.detail || 'Advertising request failed (' + response.status + ')')
+  return body
 }
 
 function normalizeHost(value) {
