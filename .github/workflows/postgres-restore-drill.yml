@@ -21,7 +21,7 @@ jobs:
     timeout-minutes: 30
     services:
       postgres:
-        image: postgres:17
+        image: postgis/postgis:17-3.5
         env:
           POSTGRES_USER: restore_drill
           POSTGRES_HOST_AUTH_METHOD: trust
@@ -50,7 +50,7 @@ jobs:
           test -n "${BACKUP_ENCRYPTION_KEY:-}" || { echo "::error::BACKUP_ENCRYPTION_KEY is missing."; exit 1; }
           [[ "$BACKUP_REPOSITORY" != "$GITHUB_REPOSITORY" ]] || { echo "::error::Refusing to use the source repository as backup."; exit 1; }
           echo "::add-mask::$BACKUP_ENCRYPTION_KEY"
-          echo "PASS: restore target is an ephemeral GitHub Actions PostgreSQL 17 service, not production."
+          echo "PASS: restore target is an ephemeral PostGIS/PostgreSQL 17 service, not production."
 
       - name: Fetch latest encrypted snapshot from private backup repository
         shell: bash
@@ -83,13 +83,16 @@ jobs:
           pg_restore --list "$RUNNER_TEMP/shopnoltd-restore.dump" > "$RUNNER_TEMP/restore-toc.txt"
           grep -q "TABLE DATA" "$RUNNER_TEMP/restore-toc.txt"
 
-      - name: Restore with matching PostgreSQL 17 tools and validate
+      - name: Restore with matching PostGIS PostgreSQL 17 tools and validate
         shell: bash
         run: |
           set -euo pipefail
-          PG_CONTAINER="$(docker ps --filter ancestor=postgres:17 --format '{{.ID}}' | head -n 1)"
-          test -n "$PG_CONTAINER" || { echo "::error::Disposable PostgreSQL 17 container not found."; exit 1; }
+          PG_IMAGE=postgis/postgis:17-3.5
+          PG_CONTAINER="$(docker ps --filter ancestor="$PG_IMAGE" --format '{{.ID}}' | head -n 1)"
+          test -n "$PG_CONTAINER" || { echo "::error::Disposable PostGIS PostgreSQL 17 container not found."; exit 1; }
           docker exec "$PG_CONTAINER" pg_restore --version
+          docker exec "$PG_CONTAINER" psql -U restore_drill -d postgres -Atc \
+            "SELECT default_version FROM pg_available_extensions WHERE name='postgis'"
           docker cp "$RUNNER_TEMP/shopnoltd-restore.dump" "$PG_CONTAINER:/tmp/shopnoltd-restore.dump"
           docker exec "$PG_CONTAINER" psql -U restore_drill -d postgres -v ON_ERROR_STOP=1 \
             -c 'CREATE DATABASE shopnoltd_restore_drill'
@@ -103,7 +106,7 @@ jobs:
           docker exec "$PG_CONTAINER" psql -U restore_drill -d shopnoltd_restore_drill -v ON_ERROR_STOP=1 -c \
             "SELECT current_database() AS restored_database, count(*) AS restored_tables FROM information_schema.tables WHERE table_schema NOT IN ('pg_catalog','information_schema') AND table_type='BASE TABLE'"
           docker exec "$PG_CONTAINER" rm -f /tmp/shopnoltd-restore.dump
-          echo "PASS: isolated PostgreSQL 17 restore validated with $table_count user tables."
+          echo "PASS: isolated PostGIS/PostgreSQL 17 restore validated with $table_count user tables."
 
       - name: Remove decrypted snapshot and temporary clone
         if: always()
