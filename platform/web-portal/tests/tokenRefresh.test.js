@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { isRefreshSessionCurrent } from '../src/lib/authSession.js'
+import { clearAuthTokens, isRefreshSessionCurrent } from '../src/lib/authSession.js'
 import { tryRefresh } from '../src/lib/tokenRefresh.js'
 
 test('refresh result is accepted while its originating session remains current', () => {
@@ -19,6 +19,19 @@ test('missing originating refresh token is never treated as a current session', 
   assert.equal(isRefreshSessionCurrent(null, null), false)
 })
 
+test('clearing an account session removes only Shopnoltd auth tokens', () => {
+  const values = new Map([
+    ['shopno_token', 'access-A'],
+    ['shopno_refresh_token', 'refresh-A'],
+    ['shopno_id_token', 'id-A'],
+    ['theme', 'dark'],
+  ])
+  clearAuthTokens({ removeItem: key => values.delete(key) })
+  assert.equal(values.has('shopno_token'), false)
+  assert.equal(values.has('shopno_refresh_token'), false)
+  assert.equal(values.has('shopno_id_token'), false)
+  assert.equal(values.get('theme'), 'dark')
+})
 
 test('a delayed refresh from account A cannot block or overwrite account B', async () => {
   const previousStorage = globalThis.localStorage
