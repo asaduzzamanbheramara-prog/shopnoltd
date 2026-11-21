@@ -136,15 +136,21 @@ jobs:
           DATABASE_URL: postgresql+asyncpg://postgres:ci-only-password@127.0.0.1:5432/payment_migration_ci
         run: alembic downgrade 0003_webhook_events
 
-      - name: Verify downgrade restores original wallet constraint
+      - name: Verify downgrade preserves idempotency keys while releasing index dependencies
         env:
           PG_CONTAINER: ${{ steps.postgres.outputs.container_id }}
         run: |
-          old_constraint="$(docker exec "$PG_CONTAINER" psql -U postgres -d payment_migration_ci -Atqc "SELECT count(*) FROM pg_constraint WHERE conname='ix_wallet_user_currency' AND contype='u'")"
+          old_constraint="$(docker exec "$PG_CONTAINER" psql -U postgres -d payment_migration_ci -Atqc "SELECT count(*) FROM pg_constraint WHERE conname='ix_wallet_user_currency' AND contype='u')"
           test "$old_constraint" = "1"
 
-          tenant_wallet_index="$(docker exec "$PG_CONTAINER" psql -U postgres -d payment_migration_ci -Atqc "SELECT count(*) FROM pg_indexes WHERE schemaname='public' AND indexname='ix_wallet_tenant_user_currency'")"
+          tenant_wallet_index="$(docker exec "$PG_CONTAINER" psql -U postgres -d payment_migration_ci -Atqc "SELECT count(*) FROM pg_indexes WHERE schemaname='public' AND indexname='ix_wallet_tenant_user_currency')"
           test "$tenant_wallet_index" = "0"
+
+          idempotency_type="$(docker exec "$PG_CONTAINER" psql -U postgres -d payment_migration_ci -Atqc "SELECT data_type || ':' || character_maximum_length FROM information_schema.columns WHERE table_schema='public' AND table_name='transactions' AND column_name='idempotency_key')"
+          test "$idempotency_type" = "character varying:128"
+
+          idempotency_index_count="$(docker exec "$PG_CONTAINER" psql -U postgres -d payment_migration_ci -Atqc "SELECT count(*) FROM pg_indexes WHERE schemaname='public' AND indexname='uq_transaction_deposit_idempotency')"
+          test "$idempotency_index_count" = "0"
 
       - name: Re-apply all payment migrations
         working-directory: platform/payment-service
