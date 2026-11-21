@@ -89,7 +89,7 @@ function InstallPrompt() {
   return <button type="button" onClick={async () => { await prompt.prompt(); setPrompt(null) }} style={{ color: 'white', background: 'rgba(255,255,255,0.14)', border: '1px solid rgba(255,255,255,0.5)', borderRadius: 6, padding: '5px 12px', cursor: 'pointer', whiteSpace: 'nowrap' }}>Install Shopnoltd</button>
 }
 
-const PUBLIC_LINKS = [['About', '/about'], ['Services', '/services'], ['Pricing', '/pricing'], ['Profiles', '/profiles'], ['Interior', '/profile/interior-business'], ['VPN', '/vpn'], ['Create Website', '/create-website'], ['Discover', '/discover'], ['Feed', '/feed'], ['Work', '/work'], ['Blog', '/blog'], ['AI', '/ai'], ['Phone', '/phone'], ['Domains', '/domain-registration'], ['Downloads', '/downloads'], ['Affiliate & Tools', '/affiliate'], ['Offers', '/offers'], ['Android Cloud', '/android-cloud'], ['Contact', '/contact']]
+const PUBLIC_LINKS = [['About', '/about'], ['Services', '/services'], ['Pricing', '/pricing'], ['Advertise', '/ads'], ['Profiles', '/profiles'], ['Interior', '/profile/interior-business'], ['VPN', '/vpn'], ['Create Website', '/create-website'], ['Discover', '/discover'], ['Feed', '/feed'], ['Work', '/work'], ['Blog', '/blog'], ['AI', '/ai'], ['Phone', '/phone'], ['Domains', '/domain-registration'], ['Downloads', '/downloads'], ['Affiliate & Tools', '/affiliate'], ['Offers', '/offers'], ['Android Cloud', '/android-cloud'], ['Contact', '/contact']]
 const STANDALONE_APP_PATHS = new Set(['/android-cloud'])
 
 function Nav() {
@@ -203,7 +203,6 @@ function Nav() {
         <Link to="/my-submission" style={{ color: 'white', textDecoration: 'none', padding: '8px 4px' }}>My Submission</Link>
         <Link to="/work-review" style={{ color: 'white', textDecoration: 'none', padding: '8px 4px' }}>Work Review</Link>
         <Link to="/my-blog" style={{ color: 'white', textDecoration: 'none', padding: '8px 4px' }}>My Blog</Link>
-        <Link to="/ads" style={{ color: 'white', textDecoration: 'none', padding: '8px 4px', fontWeight: location.pathname === '/ads' ? 700 : 400 }}>Ads Network</Link>
         {isAdmin && <>
           <Link to="/admin" style={{ color: 'white', textDecoration: 'none', padding: '8px 4px', fontWeight: 700 }}>Admin</Link>
           <Link to="/admin/analytics" style={{ color: 'white', textDecoration: 'none', padding: '8px 4px' }}>Analytics</Link>
