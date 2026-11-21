@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { KEYCLOAK_CLIENT_ID, KEYCLOAK_REALM, KEYCLOAK_URL, REDIRECT_URI } from '../config'
 import { platformApi } from '../lib/platformApi'
 import { trackEvent } from '../lib/analytics'
+import { clearAuthTokens } from '../lib/authSession'
 
 export default function Callback() {
   const [error, setError] = useState(null)
@@ -49,9 +50,9 @@ export default function Callback() {
         return data
       })
       .then((data) => {
-        // Persist the verified OIDC tokens before any optional API work. A slow or
-        // unavailable profile/referral endpoint must never strand the user on
-        // "Completing sign in…" after Keycloak has successfully authenticated them.
+        // Replace the old browser identity only after the OIDC code and state
+        // have been validated and the token endpoint returned a new access token.
+        clearAuthTokens(localStorage)
         localStorage.setItem('shopno_token', data.access_token)
         const authIntent = sessionStorage.getItem('shopno_auth_intent')
         const authMethod = sessionStorage.getItem('shopno_auth_method') || 'shopnoltd'
