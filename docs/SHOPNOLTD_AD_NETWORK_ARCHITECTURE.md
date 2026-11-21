@@ -113,3 +113,34 @@ These delivery endpoints should not require normal user login; they must authent
 
 ## Important boundary
 Shopnoltd cannot inject advertisements into arbitrary third-party websites without their participation. A publisher must authorize Shopnoltd inventory and install/use the Shopnoltd ad tag or another approved integration.
+
+## External network command center
+
+The web portal exposes an authenticated platform-admin control at
+`/admin/advertising`. It stores one policy per exact hostname in the dedicated
+`ads.external_ad_policies` table and records changes in
+`ads.external_ad_policy_audit`.
+
+- New domains and subdomains are created disabled.
+- Wildcard host entries are rejected. Add and review each hostname separately.
+- Public configuration is read-only and served through
+  `GET /api/v1/ads/config?domain={hostname}`.
+- Admin reads and writes require the Keycloak platform-admin role.
+- Network scripts require both the host policy and the visitor's advertising
+  consent. Only the five named public placements are supported.
+- Login, registration, dashboard, admin, wallet, payment, checkout, billing,
+  and account routes are always excluded.
+- Monetag stays disabled until its separate content host is reachable and the
+  publisher approval plus browser/CSP test is complete.
+- ProfitOn is currently restricted to `shopnoltd.dpdns.org`. Smartlink zone
+  `162185` remains an explicit sponsored link. Shuffle Box `162186` and Pops
+  `162184` are not loaded until the exact vendor script and SPA teardown
+  behavior are verified.
+- AdSense's publisher loader is consent- and host-policy-gated. An explicit
+  display unit still requires a valid AdSense ad-slot ID or approved Auto Ads
+  configuration; the publisher client ID is not an ad-slot ID.
+
+The control does not assert that a third-party publisher has approved a host.
+The administrator must enable a provider only after confirming that exact
+hostname in the provider's dashboard. An enabled script request is not proof
+of an impression or revenue.
