@@ -53,12 +53,12 @@ spec:
             - name: KEYCLOAK_REALM
               value: "shopnoltd"
             - name: KEYCLOAK_ADMIN_USER
-              value: "admin"
+              value: "shopnoltd-admin"
             - name: KEYCLOAK_ADMIN_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: freedomain-service-secret
-                  key: KC_BOOTSTRAP_ADMIN_PASSWORD
+                  name: freedomain-keycloak-admin-credentials
+                  key: KEYCLOAK_ADMIN_PASSWORD
             - name: BACKFILL_INCLUDE_DISABLED
               value: "true"
           envFrom:
