@@ -433,3 +433,40 @@ def test_connection_update_is_scoped_to_authenticated_user():
     ))
     assert "owner_user_id=:user" in session.query
     assert session.params["user"] == "user-A"
+
+
+def test_multiple_selected_provider_profiles_are_deduplicated():
+    assert oauth._selected_account_ids({"account_ids": ["page-1", "page-2", "page-1"]}) == [
+        "page-1", "page-2"
+    ]
+
+
+def test_legacy_single_account_selection_remains_supported():
+    assert oauth._selected_account_ids({"account_id": "page-1"}) == ["page-1"]
+
+
+def test_empty_multi_profile_selection_is_rejected():
+    from fastapi import HTTPException
+    import pytest
+
+    with pytest.raises(HTTPException) as exc:
+        oauth._selected_account_ids({"account_ids": []})
+    assert exc.value.status_code == 422
+
+
+def test_unknown_or_blank_selection_values_are_not_accepted_as_selection():
+    from fastapi import HTTPException
+    import pytest
+
+    with pytest.raises(HTTPException) as exc:
+        oauth._selected_account_ids({"account_ids": [" ", None]})
+    assert exc.value.status_code == 422
+
+
+def test_multi_profile_selection_is_bounded():
+    from fastapi import HTTPException
+    import pytest
+
+    with pytest.raises(HTTPException) as exc:
+        oauth._selected_account_ids({"account_ids": [f"profile-{i}" for i in range(101)]})
+    assert exc.value.status_code == 422

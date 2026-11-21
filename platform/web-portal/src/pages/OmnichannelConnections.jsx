@@ -66,6 +66,7 @@ export default function OmnichannelConnections() {
   const [providers, setProviders] = useState([])
   const [oauthProfiles, setOauthProfiles] = useState([])
   const [pendingSelection, setPendingSelection] = useState(null)
+  const [selectedOAuthAccounts, setSelectedOAuthAccounts] = useState([])
   const [form, setForm] = useState(EMPTY)
   const [editing, setEditing] = useState(null)
   const [busy, setBusy] = useState(false)
@@ -125,6 +126,7 @@ export default function OmnichannelConnections() {
         try {
           const pending = await platformApi.omnichannelOAuthPending(pendingId)
           setPendingSelection({ ...pending, pendingId })
+          setSelectedOAuthAccounts((pending.choices || []).map(choice => choice.id))
         } catch (e) {
           setError(e.message || 'The account selection expired. Please reconnect the provider.')
         }
@@ -193,24 +195,31 @@ export default function OmnichannelConnections() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  async function chooseOAuthAccount(accountId) {
-    if (!pendingSelection?.pendingId) return
+  async function chooseOAuthAccounts(accountIds = selectedOAuthAccounts) {
+    if (!pendingSelection?.pendingId || !accountIds.length) return
     setBusy(true)
     setError('')
     try {
-      const result = await platformApi.omnichannelOAuthSelect(pendingSelection.pendingId, accountId)
+      const result = await platformApi.omnichannelOAuthSelect(pendingSelection.pendingId, accountIds)
       setPendingSelection(null)
+      setSelectedOAuthAccounts([])
       const currentQuery = new URLSearchParams(window.location.search)
       currentQuery.delete('pending_id')
       const remaining = currentQuery.toString()
       window.history.replaceState({}, '', window.location.pathname + (remaining ? '?' + remaining : ''))
-      setNotice(result.provider + ' account connected successfully.')
+      setNotice((result.connected_count || accountIds.length) + ' ' + result.platform + ' profile(s) connected successfully.')
       await load()
     } catch (e) {
-      setError(e.message || 'Could not connect the selected account.')
+      setError(e.message || 'Could not connect the selected accounts.')
     } finally {
       setBusy(false)
     }
+  }
+
+  function toggleOAuthAccount(accountId, checked) {
+    setSelectedOAuthAccounts(current => checked
+      ? [...new Set([...current, accountId])]
+      : current.filter(id => id !== accountId))
   }
 
   async function remove(item) {
@@ -313,22 +322,26 @@ export default function OmnichannelConnections() {
     </section>
 
     {pendingSelection && <section style={{ ...styles.card, marginBottom: 20 }} aria-live="polite">
-      <h2 style={{ margin: '0 0 8px', fontSize: 18 }}>Choose the account to connect</h2>
+      <h2 style={{ margin: '0 0 8px', fontSize: 18 }}>Choose profiles to connect</h2>
       <p style={{ margin: '0 0 12px', color: '#6b7280' }}>
-        Select one {pendingSelection.platform} account authorized by {pendingSelection.provider}. Provider credentials remain encrypted on the server.
+        Select one, several, or all discovered {pendingSelection.platform} profiles from {pendingSelection.provider}. Each selected profile is saved as its own connection with separate account identity and credentials.
       </p>
-      <div style={{ display: 'grid', gap: 8 }}>
-        {pendingSelection.choices.map(choice => <button
-          key={choice.id}
-          type="button"
-          disabled={busy}
-          onClick={() => chooseOAuthAccount(choice.id)}
-          style={{ ...styles.button, justifyContent: 'space-between', width: '100%' }}
-        >
-          <span>{choice.name}{choice.username ? ' (@' + choice.username + ')' : ''}</span>
-          <span>Connect</span>
-        </button>)}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
+        <button type="button" disabled={busy} onClick={() => setSelectedOAuthAccounts(pendingSelection.choices.map(choice => choice.id))} style={styles.button}>Select all ({pendingSelection.choices.length})</button>
+        <button type="button" disabled={busy} onClick={() => setSelectedOAuthAccounts([])} style={styles.button}>Clear selection</button>
       </div>
+      <div style={{ display: 'grid', gap: 8 }}>
+        {pendingSelection.choices.map(choice => <label
+          key={choice.id}
+          style={{ ...styles.button, justifyContent: 'flex-start', width: '100%', boxSizing: 'border-box', cursor: busy ? 'default' : 'pointer' }}
+        >
+          <input type="checkbox" disabled={busy} checked={selectedOAuthAccounts.includes(choice.id)} onChange={event => toggleOAuthAccount(choice.id, event.target.checked)} />
+          <span>{choice.name}{choice.username ? ' (@' + choice.username + ')' : ''}</span>
+        </label>)}
+      </div>
+      <button type="button" disabled={busy || !selectedOAuthAccounts.length} onClick={() => chooseOAuthAccounts()} style={{ ...styles.button, marginTop: 12, background: '#111827', color: '#fff', borderColor: '#111827' }}>
+        {busy ? 'Connecting...' : 'Connect ' + selectedOAuthAccounts.length + ' selected profile(s)'}
+      </button>
     </section>}
 
     <section style={{ ...styles.card, marginBottom: 20 }}>

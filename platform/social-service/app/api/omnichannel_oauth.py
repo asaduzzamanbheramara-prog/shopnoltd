@@ -304,6 +304,22 @@ async def _identity(provider: str, access_token: str, platform: str) -> dict:
     return data.get("data", data)
 
 
+def _selected_account_ids(body: dict) -> list[str]:
+    raw_ids = body.get("account_ids")
+    if raw_ids is None:
+        raw_ids = [body.get("account_id")]
+    if not isinstance(raw_ids, list):
+        raise HTTPException(422, "account_ids must be a list")
+    selected_ids = list(dict.fromkeys(
+        str(value or "").strip() for value in raw_ids if str(value or "").strip()
+    ))
+    if not selected_ids:
+        raise HTTPException(422, "select at least one account")
+    if len(selected_ids) > 100:
+        raise HTTPException(422, "at most 100 accounts may be connected at once")
+    return selected_ids
+
+
 def _parse_scopes(returned: str | list | None, fallback: list[str]) -> list[str]:
     if isinstance(returned, str):
         return [scope for scope in re.split(r"[,\s]+", returned.strip()) if scope]
@@ -605,9 +621,7 @@ async def select_pending_account(
     user = await verify_token(creds.credentials)
     tenant = str(user.get("tenant_id") or "default")
     user_id = str(user.get("sub") or user.get("user_id") or "")
-    selected_id = str(body.get("account_id") or "").strip()
-    if not selected_id:
-        raise HTTPException(422, "account_id is required")
+    selected_ids = _selected_account_ids(body)
     async with SessionLocal() as s:
         row = (await s.execute(text(
             """SELECT provider, platform, encrypted_payload
@@ -621,16 +635,25 @@ async def select_pending_account(
             data = json.loads(_fernet().decrypt(row["encrypted_payload"].encode()))
         except (InvalidToken, ValueError, TypeError) as exc:
             raise HTTPException(410, "account selection is no longer available") from exc
-        identity = next((item for item in data.get("choices", []) if str(item.get("id") or "") == selected_id), None)
-        if not identity:
-            raise HTTPException(422, "selected account is not in this authorization request")
+        available = {str(item.get("id") or ""): item for item in data.get("choices", []) if item.get("id")}
+        unknown = [account_id for account_id in selected_ids if account_id not in available]
+        if unknown:
+            raise HTTPException(422, "one or more selected accounts are not in this authorization request")
         payload = {"sub": user_id, "tenant_id": tenant}
-        connection_id = await _save_selected_connection(payload, row["provider"], row["platform"], identity, data["tokens"], s)
+        connection_ids = []
+        for account_id in selected_ids:
+            connection_ids.append(await _save_selected_connection(
+                payload, row["provider"], row["platform"], available[account_id], data["tokens"], s
+            ))
         await s.execute(text(
             "DELETE FROM omnichannel_oauth_pending WHERE id=:id AND tenant_id=:tenant AND user_id=:user"
         ), {"id": pending_id, "tenant": tenant, "user": user_id})
         await s.commit()
-    return {"status": "connected", "connection_id": connection_id, "provider": row["provider"], "platform": row["platform"]}
+    return {
+        "status": "connected", "connection_ids": connection_ids,
+        "connection_id": connection_ids[0] if len(connection_ids) == 1 else None,
+        "connected_count": len(connection_ids), "provider": row["provider"], "platform": row["platform"],
+    }
 
 
 @router.get("/status")

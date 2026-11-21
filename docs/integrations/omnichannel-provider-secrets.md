@@ -64,7 +64,7 @@ The social-service reads Secret values at process start. A rollout restart is ne
 2. Opens Dashboard → Platform Accounts.
 3. Clicks Connect for a provider marked ready.
 4. Completes provider-hosted login and consent (Shopnoltd never sees their password).
-5. Selects the Page/channel/account if the provider returns multiple choices.
+5. Selects one, several, or all discovered Pages/channels/accounts when the provider returns multiple choices; each selection becomes its own independently owned connection.
 6. Shopnoltd automatically binds the connection to the authenticated Shopnoltd user ID and tenant ID, encrypts the provider tokens, and records granted scopes and expiry.
 7. The connection list, detail, update, disconnect and action-execution paths enforce that same owner ID; another user cannot see, edit, disconnect or execute against it.
 8. Token refresh, expiry tracking and reconnect status are handled by the service where the provider supports them. Users do not need to copy tokens or configure IDs manually.
@@ -94,3 +94,10 @@ Discord, Slack, Pinterest, Snapchat, Reddit, Twitch, Shopify, WooCommerce, Zoom 
 - The database keeps provider-account ownership exclusive within a tenant by default. Shared workspace access must be a separate explicit grant model, never an OAuth token overwrite.
 - Keep app credentials server-side and encrypt per-user OAuth tokens at rest.
 - Do not enable unimplemented actions merely because they appear in a capability table.
+
+
+## Multiple profiles per provider
+
+A Shopnoltd user may connect multiple distinct accounts on the same platform. For providers that expose managed assets during OAuth discovery (currently Meta Pages, linked Instagram professional accounts, and YouTube channels), the selection screen supports individual, multi-select, and select-all. Each selected asset is persisted as a separate connection and token record under the same authenticated Shopnoltd user and tenant. The selection is limited to assets returned by that user's current OAuth consent and pending selection expires after ten minutes.
+
+Other OAuth providers may expose only the currently authenticated user identity. Those can still support multiple profiles by completing a separate authorization flow for each provider account. WhatsApp Business, Telegram and 3CX require their respective business/bot/tenant onboarding flows; multi-number or multi-tenant discovery must be implemented and validated against each provider API before it is advertised as automatic.
