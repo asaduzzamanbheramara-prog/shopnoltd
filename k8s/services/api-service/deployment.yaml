@@ -23,6 +23,8 @@ spec:
         prometheus.io/scrape: "true"
         prometheus.io/port: "8080"
         prometheus.io/path: "/metrics"
+        # ConfigMap envFrom changes do not restart pods; bump this revision with API config changes.
+        shopnoltd.io/config-revision: "admin-office-referral-v1"
     spec:
       serviceAccountName: api-service
       automountServiceAccountToken: true
