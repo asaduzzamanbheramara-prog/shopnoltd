@@ -6,6 +6,8 @@ export default defineConfig({
   use: {
     headless: true,
     ignoreHTTPSErrors: false,
-    trace: 'retain-on-failure',
+    // Authenticated smoke inputs include passwords and generated TOTP codes.
+    // Do not capture Playwright traces for this credential-bearing test suite.
+    trace: 'off',
   },
 })
