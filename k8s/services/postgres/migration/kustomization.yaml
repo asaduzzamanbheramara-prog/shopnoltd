@@ -23,6 +23,7 @@ configMapGenerator:
   - 024-payment-wallet-tenant-unique.sql
   - 025-omnichannel-oauth-pending-selection.sql
   - 026-omnichannel-user-ownership.sql
+  - 027-payment-transaction-idempotency.sql
   options:
     disableNameSuffixHash: true
 
