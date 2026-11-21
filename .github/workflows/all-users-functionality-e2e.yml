@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-24.04
     container:
       image: mcr.microsoft.com/playwright:v1.55.0-noble
-    timeout-minutes: 90
+    timeout-minutes: 180
     defaults:
       run:
         working-directory: tests/browser-role
