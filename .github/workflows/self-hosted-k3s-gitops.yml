@@ -211,7 +211,10 @@ jobs:
           kubectl -n shopno-identity create secret generic keycloak-admin-sync-credentials \
             --from-file=KEYCLOAK_ADMIN_PASSWORD="$password_file" \
             --dry-run=client -o yaml | kubectl apply -f -
-          echo 'Permanent Keycloak master-realm admin credential provisioned without printing its value.'
+          kubectl -n "$PLATFORM_NAMESPACE" create secret generic freedomain-keycloak-admin-credentials \
+            --from-file=KEYCLOAK_ADMIN_PASSWORD="$password_file" \
+            --dry-run=client -o yaml | kubectl apply -f -
+          echo 'Permanent Keycloak master-realm admin credential provisioned in identity and free-domain namespaces without printing its value.'
 
       - name: Provision ad-service PostgreSQL secret
         shell: bash
