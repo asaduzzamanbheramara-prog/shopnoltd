@@ -434,7 +434,7 @@ def normalize_ad_hostname(value: str) -> str:
     return host
 
 
-def validate_ad_policy(body: ExternalAdPolicyUpdate) -> tuple[dict, dict]:
+def validate_ad_policy(hostname: str, body: ExternalAdPolicyUpdate) -> tuple[dict, dict]:
     unknown_networks = set(body.networks) - _ALLOWED_NETWORKS
     unknown_placements = set(body.placements) - _ALLOWED_PLACEMENTS
     if unknown_networks or unknown_placements:
@@ -445,6 +445,8 @@ def validate_ad_policy(body: ExternalAdPolicyUpdate) -> tuple[dict, dict]:
     # publisher approval gates are explicitly completed.
     if networks["monetag"]:
         raise HTTPException(409, "Monetag cannot be enabled from this control until its host-specific publisher approval and browser test are recorded")
+    if networks["profiton"] and hostname != "shopnoltd.dpdns.org":
+        raise HTTPException(409, "ProfitOn is currently approved only for shopnoltd.dpdns.org; verify the additional host with ProfitOn before enabling it")
     return networks, placements
 
 
@@ -489,7 +491,7 @@ async def upsert_external_ad_policy(
     db: AsyncSession = Depends(get_db),
 ):
     host = normalize_ad_hostname(hostname)
-    networks, placements = validate_ad_policy(body)
+    networks, placements = validate_ad_policy(host, body)
     result = await db.execute(text("""
         INSERT INTO external_ad_policies(hostname, enabled, networks, placements, updated_by, updated_at)
         VALUES (:hostname, :enabled, CAST(:networks AS jsonb), CAST(:placements AS jsonb), :actor, now())
