@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { useAdvertisingConsent } from '../lib/useAdvertisingConsent'
+import { useExternalAdPolicy } from '../lib/useExternalAdPolicy'
 
 const ZONES = {
   '468x60': { key: '7747061d0c5ae776f68405dbeeab89fd', width: 468, height: 60, scriptUrl: 'https://bicea.org/22/7747061d0c5ae776f68405dbeeab89fd' },
@@ -82,7 +83,9 @@ function AdLabel() {
 }
 
 export function AdsterraBannerZone({ name, maxWidth = 760 }) {
-  const allowed = useAdvertisingConsent()
+  const consentAllowed = useAdvertisingConsent()
+  const policyAllowed = useExternalAdPolicy('adsterra')
+  const allowed = consentAllowed && policyAllowed
   const zone = ZONES[name]
   const containerRef = useRef(null)
 
@@ -101,7 +104,9 @@ export function AdsterraBannerZone({ name, maxWidth = 760 }) {
 }
 
 export function AdsterraNativeBanner() {
-  const allowed = useAdvertisingConsent()
+  const consentAllowed = useAdvertisingConsent()
+  const policyAllowed = useExternalAdPolicy('adsterra')
+  const allowed = consentAllowed && policyAllowed
   const containerRef = useRef(null)
   useEffect(() => {
     const container = containerRef.current
@@ -129,7 +134,9 @@ export function AdsterraNativeBanner() {
 }
 
 export function AdsterraGlobalFormats() {
-  const allowed = useAdvertisingConsent()
+  const consentAllowed = useAdvertisingConsent()
+  const policyAllowed = useExternalAdPolicy('adsterra')
+  const allowed = consentAllowed && policyAllowed
   useEffect(() => {
     if (!allowed) return undefined
     // Google AdSense is loaded only after advertising consent. Do not enable Adsterra Popunder here:
@@ -157,7 +164,9 @@ export function AdsterraGlobalFormats() {
 }
 
 export function AdsterraSmartlink() {
-  const allowed = useAdvertisingConsent()
+  const consentAllowed = useAdvertisingConsent()
+  const policyAllowed = useExternalAdPolicy('adsterra')
+  const allowed = consentAllowed && policyAllowed
   if (!allowed) return null
   return <section aria-label="Sponsored link" style={{ ...shellStyle, maxWidth: 760, alignItems: 'flex-start', padding: 16 }}>
     <AdLabel />
@@ -188,7 +197,9 @@ export function AdsterraResponsiveBanner() {
 }
 
 export function AdsterraTallBannerPair() {
-  const allowed = useAdvertisingConsent()
+  const consentAllowed = useAdvertisingConsent()
+  const policyAllowed = useExternalAdPolicy('adsterra')
+  const allowed = consentAllowed && policyAllowed
   if (!allowed) return null
   return <section aria-label="Additional advertisements" style={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-start', gap: 24, flexWrap: 'wrap', margin: '32px auto', maxWidth: 520 }}>
     <AdsterraBannerZone name="160x300" maxWidth={190} />
