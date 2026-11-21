@@ -30,6 +30,8 @@ def upgrade():
 
 
 def downgrade():
-    # Forward-only: removing this column could discard keys already used to
-    # protect customer payment requests from duplicate processing.
-    pass
+    # Preserve the nullable key values; only remove the uniqueness guard so
+    # earlier revisions can safely remove columns that the index references.
+    op.execute(
+        sa.text("DROP INDEX IF EXISTS public.uq_transaction_deposit_idempotency")
+    )
