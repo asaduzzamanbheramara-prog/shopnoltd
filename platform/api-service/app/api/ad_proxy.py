@@ -36,9 +36,9 @@ async def ads_proxy(
     path: str,
     token: str | None = Depends(raw_token),
 ):
-    # /serve is the only unauthenticated public delivery endpoint. All other
+    # /serve and /config are the only unauthenticated public endpoints. All other
     # advertising API operations require a validated Shopnoltd JWT.
-    if path != "serve" and token is None:
+    if path not in {"serve", "config"} and token is None:
         raise HTTPException(401, "Authentication required")
 
     headers = {
