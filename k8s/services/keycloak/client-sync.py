@@ -11,7 +11,7 @@ import urllib.request
 
 KEYCLOAK_URL = os.environ.get("KEYCLOAK_URL", "http://keycloak.shopno-identity.svc.cluster.local").rstrip("/")
 REALM = os.environ.get("KEYCLOAK_REALM", "shopnoltd")
-ADMIN_USER = os.environ.get("KEYCLOAK_ADMIN_USER", "admin")
+ADMIN_USER = os.environ.get("KEYCLOAK_ADMIN_USER", "shopnoltd-admin")
 ADMIN_PASSWORD = os.environ.get("KEYCLOAK_ADMIN_PASSWORD")
 
 CLIENT_IDS = ["shopnoltd-web", "web-portal"]
