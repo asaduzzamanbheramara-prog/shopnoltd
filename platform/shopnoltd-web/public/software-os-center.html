@@ -174,7 +174,8 @@
       section.className='tutorial';
       section.append(makeText('h4',tutorial.title));
       section.append(makeText('p',tutorial.publisher+' · '+tutorial.status,'small muted'));
-      section.append(makeText('p','Source: '+(tutorial.source_kind||'unspecified')+
+      const sourceLabels={'official-vendor':'Official publisher','community-reference':'Community reference','shopnoltd-owned':'Shopnoltd recording'};
+      section.append(makeText('p','Provenance: '+(sourceLabels[tutorial.source_kind]||'Source type not declared')+
         (tutorial.language?' · Language: '+tutorial.language:'')+
         (tutorial.captions_available===true?' · Captions available':tutorial.captions_available===false?' · No captions listed':'')+
         (tutorial.last_reviewed?' · Last reviewed: '+tutorial.last_reviewed:''),'small muted'));
