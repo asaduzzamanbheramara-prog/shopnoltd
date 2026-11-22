@@ -60,7 +60,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install isolated test dependencies
-        run: python -m pip install pytest
+        run: python -m pip install pytest SQLAlchemy==2.0.36
       - name: Verify tenant isolation fails closed
         run: pytest -q tests/test_agent_tenant_isolation.py
 
