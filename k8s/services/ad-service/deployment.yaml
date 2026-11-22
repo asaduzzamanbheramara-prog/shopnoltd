@@ -37,6 +37,9 @@ spec:
               key: INTERNAL_API_KEY
         - name: PAYMENT_SERVICE_URL
           value: http://payment-service.shopno-payments.svc.cluster.local:80
+        # Monetag verified shopnoltd.dpdns.org; this exact subdomain is covered by the verified root-domain zone.
+        - name: MONETAG_APPROVED_HOSTS
+          value: content.shopnoltd.dpdns.org
         ports:
         - name: http
           containerPort: 8080
