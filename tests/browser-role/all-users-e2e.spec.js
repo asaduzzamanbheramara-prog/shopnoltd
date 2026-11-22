@@ -94,6 +94,16 @@ test('every real user: login via impersonation + read-only functionality checks'
 
       step = 'login'
       await page.goto(`${app}/login`, { waitUntil: 'domcontentloaded' })
+
+      // The site-wide privacy dialog blocks pointer events until the visitor makes
+      // a choice. Reject optional analytics/advertising in this ephemeral test
+      // context, matching the authenticated production smoke test.
+      const consentDialog = page.getByRole('dialog', { name: /Privacy & cookie preferences/i })
+      if (await consentDialog.isVisible().catch(() => false)) {
+        await consentDialog.getByRole('button', { name: /Reject all/i }).click()
+        await expect(consentDialog).toBeHidden()
+      }
+
       await page.getByRole('button', { name: 'Continue with Shopnoltd' }).click()
 
       if ((u.requiredActions || []).includes('UPDATE_PASSWORD') || (u.requiredActions || []).includes('VERIFY_EMAIL')) {
