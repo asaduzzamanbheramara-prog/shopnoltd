@@ -23,6 +23,8 @@ grep -q "https://nap5k.com/tag.min.js" "$ipp"
 ! grep -Eiq '12128278|12288239|n6wxm\.com|serviceWorker|navigator\.serviceWorker' "$html" "$app" "$ipp"
 
 grep -q "script-src 'self' https://nap5k.com" "$nginx"
+# The gated loader must be able to fetch the public policy API under CSP.
+grep -q "connect-src 'self' https://api.shopnoltd.dpdns.org" "$nginx"
 grep -q 'location = /sw.js { return 404; }' "$nginx"
 grep -q 'limit_except GET HEAD { deny all; }' "$nginx"
 test "$(grep -c 'limit_except GET HEAD { deny all; }' "$nginx")" -eq 2
@@ -36,4 +38,4 @@ grep -Fq 'location / { try_files $uri $uri/ =404; }' "$nginx"
 grep -q 'function youtubeId' "$app"
 grep -q 'credentials:' "$app"
 
-echo "content-site isolation, gated IPP, GET-only API proxy, and editorial media checks passed"
+echo "content-site isolation, consent-gated Monetag, CSP policy API access, GET-only API proxy, and editorial media checks passed"
