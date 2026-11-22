@@ -25,8 +25,8 @@ async function getToken(request) {
       grant_type: 'client_credentials',
       client_id: process.env.KEYCLOAK_E2E_CLIENT_ID,
       client_secret: process.env.KEYCLOAK_E2E_CLIENT_SECRET,
-    }, timeout: 15000,
     },
+    timeout: 15000,
   })
   if (!res.ok()) throw new Error(`token HTTP ${res.status()}`)
   return (await res.json()).access_token
@@ -170,7 +170,7 @@ test('every real user: login via impersonation + read-only functionality checks'
       await ctx.close().catch(() => {})
       writeReport(rows)
     }
-    await new Promise(r => setTimeout(r, 500))
+    await new Promise(r => setTimeout(r, 150))
   }
 
   writeReport(rows)
