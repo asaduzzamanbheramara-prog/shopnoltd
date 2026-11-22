@@ -82,6 +82,8 @@ jobs:
         run: pytest -q tests/test_agent_tenant_isolation.py
       - name: Verify authenticated tenant isolation against PostgreSQL
         run: pytest -q tests/test_agent_tenant_integration.py
+      - name: Verify durable conversation history and tenant isolation against PostgreSQL
+        run: pytest -q tests/test_conversations_integration.py
 
   python-syntax:
     name: Python syntax validation
