@@ -45,7 +45,8 @@
       "notes": [
         "The selected USB is formatted and its data may be erased.",
         "Verify the OS image and confirm the exact USB model and capacity before starting."
-      ]
+      ],
+      "source_kind": "official-vendor"
     }
   ],
   "notes": [
