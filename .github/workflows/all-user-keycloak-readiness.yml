@@ -25,28 +25,27 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Check cluster-held Keycloak bootstrap access
+      - name: Check trusted runner and Keycloak service access
         shell: bash
         run: |
           set -euo pipefail
           command -v kubectl >/dev/null || { echo "::error::kubectl is required on the trusted self-hosted runner."; exit 1; }
           test -s "${KUBECONFIG:-$HOME/.kube/config}" || { echo "::error::Runner kubeconfig is missing."; exit 1; }
-          kubectl --request-timeout=15s -n shopno-identity get secret keycloak-secret -o jsonpath='{.data.KC_BOOTSTRAP_ADMIN_PASSWORD}' | base64 -d | grep -q . || {
-            echo "::error::Keycloak bootstrap password is unavailable from the cluster secret; no credentials will be guessed."
-            exit 1
-          }
-          echo "Cluster access and the existing Keycloak bootstrap secret are present. The workflow will provision/use a separate read-only audit client; no customer account will be modified."
+          kubectl --request-timeout=15s -n shopno-identity get service keycloak >/dev/null
+          echo "Trusted runner and Keycloak service are available; no customer account will be modified."
 
       - name: Audit all users without changing accounts
         env:
           KEYCLOAK_REALM: ${{ vars.KEYCLOAK_REALM || 'shopnoltd' }}
+          KEYCLOAK_ADMIN_USER: shopnoltd-admin
+          KEYCLOAK_ADMIN_PASSWORD: ${{ secrets.KEYCLOAK_ADMIN_PASSWORD }}
         run: |
           set -euo pipefail
           command -v kubectl >/dev/null || { echo "::error::kubectl is required on the trusted self-hosted runner."; exit 1; }
           command -v curl >/dev/null || { echo "::error::curl is required on the trusted self-hosted runner."; exit 1; }
-          export KEYCLOAK_ADMIN_USER="admin"
-          export KEYCLOAK_ADMIN_PASSWORD="$(kubectl -n shopno-identity get secret keycloak-secret -o jsonpath='{.data.KC_BOOTSTRAP_ADMIN_PASSWORD}' | base64 -d)"
-          test -n "$KEYCLOAK_ADMIN_PASSWORD" || { echo "::error::Keycloak bootstrap credential is empty."; exit 1; }
+          test -n "${KEYCLOAK_ADMIN_PASSWORD:-}" || { echo "::error::Actions secret KEYCLOAK_ADMIN_PASSWORD is required for the permanent shopnoltd-admin account."; exit 1; }
+          echo "::add-mask::$KEYCLOAK_ADMIN_PASSWORD"
+          export KEYCLOAK_ADMIN_USER KEYCLOAK_ADMIN_PASSWORD
           pf_log="${RUNNER_TEMP:-/tmp}/shopnoltd-keycloak-port-forward.log"
           kubectl -n shopno-identity port-forward --address 127.0.0.1 svc/keycloak 18080:80 >"$pf_log" 2>&1 &
           pf_pid=$!
@@ -121,7 +120,7 @@ jobs:
               }).encode()
               payload = request(f"{base}/realms/master/protocol/openid-connect/token", data=form)
               if not isinstance(payload, dict) or not payload.get("access_token"):
-                  raise RuntimeError("Keycloak bootstrap authentication failed; check the cluster-held bootstrap credential")
+                  raise RuntimeError("Keycloak admin authentication failed; verify the permanent admin Actions secret and account status")
               return payload["access_token"]
 
           def ensure_audit_client(admin_token):
