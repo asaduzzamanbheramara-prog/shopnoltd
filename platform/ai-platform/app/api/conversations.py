@@ -1,5 +1,5 @@
 """Durable, tenant- and user-owned AI Workspace conversation history."""
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -72,7 +72,7 @@ async def sync_chats(body: ChatSync, user=Depends(current_user), db: AsyncSessio
             db.add(row)
         row.title, row.model, row.model_id = chat.title, chat.model, chat.modelId
         row.messages = [message.model_dump() for message in chat.messages]
-        row.updated_at = datetime.utcnow()
+        row.updated_at = datetime.now(timezone.utc)
     await db.commit()
     return {"saved": len(body.chats)}
 
