@@ -160,7 +160,7 @@ test('every real user: login via impersonation + read-only functionality checks'
       const message = String(e.message)
       row.status = message.startsWith('user_timeout_') ? 'TIMEOUT' : 'FAIL'
       row.failed_step = message.startsWith('user_timeout_') ? 'user-timeout' : step
-      row.detail = message.split('\n')[0].slice(0, 200)
+      row.detail = message.split('\n')[0].replace(/Bearer\s+\S+/gi, 'Bearer [REDACTED]').replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, '[EMAIL]').replace(/https?:\/\/[^\s)]+/gi, '[URL]').slice(0, 200)
     } finally {
       clearTimeout(timeoutHandle)
       // A context can already be closed when Playwright aborts a timed-out
@@ -168,7 +168,7 @@ test('every real user: login via impersonation + read-only functionality checks'
       await ctx.close().catch(() => {})
       writeReport(rows)
     }
-    console.log(`Shard ${shardIndex + 1}: ${row.user_ref} => ${row.status}`)
+    console.log(`Shard ${shardIndex + 1}: ${row.user_ref} => ${row.status}${row.failed_step ? ` | step=${row.failed_step}` : ''}${row.detail ? ` | detail=${row.detail}` : ''}`)
     await new Promise(r => setTimeout(r, 150))
   }
 
