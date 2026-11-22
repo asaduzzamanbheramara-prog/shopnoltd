@@ -1,13 +1,15 @@
 import { KEYCLOAK_CLIENT_ID, KEYCLOAK_REALM, KEYCLOAK_URL, REDIRECT_URI, SOCIAL_LOGIN_PROVIDERS } from '../config'
 import { randomString, codeChallengeFor } from '../pkce'
+import { clearAuthSession } from '../lib/authSession'
 
 const PROVIDERS = [
-  { id: 'google', label: 'Sign up with Google', icon: 'G' },
-  { id: 'facebook', label: 'Sign up with Facebook', icon: 'f' },
-  { id: 'github', label: 'Sign up with GitHub', icon: 'GH' },
-].filter((provider) => SOCIAL_LOGIN_PROVIDERS[provider.id])
+  { id: 'google-signup', feature: 'google', label: 'Sign up with Google', icon: 'G' },
+  { id: 'facebook-signup', feature: 'facebook', label: 'Sign up with Facebook', icon: 'f' },
+  { id: 'github-signup', feature: 'github', label: 'Sign up with GitHub', icon: 'GH' },
+].filter((provider) => SOCIAL_LOGIN_PROVIDERS[provider.feature])
 
 async function startSocialSignup(provider) {
+  clearAuthSession(localStorage, sessionStorage)
   sessionStorage.setItem('shopno_auth_intent', 'sign_up')
   sessionStorage.setItem('shopno_auth_method', provider)
   const verifier = randomString(64)
@@ -56,6 +58,7 @@ async function startSocialSignup(provider) {
 }
 
 async function startLocalSignup() {
+  clearAuthSession(localStorage, sessionStorage)
   sessionStorage.setItem('shopno_auth_intent', 'sign_up')
   sessionStorage.setItem('shopno_auth_method', 'shopnoltd')
   const searchParams = new URLSearchParams(window.location.search)
