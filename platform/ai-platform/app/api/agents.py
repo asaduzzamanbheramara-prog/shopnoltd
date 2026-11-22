@@ -44,7 +44,12 @@ async def list_(user=Depends(current_user), s: AsyncSession = Depends(db)):
 async def chat(
     agent_id: str, message: str, user=Depends(current_user), s: AsyncSession = Depends(db)
 ):
-    a = (await s.execute(select(Agent).where(Agent.id == agent_id))).scalar_one_or_none()
+    tenant_id = user.get("tenant_id", "default")
+    a = (
+        await s.execute(
+            select(Agent).where(Agent.id == agent_id, Agent.tenant_id == tenant_id)
+        )
+    ).scalar_one_or_none()
     if not a:
         raise HTTPException(404, "agent not found")
     s.add(Conversation(agent_id=a.id, user_id=user["sub"], role="user", content=message))
