@@ -7,7 +7,7 @@ const NETWORKS = [
   ['adsense', 'Google AdSense'],
   ['adsterra', 'Adsterra'],
   ['profiton', 'ProfitOn'],
-  ['monetag', 'Monetag (manual test only)'],
+  ['monetag', 'Monetag (approved host only)'],
 ]
 const PLACEMENTS = [
   ['home', 'Home'],
