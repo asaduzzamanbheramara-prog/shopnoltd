@@ -167,6 +167,7 @@ export default function AIWorkspace() {
   const lastRequestRef = useRef(null)
   const lastMultimodalRef = useRef([])
   const explicitModelSelectionRef = useRef(false)
+  const serverHistoryReadyRef = useRef(false)
 
   const activeChat = chats.find((chat) => chat.id === activeId) || chats[0]
   const activeMessages = activeChat?.messages || []
@@ -179,6 +180,60 @@ export default function AIWorkspace() {
   const activeModelId = modelId || activeChat?.modelId || null
 
   useEffect(() => { localStorage.setItem(STORAGE_KEY, JSON.stringify(chats)) }, [chats])
+
+  useEffect(() => {
+    let cancelled = false
+    async function hydrateServerHistory() {
+      try {
+        const saved = await request('/conversations')
+        if (cancelled || !Array.isArray(saved)) return
+        if (saved.length) {
+          const localById = new Map(chats.map((chat) => [chat.id, chat]))
+          const savedIds = new Set(saved.map((chat) => chat.id))
+          const restored = saved.map((chat) => ({
+            ...chat,
+            modelId: chat.modelId || null,
+            messages: (chat.messages || []).map((message) => {
+              const local = localById.get(chat.id)?.messages?.find((item) => item.id === message.id)
+              return local ? { ...message, ...local } : message
+            })
+          }))
+          const localOnly = chats.filter((chat) => !savedIds.has(chat.id))
+          setChats([...restored, ...localOnly])
+          setActiveId(saved[0].id)
+        } else if (chats.length) {
+          await request('/conversations/sync', {
+            method: 'PUT',
+            body: JSON.stringify({ chats: chats.map((chat) => ({
+              id: chat.id, title: chat.title, model: chat.model, modelId: chat.modelId,
+              messages: (chat.messages || []).map(({ id, role, content }) => ({ id, role, content }))
+            })) })
+          })
+        }
+      } catch (err) {
+        if (!cancelled) setError(friendlyError(err))
+      } finally {
+        if (!cancelled) serverHistoryReadyRef.current = true
+      }
+    }
+    hydrateServerHistory()
+    return () => { cancelled = true }
+  }, [])
+
+  useEffect(() => {
+    if (!serverHistoryReadyRef.current) return undefined
+    const timer = setTimeout(() => {
+      request('/conversations/sync', {
+        method: 'PUT',
+        body: JSON.stringify({ chats: chats.map((chat) => ({
+          id: chat.id, title: chat.title, model: chat.model, modelId: chat.modelId,
+          messages: (chat.messages || []).map(({ id, role, content }) => ({ id, role, content }))
+        })) })
+      }).catch((err) => setError(friendlyError(err)))
+    }, 500)
+    return () => clearTimeout(timer)
+  }, [chats])
+
 
   // The site menu can be one to three rows tall, so measure what is left under it instead of guessing.
   useLayoutEffect(() => {
@@ -299,6 +354,7 @@ export default function AIWorkspace() {
   }
 
   function deleteChat(id) {
+    request(`/conversations/${encodeURIComponent(id)}`, { method: 'DELETE' }).catch((err) => setError(friendlyError(err)))
     setChats((current) => {
       const remaining = current.filter((chat) => chat.id !== id)
       const next = remaining.length ? remaining : [createChat(activeModel, resolvedModelId)]
