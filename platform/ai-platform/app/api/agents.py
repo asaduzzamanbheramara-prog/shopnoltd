@@ -1,24 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.db import SessionLocal
-from app.core.security import verify_token
-from app.models.models import Agent, Conversation
+from app.core.security import current_user
+from app.db.models import Agent, Conversation
+from app.db.session import get_db
 from app.schemas.schemas import AgentIn
 
 router = APIRouter()
-bearer = HTTPBearer()
-
-
-async def db():
-    async with SessionLocal() as s:
-        yield s
-
-
-async def current_user(creds: HTTPAuthorizationCredentials = Depends(bearer)):
-    return await verify_token(creds.credentials)
 
 
 def current_tenant_id(user: dict) -> str:
@@ -29,7 +18,7 @@ def current_tenant_id(user: dict) -> str:
 
 
 @router.post("", status_code=201)
-async def create(body: AgentIn, user=Depends(current_user), s: AsyncSession = Depends(db)):
+async def create(body: AgentIn, user=Depends(current_user), s: AsyncSession = Depends(get_db)):
     a = Agent(
         tenant_id=current_tenant_id(user),
         name=body.name,
@@ -42,14 +31,14 @@ async def create(body: AgentIn, user=Depends(current_user), s: AsyncSession = De
 
 
 @router.get("")
-async def list_(user=Depends(current_user), s: AsyncSession = Depends(db)):
+async def list_(user=Depends(current_user), s: AsyncSession = Depends(get_db)):
     res = await s.execute(select(Agent).where(Agent.tenant_id == current_tenant_id(user)))
     return [{"id": a.id, "name": a.name, "model": a.model} for a in res.scalars().all()]
 
 
 @router.post("/{agent_id}/chat")
 async def chat(
-    agent_id: str, message: str, user=Depends(current_user), s: AsyncSession = Depends(db)
+    agent_id: str, message: str, user=Depends(current_user), s: AsyncSession = Depends(get_db)
 ):
     tenant_id = current_tenant_id(user)
     a = (
