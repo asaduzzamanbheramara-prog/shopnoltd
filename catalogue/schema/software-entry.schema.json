@@ -266,7 +266,8 @@
           "url",
           "publisher",
           "scope",
-          "status"
+          "status",
+          "source_kind"
         ],
         "properties": {
           "title": {
