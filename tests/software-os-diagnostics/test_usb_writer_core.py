@@ -139,9 +139,11 @@ class WriterTests(unittest.TestCase):
             self.run_write(cancel_requested=lambda: True)
 
     def test_cancelled_after_final_chunk_before_flush_is_not_success(self):
-        checks = iter([False, True])
+        # Five write chunks complete; the sixth check is immediately before flush.
+        checks = iter([False, False, False, False, False, True])
         with self.assertRaises(writer.WriteCancelled):
             self.run_write(cancel_requested=lambda: next(checks))
+        self.assertEqual(bytes(self.device.data[:len(self.payload)]), self.payload)
         self.assertFalse(self.device.flushed)
 
     def test_declared_size_mismatch_refused(self):
