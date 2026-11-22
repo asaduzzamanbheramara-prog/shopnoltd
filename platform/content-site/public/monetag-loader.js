@@ -14,6 +14,14 @@
   const root = document.querySelector('#content');
   if (!root) return;
 
+  const privacyButton = document.createElement('button');
+  privacyButton.type = 'button';
+  privacyButton.textContent = 'Privacy settings';
+  privacyButton.setAttribute('aria-label', 'Open advertising privacy settings');
+  privacyButton.style.cssText = 'position:fixed;z-index:9999;left:16px;bottom:16px;border:1px solid #cbd5e1;border-radius:999px;padding:8px 12px;background:#fff;color:#0f172a;font:700 12px system-ui,sans-serif;box-shadow:0 2px 12px rgba(15,23,42,.12);cursor:pointer';
+  privacyButton.addEventListener('click', showConsentChoice);
+  document.body.append(privacyButton);
+
   function readConsent() {
     try {
       const value = JSON.parse(localStorage.getItem(CONSENT_KEY) || 'null');
@@ -39,9 +47,9 @@
     panel.dataset.shopnoltdAdConsent = 'true';
     panel.setAttribute('role', 'dialog');
     panel.setAttribute('aria-label', 'Advertising privacy choice');
-    panel.style.cssText = 'position:fixed;z-index:10000;left:16px;right:16px;bottom:16px;max-width:760px;margin:auto;padding:16px;background:#fff;color:#0f172a;border:1px solid #cbd5e1;border-radius:12px;box-shadow:0 8px 32px rgba(15,23,42,.2);font:14px/1.55 system-ui,sans-serif';
+    panel.style.cssText = 'position:fixed;z-index:10000;left:16px;right:16px;bottom:64px;max-width:760px;margin:auto;padding:16px;background:#fff;color:#0f172a;border:1px solid #cbd5e1;border-radius:12px;box-shadow:0 8px 32px rgba(15,23,42,.2);font:14px/1.55 system-ui,sans-serif';
     const message = document.createElement('p');
-    message.textContent = 'Allow optional advertising on Shopnoltd Editorial? Advertising partners may use cookies or similar technologies. Your choice is stored on this site and can be changed by clearing this site’s saved privacy choice.';
+    message.textContent = 'Allow optional advertising on Shopnoltd Editorial? Advertising partners may use cookies or similar technologies. Your choice is stored on this site and you can revisit this choice using the Privacy settings control.';
     message.style.margin = '0 0 12px';
     const actions = document.createElement('div');
     actions.style.cssText = 'display:flex;gap:10px;flex-wrap:wrap';
