@@ -8,6 +8,7 @@
 <style>
 :root{color-scheme:light dark;--bg:#0b1220;--panel:#121d30;--line:#293851;--ink:#edf4ff;--muted:#a9b8ce;--accent:#70a5ff;--good:#8fe0b0;--warn:#ffd18b}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 system-ui,-apple-system,Segoe UI,sans-serif}a{color:var(--accent)}header,main,footer{max-width:1080px;margin:auto;padding:22px}header{display:flex;justify-content:space-between;align-items:center;gap:16px;border-bottom:1px solid var(--line)}.brand{font-weight:800;font-size:1.2rem;text-decoration:none;color:var(--ink)}.pill{border:1px solid var(--line);border-radius:999px;padding:5px 11px;color:var(--muted);font-size:.82rem}.hero{padding:42px 0 24px}.hero h1{font-size:clamp(2rem,5vw,3.2rem);line-height:1.1;margin:12px 0}.hero p,.muted{color:var(--muted)}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(245px,1fr));gap:16px}.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px}.card h2,.card h3{margin-top:0}.btn{display:inline-block;border:1px solid var(--accent);border-radius:9px;padding:9px 13px;text-decoration:none;font-weight:650;margin:5px 5px 0 0}.primary{background:var(--accent);color:#071326}.search{width:100%;padding:12px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font:inherit;margin:12px 0 18px}.notice{border-left:4px solid var(--warn);padding:12px 15px;background:#332819;border-radius:6px;margin:16px 0}.ok{color:var(--good)}.list{padding-left:20px}.section{margin:30px 0}footer{color:var(--muted);border-top:1px solid var(--line);font-size:.9rem}.small{font-size:.9rem}.hidden{display:none!important}.tutorial-video{display:block;width:100%;aspect-ratio:16/9;border:0;border-radius:10px;margin-top:10px;background:#000}.tutorial{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}.status{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:3px 9px;font-weight:700}.status-pending{color:var(--warn);border-color:#80643b}.status-verified{color:var(--good);border-color:#386d50}.status-blocked{color:#ff9d9d;border-color:#8b4545}#catalogue-summary{margin:10px 0 16px;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--muted)}
+.planner-output{white-space:pre-wrap;background:#08101d;border:1px solid var(--line);border-radius:10px;padding:16px;overflow-wrap:anywhere}.field label{display:block;font-weight:650}.field select,.field input{width:100%;padding:11px;border-radius:9px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font:inherit;margin:7px 0 12px}.danger{border-left-color:#ff9d9d;background:#351d24}.checklist{padding-left:22px}.checklist li{margin:7px 0}
 </style>
 </head>
 <body>
@@ -44,6 +45,46 @@
 <article class="card"><h2>2. Offline recovery</h2><ol class="list"><li>Use another working computer.</li><li>Download the OS/recovery image from its official source.</li><li>Verify its signature or publisher checksum.</li><li>Create bootable media using a trusted tool.</li><li>Boot the target PC and choose diagnostics or installation.</li></ol></article>
 <article class="card"><h2>Safety first</h2><ul class="list"><li>Back up important files before recovery.</li><li>Confirm the target disk before formatting or installing.</li><li>Never share passwords, licence keys or recovery keys.</li><li>Use official sources and respect each software licence.</li></ul></article>
 </section>
+<section class="section card" id="master-pendrive">
+<h2>Master Pendrive Builder · Safe planning mode</h2>
+<p class="muted">Plan a multi-boot recovery USB and an offline software library for supported PCs. This browser tool does not detect disks, partition drives, download images, or write USB media.</p>
+<div class="notice danger"><strong>Protect existing USB drives:</strong> Never select or overwrite your existing E2B/multiboot pendrive. Use a separate blank test USB. A real writer will require a separately installed, reviewed local helper and a second confirmation of the exact physical drive immediately before writing.</div>
+<div class="grid">
+<div class="field"><label for="master-host">Working computer OS</label><select id="master-host"><option value="windows">Windows 10/11</option><option value="linux">Linux</option><option value="macos">macOS</option></select></div>
+<div class="field"><label for="master-capacity">Separate USB capacity</label><select id="master-capacity"><option value="8">8 GB</option><option value="16" selected>16 GB</option><option value="32">32 GB</option><option value="64">64 GB</option><option value="128">128 GB</option><option value="256">256 GB</option></select></div>
+<div class="field"><label for="master-goal">Pendrive purpose</label><select id="master-goal"><option value="rescue">PC repair + data rescue</option><option value="install">OS installation toolkit</option><option value="offline">Offline software + drivers library</option><option value="all">Combined recovery + software library</option></select></div>
+<div class="field"><label for="master-target">Target device family</label><select id="master-target"><option value="pc">Windows/Linux PC and laptop</option><option value="mac">Supported Intel / Apple silicon Mac (separate Apple workflow)</option><option value="chromebook">Chromebook (model-specific recovery USB)</option><option value="mixed">Mixed devices (vendor-specific workflows)</option></select></div>
+</div>
+<button class="btn primary" id="build-master-plan" type="button">Build my pendrive plan</button>
+<div id="master-plan-output" class="planner-output" role="status" aria-live="polite">Select your requirements and build a plan. No drive will be modified.</div>
+<h3>Suggested master USB folder layout</h3>
+<pre class="planner-output">SHOPNOLTD-RECOVERY/
+  00-READ-ME-FIRST/
+    offline-recovery-guide.html
+    device-inventory.txt
+  01-VERIFIED-OS-IMAGES/
+    WINDOWS/
+    LINUX/
+    FREEBSD/
+  02-DEVICE-SPECIFIC/
+    APPLE-MAC/
+    CHROMEBOOK/
+    ANDROID-VENDOR-GUIDES/
+    TV-ROUTER-EMBEDDED/
+  03-RESCUE-AND-DIAGNOSTICS/
+  04-OFFLINE-SOFTWARE/
+    WINDOWS/
+    MACOS/
+    LINUX/
+    ANDROID/
+  05-DRIVERS-FIRMWARE/
+    EXACT-MODEL-ONLY/
+  06-CHECKSUMS-AND-SIGNATURES/
+  07-INSTALLATION-INSTRUCTIONS/
+  08-BACKUP-AND-RESTORE-TOOLS/</pre>
+<p class="small muted">This is a suggested file organization, not a bootable partition layout. Keep OS images and firmware from their official publishers; verify them before use and observe redistribution licences.</p>
+</section>
+
 <section class="section card" id="recovery-guide">
 <h2>Guided recovery planner · Preview</h2>
 <p class="muted">Choose the target device and goal to get a safer, device-specific checklist. This page does not download images, inspect connected drives, or write a pendrive.</p>
@@ -110,6 +151,53 @@
     recoveryResult.append(list);
   });
 
+
+  const masterOutput=document.getElementById('master-plan-output');
+  document.getElementById('build-master-plan').addEventListener('click',function(){
+    const host=document.getElementById('master-host').value;
+    const capacity=Number(document.getElementById('master-capacity').value);
+    const goal=document.getElementById('master-goal').value;
+    const target=document.getElementById('master-target').value;
+    const hostNames={windows:'Windows 10/11',linux:'Linux',macos:'macOS'};
+    const goalNames={rescue:'PC repair and data rescue',install:'OS installation toolkit',offline:'offline software and drivers library',all:'combined recovery and offline software library'};
+    const lines=[
+      'SHOPNOLTD MASTER PENDRIVE PLAN',
+      'Working computer: '+hostNames[host],
+      'Separate USB capacity: '+capacity+' GB (usable capacity is lower)',
+      'Purpose: '+goalNames[goal],
+      'Target family: '+target,
+      '',
+      'PHASE 1 — PREPARE SAFELY',
+      '1. Use a separate, blank USB that contains no needed data. Do not use your existing E2B/multiboot drive.',
+      '2. Record the USB brand, model, serial locally and capacity. This web page cannot inspect or identify attached drives.',
+      '3. Back up the blank USB only if it unexpectedly contains data; stop if drive identity is uncertain.',
+      '4. Download only official OS images, vendor recovery files and publisher installers. Check licence and exact model/architecture.',
+      '5. Verify publisher signatures/checksums; keep verification files in 06-CHECKSUMS-AND-SIGNATURES.',
+      '',
+      'PHASE 2 — CONTENT PLAN',
+      goal==='rescue'?'Prioritize read-only rescue tools, backup instructions and diagnostics; defer reinstall images.':
+      goal==='install'?'Prioritize supported PC OS installers and separate model-specific Apple/Chromebook workflows.':
+      goal==='offline'?'Prioritize signed offline installers, exact-model drivers and dependency notes; these files do not boot a device.':
+      'Separate verified PC recovery images from offline installers, drivers and vendor-specific restore instructions.',
+      capacity<32?'Capacity note: 8–16 GB is restrictive. Limit the number of images; a 32 GB or larger separate USB is more practical for a multi-image toolkit.':
+      'Capacity note: reserve free space for updates and verification; image sizes vary by release.',
+      '',
+      'PHASE 3 — WRITE (NOT AVAILABLE IN BROWSER)',
+      'No USB writing is performed by this planner. A future local helper must show the exact removable drive, reject system disks, re-check device identity, require a final destructive confirmation, write with progress, flush and verify.',
+      '',
+      'PHASE 4 — TEST',
+      'Test each image in a disposable VM first, then on a documented physical test device. Record model, firmware, Secure Boot, architecture, image version and result.',
+      '',
+      'DEVICE LIMITS',
+      target==='mac'?'Mac recovery requires Apple-supported, model-compatible methods; do not treat a generic PC multiboot image as a Mac installer.':
+      target==='chromebook'?'Chromebook recovery uses the exact model/product recovery image and Google recovery workflow; it is not a generic PC ISO.':
+      target==='mixed'?'Phones, TVs, routers and embedded devices require exact vendor-supported procedures; a PC bootable USB is not universal.':
+      'This plan is for supported PC boot media. Phones, TVs and embedded devices require separate vendor-supported procedures.',
+      '',
+      'STATUS: PLANNING ONLY — no drive detected, no image downloaded, no disk changed, no OS installed.'
+    ];
+    masterOutput.textContent=lines.join('\n');
+  });
 
   function makeText(tag, text, className){
     const node=document.createElement(tag);
