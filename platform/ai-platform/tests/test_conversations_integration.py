@@ -83,9 +83,14 @@ def test_conversation_history_is_durable_and_isolated_by_tenant_and_user():
                 claims.update({"sub": "user-b", "tenant_id": "tenant-a"})
                 overwrite = await client.put("/conversations/sync", json=snapshot)
                 assert overwrite.status_code == 404, overwrite.text
+                cross_user_delete = await client.delete("/conversations/chat-a")
+                assert cross_user_delete.status_code == 204
 
                 claims.clear()
                 claims.update({"sub": "user-a", "tenant_id": "tenant-a"})
+                still_owned = await client.get("/conversations")
+                assert still_owned.status_code == 200
+                assert len(still_owned.json()) == 1
                 deleted = await client.delete("/conversations/chat-a")
                 assert deleted.status_code == 204
                 assert (await client.get("/conversations")).json() == []
