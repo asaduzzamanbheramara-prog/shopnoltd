@@ -236,13 +236,19 @@ jobs:
           echo 'Changed files from push comparison:'
           printf '%s\n' "$files"
 
+          # The Web Portal is deployed independently by its dedicated workflow.
+          # Do not hold its release gate on an unrelated K3s/Argo CD reconciliation.
+          deployment_files="$(awk '!/^platform\/web-portal\//' <<<"$files")"
+          echo 'Files requiring image build or self-hosted GitOps:'
+          printf '%s\n' "$deployment_files"
+
           image_build_required=false
-          if grep -Eq '^(platform/|enketo/|billing-engine/|services/vpn-service/|shared/|\.github/workflows/build-platform\.yml$)' <<<"$files"; then
+          if grep -Eq '^(platform/|enketo/|billing-engine/|services/vpn-service/|shared/|\.github/workflows/build-platform\.yml$)' <<<"$deployment_files"; then
             image_build_required=true
           fi
           echo "image_build_required=$image_build_required" >> "$GITHUB_OUTPUT"
 
-          if grep -Eq '^(k8s/|ops/cloudflare/|platform/|services/|billing-engine/|enketo/|shared/|\.github/workflows/(self-hosted-k3s-gitops|build-platform)\.yml$)' <<<"$files"; then
+          if grep -Eq '^(k8s/|ops/cloudflare/|platform/|services/|billing-engine/|enketo/|shared/|\.github/workflows/(self-hosted-k3s-gitops|build-platform)\.yml$)' <<<"$deployment_files"; then
             echo 'deployment_required=true' >> "$GITHUB_OUTPUT"
             echo 'This push changes application or deployment-controlled files; image promotion and/or matching self-hosted GitOps reconciliation is required.'
           else
