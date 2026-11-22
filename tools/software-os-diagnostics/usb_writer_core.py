@@ -2,7 +2,7 @@
 from __future__ import annotations
 import hashlib
 from dataclasses import dataclass
-from typing import BinaryIO, Callable, Protocol
+from typing import BinaryIO, Callable, Protocol, Collection
 from urllib.parse import urlparse
 
 class WriterRefused(RuntimeError): pass
@@ -36,6 +36,18 @@ def identity_of(device: BlockDevice) -> DeviceIdentity:
     return DeviceIdentity(device.path, device.stable_id, device.size_bytes,
                           device.is_removable, device.is_system_disk)
 
+def validate_architecture_pair(image_architecture: str, target_architecture: str,
+                               supported_pairs: Collection[tuple[str, str]]) -> None:
+    """Require an exact pair from a caller-supplied, reviewed compatibility matrix."""
+    image_arch = image_architecture.strip().casefold()
+    target_arch = target_architecture.strip().casefold()
+    allowed = {(image.strip().casefold(), target.strip().casefold())
+               for image, target in supported_pairs}
+    if not image_arch or not target_arch or not allowed:
+        raise WriterRefused("A reviewed image/target architecture matrix is required.")
+    if (image_arch, target_arch) not in allowed:
+        raise WriterRefused("Unsupported image and target architecture combination.")
+
 def _hash_image(image: BinaryIO, size: int, chunk_size: int) -> str:
     digest, total = hashlib.sha256(), 0
     image.seek(0)
@@ -52,18 +64,21 @@ def _write_all(device: BlockDevice, offset: int, data: bytes) -> None:
     done = 0
     while done < len(data):
         count = device.write_at(offset + done, data[done:])
-        if not isinstance(count, int) or count <= 0 or count > len(data) - done:
+        if isinstance(count, bool) or not isinstance(count, int) or count <= 0 or count > len(data) - done:
             raise IOError("Invalid or failed block-device write.")
         done += count
 
 def write_verified_image(*, image: BinaryIO, expected_size: int,
     expected_sha256: str, publisher_digest_url: str,
+    image_architecture: str, target_architecture: str,
+    supported_architecture_pairs: Collection[tuple[str, str]],
     selected_identity: DeviceIdentity, current_device: Callable[[], BlockDevice],
     open_device: Callable[[], BlockDevice], typed_confirmation: str,
     cancel_requested: Callable[[], bool] = lambda: False,
     progress: Callable[[int, int], None] = lambda _done, _total: None,
     chunk_size: int = 1024 * 1024) -> WriteResult:
     """Core only; a separately reviewed native adapter is still required."""
+    validate_architecture_pair(image_architecture, target_architecture, supported_architecture_pairs)
     parsed = urlparse(publisher_digest_url)
     if parsed.scheme != "https" or not parsed.netloc:
         raise WriterRefused("Publisher digest source must be HTTPS.")
