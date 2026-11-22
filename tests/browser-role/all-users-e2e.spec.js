@@ -8,12 +8,15 @@ const realm = process.env.KEYCLOAK_REALM || 'shopnoltd'
 const adminRole = process.env.ADMIN_ROLE || 'platform_admin'
 const authRoutes = (process.env.AUTH_ROUTES || '/dashboard').split(',').map(s => s.trim()).filter(Boolean)
 const admin = kc + '/admin/realms/' + realm
+const shardIndex = Number(process.env.USER_SHARD_INDEX || 0)
+const shardCount = Math.max(1, Number(process.env.USER_SHARD_COUNT || 1))
+const perUserTimeoutMs = Math.max(30000, Number(process.env.PER_USER_TIMEOUT_MS || 120000))
 
 function writeReport(rows) {
   fs.mkdirSync('reports', { recursive: true })
   const header = 'user_ref,status,failed_step,detail'
   const csv = [header, ...rows.map(r => [r.user_ref, r.status, r.failed_step, '"' + r.detail.replaceAll('"', "'") + '"'].join(','))]
-  fs.writeFileSync('reports/all-users-e2e.csv', csv.join('\n') + '\n')
+  fs.writeFileSync(`reports/all-users-e2e-shard-${shardIndex}.csv`, csv.join('\n') + '\n')
 }
 
 async function getToken(request) {
@@ -23,6 +26,7 @@ async function getToken(request) {
       client_id: process.env.KEYCLOAK_E2E_CLIENT_ID,
       client_secret: process.env.KEYCLOAK_E2E_CLIENT_SECRET,
     },
+    timeout: 15000,
   })
   if (!res.ok()) throw new Error(`token HTTP ${res.status()}`)
   return (await res.json()).access_token
@@ -39,7 +43,7 @@ test('every real user: login via impersonation + read-only functionality checks'
   const users = []
   for (let first = 0; ; first += 100) {
     const r = await request.get(`${admin}/users?first=${first}&max=100&briefRepresentation=false`, {
-      headers: { Authorization: `Bearer ${token0}` },
+      headers: { Authorization: `Bearer ${token0}` }, timeout: 30000,
     })
     if (!r.ok()) throw new Error(`users HTTP ${r.status()}`)
     const page = await r.json()
@@ -48,6 +52,9 @@ test('every real user: login via impersonation + read-only functionality checks'
   }
   let targets = users.filter(u => !u.username?.startsWith('service-account-') && !u.username?.startsWith('autotest_'))
   if (process.env.LIMIT_USERS) targets = targets.slice(0, Number(process.env.LIMIT_USERS))
+  const totalTargets = targets.length
+  targets = targets.filter((_, index) => index % shardCount === shardIndex)
+  console.log(`Shard ${shardIndex + 1}/${shardCount}: ${targets.length}/${totalTargets} users assigned`)
 
   const rows = []
   for (const u of targets) {
@@ -56,6 +63,7 @@ test('every real user: login via impersonation + read-only functionality checks'
       status: 'IN_PROGRESS', failed_step: '', detail: '',
     }
     rows.push(row)
+    console.log(`Shard ${shardIndex + 1}: starting user ${row.user_ref}`)
     // Persist a checkpoint before starting each account. If the suite hits its
     // global timeout, the artifact still identifies the last account reached.
     writeReport(rows)
@@ -63,20 +71,25 @@ test('every real user: login via impersonation + read-only functionality checks'
 
     let step = 'start'
     const ctx = await browser.newContext()
+    ctx.setDefaultTimeout(15000)
+    ctx.setDefaultNavigationTimeout(20000)
     const page = await ctx.newPage()
     const problems = []
     page.on('pageerror', () => problems.push('uncaught_js_error'))
     page.on('response', r => {
       if (r.url().startsWith(`${app}/api`) && (r.status() >= 500 || r.status() === 401)) problems.push(`api_${r.status()}`)
     })
+    let timeoutHandle
     try {
+      await Promise.race([
+        (async () => {
       const token = await getToken(request)
 
       const headers = { Authorization: `Bearer ${token}` }
       if ((u.requiredActions || []).length) row.detail = 'has_required_actions'
 
       step = 'impersonate'
-      const imp = await ctx.request.post(`${admin}/users/${u.id}/impersonation`, { headers })
+      const imp = await ctx.request.post(`${admin}/users/${u.id}/impersonation`, { headers, timeout: 20000 })
       if (!imp.ok()) throw new Error(`impersonation HTTP ${imp.status()}`)
 
       step = 'login'
@@ -96,8 +109,7 @@ test('every real user: login via impersonation + read-only functionality checks'
         row.failed_step = ''
         row.detail = 'blocked_by_required_action:' + (u.requiredActions || []).join('|')
         writeReport(rows)
-        await new Promise(r => setTimeout(r, 500))
-        continue
+        return
       }
 
       await page.waitForURL(url => new URL(url).pathname === '/dashboard', { timeout: 30000 })
@@ -107,23 +119,23 @@ test('every real user: login via impersonation + read-only functionality checks'
       ).toBe(true)
 
       step = 'role-access'
-      const rr = await request.get(`${admin}/users/${u.id}/role-mappings/realm/composite`, { headers })
+      const rr = await request.get(`${admin}/users/${u.id}/role-mappings/realm/composite`, { headers, timeout: 15000 })
       const roles = rr.ok() ? (await rr.json()).map(x => x.name) : []
-      await page.goto(`${app}/admin`, { waitUntil: 'networkidle' })
+      await page.goto(`${app}/admin`, { waitUntil: 'domcontentloaded', timeout: 20000 })
       const onAdmin = new URL(page.url()).pathname.startsWith('/admin')
       if (roles.includes(adminRole) && !onAdmin) throw new Error('admin role but /admin not accessible')
       if (!roles.includes(adminRole) && onAdmin) throw new Error('non-admin can open /admin')
 
       step = 'routes'
       for (const route of authRoutes) {
-        const res = await page.goto(`${app}${route}`, { waitUntil: 'networkidle' })
+        const res = await page.goto(`${app}${route}`, { waitUntil: 'domcontentloaded', timeout: 20000 })
         if (!res || res.status() >= 400) throw new Error(`${route} HTTP ${res?.status()}`)
         if (new URL(page.url()).pathname.startsWith('/login')) throw new Error(`${route} bounced to /login`)
       }
 
       step = 'logout'
 
-      await page.goto(`${app}/dashboard`, { waitUntil: 'networkidle' })
+      await page.goto(`${app}/dashboard`, { waitUntil: 'domcontentloaded', timeout: 20000 })
       const out = page.getByRole('button', { name: /log ?out|sign ?out/i })
         .or(page.getByRole('link', { name: /log ?out|sign ?out/i })).first()
       if (await out.count()) {
@@ -138,23 +150,32 @@ test('every real user: login via impersonation + read-only functionality checks'
 
       step = 'errors'
       if (problems.length) throw new Error([...new Set(problems)].join(','))
+        })(),
+        new Promise((_, reject) => {
+          timeoutHandle = setTimeout(() => reject(new Error(`user_timeout_${perUserTimeoutMs}ms`)), perUserTimeoutMs)
+        }),
+      ])
+      if (row.status === 'IN_PROGRESS') row.status = 'PASS'
     } catch (e) {
-      row.status = 'FAIL'
-      row.failed_step = step
-      row.detail = String(e.message).split('\n')[0].slice(0, 200)
+      const message = String(e.message)
+      row.status = message.startsWith('user_timeout_') ? 'TIMEOUT' : 'FAIL'
+      row.failed_step = message.startsWith('user_timeout_') ? 'user-timeout' : step
+      row.detail = message.split('\n')[0].slice(0, 200)
     } finally {
+      clearTimeout(timeoutHandle)
       // A context can already be closed when Playwright aborts a timed-out
       // test. Cleanup must not mask the real result or prevent CSV checkpointing.
       await ctx.close().catch(() => {})
       writeReport(rows)
     }
-    await new Promise(r => setTimeout(r, 500))
+    console.log(`Shard ${shardIndex + 1}: ${row.user_ref} => ${row.status}`)
+    await new Promise(r => setTimeout(r, 150))
   }
 
   writeReport(rows)
 
   const count = s => rows.filter(r => r.status === s).length
-  console.log(`Total: ${rows.length} | PASS: ${count('PASS')} | FAIL: ${count('FAIL')} | SKIPPED_DISABLED: ${count('SKIPPED_DISABLED')} | NOT_TESTABLE: ${count('NOT_TESTABLE')}`)
+  console.log(`Shard ${shardIndex + 1}/${shardCount} | Total: ${rows.length} | PASS: ${count('PASS')} | FAIL: ${count('FAIL')} | TIMEOUT: ${count('TIMEOUT')} | SKIPPED_DISABLED: ${count('SKIPPED_DISABLED')} | NOT_TESTABLE: ${count('NOT_TESTABLE')}`)
 
-  expect(rows.filter(r => r.status === 'FAIL').map(r => r.user_ref), 'users that failed').toEqual([])
+  expect(rows.filter(r => ['FAIL', 'TIMEOUT'].includes(r.status)).map(r => r.user_ref), 'users that failed or timed out').toEqual([])
 })
