@@ -450,12 +450,12 @@ def validate_ad_policy(hostname: str, body: ExternalAdPolicyUpdate) -> tuple[dic
     placements = {key: bool(body.placements.get(key, False)) for key in sorted(_ALLOWED_PLACEMENTS)}
     # Monetag is opt-in per exact hostname and must also be allowlisted by
     # deployment configuration after publisher approval. No wildcard support.
-    approved_moneta_hosts = {
+    approved_monetag_hosts = {
         item.strip().lower().rstrip(".")
         for item in settings.monetag_approved_hosts.split(",")
         if item.strip()
     }
-    if networks["monetag"] and hostname not in approved_moneta_hosts:
+    if networks["monetag"] and hostname not in approved_monetag_hosts:
         raise HTTPException(409, "This hostname is not in MONETAG_APPROVED_HOSTS. Verify it in the Monetag publisher dashboard, then add the exact hostname to the ad-service deployment configuration.")
     if networks["profiton"] and hostname != "shopnoltd.dpdns.org":
         raise HTTPException(409, "ProfitOn is currently approved only for shopnoltd.dpdns.org; verify the additional host with ProfitOn before enabling it")
