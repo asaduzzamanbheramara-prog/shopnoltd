@@ -109,8 +109,6 @@ test('every real user: login via impersonation + read-only functionality checks'
         row.failed_step = ''
         row.detail = 'blocked_by_required_action:' + (u.requiredActions || []).join('|')
         writeReport(rows)
-        console.log(`Shard ${shardIndex + 1}: ${row.user_ref} => ${row.status}`)
-    await new Promise(r => setTimeout(r, 150))
         return
       }
 
@@ -170,6 +168,7 @@ test('every real user: login via impersonation + read-only functionality checks'
       await ctx.close().catch(() => {})
       writeReport(rows)
     }
+    console.log(`Shard ${shardIndex + 1}: ${row.user_ref} => ${row.status}`)
     await new Promise(r => setTimeout(r, 150))
   }
 
