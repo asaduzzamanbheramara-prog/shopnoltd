@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 ROOT = Path(__file__).parents[1]
 sys.path.insert(0, str(ROOT))
-sys.path.insert(0, str(ROOT.parents[2] / "shared" / "libraries" / "python"))
+sys.path.insert(0, str(ROOT.parents[1] / "shared" / "libraries" / "python"))
 
 from app.api import agents
 from app.core.security import current_user
