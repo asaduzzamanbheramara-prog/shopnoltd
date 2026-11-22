@@ -189,14 +189,17 @@ export default function AIWorkspace() {
         if (cancelled || !Array.isArray(saved)) return
         if (saved.length) {
           const localById = new Map(chats.map((chat) => [chat.id, chat]))
-          setChats(saved.map((chat) => ({
+          const savedIds = new Set(saved.map((chat) => chat.id))
+          const restored = saved.map((chat) => ({
             ...chat,
             modelId: chat.modelId || null,
             messages: (chat.messages || []).map((message) => {
               const local = localById.get(chat.id)?.messages?.find((item) => item.id === message.id)
               return local ? { ...message, ...local } : message
             })
-          })))
+          }))
+          const localOnly = chats.filter((chat) => !savedIds.has(chat.id))
+          setChats([...restored, ...localOnly])
           setActiveId(saved[0].id)
         } else if (chats.length) {
           await request('/conversations/sync', {
