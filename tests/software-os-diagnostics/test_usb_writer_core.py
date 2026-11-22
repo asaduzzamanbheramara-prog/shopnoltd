@@ -63,4 +63,37 @@ class WriterTests(unittest.TestCase):
     def test_declared_size_mismatch_refused(self):
         with self.assertRaises(writer.WriterRefused): self.run_write(expected_size=len(self.payload)+1)
 
+
+    def test_partial_write_failure_is_not_success(self):
+        def broken_write(offset, data):
+            if offset >= 5:
+                raise OSError("simulated permission or media error")
+            self.device.data[offset:offset+2] = data[:2]
+            return 2
+        self.device.write_at = broken_write
+        with self.assertRaises(OSError):
+            self.run_write()
+
+    def test_readback_mismatch_is_not_success(self):
+        original_read = self.device.read_at
+        def corrupted_read(offset, length):
+            chunk = original_read(offset, length)
+            return (bytes([chunk[0] ^ 1]) + chunk[1:]) if offset == 0 and chunk else chunk
+        self.device.read_at = corrupted_read
+        with self.assertRaisesRegex(IOError, "read-back verification failed"):
+            self.run_write()
+
+    def test_opened_device_identity_mismatch_is_refused(self):
+        other = FakeDevice(stable_id="REPLACED")
+        with self.assertRaises(writer.WriterRefused):
+            self.run_write(open_device=lambda: other)
+
+    def test_cancellation_after_progress_is_not_success(self):
+        checks = iter([False, False, True])
+        progress = []
+        with self.assertRaises(writer.WriteCancelled):
+            self.run_write(cancel_requested=lambda: next(checks),
+                           progress=lambda done, total: progress.append(done))
+        self.assertTrue(progress)
+
 if __name__=="__main__": unittest.main(verbosity=2)
