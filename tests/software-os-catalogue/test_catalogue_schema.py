@@ -129,6 +129,15 @@ class CatalogueSchemaTests(unittest.TestCase):
         self.assertNotIn("tutorial.source_kind||'unspecified'", page)
         self.assertIn("awaiting review", page)
 
+    def test_frontend_displays_verified_compatibility_evidence(self):
+        page = (ROOT / "frontend/software-os-center.html").read_text(encoding="utf-8")
+        public_page = (ROOT / "platform/shopnoltd-web/public/software-os-center.html").read_text(encoding="utf-8")
+        self.assertEqual(page, public_page)
+        self.assertIn("Compatibility scope: ", page)
+        self.assertIn("Compatibility evidence reviewed: ", page)
+        self.assertIn("compatibility_evidence_url", page)
+        self.assertIn("Compatibility evidence", page)
+
     def test_verified_entry_requires_explicit_compatibility_evidence(self):
         entry = json.loads(json.dumps(SAMPLE))
         entry["verification"].update({
