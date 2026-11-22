@@ -104,3 +104,18 @@ async def documents(request: Request, path: str, token: str = Depends(raw_token)
 @router.api_route("/ai/agents/{path:path}", methods=["GET", "POST", "PUT", "PATCH", "DELETE"])
 async def agents(request: Request, path: str, token: str = Depends(raw_token)):
     return await proxy(request, f"/api/v1/agents/{path}", token)
+
+
+@router.api_route("/ai/conversations", methods=["GET"])
+async def conversations(request: Request, token: str = Depends(raw_token)):
+    return await proxy(request, "/api/v1/conversations", token)
+
+
+@router.api_route("/ai/conversations/sync", methods=["PUT"])
+async def sync_conversations(request: Request, token: str = Depends(raw_token)):
+    return await proxy(request, "/api/v1/conversations/sync", token)
+
+
+@router.api_route("/ai/conversations/{chat_id}", methods=["DELETE"])
+async def delete_conversation(request: Request, chat_id: str, token: str = Depends(raw_token)):
+    return await proxy(request, f"/api/v1/conversations/{chat_id}", token)
