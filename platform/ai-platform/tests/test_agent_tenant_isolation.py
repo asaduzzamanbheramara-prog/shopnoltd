@@ -1,5 +1,6 @@
 import ast
 from pathlib import Path
+import sys
 import unittest
 
 
@@ -141,6 +142,20 @@ class AgentTenantIsolationSourceTests(unittest.TestCase):
                 + self.functions[endpoint].args.kw_defaults
                 if default is not None
             ), endpoint)
+
+    def test_agent_models_register_on_runtime_sqlalchemy_metadata(self):
+        sys.path.insert(0, str(ROOT))
+        from app.db.base import Base
+        from app.db.models import Agent, Conversation
+
+        self.assertIs(Agent.metadata, Base.metadata)
+        self.assertIs(Conversation.metadata, Base.metadata)
+        self.assertIn("agents", Base.metadata.tables)
+        self.assertIn("ai_conversations", Base.metadata.tables)
+        self.assertEqual(
+            next(iter(Conversation.__table__.c.agent_id.foreign_keys)).target_fullname,
+            "agents.id",
+        )
 
     def test_agent_tables_are_registered_on_shared_base(self):
         for name, table in (("Agent", "agents"), ("Conversation", "ai_conversations")):
