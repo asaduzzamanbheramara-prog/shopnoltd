@@ -234,8 +234,8 @@ jobs:
               return payload["access_token"]
 
           try:
-              bootstrap_token = get_admin_token()
-              client_secret = ensure_audit_client(bootstrap_token)
+              admin_token = get_admin_token()
+              client_secret = ensure_audit_client(admin_token)
               token = get_audit_token(client_secret)
               # From this point onward, every Keycloak call is read-only and uses
               # the dedicated service account with only the three read roles.
