@@ -84,7 +84,6 @@ async def delete_chat(chat_id: str, user=Depends(current_user), db: AsyncSession
         AIChatThread.id == chat_id, AIChatThread.tenant_id == tenant_id,
         AIChatThread.user_id == user_id
     ))).scalar_one_or_none()
-    if row is None:
-        raise HTTPException(404, "conversation not found")
-    await db.delete(row)
-    await db.commit()
+    if row is not None:
+        await db.delete(row)
+        await db.commit()
