@@ -51,7 +51,8 @@
       "notes": [
         "Initial Ventoy installation formats the selected USB and deletes its data.",
         "Use Update rather than Install when updating an existing Ventoy drive, and verify the target before confirming."
-      ]
+      ],
+      "source_kind": "official-vendor"
     }
   ],
   "notes": [
