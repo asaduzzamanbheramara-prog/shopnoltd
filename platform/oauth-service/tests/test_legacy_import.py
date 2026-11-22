@@ -98,5 +98,15 @@ def test_creating_legacy_identity_does_not_send_email_without_opt_in(monkeypatch
     assert created is True
     assert reset_sent is False
     assert len(client.posts) == 1
+    created_payload = client.posts[0][1]["json"]
+    assert "credentials" not in created_payload
+    assert "requiredActions" not in created_payload
     assert client.puts == []
 
+
+
+def test_excel_import_does_not_force_password_update():
+    source = Path(__file__).parents[1] / "app" / "scripts" / "import_excel.py"
+    content = source.read_text()
+    assert "UPDATE_PASSWORD" not in content
+    assert '"requiredActions"' not in content
