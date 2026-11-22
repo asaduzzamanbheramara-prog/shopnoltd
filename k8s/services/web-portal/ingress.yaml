@@ -66,6 +66,14 @@ spec:
         paths:
           # Serve the Software & OS Center from its dedicated static web image.
           # Exact matches preserve all existing root and application path routing.
+          - path: /software-os-center
+            pathType: Exact
+            backend:
+              service:
+                name: shopnoltd-web
+                port:
+                  number: 80
+
           - path: /software-os-center.html
             pathType: Exact
             backend:
