@@ -84,7 +84,7 @@ export default function ConsentManager() {
         </div>
 
         <p style={{ margin: '0 0 16px', color: '#475569', fontSize: 14, lineHeight: 1.6 }}>
-          Essential storage is always active for security and core site functions. Optional analytics helps us understand site usage. Optional advertising enables advertising partners such as Google AdSense and Adsterra. Optional categories stay off unless you choose to allow them.
+          Essential storage is always active for security and core site functions. Optional analytics helps us understand site usage. Optional advertising may enable Google AdSense, Adsterra, Monetag, or ProfitOn only on hostnames and placements configured by Shopnoltd. Optional advertising stays off unless you choose to allow it.
         </p>
 
         {customizing && <div style={{ border: '1px solid #dbe3ee', borderRadius: 10, padding: 14, marginBottom: 16 }}>

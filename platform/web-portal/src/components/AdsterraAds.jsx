@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { useAdvertisingConsent } from '../lib/useAdvertisingConsent'
+import { useExternalAdPolicy } from '../lib/useExternalAdPolicy'
 
 const ZONES = {
   '468x60': { key: '7747061d0c5ae776f68405dbeeab89fd', width: 468, height: 60, scriptUrl: 'https://bicea.org/22/7747061d0c5ae776f68405dbeeab89fd' },
@@ -22,12 +23,24 @@ function enqueueZoneLoad(job) {
     window.__shopnoltdAdsterraQueue = { jobs: [], running: false }
   }
   const queue = window.__shopnoltdAdsterraQueue
+  job.cancelled = false
   queue.jobs.push(job)
 
+  const finish = (current) => {
+    if (queue.current !== current) return
+    queue.running = false
+    queue.current = null
+    if (window.atOptions?.key === current.zone.key) delete window.atOptions
+    runNext()
+  }
+
   const runNext = () => {
-    if (queue.running || !queue.jobs.length) return
-    queue.running = true
+    if (queue.running) return
     const next = queue.jobs.shift()
+    if (!next) return
+    if (next.cancelled || !next.container.isConnected) return runNext()
+    queue.running = true
+    queue.current = next
     window.atOptions = {
       key: next.zone.key,
       format: 'iframe',
@@ -36,27 +49,28 @@ function enqueueZoneLoad(job) {
       params: {},
     }
     const script = document.createElement('script')
+    next.script = script
     script.src = next.zone.scriptUrl
     script.async = false
     script.dataset.shopnoltdAdsterra = next.name
     script.setAttribute('data-cfasync', 'false')
-    script.onload = () => {
-      queue.running = false
-      if (window.atOptions?.key === next.zone.key) delete window.atOptions
-      runNext()
-    }
-    script.onerror = () => {
-      queue.running = false
-      if (window.atOptions?.key === next.zone.key) delete window.atOptions
-      runNext()
-    }
+    script.onload = () => finish(next)
+    script.onerror = () => finish(next)
     next.container.appendChild(script)
   }
 
   runNext()
   return () => {
+    job.cancelled = true
     const index = queue.jobs.indexOf(job)
     if (index >= 0) queue.jobs.splice(index, 1)
+    if (queue.current === job) {
+      job.script?.remove()
+      queue.running = false
+      queue.current = null
+      if (window.atOptions?.key === job.zone.key) delete window.atOptions
+      runNext()
+    }
   }
 }
 
@@ -82,7 +96,9 @@ function AdLabel() {
 }
 
 export function AdsterraBannerZone({ name, maxWidth = 760 }) {
-  const allowed = useAdvertisingConsent()
+  const consentAllowed = useAdvertisingConsent()
+  const policyAllowed = useExternalAdPolicy('adsterra')
+  const allowed = consentAllowed && policyAllowed
   const zone = ZONES[name]
   const containerRef = useRef(null)
 
@@ -101,7 +117,9 @@ export function AdsterraBannerZone({ name, maxWidth = 760 }) {
 }
 
 export function AdsterraNativeBanner() {
-  const allowed = useAdvertisingConsent()
+  const consentAllowed = useAdvertisingConsent()
+  const policyAllowed = useExternalAdPolicy('adsterra')
+  const allowed = consentAllowed && policyAllowed
   const containerRef = useRef(null)
   useEffect(() => {
     const container = containerRef.current
@@ -129,7 +147,9 @@ export function AdsterraNativeBanner() {
 }
 
 export function AdsterraGlobalFormats() {
-  const allowed = useAdvertisingConsent()
+  const consentAllowed = useAdvertisingConsent()
+  const policyAllowed = useExternalAdPolicy('adsterra')
+  const allowed = consentAllowed && policyAllowed
   useEffect(() => {
     if (!allowed) return undefined
     // Google AdSense is loaded only after advertising consent. Do not enable Adsterra Popunder here:
@@ -157,7 +177,9 @@ export function AdsterraGlobalFormats() {
 }
 
 export function AdsterraSmartlink() {
-  const allowed = useAdvertisingConsent()
+  const consentAllowed = useAdvertisingConsent()
+  const policyAllowed = useExternalAdPolicy('adsterra')
+  const allowed = consentAllowed && policyAllowed
   if (!allowed) return null
   return <section aria-label="Sponsored link" style={{ ...shellStyle, maxWidth: 760, alignItems: 'flex-start', padding: 16 }}>
     <AdLabel />
@@ -188,7 +210,9 @@ export function AdsterraResponsiveBanner() {
 }
 
 export function AdsterraTallBannerPair() {
-  const allowed = useAdvertisingConsent()
+  const consentAllowed = useAdvertisingConsent()
+  const policyAllowed = useExternalAdPolicy('adsterra')
+  const allowed = consentAllowed && policyAllowed
   if (!allowed) return null
   return <section aria-label="Additional advertisements" style={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-start', gap: 24, flexWrap: 'wrap', margin: '32px auto', maxWidth: 520 }}>
     <AdsterraBannerZone name="160x300" maxWidth={190} />

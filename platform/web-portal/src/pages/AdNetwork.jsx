@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { isPlatformAdmin } from '../lib/jwt'
 import { tryRefresh } from '../lib/tokenRefresh'
 
-const API = '/api/v1/ads'
+const API = 'https://api.shopnoltd.dpdns.org/api/v1/ads'
 
 function token() {
   return localStorage.getItem('shopno_token') || ''

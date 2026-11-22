@@ -24,6 +24,8 @@ configMapGenerator:
   - 025-omnichannel-oauth-pending-selection.sql
   - 026-omnichannel-user-ownership.sql
   - 027-payment-transaction-idempotency.sql
+  - 028-external-advertising-policy.sql
+  - 029-external-advertising-policy-permissions.sql
   options:
     disableNameSuffixHash: true
 

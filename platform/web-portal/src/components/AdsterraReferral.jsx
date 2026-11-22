@@ -1,9 +1,12 @@
 import { useAdvertisingConsent } from '../lib/useAdvertisingConsent'
+import { useExternalAdPolicy } from '../lib/useExternalAdPolicy'
 
 const REFERRAL_URL = 'https://beta.publishers.adsterra.com/referral/R3sEyBaL51'
 
 export default function AdsterraReferral() {
-  const allowed = useAdvertisingConsent()
+  const consentAllowed = useAdvertisingConsent()
+  const policyAllowed = useExternalAdPolicy('adsterra')
+  const allowed = consentAllowed && policyAllowed
   if (!allowed) return null
   return (
     <section
