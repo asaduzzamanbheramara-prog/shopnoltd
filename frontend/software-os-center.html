@@ -84,7 +84,8 @@
   08-BACKUP-AND-RESTORE-TOOLS/</pre>
 <p class="small muted">This is a suggested file organization, not a bootable partition layout. Keep OS images and firmware from their official publishers; verify them before use and observe redistribution licences.</p>
 </section>
-\n<section class="section card" id="recovery-guide">
+
+<section class="section card" id="recovery-guide">
 <h2>Guided recovery planner · Preview</h2>
 <p class="muted">Choose the target device and goal to get a safer, device-specific checklist. This page does not download images, inspect connected drives, or write a pendrive.</p>
 <div class="grid">
@@ -197,7 +198,8 @@
     ];
     masterOutput.textContent=lines.join('\n');
   });
-\n  function makeText(tag, text, className){
+
+  function makeText(tag, text, className){
     const node=document.createElement(tag);
     node.textContent=String(text || '');
     if(className)node.className=className;
