@@ -186,6 +186,12 @@ jobs:
           - name: social-feed-page
             url: https://shopnoltd.dpdns.org/feed
             mode: web
+          - name: software-os-center
+            url: https://shopnoltd.dpdns.org/software-os-center.html
+            mode: web
+          - name: software-os-catalogue
+            url: https://shopnoltd.dpdns.org/catalogue.json
+            mode: web
           - name: api
             url: https://api.shopnoltd.dpdns.org/healthz
             mode: health
