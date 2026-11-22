@@ -1,5 +1,6 @@
 import { KEYCLOAK_CLIENT_ID, KEYCLOAK_REALM, KEYCLOAK_URL, REDIRECT_URI, SOCIAL_LOGIN_PROVIDERS } from '../config'
 import { randomString, codeChallengeFor } from '../pkce'
+import { clearAuthTokens, clearPendingAuthState } from '../lib/authSession'
 
 const PROVIDERS = [
   { id: 'google', label: 'Sign up with Google', icon: 'G' },
@@ -8,6 +9,8 @@ const PROVIDERS = [
 ].filter((provider) => SOCIAL_LOGIN_PROVIDERS[provider.id])
 
 async function startSocialSignup(provider) {
+  clearAuthTokens(localStorage)
+  clearPendingAuthState(sessionStorage)
   sessionStorage.setItem('shopno_auth_intent', 'sign_up')
   sessionStorage.setItem('shopno_auth_method', provider)
   const verifier = randomString(64)
@@ -56,6 +59,8 @@ async function startSocialSignup(provider) {
 }
 
 async function startLocalSignup() {
+  clearAuthTokens(localStorage)
+  clearPendingAuthState(sessionStorage)
   sessionStorage.setItem('shopno_auth_intent', 'sign_up')
   sessionStorage.setItem('shopno_auth_method', 'shopnoltd')
   const searchParams = new URLSearchParams(window.location.search)

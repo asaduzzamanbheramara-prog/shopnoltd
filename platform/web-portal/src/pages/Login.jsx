@@ -1,5 +1,6 @@
 import { KEYCLOAK_CLIENT_ID, KEYCLOAK_REALM, KEYCLOAK_URL, REDIRECT_URI, SOCIAL_LOGIN_PROVIDERS } from '../config'
 import { randomString, codeChallengeFor } from '../pkce'
+import { clearAuthTokens } from '../lib/authSession'
 
 const PROVIDERS = [
   { id: 'google', label: 'Continue with Google', icon: 'G' },
@@ -8,6 +9,22 @@ const PROVIDERS = [
 ].filter((provider) => SOCIAL_LOGIN_PROVIDERS[provider.id])
 
 async function startLogin(provider = '') {
+  // A new login is an account switch boundary. Remove the previous user's
+  // tokens before leaving this page so failed or cancelled login cannot keep
+  // the previous account active in this browser.
+  clearAuthTokens(localStorage)
+  for (const key of [
+    'shopno_profile_provisioned',
+    'pkce_verifier',
+    'oidc_state',
+    'pending_domain',
+    'pending_referral_code',
+    'pending_referral_category',
+    'post_login_next',
+    'shopno_auth_intent',
+    'shopno_auth_method',
+  ]) sessionStorage.removeItem(key)
+
   sessionStorage.setItem('shopno_auth_intent', 'login')
   sessionStorage.setItem('shopno_auth_method', provider || 'shopnoltd')
   const verifier = randomString(64)
