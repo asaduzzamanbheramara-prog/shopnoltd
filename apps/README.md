@@ -12,8 +12,10 @@ shows whatever is actually deployed.
 
 ## Desktop (`apps/desktop-shell/`) -- Windows, Mac, Linux
 
-Electron. One codebase, two configs (`src/configs/web-portal.json` and
-`src/configs/admin-portal.json`), selected at build time.
+Electron. The web/admin shells use `src/configs/web-portal.json` and
+`src/configs/admin-portal.json`. A separate `src/configs/browser.json` builds
+**Shopnoltd Browser** and opens the protected `/browser` workspace with the
+same Keycloak login and remote Chromium session manager.
 
 ```bash
 cd apps/desktop-shell
@@ -22,12 +24,14 @@ npm install
 # Run locally without packaging
 npm start          # loads web-portal
 npm run start:admin
+npm run start:browser
 
 # Package installers (run on the matching OS, or use electron-builder's
 # Docker image for cross-compiling Windows/Linux from Linux -- macOS
 # builds still need a real Mac due to Apple's codesigning requirements)
 npm run build:web    # -> release/web-portal/*.exe / *.dmg / *.AppImage / *.deb
 npm run build:admin   # -> release/admin-portal/*
+npm run build:browser # -> release/browser/*.exe (Windows)
 ```
 
 Security notes baked in: `nodeIntegration: false`, `contextIsolation: true`,
@@ -68,6 +72,15 @@ Capacitor apps typically want a full icon/splash set generated per
 resolution -- run `npx @capacitor/assets generate` from `apps/mobile-shell`
 once you've dropped that source image (already copied to
 `apps/mobile-shell/resources/icon.png`) alongside a splash image.
+
+## Shopnoltd Browser desktop release
+
+The Windows Browser installer is published to the `shopnoltd-browser-latest`
+GitHub Release with `Shopnoltd-Browser-Setup.exe` and `SHA256SUMS.txt`. The app
+is a secure Electron shell around the live Shopnoltd Browser workspace; the
+Chromium browser itself runs in the isolated Shopnoltd Session Manager, not
+inside the desktop shell. The Windows installer is currently unsigned until
+a code-signing certificate is configured.
 
 ## What this doesn't include
 
