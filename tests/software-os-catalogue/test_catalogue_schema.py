@@ -1,539 +1,170 @@
-{
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://shopnoltd.dpdns.org/schemas/software-entry.schema.json",
-  "title": "Shopnoltd Software Catalogue Entry",
-  "type": "object",
-  "additionalProperties": false,
-  "required": [
-    "id",
-    "name",
-    "kind",
-    "description",
-    "platforms",
-    "source",
-    "license_note",
-    "verification"
-  ],
-  "properties": {
-    "id": {
-      "type": "string",
-      "pattern": "^[a-z0-9][a-z0-9-]{1,63}$"
-    },
-    "name": {
-      "type": "string",
-      "minLength": 1,
-      "maxLength": 120
-    },
-    "kind": {
-      "type": "string",
-      "enum": [
-        "operating-system",
-        "application",
-        "driver",
-        "recovery-tool",
-        "documentation"
-      ]
-    },
-    "description": {
-      "type": "string",
-      "minLength": 1,
-      "maxLength": 1000
-    },
-    "platforms": {
-      "type": "array",
-      "minItems": 1,
-      "uniqueItems": true,
-      "items": {
-        "type": "string",
-        "enum": [
-          "windows",
-          "linux",
-          "macos",
-          "android",
-          "ios",
-          "ipados",
-          "chromeos",
-          "tvos",
-          "watchos",
-          "harmonyos",
-          "kaios",
-          "bsd",
-          "web",
-          "firmware",
-          "cross-platform",
-          "other"
+#!/usr/bin/env python3
+"""Regression tests for catalogue metadata policy; never execute catalogue content."""
+from __future__ import annotations
+
+import importlib.util
+import json
+import subprocess
+import sys
+import unittest
+from pathlib import Path
+
+from jsonschema import Draft202012Validator, FormatChecker
+
+ROOT = Path(__file__).resolve().parents[2]
+SCHEMA = json.loads((ROOT / "catalogue/schema/software-entry.schema.json").read_text(encoding="utf-8"))
+SAMPLE = json.loads((ROOT / "catalogue/entries/sample-linux-tools.json").read_text(encoding="utf-8"))
+VALIDATOR = Draft202012Validator(SCHEMA, format_checker=FormatChecker())
+VALIDATOR_SPEC = importlib.util.spec_from_file_location(
+    "validate_software_os_catalogue", ROOT / "scripts/validate-software-os-catalogue.py"
+)
+VALIDATOR_MODULE = importlib.util.module_from_spec(VALIDATOR_SPEC)
+assert VALIDATOR_SPEC and VALIDATOR_SPEC.loader
+VALIDATOR_SPEC.loader.exec_module(VALIDATOR_MODULE)
+
+
+class CatalogueSchemaTests(unittest.TestCase):
+    def test_sample_entry_is_valid(self):
+        self.assertEqual(list(VALIDATOR.iter_errors(SAMPLE)), [])
+
+    def test_every_catalogue_entry_is_valid(self):
+        for path in sorted((ROOT / "catalogue/entries").glob("*.json")):
+            with self.subTest(entry=path.name):
+                entry = json.loads(path.read_text(encoding="utf-8"))
+                self.assertEqual(list(VALIDATOR.iter_errors(entry)), [])
+
+    def test_generated_browser_catalogue_matches_source_entries(self):
+        subprocess.run(
+            [sys.executable, str(ROOT / "scripts/build-software-os-catalogue.py")],
+            cwd=ROOT,
+            check=True,
+        )
+        generated = json.loads((ROOT / "frontend/catalogue.json").read_text(encoding="utf-8"))
+        source = [
+            json.loads(path.read_text(encoding="utf-8"))
+            for path in sorted((ROOT / "catalogue/entries").glob("*.json"))
         ]
-      }
-    },
-    "architectures": {
-      "type": "array",
-      "uniqueItems": true,
-      "items": {
-        "type": "string",
-        "enum": [
-          "x86_64",
-          "x86",
-          "arm64",
-          "arm",
-          "arm64-v8a",
-          "armeabi-v7a",
-          "riscv64",
-          "mips",
-          "ppc64le",
-          "s390x",
-          "wasm32",
-          "universal",
-          "any"
-        ]
-      }
-    },
-    "version": {
-      "type": "string",
-      "maxLength": 100
-    },
-    "source": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "type",
-        "url"
-      ],
-      "properties": {
-        "type": {
-          "type": "string",
-          "enum": [
-            "official-download-page",
-            "official-release",
-            "repository",
-            "documentation"
-          ]
-        },
-        "url": {
-          "type": "string",
-          "format": "uri",
-          "pattern": "^https://"
-        },
-        "publisher": {
-          "type": "string",
-          "maxLength": 160
+        self.assertEqual(generated, source)
+
+
+    def test_paid_shopnoltd_feature_requires_server_entitlement_key(self):
+        entry = json.loads(json.dumps(SAMPLE))
+        entry["pricing"] = {"model": "paid-shopnoltd-feature"}
+        self.assertTrue(list(VALIDATOR.iter_errors(entry)))
+
+    def test_paid_shopnoltd_feature_with_entitlement_key_is_valid(self):
+        entry = json.loads(json.dumps(SAMPLE))
+        entry["pricing"] = {
+            "model": "paid-shopnoltd-feature",
+            "entitlement_key": "software-os-center-premium",
         }
-      }
-    },
-    "license_note": {
-      "type": "string",
-      "minLength": 1,
-      "maxLength": 1000
-    },
-    "verification": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "method",
-        "status"
-      ],
-      "properties": {
-        "method": {
-          "type": "string",
-          "enum": [
-            "publisher-signature",
-            "publisher-checksum",
-            "source-only-not-yet-verified"
-          ]
-        },
-        "checksum_algorithm": {
-          "type": "string",
-          "enum": [
-            "sha256",
-            "sha512"
-          ]
-        },
-        "checksum": {
-          "type": "string",
-          "pattern": "^(?:[a-fA-F0-9]{64}|[a-fA-F0-9]{128})$"
-        },
-        "status": {
-          "type": "string",
-          "enum": [
-            "needs-review",
-            "verified",
-            "blocked"
-          ]
-        },
-        "evidence_url": {
-          "type": "string",
-          "format": "uri",
-          "pattern": "^https://"
-        }
-      }
-    },
-    "pricing": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "model": {
-          "type": "string",
-          "enum": [
-            "free",
-            "paid-shopnoltd-feature",
-            "external-vendor-license"
-          ]
-        },
-        "entitlement_key": {
-          "type": "string",
-          "maxLength": 120
-        }
-      }
-    },
-    "installation_guide": {
-      "type": "string",
-      "format": "uri",
-      "pattern": "^https://"
-    },
-    "notes": {
-      "type": "array",
-      "items": {
-        "type": "string",
-        "maxLength": 500
-      }
-    },
-    "device_types": {
-      "type": "array",
-      "uniqueItems": true,
-      "items": {
-        "type": "string",
-        "enum": [
-          "desktop",
-          "laptop",
-          "workstation",
-          "server",
-          "phone",
-          "tablet",
-          "tv",
-          "wearable",
-          "router",
-          "single-board-computer",
-          "virtual-machine",
-          "embedded",
-          "browser",
-          "other"
-        ]
-      }
-    },
-    "package_formats": {
-      "type": "array",
-      "uniqueItems": true,
-      "items": {
-        "type": "string",
-        "enum": [
-          "exe",
-          "msi",
-          "msix",
-          "appx",
-          "dmg",
-          "pkg",
-          "appimage",
-          "deb",
-          "rpm",
-          "flatpak",
-          "snap",
-          "apk",
-          "apks",
-          "xapk",
-          "aab",
-          "ipa",
-          "zip",
-          "tar",
-          "iso",
-          "img",
-          "bin",
-          "source",
-          "web-app",
-          "container",
-          "firmware",
-          "other"
-        ]
-      }
-    },
-    "tutorials": {
-      "type": "array",
-      "maxItems": 10,
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "title",
-          "type",
-          "url",
-          "publisher",
-          "scope",
-          "status",
-          "source_kind"
-        ],
-        "properties": {
-          "title": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 160
-          },
-          "type": {
-            "type": "string",
-            "enum": [
-              "video",
-              "article"
-            ]
-          },
-          "url": {
-            "type": "string",
-            "format": "uri",
-            "pattern": "^https://"
-          },
-          "publisher": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 160
-          },
-          "scope": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 400
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "official-reference",
-              "model-specific-tested",
-              "model-specific-not-verified"
-            ]
-          },
-          "notes": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "maxLength": 500
-            }
-          },
-          "source_kind": {
-            "type": "string",
-            "enum": [
-              "official-vendor",
-              "shopnoltd-owned",
-              "community-reference"
-            ],
-            "description": "Provenance of the tutorial; community references are informational and are not proof of tested recovery."
-          },
-          "language": {
-            "type": "string",
-            "minLength": 2,
-            "maxLength": 35
-          },
-          "captions_available": {
-            "type": "boolean"
-          },
-          "last_reviewed": {
-            "type": "string",
-            "format": "date"
-          },
-          "privacy_review": {
-            "type": "string",
-            "enum": [
-              "not-applicable",
-              "pending",
-              "passed"
-            ],
-            "description": "Required for Shopnoltd-owned recordings; passed means secrets and personal data were reviewed and masked."
-          }
-        }
-      }
-    },
-    "categories": {
-      "type": "array",
-      "uniqueItems": true,
-      "description": "Functional software category tags used for catalogue discovery.",
-      "items": {
-        "type": "string",
-        "enum": [
-          "browser",
-          "office-productivity",
-          "developer-tools",
-          "programming-runtimes",
-          "security-privacy",
-          "drivers-firmware",
-          "media-creative",
-          "education-science",
-          "communication",
-          "utilities",
-          "server-self-hosted",
-          "database-storage",
-          "backup-recovery",
-          "accessibility",
-          "gaming",
-          "system-administration",
-          "design-engineering",
-          "other"
-        ]
-      }
-    }
-  },
-  "allOf": [
-    {
-      "if": {
-        "properties": {
-          "verification": {
-            "properties": {
-              "status": {
-                "const": "verified"
-              }
-            },
-            "required": [
-              "status"
-            ]
-          }
-        },
-        "required": [
-          "verification"
-        ]
-      },
-      "then": {
-        "properties": {
-          "verification": {
-            "required": [
-              "evidence_url"
-            ],
-            "properties": {
-              "method": {
-                "enum": [
-                  "publisher-signature",
-                  "publisher-checksum"
-                ]
-              }
-            }
-          }
-        }
-      }
-    },
-    {
-      "if": {
-        "properties": {
-          "pricing": {
-            "properties": {
-              "model": {
-                "const": "paid-shopnoltd-feature"
-              }
-            },
-            "required": [
-              "model"
-            ]
-          }
-        },
-        "required": [
-          "pricing"
-        ]
-      },
-      "then": {
-        "properties": {
-          "pricing": {
-            "required": [
-              "entitlement_key"
-            ],
-            "properties": {
-              "entitlement_key": {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 120
-              }
-            }
-          }
-        }
-      }
-    },
-    {
-      "if": {
-        "properties": {
-          "verification": {
-            "properties": {
-              "checksum_algorithm": {
-                "const": "sha256"
-              }
-            },
-            "required": [
-              "checksum_algorithm"
-            ]
-          }
-        },
-        "required": [
-          "verification"
-        ]
-      },
-      "then": {
-        "properties": {
-          "verification": {
-            "properties": {
-              "checksum": {
-                "pattern": "^[a-fA-F0-9]{64}$"
-              }
-            }
-          }
-        }
-      }
-    },
-    {
-      "if": {
-        "properties": {
-          "verification": {
-            "properties": {
-              "checksum_algorithm": {
-                "const": "sha512"
-              }
-            },
-            "required": [
-              "checksum_algorithm"
-            ]
-          }
-        },
-        "required": [
-          "verification"
-        ]
-      },
-      "then": {
-        "properties": {
-          "verification": {
-            "properties": {
-              "checksum": {
-                "pattern": "^[a-fA-F0-9]{128}$"
-              }
-            }
-          }
-        }
-      }
-    },
-    {
-      "if": {
-        "properties": {
-          "verification": {
-            "properties": {
-              "method": {
-                "const": "publisher-checksum"
-              }
-            },
-            "required": [
-              "method"
-            ]
-          }
-        },
-        "required": [
-          "verification"
-        ]
-      },
-      "then": {
-        "properties": {
-          "verification": {
-            "required": [
-              "checksum_algorithm",
-              "checksum"
-            ]
-          }
-        }
-      }
-    }
-  ]
-}
+        self.assertEqual(list(VALIDATOR.iter_errors(entry)), [])
+
+
+    def test_duplicate_catalogue_ids_are_reported(self):
+        first = ROOT / "catalogue/entries/first.json"
+        duplicate = ROOT / "catalogue/entries/duplicate.json"
+        errors = VALIDATOR_MODULE.duplicate_id_errors([
+            (first, {"id": "same-id"}),
+            (duplicate, {"id": "same-id"}),
+        ])
+        self.assertEqual(errors, [(duplicate, "same-id", first)])
+
+
+    def test_sha256_checksum_requires_64_hex_characters(self):
+        entry = json.loads(json.dumps(SAMPLE))
+        entry["verification"].update({
+            "method": "publisher-checksum",
+            "status": "verified",
+            "checksum_algorithm": "sha256",
+            "checksum": "a" * 64,
+            "evidence_url": "https://example.com/verification",
+            "compatibility_scope": "Windows 11 x64 desktop and laptop",
+            "compatibility_evidence_url": "https://example.com/compatibility",
+            "compatibility_reviewed_at": "2026-11-23",
+        })
+        self.assertEqual(list(VALIDATOR.iter_errors(entry)), [])
+        entry["verification"]["checksum"] = "a" * 128
+        self.assertTrue(list(VALIDATOR.iter_errors(entry)))
+
+    def test_sha512_checksum_requires_128_hex_characters(self):
+        entry = json.loads(json.dumps(SAMPLE))
+        entry["verification"].update({
+            "method": "publisher-checksum",
+            "status": "verified",
+            "checksum_algorithm": "sha512",
+            "checksum": "b" * 128,
+            "evidence_url": "https://example.com/verification",
+            "compatibility_scope": "Windows 11 x64 desktop and laptop",
+            "compatibility_evidence_url": "https://example.com/compatibility",
+            "compatibility_reviewed_at": "2026-11-23",
+        })
+        self.assertEqual(list(VALIDATOR.iter_errors(entry)), [])
+        entry["verification"]["checksum"] = "b" * 64
+        self.assertTrue(list(VALIDATOR.iter_errors(entry)))
+
+
+    def test_frontend_renders_supported_catalogue_kinds_not_only_operating_systems(self):
+        page = (ROOT / "frontend/software-os-center.html").read_text(encoding="utf-8")
+        self.assertIn(
+            "entries.filter(entry=>entry&&typeof entry.name==='string'&&typeof entry.kind==='string')",
+            page,
+        )
+        self.assertNotIn("entry.kind==='operating-system').forEach(entry=>catalogue.append(renderEntry(entry))", page)
+
+    def test_every_tutorial_declares_provenance(self):
+        for path in sorted((ROOT / "catalogue/entries").glob("*.json")):
+            entry = json.loads(path.read_text(encoding="utf-8"))
+            for tutorial in entry.get("tutorials", []):
+                with self.subTest(entry=path.name, tutorial=tutorial.get("title")):
+                    self.assertIn(tutorial.get("source_kind"), {
+                        "official-vendor", "community-reference", "shopnoltd-owned"
+                    })
+
+    def test_frontend_explains_pending_verification_and_provenance(self):
+        page = (ROOT / "frontend/software-os-center.html").read_text(encoding="utf-8")
+        self.assertIn("Review pending", page)
+        self.assertIn("installer integrity and exact device compatibility", page)
+        self.assertIn("Provenance:", page)
+        self.assertNotIn("tutorial.source_kind||'unspecified'", page)
+        self.assertIn("awaiting review", page)
+
+    def test_verified_entry_requires_explicit_compatibility_evidence(self):
+        entry = json.loads(json.dumps(SAMPLE))
+        entry["verification"].update({
+            "method": "publisher-signature",
+            "status": "verified",
+            "evidence_url": "https://example.com/integrity",
+        })
+        self.assertTrue(list(VALIDATOR.iter_errors(entry)))
+        entry["verification"].update({
+            "compatibility_scope": "Windows 11 x64 desktop and laptop",
+            "compatibility_evidence_url": "https://example.com/compatibility",
+            "compatibility_reviewed_at": "2026-11-23",
+        })
+        self.assertEqual(list(VALIDATOR.iter_errors(entry)), [])
+
+    def test_rejects_non_https_source(self):
+        entry = json.loads(json.dumps(SAMPLE))
+        entry["source"]["url"] = "http://example.invalid/software"
+        self.assertTrue(list(VALIDATOR.iter_errors(entry)))
+
+    def test_rejects_unknown_executable_field(self):
+        entry = json.loads(json.dumps(SAMPLE))
+        entry["install_command"] = "curl example.invalid | sh"
+        self.assertTrue(list(VALIDATOR.iter_errors(entry)))
+
+    def test_rejects_unreviewed_entry_marked_verified_with_no_evidence(self):
+        entry = json.loads(json.dumps(SAMPLE))
+        entry["verification"]["status"] = "verified"
+        entry["verification"].pop("evidence_url", None)
+        self.assertTrue(list(VALIDATOR.iter_errors(entry)))
+
+    def test_schema_rejects_unknown_platform(self):
+        entry = json.loads(json.dumps(SAMPLE))
+        entry["platforms"] = ["all-platforms-everywhere"]
+        self.assertTrue(list(VALIDATOR.iter_errors(entry)))
+
+
+if __name__ == "__main__":
+    unittest.main(verbosity=2)
