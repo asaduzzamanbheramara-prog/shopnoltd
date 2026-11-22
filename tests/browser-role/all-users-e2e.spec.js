@@ -170,7 +170,26 @@ test('every real user: login via impersonation + read-only functionality checks'
       const message = String(e.message)
       row.status = message.startsWith('user_timeout_') ? 'TIMEOUT' : 'FAIL'
       row.failed_step = message.startsWith('user_timeout_') ? 'user-timeout' : step
-      row.detail = message.split('\n')[0].replace(/Bearer\s+\S+/gi, 'Bearer [REDACTED]').replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, '[EMAIL]').replace(/https?:\/\/[^\s)]+/gi, '[URL]').slice(0, 200)
+
+      // Record only allowlisted, non-sensitive login diagnostics. Never capture
+      // full page text, query strings, tokens, usernames, email addresses or codes.
+      let location = 'location_unavailable'
+      try {
+        const current = new URL(page.url())
+        location = `${current.hostname}${current.pathname}`
+      } catch {}
+      const authMessage = await page.locator('body').innerText().catch(() => '')
+      const safeAuthMessage = authMessage.split('\n')
+        .map(line => line.trim())
+        .find(line => /invalid username|invalid password|account disabled|account is disabled|invalid authenticator|invalid one-time|verify your email|temporarily disabled|too many attempts|update password|verify email/i.test(line))
+        ?.replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, '[EMAIL]')
+        ?.slice(0, 100)
+      const safeError = message.split('\n')[0]
+        .replace(/Bearer\s+\S+/gi, 'Bearer [REDACTED]')
+        .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, '[EMAIL]')
+        .replace(/https?:\/\/[^\s)]+/gi, '[URL]')
+        .slice(0, 120)
+      row.detail = `${safeError}; location=${location}${safeAuthMessage ? `; auth_message=${safeAuthMessage}` : ''}`.slice(0, 200)
     } finally {
       clearTimeout(timeoutHandle)
       // A context can already be closed when Playwright aborts a timed-out
