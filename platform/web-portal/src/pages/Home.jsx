@@ -17,14 +17,14 @@ function Card({ service, admin = false }) {
   const action = admin ? 'Open administration →' : businessApp ? 'Create application →' : integration ? 'Configure integration →' : internal ? 'Open workspace →' : 'Open service →'
   const cardStyle = { display: 'flex', flexDirection: 'column', textDecoration: 'none', color: 'inherit', padding: 20, background: 'white', borderRadius: 16, border: '1px solid #e2e8f0', boxShadow: '0 3px 12px rgba(15,23,42,.06)', minHeight: 175 }
   const content = <><div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}><span style={{ fontSize: 32 }}>{service.icon}</span><span style={{ fontSize: 11, fontWeight: 700, color: businessApp ? '#b45309' : integration ? '#7c3aed' : internal ? '#047857' : '#0369a1' }}>{badge}</span></div><h3 style={{ margin: '12px 0 7px' }}>{service.name}</h3><p style={{ margin: 0, color: '#64748b', lineHeight: 1.5, flex: 1 }}>{service.description}</p><span style={{ marginTop: 14, color: '#0284c7', fontWeight: 700 }}>{action}</span></>
-  if (internal) {
+  if (internal && !service.url.endsWith('.html')) {
     return <Link to={service.url} style={cardStyle}>{content}</Link>
   }
-  return <a href={service.url} target="_blank" rel="noopener noreferrer" style={cardStyle}>{content}</a>
+  return <a href={service.url} target={internal ? undefined : '_blank'} rel={internal ? undefined : 'noopener noreferrer'} style={cardStyle}>{content}</a>
 }
 
 function PreviewSection({ title, description, items, limit = 6, admin = false, href = '/services' }) {
-  return <section style={{ marginTop: 48 }}><div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'end', gap: 12, flexWrap: 'wrap' }}><div><h2 style={{ marginBottom: 6 }}>{title}</h2><p style={{ color: '#64748b', marginTop: 0 }}>{description}</p></div>{!admin && <Link to={href} style={{ color: '#0369a1', fontWeight: 700, textDecoration: 'none' }}>View all →</Link>}</div><div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 16 }}>{items.slice(0, limit).map(item => <Card key={item.name} service={item} admin={admin} />)}</div></section>
+  return <section style={{ marginTop: 48 }}><div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'end', gap: 12, flexWrap: 'wrap' }}><div><h2 style={{ marginBottom: 6 }}>{title}</h2><p style={{ color: '#64748b', marginTop: 0 }}>{description}</p></div>{!admin && (href.endsWith('.html') ? <a href={href} style={{ color: '#0369a1', fontWeight: 700, textDecoration: 'none' }}>View all →</a> : <Link to={href} style={{ color: '#0369a1', fontWeight: 700, textDecoration: 'none' }}>View all →</Link>)}</div><div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 16 }}>{items.slice(0, limit).map(item => <Card key={item.name} service={item} admin={admin} />)}</div></section>
 }
 
 function PaymentAccounts() {
@@ -85,6 +85,7 @@ export default function Home() {
     <PreviewSection title="Core services" description="Start with services managed inside your Shopnoltd workspace, including messaging, calls, notifications and live media." items={SERVICES} />
     <PreviewSection title="Cloud devices" description="Launch browser-accessible Shopnoltd device workspaces." items={SERVICES.filter(service => service.category === 'Cloud Devices')} limit={6} href="/android-cloud" />
     <PreviewSection title="Downloads" description="Install the official Shopnoltd applications on Windows, Linux, macOS or Android." items={SERVICES.filter(service => service.category === 'Downloads')} limit={3} href="/downloads" />
+    <PreviewSection title="Software & Operating System Installation" description="Online software and driver resources, supported OS installation guidance, and offline USB recovery preparation for compatible devices. Actual installation is performed with the device owner's approval using official vendor tools." items={SERVICES.filter(service => service.category === 'Software & OS')} limit={3} href="/software-os-center.html" />
     <AdsterraNativeBanner />
     <PreviewSection title="Business applications" description="Create HR, POS, POS Billing System or ERP applications through the existing website and domain workflow." items={BUSINESS_SERVICES} limit={4} href="/services" />
     <PreviewSection title="Connected platforms" description="Connect supported external platforms through authorized integrations. External availability depends on the provider/API connection." items={CONNECTED_PLATFORMS} limit={6} />
