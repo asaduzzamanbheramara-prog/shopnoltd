@@ -62,6 +62,33 @@ class AgentTenantIsolationSourceTests(unittest.TestCase):
             isinstance(node, ast.Constant) and node.value == "default"
             for node in ast.walk(helper)
         ))
+        self.assertTrue(any(
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and node.func.attr == "strip"
+            for node in ast.walk(helper)
+        ))
+
+    def test_tenant_context_runtime_behavior(self):
+        helper_node = self.functions["current_tenant_id"]
+
+        class FakeHTTPException(Exception):
+            def __init__(self, status_code, detail):
+                self.status_code = status_code
+                self.detail = detail
+
+        namespace = {"HTTPException": FakeHTTPException}
+        module = ast.Module(body=[helper_node], type_ignores=[])
+        exec(compile(module, str(SOURCE), "exec"), namespace)
+        resolve_tenant = namespace["current_tenant_id"]
+
+        self.assertEqual(resolve_tenant({"tenant_id": "tenant-a"}), "tenant-a")
+        self.assertEqual(resolve_tenant({"tenant_id": "  tenant-a  "}), "tenant-a")
+        for claims in ({}, {"tenant_id": None}, {"tenant_id": ""}, {"tenant_id": "   "}, {"tenant_id": 42}):
+            with self.subTest(claims=claims):
+                with self.assertRaises(FakeHTTPException) as raised:
+                    resolve_tenant(claims)
+                self.assertEqual(raised.exception.status_code, 403)
 
     def test_agent_creation_and_listing_require_tenant_context(self):
         for endpoint in ("create", "list_"):

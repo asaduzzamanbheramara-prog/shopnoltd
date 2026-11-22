@@ -25,7 +25,7 @@ def current_tenant_id(user: dict) -> str:
     tenant_id = user.get("tenant_id")
     if not isinstance(tenant_id, str) or not tenant_id.strip():
         raise HTTPException(403, "tenant context required")
-    return tenant_id
+    return tenant_id.strip()
 
 
 @router.post("", status_code=201)
