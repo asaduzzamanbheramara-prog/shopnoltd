@@ -3,7 +3,9 @@ from pathlib import Path
 import unittest
 
 
-SOURCE = Path(__file__).parents[1] / "app" / "api" / "agents.py"
+ROOT = Path(__file__).parents[1]
+SOURCE = ROOT / "app" / "api" / "agents.py"
+MODELS_SOURCE = ROOT / "app" / "db" / "models.py"
 
 
 def calls_named(node, name):
@@ -32,10 +34,16 @@ class AgentTenantIsolationSourceTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.tree = ast.parse(SOURCE.read_text(encoding="utf-8"))
+        cls.model_tree = ast.parse(MODELS_SOURCE.read_text(encoding="utf-8"))
         cls.functions = {
             node.name: node
             for node in cls.tree.body
             if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+        }
+        cls.model_classes = {
+            node.name: node
+            for node in cls.model_tree.body
+            if isinstance(node, ast.ClassDef)
         }
 
     def test_tenant_context_fails_closed(self):
@@ -110,6 +118,55 @@ class AgentTenantIsolationSourceTests(unittest.TestCase):
             isinstance(node, ast.Constant) and node.value == 404
             for node in ast.walk(chat)
         ))
+
+    def test_agent_api_uses_shared_database_session_and_metadata(self):
+        imports = [
+            node for node in self.tree.body
+            if isinstance(node, (ast.Import, ast.ImportFrom))
+        ]
+        import_text = "\n".join(ast.unparse(node) for node in imports)
+        self.assertIn("from app.db.models import Agent, Conversation", import_text)
+        self.assertIn("from app.db.session import get_db", import_text)
+        self.assertNotIn("app.core.db", import_text)
+        self.assertNotIn("SessionLocal", import_text)
+        for endpoint in ("create", "list_", "chat"):
+            self.assertTrue(any(
+                isinstance(default, ast.Call)
+                and isinstance(default.func, ast.Name)
+                and default.func.id == "Depends"
+                and default.args
+                and isinstance(default.args[0], ast.Name)
+                and default.args[0].id == "get_db"
+                for default in self.functions[endpoint].args.defaults
+                + self.functions[endpoint].args.kw_defaults
+                if default is not None
+            ), endpoint)
+
+    def test_agent_tables_are_registered_on_shared_base(self):
+        for name, table in (("Agent", "agents"), ("Conversation", "ai_conversations")):
+            node = self.model_classes[name]
+            self.assertTrue(any(
+                isinstance(base, ast.Name) and base.id == "Base"
+                for base in node.bases
+            ), name)
+            self.assertTrue(any(
+                isinstance(child, ast.Assign)
+                and any(isinstance(target, ast.Name) and target.id == "__tablename__" for target in child.targets)
+                and isinstance(child.value, ast.Constant)
+                and child.value.value == table
+                for child in node.body
+            ), name)
+
+        conversation = self.model_classes["Conversation"]
+        foreign_keys = [
+            child for child in ast.walk(conversation)
+            if isinstance(child, ast.Call)
+            and isinstance(child.func, ast.Name)
+            and child.func.id == "ForeignKey"
+            and child.args
+            and isinstance(child.args[0], ast.Constant)
+        ]
+        self.assertTrue(any(item.args[0].value == "agents.id" for item in foreign_keys))
 
 
 if __name__ == "__main__":
