@@ -16,10 +16,12 @@ double. It does NOT enable physical USB writing.
   read-back hash verification are required before success is returned.
 - Cancellation and I/O errors are failures. Partial media must not be booted.
 
-Tests use only an in-memory fake and cover success/read-back, system disk,
-non-removable target, wrong confirmation, insufficient capacity, changed
-identity, digest mismatch, non-HTTPS digest source, cancellation, and size
-mismatch. CI must never use real block devices.
+Tests use only an in-memory fake and cover successful write/read-back,
+system-disk and non-removable-target refusal, wrong confirmation, insufficient
+capacity, changed identity before and after open, digest mismatch, non-HTTPS
+digest source, cancellation before and after progress, declared-size mismatch,
+partial-write failure, and read-back corruption. CI must never use real block
+devices.
 
 ## Still required before physical use
 
