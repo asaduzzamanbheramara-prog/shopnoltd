@@ -52,7 +52,8 @@
         "The article documents Power + Volume Down to enter Recovery Mode and storage-based updates when a compatible official package is available.",
         "Back up data and keep the phone powered during updates.",
         "No verified official realme C35 RMX3511 recovery video was identified; do not substitute a third-party firmware video."
-      ]
+      ],
+      "source_kind": "official-vendor"
     },
     {
       "title": "realme software update instructions",
@@ -64,7 +65,8 @@
       "notes": [
         "Do not use a package intended for another region or model.",
         "Do not interrupt the update process."
-      ]
+      ],
+      "source_kind": "official-vendor"
     }
   ]
 }

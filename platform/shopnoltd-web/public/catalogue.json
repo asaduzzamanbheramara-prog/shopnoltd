@@ -181,7 +181,8 @@
         "notes": [
           "Writing an image overwrites the selected target drive.",
           "Not every Windows installer ISO is supported as a directly bootable image; follow the OS publisher's recommended tool."
-        ]
+        ],
+        "source_kind": "official-vendor"
       }
     ],
     "notes": [
@@ -852,7 +853,8 @@
           "The video is published by the verified HP Support YouTube channel.",
           "Use HP Cloud Recovery only if the exact HP product number is eligible.",
           "Creating recovery media can erase the selected USB; preserve existing E2B media."
-        ]
+        ],
+        "source_kind": "official-vendor"
       },
       {
         "title": "Creating and Using a Microsoft Recovery USB Drive | HP Computers",
@@ -865,7 +867,8 @@
           "The video is published by the verified HP Support YouTube channel.",
           "Creating the recovery USB removes data from the selected USB; use a separate blank drive.",
           "Back up the target PC before using recovery media."
-        ]
+        ],
+        "source_kind": "official-vendor"
       },
       {
         "title": "HP PCs — Software recovery options (Windows)",
@@ -877,7 +880,8 @@
         "notes": [
           "Review the model's exact support page before choosing a recovery image.",
           "Back up files before factory recovery or reinstall."
-        ]
+        ],
+        "source_kind": "official-vendor"
       }
     ]
   },
@@ -1500,7 +1504,8 @@
           "The article documents Power + Volume Down to enter Recovery Mode and storage-based updates when a compatible official package is available.",
           "Back up data and keep the phone powered during updates.",
           "No verified official realme C35 RMX3511 recovery video was identified; do not substitute a third-party firmware video."
-        ]
+        ],
+        "source_kind": "official-vendor"
       },
       {
         "title": "realme software update instructions",
@@ -1512,7 +1517,8 @@
         "notes": [
           "Do not use a package intended for another region or model.",
           "Do not interrupt the update process."
-        ]
+        ],
+        "source_kind": "official-vendor"
       }
     ]
   },
@@ -1563,7 +1569,8 @@
         "notes": [
           "The selected USB is formatted and its data may be erased.",
           "Verify the OS image and confirm the exact USB model and capacity before starting."
-        ]
+        ],
+        "source_kind": "official-vendor"
       }
     ],
     "notes": [
@@ -1748,7 +1755,8 @@
         "notes": [
           "Initial Ventoy installation formats the selected USB and deletes its data.",
           "Use Update rather than Install when updating an existing Ventoy drive, and verify the target before confirming."
-        ]
+        ],
+        "source_kind": "official-vendor"
       }
     ],
     "notes": [
@@ -1946,7 +1954,8 @@
           "Microsoft requires a blank USB of at least 8 GB for the media creation workflow.",
           "Creating installation media deletes existing content on the selected USB.",
           "Back up the target PC before a clean install; clean installation can remove personal files and applications."
-        ]
+        ],
+        "source_kind": "official-vendor"
       }
     ],
     "notes": [

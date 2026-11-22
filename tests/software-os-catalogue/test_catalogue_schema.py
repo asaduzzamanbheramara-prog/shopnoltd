@@ -106,6 +106,23 @@ class CatalogueSchemaTests(unittest.TestCase):
         )
         self.assertNotIn("entry.kind==='operating-system').forEach(entry=>catalogue.append(renderEntry(entry))", page)
 
+    def test_every_tutorial_declares_provenance(self):
+        for path in sorted((ROOT / "catalogue/entries").glob("*.json")):
+            entry = json.loads(path.read_text(encoding="utf-8"))
+            for tutorial in entry.get("tutorials", []):
+                with self.subTest(entry=path.name, tutorial=tutorial.get("title")):
+                    self.assertIn(tutorial.get("source_kind"), {
+                        "official-vendor", "community-reference", "shopnoltd-owned"
+                    })
+
+    def test_frontend_explains_pending_verification_and_provenance(self):
+        page = (ROOT / "frontend/software-os-center.html").read_text(encoding="utf-8")
+        self.assertIn("Review pending", page)
+        self.assertIn("installer integrity and exact device compatibility", page)
+        self.assertIn("Provenance:", page)
+        self.assertNotIn("tutorial.source_kind||'unspecified'", page)
+        self.assertIn("awaiting review", page)
+
     def test_rejects_non_https_source(self):
         entry = json.loads(json.dumps(SAMPLE))
         entry["source"]["url"] = "http://example.invalid/software"

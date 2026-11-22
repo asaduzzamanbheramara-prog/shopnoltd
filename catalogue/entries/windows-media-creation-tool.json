@@ -45,7 +45,8 @@
         "Microsoft requires a blank USB of at least 8 GB for the media creation workflow.",
         "Creating installation media deletes existing content on the selected USB.",
         "Back up the target PC before a clean install; clean installation can remove personal files and applications."
-      ]
+      ],
+      "source_kind": "official-vendor"
     }
   ],
   "notes": [

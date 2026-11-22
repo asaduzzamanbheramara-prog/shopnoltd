@@ -51,7 +51,8 @@
       "notes": [
         "Writing an image overwrites the selected target drive.",
         "Not every Windows installer ISO is supported as a directly bootable image; follow the OS publisher's recommended tool."
-      ]
+      ],
+      "source_kind": "official-vendor"
     }
   ],
   "notes": [

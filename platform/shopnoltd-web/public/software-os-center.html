@@ -7,11 +7,11 @@
 <title>Software & OS Center | Shopnoltd</title>
 <style>
 :root{color-scheme:light dark;--bg:#0b1220;--panel:#121d30;--line:#293851;--ink:#edf4ff;--muted:#a9b8ce;--accent:#70a5ff;--good:#8fe0b0;--warn:#ffd18b}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 system-ui,-apple-system,Segoe UI,sans-serif}a{color:var(--accent)}header,main,footer{max-width:1080px;margin:auto;padding:22px}header{display:flex;justify-content:space-between;align-items:center;gap:16px;border-bottom:1px solid var(--line)}.brand{font-weight:800;font-size:1.2rem;text-decoration:none;color:var(--ink)}.pill{border:1px solid var(--line);border-radius:999px;padding:5px 11px;color:var(--muted);font-size:.82rem}.hero{padding:42px 0 24px}.hero h1{font-size:clamp(2rem,5vw,3.2rem);line-height:1.1;margin:12px 0}.hero p,.muted{color:var(--muted)}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(245px,1fr));gap:16px}.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px}.card h2,.card h3{margin-top:0}.btn{display:inline-block;border:1px solid var(--accent);border-radius:9px;padding:9px 13px;text-decoration:none;font-weight:650;margin:5px 5px 0 0}.primary{background:var(--accent);color:#071326}.search{width:100%;padding:12px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font:inherit;margin:12px 0 18px}.notice{border-left:4px solid var(--warn);padding:12px 15px;background:#332819;border-radius:6px;margin:16px 0}.ok{color:var(--good)}.list{padding-left:20px}.section{margin:30px 0}footer{color:var(--muted);border-top:1px solid var(--line);font-size:.9rem}.small{font-size:.9rem}.hidden{display:none!important}.tutorial-video{display:block;width:100%;aspect-ratio:16/9;border:0;border-radius:10px;margin-top:10px;background:#000}.tutorial{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 system-ui,-apple-system,Segoe UI,sans-serif}a{color:var(--accent)}header,main,footer{max-width:1080px;margin:auto;padding:22px}header{display:flex;justify-content:space-between;align-items:center;gap:16px;border-bottom:1px solid var(--line)}.brand{font-weight:800;font-size:1.2rem;text-decoration:none;color:var(--ink)}.pill{border:1px solid var(--line);border-radius:999px;padding:5px 11px;color:var(--muted);font-size:.82rem}.hero{padding:42px 0 24px}.hero h1{font-size:clamp(2rem,5vw,3.2rem);line-height:1.1;margin:12px 0}.hero p,.muted{color:var(--muted)}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(245px,1fr));gap:16px}.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px}.card h2,.card h3{margin-top:0}.btn{display:inline-block;border:1px solid var(--accent);border-radius:9px;padding:9px 13px;text-decoration:none;font-weight:650;margin:5px 5px 0 0}.primary{background:var(--accent);color:#071326}.search{width:100%;padding:12px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font:inherit;margin:12px 0 18px}.notice{border-left:4px solid var(--warn);padding:12px 15px;background:#332819;border-radius:6px;margin:16px 0}.ok{color:var(--good)}.list{padding-left:20px}.section{margin:30px 0}footer{color:var(--muted);border-top:1px solid var(--line);font-size:.9rem}.small{font-size:.9rem}.hidden{display:none!important}.tutorial-video{display:block;width:100%;aspect-ratio:16/9;border:0;border-radius:10px;margin-top:10px;background:#000}.tutorial{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}.status{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:3px 9px;font-weight:700}.status-pending{color:var(--warn);border-color:#80643b}.status-verified{color:var(--good);border-color:#386d50}.status-blocked{color:#ff9d9d;border-color:#8b4545}#catalogue-summary{margin:10px 0 16px;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--muted)}
 </style>
 </head>
 <body>
-<header><a class="brand" href="/">Shopnoltd</a><span class="pill">Preview · Catalogue foundation</span></header>
+<header><a class="brand" href="/">Shopnoltd</a><span class="pill">Publisher-linked catalogue</span></header>
 <main>
 <section class="hero">
 <span class="pill">SOFTWARE · OPERATING SYSTEMS · RECOVERY</span>
@@ -23,7 +23,7 @@
 <section class="section">
 <h2>Browse catalogue</h2>
 <label for="search">Search software, OS, APKs, drivers, package formats and devices</label>
-<input class="search" id="search" type="search" placeholder="Try Windows, Ubuntu, Android APK, iOS, MSI, APK, ISO, phone…" autocomplete="off">
+<p id="catalogue-summary" role="status" aria-live="polite">Loading catalogue and verification status…</p><input class="search" id="search" type="search" placeholder="Try Windows, Ubuntu, Android APK, iOS, MSI, APK, ISO, phone…" autocomplete="off">
 <div class="grid" id="catalogue">
 <article class="card" data-search="ubuntu linux operating system desktop iso install recovery">
 <h3>Ubuntu Desktop</h3><p class="muted small">Linux · OS · x86-64 (review current requirements)</p><p>Choose a supported release and verify the downloaded image using Ubuntu's official instructions.</p><p class="ok small">Official source · Metadata example, not yet release-verified</p><a class="btn primary" href="https://ubuntu.com/download/desktop" rel="noopener noreferrer" target="_blank">Official download</a><a class="btn" href="https://ubuntu.com/tutorials/how-to-verify-ubuntu" rel="noopener noreferrer" target="_blank">Verify image</a>
@@ -127,8 +127,17 @@
     if((entry.device_types||[]).length)card.append(makeText('p','Devices: '+entry.device_types.join(', '),'small'));
     if((entry.package_formats||[]).length)card.append(makeText('p','Package formats: '+entry.package_formats.join(', '),'small'));
     card.append(makeText('p',entry.description));
-    const status=(entry.verification&&entry.verification.status)||'needs-review';
-    card.append(makeText('p','Catalogue status: '+status+' · '+((entry.source&&entry.source.publisher)||'Publisher not specified'),'small'));
+    const verification=entry.verification||{};
+    const status=verification.status||'needs-review';
+    const statusLabel=status==='verified'?'Verified integrity evidence':status==='blocked'?'Blocked pending review':'Review pending';
+    const statusClass=status==='verified'?'status-verified':status==='blocked'?'status-blocked':'status-pending';
+    card.append(makeText('p',statusLabel+' · '+((entry.source&&entry.source.publisher)||'Publisher not specified'),'small status '+statusClass));
+    if(status==='needs-review'){
+      const reviewNote=entry.kind==='documentation'
+        ? 'A publisher reference is linked; this documentation entry has not been independently tested as an installation package.'
+        : 'A publisher link is listed, but installer integrity and exact device compatibility have not been independently verified by Shopnoltd.';
+      card.append(makeText('p',reviewNote,'small muted'));
+    }
     const url=entry.source&&entry.source.url;
     if(typeof url==='string' && url.startsWith('https://')){
       const link=document.createElement('a');
@@ -165,7 +174,8 @@
       section.className='tutorial';
       section.append(makeText('h4',tutorial.title));
       section.append(makeText('p',tutorial.publisher+' · '+tutorial.status,'small muted'));
-      section.append(makeText('p','Source: '+(tutorial.source_kind||'unspecified')+
+      const sourceLabels={'official-vendor':'Official publisher','community-reference':'Community reference','shopnoltd-owned':'Shopnoltd recording'};
+      section.append(makeText('p','Provenance: '+(sourceLabels[tutorial.source_kind]||'Source type not declared')+
         (tutorial.language?' · Language: '+tutorial.language:'')+
         (tutorial.captions_available===true?' · Captions available':tutorial.captions_available===false?' · No captions listed':'')+
         (tutorial.last_reviewed?' · Last reviewed: '+tutorial.last_reviewed:''),'small muted'));
@@ -207,6 +217,8 @@
     .then(response=>{if(!response.ok)throw new Error('Catalogue unavailable');return response.json();})
     .then(entries=>{
       if(!Array.isArray(entries))throw new Error('Invalid catalogue payload');
+      const counts=entries.reduce((total,entry)=>{const status=(entry.verification&&entry.verification.status)||'needs-review';total[status]=(total[status]||0)+1;return total;},{});
+      document.getElementById('catalogue-summary').textContent=`${entries.length} entries · ${counts.verified||0} verified · ${counts['needs-review']||0} awaiting review · ${counts.blocked||0} blocked`;
       const current=[...catalogue.querySelectorAll('article.card')];
       const usb=current.find(card=>card.textContent.includes('Bootable USB guidance'));
       catalogue.replaceChildren();
@@ -214,7 +226,7 @@
       if(usb)catalogue.append(usb);
       refreshSearch();
     })
-    .catch(()=>{ /* Keep the safe, official-link fallback cards if the JSON catalogue is unavailable. */ });
+    .catch(()=>{ document.getElementById('catalogue-summary').textContent='Full catalogue unavailable; showing the limited built-in official-link fallback. Please retry later.'; });
 })();
 </script>
 </body>
