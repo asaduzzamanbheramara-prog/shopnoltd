@@ -48,6 +48,22 @@ jobs:
           print('GitOps recovery script parses and contains revision, migration allowlist, and active-pod guards.')
           PY
 
+  ai-platform-agent-tenant-isolation:
+    name: AI Platform agent tenant isolation tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: platform/ai-platform
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install isolated test dependencies
+        run: python -m pip install pytest
+      - name: Verify tenant isolation fails closed
+        run: pytest -q tests/test_agent_tenant_isolation.py
+
   python-syntax:
     name: Python syntax validation
     runs-on: ubuntu-latest
