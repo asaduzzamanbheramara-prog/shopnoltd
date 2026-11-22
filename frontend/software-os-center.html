@@ -166,6 +166,19 @@
       evidence.textContent='Verification instructions';
       card.append(evidence);
     }
+    if(status==='verified'){
+      card.append(makeText('p','Compatibility scope: '+verification.compatibility_scope,'small'));
+      card.append(makeText('p','Compatibility evidence reviewed: '+verification.compatibility_reviewed_at,'small muted'));
+      if(typeof verification.compatibility_evidence_url==='string' && verification.compatibility_evidence_url.startsWith('https://')){
+        const compatibility=document.createElement('a');
+        compatibility.className='btn';
+        compatibility.href=verification.compatibility_evidence_url;
+        compatibility.target='_blank';
+        compatibility.rel='noopener noreferrer';
+        compatibility.textContent='Compatibility evidence';
+        card.append(compatibility);
+      }
+    }
     if(entry.kind==='recovery-tool' && !(entry.tutorials||[]).some(tutorial=>tutorial.type==='video')){
       card.append(makeText('p','No verified official recovery video is listed yet. Follow the written official guide; do not substitute an unverified firmware video.','small muted'));
     }
