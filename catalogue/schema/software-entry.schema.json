@@ -163,6 +163,23 @@
           "type": "string",
           "format": "uri",
           "pattern": "^https://"
+        },
+        "compatibility_scope": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500,
+          "description": "Exact platforms, device families and architectures reviewed for compatibility."
+        },
+        "compatibility_evidence_url": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^https://",
+          "description": "Publisher documentation or a reproducible test record supporting the compatibility scope."
+        },
+        "compatibility_reviewed_at": {
+          "type": "string",
+          "format": "date",
+          "description": "Date the compatibility evidence was reviewed."
         }
       }
     },
@@ -375,6 +392,36 @@
     }
   },
   "allOf": [
+    {
+      "if": {
+        "properties": {
+          "verification": {
+            "properties": {
+              "status": {
+                "const": "verified"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          }
+        },
+        "required": [
+          "verification"
+        ]
+      },
+      "then": {
+        "properties": {
+          "verification": {
+            "required": [
+              "compatibility_scope",
+              "compatibility_evidence_url",
+              "compatibility_reviewed_at"
+            ]
+          }
+        }
+      }
+    },
     {
       "if": {
         "properties": {
