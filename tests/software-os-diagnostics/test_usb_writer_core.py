@@ -27,6 +27,8 @@ class WriterTests(unittest.TestCase):
     def run_write(self, **overrides):
         args=dict(image=io.BytesIO(self.payload), expected_size=len(self.payload),
             expected_sha256=self.digest, publisher_digest_url="https://vendor.example/SHA256SUMS",
+            image_architecture="x86_64", target_architecture="x86_64",
+            supported_architecture_pairs={("x86_64","x86_64"),("arm64","arm64")},
             selected_identity=self.identity, current_device=lambda:self.device,
             open_device=lambda:self.device, typed_confirmation="ERASE /dev/fake-usb", chunk_size=5)
         args.update(overrides)
@@ -62,38 +64,45 @@ class WriterTests(unittest.TestCase):
         with self.assertRaises(writer.WriteCancelled): self.run_write(cancel_requested=lambda:True)
     def test_declared_size_mismatch_refused(self):
         with self.assertRaises(writer.WriterRefused): self.run_write(expected_size=len(self.payload)+1)
-
-
     def test_partial_write_failure_is_not_success(self):
         def broken_write(offset, data):
-            if offset >= 5:
-                raise OSError("simulated permission or media error")
+            if offset >= 5: raise OSError("simulated media error")
             self.device.data[offset:offset+2] = data[:2]
             return 2
         self.device.write_at = broken_write
-        with self.assertRaises(OSError):
-            self.run_write()
-
+        with self.assertRaises(OSError): self.run_write()
+    def test_permission_error_is_not_success(self):
+        def denied_write(offset, data): raise PermissionError("simulated permission denied")
+        self.device.write_at = denied_write
+        with self.assertRaises(PermissionError): self.run_write()
     def test_readback_mismatch_is_not_success(self):
         original_read = self.device.read_at
         def corrupted_read(offset, length):
             chunk = original_read(offset, length)
             return (bytes([chunk[0] ^ 1]) + chunk[1:]) if offset == 0 and chunk else chunk
         self.device.read_at = corrupted_read
-        with self.assertRaisesRegex(IOError, "read-back verification failed"):
+        with self.assertRaisesRegex(IOError, "Post-write read-back verification failed"):
             self.run_write()
-
     def test_opened_device_identity_mismatch_is_refused(self):
         other = FakeDevice(stable_id="REPLACED")
-        with self.assertRaises(writer.WriterRefused):
-            self.run_write(open_device=lambda: other)
-
+        with self.assertRaises(writer.WriterRefused): self.run_write(open_device=lambda: other)
     def test_cancellation_after_progress_is_not_success(self):
-        checks = iter([False, False, True])
-        progress = []
+        checks = iter([False, False, True]); progress = []
         with self.assertRaises(writer.WriteCancelled):
             self.run_write(cancel_requested=lambda: next(checks),
                            progress=lambda done, total: progress.append(done))
         self.assertTrue(progress)
+    def test_unsupported_architecture_pair_refused_before_open(self):
+        opened=[]
+        with self.assertRaises(writer.WriterRefused):
+            self.run_write(image_architecture="arm64", target_architecture="x86_64",
+                           open_device=lambda:opened.append(1) or self.device)
+        self.assertEqual(opened,[])
+    def test_missing_architecture_matrix_refused_before_open(self):
+        opened=[]
+        with self.assertRaises(writer.WriterRefused):
+            self.run_write(supported_architecture_pairs=set(),
+                           open_device=lambda:opened.append(1) or self.device)
+        self.assertEqual(opened,[])
 
 if __name__=="__main__": unittest.main(verbosity=2)
