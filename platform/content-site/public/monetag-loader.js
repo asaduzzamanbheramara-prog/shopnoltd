@@ -8,8 +8,8 @@
   const SCRIPT_URL = 'https://nap5k.com/tag.min.js';
 
   if (location.hostname.toLowerCase() !== HOST) return;
-  const path = location.pathname.replace(/\\/+$/, '') || '/';
-  if (!/^\\/blog\\/[^/]+$/.test(path)) return;
+  const path = location.pathname.replace(/\/+$/, '') || '/';
+  if (!/^\/blog\/[^/]+$/.test(path)) return;
 
   const root = document.querySelector('#content');
   if (!root) return;
