@@ -599,5 +599,3 @@ async def sandbox_admin_summary(claims=Depends(current_user), session: AsyncSess
 @router.post("/postback", include_in_schema=False)
 async def disabled_postback():
     raise HTTPException(503, "Callbacks disabled until Affmine confirms its publisher postback authentication, macros, and conversion status lifecycle")
-
-[executed on device: Shopnoltd (52cb1894-787c-49c2-9460-901a8f74a1e7)]
