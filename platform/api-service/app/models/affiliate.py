@@ -50,6 +50,8 @@ class AffiliateConversion(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     available_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     settled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    provider_payment_reference: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    wallet_transaction_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
 
 class AdGemPostbackEvent(Base):

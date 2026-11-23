@@ -337,3 +337,21 @@ def test_affiliate_user_copy_hides_provider_identity_and_wholesale_rates():
     assert "Platform share" not in user_render
     assert "Your reward" in user_render
     assert "available task" in user_render
+
+
+def test_affiliate_settlement_fields_and_admin_lifecycle_routes_exist():
+    columns = AffiliateConversion.__table__.columns
+    assert "provider_payment_reference" in columns
+    assert "wallet_transaction_id" in columns
+    paths = {route.path for route in router.routes}
+    assert "/affiliate/admin/adgem/events" in paths
+    assert "/affiliate/admin/adgem/events/{request_id}/approve" in paths
+    assert "/affiliate/admin/conversions/{txn}/provider-paid" in paths
+    assert "/affiliate/admin/conversions/{txn}/settle" in paths
+
+
+def test_adgem_amount_and_payout_are_distinct_fields():
+    columns = AdGemPostbackEvent.__table__.columns
+    assert "amount" in columns
+    assert "network_payout" in columns
+    assert columns["amount"] is not columns["network_payout"]

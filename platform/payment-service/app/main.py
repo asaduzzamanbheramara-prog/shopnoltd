@@ -4,7 +4,7 @@ import time
 from contextlib import asynccontextmanager
 
 import structlog
-from app.api import admin, admin_tables, admin_reports, admin_backups, deposits, direct_mfs_feed, direct_payments, exchanges, internal_ads, methods, payment_accounts, transactions, transfers, wallets, webhooks, withdrawals
+from app.api import admin, admin_tables, admin_reports, admin_backups, deposits, direct_mfs_feed, direct_payments, exchanges, internal_ads, internal_affiliate, methods, payment_accounts, transactions, transfers, wallets, webhooks, withdrawals
 from app.core.config import settings
 from app.core.db import engine
 from fastapi import FastAPI
@@ -70,6 +70,7 @@ app.include_router(admin_tables.router, prefix="/api/v1/admin", tags=["admin-tab
 app.include_router(admin_reports.router, prefix="/api/v1/admin", tags=["admin-data-reports"])
 app.include_router(admin_backups.router, prefix="/api/v1/admin", tags=["admin-backups"])
 app.include_router(internal_ads.router, prefix="/api/v1/internal/ad-network", tags=["internal-ad-network"])
+app.include_router(internal_affiliate.router, prefix="/api/v1/internal/affiliate", tags=["internal-affiliate-settlement"])
 
 
 @app.get("/healthz", include_in_schema=False)

@@ -1,8 +1,8 @@
 """Authenticated affiliate marketplace and click attribution.
 
 Affmine callbacks remain disabled until its publisher authentication and lifecycle
-are verified. AdGem v3 events are signature-checked and held for reconciliation;
-this API never credits wallets directly.
+are verified. AdGem v3 events are signature-checked, reviewed by an administrator,
+and settled only after provider funds are confirmed received.
 """
 import os
 import hmac
@@ -10,6 +10,7 @@ import json
 import re
 import uuid
 import xml.etree.ElementTree as ET
+from datetime import datetime
 from decimal import Decimal, InvalidOperation
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
@@ -28,6 +29,7 @@ from app.models.affiliate import AdGemPostbackEvent, AffiliateClick, AffiliateCo
 router = APIRouter(prefix="/affiliate", tags=["affiliate"])
 bearer = HTTPBearer()
 EXCHANGE_URL = "http://exchange-service.shopno-payments.svc.cluster.local:80"
+PAYMENT_URL = "http://payment-service.shopno-payments.svc.cluster.local:80"
 
 
 async def db():
@@ -313,8 +315,8 @@ async def my_summary(claims=Depends(current_user), session: AsyncSession = Depen
         "payable": by_status.get("payable", {"count": 0, "amount_usd": "0"}),
         "paid": by_status.get("paid", {"count": 0, "amount_usd": "0"}),
         "reversed": by_status.get("reversed", {"count": 0, "amount_usd": "0"}),
-        "wallet_credit_enabled": False,
-        "note": "Rewards remain pending until network approval and received payout are reconciled.",
+        "wallet_credit_enabled": bool(os.getenv("PAYMENT_INTERNAL_API_KEY", "").strip()),
+        "note": "Only administrator-approved conversions backed by received provider funds can be settled to the wallet.",
     }
 
 
@@ -554,6 +556,130 @@ async def admin_summary(claims=Depends(current_user), session: AsyncSession = De
     }
 
 
+@router.get("/admin/adgem/events")
+async def admin_adgem_events(claims=Depends(current_user), session: AsyncSession = Depends(db)):
+    _require_admin(claims)
+    rows = await session.execute(
+        select(AdGemPostbackEvent, AffiliateConversion)
+        .outerjoin(AffiliateConversion, AffiliateConversion.txn == func.concat("adgem:", AdGemPostbackEvent.request_id))
+        .order_by(AdGemPostbackEvent.created_at.desc()).limit(200)
+    )
+    return [{
+        "request_id": event.request_id, "conversion_id": event.conversion_id,
+        "user_id": event.user_id, "offer_id": event.offer_id,
+        "goal_name": event.goal_name, "conversion_type": event.conversion_type,
+        "network_payout": str(event.network_payout), "currency": "USD",
+        "status": event.status, "signature_verified": event.signature_verified,
+        "created_at": event.created_at.isoformat() if event.created_at else None,
+        "conversion_txn": conversion.txn if conversion else None,
+        "user_amount": str(conversion.user_amount) if conversion else "0",
+        "platform_amount": str(conversion.platform_amount) if conversion else str(event.network_payout),
+        "payout_received": bool(conversion.payout_received) if conversion else False,
+        "provider_payment_reference": conversion.provider_payment_reference if conversion else None,
+        "wallet_transaction_id": conversion.wallet_transaction_id if conversion else None,
+    } for event, conversion in rows.all()]
+
+
+@router.post("/admin/adgem/events/{request_id}/approve")
+async def approve_adgem_event(request_id: str, claims=Depends(current_user), session: AsyncSession = Depends(db)):
+    _require_admin(claims)
+    event = await session.get(AdGemPostbackEvent, request_id)
+    if not event:
+        raise HTTPException(404, "AdGem event not found")
+    if not event.signature_verified:
+        raise HTTPException(409, "Unsigned event cannot be approved")
+    if event.conversion_type != "reward" or Decimal(event.network_payout) <= 0:
+        raise HTTPException(422, "Tracking-only or zero-payout events cannot be approved as rewards")
+    if event.status != "pending_review":
+        raise HTTPException(409, "Only pending-review events can be approved")
+    txn = "adgem:" + event.request_id
+    conversion = await session.get(AffiliateConversion, txn)
+    if not conversion:
+        raise HTTPException(409, "Conversion record is missing; event cannot be approved")
+    conversion.status = "approved_unpaid"
+    event.status = "approved_unpaid"
+    await session.commit()
+    return {"request_id": request_id, "status": event.status,
+            "user_amount": str(conversion.user_amount), "platform_amount": str(conversion.platform_amount),
+            "payout_received": False, "wallet_credited": False}
+
+
+@router.post("/admin/conversions/{txn}/provider-paid")
+async def mark_affiliate_provider_paid(txn: str, request: Request, claims=Depends(current_user), session: AsyncSession = Depends(db)):
+    _require_admin(claims)
+    body = await request.json()
+    reference = str(body.get("provider_payment_reference") or "").strip()
+    if not reference or len(reference) > 128:
+        raise HTTPException(422, "A real provider payout/settlement reference (1-128 characters) is required")
+    conversion = await session.get(AffiliateConversion, txn)
+    if not conversion:
+        raise HTTPException(404, "Affiliate conversion not found")
+    if conversion.status == "paid":
+        raise HTTPException(409, "This conversion is already settled to the user wallet")
+    if conversion.status != "approved_unpaid":
+        raise HTTPException(409, "Only approved conversions can be marked provider-paid")
+    conversion.payout_received = True
+    conversion.provider_payment_reference = reference
+    conversion.status = "payable"
+    event = await session.get(AdGemPostbackEvent, txn.removeprefix("adgem:")) if txn.startswith("adgem:") else None
+    if event:
+        event.status = "payable"
+    await session.commit()
+    return {"txn": txn, "status": conversion.status, "payout_received": True, "wallet_credited": False}
+
+
+@router.post("/admin/conversions/{txn}/settle")
+async def settle_affiliate_conversion(txn: str, claims=Depends(current_user), session: AsyncSession = Depends(db)):
+    _require_admin(claims)
+    conversion = await session.get(AffiliateConversion, txn)
+    if not conversion:
+        raise HTTPException(404, "Affiliate conversion not found")
+    if conversion.status == "paid" and conversion.wallet_transaction_id:
+        return {"txn": txn, "status": "paid", "wallet_credited": True,
+                "wallet_transaction_id": conversion.wallet_transaction_id, "duplicate": True}
+    if conversion.status != "payable" or not conversion.payout_received or not conversion.provider_payment_reference:
+        raise HTTPException(409, "Provider payout must be confirmed and referenced before wallet settlement")
+    reward_amount = Decimal(conversion.user_amount)
+    if not reward_amount.is_finite() or reward_amount <= 0:
+        raise HTTPException(422, "Conversion reward amount is invalid")
+    click = await session.get(AffiliateClick, conversion.click_id)
+    if not click:
+        raise HTTPException(409, "Original user click record is missing; settlement is blocked")
+    if len(click.user_id) > 64:
+        raise HTTPException(422, "User identity exceeds the payment wallet's supported ID length")
+    internal_key = os.getenv("PAYMENT_INTERNAL_API_KEY", "").strip()
+    if not internal_key:
+        raise HTTPException(503, "Secure payment-service bridge is not configured")
+    payload = {
+        "tenant_id": "default", "user_id": click.user_id, "currency": conversion.currency,
+        "amount": str(conversion.user_amount),
+        "idempotency_key": "affiliate:" + txn + ":user-reward",
+        "reference": ("Affiliate reward " + txn)[:128],
+    }
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            response = await client.post(
+                f"{PAYMENT_URL}/api/v1/internal/affiliate/wallet-credit",
+                json=payload, headers={"X-Internal-Api-Key": internal_key},
+            )
+            response.raise_for_status()
+            result = response.json()
+    except httpx.HTTPStatusError as exc:
+        raise HTTPException(502, "Payment service rejected affiliate settlement; no success was recorded") from exc
+    except httpx.HTTPError as exc:
+        raise HTTPException(503, "Payment service is temporarily unavailable; retry is safe") from exc
+    conversion.status = "paid"
+    conversion.settled_at = datetime.utcnow()
+    conversion.wallet_transaction_id = str(result.get("transaction_id") or "")
+    if not conversion.wallet_transaction_id:
+        raise HTTPException(502, "Payment service returned no transaction identifier")
+    event = await session.get(AdGemPostbackEvent, txn.removeprefix("adgem:")) if txn.startswith("adgem:") else None
+    if event:
+        event.status = "paid"
+    await session.commit()
+    return {"txn": txn, "status": "paid", "wallet_credited": True,
+            "wallet_transaction_id": conversion.wallet_transaction_id, "duplicate": False}
+
 
 # Sandbox records are separate from network conversions and never settle to wallets.
 @router.post("/sandbox/simulate")
@@ -715,6 +841,21 @@ async def adgem_postback_v3(request: Request, session: AsyncSession = Depends(db
         status="pending_review",
         signature_verified=True,
     )
+    if conversion_type != "reward" or payout <= 0:
+        event.status = "tracking_only"
+    else:
+        offer = await session.get(AffiliateOffer, click.offer_id)
+        if not offer:
+            raise HTTPException(422, "The originating Shopnoltd offer no longer exists")
+        share_percent = int(offer.user_share_percent)
+        user_amount = (payout * Decimal(share_percent) / Decimal(100)).quantize(Decimal("0.0001"))
+        platform_amount = (payout - user_amount).quantize(Decimal("0.0001"))
+        session.add(AffiliateConversion(
+            txn="adgem:" + request_id, click_id=click.id, network_payout=payout,
+            user_amount=user_amount, platform_amount=platform_amount,
+            user_share_percent=share_percent, currency="USD", status="pending",
+            payout_received=False, available_at=datetime.utcnow(),
+        ))
     session.add(event)
     try:
         await session.commit()
@@ -724,7 +865,7 @@ async def adgem_postback_v3(request: Request, session: AsyncSession = Depends(db
     return {
         "ok": True,
         "accepted": True,
-        "status": "pending_review",
+        "status": event.status,
         "wallet_credited": False,
     }
 

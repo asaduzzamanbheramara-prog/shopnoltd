@@ -80,6 +80,12 @@ spec:
                   name: adgem-integration
                   key: ADGEM_APP_ID
                   optional: true
+            - name: PAYMENT_INTERNAL_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: affiliate-payment-bridge
+                  key: AFFILIATE_INTERNAL_API_KEY
+                  optional: true
             - name: POD_NAME
               valueFrom: { fieldRef: { fieldPath: metadata.name } }
             - name: POD_NAMESPACE

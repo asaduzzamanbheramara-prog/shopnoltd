@@ -15,7 +15,7 @@ from starlette.responses import Response
 from app.core.config import settings
 from app.core.db import Base, engine
 from app.models.work import Work, WorkAssignment, WorkSubmission  # noqa: F401
-from app.models.work_evidence import WorkTaskConfig, WorkSession, WorkEvidence, WorkEvent, GlobalTaskRate
+from app.models.work_evidence import WorkTaskConfig, WorkSession, WorkEvidence, WorkEvent, GlobalTaskRate  # noqa: F401
 from app.models.work_rating import WorkRating  # noqa: F401
 from app.models.referral import ReferralCode, Referral, ReferralPolicy, ReferralReward, ReferralSystemIdentity  # noqa: F401
 from app.models.service_order import ServiceOrder, ServiceOrderEvent  # noqa: F401
@@ -44,6 +44,8 @@ async def lifespan(app: FastAPI):
             # Affiliate feed metadata compatibility columns.
             await conn.execute(text("ALTER TABLE shopnoltd_affiliate_offers ADD COLUMN IF NOT EXISTS allowed_platform VARCHAR(64) NOT NULL DEFAULT '1,2,3,4,5'"))
             await conn.execute(text("ALTER TABLE shopnoltd_affiliate_offers ADD COLUMN IF NOT EXISTS network_incentive VARCHAR(16) NOT NULL DEFAULT 'unknown'"))
+            await conn.execute(text("ALTER TABLE shopnoltd_affiliate_conversions ADD COLUMN IF NOT EXISTS provider_payment_reference VARCHAR(128)"))
+            await conn.execute(text("ALTER TABLE shopnoltd_affiliate_conversions ADD COLUMN IF NOT EXISTS wallet_transaction_id VARCHAR(64)"))
             # Referral compatibility columns preserve existing direct/legacy mappings.
             await conn.execute(text("ALTER TABLE referrals ADD COLUMN IF NOT EXISTS source VARCHAR(24) NOT NULL DEFAULT 'direct'"))
             await conn.execute(text("ALTER TABLE referral_policies ADD COLUMN IF NOT EXISTS fallback_referrer_id VARCHAR(128) NOT NULL DEFAULT 'admin_office'"))
