@@ -188,5 +188,3 @@ async def readyz():
 @app.get("/metrics", include_in_schema=False)
 def metrics():
     return Response(generate_latest(), media_type="text/plain; version=0.0.4")
-
-[executed on device: Shopnoltd (52cb1894-787c-49c2-9460-901a8f74a1e7)]
