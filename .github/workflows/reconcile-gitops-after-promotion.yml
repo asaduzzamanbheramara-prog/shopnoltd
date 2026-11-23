@@ -38,5 +38,5 @@ jobs:
           gh workflow run self-hosted-k3s-gitops.yml \
             --repo "$REPOSITORY" \
             --ref main \
-            -f perform_gitops_sync=true
-          echo 'Self-hosted GitOps reconciliation dispatched for main with perform_gitops_sync=true.'
+            -f perform_gitops_sync=false
+          echo 'Passive Argo reconciliation dispatched for main; full recovery and secret provisioning remain manual-only.'
