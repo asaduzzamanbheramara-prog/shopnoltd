@@ -57,3 +57,14 @@ Until that is confirmed, the conversion postback intentionally returns 503 and n
 ## Deployment gate
 
 The feature branch and PR must pass API tests, web build, security scans, and release validation. Production database migration, secret configuration, deployment, and wallet-credit activation remain separate gated steps.
+
+
+## Earnings sandbox (test-only)
+
+- Sandbox conversions are stored in the separate `shopnoltd_affiliate_sandbox_conversions` table, never in the live network conversion table.
+- Authenticated users can create mock conversions with a USD payout from 0.01 to 1,000 and a user share from 0% to 90%; the remainder is the simulated Shopnoltd share.
+- The user dashboard labels all values as simulated and non-withdrawable. The admin dashboard reports sandbox totals separately.
+- Users can delete only their own sandbox records. This does not alter real conversions, payments, or wallet balances.
+- Sandbox routes: `POST /api/v1/affiliate/sandbox/simulate`, `GET /api/v1/affiliate/sandbox/me/summary`, `DELETE /api/v1/affiliate/sandbox/me/reset`, and platform-admin-only `GET /api/v1/affiliate/sandbox/admin/summary`.
+- Sandbox results are never counted as Affmine conversions, real revenue, payable earnings, or wallet funds. Do not present simulated earnings as actual income.
+- This is application-level test functionality, not a substitute for Affmine's own sandbox or written permission for live incentivized campaigns.
