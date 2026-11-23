@@ -39,6 +39,8 @@ def test_tracking_url_requires_https_and_sets_click_id():
 def test_platform_admin_requires_realm_role_not_client_role():
     assert _is_platform_admin({"realm_access": {"roles": ["platform_admin"]}})
     assert _is_platform_admin({"realm_roles": ["platform_admin"]})
+    assert not _is_platform_admin({"realm_access": {"roles": ["admin"]}})
+    assert not _is_platform_admin({"realm_access": {"roles": ["shopnoltd-admin"]}})
     assert not _is_platform_admin({
         "roles": ["platform_admin"],
         "resource_access": {"client": {"roles": ["platform_admin"]}},
