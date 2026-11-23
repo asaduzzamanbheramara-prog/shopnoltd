@@ -1,14 +1,27 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { tryRefresh } from '../lib/tokenRefresh'
 
 const API = (import.meta.env.VITE_API_BASE || import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'https://api.shopnoltd.dpdns.org').replace(/\/+$/, '')
 const MAX_BYTES = 25 * 1024 * 1024
 
 async function storage(path, options = {}) {
-  const token = localStorage.getItem('shopno_token')
+  let token = localStorage.getItem('shopno_token')
   if (!token) throw new Error('Please sign in to access your private files.')
-  const headers = { ...(options.headers || {}), Authorization: `Bearer ${token}` }
-  const response = await fetch(`${API}/api/v1/storage/drive${path}`, { ...options, headers })
+
+  let response
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const headers = { ...(options.headers || {}), Authorization: `Bearer ${token}` }
+    response = await fetch(`${API}/api/v1/storage/drive${path}`, { ...options, headers })
+    if (response.status !== 401 || attempt === 1) break
+
+    // Match the platform API's single-flight refresh behavior so an expired
+    // access token does not strand the private drive on an authentication error.
+    const refreshed = await tryRefresh()
+    if (!refreshed) break
+    token = refreshed
+  }
+
   if (!response.ok) {
     let message = `Storage request failed (${response.status})`
     try { const body = await response.json(); message = body.detail || message } catch {}
