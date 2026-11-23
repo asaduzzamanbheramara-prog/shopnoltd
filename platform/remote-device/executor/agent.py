@@ -170,6 +170,27 @@ def enroll(config):
     except URLError as exc: raise RuntimeError(f"executor enrollment connection failed: {exc}") from exc
 
 
+def complete_enrollment(config, response):
+    if not response.get("ok"):
+        raise RuntimeError(f"executor enrollment failed: {response}")
+    agent_id=response.get("agent_id")
+    secret=response.get("secret")
+    if not agent_id or not secret:
+        raise RuntimeError("Enrollment response did not include agent_id and secret; request a new enrollment token.")
+    updated=dict(config)
+    updated["agent_id"]=agent_id
+    updated["secret"]=secret
+    updated.pop("enrollment_token",None)
+    try:
+        save_config_secure(updated)
+    except Exception as exc:
+        raise RuntimeError(
+            "Enrollment succeeded but secure credential persistence failed. "
+            "Revoke/reissue this device enrollment token before retrying."
+        ) from exc
+    return updated
+
+
 def heartbeat(config):
     return request(config,"POST",f"/api/executor/heartbeat/{config['device_id']}",{"agent_id":config["agent_id"],"version":"2.0","platform":platform.system(),"hostname":socket.gethostname(),"profile":system_profile(),"network":interface_profile()})
 def poll(config): return request(config,"GET",f"/api/executor/jobs/{config['device_id']}")
@@ -183,23 +204,7 @@ def main():
         # server-side one-time token. The returned secret is only shown once.
         prepare_config_storage()
         response=enroll(config)
-        if not response.get("ok"):
-            raise RuntimeError(f"executor enrollment failed: {response}")
-        agent_id=response.get("agent_id")
-        secret=response.get("secret")
-        if not agent_id or not secret:
-            raise RuntimeError("Enrollment response did not include agent_id and secret; request a new enrollment token.")
-        config=dict(config)
-        config["agent_id"]=agent_id
-        config["secret"]=secret
-        config.pop("enrollment_token",None)
-        try:
-            save_config_secure(config)
-        except Exception as exc:
-            raise RuntimeError(
-                "Enrollment succeeded but secure credential persistence failed. "
-                "Revoke/reissue this device enrollment token before retrying."
-            ) from exc
+        config=complete_enrollment(config,response)
         print("Shopnoltd Executor enrollment completed; credentials saved with restricted permissions.", flush=True)
     last=0.0
     while True:
