@@ -6,7 +6,7 @@ Discovery is read-only. Mutations remain capability-driven and service-owned.
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from app.core.security import verify_token
+from app.core.security import realm_roles, verify_token
 from app.database_control_plane.discovery import discover_mongodb, reconcile_postgres
 from app.database_control_plane.registry import catalog
 
@@ -17,7 +17,7 @@ bearer = HTTPBearer(auto_error=True)
 async def require_admin(credentials: HTTPAuthorizationCredentials = Depends(bearer)):
     """Allow administrators to inspect the guarded control-plane catalog."""
     token = await verify_token(credentials.credentials)
-    roles = set(token.get("roles", []))
+    roles = realm_roles(token)
     if not roles.intersection({"admin", "platform_admin"}):
         raise HTTPException(403, "admin privileges required")
     return token
