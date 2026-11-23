@@ -2,7 +2,7 @@ from fastapi import HTTPException
 import pytest
 
 from app.api.affiliate import _country, _geo_ok, _is_platform_admin, _percent, _safe_tracking_url
-from app.models.affiliate import AffiliateConversion, AffiliateOffer
+from app.models.affiliate import AffiliateConversion, AffiliateOffer, AffiliateSandboxConversion
 from app.api.affiliate import router
 
 
@@ -90,3 +90,22 @@ def test_affiliate_router_exposes_user_and_admin_automation_endpoints():
     assert "/affiliate/admin/offers/{offer_id}/commission" in paths
     assert "/affiliate/admin/offers/{offer_id}/eligibility" in paths
     assert "/affiliate/admin/summary" in paths
+
+def test_sandbox_records_are_isolated_from_real_conversion_table():
+    assert AffiliateSandboxConversion.__tablename__ == "shopnoltd_affiliate_sandbox_conversions"
+    assert AffiliateSandboxConversion.__tablename__ != AffiliateConversion.__tablename__
+    columns = AffiliateSandboxConversion.__table__.columns
+    assert "simulated_network_payout" in columns
+    assert "simulated_user_amount" in columns
+    assert "simulated_platform_amount" in columns
+    assert "user_id" in columns
+
+
+def test_sandbox_endpoints_are_separate_and_wallet_safe():
+    paths = {route.path for route in router.routes}
+    assert "/affiliate/sandbox/simulate" in paths
+    assert "/affiliate/sandbox/me/summary" in paths
+    assert "/affiliate/sandbox/me/reset" in paths
+    assert "/affiliate/sandbox/admin/summary" in paths
+    # The live network callback remains intentionally disabled.
+    assert "/affiliate/postback" in paths
