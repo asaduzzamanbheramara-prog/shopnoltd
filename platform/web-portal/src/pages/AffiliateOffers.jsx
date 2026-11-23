@@ -22,7 +22,7 @@ export default function AffiliateOffers() {
   const [shareEdits, setShareEdits] = useState({})
   const [newOffer, setNewOffer] = useState({ network_offer_id: '', title: '', tracking_url: '', network_payout: '', countries: '', user_share_percent: 70, incentive_allowed: false })
   const loggedIn = Boolean(localStorage.getItem('shopno_token'))
-  const admin = loggedIn && isPlatformAdmin()
+  const admin = loggedIn && isPlatformAdmin()\n  const bdtEstimate = amount => rate ? '≈ ৳' + (Number(amount || 0) * Number(rate.rate)).toLocaleString('en-BD', { maximumFractionDigits: 2 }) : 'BDT rate unavailable'
 
   const load = useCallback(async () => {
     if (!loggedIn) return
@@ -122,10 +122,10 @@ export default function AffiliateOffers() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(130px,1fr))', gap: 12 }}>
         <Metric label="Tracked clicks" value={summary?.clicks ?? '—'} />
         <Metric label="Conversions" value={summary?.conversions ?? '—'} />
-        <Metric label="Pending" value={money(summary?.pending?.amount_usd)} />
-        <Metric label="Approved, unpaid" value={money(summary?.approved_unpaid?.amount_usd)} />
-        <Metric label="Payable" value={money(summary?.payable?.amount_usd)} />
-        <Metric label="Paid" value={money(summary?.paid?.amount_usd)} />
+        <Metric label="Pending" value={money(summary?.pending?.amount_usd)} detail={bdtEstimate(summary?.pending?.amount_usd)} />
+        <Metric label="Approved, unpaid" value={money(summary?.approved_unpaid?.amount_usd)} detail={bdtEstimate(summary?.approved_unpaid?.amount_usd)} />
+        <Metric label="Payable" value={money(summary?.payable?.amount_usd)} detail={bdtEstimate(summary?.payable?.amount_usd)} />
+        <Metric label="Paid" value={money(summary?.paid?.amount_usd)} detail={bdtEstimate(summary?.paid?.amount_usd)} />
       </div>
       <p style={{ color: '#64748b', fontSize: 13 }}>Wallet credits are disabled until Affmine postback verification and payout reconciliation are completed. These figures are not spendable wallet balance.</p>
       {rate ? <p style={{ fontSize: 13, color: '#475569' }}>Current USD/BDT reference: ৳{Number(rate.rate).toFixed(4)} per USD · {rate.source || 'Exchange service'} · {rate.fetched_at || 'Timestamp unavailable'}</p> : <p style={{ fontSize: 13, color: '#92400e' }}>Live USD/BDT reference is temporarily unavailable; no estimated BDT value is shown.</p>}
