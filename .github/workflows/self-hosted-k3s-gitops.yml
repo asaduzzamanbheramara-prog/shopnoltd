@@ -1117,7 +1117,20 @@ jobs:
               started_epoch="$(date -d "$started_at" +%s 2>/dev/null || echo 0)"
             fi
 
-            echo "phase=$operation_phase operationRevision=$operation_revision statusOperationRevision=$status_operation_revision syncRevision=$sync_revision sync=$sync_status health=$health_status startedAt=$started_at"
+            # Argo tracks the branch's current revision, which may advance
+            # beyond this run's pinned GIT_REVISION while image promotion or a
+            # workflow-only commit lands. Accept only a verified Git descendant.
+            if [ -n "$sync_revision" ] && ! git cat-file -e "${sync_revision}^{commit}" 2>/dev/null; then
+              git fetch --quiet --no-tags origin main || true
+            fi
+            sync_revision_is_descendant=0
+            if [ -n "$sync_revision" ] &&
+              git cat-file -e "${sync_revision}^{commit}" 2>/dev/null &&
+              git merge-base --is-ancestor "$GIT_REVISION" "$sync_revision"; then
+              sync_revision_is_descendant=1
+            fi
+
+            echo "phase=$operation_phase operationRevision=$operation_revision statusOperationRevision=$status_operation_revision syncRevision=$sync_revision descendant=$sync_revision_is_descendant sync=$sync_status health=$health_status startedAt=$started_at"
 
             # Prefer the live operation revision while an operation exists. Once
             # Argo CD completes, .operation is cleared; in that terminal state only
@@ -1132,13 +1145,13 @@ jobs:
               seen_exact_revision=1
             fi
 
-            # If another serialized run advanced Argo CD's live sync to this exact
-            # target before this run could observe its own operation history, the live
-            # revision plus Synced/Healthy state is authoritative. Argo can retain an
-            # older status.operationState revision after an automated sync.
+            # If another serialized run advanced Argo CD to this requested revision
+            # or a newer Git descendant before this run could observe its own operation
+            # history, the live revision plus Synced/Healthy state is authoritative.
+            # Argo can retain an older status.operationState revision after auto-sync.
             if [ "$live_operation" = "false" ] &&
               [ "$operation_phase" = "Succeeded" ] &&
-              [ "$sync_revision" = "$GIT_REVISION" ] &&
+              [ "$sync_revision_is_descendant" -eq 1 ] &&
               [ "$sync_status" = "Synced" ] &&
               [ "$health_status" = "Healthy" ]; then
               echo 'Argo CD live sync revision matches the requested commit and is Synced/Healthy; accepting the verified terminal live state.'
@@ -1147,7 +1160,7 @@ jobs:
 
             if [ "$seen_exact_revision" -eq 1 ] &&
               [ "$operation_phase" = "Succeeded" ] &&
-              [ "$sync_revision" = "$GIT_REVISION" ] &&
+              [ "$sync_revision_is_descendant" -eq 1 ] &&
               [ "$sync_status" = "Synced" ] &&
               [ "$health_status" = "Healthy" ]; then
               echo 'Argo CD full sync verified at the requested revision.'
@@ -1162,7 +1175,7 @@ jobs:
             if [ "$live_operation" = "false" ] &&
               { [ "$operation_phase" = "Running" ] || [ "$operation_phase" = "Terminating" ]; } &&
               [ "$status_operation_revision" = "$GIT_REVISION" ] &&
-              [ "$sync_revision" = "$GIT_REVISION" ] &&
+              [ "$sync_revision_is_descendant" -eq 1 ] &&
               [ "$sync_status" = "Synced" ] &&
               [ "$health_status" = "Healthy" ] &&
               [ "$started_epoch" -ge "$request_epoch" ]; then
