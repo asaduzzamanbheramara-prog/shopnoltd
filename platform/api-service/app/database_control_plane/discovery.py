@@ -50,51 +50,103 @@ async def _connect(database: str) -> asyncpg.Connection:
 
 
 async def _inspect_database(database: str) -> dict[str, Any]:
+    """Inspect one database with a fixed number of metadata round trips.
+
+    Keep catalog discovery independent of table count: issuing three queries
+    per table made large databases exceed the endpoint's request deadline.
+    """
     conn = await _connect(database)
     try:
+        excluded = list(_EXCLUDED_SCHEMAS)
         schemas = [r["schema_name"] for r in await conn.fetch(
             """select schema_name from information_schema.schemata
                where schema_name <> all($1::text[]) order by schema_name""",
-            list(_EXCLUDED_SCHEMAS),
+            excluded,
         )]
         tables = await conn.fetch(
-            """select c.table_schema, c.table_name
-               from information_schema.tables c
-               where c.table_type = 'BASE TABLE'
-                 and c.table_schema <> all($1::text[])
-               order by c.table_schema, c.table_name""",
-            list(_EXCLUDED_SCHEMAS),
+            """select table_schema, table_name
+               from information_schema.tables
+               where table_type = 'BASE TABLE'
+                 and table_schema <> all($1::text[])
+               order by table_schema, table_name""",
+            excluded,
         )
-        table_items: list[dict[str, Any]] = []
-        for row in tables:
-            schema, name = row["table_schema"], row["table_name"]
-            columns = await conn.fetch(
-                """select column_name, data_type, is_nullable, ordinal_position
-                   from information_schema.columns
-                   where table_schema=$1 and table_name=$2
-                   order by ordinal_position""", schema, name)
-            constraints = await conn.fetch(
-                """select tc.constraint_name, tc.constraint_type,
-                          array_agg(kcu.column_name order by kcu.ordinal_position) as columns
-                   from information_schema.table_constraints tc
-                   left join information_schema.key_column_usage kcu
-                     on kcu.constraint_name=tc.constraint_name
-                    and kcu.table_schema=tc.table_schema
-                    and kcu.table_name=tc.table_name
-                   where tc.table_schema=$1 and tc.table_name=$2
-                   group by tc.constraint_name, tc.constraint_type
-                   order by tc.constraint_name""", schema, name)
-            indexes = await conn.fetch(
-                """select indexname, indexdef from pg_indexes
-                   where schemaname=$1 and tablename=$2 order by indexname""", schema, name)
-            table_items.append({
-                "schema": schema,
-                "name": name,
-                "columns": [dict(r) for r in columns],
-                "constraints": [dict(r) for r in constraints],
-                "indexes": [dict(r) for r in indexes],
-            })
-        return {"database": database, "reachable": True, "schemas": schemas, "tables": table_items}
+
+        # Fetch each metadata family once per database, then assemble the
+        # per-table response in memory. This changes query count from O(tables)
+        # to a constant five queries, without reading application row data.
+        columns = await conn.fetch(
+            """select table_schema, table_name, column_name, data_type,
+                      is_nullable, ordinal_position
+               from information_schema.columns
+               where table_schema <> all($1::text[])
+               order by table_schema, table_name, ordinal_position""",
+            excluded,
+        )
+        constraints = await conn.fetch(
+            """select tc.table_schema, tc.table_name, tc.constraint_name,
+                      tc.constraint_type,
+                      array_agg(kcu.column_name order by kcu.ordinal_position) as columns
+               from information_schema.table_constraints tc
+               left join information_schema.key_column_usage kcu
+                 on kcu.constraint_name=tc.constraint_name
+                and kcu.constraint_schema=tc.constraint_schema
+                and kcu.table_schema=tc.table_schema
+                and kcu.table_name=tc.table_name
+               where tc.table_schema <> all($1::text[])
+               group by tc.table_schema, tc.table_name,
+                        tc.constraint_name, tc.constraint_type
+               order by tc.table_schema, tc.table_name, tc.constraint_name""",
+            excluded,
+        )
+        indexes = await conn.fetch(
+            """select schemaname as table_schema, tablename as table_name,
+                      indexname, indexdef
+               from pg_indexes
+               where schemaname <> all($1::text[])
+               order by schemaname, tablename, indexname""",
+            excluded,
+        )
+
+        table_items: dict[tuple[str, str], dict[str, Any]] = {
+            (row["table_schema"], row["table_name"]): {
+                "schema": row["table_schema"],
+                "name": row["table_name"],
+                "columns": [],
+                "constraints": [],
+                "indexes": [],
+            }
+            for row in tables
+        }
+        for row in columns:
+            item = table_items.get((row["table_schema"], row["table_name"]))
+            if item is not None:
+                item["columns"].append({
+                    key: row[key]
+                    for key in ("column_name", "data_type", "is_nullable", "ordinal_position")
+                })
+        for row in constraints:
+            item = table_items.get((row["table_schema"], row["table_name"]))
+            if item is not None:
+                item["constraints"].append({
+                    "constraint_name": row["constraint_name"],
+                    "constraint_type": row["constraint_type"],
+                    "columns": row["columns"],
+                })
+        for row in indexes:
+            item = table_items.get((row["table_schema"], row["table_name"]))
+            if item is not None:
+                item["indexes"].append({
+                    "indexname": row["indexname"],
+                    "indexdef": row["indexdef"],
+                })
+
+        return {
+            "database": database,
+            "reachable": True,
+            "schemas": schemas,
+            "tables": list(table_items.values()),
+        }
     finally:
         await conn.close()
 async def discover_postgres() -> dict[str, Any]:

@@ -1383,7 +1383,10 @@ jobs:
     name: Verify Argo CD passive reconciliation
     if: ${{ github.event_name == 'push' }}
     runs-on: [self-hosted, linux]
-    timeout-minutes: 5
+    # Image promotion commits and Argo CD reconciliation happen after the
+    # application-code push. Wait for that normal GitOps chain instead of
+    # failing immediately on the pre-promotion Argo revision.
+    timeout-minutes: 45
     steps:
       - name: Checkout repository history for revision ancestry check
         uses: actions/checkout@v4
@@ -1391,27 +1394,43 @@ jobs:
           ref: ${{ github.sha }}
           fetch-depth: 0
 
-      - name: Verify Argo CD has reconciled this commit or a newer descendant
+      - name: Wait for Argo CD to reconcile this commit or a newer descendant
         shell: bash
         run: |
           set -euo pipefail
           expected="${GITHUB_SHA}"
-          app_json="$(kubectl --request-timeout=20s -n argocd get application shopnoltd -o json)"
-          actual_revision="$(jq -r '.status.sync.revision // empty' <<<"$app_json")"
-          sync_status="$(jq -r '.status.sync.status // empty' <<<"$app_json")"
-          health_status="$(jq -r '.status.health.status // empty' <<<"$app_json")"
-          echo "Pushed revision=$expected"
-          echo "Observed Argo revision=${actual_revision:-missing} sync=${sync_status:-missing} health=${health_status:-missing}"
-          if [ -z "$actual_revision" ] || ! git cat-file -e "${actual_revision}^{commit}" 2>/dev/null; then
-            echo "::error::Argo CD reported a revision that is not present in the checked-out repository history."
-            exit 1
-          fi
-          if ! git merge-base --is-ancestor "$expected" "$actual_revision"; then
-            echo "::error::Argo CD has not reconciled the pushed commit or a descendant of it."
-            exit 1
-          fi
-          if [ "$sync_status" != "Synced" ] || [ "$health_status" != "Healthy" ]; then
-            echo "::error::Argo CD revision ancestry is current, but the application is not Synced and Healthy."
-            exit 1
-          fi
-          echo "Argo CD is Synced and Healthy at the pushed commit or a newer descendant; no manual sync or cluster mutation was requested."
+          deadline=$((SECONDS + 2100))
+          echo "Waiting for Argo CD to reconcile pushed revision=$expected or a newer descendant."
+          while [ "$SECONDS" -lt "$deadline" ]; do
+            if ! app_json="$(kubectl --request-timeout=20s -n argocd get application shopnoltd -o json 2>/dev/null)"; then
+              echo "Argo CD Application is temporarily unavailable; retrying."
+              sleep 15
+              continue
+            fi
+
+            actual_revision="$(jq -r '.status.sync.revision // empty' <<<"$app_json")"
+            sync_status="$(jq -r '.status.sync.status // empty' <<<"$app_json")"
+            health_status="$(jq -r '.status.health.status // empty' <<<"$app_json")"
+
+            if [ -n "$actual_revision" ] && ! git cat-file -e "${actual_revision}^{commit}" 2>/dev/null; then
+              # The image-promotion bot may have advanced main after this job
+              # checked out GITHUB_SHA. Fetch that descendant before testing
+              # ancestry; never treat an unknown revision as a successful sync.
+              git fetch --quiet --no-tags origin main || true
+            fi
+
+            if [ -n "$actual_revision" ] &&
+               git cat-file -e "${actual_revision}^{commit}" 2>/dev/null &&
+               git merge-base --is-ancestor "$expected" "$actual_revision" &&
+               [ "$sync_status" = "Synced" ] &&
+               [ "$health_status" = "Healthy" ]; then
+              echo "Argo CD is Synced and Healthy at revision=$actual_revision (pushed revision or newer descendant)."
+              exit 0
+            fi
+
+            echo "Waiting: pushed=$expected observed=${actual_revision:-missing} sync=${sync_status:-missing} health=${health_status:-missing}"
+            sleep 15
+          done
+
+          echo "::error::Timed out waiting for Argo CD to reconcile $expected or a newer descendant in Synced/Healthy state."
+          exit 1
