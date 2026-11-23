@@ -8,7 +8,6 @@ on:
       - 'k8s/**'
       - 'platform/**'
       - 'services/**'
-      - '.github/workflows/self-hosted-k3s-gitops.yml'
   workflow_dispatch:
     inputs:
       perform_gitops_sync:
