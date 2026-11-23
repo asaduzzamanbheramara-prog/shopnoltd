@@ -28,6 +28,11 @@ def test_affmine_json_feed_normalizes_valid_offer_shapes():
         '{"offer_feed":{"success":1,"offers":[{"offer_id":"43"}]}}',
         "application/json",
     ) == [{"offer_id": "43"}]
+    normalized = _affmine_campaign_rows(
+        '{"offer_feed":{"success":true,"offers":[{"offer_id":"44","name":"Live feed title"}]}}',
+        "application/json",
+    )
+    assert normalized[0]["offer_name"] == "Live feed title"
     assert _affmine_campaign_rows('{"success":true,"offers":null}', "application/json") == []
 
 
