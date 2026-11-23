@@ -31,7 +31,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: web-portal
-          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/web-portal:811d1bf19daf6dac414a57bb3ca3a0f7ddf6c4ca
+          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/web-portal:80cae664434f0a8de74d55f826ce4134fafa761d
           imagePullPolicy: Always
           ports:
             - name: http
