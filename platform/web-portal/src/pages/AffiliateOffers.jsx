@@ -168,13 +168,13 @@ export default function AffiliateOffers() {
         <Metric label="Payable" value={money(summary?.payable?.amount_usd)} detail={bdtEstimate(summary?.payable?.amount_usd)} />
         <Metric label="Paid" value={money(summary?.paid?.amount_usd)} detail={bdtEstimate(summary?.paid?.amount_usd)} />
       </div>
-      <p style={{ color: '#64748b', fontSize: 13 }}>Wallet credits are disabled until Affmine postback verification and payout reconciliation are completed. These figures are not spendable wallet balance.</p>
+      <p style={{ color: '#64748b', fontSize: 13 }}>Wallet credits are disabled until partner postback verification and payout reconciliation are completed. These figures are not spendable wallet balance.</p>
       {rate ? <p style={{ fontSize: 13, color: '#475569' }}>Current USD/BDT reference: ৳{Number(rate.rate).toFixed(4)} per USD · {rate.source || 'Exchange service'} · {rate.fetched_at || 'Timestamp unavailable'}</p> : <p style={{ fontSize: 13, color: '#92400e' }}>Live USD/BDT reference is temporarily unavailable; no estimated BDT value is shown.</p>}
     </section>
 
-    {sandboxSummary?.enabled && <section style={{ ...panel, marginBottom: 18, borderStyle: 'dashed', borderColor: '#d97706' }}>
+    {admin && sandboxSummary?.enabled && <section style={{ ...panel, marginBottom: 18, borderStyle: 'dashed', borderColor: '#d97706' }}>
       <h2 style={{ marginTop: 0 }}>Earnings Sandbox — Test Only</h2>
-      <p style={{ color: '#92400e', fontWeight: 700 }}>These are simulated figures, not Affmine earnings, not payable, and never added to your wallet.</p>
+      <p style={{ color: '#92400e', fontWeight: 700 }}>These are simulated figures, not real partner earnings, not payable, and never added to your wallet.</p>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: 12, alignItems: 'end' }}>
         <label>Mock network payout (USD)<input type="number" min="0.01" max="1000" step="0.01" value={sandboxPayout} onChange={e => setSandboxPayout(e.target.value)} style={{ display: 'block', width: '100%', padding: 9, boxSizing: 'border-box' }} /></label>
         <label>User share (%)<input type="number" min="0" max="90" step="1" value={sandboxShare} onChange={e => setSandboxShare(e.target.value)} style={{ display: 'block', width: '100%', padding: 9, boxSizing: 'border-box' }} /></label>
