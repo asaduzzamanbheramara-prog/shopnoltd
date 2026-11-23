@@ -218,5 +218,3 @@ def test_affmine_country_codes_support_json_shapes():
     assert _affmine_country_codes(["BD", "US"]) == "BD,US"
     assert _affmine_country_codes({"country": [{"country_code": "BD"}, {"country_code": "US"}]}) == "BD,US"
     assert _affmine_country_codes({"country_code": "BD"}) == "BD"
-
-[executed on device: Shopnoltd (52cb1894-787c-49c2-9460-901a8f74a1e7)]
