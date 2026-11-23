@@ -17,7 +17,7 @@ from fastapi.responses import Response
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.core.config import settings
-from app.core.security import verify_token
+from app.core.security import realm_roles, verify_token
 from app.database_control_plane.access import resolve_table_capability
 from app.database_control_plane.discovery import _connect, discover_postgres
 
@@ -29,7 +29,7 @@ _IDENTIFIER = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 async def require_admin(credentials: HTTPAuthorizationCredentials = Depends(bearer)):
     token = await verify_token(credentials.credentials)
-    if not set(token.get("roles", [])).intersection({"admin", "platform_admin"}):
+    if not realm_roles(token).intersection({"admin", "platform_admin"}):
         raise HTTPException(403, "admin privileges required")
     return token
 
@@ -37,7 +37,7 @@ async def require_admin(credentials: HTTPAuthorizationCredentials = Depends(bear
 async def require_platform_admin(credentials: HTTPAuthorizationCredentials = Depends(bearer)):
     """Restrict generic database mutations to the dedicated platform-admin role."""
     token = await verify_token(credentials.credentials)
-    if "platform_admin" not in set(token.get("roles", [])):
+    if "platform_admin" not in realm_roles(token):
         raise HTTPException(403, "platform_admin privileges required")
     return token
 
@@ -428,7 +428,7 @@ async def execute_admin_sql(payload: dict[str, Any] = Body(...), token: dict = D
     if first == "WITH":
         raise HTTPException(403, "WITH statements are read-only through the browser SQL control plane")
     mutation = first in {"INSERT", "UPDATE", "DELETE"}
-    if mutation and "platform_admin" not in set(token.get("roles", [])):
+    if mutation and "platform_admin" not in realm_roles(token):
         raise HTTPException(403, "platform_admin is required for SQL mutations")
     tables = _guarded_sql_table_references(sql)
     if any(schema in {"pg_catalog", "information_schema"} for schema, _ in tables):
