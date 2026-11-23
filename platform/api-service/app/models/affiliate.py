@@ -63,5 +63,3 @@ class AffiliateSandboxConversion(Base):
     user_share_percent: Mapped[int] = mapped_column(Integer, nullable=False)
     currency: Mapped[str] = mapped_column(String(3), nullable=False, default="USD")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-
-[executed on device: Shopnoltd (52cb1894-787c-49c2-9460-901a8f74a1e7)]
