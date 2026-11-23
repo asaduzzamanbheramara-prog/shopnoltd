@@ -23,6 +23,7 @@ export default function AffiliateOffers() {
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [syncingAffmine, setSyncingAffmine] = useState(false)
   const [shareEdits, setShareEdits] = useState({})
   const [newOffer, setNewOffer] = useState({ network_offer_id: '', title: '', tracking_url: '', click_param: 's1', network_payout: '', countries: '', user_share_percent: 70, incentive_allowed: false })
   const loggedIn = Boolean(localStorage.getItem('shopno_token'))
@@ -119,6 +120,16 @@ export default function AffiliateOffers() {
     } catch (e) { setError(e.message || 'Offer status update failed') }
   }
 
+  async function syncAffmine() {
+    setError(''); setMessage(''); setSyncingAffmine(true)
+    try {
+      const result = await authenticatedRequest('/api/v1/affiliate/admin/sync-affmine', { method: 'POST' })
+      setMessage('Affmine sync complete: ' + result.inserted + ' new drafts, ' + result.updated + ' updated, ' + result.skipped_unsupported_currency + ' unsupported-currency offers skipped. No offers were activated and no incentives were enabled.')
+      await load()
+    } catch (e) { setError(e.message || 'Affmine campaign sync failed') }
+    finally { setSyncingAffmine(false) }
+  }
+
   async function addOffer(event) {
     event.preventDefault(); setError(''); setMessage('')
     try {
@@ -196,6 +207,12 @@ export default function AffiliateOffers() {
 
     {admin && <section style={{ marginTop: 36 }}>
       <h2>Admin Affiliate Center</h2>
+      <div style={{ ...panel, marginBottom: 16 }}>
+        <h3 style={{ marginTop: 0 }}>Affmine Publisher API v1.0</h3>
+        <p style={{ color: '#64748b', lineHeight: 1.6 }}>Import active campaigns from Affmine into Shopnoltd. Every imported campaign stays Draft and incentive-disabled until its tracking URL, click macro, campaign terms, GEO and incentivized-traffic permission are verified.</p>
+        <button type="button" style={button} onClick={syncAffmine} disabled={syncingAffmine}>{syncingAffmine ? 'Syncing Affmine campaigns…' : 'Sync campaigns from Affmine'}</button>
+        <small style={{ display: 'block', marginTop: 8, color: '#64748b' }}>Requires server-side AFFMINE_AFF_ID and AFFMINE_API_KEY. Credentials are never sent to the browser.</small>
+      </div>
       <div style={{ ...panel, marginBottom: 16 }}>
         <h3 style={{ marginTop: 0 }}>Network conversion summary</h3>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: 12 }}>
