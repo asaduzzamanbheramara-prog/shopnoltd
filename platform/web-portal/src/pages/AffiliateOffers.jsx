@@ -71,6 +71,24 @@ export default function AffiliateOffers() {
     } catch (e) { setError(e.message || 'Commission update failed') }
   }
 
+  async function toggleEligibility(offer) {
+    setError(''); setMessage('')
+    try {
+      await authenticatedRequest('/api/v1/affiliate/admin/offers/' + offer.id + '/eligibility', { method: 'PATCH', body: JSON.stringify({ incentive_allowed: !offer.incentive_allowed }) })
+      setMessage('Offer incentive eligibility updated. Disabling incentive permission automatically pauses the offer.')
+      await load()
+    } catch (e) { setError(e.message || 'Eligibility update failed') }
+  }
+
+  async function setOfferStatus(offer, action) {
+    setError(''); setMessage('')
+    try {
+      await authenticatedRequest('/api/v1/affiliate/admin/offers/' + offer.id + '/' + action, { method: 'POST' })
+      setMessage('Offer status updated.')
+      await load()
+    } catch (e) { setError(e.message || 'Offer status update failed') }
+  }
+
   async function addOffer(event) {
     event.preventDefault(); setError(''); setMessage('')
     try {
@@ -151,7 +169,7 @@ export default function AffiliateOffers() {
       </form>
       <div style={{ display: 'grid', gap: 10 }}>
         {adminOffers.map(offer => <div key={offer.id} style={{ ...panel, display: 'grid', gridTemplateColumns: 'minmax(0,1fr) auto', alignItems: 'center', gap: 12 }}>
-          <div><b>{offer.title}</b><p style={{ margin: '4px 0', color: '#64748b', fontSize: 13 }}>#{offer.network_offer_id} · {offer.status} · Incentive permitted: {String(offer.incentive_allowed)}</p><small>Network payout {money(offer.network_payout)} · Platform share {100 - Number(shareEdits[offer.id] ?? offer.user_share_percent)}%</small></div>
+          <div><b>{offer.title}</b><p style={{ margin: '4px 0', color: '#64748b', fontSize: 13 }}>#{offer.network_offer_id} · {offer.status} · Incentive permitted: {String(offer.incentive_allowed)}</p><small>Network payout {money(offer.network_payout)} · Platform share {100 - Number(shareEdits[offer.id] ?? offer.user_share_percent)}%</small><div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}><button type="button" style={{ ...button, background: '#475569' }} onClick={() => toggleEligibility(offer)}>{offer.incentive_allowed ? 'Revoke incentive permission' : 'Confirm incentive permission'}</button><button type="button" style={{ ...button, background: offer.status === 'active' ? '#b45309' : '#15803d' }} onClick={() => setOfferStatus(offer, offer.status === 'active' ? 'deactivate' : 'activate')}>{offer.status === 'active' ? 'Pause offer' : 'Activate offer'}</button></div></div>
           <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}><input aria-label="User commission percentage" type="number" min="0" max="90" value={shareEdits[offer.id] ?? offer.user_share_percent} onChange={e => setShareEdits(v => ({ ...v, [offer.id]: e.target.value }))} style={{ width: 65, padding: 8 }} /><button type="button" style={button} onClick={() => updateShare(offer.id)}>Save split</button></div>
         </div>)}
       </div>
