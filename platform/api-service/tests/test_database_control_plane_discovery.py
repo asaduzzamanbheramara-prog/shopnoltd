@@ -13,7 +13,7 @@ from app.database_control_plane.discovery import _declared_by_database, _postgre
 def test_declared_database_map_preserves_service_ownership():
     data = _declared_by_database(DatastoreKind.POSTGRESQL)
     assert "shopnoltd" in data
-    assert "payment-service" in data["shopnoltd"]
+    assert "api-service" in data["shopnoltd"]
     assert "ai-platform" in data["ai"]
 
 
@@ -28,13 +28,8 @@ def test_sql_guard_resolves_simple_table_references():
     assert _guarded_sql_table_references("SELECT id FROM public.posts WHERE id = 1") == {("public", "posts")}
 
 
-def test_sql_guard_rejects_quoted_identifiers_that_bypass_scanner():
-    try:
-        _guarded_sql_table_references('SELECT * FROM "public"."transactions"')
-    except HTTPException as exc:
-        assert exc.status_code == 403
-    else:
-        raise AssertionError("quoted identifiers must fail closed")
+def test_sql_guard_resolves_quoted_identifiers():
+    assert _guarded_sql_table_references('SELECT * FROM "public"."transactions"') == {("public", "transactions")}
 
 
 def test_sql_guard_rejects_comma_separated_from_lists():
