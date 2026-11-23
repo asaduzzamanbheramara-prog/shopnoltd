@@ -12,7 +12,7 @@ website `shopnoltd.dpdns.org`:
 - Native banner
 - Popunder
 - Social Bar
-- Smartlink, intentionally disabled until the publisher dashboard provides a confirmed active URL
+- Smartlink, rendered only after advertising consent and the exact-host policy allow it; publisher activation must still be confirmed in the dashboard
 
 The standard display snippets share the global `window.atOptions` variable.
 `src/components/AdsterraAds.jsx` serializes their script loading so a zone's
@@ -22,9 +22,11 @@ The existing `AdsterraBanner.jsx` component retains the original homepage
 
 Popunder and Social Bar scripts are loaded from the homepage. They can affect
 visitor experience; monitor frequency, mobile behavior, browser console, and
-Adsterra's policy requirements. The Smartlink placement is currently disabled because the publisher dashboard
-reports Smartlink_1 (31843363) as inactive. Re-enable only after confirming the
-active destination URL in the dashboard; never infer it from an inactive ID.
+Adsterra's policy requirements. The publisher dashboard screenshot reports Smartlink_1 (31843363) as inactive.
+The existing explicit-click destination remains in the code behind consent and
+exact-host policy, but its current publisher status is unverified. Confirm that
+the URL belongs to an active unit before expecting delivery; never infer a URL
+from an inactive ID.
 
 ## Publisher-provided hosts and keys
 
