@@ -316,3 +316,10 @@ def test_offer_links_use_shopnoltd_redirect_not_provider_destination():
     assert "_safe_tracking_url" not in start_source
     assert "RedirectResponse(destination, status_code=302)" in redirect_source
     assert any(route.path == "/affiliate/go/{click_id}" for route in affiliate_router.routes)
+
+
+def test_social_task_destinations_include_api_supported_linkedin_and_x():
+    from app.api.v3_work import WORK_PLATFORMS
+    from app.api.v2 import WORK_PLATFORMS as LEGACY_WORK_PLATFORMS
+    assert {"linkedin", "x"}.issubset(WORK_PLATFORMS)
+    assert WORK_PLATFORMS == LEGACY_WORK_PLATFORMS

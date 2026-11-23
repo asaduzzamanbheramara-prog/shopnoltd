@@ -27,7 +27,7 @@ TASK_TYPES = {
     "review", "social", "data", "upload", "custom", "watch",
 }
 
-WORK_PLATFORMS = {"shopnoltd", "facebook", "instagram", "youtube", "tiktok", "telegram", "whatsapp", "website", "data", "custom"}
+WORK_PLATFORMS = {"shopnoltd", "facebook", "instagram", "youtube", "tiktok", "telegram", "whatsapp", "linkedin", "x", "website", "data", "custom"}
 
 async def current_user(creds: HTTPAuthorizationCredentials = Depends(bearer)):
     try:

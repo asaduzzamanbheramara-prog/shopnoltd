@@ -71,7 +71,7 @@ TASK_TYPES = {
 }
 
 MICRO_TASK_TYPES = {"simple", "follow", "like", "comment", "share", "view", "visit", "review", "social", "data", "upload", "custom"}
-WORK_PLATFORMS = {"shopnoltd", "facebook", "instagram", "youtube", "tiktok", "telegram", "whatsapp", "website", "data", "custom"}
+WORK_PLATFORMS = {"shopnoltd", "facebook", "instagram", "youtube", "tiktok", "telegram", "whatsapp", "linkedin", "x", "website", "data", "custom"}
 
 def is_admin(u):
     roles = set(u.get("roles") or [])
