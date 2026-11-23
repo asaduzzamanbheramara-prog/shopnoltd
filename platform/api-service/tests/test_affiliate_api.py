@@ -4,7 +4,7 @@ from decimal import Decimal
 from fastapi import HTTPException
 import pytest
 
-from app.api.affiliate import _affmine_campaign_rows, _affmine_country_codes, _country, _geo_ok, _is_platform_admin, _percent, _require_sandbox_enabled, _safe_tracking_url, sandbox_user_summary, simulate_sandbox_earning
+from app.api.affiliate import _affmine_campaign_rows, _affmine_country_codes, _affmine_platform_codes, _client_platform, _platform_ok, _country, _geo_ok, _is_platform_admin, _percent, _require_sandbox_enabled, _safe_tracking_url, sandbox_user_summary, simulate_sandbox_earning
 from app.models.affiliate import AffiliateConversion, AffiliateOffer, AffiliateSandboxConversion
 from app.api.affiliate import router
 
@@ -183,3 +183,34 @@ def test_affmine_sync_is_platform_admin_only_and_route_exists():
     route = next(r for r in router.routes if r.path == "/affiliate/admin/sync-affmine")
     assert "POST" in route.methods
     assert route.endpoint.__name__ == "sync_affmine_campaigns"
+
+
+def test_affmine_platform_metadata_is_normalized_and_enforced():
+    assert _affmine_platform_codes("1,3,4") == "1,3,4"
+    assert _affmine_platform_codes(["2", "5", "invalid"]) == "2,5"
+    assert _affmine_platform_codes("") == "unknown"
+    assert _platform_ok("1,3", "3")
+    assert not _platform_ok("1,3", "4")
+    assert not _platform_ok("unknown", "3")
+    assert _platform_ok("1,2,3,4,5", "")
+
+
+def test_client_platform_detection_from_user_agent():
+    class DeviceRequest:
+        def __init__(self, ua):
+            self.headers = {"user-agent": ua}
+    assert _client_platform(DeviceRequest("Mozilla/5.0 (Windows NT 10.0; Win64; x64)")) == "1"
+    assert _client_platform(DeviceRequest("Mozilla/5.0 (Macintosh; Intel Mac OS X)")) == "2"
+    assert _client_platform(DeviceRequest("Mozilla/5.0 (Linux; Android 14) Mobile")) == "3"
+    assert _client_platform(DeviceRequest("Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)")) == "4"
+    assert _client_platform(DeviceRequest("Mozilla/5.0 (Linux; U; Mobile)")) == "5"
+
+
+def test_affiliate_offer_model_stores_network_platform_and_currency():
+    columns = AffiliateOffer.__table__.columns
+    assert "currency" in columns
+    assert "allowed_platform" in columns
+    assert "network_incentive" in columns
+    assert columns["currency"].type.length == 3
+
+[executed on device: Shopnoltd (52cb1894-787c-49c2-9460-901a8f74a1e7)]
