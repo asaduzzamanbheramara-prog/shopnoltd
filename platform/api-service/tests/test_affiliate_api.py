@@ -14,6 +14,31 @@ class Request:
         self.headers = headers
 
 
+def test_affmine_json_feed_normalizes_valid_offer_shapes():
+    assert _affmine_campaign_rows(
+        '{"success":true,"offers":{"offer":{"offer_id":"42","offer_name":"Example"}}}',
+        "application/json",
+    ) == [{"offer_id": "42", "offer_name": "Example"}]
+    assert _affmine_campaign_rows(
+        '{"offer_feed":{"success":1,"offers":[{"offer_id":"43"}]}}',
+        "application/json",
+    ) == [{"offer_id": "43"}]
+    assert _affmine_campaign_rows('{"success":true,"offers":null}', "application/json") == []
+
+
+@pytest.mark.parametrize("payload", [
+    "[]",
+    '{"offer_feed":[]}',
+    '{"success":true,"offers":"not-a-list"}',
+    '{"success":true,"offers":[null]}',
+    "{invalid-json",
+])
+def test_affmine_json_feed_rejects_malformed_structures(payload):
+    with pytest.raises(HTTPException) as error:
+        _affmine_campaign_rows(payload, "application/json")
+    assert error.value.status_code == 502
+
+
 def test_country_requires_cloudflare_country_header():
     assert _country(Request({"cf-ipcountry": "BD"})) == "BD"
     assert _country(Request({"cf-ipcountry": "XX"})) == ""
