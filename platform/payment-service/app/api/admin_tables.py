@@ -13,6 +13,7 @@ from datetime import date, datetime
 from decimal import Decimal
 
 from app.api.admin import require_admin
+from app.core.security import realm_roles
 from app.core.db import Base, SessionLocal
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from fastapi.responses import StreamingResponse
@@ -35,7 +36,7 @@ async def db():
         yield s
 
 def _platform_admin(user):
-    if "platform_admin" not in set(user.get("roles", [])):
+    if "platform_admin" not in realm_roles(user):
         raise HTTPException(403, "platform_admin required for generic database operations")
 
 def _serialize(value):
@@ -66,7 +67,7 @@ def _write_allowed(name):
 def _tenant_clause(table, user):
     tenant = table.columns.get("tenant_id")
     tenant_id = user.get("tenant_id")
-    if tenant is not None and tenant_id and "platform_admin" not in set(user.get("roles", [])):
+    if tenant is not None and tenant_id and "platform_admin" not in realm_roles(user):
         return tenant == str(tenant_id)
     return None
 
