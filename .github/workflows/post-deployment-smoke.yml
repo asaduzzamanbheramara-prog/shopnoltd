@@ -35,15 +35,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 50
     steps:
-      - name: Dispatch reconciliation when explicitly requested or when only this workflow changed
+      - name: Keep manual smoke checks read-only
         shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
-            gh workflow run self-hosted-k3s-gitops.yml --repo "$GITHUB_REPOSITORY" --ref main
-            echo 'Dispatched GitOps reconciliation for an explicit manual request.'
+            echo 'Manual smoke checks validate the currently deployed revision and never trigger a full cluster reconciliation.'
           else
             echo 'Push-triggered checks never dispatch a duplicate GitOps run.'
           fi
@@ -54,6 +51,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            echo 'Manual smoke request: validate public endpoints for the currently deployed cluster; no GitOps operation is required.'
+            exit 0
+          fi
           workflow='self-hosted-k3s-gitops.yml'
           if [ "$GITHUB_EVENT_NAME" = "workflow_run" ] && [ "$(jq -r '.workflow_run.name' "$GITHUB_EVENT_PATH")" = "Shopnoltd Self-Hosted K3s GitOps" ]; then
             expected_sha="$(jq -r '.workflow_run.head_sha' "$GITHUB_EVENT_PATH")"

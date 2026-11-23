@@ -37,7 +37,7 @@ permissions:
   actions: write
 
 concurrency:
-  group: platform-build-promote-main
+  group: platform-build-promote-${{ github.ref }}
   cancel-in-progress: false
 
 env:
