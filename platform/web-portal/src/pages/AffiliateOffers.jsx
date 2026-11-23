@@ -41,7 +41,7 @@ export default function AffiliateOffers() {
       setOffers(Array.isArray(offersData) ? offersData : [])
       setSummary(summaryData)
       setRate(rateData)
-      const sandboxData = await authenticatedRequest('/api/v1/affiliate/sandbox/me/summary')
+      const sandboxData = await authenticatedRequest('/api/v1/affiliate/sandbox/me/summary').catch(() => null)
       setSandboxSummary(sandboxData)
       if (admin) {
         const [adminRows, adminTotals] = await Promise.all([
@@ -50,7 +50,7 @@ export default function AffiliateOffers() {
         ])
         setAdminOffers(Array.isArray(adminRows) ? adminRows : [])
         setAdminSummary(adminTotals || {})
-        const sandboxTotals = await authenticatedRequest('/api/v1/affiliate/sandbox/admin/summary')
+        const sandboxTotals = await authenticatedRequest('/api/v1/affiliate/sandbox/admin/summary').catch(() => null)
         setSandboxAdmin(sandboxTotals || null)
       }
     } catch (e) { setError(e.message || 'Could not load affiliate data') }
@@ -161,7 +161,7 @@ export default function AffiliateOffers() {
       {rate ? <p style={{ fontSize: 13, color: '#475569' }}>Current USD/BDT reference: ৳{Number(rate.rate).toFixed(4)} per USD · {rate.source || 'Exchange service'} · {rate.fetched_at || 'Timestamp unavailable'}</p> : <p style={{ fontSize: 13, color: '#92400e' }}>Live USD/BDT reference is temporarily unavailable; no estimated BDT value is shown.</p>}
     </section>
 
-    <section style={{ ...panel, marginBottom: 18, borderStyle: 'dashed', borderColor: '#d97706' }}>
+    {sandboxSummary?.enabled && <section style={{ ...panel, marginBottom: 18, borderStyle: 'dashed', borderColor: '#d97706' }}>
       <h2 style={{ marginTop: 0 }}>Earnings Sandbox — Test Only</h2>
       <p style={{ color: '#92400e', fontWeight: 700 }}>These are simulated figures, not Affmine earnings, not payable, and never added to your wallet.</p>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: 12, alignItems: 'end' }}>
@@ -176,7 +176,7 @@ export default function AffiliateOffers() {
         <Metric label="Mock user share" value={money(sandboxSummary?.simulated_user_amount_usd)} />
       </div>
       <small style={{ color: '#64748b' }}>Separate sandbox storage. Reset deletes only your sandbox records; real conversions and wallet balances are untouched.</small>
-    </section>
+    </section>}
 
     <section>
       <h2>Offers available to your account</h2>
@@ -203,7 +203,7 @@ export default function AffiliateOffers() {
         </div>
         <p style={{ color: '#64748b', fontSize: 13 }}>No real conversion totals appear until verified network callbacks are enabled.</p>
       </div>
-      <div style={{ ...panel, marginBottom: 16, borderStyle: 'dashed', borderColor: '#d97706' }}>
+      {sandboxAdmin?.enabled && <div style={{ ...panel, marginBottom: 16, borderStyle: 'dashed', borderColor: '#d97706' }}>
         <h3 style={{ marginTop: 0 }}>Platform Sandbox Totals — Test Only</h3>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', gap: 12 }}>
           <Metric label="Mock conversions" value={sandboxAdmin?.test_conversions ?? 0} />
@@ -211,7 +211,7 @@ export default function AffiliateOffers() {
           <Metric label="Mock Shopnoltd share" value={money(sandboxAdmin?.simulated_platform_share_usd)} />
         </div>
         <small style={{ color: '#92400e' }}>Never included in real affiliate revenue, payable amounts, or wallet funds.</small>
-      </div>
+      </div>}
       <form onSubmit={addOffer} style={{ ...panel, display: 'grid', gap: 10, marginBottom: 16 }}>
         <h3 style={{ margin: 0 }}>Add a network offer (admin only)</h3>
         <input required placeholder="Network offer ID" value={newOffer.network_offer_id} onChange={e => setNewOffer(v => ({ ...v, network_offer_id: e.target.value }))} />
