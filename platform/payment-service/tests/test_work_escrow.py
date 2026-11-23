@@ -79,4 +79,4 @@ def test_escrow_request_contracts_require_positive_amount_and_stable_identifiers
     with pytest.raises(ValidationError):
         ReserveIn(tenant_id="tenant-1", creator_id="creator-1", work_id="work-1", currency="BDT", amount="0")
     with pytest.raises(ValidationError):
-        ReleaseIn(tenant_id="tenant-1", creator_id="creator-1", work_id="work-1", currency="BDT")
+        ReleaseIn(tenant_id="tenant-1", creator_id="creator-1", work_id="work-1")
