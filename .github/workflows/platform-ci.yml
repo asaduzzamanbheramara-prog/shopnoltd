@@ -336,3 +336,62 @@ jobs:
           pip install -r requirements.txt pytest
       - name: Test session TTL and cleanup retries
         run: pytest -q tests/test_session_cleanup.py
+
+  realm-role-authorization-tests:
+    name: "${{ matrix.service }} realm-role authorization regression tests"
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: ad
+            path: platform/ad-service
+            test_file: tests/test_security_roles.py
+          - service: analytics
+            path: platform/analytics-service
+            test_file: tests/test_admin_authorization.py
+          - service: storage
+            path: platform/storage-service
+            test_file: tests/test_admin_authorization.py
+    defaults:
+      run:
+        working-directory: ${{ matrix.path }}
+    env:
+      DATABASE_URL: postgresql+asyncpg://test:test@localhost/test
+      PYTHONPATH: .:../../shared/libraries/python
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: ${{ matrix.path }}/requirements.txt
+      - name: Install service dependencies and pytest
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt pytest
+      - name: Run realm-role authorization regression tests
+        run: python -m pytest -q ${{ matrix.test_file }}
+
+  ai-platform-realm-role-authorization-tests:
+    name: AI platform realm-role authorization regression tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: platform/ai-platform
+    env:
+      DATABASE_URL: postgresql+asyncpg://test:test@localhost/test
+      PYTHONPATH: .:../../shared/libraries/python
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install minimal authentication test dependencies
+        run: python -m pip install fastapi httpx python-jose[cryptography] cryptography pydantic-settings pytest
+      - name: Run AI platform realm-role regression tests
+        run: python -m pytest -q tests/test_admin_authorization.py

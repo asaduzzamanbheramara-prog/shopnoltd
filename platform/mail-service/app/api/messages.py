@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.db import SessionLocal
-from app.core.security import verify_token
+from app.core.security import realm_roles, verify_token
 from app.models.models import Mailbox, Message
 
 router = APIRouter()
@@ -28,14 +28,8 @@ async def current_user(creds: HTTPAuthorizationCredentials = Depends(bearer)):
 
 
 def _is_platform_admin(user: dict) -> bool:
-    # Only realm roles and this service's own client roles are authoritative;
-    # an unrelated client's role named "admin" must not grant mailbox access.
-    realm_access = user.get("realm_access") or {}
-    roles = set(realm_access.get("roles") or [])
-    resource_access = user.get("resource_access") or {}
-    client_access = resource_access.get("mail-service") or {}
-    roles.update(client_access.get("roles") or [])
-    return bool(roles.intersection({"admin", "platform_admin"}))
+    # Cross-mailbox access is platform-wide and therefore realm-role only.
+    return bool(realm_roles(user).intersection({"admin", "platform_admin"}))
 
 
 def ensure_mailbox_access(mailbox: Mailbox, user: dict) -> None:

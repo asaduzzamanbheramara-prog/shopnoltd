@@ -6,7 +6,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import SessionLocal
-from app.core.security import verify_token
+from app.core.security import realm_roles, verify_token
 from app.models.models import Event
 
 router = APIRouter()
@@ -24,7 +24,7 @@ async def current_user(creds: HTTPAuthorizationCredentials = Depends(bearer)):
 
 @router.get("/visitors")
 async def visitors(days: int = 30, limit: int = 20, user=Depends(current_user), s: AsyncSession = Depends(db)):
-    roles = set(user.get("roles", []))
+    roles = realm_roles(user)
     if not roles.intersection({"admin", "platform_admin", "tenant_owner"}):
         from fastapi import HTTPException
         raise HTTPException(403, "Analytics administration privileges required")

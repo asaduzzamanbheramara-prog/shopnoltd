@@ -71,19 +71,13 @@ async def verify_token(token: str) -> dict:
 
 
 def user_roles(user: dict) -> set[str]:
-    """Return effective Keycloak roles from common JWT claim locations."""
-    roles = set(user.get("roles") or [])
-
-    realm_access = user.get("realm_access") or {}
-    roles.update(realm_access.get("roles") or [])
-
-    resource_access = user.get("resource_access") or {}
-    for client in resource_access.values():
-        if isinstance(client, dict):
-            roles.update(client.get("roles") or [])
-
+    """Return verified realm roles only for platform-wide administration."""
+    roles = set(user.get("realm_roles", []) or [])
+    roles.update((user.get("realm_access") or {}).get("roles", []) or [])
+    if "realm_roles" not in user:
+        # This deployment's flat `roles` mapper is the Keycloak realm-role mapper.
+        roles.update(user.get("roles", []) or [])
     return roles
-
 
 
 async def verify_token_admin(token: str) -> dict:

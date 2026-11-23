@@ -42,3 +42,22 @@ def test_realm_platform_admin_can_access_financial_admin_routes(monkeypatch):
     }
     monkeypatch.setattr(admin, "verify_token", AsyncMock(return_value=claims))
     assert asyncio.run(admin.require_admin(SimpleNamespace(credentials="token"))) is claims
+
+
+def test_client_scoped_platform_admin_cannot_access_direct_payment_admin(monkeypatch):
+    from app.api import direct_payments
+
+    claims = {"roles": ["platform_admin"], "realm_roles": [], "resource_access": {"api-service": {"roles": ["platform_admin"]}}}
+    monkeypatch.setattr(direct_payments, "verify_token", AsyncMock(return_value=claims))
+    with pytest.raises(HTTPException) as exc:
+        asyncio.run(direct_payments.require_admin(SimpleNamespace(credentials="token")))
+    assert exc.value.status_code == 403
+
+
+def test_client_scoped_platform_admin_cannot_cross_payment_account_tenants():
+    from app.api.payment_accounts import _tenant
+
+    claims = {"tenant_id": "tenant-a", "roles": ["platform_admin"], "realm_roles": [], "resource_access": {"api-service": {"roles": ["platform_admin"]}}}
+    with pytest.raises(HTTPException) as exc:
+        _tenant(claims, "tenant-b")
+    assert exc.value.status_code == 403

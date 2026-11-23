@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 from decimal import Decimal
 
 from app.core.db import SessionLocal
-from app.core.security import verify_token
+from app.core.security import realm_roles, verify_token
 from app.models.models import (
     DirectPaymentAccount,
     DirectPaymentIntent,
@@ -43,7 +43,7 @@ async def current_user(creds: HTTPAuthorizationCredentials = Depends(bearer)):
 
 async def require_admin(creds: HTTPAuthorizationCredentials = Depends(bearer)):
     user = await verify_token(creds.credentials)
-    if not ({"platform_admin", "admin"} & set(user.get("roles", []))):
+    if not ({"platform_admin", "admin"} & realm_roles(user)):
         raise HTTPException(403, "admin only")
     return user
 

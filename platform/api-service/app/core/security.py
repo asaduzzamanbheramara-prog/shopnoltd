@@ -10,6 +10,16 @@ _jwks_cache = None
 logger = logging.getLogger(__name__)
 
 
+def realm_roles(payload: dict) -> set[str]:
+    """Return verified realm roles only; client-scoped roles never grant admin."""
+    roles = set(payload.get("realm_roles", []) or [])
+    roles.update((payload.get("realm_access") or {}).get("roles", []) or [])
+    if "realm_roles" not in payload:
+        # The configured flat `roles` claim is this realm's role mapper.
+        roles.update(payload.get("roles", []) or [])
+    return roles
+
+
 async def _jwks(force_refresh: bool = False):
     global _jwks_cache
     if force_refresh:
@@ -75,6 +85,6 @@ async def verify_token(token: str) -> dict:
 
 async def verify_token_admin(token: str) -> dict:
     u = await verify_token(token)
-    if "admin" not in u.get("roles", []):
+    if "admin" not in realm_roles(u):
         raise PermissionError("admin only")
     return u
