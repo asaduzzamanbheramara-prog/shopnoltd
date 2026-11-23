@@ -29,7 +29,7 @@ SERVICE_LABELS = {
     "business_it_care": "Business IT care subscription",
     "other": "Other software or OS service",
 }
-ADMIN_ROLES = {"platform_admin", "tenant_admin", "shopnoltd-admin"}
+ADMIN_ROLES = {"platform_admin", "tenant_owner", "shopnoltd-admin"}
 EMAIL_PATTERN = re.compile(r"^[^@\s]{1,128}@[^@\s]{1,120}\.[^@\s]{2,63}$")
 
 
@@ -112,7 +112,14 @@ def _user_id(user: dict) -> str:
 
 
 def _roles(user: dict) -> set[str]:
-    roles = set(user.get("roles") or [])
+    # verify_token preserves authoritative realm roles separately from the
+    # combined convenience role list, which may also contain client roles.
+    if "realm_roles" in user:
+        roles = set(user.get("realm_roles") or [])
+    else:
+        # Direct unit-test callers and trusted internal callers may supply
+        # the documented flat realm-role claim without normalization.
+        roles = set(user.get("roles") or [])
     roles.update((user.get("realm_access") or {}).get("roles") or [])
     return roles
 
