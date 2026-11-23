@@ -312,3 +312,22 @@ def test_social_task_destinations_include_api_supported_linkedin_and_x():
     from app.api.v2 import WORK_PLATFORMS as LEGACY_WORK_PLATFORMS
     assert {"linkedin", "x"}.issubset(WORK_PLATFORMS)
     assert WORK_PLATFORMS == LEGACY_WORK_PLATFORMS
+
+
+def test_affiliate_user_copy_hides_provider_identity_and_wholesale_rates():
+    from pathlib import Path
+    source_path = Path(__file__).resolve().parents[2] / "web-portal/src/pages/AffiliateOffers.jsx"
+    source = source_path.read_text()
+    logged_out_start = source.index("if (!loggedIn) return")
+    render_start = source.index("return <main style={shell}>", logged_out_start)
+    admin_start = source.index("{admin && <section", render_start)
+    user_render = source[render_start:admin_start]
+    sandbox_start = user_render.find("{admin && sandboxSummary?.enabled && <section")
+    if sandbox_start >= 0:
+        sandbox_end = user_render.index("</section>}", sandbox_start) + len("</section>}")
+        user_render = user_render[:sandbox_start] + user_render[sandbox_end:]
+    assert "Affmine" not in user_render
+    assert "Network payout" not in user_render
+    assert "Platform share" not in user_render
+    assert "Your reward" in user_render
+    assert "available task" in user_render
