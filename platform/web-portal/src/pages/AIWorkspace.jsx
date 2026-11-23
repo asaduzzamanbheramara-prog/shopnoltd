@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { ArrowDown, Bot, Check, ChevronDown, Copy, Download, Eye, FileText, FolderKanban, ListTodo, Maximize2, Menu, MessageSquare, Mic, Minimize2, Monitor, Paperclip, Plus, PlusCircle, RefreshCw, Send, Sparkles, Square, Trash2, Volume2, X } from 'lucide-react'
 import { authenticatedRequest, authenticatedStreamRequest } from '../lib/financialApi'
 import AgentWorkspace from './AgentWorkspace'
+import AIMemoryManager from './AIMemoryManager'
 import { MAX_IMAGE_INPUT_BYTES, MAX_VIDEO_INPUT_BYTES, copyToClipboard, downloadBlob, friendlyError, prepareImage, prepareVideo, resolveLanguage, splitBlocks, svgDataUrl, svgToJpegBlob, svgToPngBlob } from './aiChatHelpers'
 
 async function request(path, options = {}) {
@@ -151,6 +152,7 @@ export default function AIWorkspace() {
   const [loadingModels, setLoadingModels] = useState(true)
   const [listening, setListening] = useState(false)
   const [error, setError] = useState('')
+  const [memoryOpen, setMemoryOpen] = useState(false)
   const [canRetry, setCanRetry] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [focusMode, setFocusMode] = useState(false)
@@ -612,8 +614,10 @@ export default function AIWorkspace() {
           <button onClick={() => setFocusMode((value) => !value)} aria-label={focusMode ? 'Exit full screen' : 'Full screen'} title={focusMode ? 'Exit full screen (Esc)' : 'Full screen'} style={actionStyle}>{focusMode ? <Minimize2 size={18} /> : <Maximize2 size={18} />}</button>
           <button className="shopno-ai-mobile-only" onClick={() => setSidebarOpen(false)} aria-label="Close history" style={{ ...actionStyle, alignItems: 'center' }}><X size={18} /></button>
           <Link to="/ai/connections" style={{ ...actionStyle, textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }} title="Connections">Connections</Link>
+          <button type="button" onClick={() => setMemoryOpen(true)} aria-label="Manage saved memory" title="Review and manage saved memory" style={{ ...actionStyle, fontWeight: 700 }}>Memory</button>
           <button type="button" onClick={() => setMode((value) => (value === 'agent' ? 'chat' : 'agent'))} aria-pressed={mode === 'agent'} title="Autonomous agent mode" style={{ ...actionStyle, display: 'inline-flex', alignItems: 'center', gap: 5, fontWeight: 700, color: mode === 'agent' ? '#10a37f' : '#4b5563' }}><Bot size={16} /> Agent</button>
         </header>
+        {memoryOpen && <AIMemoryManager onClose={() => setMemoryOpen(false)} />}
         {workspaceView === 'projects' ? <div style={{ flex: 1, overflowY: 'auto', padding: '34px max(18px, calc((100% - 820px) / 2))' }}><div style={{ color: '#6b7280', fontSize: 13, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase' }}>Projects</div><h1 style={{ margin: '8px 0 10px', fontSize: 30 }}>Organize your AI work</h1><p style={{ color: '#6b7280', lineHeight: 1.6 }}>Projects keep related tasks, chats, and files together. Your default Shopnoltd workspace is ready.</p><div style={{ marginTop: 22, border: '1px solid #e5e7eb', borderRadius: 14, padding: 18, background: '#fff' }}><div style={{ display: 'flex', alignItems: 'center', gap: 12 }}><FolderKanban size={20} color="#10a37f" /><div><strong>Shopnoltd AI</strong><div style={{ color: '#6b7280', fontSize: 13, marginTop: 3 }}>Default project · {chats.length} chat{chats.length === 1 ? '' : 's'}</div></div></div></div></div> : mode === 'agent' ? <AgentWorkspace /> : (<>
         <div style={{ position: 'relative', flex: 1, minHeight: 0, display: 'flex' }}>
           <div ref={scrollRef} onScroll={onScroll} className="shopno-ai-content" style={{ flex: 1, minHeight: 0, overflowY: 'auto', overscrollBehavior: 'contain', padding: '0 max(18px, calc((100% - 820px) / 2))' }}>
