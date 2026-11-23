@@ -22,7 +22,8 @@ export default function AffiliateOffers() {
   const [shareEdits, setShareEdits] = useState({})
   const [newOffer, setNewOffer] = useState({ network_offer_id: '', title: '', tracking_url: '', network_payout: '', countries: '', user_share_percent: 70, incentive_allowed: false })
   const loggedIn = Boolean(localStorage.getItem('shopno_token'))
-  const admin = loggedIn && isPlatformAdmin()\n  const bdtEstimate = amount => rate ? '≈ ৳' + (Number(amount || 0) * Number(rate.rate)).toLocaleString('en-BD', { maximumFractionDigits: 2 }) : 'BDT rate unavailable'
+  const admin = loggedIn && isPlatformAdmin()
+  const bdtEstimate = amount => rate ? '≈ ৳' + (Number(amount || 0) * Number(rate.rate)).toLocaleString('en-BD', { maximumFractionDigits: 2 }) : 'BDT rate unavailable'
 
   const load = useCallback(async () => {
     if (!loggedIn) return
