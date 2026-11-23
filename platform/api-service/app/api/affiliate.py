@@ -49,7 +49,7 @@ def _geo_ok(countries: str | None, country: str) -> bool:
     return bool(country and country in allowed)
 
 
-def _safe_tracking_url(value: str, click_id: str) -> str:
+def _safe_tracking_url(value: str, click_id: str, click_param: str = "s1") -> str:
     parts = urlsplit(value)
     if parts.scheme != "https" or not parts.hostname or parts.username or parts.password:
         raise HTTPException(503, "Offer tracking URL is not safely configured")
@@ -134,7 +134,7 @@ async def start_offer(offer_id: int, request: Request, claims=Depends(current_us
     ))
     await session.commit()
     # The returned URL is the user's unique network link. It can be copied/shared.
-    return {"url": _safe_tracking_url(offer.tracking_url, click_id), "click_id": click_id}
+    return {"url": _safe_tracking_url(offer.tracking_url, click_id, offer.click_param), "click_id": click_id}
 
 
 @router.get("/me/summary")
