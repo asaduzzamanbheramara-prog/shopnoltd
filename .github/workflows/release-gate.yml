@@ -248,7 +248,7 @@ jobs:
           fi
           echo "image_build_required=$image_build_required" >> "$GITHUB_OUTPUT"
 
-          if grep -Eq '^(k8s/|ops/cloudflare/|platform/|services/|billing-engine/|enketo/|shared/|\.github/workflows/(self-hosted-k3s-gitops|build-platform)\.yml$)' <<<"$deployment_files"; then
+          if grep -Eq '^(k8s/|ops/cloudflare/|platform/|services/|billing-engine/|enketo/|shared/|\.github/workflows/build-platform\.yml$)' <<<"$deployment_files"; then
             echo 'deployment_required=true' >> "$GITHUB_OUTPUT"
             echo 'This push changes application or deployment-controlled files; image promotion and/or matching self-hosted GitOps reconciliation is required.'
           else
