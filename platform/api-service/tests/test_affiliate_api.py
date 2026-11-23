@@ -292,3 +292,16 @@ def test_public_affiliate_offer_exposes_only_shopnoltd_reward():
     forbidden = {"network_offer_id", "network_payout", "user_share_percent",
                  "platform_share_percent", "countries", "allowed_platform"}
     assert forbidden.isdisjoint(result)
+
+
+
+def test_verified_work_approval_runs_referral_transfer_after_worker_reward():
+    import inspect
+    from app.api.v3_work import approve_submission
+    source = inspect.getsource(approve_submission)
+    worker_transfer = source.index("await client.post(")
+    referral_transfer = source.index("await settle_referral_reward(")
+    approval = source.index('sub.status = "approved"')
+    assert worker_transfer < referral_transfer < approval
+    assert "tenant_id=w.tenant_id" in source
+    assert "submission_id=sub.id" in source
