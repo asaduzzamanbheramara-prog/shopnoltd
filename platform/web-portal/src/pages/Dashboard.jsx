@@ -23,6 +23,14 @@ function QuickLink({ service }) {
   )
 }
 
+// Only a valid array is evidence of a confirmed empty collection. Preserve null
+// for malformed payloads so the dashboard never turns API contract drift into zero.
+function asArrayOrNull(value) {
+  if (Array.isArray(value)) return value
+  if (value && Array.isArray(value.items)) return value.items
+  return null
+}
+
 function Metric({ label, value, href, note }) {
   const body = (
     <div style={{ padding: 18, background: 'white', border: '1px solid #e2e8f0', borderRadius: 10, minHeight: 92, boxSizing: 'border-box' }}>
@@ -88,12 +96,15 @@ export default function Dashboard() {
       if (profile.status === 'fulfilled') setMe(profile.value)
       else throw profile.reason
       if (walletResult.status === 'fulfilled') setWallet(walletResult.value)
-      if (transactions.status === 'fulfilled') setTransactionCount(Array.isArray(transactions.value) ? transactions.value.length : 0)
-      if (notificationResult.status === 'fulfilled') setNotifications(Array.isArray(notificationResult.value) ? notificationResult.value : (notificationResult.value?.items || []))
-      if (activeWorks.status === 'fulfilled') setWorks(Array.isArray(activeWorks.value) ? activeWorks.value : (activeWorks.value?.items || []))
-      if (connectionResult.status === 'fulfilled') setPlatformConnections(Array.isArray(connectionResult.value) ? connectionResult.value : (connectionResult.value?.items || []))
-      if (domainResult.status === 'fulfilled') setDomains(Array.isArray(domainResult.value) ? domainResult.value : [])
-      if (freeDomainResult.status === 'fulfilled') setFreeDomains(Array.isArray(freeDomainResult.value) ? freeDomainResult.value : [])
+      if (transactions.status === 'fulfilled') {
+        const rows = asArrayOrNull(transactions.value)
+        setTransactionCount(rows === null ? null : rows.length)
+      }
+      if (notificationResult.status === 'fulfilled') setNotifications(asArrayOrNull(notificationResult.value))
+      if (activeWorks.status === 'fulfilled') setWorks(asArrayOrNull(activeWorks.value))
+      if (connectionResult.status === 'fulfilled') setPlatformConnections(asArrayOrNull(connectionResult.value))
+      if (domainResult.status === 'fulfilled') setDomains(asArrayOrNull(domainResult.value))
+      if (freeDomainResult.status === 'fulfilled') setFreeDomains(asArrayOrNull(freeDomainResult.value))
     } catch (err) {
       console.error('Dashboard profile request failed:', err)
       const message = err.message || 'Unable to load dashboard.'
