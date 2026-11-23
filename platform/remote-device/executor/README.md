@@ -20,6 +20,25 @@ The browser device console displays the public IP, local IPs and VPN IPs togethe
 
 A VPN IP is only reported when the VPN interface is visible to the host. A public IP is the observed HTTPS egress address; it may therefore be the VPN exit IP when traffic is routed through a VPN.
 
+## Automatic first enrollment and reconnect
+
+On first start, the executor submits its one-time enrollment token, validates the
+response, writes the returned `agent_id` and HMAC secret to its configuration
+file, removes the one-time token, and continues directly into the heartbeat/job
+poll loop. It no longer exits after a successful first enrollment.
+
+Before consuming the one-time token, the executor restricts the configuration
+directory. On Windows it grants access only to LocalSystem and the local
+Administrators group; on POSIX systems it uses directory mode `0700` and file
+mode `0600`. The credential file is replaced atomically. If secure persistence
+fails after the server consumes the token, revoke/reissue the enrollment token
+before retrying because the server returns the HMAC secret only once.
+
+The executor loop continues to send heartbeats and retry transient network
+failures. Running it as an OS-managed service/startup task is still required
+for unattended operation after reboot; this change does not install or
+configure that service.
+
 ## Security
 
 - no inbound listener
