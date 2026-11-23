@@ -86,6 +86,17 @@ def test_canonical_tenant_owner_and_platform_admin_scopes_are_distinct():
     assert not is_service_admin({"sub": "ordinary", "is_admin": True})
 
 
+def test_client_specific_roles_cannot_grant_service_order_administration():
+    client_only_owner = {
+        "sub": "client-role-user",
+        "roles": ["tenant_owner", "platform_admin"],
+        "realm_roles": [],
+        "realm_access": {"roles": []},
+    }
+    assert not is_service_admin(client_only_owner)
+    assert not _is_platform_admin(client_only_owner)
+
+
 def test_identity_is_derived_from_verified_claims():
     user = {"sub": "keycloak-user-123", "tenant_id": "tenant-a"}
     assert _user_id(user) == "keycloak-user-123"

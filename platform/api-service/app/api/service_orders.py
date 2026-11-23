@@ -112,7 +112,14 @@ def _user_id(user: dict) -> str:
 
 
 def _roles(user: dict) -> set[str]:
-    roles = set(user.get("roles") or [])
+    # verify_token preserves authoritative realm roles separately from the
+    # combined convenience role list, which may also contain client roles.
+    if "realm_roles" in user:
+        roles = set(user.get("realm_roles") or [])
+    else:
+        # Direct unit-test callers and trusted internal callers may supply
+        # the documented flat realm-role claim without normalization.
+        roles = set(user.get("roles") or [])
     roles.update((user.get("realm_access") or {}).get("roles") or [])
     return roles
 
