@@ -5,7 +5,9 @@ os.environ.setdefault("DATABASE_URL", "postgresql+asyncpg://test:test@localhost/
 from fastapi import HTTPException
 
 from app.api.database_control import _guarded_sql_table_references
-from app.database_control_plane.contract import DatastoreKind\nfrom app.database_control_plane import discovery\nfrom app.database_control_plane.discovery import _declared_by_database, _postgres_dsn
+from app.database_control_plane.contract import DatastoreKind
+from app.database_control_plane import discovery
+from app.database_control_plane.discovery import _declared_by_database, _postgres_dsn
 
 
 def test_declared_database_map_preserves_service_ownership():
