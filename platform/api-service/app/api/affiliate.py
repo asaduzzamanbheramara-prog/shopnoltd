@@ -170,9 +170,18 @@ def _platform_ok(allowed_platform: str | None, client_platform: str) -> bool:
 
 
 def _affmine_country_codes(value):
+    if isinstance(value, dict):
+        value = value.get("country", value.get("countries", value.get("country_code", [])))
+        if isinstance(value, dict):
+            value = [value]
     if isinstance(value, list):
-        codes = [str(row.get("country_code", "")).upper() for row in value if isinstance(row, dict)]
-        return ",".join(code for code in codes if re.fullmatch(r"[A-Z]{2}", code)) or None
+        codes = []
+        for row in value:
+            code = row.get("country_code", row.get("code", "")) if isinstance(row, dict) else row
+            code = str(code).strip().upper()
+            if re.fullmatch(r"[A-Z]{2}", code):
+                codes.append(code)
+        return ",".join(sorted(set(codes))) or None
     raw = str(value or "").strip().upper()
     if raw in {"", "0", "ALL", "WORLDWIDE"}:
         return None
