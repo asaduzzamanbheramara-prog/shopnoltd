@@ -84,7 +84,7 @@ class Transaction(Base):
     wallet_id = Column(UUID(as_uuid=True), ForeignKey("wallets.id"), nullable=False)
     type = Column(Enum(TxType, native_enum=False, length=16), nullable=False)
     method = Column(Enum(PaymentMethod, native_enum=False, length=16), nullable=False)
-    status = Column(Enum(TxStatus, native_enum=False, length=16), default=TxStatus.pending, nullable=False, index=True)
+    status = Column(Enum(TxStatus, native_enum=False, length=24), default=TxStatus.pending, nullable=False, index=True)
     amount = Column(Numeric(20, 8), nullable=False)
     fee = Column(Numeric(20, 8), default=0, nullable=False)
     currency = Column(String(8), nullable=False)
