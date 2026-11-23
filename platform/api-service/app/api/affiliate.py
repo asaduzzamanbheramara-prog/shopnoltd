@@ -53,10 +53,15 @@ def _safe_tracking_url(value: str, click_id: str, click_param: str = "s1") -> st
     parts = urlsplit(value)
     if parts.scheme != "https" or not parts.hostname or parts.username or parts.password:
         raise HTTPException(503, "Offer tracking URL is not safely configured")
+    if not re.fullmatch(r"[A-Za-z][A-Za-z0-9_]{0,31}", click_param or ""):
+        raise HTTPException(503, "Offer click parameter is not safely configured")
     if "{click_id}" in value:
         return value.replace("{click_id}", click_id)
-    query = dict(parse_qsl(parts.query, keep_blank_values=True))
-    query["s1"] = click_id
+    # Preserve unrelated and repeated query parameters; replace only the
+    # configured attribution parameter so each click has one unambiguous ID.
+    query = [(key, val) for key, val in parse_qsl(parts.query, keep_blank_values=True)
+             if key != click_param]
+    query.append((click_param, click_id))
     return urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode(query), ""))
 
 
@@ -219,10 +224,14 @@ async def create_offer(request: Request, claims=Depends(current_user), session: 
     if existing:
         raise HTTPException(409, "This network offer already exists")
     share = _percent(body.get("user_share_percent", 70))
+    click_param = str(body.get("click_param", "s1")).strip()
+    if not re.fullmatch(r"[A-Za-z][A-Za-z0-9_]{0,31}", click_param):
+        raise HTTPException(422, "click_param must be a valid confirmed network sub-ID parameter")
     offer = AffiliateOffer(
         network_offer_id=network_id,
         title=title,
         tracking_url=tracking_url,
+        click_param=click_param,
         network_payout=payout,
         user_share_percent=share,
         incentive_allowed=body.get("incentive_allowed") is True,
