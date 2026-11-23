@@ -179,8 +179,13 @@
     const serviceCode=serviceCodes[serviceLabel];
     if(!serviceCode){quoteStatus.textContent='Please choose a valid service.';return;}
     if(!localStorage.getItem('shopno_token')){
-      quoteStatus.replaceChildren(document.createTextNode('Please sign in before submitting your request. '));
-      const login=document.createElement('a');login.href='/login';login.textContent='Sign in to Shopnoltd';quoteStatus.append(login);
+      quoteStatus.replaceChildren(document.createTextNode('Sign in in a new tab, then return here to submit your request. Your form details will stay in this tab. '));
+      const login=document.createElement('a');
+      login.href='/login?next='+encodeURIComponent('/software-os-center.html');
+      login.target='_blank';
+      login.rel='noopener noreferrer';
+      login.textContent='Open Shopnoltd sign in in a new tab';
+      quoteStatus.append(login);
       return;
     }
     const submit=quoteForm.querySelector('button[type="submit"]');
