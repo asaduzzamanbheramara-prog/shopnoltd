@@ -34,20 +34,21 @@
 <article class="card service-card"><span class="pill">Monthly / annual plan</span><h3>Business IT care</h3><p>Planned software maintenance, workstation setup, update coordination, onboarding assistance and priority support for teams.</p><p class="service-price">Plan priced to team size and scope</p><p class="fine-print">Service levels, supported devices and response windows are agreed in writing.</p><a class="btn primary" href="#service-quote" data-service="Business IT care subscription">Request a business plan</a></article>
 </div></section>
 <section class="section card" id="service-quote"><h2>Request a service quote</h2>
-<p class="muted">Tell us what you need. This form prepares an email in your own email application; it does not submit an order until you review and send that email.</p>
+<p class="muted">Submit a service request to your Shopnoltd account. Sign in is required so you can track the request and review any written quote. No payment is collected here.</p>
 <form id="service-quote-form" class="quote-form">
 <label>Your name<input name="name" autocomplete="name" maxlength="100" required></label>
 <label>Reply email<input name="email" type="email" autocomplete="email" maxlength="254" required></label>
 <label>Service<select name="service" id="quote-service" required><option value="">Choose a service</option><option>Operating system installation</option><option>Startup repair and recovery</option><option>Software, drivers and applications</option><option>Bootable USB and recovery media</option><option>Phone, tablet and device support</option><option>Technical troubleshooting</option><option>Business IT care subscription</option><option>Other software or OS service</option></select></label>
 <label>Device / platform<input name="device" maxlength="160" placeholder="e.g. Dell laptop, Windows 11, Android phone"></label>
 <label style="grid-column:1/-1">What do you need?<textarea name="details" minlength="10" maxlength="2000" required placeholder="Describe the issue or service you need. Do not include passwords, licence keys, recovery keys or payment details."></textarea></label>
-<button class="btn primary" type="submit">Prepare quote request email</button></form>
-<p id="quote-status" class="fine-print" role="status" aria-live="polite">Your email app must send the message before Shopnoltd receives it. No payment is collected on this page.</p></section>
+<button class="btn primary" type="submit">Submit service request</button></form>
+<p id="quote-status" class="fine-print" role="status" aria-live="polite">Sign in before submitting. Your request is saved to your account; no payment is collected on this page.</p></section>
+<section class="section card hidden" id="my-service-orders"><h2>My service requests</h2><p class="fine-print">Your submitted requests and written quotes appear here. Accepting a quote records your approval only; payment and scheduling are confirmed separately.</p><div id="my-service-orders-list" aria-live="polite">Loading your requests...</div></section>
 <section class="section card"><h2>Clear pricing and payment</h2><div class="commerce-steps">
 <div class="commerce-step"><strong>1. Tell us what you need</strong><p class="fine-print">Send a quote request with your device and service details.</p></div>
 <div class="commerce-step"><strong>2. Receive a written quote</strong><p class="fine-print">We confirm compatibility, scope, turnaround estimate and total price before you approve.</p></div>
-<div class="commerce-step"><strong>3. Approve and pay</strong><p class="fine-print">Payment instructions are provided only after you accept the written quote. Never send card PINs, passwords or OTPs to support staff.</p></div>
-<div class="commerce-step"><strong>4. Track your service</strong><p class="fine-print">Keep your order reference and receipt. Work begins only after agreed payment and service conditions are confirmed.</p></div></div>
+<div class="commerce-step"><strong>3. Accept the written quote</strong><p class="fine-print">Accepting records your approval. Payment collection is not enabled in this service-request flow; Shopnoltd must separately confirm payment arrangements and scheduling. Never share card PINs, passwords or OTPs.</p></div>
+<div class="commerce-step"><strong>4. Track your request</strong><p class="fine-print">Sign in on this page to review your request, quote status and reference. Work starts only after payment and service conditions are separately confirmed.</p></div></div>
 <p class="fine-print">Free catalogue links and basic guides remain free. Shopnoltd does not charge for third-party software downloads that publishers provide free. Third-party licence fees, shipping and optional parts are disclosed separately.</p></section>
 <section class="section">
 <h2>Browse free software catalogue</h2>
@@ -94,14 +95,114 @@
   const quoteForm=document.getElementById('service-quote-form');
   const quoteService=document.getElementById('quote-service');
   document.querySelectorAll('[data-service]').forEach(link=>link.addEventListener('click',()=>{quoteService.value=link.dataset.service;}));
-  quoteForm.addEventListener('submit',event=>{
+  const quoteStatus=document.getElementById('quote-status');
+  const orderPanel=document.getElementById('my-service-orders');
+  const orderList=document.getElementById('my-service-orders-list');
+  const serviceCodes={
+    'Operating system installation':'os_installation',
+    'Startup repair and recovery':'startup_recovery',
+    'Software, drivers and applications':'software_setup',
+    'Bootable USB and recovery media':'bootable_media',
+    'Phone, tablet and device support':'device_support',
+    'Technical troubleshooting':'troubleshooting',
+    'Business IT care subscription':'business_it_care',
+    'Other software or OS service':'other'
+  };
+  const apiBase='https://api.shopnoltd.dpdns.org';
+  let requestKey=crypto.randomUUID();
+  async function serviceApi(path, options={}){
+    const token=localStorage.getItem('shopno_token');
+    if(!token)throw new Error('Please sign in to submit and track service requests.');
+    const response=await fetch(apiBase+path,{...options,headers:{'Accept':'application/json','Content-Type':'application/json','Authorization':'Bearer '+token,...(options.headers||{})}});
+    const raw=await response.text();
+    let data=null;
+    try{data=raw?JSON.parse(raw):null;}catch{data={detail:raw};}
+    if(!response.ok)throw new Error(data&&data.detail?String(data.detail):'Service request could not be completed.');
+    return data;
+  }
+  function textNode(tag,value,className){
+    const node=document.createElement(tag);
+    node.textContent=String(value||'');
+    if(className)node.className=className;
+    return node;
+  }
+  async function refreshServiceOrders(){
+    if(!localStorage.getItem('shopno_token')){orderPanel.classList.add('hidden');return;}
+    orderPanel.classList.remove('hidden');
+    orderList.textContent='Loading your requests...';
+    try{
+      const orders=await serviceApi('/api/v1/service-orders');
+      orderList.replaceChildren();
+      if(!orders.length){orderList.append(textNode('p','You have not submitted any service requests yet.','fine-print'));return;}
+      orders.forEach(order=>{
+        const card=document.createElement('article');
+        card.className='commerce-step';
+        card.style.marginBottom='12px';
+        card.append(textNode('h3',(order.service_label||'Service request')+' — '+String(order.status||'').replaceAll('_',' ')));
+        card.append(textNode('p','Reference: '+order.id,'fine-print'));
+        card.append(textNode('p','Device: '+(order.device_platform||'Not specified')));
+        card.append(textNode('p',order.details));
+        if(order.quoted_amount!==null&&order.quoted_amount!==undefined){
+          card.append(textNode('p','Written quote: '+order.quoted_amount+' '+order.quote_currency+' (version '+order.quote_version+')','service-price'));
+          if(order.quote_expires_at)card.append(textNode('p','Valid until: '+new Date(order.quote_expires_at).toLocaleString(),'fine-print'));
+          if(order.customer_message)card.append(textNode('p',order.customer_message));
+        }
+        if(order.status==='quoted'){
+          const actions=document.createElement('div');
+          const accept=document.createElement('button');
+          accept.type='button';accept.className='btn primary';accept.textContent='Accept quote';
+          accept.addEventListener('click',async()=>{
+            accept.disabled=true;
+            try{await serviceApi('/api/v1/service-orders/'+encodeURIComponent(order.id)+'/accept',{method:'POST'});await refreshServiceOrders();}
+            catch(error){quoteStatus.textContent=error.message;accept.disabled=false;}
+          });
+          const decline=document.createElement('button');
+          decline.type='button';decline.className='btn';decline.textContent='Decline quote';
+          decline.addEventListener('click',async()=>{
+            decline.disabled=true;
+            try{await serviceApi('/api/v1/service-orders/'+encodeURIComponent(order.id)+'/decline',{method:'POST'});await refreshServiceOrders();}
+            catch(error){quoteStatus.textContent=error.message;decline.disabled=false;}
+          });
+          actions.append(accept,decline);card.append(actions);
+        }
+        if(order.status==='accepted')card.append(textNode('p','Quote accepted. Payment and scheduling still require separate confirmation; no payment has been taken.','fine-print'));
+        orderList.append(card);
+      });
+    }catch(error){
+      orderList.textContent=error.message;
+    }
+  }
+  quoteForm.addEventListener('submit',async event=>{
     event.preventDefault();
     const data=new FormData(quoteForm);
-    const subject='Shopnoltd service quote request: '+String(data.get('service')||'Software and OS service');
-    const body=['Service: '+String(data.get('service')||''),'Name: '+String(data.get('name')||''),'Reply email: '+String(data.get('email')||''),'Device / platform: '+String(data.get('device')||'Not specified'),'','Requirements:',String(data.get('details')||''),'','Please confirm compatibility, scope, estimated turnaround and total price before any paid work begins.'].join('\n');
-    document.getElementById('quote-status').textContent='Your email application should open with the request. Review it and press Send; Shopnoltd has not received it until you send it.';
-    window.location.href='mailto:support@shopnoltd.dpdns.org?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
+    const serviceLabel=String(data.get('service')||'');
+    const serviceCode=serviceCodes[serviceLabel];
+    if(!serviceCode){quoteStatus.textContent='Please choose a valid service.';return;}
+    if(!localStorage.getItem('shopno_token')){
+      quoteStatus.replaceChildren(document.createTextNode('Please sign in before submitting your request. '));
+      const login=document.createElement('a');login.href='/login';login.textContent='Sign in to Shopnoltd';quoteStatus.append(login);
+      return;
+    }
+    const submit=quoteForm.querySelector('button[type="submit"]');
+    submit.disabled=true;quoteStatus.textContent='Saving your service request...';
+    try{
+      const order=await serviceApi('/api/v1/service-orders',{method:'POST',body:JSON.stringify({
+        service_code:serviceCode,
+        contact_name:String(data.get('name')||''),
+        contact_email:String(data.get('email')||''),
+        device_platform:String(data.get('device')||''),
+        details:String(data.get('details')||''),
+        request_key:requestKey
+      })});
+      quoteForm.reset();
+      requestKey=crypto.randomUUID();
+      quoteStatus.textContent='Request saved successfully. Reference: '+order.id+'. You can review updates below.';
+      await refreshServiceOrders();
+    }catch(error){
+      quoteStatus.textContent=error.message;
+    }finally{submit.disabled=false;}
   });
+  refreshServiceOrders();
   const input=document.getElementById('search');
   const catalogue=document.getElementById('catalogue');
   const empty=document.getElementById('empty');

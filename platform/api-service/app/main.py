@@ -18,6 +18,8 @@ from app.models.work import Work, WorkAssignment, WorkSubmission  # noqa: F401
 from app.models.work_evidence import WorkTaskConfig, WorkSession, WorkEvidence, WorkEvent, GlobalTaskRate
 from app.models.work_rating import WorkRating  # noqa: F401
 from app.models.referral import ReferralCode, Referral, ReferralPolicy, ReferralReward, ReferralSystemIdentity  # noqa: F401
+from app.models.service_order import ServiceOrder, ServiceOrderEvent  # noqa: F401
+from app.models.affiliate import AffiliateOffer, AffiliateClick, AffiliateConversion, AffiliateSandboxConversion  # noqa: F401
 
 log = structlog.get_logger()
 
@@ -36,6 +38,9 @@ async def lifespan(app: FastAPI):
             await conn.execute(text("ALTER TABLE works ADD COLUMN IF NOT EXISTS platform VARCHAR(64) NOT NULL DEFAULT 'shopnoltd'"))
             await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_works_task_type ON works (task_type)"))
             await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_works_platform ON works (platform)"))
+            # Affiliate feed metadata compatibility columns.
+            await conn.execute(text("ALTER TABLE shopnoltd_affiliate_offers ADD COLUMN IF NOT EXISTS allowed_platform VARCHAR(64) NOT NULL DEFAULT '1,2,3,4,5'"))
+            await conn.execute(text("ALTER TABLE shopnoltd_affiliate_offers ADD COLUMN IF NOT EXISTS network_incentive VARCHAR(16) NOT NULL DEFAULT 'unknown'"))
             # Referral compatibility columns preserve existing direct/legacy mappings.
             await conn.execute(text("ALTER TABLE referrals ADD COLUMN IF NOT EXISTS source VARCHAR(24) NOT NULL DEFAULT 'direct'"))
             await conn.execute(text("ALTER TABLE referral_policies ADD COLUMN IF NOT EXISTS fallback_referrer_id VARCHAR(128) NOT NULL DEFAULT 'admin_office'"))
@@ -160,6 +165,8 @@ app.include_router(__import__("app.api.v2_blog_user", fromlist=["router"]).route
 app.include_router(__import__("app.api.v2_blog", fromlist=["router"]).router, prefix="/api/v2", tags=["blog"])
 app.include_router(__import__("app.api.v3_work", fromlist=["router"]).router, prefix="/api/v3", tags=["verified-work"])
 app.include_router(__import__("app.api.referrals", fromlist=["router"]).router, prefix="/api/v1", tags=["referrals"])
+app.include_router(__import__("app.api.affiliate", fromlist=["router"]).router, prefix="/api/v1", tags=["affiliate"])
+app.include_router(__import__("app.api.service_orders", fromlist=["router"]).router, prefix="/api/v1", tags=["service-orders"])
 app.include_router(__import__("app.api.graphql", fromlist=["router"]).router, prefix="/graphql", tags=["graphql"])
 app.include_router(__import__("app.api.health", fromlist=["router"]).router, prefix="", tags=["health"])
 

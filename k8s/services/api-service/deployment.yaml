@@ -37,7 +37,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: api-service
-          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/api-service:fba6decf39e10e9cb107caf2b8c7d92f37c905e9
+          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/api-service:bfc241221d0777f5bc06dbc264c8410d05efbee0
           imagePullPolicy: Always
           ports:
             - name: http
@@ -48,6 +48,8 @@ spec:
                 name: api-service-config
             - secretRef:
                 name: api-service-secret
+            - secretRef:
+                name: api-service-affmine
           env:
             - name: SHOPNOLTD_INTERNAL_AUTOMATION_TOKEN
               valueFrom:
