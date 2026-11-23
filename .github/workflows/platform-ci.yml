@@ -90,6 +90,9 @@ jobs:
       - name: Verify user-controlled memory CRUD and isolation against PostgreSQL
         if: hashFiles('platform/ai-platform/tests/test_memories_integration.py') != ''
         run: pytest -q tests/test_memories_integration.py
+      - name: Verify saved memory inference context is bounded and isolated
+        if: hashFiles('platform/ai-platform/tests/test_personal_memory_context.py') != ''
+        run: pytest -q tests/test_personal_memory_context.py
 
   python-syntax:
     name: Python syntax validation
