@@ -46,6 +46,9 @@ spec:
                 name: payment-service-config
             - secretRef:
                 name: payment-service-secret
+            - secretRef:
+                name: affiliate-payment-bridge
+                optional: true
           env:
             - name: DATABASE_URL
               valueFrom:

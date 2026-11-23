@@ -15,6 +15,8 @@ export default function AffiliateOffers() {
   const [rate, setRate] = useState(null)
   const [adminOffers, setAdminOffers] = useState([])
   const [adminSummary, setAdminSummary] = useState({})
+  const [adminEvents, setAdminEvents] = useState([])
+  const [providerRefs, setProviderRefs] = useState({})
   const [sandboxSummary, setSandboxSummary] = useState(null)
   const [sandboxAdmin, setSandboxAdmin] = useState(null)
   const [sandboxPayout, setSandboxPayout] = useState('1.00')
@@ -45,12 +47,14 @@ export default function AffiliateOffers() {
       const sandboxData = await authenticatedRequest('/api/v1/affiliate/sandbox/me/summary').catch(() => null)
       setSandboxSummary(sandboxData)
       if (admin) {
-        const [adminRows, adminTotals] = await Promise.all([
+        const [adminRows, adminTotals, eventRows] = await Promise.all([
           authenticatedRequest('/api/v1/affiliate/admin/offers'),
           authenticatedRequest('/api/v1/affiliate/admin/summary'),
+          authenticatedRequest('/api/v1/affiliate/admin/adgem/events'),
         ])
         setAdminOffers(Array.isArray(adminRows) ? adminRows : [])
         setAdminSummary(adminTotals || {})
+        setAdminEvents(Array.isArray(eventRows) ? eventRows : [])
         const sandboxTotals = await authenticatedRequest('/api/v1/affiliate/sandbox/admin/summary').catch(() => null)
         setSandboxAdmin(sandboxTotals || null)
       }
@@ -130,6 +134,37 @@ export default function AffiliateOffers() {
     finally { setSyncingAffmine(false) }
   }
 
+  async function approveAdGemEvent(requestId) {
+    setError(''); setMessage('')
+    try {
+      await authenticatedRequest('/api/v1/affiliate/admin/adgem/events/' + encodeURIComponent(requestId) + '/approve', { method: 'POST' })
+      setMessage('Conversion approved for reconciliation. It is not payable until Shopnoltd receives the provider payout.')
+      await load()
+    } catch (e) { setError(e.message || 'Conversion approval failed') }
+  }
+
+  async function markProviderPaid(txn) {
+    const reference = String(providerRefs[txn] || '').trim()
+    if (!reference) { setError('Enter the actual provider payout reference before marking funds received.'); return }
+    setError(''); setMessage('')
+    try {
+      await authenticatedRequest('/api/v1/affiliate/admin/conversions/' + encodeURIComponent(txn) + '/provider-paid', {
+        method: 'POST', body: JSON.stringify({ provider_payment_reference: reference }),
+      })
+      setMessage('Provider payout marked received. The user wallet is still unchanged until settlement is run.')
+      await load()
+    } catch (e) { setError(e.message || 'Provider payout reconciliation failed') }
+  }
+
+  async function settleConversion(txn) {
+    setError(''); setMessage('')
+    try {
+      const result = await authenticatedRequest('/api/v1/affiliate/admin/conversions/' + encodeURIComponent(txn) + '/settle', { method: 'POST' })
+      setMessage('Wallet settlement confirmed. Payment transaction: ' + result.wallet_transaction_id)
+      await load()
+    } catch (e) { setError(e.message || 'Wallet settlement failed') }
+  }
+
   async function addOffer(event) {
     event.preventDefault(); setError(''); setMessage('')
     try {
@@ -168,7 +203,7 @@ export default function AffiliateOffers() {
         <Metric label="Payable" value={money(summary?.payable?.amount_usd)} detail={bdtEstimate(summary?.payable?.amount_usd)} />
         <Metric label="Paid" value={money(summary?.paid?.amount_usd)} detail={bdtEstimate(summary?.paid?.amount_usd)} />
       </div>
-      <p style={{ color: '#64748b', fontSize: 13 }}>Wallet credits are disabled until partner postback verification and payout reconciliation are completed. These figures are not spendable wallet balance.</p>
+      <p style={{ color: '#64748b', fontSize: 13 }}>Rewards become payable only after provider approval and Shopnoltd confirms the corresponding payout was received. The Paid amount reflects completed wallet settlements; pending and approved-unpaid amounts are not spendable.</p>
       {rate ? <p style={{ fontSize: 13, color: '#475569' }}>Current USD/BDT reference: ৳{Number(rate.rate).toFixed(4)} per USD · {rate.source || 'Exchange service'} · {rate.fetched_at || 'Timestamp unavailable'}</p> : <p style={{ fontSize: 13, color: '#92400e' }}>Live USD/BDT reference is temporarily unavailable; no estimated BDT value is shown.</p>}
     </section>
 
@@ -218,7 +253,26 @@ export default function AffiliateOffers() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: 12 }}>
           {Object.entries(adminSummary).map(([status, data]) => <Metric key={status} label={status.replaceAll('_',' ')} value={money(data.user_share_usd)} detail={'Platform: ' + money(data.platform_share_usd)} />)}
         </div>
-        <p style={{ color: '#64748b', fontSize: 13 }}>No real conversion totals appear until verified network callbacks are enabled.</p>
+        <p style={{ color: '#64748b', fontSize: 13 }}>Provider revenue is not Shopnoltd cash received until matched to an actual payout statement. User rewards are settled only after this reconciliation.</p>
+      </div>
+      <div style={{ ...panel, marginBottom: 16 }}>
+        <h3 style={{ marginTop: 0 }}>AdGem conversion review &amp; settlement</h3>
+        <p style={{ color: '#64748b', fontSize: 13 }}>Approve genuine signed conversions, record the actual provider payout reference when funds arrive, then settle the user's wallet. Do not enter a reference until the payout is visible in your publisher/payment account.</p>
+        {adminEvents.length === 0 && <p>No AdGem conversion events have been received yet.</p>}
+        <div style={{ display: 'grid', gap: 12 }}>
+          {adminEvents.map(event => <article key={event.request_id} style={{ border: '1px solid #e2e8f0', borderRadius: 10, padding: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+              <b>{event.goal_name || event.offer_id || 'AdGem conversion'}</b>
+              <b>{event.status}</b>
+            </div>
+            <p style={{ margin: '6px 0', color: '#64748b', fontSize: 13 }}>User: {event.user_id} · Provider payout: {money(event.network_payout)} · User reward: {money(event.user_amount)} · Shopnoltd share: {money(event.platform_amount)}</p>
+            <small style={{ color: '#64748b' }}>Request {event.request_id} · Signature verified: {String(event.signature_verified)} · {event.created_at || ''}</small>
+            {event.status === 'pending_review' && event.conversion_txn && <div style={{ marginTop: 10 }}><button type="button" style={button} onClick={() => approveAdGemEvent(event.request_id)}>Approve conversion</button></div>}
+            {event.status === 'approved_unpaid' && event.conversion_txn && <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}><input aria-label="Provider payout reference" placeholder="Actual provider payout reference" value={providerRefs[event.conversion_txn] || ''} onChange={e => setProviderRefs(v => ({ ...v, [event.conversion_txn]: e.target.value }))} style={{ flex: '1 1 240px', padding: 9 }} /><button type="button" style={button} onClick={() => markProviderPaid(event.conversion_txn)}>Confirm provider funds received</button></div>}
+            {event.status === 'payable' && event.conversion_txn && <div style={{ marginTop: 10 }}><p style={{ color: '#166534', fontSize: 13 }}>Provider payout reference: {event.provider_payment_reference || 'recorded'}</p><button type="button" style={button} onClick={() => settleConversion(event.conversion_txn)}>Settle user wallet</button></div>}
+            {event.status === 'paid' && <p style={{ color: '#166534', fontSize: 13, marginBottom: 0 }}>Wallet transaction: {event.wallet_transaction_id || 'settled'}</p>}
+          </article>)}
+        </div>
       </div>
       {sandboxAdmin?.enabled && <div style={{ ...panel, marginBottom: 16, borderStyle: 'dashed', borderColor: '#d97706' }}>
         <h3 style={{ marginTop: 0 }}>Platform Sandbox Totals — Test Only</h3>

@@ -20,6 +20,15 @@ def require_internal_key(x_internal_api_key: str = Header(...)):
     return True
 
 
+def require_affiliate_payment_key(x_internal_api_key: str = Header(...)):
+    """Dedicated credit-only bridge; never reuse the broader ad-network key."""
+    if not settings.affiliate_internal_api_key:
+        raise HTTPException(500, "AFFILIATE_INTERNAL_API_KEY is not configured")
+    if not secrets.compare_digest(x_internal_api_key, settings.affiliate_internal_api_key):
+        raise HTTPException(403, "Invalid affiliate payment bridge key")
+    return True
+
+
 async def _jwks():
     global _jwks_cache
     if _jwks_cache:
