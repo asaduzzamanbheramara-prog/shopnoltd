@@ -82,3 +82,12 @@ The feature branch and PR must pass API tests, web build, security scans, and re
 - Affmine's allowed_platform and incentive values are stored as network metadata. An empty/unrestricted allowed_platform value is normalized to all five documented platform IDs; platform eligibility is applied to offer listing and click start. The network incentive flag is not proof of campaign-level approval for Shopnoltd's exact reward/task model.
 - The sample Affiliate ID/API key in the supplied documentation must not be used as account credentials. Use the actual account-issued credentials only in the server-side secret store.
 - Sync endpoint: `POST /api/v1/affiliate/admin/sync-affmine`.
+
+## Affmine campaign application automation boundary
+
+- The currently supplied Affmine Publisher API v1.0 specification documents the `getCampaigns` feed. It does not document a campaign-application or `Apply to Run` endpoint, nor an API field that reliably proves campaign-level approval for this publisher.
+- Therefore, the Shopnoltd sync job may import and classify feed records, but it must not submit guessed requests, simulate dashboard clicks, or treat feed visibility as campaign approval.
+- Campaigns are never auto-activated solely because they appear in the feed. New records remain Draft and reward-disabled until campaign-level permission, the exact Shopnoltd incentivized task model, traffic source, click macro, and tracking terms are confirmed.
+- If Affmine supplies an authenticated application endpoint and documents its request, response, approval-state, and rate-limit contract in writing, implement it behind a feature flag with idempotency, audit logging, and explicit publisher authorization. Until then, any required application is handled through Affmine's publisher dashboard.
+- Ask Affmine support to confirm in writing: (1) whether this publisher account requires per-campaign applications; (2) whether API-based campaign applications are supported and provide the official endpoint/schema; (3) whether Shopnoltd's worldwide user-reward/offerwall model is permitted, and which campaigns permit incentivized traffic; and (4) how approved/rejected/pending campaign states are exposed in the feed.
+- This is an intentional compliance boundary, not an incomplete auto-click workaround. Do not use browser automation to submit applications or bypass campaign review.
