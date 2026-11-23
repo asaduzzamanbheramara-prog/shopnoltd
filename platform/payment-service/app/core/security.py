@@ -40,6 +40,15 @@ async def _jwks():
     raise HTTPException(status_code=503, detail="Unable to reach identity provider; try again shortly") from last_exc
 
 
+def realm_roles(payload: dict) -> set[str]:
+    """Return verified realm-level roles, excluding client-specific roles."""
+    roles = set(payload.get("realm_roles", []) or [])
+    roles.update((payload.get("realm_access") or {}).get("roles", []) or [])
+    if "realm_roles" not in payload:
+        roles.update(payload.get("roles", []) or [])
+    return roles
+
+
 async def verify_token(token: str) -> dict:
     try:
         unverified = jwt.get_unverified_header(token)
@@ -49,10 +58,12 @@ async def verify_token(token: str) -> dict:
         for audience in (settings.keycloak_audience, settings.keycloak_web_audience):
             try:
                 claims = jwt.decode(token, key, algorithms=[key["alg"]], audience=audience, options={"verify_aud": True})
-                roles = set(claims.get("roles", []) or [])
-                roles.update((claims.get("realm_access") or {}).get("roles", []) or [])
+                realm = set(claims.get("roles", []) or [])
+                realm.update((claims.get("realm_access") or {}).get("roles", []) or [])
+                roles = set(realm)
                 for client in (claims.get("resource_access") or {}).values():
                     roles.update((client or {}).get("roles", []) or [])
+                claims["realm_roles"] = sorted(realm)
                 claims["roles"] = sorted(roles)
                 return claims
             except JWTError as exc:

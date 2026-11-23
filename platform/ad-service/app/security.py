@@ -53,13 +53,12 @@ async def current_user(
 
 
 def _claim_roles(user: dict[str, Any]) -> set[str]:
-    roles = set(user.get("roles", []))
-    roles.update(user.get("realm_access", {}).get("roles", []))
-    roles.update(
-        user.get("resource_access", {})
-        .get(settings.keycloak_audience, {})
-        .get("roles", [])
-    )
+    """Return realm roles only; client-scoped roles never grant platform admin."""
+    roles = set(user.get("realm_roles", []) or [])
+    roles.update((user.get("realm_access") or {}).get("roles", []) or [])
+    if "realm_roles" not in user:
+        # The configured flat `roles` mapper contains Keycloak realm roles.
+        roles.update(user.get("roles", []) or [])
     return roles
 
 

@@ -7,6 +7,7 @@ import io
 from datetime import datetime
 
 from app.api.admin import require_admin
+from app.core.security import realm_roles
 from app.core.db import Base, SessionLocal
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
@@ -25,7 +26,7 @@ async def db():
         yield s
 
 def _admin(user):
-    if "platform_admin" not in set(user.get("roles", [])):
+    if "platform_admin" not in realm_roles(user):
         raise HTTPException(403, "platform_admin required")
 
 def _table(name):

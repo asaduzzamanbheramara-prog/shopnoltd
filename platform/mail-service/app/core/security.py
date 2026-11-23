@@ -7,6 +7,15 @@ from app.core.config import settings
 _jwks_cache = None
 
 
+def realm_roles(payload: dict) -> set[str]:
+    """Return verified realm-level roles; mail client roles are not platform roles."""
+    roles = set(payload.get("realm_roles", []) or [])
+    roles.update((payload.get("realm_access") or {}).get("roles", []) or [])
+    if "realm_roles" not in payload:
+        roles.update(payload.get("roles", []) or [])
+    return roles
+
+
 async def _jwks():
     global _jwks_cache
     if _jwks_cache:
@@ -36,9 +45,6 @@ async def verify_token(token: str) -> dict:
 
 async def verify_token_admin(token: str) -> dict:
     u = await verify_token(token)
-    roles = u.get("realm_access", {}).get("roles", []) + u.get("resource_access", {}).get(
-        settings.keycloak_audience, {}
-    ).get("roles", [])
-    if "admin" not in roles:
+    if not realm_roles(u).intersection({"admin", "platform_admin"}):
         raise HTTPException(status_code=403, detail="admin only")
     return u

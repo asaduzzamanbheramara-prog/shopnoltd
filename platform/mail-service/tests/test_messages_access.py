@@ -52,10 +52,19 @@ def test_unrelated_client_admin_role_does_not_grant_mailbox_access():
     assert caught.value.status_code == 404
 
 
-def test_mail_service_admin_role_can_access_mailbox():
+def test_mail_service_client_admin_role_does_not_grant_platform_mailbox_access():
+    with pytest.raises(HTTPException) as caught:
+        ensure_mailbox_access(
+            mailbox(),
+            {"sub": "admin-1", "resource_access": {"mail-service": {"roles": ["platform_admin"]}}},
+        )
+    assert caught.value.status_code == 404
+
+
+def test_realm_platform_admin_can_access_mailbox():
     ensure_mailbox_access(
         mailbox(),
-        {"sub": "admin-1", "resource_access": {"mail-service": {"roles": ["platform_admin"]}}},
+        {"sub": "admin-1", "realm_access": {"roles": ["platform_admin"]}},
     )
 
 def test_smtp_sender_fails_closed_without_configuration(monkeypatch):
@@ -176,3 +185,18 @@ def test_send_endpoint_rejects_subject_header_injection(monkeypatch):
         ))
     assert caught.value.status_code == 422
 
+
+
+def test_mail_admin_verifier_rejects_client_scoped_admin(monkeypatch):
+    import asyncio
+    from unittest.mock import AsyncMock
+    from app.core import security
+
+    monkeypatch.setattr(
+        security,
+        "verify_token",
+        AsyncMock(return_value={"resource_access": {"mail-service": {"roles": ["platform_admin"]}}}),
+    )
+    with pytest.raises(HTTPException) as caught:
+        asyncio.run(security.verify_token_admin("token"))
+    assert caught.value.status_code == 403

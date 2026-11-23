@@ -15,6 +15,8 @@ jobs:
       - name: Run role guard regression tests
         working-directory: platform/web-portal
         run: npm run test:authz
+      - name: Run Admin Portal realm-role regression tests
+        run: node --test platform/admin-portal/tests/jwt.test.js
   test-agent-service:
     name: Test autonomous agent service
     runs-on: ubuntu-latest

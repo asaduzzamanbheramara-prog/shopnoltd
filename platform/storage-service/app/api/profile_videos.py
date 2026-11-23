@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import SessionLocal
 from app.core.minio_client import client
-from app.core.security import verify_token
+from app.core.security import realm_roles, verify_token
 from app.models.models import ProfessionalProfile, ProfileVideo, ProfileVideoUpload
 
 router = APIRouter()
@@ -35,9 +35,7 @@ def _profile(slug: str) -> str:
 
 
 def _admin_roles(user: dict) -> bool:
-    roles = set(user.get("roles", []))
-    realm = set(user.get("realm_access", {}).get("roles", []))
-    return bool(roles.intersection({"admin", "platform_admin"}) or realm.intersection({"admin", "platform_admin"}))
+    return bool(realm_roles(user).intersection({"admin", "platform_admin"}))
 
 
 async def admin(creds: HTTPAuthorizationCredentials = Depends(bearer)):

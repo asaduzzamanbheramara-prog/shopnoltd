@@ -18,6 +18,17 @@ async def _jwks():
     return _jwks_cache
 
 
+def realm_roles(payload: dict) -> set[str]:
+    """Return only realm-level roles; never promote client roles to platform roles."""
+    roles = set(payload.get("realm_roles", []) or [])
+    roles.update((payload.get("realm_access") or {}).get("roles", []) or [])
+    # The top-level roles claim is the explicitly configured Keycloak realm-role
+    # mapper used by this project. Do not read resource_access here.
+    if "realm_roles" not in payload:
+        roles.update(payload.get("roles", []) or [])
+    return roles
+
+
 async def verify_token(token: str) -> dict:
     try:
         h = jwt.get_unverified_header(token)
@@ -30,10 +41,12 @@ async def verify_token(token: str) -> dict:
             audience=settings.keycloak_audience,
             options={"verify_aud": True},
         )
-        roles = set(claims.get("roles", []) or [])
-        roles.update((claims.get("realm_access") or {}).get("roles", []) or [])
+        realm = set(claims.get("roles", []) or [])
+        realm.update((claims.get("realm_access") or {}).get("roles", []) or [])
+        roles = set(realm)
         for client in (claims.get("resource_access") or {}).values():
             roles.update((client or {}).get("roles", []) or [])
+        claims["realm_roles"] = sorted(realm)
         claims["roles"] = sorted(roles)
         return claims
     except (JWTError, StopIteration) as e:
@@ -41,9 +54,9 @@ async def verify_token(token: str) -> dict:
 
 
 async def verify_token_admin(token: str) -> dict:
-    """Require a platform-wide administrator role from the validated JWT."""
+    """Require a platform-wide administrator role from verified realm claims."""
     u = await verify_token(token)
-    if not set(u.get("roles", [])).intersection({"admin", "platform_admin"}):
+    if not realm_roles(u).intersection({"admin", "platform_admin"}):
         raise PermissionError("admin only")
     return u
 
@@ -56,7 +69,8 @@ async def verify_token_admin(token: str) -> dict:
 
 
 def _roles(payload: dict) -> set:
-    return set(payload.get("roles", []))
+    # Business roles used for tenant authorization are realm roles only.
+    return realm_roles(payload)
 
 
 async def require_roles(token: str, allowed: set) -> dict:

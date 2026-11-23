@@ -20,6 +20,15 @@ async def _jwks(force_refresh: bool = False):
     return _jwks_cache
 
 
+def realm_roles(payload: dict) -> set[str]:
+    """Return realm-level roles only; never promote client roles to admin."""
+    roles = set(payload.get("realm_roles", []) or [])
+    roles.update((payload.get("realm_access") or {}).get("roles", []) or [])
+    if "realm_roles" not in payload:
+        roles.update(payload.get("roles", []) or [])
+    return roles
+
+
 async def verify_token(token: str) -> dict:
     try:
         h = jwt.get_unverified_header(token)
@@ -55,11 +64,6 @@ async def verify_token(token: str) -> dict:
 
 async def verify_token_admin(token: str) -> dict:
     u = await verify_token(token)
-    roles = set(u.get("roles", []))
-    roles.update((u.get("realm_access") or {}).get("roles", []) or [])
-    for client in (u.get("resource_access") or {}).values():
-        roles.update((client or {}).get("roles", []) or [])
-    if not roles.intersection({"admin", "platform_admin"}):
+    if not realm_roles(u).intersection({"admin", "platform_admin"}):
         raise PermissionError("admin only")
-    u["roles"] = sorted(roles)
     return u
