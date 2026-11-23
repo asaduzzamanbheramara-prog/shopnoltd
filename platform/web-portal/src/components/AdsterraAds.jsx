@@ -176,8 +176,8 @@ export function AdsterraGlobalFormats() {
   return null
 }
 
-// The publisher dashboard currently reports Smartlink_1 (31843363) as inactive.
-// Keep the placement fail-closed until the owner supplies a confirmed active URL.
+// Adsterra dashboard confirms Smartlink_1 (31843363) is Active; use the owner-supplied URL.
+// Keep the placement gated by advertising consent and the exact-host ad policy.
 export function AdsterraSmartlink() {
   const consentAllowed = useAdvertisingConsent()
   const policyAllowed = useExternalAdPolicy('adsterra')
@@ -186,7 +186,7 @@ export function AdsterraSmartlink() {
   return <section aria-label="Sponsored link" style={{ ...shellStyle, maxWidth: 760, alignItems: 'flex-start', padding: 16 }}>
     <AdLabel />
     <p style={{ margin: 0, color: '#475569', lineHeight: 1.5 }}>Sponsored link. Opening it takes you to an external advertiser destination.</p>
-    <a href="https://arwf.org/4/e15a69f3ca91af71dfca281a544d18e9" target="_blank" rel="sponsored noopener noreferrer" style={{ display: 'inline-block', padding: '9px 14px', borderRadius: 8, background: '#0369a1', color: '#fff', fontWeight: 700, textDecoration: 'none' }}>Visit sponsored link ↗</a>
+    <a href="https://asiafilm.org/4/bd6b0eff0d812e506d7bb51d544a1f92" target="_blank" rel="sponsored noopener noreferrer" style={{ display: 'inline-block', padding: '9px 14px', borderRadius: 8, background: '#0369a1', color: '#fff', fontWeight: 700, textDecoration: 'none' }}>Visit sponsored link ↗</a>
   </section>
 }
 
