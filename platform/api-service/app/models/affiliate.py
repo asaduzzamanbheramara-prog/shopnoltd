@@ -12,7 +12,7 @@ class AffiliateOffer(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     network_offer_id: Mapped[str] = mapped_column(String(128), unique=True, nullable=False)
     title: Mapped[str] = mapped_column(String(500), nullable=False)
-    tracking_url: Mapped[str] = mapped_column(Text, nullable=False)
+    tracking_url: Mapped[str] = mapped_column(Text, nullable=False)\n    click_param: Mapped[str] = mapped_column(String(32), nullable=False, default="s1")
     network_payout: Mapped[Decimal] = mapped_column(Numeric(12, 4), nullable=False, default=0)
     user_share_percent: Mapped[int] = mapped_column(Integer, nullable=False, default=70)
     incentive_allowed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
