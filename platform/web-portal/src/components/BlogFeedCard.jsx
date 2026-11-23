@@ -1,6 +1,17 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { platformApi } from '../lib/platformApi'
+
+function extractYouTubeId(content = '') {
+  const match = String(content).match(/\\[VIDEO:\\s*(https:\\/\\/[^\\]]+)\\]/i)
+  if (!match) return ''
+  try {
+    const url = new URL(match[1])
+    const host = url.hostname.toLowerCase().replace(/^www\\./, '')
+    const id = host === 'youtu.be' ? url.pathname.split('/').filter(Boolean)[0] : (url.searchParams.get('v') || url.pathname.split('/').filter(Boolean).slice(-1)[0])
+    return url.protocol === 'https:' && ['youtube.com','m.youtube.com','youtube-nocookie.com','youtu.be'].includes(host) && /^[A-Za-z0-9_-]{11}$/.test(id || '') ? id : ''
+  } catch { return '' }
+}
 
 const actionStyle = { border: '1px solid #cbd5e1', background: '#fff', color: '#0f172a', borderRadius: 8, padding: '8px 12px', cursor: 'pointer', fontSize: 14 }
 
@@ -12,7 +23,7 @@ export default function BlogFeedCard({ post }) {
   const [commentText, setCommentText] = useState('')
   const [busy, setBusy] = useState(false)
   const [expanded, setExpanded] = useState(false)
-  const [message, setMessage] = useState('')
+  const [message, setMessage] = useState('')\n  const [videoPlaying, setVideoPlaying] = useState(false)\n  const videoFrameRef = useRef(null)\n  const videoId = extractYouTubeId(post.content)\n\n  useEffect(() => {\n    const frame = videoFrameRef.current\n    if (!frame || !videoId || typeof IntersectionObserver === 'undefined') return undefined\n    const observer = new IntersectionObserver(entries => {\n      const visible = entries.some(entry => entry.isIntersecting && entry.intersectionRatio >= 0.6)\n      setVideoPlaying(visible)\n    }, { threshold: [0, 0.6, 1] })\n    observer.observe(frame)\n    return () => observer.disconnect()\n  }, [videoId])
 
   useEffect(() => {
     let active = true
@@ -100,6 +111,12 @@ export default function BlogFeedCard({ post }) {
       <button type="button" disabled={busy} onClick={toggleSave} style={{ ...actionStyle, background: saved ? '#e0f2fe' : '#fff', borderColor: saved ? '#0284c7' : '#cbd5e1' }}>{saved ? '🔖 Saved' : '🔖 Save'}</button>
     </div>
     {post.cover_image && <Link to={'/blog/' + encodeURIComponent(post.slug)}><img src={post.cover_image} alt="" loading="lazy" style={{ display: 'block', width: '100%', maxHeight: 420, objectFit: 'cover', borderRadius: 10, marginBottom: 12 }} /></Link>}
+    {videoId && <div ref={videoFrameRef} style={{ position: 'relative', width: '100%', aspectRatio: '16 / 9', margin: '0 0 14px', overflow: 'hidden', borderRadius: 12, background: '#0f172a' }}>
+      {videoPlaying ? <iframe title={post.title ? post.title + ' video' : 'Blog video'} src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&mute=1&controls=1&playsinline=1&rel=0`} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 0 }} allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; web-share" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen /> : <button type="button" onClick={() => setVideoPlaying(true)} aria-label="Play blog video" style={{ position: 'absolute', inset: 0, width: '100%', border: 0, padding: 0, cursor: 'pointer', background: '#0f172a' }}>
+        <img src={`https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`} alt={post.title ? post.title + ' video thumbnail' : 'Blog video thumbnail'} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+        <span style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%,-50%)', display: 'grid', placeItems: 'center', width: 64, height: 46, borderRadius: 12, background: '#dc2626', color: '#fff', fontSize: 25 }}>▶</span>
+      </button>}
+    </div>}
     <p style={{ color: '#475569', lineHeight: 1.7, whiteSpace: 'pre-wrap', margin: '0 0 12px' }}>{post.excerpt || String(post.content || '').slice(0, 280)}</p>
     <Link to={'/blog/' + encodeURIComponent(post.slug)} style={{ color: '#0369a1', fontWeight: 700 }}>Read article →</Link>
     {expanded && <section style={{ marginTop: 16, borderTop: '1px solid #e2e8f0', paddingTop: 14 }}>
