@@ -12,12 +12,12 @@ from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import SessionLocal
 from app.core.security import verify_token
-from app.models.affiliate import AffiliateClick, AffiliateConversion, AffiliateOffer
+from app.models.affiliate import AffiliateClick, AffiliateConversion, AffiliateOffer, AffiliateSandboxConversion
 
 router = APIRouter(prefix="/affiliate", tags=["affiliate"])
 bearer = HTTPBearer()
@@ -319,6 +319,82 @@ async def admin_summary(claims=Depends(current_user), session: AsyncSession = De
         status: {"count": int(count), "network_payout_usd": str(network),
                  "user_share_usd": str(user), "platform_share_usd": str(platform)}
         for status, count, network, user, platform in result.all()
+    }
+
+
+
+# Sandbox records are separate from network conversions and never settle to wallets.
+@router.post("/sandbox/simulate")
+async def simulate_sandbox_earning(request: Request, claims=Depends(current_user), session: AsyncSession = Depends(db)):
+    body = await request.json()
+    try:
+        payout = Decimal(str(body.get("network_payout_usd", "1")))
+    except (InvalidOperation, TypeError, ValueError) as exc:
+        raise HTTPException(422, "network_payout_usd must be a positive decimal") from exc
+    if not payout.is_finite() or payout <= 0 or payout > Decimal("1000"):
+        raise HTTPException(422, "Sandbox payout must be greater than 0 and no more than 1000 USD")
+    share = _percent(body.get("user_share_percent", 70))
+    user_amount = (payout * Decimal(share) / Decimal(100)).quantize(Decimal("0.0001"))
+    platform_amount = (payout - user_amount).quantize(Decimal("0.0001"))
+    record = AffiliateSandboxConversion(
+        id=str(uuid.uuid4()), user_id=str(claims["sub"]),
+        simulated_network_payout=payout.quantize(Decimal("0.0001")),
+        simulated_user_amount=user_amount, simulated_platform_amount=platform_amount,
+        user_share_percent=share, currency="USD",
+    )
+    session.add(record)
+    await session.commit()
+    return {
+        "id": record.id, "sandbox": True, "withdrawable": False, "wallet_credited": False,
+        "currency": "USD", "simulated_network_payout": str(record.simulated_network_payout),
+        "simulated_user_amount": str(record.simulated_user_amount),
+        "simulated_platform_amount": str(record.simulated_platform_amount),
+        "user_share_percent": share, "platform_share_percent": 100 - share,
+        "note": "Simulation only. Not an Affmine conversion, real income, or payable balance.",
+    }
+
+
+@router.get("/sandbox/me/summary")
+async def sandbox_user_summary(claims=Depends(current_user), session: AsyncSession = Depends(db)):
+    result = await session.execute(
+        select(func.count(AffiliateSandboxConversion.id),
+               func.coalesce(func.sum(AffiliateSandboxConversion.simulated_network_payout), 0),
+               func.coalesce(func.sum(AffiliateSandboxConversion.simulated_user_amount), 0))
+        .where(AffiliateSandboxConversion.user_id == str(claims["sub"]))
+    )
+    count, network, user_amount = result.one()
+    return {
+        "sandbox": True, "withdrawable": False, "wallet_credited": False,
+        "conversions": int(count), "simulated_network_payout_usd": str(network),
+        "simulated_user_amount_usd": str(user_amount),
+        "note": "Simulation only; excluded from real earnings and wallet balance.",
+    }
+
+
+@router.delete("/sandbox/me/reset")
+async def reset_my_sandbox(claims=Depends(current_user), session: AsyncSession = Depends(db)):
+    result = await session.execute(
+        delete(AffiliateSandboxConversion).where(AffiliateSandboxConversion.user_id == str(claims["sub"]))
+    )
+    await session.commit()
+    return {"sandbox": True, "deleted_test_records": result.rowcount or 0, "wallet_unchanged": True}
+
+
+@router.get("/sandbox/admin/summary")
+async def sandbox_admin_summary(claims=Depends(current_user), session: AsyncSession = Depends(db)):
+    _require_admin(claims)
+    result = await session.execute(
+        select(func.count(AffiliateSandboxConversion.id),
+               func.coalesce(func.sum(AffiliateSandboxConversion.simulated_network_payout), 0),
+               func.coalesce(func.sum(AffiliateSandboxConversion.simulated_user_amount), 0),
+               func.coalesce(func.sum(AffiliateSandboxConversion.simulated_platform_amount), 0))
+    )
+    count, network, users, platform = result.one()
+    return {
+        "sandbox": True, "withdrawable": False, "wallet_credited": False,
+        "test_conversions": int(count), "simulated_network_payout_usd": str(network),
+        "simulated_user_share_usd": str(users), "simulated_platform_share_usd": str(platform),
+        "note": "Simulated values only; excluded from real revenue, payable earnings, and wallet balances.",
     }
 
 
