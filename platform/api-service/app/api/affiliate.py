@@ -103,8 +103,15 @@ def _affmine_campaign_rows(payload, content_type: str):
     """Normalize Affmine v1 JSON/XML feed rows without trusting remote markup."""
     if "json" in (content_type or "").lower() or payload.lstrip().startswith("{"):
         import json
-        data = json.loads(payload)
+        try:
+            data = json.loads(payload)
+        except (TypeError, json.JSONDecodeError) as exc:
+            raise HTTPException(502, "Affmine returned invalid JSON campaign data") from exc
+        if not isinstance(data, dict):
+            raise HTTPException(502, "Affmine returned an unexpected campaign feed structure")
         root = data.get("offer_feed", data)
+        if not isinstance(root, dict):
+            raise HTTPException(502, "Affmine returned an unexpected campaign feed structure")
         if str(root.get("success", "true")).lower() not in {"true", "1", "yes"}:
             raise HTTPException(502, "Affmine campaign feed reported an unsuccessful response")
         offers = root.get("offers", [])
@@ -112,7 +119,11 @@ def _affmine_campaign_rows(payload, content_type: str):
             offers = offers.get("offer", [])
         if isinstance(offers, dict):
             offers = [offers]
-        return offers or []
+        if offers is None:
+            return []
+        if not isinstance(offers, list) or any(not isinstance(row, dict) for row in offers):
+            raise HTTPException(502, "Affmine returned an invalid campaign list")
+        return offers
     try:
         root = ET.fromstring(payload)
     except ET.ParseError as exc:
@@ -302,9 +313,14 @@ async def sync_affmine_campaigns(claims=Depends(current_user), session: AsyncSes
     inserted = updated = skipped_currency = 0
     start_row = 0
     page_size = 200
+    max_pages = 1000
+    page_count = 0
     try:
         async with httpx.AsyncClient(timeout=25) as client:
             while True:
+                if page_count >= max_pages:
+                    raise HTTPException(502, "Affmine campaign feed exceeded the safe pagination limit")
+                page_count += 1
                 response = await client.get(
                     "https://network.affmine.com/api/v1/getCampaigns",
                     params={
