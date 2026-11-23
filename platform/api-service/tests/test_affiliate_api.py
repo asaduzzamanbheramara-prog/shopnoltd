@@ -305,3 +305,14 @@ def test_verified_work_approval_runs_referral_transfer_after_worker_reward():
     assert worker_transfer < referral_transfer < approval
     assert "tenant_id=w.tenant_id" in source
     assert "submission_id=sub.id" in source
+
+
+def test_offer_links_use_shopnoltd_redirect_not_provider_destination():
+    import inspect
+    from app.api.affiliate import start_offer, redirect_offer, router as affiliate_router
+    start_source = inspect.getsource(start_offer)
+    redirect_source = inspect.getsource(redirect_offer)
+    assert 'request.url_for("redirect_offer"' in start_source
+    assert "_safe_tracking_url" not in start_source
+    assert "RedirectResponse(destination, status_code=302)" in redirect_source
+    assert any(route.path == "/affiliate/go/{click_id}" for route in affiliate_router.routes)
