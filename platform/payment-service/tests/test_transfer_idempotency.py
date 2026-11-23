@@ -51,8 +51,9 @@ def test_transaction_enums_match_existing_varchar_schema():
     from sqlalchemy import Enum as SqlAlchemyEnum
     from app.models.models import Transaction
 
-    for column_name in ("type", "method", "status"):
+    expected_lengths = {"type": 16, "method": 16, "status": 24}
+    for column_name, expected_length in expected_lengths.items():
         column_type = Transaction.__table__.c[column_name].type
         assert isinstance(column_type, SqlAlchemyEnum)
         assert column_type.native_enum is False
-        assert column_type.length == 16
+        assert column_type.length == expected_length
