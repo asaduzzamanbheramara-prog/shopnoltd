@@ -23,7 +23,7 @@ class ProviderType(enum.StrEnum):
     openai = "openai"
     anthropic = "anthropic"
     ollama = "ollama"
-    google = "google"  # Gemini — adapter stubbed, easy to fill in later
+    google = "google"  # Gemini Î“Ã‡Ã¶ adapter stubbed, easy to fill in later
     azure_openai = "azure_openai"
     custom = "custom"  # any OpenAI-compatible endpoint (vLLM, LM Studio, etc.)
 
@@ -37,7 +37,7 @@ class AIProvider(Base):
         Enum(ProviderType, name="provider_type_enum"), nullable=False
     )
 
-    # Fernet-encrypted at the application layer — never store plaintext.
+    # Fernet-encrypted at the application layer Î“Ã‡Ã¶ never store plaintext.
     api_key_encrypted: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     base_url: Mapped[str | None] = mapped_column(
@@ -143,3 +143,34 @@ class AIPersonalMemory(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), index=True
     )
+
+class Agent(Base):
+    """Agent table registered on the same metadata initialized by the AI Platform lifespan.
+
+    Column names and types intentionally match the pre-existing legacy table so
+    create_all() is additive and does not require a destructive table rebuild.
+    """
+    __tablename__ = "agents"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=lambda: str(uuid.uuid4()))
+    tenant_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(128), nullable=False)
+    system_prompt: Mapped[str | None] = mapped_column(
+        Text, default="You are a helpful Shopnoltd assistant."
+    )
+    model: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class Conversation(Base):
+    """Conversation rows retain the legacy ai_conversations schema."""
+    __tablename__ = "ai_conversations"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=lambda: str(uuid.uuid4()))
+    agent_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey("agents.id"), nullable=False, index=True
+    )
+    user_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    role: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
