@@ -38,6 +38,34 @@ class LoginBrokerFlowTests(TestCase):
             ],
         )
 
+    def test_signup_aliases_are_hidden_from_login_page_but_login_aliases_remain_visible(self):
+        provider = client_sync.SOCIAL_PROVIDERS["facebook"]
+        environment = {
+            provider["clientIdEnv"]: "facebook-id",
+            provider["clientSecretEnv"]: "facebook-secret",
+        }
+
+        for alias, expected_hide in (("facebook", False), ("facebook-signup", True)):
+            requests = []
+
+            def fake_request(method, path, token=None, body=None, form=False):
+                requests.append((method, path, body))
+                if method == "GET":
+                    return 404, None
+                if method == "POST":
+                    return 201, None
+                self.fail("Unexpected Keycloak API call: {} {}".format(method, path))
+
+            with patch.dict("os.environ", environment, clear=False):
+                with patch.object(client_sync, "request", side_effect=fake_request):
+                    self.assertTrue(
+                        client_sync.sync_social_provider("test-token", alias, provider)
+                    )
+
+            created = next(body for method, path, body in requests if method == "POST")
+            self.assertEqual(created["hideOnLogin"], expected_hide, alias)
+
+
     def test_oauth_social_providers_do_not_trust_unverified_email_claims(self):
         for alias in ("facebook", "github"):
             provider = client_sync.SOCIAL_PROVIDERS[alias]
