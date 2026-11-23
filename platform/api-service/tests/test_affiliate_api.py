@@ -6,7 +6,7 @@ import pytest
 
 from app.api.affiliate import _affmine_request_params, _affmine_campaign_rows, _affmine_country_codes, _affmine_platform_codes, _client_platform, _platform_ok, _country, _geo_ok, _is_platform_admin, _percent, _require_sandbox_enabled, _safe_tracking_url, sandbox_user_summary, simulate_sandbox_earning
 from app.models.affiliate import AffiliateConversion, AffiliateOffer, AffiliateSandboxConversion
-from app.api.affiliate import router
+from app.api.affiliate import router, public_offer_dict
 
 
 class Request:
@@ -256,3 +256,28 @@ def test_affmine_country_codes_support_json_shapes():
     assert _affmine_country_codes(["BD", "US"]) == "BD,US"
     assert _affmine_country_codes({"country": [{"country_code": "BD"}, {"country_code": "US"}]}) == "BD,US"
     assert _affmine_country_codes({"country_code": "BD"}) == "BD"
+
+
+def test_public_affiliate_offer_exposes_only_shopnoltd_reward():
+    from types import SimpleNamespace
+
+    offer = SimpleNamespace(
+        id=17,
+        title="Shopnoltd task",
+        network_offer_id="AFFMINE-SECRET-123",
+        network_payout=Decimal("10.00"),
+        user_share_percent=70,
+        currency="USD",
+        countries="US",
+        allowed_platform="1,3",
+    )
+    result = public_offer_dict(offer)
+    assert result == {
+        "id": 17,
+        "title": "Shopnoltd task",
+        "reward_amount": "7.0000",
+        "currency": "USD",
+    }
+    forbidden = {"network_offer_id", "network_payout", "user_share_percent",
+                 "platform_share_percent", "countries", "allowed_platform"}
+    assert forbidden.isdisjoint(result)
