@@ -17,12 +17,15 @@ class CommerceStorefrontTests(unittest.TestCase):
         self.assertIn("Custom quote before work", page)
         self.assertIn("full price before any paid work begins", page)
 
-    def test_quote_request_is_transparent_and_does_not_claim_submission(self):
+    def test_quote_request_is_persisted_and_does_not_claim_payment(self):
         page = PAGE.read_text(encoding="utf-8")
         self.assertIn('id="service-quote-form"', page)
-        self.assertIn("mailto:support@shopnoltd.dpdns.org", page)
-        self.assertIn("has not received it until you send it", page)
-        self.assertIn("No payment is collected on this page", page)
+        self.assertIn("https://api.shopnoltd.dpdns.org", page)
+        self.assertIn("/api/v1/service-orders", page)
+        self.assertIn("Sign in before submitting", page)
+        self.assertIn("Request saved successfully", page)
+        self.assertIn("No payment is collected", page)
+        self.assertNotIn("mailto:support@shopnoltd.dpdns.org", page)
 
     def test_page_is_branded_as_a_service_center_not_a_catalogue_preview(self):
         page = PAGE.read_text(encoding="utf-8")
@@ -31,11 +34,12 @@ class CommerceStorefrontTests(unittest.TestCase):
         self.assertIn("Shopnoltd Software &amp; OS Services Center.", page)
         self.assertNotIn("Catalogue preview", page)
 
-    def test_quote_uses_the_published_shopnoltd_support_address(self):
+    def test_quote_form_sends_only_request_details_and_no_client_price(self):
         page = PAGE.read_text(encoding="utf-8")
-        contact = (ROOT / "platform/web-portal/src/pages/Contact.jsx").read_text(encoding="utf-8")
-        self.assertIn("mailto:support@shopnoltd.dpdns.org", page)
-        self.assertIn("const SUPPORT_EMAIL = 'support@shopnoltd.dpdns.org'", contact)
+        self.assertIn("service_code:serviceCode", page)
+        self.assertIn("request_key:requestKey", page)
+        self.assertNotIn("quoted_amount:", page)
+        self.assertNotIn("price:", page)
 
     def test_no_browser_side_payment_or_entitlement_unlock(self):
         page = PAGE.read_text(encoding="utf-8")
