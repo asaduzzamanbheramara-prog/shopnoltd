@@ -95,7 +95,7 @@ const PUBLIC_LINKS = [['About', '/about'], ['Services', '/services'], ['Pricing'
 const STANDALONE_APP_PATHS = new Set(['/android-cloud'])
 
 function Nav() {
-  if (window.location.hostname === 'files.shopnoltd.dpdns.org') return null
+  const isFilesHost = window.location.hostname === 'files.shopnoltd.dpdns.org'
   const navigate = useNavigate()
   const location = useLocation()
   const token = localStorage.getItem('shopno_token')
@@ -148,6 +148,8 @@ function Nav() {
       ? <a key={path} href={path} style={style}>{label}</a>
       : <Link key={path} to={path} style={style}>{label}</Link>
   }
+
+  if (isFilesHost) return null
 
   return <nav aria-label="Main navigation" style={{
     display: 'flex',
