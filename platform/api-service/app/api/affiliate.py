@@ -99,6 +99,13 @@ def _percent(value, field="user_share_percent") -> int:
     return number
 
 
+def _affmine_request_params(aff_id: str, api_key: str) -> dict[str, str]:
+    # Only send parameters documented in the supplied Affmine Publisher API v1.0 spec.
+    # Do not guess filters or pagination keys: unsupported keys can silently return
+    # the same first page and make an importer loop indefinitely.
+    return {"aff_id": aff_id, "api_key": api_key, "format": "json"}
+
+
 def _affmine_campaign_rows(payload, content_type: str):
     """Normalize Affmine v1 JSON/XML feed rows without trusting remote markup."""
     if "json" in (content_type or "").lower() or payload.lstrip().startswith("{"):
@@ -311,78 +318,60 @@ async def sync_affmine_campaigns(claims=Depends(current_user), session: AsyncSes
     if not aff_id or not api_key:
         raise HTTPException(503, "Affmine API credentials are not configured on the API service")
     inserted = updated = skipped_currency = 0
-    start_row = 0
-    page_size = 200
-    max_pages = 1000
-    page_count = 0
     try:
         async with httpx.AsyncClient(timeout=25) as client:
-            while True:
-                if page_count >= max_pages:
-                    raise HTTPException(502, "Affmine campaign feed exceeded the safe pagination limit")
-                page_count += 1
-                response = await client.get(
-                    "https://network.affmine.com/api/v1/getCampaigns",
-                    params={
-                        "aff_id": aff_id, "api_key": api_key, "format": "json",
-                        "offer_status": "1", "countries": "",
-                        "platform": "", "incentive": "0",
-                        "start_row": str(start_row), "limit_row": str(page_size),
-                    },
+            response = await client.get(
+                "https://network.affmine.com/api/v1/getCampaigns",
+                params=_affmine_request_params(aff_id, api_key),
+            )
+            response.raise_for_status()
+            rows = _affmine_campaign_rows(response.text, response.headers.get("content-type", ""))
+            for row in rows:
+                network_id = str(row.get("offer_id", "")).strip()
+                title = str(row.get("offer_name", "")).strip()
+                if not network_id or not title:
+                    continue
+                currency = str(row.get("currency", "USD")).strip().upper()
+                if not re.fullmatch(r"[A-Z]{3}", currency):
+                    skipped_currency += 1
+                    continue
+                try:
+                    payout = Decimal(str(row.get("payout", "0")))
+                except (InvalidOperation, TypeError, ValueError):
+                    continue
+                if not payout.is_finite() or payout <= 0:
+                    continue
+                existing = await session.scalar(
+                    select(AffiliateOffer).where(AffiliateOffer.network_offer_id == network_id)
                 )
-                response.raise_for_status()
-                rows = _affmine_campaign_rows(response.text, response.headers.get("content-type", ""))
-                if not rows:
-                    break
-                for row in rows:
-                    network_id = str(row.get("offer_id", "")).strip()
-                    title = str(row.get("offer_name", "")).strip()
-                    if not network_id or not title:
-                        continue
-                    currency = str(row.get("currency", "USD")).strip().upper()
-                    if not re.fullmatch(r"[A-Z]{3}", currency):
-                        skipped_currency += 1
-                        continue
-                    try:
-                        payout = Decimal(str(row.get("payout", "0")))
-                    except (InvalidOperation, TypeError, ValueError):
-                        continue
-                    if not payout.is_finite() or payout <= 0:
-                        continue
-                    existing = await session.scalar(
-                        select(AffiliateOffer).where(AffiliateOffer.network_offer_id == network_id)
-                    )
-                    tracking_url = str(row.get("url", "") or "").strip()
-                    if tracking_url and (urlsplit(tracking_url).scheme != "https" or not urlsplit(tracking_url).hostname):
-                        tracking_url = ""
-                    countries = _affmine_country_codes(row.get("countries"))
-                    allowed_platform = _affmine_platform_codes(row.get("allowed_platform"))
-                    network_incentive = str(row.get("incentive", "unknown")).strip().lower()[:16] or "unknown"
-                    if existing:
-                        existing.title = title[:500]
-                        existing.network_payout = payout
-                        existing.currency = currency
-                        existing.countries = countries
-                        existing.allowed_platform = allowed_platform
-                        existing.network_incentive = network_incentive
-                        if tracking_url:
-                            existing.tracking_url = tracking_url
-                        # Keep existing admin decision/status unchanged on sync.
-                        updated += 1
-                    else:
-                        session.add(AffiliateOffer(
-                            network_offer_id=network_id[:128], title=title[:500],
-                            tracking_url=tracking_url, click_param="s1",
-                            network_payout=payout, user_share_percent=70,
-                            incentive_allowed=False, status="draft",
-                            countries=countries, currency=currency,
-                            allowed_platform=allowed_platform, network_incentive=network_incentive,
-                        ))
-                        inserted += 1
-                await session.commit()
-                if len(rows) < page_size:
-                    break
-                start_row += page_size
+                tracking_url = str(row.get("url", "") or "").strip()
+                if tracking_url and (urlsplit(tracking_url).scheme != "https" or not urlsplit(tracking_url).hostname):
+                    tracking_url = ""
+                countries = _affmine_country_codes(row.get("countries"))
+                allowed_platform = _affmine_platform_codes(row.get("allowed_platform"))
+                network_incentive = str(row.get("incentive", "unknown")).strip().lower()[:16] or "unknown"
+                if existing:
+                    existing.title = title[:500]
+                    existing.network_payout = payout
+                    existing.currency = currency
+                    existing.countries = countries
+                    existing.allowed_platform = allowed_platform
+                    existing.network_incentive = network_incentive
+                    if tracking_url:
+                        existing.tracking_url = tracking_url
+                    # Keep existing admin decision/status unchanged on sync.
+                    updated += 1
+                else:
+                    session.add(AffiliateOffer(
+                        network_offer_id=network_id[:128], title=title[:500],
+                        tracking_url=tracking_url, click_param="s1",
+                        network_payout=payout, user_share_percent=70,
+                        incentive_allowed=False, status="draft",
+                        countries=countries, currency=currency,
+                        allowed_platform=allowed_platform, network_incentive=network_incentive,
+                    ))
+                    inserted += 1
+            await session.commit()
     except httpx.HTTPStatusError as exc:
         await session.rollback()
         raise HTTPException(502, f"Affmine API returned HTTP {exc.response.status_code}") from exc

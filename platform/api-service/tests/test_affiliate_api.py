@@ -4,7 +4,7 @@ from decimal import Decimal
 from fastapi import HTTPException
 import pytest
 
-from app.api.affiliate import _affmine_campaign_rows, _affmine_country_codes, _affmine_platform_codes, _client_platform, _platform_ok, _country, _geo_ok, _is_platform_admin, _percent, _require_sandbox_enabled, _safe_tracking_url, sandbox_user_summary, simulate_sandbox_earning
+from app.api.affiliate import _affmine_request_params, _affmine_campaign_rows, _affmine_country_codes, _affmine_platform_codes, _client_platform, _platform_ok, _country, _geo_ok, _is_platform_admin, _percent, _require_sandbox_enabled, _safe_tracking_url, sandbox_user_summary, simulate_sandbox_earning
 from app.models.affiliate import AffiliateConversion, AffiliateOffer, AffiliateSandboxConversion
 from app.api.affiliate import router
 
@@ -12,6 +12,11 @@ from app.api.affiliate import router
 class Request:
     def __init__(self, headers):
         self.headers = headers
+
+
+def test_affmine_request_uses_only_documented_v1_parameters():
+    params = _affmine_request_params("51406", "test-key-not-real")
+    assert params == {"aff_id": "51406", "api_key": "test-key-not-real", "format": "json"}
 
 
 def test_affmine_json_feed_normalizes_valid_offer_shapes():
