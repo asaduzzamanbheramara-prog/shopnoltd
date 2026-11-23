@@ -1,7 +1,7 @@
 from fastapi import HTTPException
 import pytest
 
-from app.api.affiliate import _country, _geo_ok, _is_platform_admin, _percent, _safe_tracking_url
+from app.api.affiliate import _country, _geo_ok, _is_platform_admin, _percent, _require_sandbox_enabled, _safe_tracking_url
 from app.models.affiliate import AffiliateConversion, AffiliateOffer, AffiliateSandboxConversion
 from app.api.affiliate import router
 
@@ -109,3 +109,11 @@ def test_sandbox_endpoints_are_separate_and_wallet_safe():
     assert "/affiliate/sandbox/admin/summary" in paths
     # The live network callback remains intentionally disabled.
     assert "/affiliate/postback" in paths
+
+def test_sandbox_requires_explicit_environment_enablement(monkeypatch):
+    monkeypatch.delenv("AFFILIATE_SANDBOX_ENABLED", raising=False)
+    with pytest.raises(HTTPException) as disabled:
+        _require_sandbox_enabled()
+    assert disabled.value.status_code == 404
+    monkeypatch.setenv("AFFILIATE_SANDBOX_ENABLED", "true")
+    _require_sandbox_enabled()
