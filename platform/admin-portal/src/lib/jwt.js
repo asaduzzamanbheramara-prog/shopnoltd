@@ -8,4 +8,12 @@ export function getRoles() {
   for (const role of payload?.resource_access?.['api-service']?.roles || []) roles.add(role)
   return [...roles]
 }
-export function isPlatformAdmin() { const roles = getRoles(); return roles.includes('platform_admin') || roles.includes('admin') }
+export function isPlatformAdmin() {
+  const token = localStorage.getItem('shopno_token')
+  const payload = token ? decodeToken(token) : null
+  // Only verified realm-role claims grant platform-wide UI access.
+  // resource_access roles are scoped to their individual Keycloak clients.
+  const roles = new Set(payload?.realm_roles || payload?.roles || [])
+  for (const role of payload?.realm_access?.roles || []) roles.add(role)
+  return roles.has('platform_admin')
+}
