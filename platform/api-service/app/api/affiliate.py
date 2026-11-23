@@ -131,6 +131,44 @@ def _affmine_campaign_rows(payload, content_type: str):
     return rows
 
 
+def _affmine_platform_codes(value):
+    """Normalize Affmine platform IDs: 1 Windows, 2 Mac, 3 Android, 4 iOS, 5 other mobile."""
+    if isinstance(value, list):
+        raw = ",".join(str(item.get("platform_id", item.get("id", ""))) if isinstance(item, dict) else str(item) for item in value)
+    else:
+        raw = str(value or "")
+    named = {"WINDOWS": "1", "MAC": "2", "MACOS": "2", "ANDROID": "3",
+             "IOS": "4", "IPHONE": "4", "IPAD": "4", "OTHER MOBILE": "5",
+             "OTHER_MOBILE": "5", "MOBILE": "5"}
+    for label, code in named.items():
+        raw = re.sub(rf"\b{re.escape(label)}\b", code, raw, flags=re.IGNORECASE)
+    codes = sorted({part for part in re.split(r"[^0-9]+", raw) if part in {"1", "2", "3", "4", "5"}}, key=int)
+    return ",".join(codes) if codes else "unknown"
+
+
+def _client_platform(request: Request) -> str:
+    ua = (request.headers.get("user-agent") or "").lower()
+    if "android" in ua:
+        return "3"
+    if any(token in ua for token in ("iphone", "ipad", "ipod")):
+        return "4"
+    if "windows" in ua:
+        return "1"
+    if any(token in ua for token in ("macintosh", "mac os")):
+        return "2"
+    if any(token in ua for token in ("mobile", "opera mini", "iemobile")):
+        return "5"
+    return ""
+
+
+def _platform_ok(allowed_platform: str | None, client_platform: str) -> bool:
+    raw = (allowed_platform or "").strip()
+    if raw in {"", "0", "ALL", "1,2,3,4,5"}:
+        return True
+    allowed = {part for part in raw.split(",") if part in {"1", "2", "3", "4", "5"}}
+    return bool(client_platform and client_platform in allowed)
+
+
 def _affmine_country_codes(value):
     if isinstance(value, list):
         codes = [str(row.get("country_code", "")).upper() for row in value if isinstance(row, dict)]
@@ -145,6 +183,7 @@ def _affmine_country_codes(value):
 @router.get("/offers")
 async def list_offers(request: Request, _user=Depends(current_user), session: AsyncSession = Depends(db)):
     country = _country(request)
+    platform = _client_platform(request)
     result = await session.execute(
         select(AffiliateOffer).where(
             AffiliateOffer.status == "active",
@@ -153,7 +192,7 @@ async def list_offers(request: Request, _user=Depends(current_user), session: As
     )
     offers = []
     for offer in result.scalars().all():
-        if not _geo_ok(offer.countries, country):
+        if not _geo_ok(offer.countries, country) or not _platform_ok(offer.allowed_platform, platform):
             continue
         user_share = Decimal(offer.user_share_percent) / Decimal(100)
         offers.append({
@@ -166,6 +205,7 @@ async def list_offers(request: Request, _user=Depends(current_user), session: As
             "platform_share_percent": 100 - offer.user_share_percent,
             "estimated_user_reward": str((Decimal(offer.network_payout) * user_share).quantize(Decimal("0.0001"))),
             "currency": offer.currency,
+            "allowed_platform": offer.allowed_platform,
         })
     return offers
 
@@ -181,7 +221,8 @@ async def start_offer(offer_id: int, request: Request, claims=Depends(current_us
     )
     offer = result.scalar_one_or_none()
     country = _country(request)
-    if not offer or not _geo_ok(offer.countries, country):
+    platform = _client_platform(request)
+    if not offer or not _geo_ok(offer.countries, country) or not _platform_ok(offer.allowed_platform, platform):
         raise HTTPException(404, "Offer not available in your country")
     click_id = str(uuid.uuid4())
     session.add(AffiliateClick(
@@ -272,7 +313,7 @@ async def sync_affmine_campaigns(claims=Depends(current_user), session: AsyncSes
                     if not network_id or not title:
                         continue
                     currency = str(row.get("currency", "USD")).strip().upper()
-                    if currency != "USD":
+                    if not re.fullmatch(r"[A-Z]{3}", currency):
                         skipped_currency += 1
                         continue
                     try:
@@ -288,11 +329,15 @@ async def sync_affmine_campaigns(claims=Depends(current_user), session: AsyncSes
                     if tracking_url and (urlsplit(tracking_url).scheme != "https" or not urlsplit(tracking_url).hostname):
                         tracking_url = ""
                     countries = _affmine_country_codes(row.get("countries"))
+                    allowed_platform = _affmine_platform_codes(row.get("allowed_platform"))
+                    network_incentive = str(row.get("incentive", "unknown")).strip().lower()[:16] or "unknown"
                     if existing:
                         existing.title = title[:500]
                         existing.network_payout = payout
-                        existing.currency = "USD"
+                        existing.currency = currency
                         existing.countries = countries
+                        existing.allowed_platform = allowed_platform
+                        existing.network_incentive = network_incentive
                         if tracking_url:
                             existing.tracking_url = tracking_url
                         # Keep existing admin decision/status unchanged on sync.
@@ -303,7 +348,8 @@ async def sync_affmine_campaigns(claims=Depends(current_user), session: AsyncSes
                             tracking_url=tracking_url, click_param="s1",
                             network_payout=payout, user_share_percent=70,
                             incentive_allowed=False, status="draft",
-                            countries=countries, currency="USD",
+                            countries=countries, currency=currency,
+                            allowed_platform=allowed_platform, network_incentive=network_incentive,
                         ))
                         inserted += 1
                 await session.commit()
@@ -318,7 +364,7 @@ async def sync_affmine_campaigns(claims=Depends(current_user), session: AsyncSes
         raise HTTPException(502, "Could not retrieve or parse Affmine campaign feed") from exc
     return {
         "source": "Affmine Publisher API v1.0", "status": "imported_as_drafts",
-        "inserted": inserted, "updated": updated, "skipped_unsupported_currency": skipped_currency,
+        "inserted": inserted, "updated": updated, "skipped_invalid_currency": skipped_currency,
         "incentives_enabled": 0, "offers_activated": 0,
         "note": "Imported campaigns remain Draft and incentive-disabled until campaign-level permission and tracking parameters are verified.",
     }
@@ -333,7 +379,8 @@ async def admin_offers(claims=Depends(current_user), session: AsyncSession = Dep
          "status": o.status, "incentive_allowed": o.incentive_allowed,
          "network_payout": str(o.network_payout), "currency": o.currency,
          "user_share_percent": o.user_share_percent,
-         "platform_share_percent": 100 - o.user_share_percent, "countries": o.countries}
+         "platform_share_percent": 100 - o.user_share_percent, "countries": o.countries,
+         "allowed_platform": o.allowed_platform, "network_incentive": o.network_incentive}
         for o in result.scalars().all()
     ]
 
@@ -373,10 +420,12 @@ async def create_offer(request: Request, claims=Depends(current_user), session: 
         incentive_allowed=body.get("incentive_allowed") is True,
         status="draft",
         countries=str(body.get("countries", "")).strip() or None,
-        currency=str(body.get("currency", "USD")).upper(),
+        currency=str(body.get("currency", "USD")).strip().upper(),
+        allowed_platform=_affmine_platform_codes(body.get("allowed_platform", "1,2,3,4,5")),
+        network_incentive="unknown",
     )
-    if offer.currency != "USD":
-        raise HTTPException(422, "Only USD network payouts are supported until a verified network FX contract exists")
+    if not re.fullmatch(r"[A-Z]{3}", offer.currency):
+        raise HTTPException(422, "currency must be a three-letter ISO currency code")
     session.add(offer)
     await session.commit()
     await session.refresh(offer)
@@ -541,3 +590,5 @@ async def sandbox_admin_summary(claims=Depends(current_user), session: AsyncSess
 @router.post("/postback", include_in_schema=False)
 async def disabled_postback():
     raise HTTPException(503, "Callbacks disabled until Affmine confirms its publisher postback authentication, macros, and conversion status lifecycle")
+
+[executed on device: Shopnoltd (52cb1894-787c-49c2-9460-901a8f74a1e7)]
