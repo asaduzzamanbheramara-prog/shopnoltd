@@ -26,7 +26,7 @@ spec:
       containers:
         - name: web
 
-          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/shopnoltd-web:a40759341637e63336702d011827f7282e689b3f
+          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/shopnoltd-web:b22cac2559f73d6dce6c41236b0d92a5a701dd85
 
           imagePullPolicy: Always
 

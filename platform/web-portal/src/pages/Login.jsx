@@ -1,5 +1,6 @@
 import { KEYCLOAK_CLIENT_ID, KEYCLOAK_REALM, KEYCLOAK_URL, REDIRECT_URI, SOCIAL_LOGIN_PROVIDERS } from '../config'
 import { randomString, codeChallengeFor } from '../pkce'
+import { clearAuthSession } from '../lib/authSession'
 
 const PROVIDERS = [
   { id: 'google', label: 'Continue with Google', icon: 'G' },
@@ -8,6 +9,7 @@ const PROVIDERS = [
 ].filter((provider) => SOCIAL_LOGIN_PROVIDERS[provider.id])
 
 async function startLogin(provider = '') {
+  clearAuthSession(localStorage, sessionStorage)
   sessionStorage.setItem('shopno_auth_intent', 'login')
   sessionStorage.setItem('shopno_auth_method', provider || 'shopnoltd')
   const verifier = randomString(64)

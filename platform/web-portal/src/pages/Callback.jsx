@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { KEYCLOAK_CLIENT_ID, KEYCLOAK_REALM, KEYCLOAK_URL, REDIRECT_URI } from '../config'
 import { platformApi } from '../lib/platformApi'
+import { clearAuthTokens } from '../lib/authSession'
 import { trackEvent } from '../lib/analytics'
 
 export default function Callback() {
@@ -52,6 +53,7 @@ export default function Callback() {
         // Persist the verified OIDC tokens before any optional API work. A slow or
         // unavailable profile/referral endpoint must never strand the user on
         // "Completing sign in…" after Keycloak has successfully authenticated them.
+        clearAuthTokens(localStorage)
         localStorage.setItem('shopno_token', data.access_token)
         const authIntent = sessionStorage.getItem('shopno_auth_intent')
         const authMethod = sessionStorage.getItem('shopno_auth_method') || 'shopnoltd'
