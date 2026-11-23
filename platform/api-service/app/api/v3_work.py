@@ -843,7 +843,8 @@ async def reject_submission(submission_id: str, body: dict = None, s: AsyncSessi
         a.status = "rejected"
     if w.status == "full":
         active_count = await s.scalar(select(func.count(WorkAssignment.id)).where(WorkAssignment.work_id == w.id, WorkAssignment.status == "active"))
-        if int(active_count or 0) < w.max_workers:
+        completed_count = await s.scalar(select(func.count(WorkAssignment.id)).where(WorkAssignment.work_id == w.id, WorkAssignment.status == "completed"))
+        if int(active_count or 0) + int(completed_count or 0) < w.max_workers:
             w.status = "open"
     await s.commit()
     return {"id": sub.id, "status": sub.status, "work_status": w.status}

@@ -98,11 +98,15 @@ def can_view_work(work: Work, user: dict) -> bool:
     return True
 
 
+def remaining_work_slots(max_workers: int, active_slots: int, completed_slots: int) -> int:
+    return max(int(max_workers) - int(active_slots) - int(completed_slots), 0)
+
+
 def work_dict(w: Work, total_slots: int | None = None, active_slots: int | None = None, completed_slots: int | None = None, viewer_id: str | None = None, include_admin_fields: bool = False):
     total_slots = int(total_slots if total_slots is not None else w.max_workers)
     active_slots = int(active_slots if active_slots is not None else 0)
     completed_slots = int(completed_slots if completed_slots is not None else 0)
-    remaining_slots = max(total_slots - active_slots - completed_slots, 0)
+    remaining_slots = remaining_work_slots(total_slots, active_slots, completed_slots)
     gross_reward = Decimal(str(w.reward_amount))
     worker_share = int(getattr(w, "payout_share_percent", 100) or 100)
     worker_reward = (gross_reward * Decimal(worker_share) / Decimal(100)).quantize(Decimal("0.00000001"))
@@ -396,8 +400,10 @@ async def accept_work(work_id: str, s: AsyncSession = Depends(db), user=Depends(
         return {"accepted": False, "completed": True, "work_id": work_id}
     if existing and existing.status == "active":
         return {"accepted": True, "already": True, "work_id": work_id}
-    count = await s.scalar(select(func.count(WorkAssignment.id)).where(WorkAssignment.work_id == work_id, WorkAssignment.status == "active"))
-    if int(count or 0) >= work.max_workers:
+    active_count = await s.scalar(select(func.count(WorkAssignment.id)).where(WorkAssignment.work_id == work_id, WorkAssignment.status == "active"))
+    completed_count = await s.scalar(select(func.count(WorkAssignment.id)).where(WorkAssignment.work_id == work_id, WorkAssignment.status == "completed"))
+    occupied_slots = int(active_count or 0) + int(completed_count or 0)
+    if remaining_work_slots(work.max_workers, int(active_count or 0), int(completed_count or 0)) <= 0:
         work.status = "full"
         await s.commit()
         raise HTTPException(409, "work has no remaining slots")
@@ -406,7 +412,7 @@ async def accept_work(work_id: str, s: AsyncSession = Depends(db), user=Depends(
         existing.accepted_at = datetime.utcnow()
     else:
         s.add(WorkAssignment(work_id=work_id, worker_id=user["sub"], status="active"))
-    if int(count or 0) + 1 >= work.max_workers: work.status = "full"
+    if occupied_slots + 1 >= work.max_workers: work.status = "full"
     else: work.status = "open"
     await s.commit()
     return {"accepted": True, "work_id": work_id, "reopened": bool(existing)}

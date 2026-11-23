@@ -57,3 +57,12 @@ def test_creator_and_admin_can_view_drafts():
 def test_other_tenant_cannot_view_work_even_if_admin():
     admin = {"sub": "admin-1", "tenant_id": "tenant-2", "roles": ["admin"]}
     assert not can_view_work(make_work(status="open"), admin)
+
+
+def test_completed_assignments_consume_capacity():
+    from app.api.v2 import remaining_work_slots
+
+    assert remaining_work_slots(3, 1, 2) == 0
+    assert remaining_work_slots(3, 1, 1) == 1
+    assert remaining_work_slots(1, 0, 1) == 0
+    assert remaining_work_slots(2, 0, 0) == 2
