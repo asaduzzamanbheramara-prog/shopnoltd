@@ -36,6 +36,9 @@ async def lifespan(app: FastAPI):
             await conn.execute(text("ALTER TABLE works ADD COLUMN IF NOT EXISTS before_post_screenshot TEXT"))
             await conn.execute(text("ALTER TABLE works ADD COLUMN IF NOT EXISTS task_type VARCHAR(32) NOT NULL DEFAULT 'simple'"))
             await conn.execute(text("ALTER TABLE works ADD COLUMN IF NOT EXISTS platform VARCHAR(64) NOT NULL DEFAULT 'shopnoltd'"))
+            # Preserve historical task promises; only newly created tasks opt into the 70/30 split.
+            await conn.execute(text("ALTER TABLE works ADD COLUMN IF NOT EXISTS payout_share_percent INTEGER NOT NULL DEFAULT 100"))
+            await conn.execute(text("ALTER TABLE work_sessions ADD COLUMN IF NOT EXISTS payout_share_percent INTEGER NOT NULL DEFAULT 100"))
             await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_works_task_type ON works (task_type)"))
             await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_works_platform ON works (platform)"))
             # Affiliate feed metadata compatibility columns.

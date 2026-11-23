@@ -8,11 +8,11 @@ export default function ReferralAdmin(){
  if(!p)return <main style={{padding:32}}>Loading referral settings…</main>
  async function save(){setSaving(true);try{await platformApi.setReferralPolicy(p);await load();alert('Referral policy saved.')}catch(e){alert(e.message)}finally{setSaving(false)}}
  return <main style={{maxWidth:1050,margin:'0 auto',padding:'32px 18px 80px',fontFamily:'system-ui,sans-serif'}}>
-  <h1>Referral Rewards</h1><p>Configure the recurring benefit paid to a direct referrer after a referred user's approved task is settled.</p>
+  <h1>Referral Rewards</h1><p>Configure referral rewards paid after approved work. For new tasks, referral rewards are funded from Shopnoltd's 30% commission pool, never added on top of the gross task budget.</p><p style={{fontSize:13,color:"#64748b"}}>Automatic fines or penalty deductions are not enabled. Any future penalty requires a published rule, evidence, notice and admin review; no balance is deducted automatically.</p>
   <section style={{padding:20,border:'1px solid #e2e8f0',borderRadius:16,marginBottom:20}}>
    <h2>Policy</h2>
    <label>Mode<select value={p.mode} onChange={e=>setP({...p,mode:e.target.value})}><option value="percent">Percentage of task reward</option><option value="fixed">Fixed amount per completed task</option></select></label>
-   <label style={{display:'block',marginTop:12}}>Percentage<input type="number" min="0" max="100" step="0.01" value={p.percent} onChange={e=>setP({...p,percent:e.target.value})}/></label>
+   <label style={{display:'block',marginTop:12}}>Percentage<input type="number" min="0" max="30" step="0.01" value={p.percent} onChange={e=>setP({...p,percent:e.target.value})}/></label>
    <label style={{display:'block',marginTop:12}}>Fixed amount<input type="number" min="0" step="any" value={p.fixed_amount} onChange={e=>setP({...p,fixed_amount:e.target.value})}/></label>
    <label style={{display:'block',marginTop:12}}>Maximum reward per task (optional)<input type="number" min="0" step="any" value={p.max_amount||''} onChange={e=>setP({...p,max_amount:e.target.value||null})}/></label>
    <label style={{display:'block',marginTop:12}}>Currency<input value={p.currency} onChange={e=>setP({...p,currency:e.target.value.toUpperCase()})}/></label>

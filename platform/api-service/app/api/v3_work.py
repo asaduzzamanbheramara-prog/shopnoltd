@@ -15,7 +15,7 @@ from app.core.security import verify_token
 from app.core.currencies import SUPPORTED_CURRENCIES
 from app.models.work import Work, WorkAssignment, WorkSubmission
 from app.models.work_evidence import WorkTaskConfig, WorkSession, WorkEvidence, WorkEvent, GlobalTaskRate
-from app.services.referrals import settle_referral_reward
+from app.services.referrals import preflight_referral_reward, resolve_referrer_recipient, settle_platform_commission, settle_referral_reward
 
 router = APIRouter(prefix="/work")
 bearer = HTTPBearer()
@@ -49,6 +49,8 @@ def parse_json(value, default):
 
 
 def session_dict(x):
+    share = int(getattr(x, "payout_share_percent", 100) or 100)
+    worker_amount = (Decimal(str(x.calculated_amount)) * Decimal(share) / Decimal(100)).quantize(Decimal("0.00000001"))
     return {
         "id": x.id,
         "work_id": x.work_id,
@@ -60,7 +62,7 @@ def session_dict(x):
         "watch_seconds": x.watch_seconds,
         "interaction_seconds": x.interaction_seconds,
         "eligible_watch_seconds": x.eligible_watch_seconds,
-        "calculated_amount": str(x.calculated_amount),
+        "calculated_amount": str(worker_amount),
         "currency": x.currency,
     }
 
@@ -119,8 +121,11 @@ def worker_rate_payload(work, config=None, global_rate=None):
             rate = work.reward_amount
             currency = work.currency
         unit = "per_task"
+    share = Decimal(str(getattr(work, "payout_share_percent", 100) or 100))
+    worker_rate = (Decimal(str(rate)) * share / Decimal(100)).quantize(Decimal("0.00000001"))
+    worker_rate_text = str(rate) if share == 100 else format(worker_rate.normalize(), "f")
     return {
-        "worker_rate": str(rate),
+        "worker_rate": worker_rate_text,
         "worker_rate_unit": unit,
         "rate_currency": str(currency).upper(),
     }
@@ -358,7 +363,7 @@ async def create_session(work_id: str, s: AsyncSession = Depends(db), u=Depends(
     ))
     if active:
         return session_dict(active)
-    x = WorkSession(work_id=work_id, worker_id=u["sub"], stage="before", currency=w.currency)
+    x = WorkSession(work_id=work_id, worker_id=u["sub"], stage="before", currency=w.currency, payout_share_percent=int(getattr(w, "payout_share_percent", 100) or 100))
     s.add(x)
     await s.commit()
     await s.refresh(x)
@@ -716,12 +721,17 @@ async def submit_session(session_id: str, s: AsyncSession = Depends(db), u=Depen
     ))
     if pending:
         raise HTTPException(409, "a submission is already pending")
+    gross_amount = Decimal(str(x.calculated_amount))
+    share = int(getattr(x, "payout_share_percent", 100) or 100)
+    worker_amount = (gross_amount * Decimal(share) / Decimal(100)).quantize(Decimal("0.00000001"))
     proof = json.dumps({
         "session_id": x.id,
         "work_seconds": x.work_seconds,
         "watch_seconds": x.watch_seconds,
         "eligible_watch_seconds": x.eligible_watch_seconds,
-        "calculated_amount": str(x.calculated_amount),
+        "calculated_amount": str(worker_amount),
+        "gross_amount": str(gross_amount),
+        "payout_share_percent": share,
         "currency": x.currency,
         "verification": "server_calculated",
     })
@@ -730,7 +740,7 @@ async def submit_session(session_id: str, s: AsyncSession = Depends(db), u=Depen
     x.stage = "submitted"
     await s.commit()
     await s.refresh(sub)
-    return {"id": sub.id, "session_id": x.id, "status": sub.status, "calculated_amount": str(x.calculated_amount), "currency": x.currency}
+    return {"id": sub.id, "session_id": x.id, "status": sub.status, "calculated_amount": str(worker_amount), "currency": x.currency}
 
 
 @router.post("/submissions/{submission_id}/approve")
@@ -744,9 +754,17 @@ async def approve_submission(submission_id: str, creds: HTTPAuthorizationCredent
     if sub.status != "pending":
         raise HTTPException(409, "submission already reviewed")
     data = parse_json(sub.proof, {})
-    amount = Decimal(str(data.get("calculated_amount", 0)))
+    gross_amount = Decimal(str(data.get("gross_amount", data.get("calculated_amount", 0))))
+    share = int(data.get("payout_share_percent", getattr(w, "payout_share_percent", 100)) or 100)
+    amount = (gross_amount * Decimal(share) / Decimal(100)).quantize(Decimal("0.00000001"))
     currency = str(data.get("currency") or w.currency)
-    if amount > 0:
+    if gross_amount > 0:
+        platform_user_id = await resolve_referrer_recipient(s, "admin_office", w.tenant_id) if share < 100 else None
+        if share < 100:
+            await preflight_referral_reward(
+                s, referred_id=sub.worker_id, submission_id=sub.id, base_amount=gross_amount,
+                currency=currency, tenant_id=w.tenant_id, available_commission=gross_amount - amount,
+            )
         key = "work-evidence-settle:" + hashlib.sha256(sub.id.encode()).hexdigest()
         payload = {
             "to_user_id": sub.worker_id,
@@ -776,16 +794,22 @@ async def approve_submission(submission_id: str, creds: HTTPAuthorizationCredent
     # Keep the referral commission path consistent with the legacy work API.
     # It runs only after the worker reward transfer and uses a submission-scoped
     # idempotency key inside settle_referral_reward to prevent duplicate payouts.
-    await settle_referral_reward(
-        s,
-        referred_id=sub.worker_id,
-        work_id=w.id,
-        submission_id=sub.id,
-        base_amount=amount,
-        currency=currency,
-        tenant_id=w.tenant_id,
-        token=creds.credentials,
-    )
+    if gross_amount > 0 and share < 100:
+        referral_reward = await settle_referral_reward(
+            s, referred_id=sub.worker_id, work_id=w.id, submission_id=sub.id,
+            base_amount=gross_amount, currency=currency, tenant_id=w.tenant_id,
+            token=creds.credentials, available_commission=gross_amount - amount, payer_id=u["sub"],
+        )
+        referral_amount = Decimal(str(referral_reward.reward_amount)) if referral_reward else Decimal("0")
+        await settle_platform_commission(
+            payer_id=u["sub"], recipient_id=platform_user_id, submission_id=sub.id,
+            amount=gross_amount - amount - referral_amount, currency=currency, token=creds.credentials,
+        )
+    elif gross_amount > 0:
+        await settle_referral_reward(
+            s, referred_id=sub.worker_id, work_id=w.id, submission_id=sub.id,
+            base_amount=gross_amount, currency=currency, tenant_id=w.tenant_id, token=creds.credentials, payer_id=u["sub"],
+        )
     sub.status = "approved"
     sub.reviewer_id = u["sub"]
     sub.reviewed_at = datetime.utcnow()

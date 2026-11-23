@@ -32,6 +32,7 @@ class WorkSession(Base):
     interaction_seconds = Column(Integer, nullable=False, default=0)
     eligible_watch_seconds = Column(Integer, nullable=False, default=0)
     calculated_amount = Column(Numeric(20, 8), nullable=False, default=0)
+    payout_share_percent = Column(Integer, nullable=False, default=100)
     currency = Column(String(16), nullable=False, default="BDT")
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     __table_args__ = (Index("ix_work_session_worker_work", "worker_id", "work_id"),)
