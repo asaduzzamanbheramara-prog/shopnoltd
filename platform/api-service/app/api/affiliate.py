@@ -214,6 +214,17 @@ def _affmine_country_codes(value):
     return ",".join(codes) or None
 
 
+def public_offer_dict(offer: AffiliateOffer):
+    """Return the worker-facing Shopnoltd task contract without network economics."""
+    user_share = Decimal(offer.user_share_percent) / Decimal(100)
+    return {
+        "id": offer.id,
+        "title": offer.title,
+        "reward_amount": str((Decimal(offer.network_payout) * user_share).quantize(Decimal("0.0001"))),
+        "currency": offer.currency,
+    }
+
+
 @router.get("/offers")
 async def list_offers(request: Request, _user=Depends(current_user), session: AsyncSession = Depends(db)):
     country = _country(request)
@@ -228,19 +239,7 @@ async def list_offers(request: Request, _user=Depends(current_user), session: As
     for offer in result.scalars().all():
         if not _geo_ok(offer.countries, country) or not _platform_ok(offer.allowed_platform, platform):
             continue
-        user_share = Decimal(offer.user_share_percent) / Decimal(100)
-        offers.append({
-            "id": offer.id,
-            "network_offer_id": offer.network_offer_id,
-            "title": offer.title,
-            "countries": offer.countries,
-            "network_payout": str(offer.network_payout),
-            "user_share_percent": offer.user_share_percent,
-            "platform_share_percent": 100 - offer.user_share_percent,
-            "estimated_user_reward": str((Decimal(offer.network_payout) * user_share).quantize(Decimal("0.0001"))),
-            "currency": offer.currency,
-            "allowed_platform": offer.allowed_platform,
-        })
+        offers.append(public_offer_dict(offer))
     return offers
 
 

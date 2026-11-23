@@ -190,15 +190,15 @@ export default function AffiliateOffers() {
     </section>}
 
     <section>
-      <h2>Offers available to your account</h2>
-      {offers.length === 0 && !loading && <div style={panel}><p>No approved offers are currently available for your country. New offers appear only after advertiser terms and permitted promotion methods are verified.</p></div>}
+      <h2>Shopnoltd tasks available to your account</h2>
+      <p style={{ color: '#64748b', fontSize: 13 }}>{offers.length} available task{offers.length === 1 ? '' : 's'} - Each card shows only your reward. Availability is filtered automatically for your account.</p>
+      {offers.length === 0 && !loading && <div style={panel}><p>No approved tasks are currently available for your account. New tasks appear only after their terms and permitted promotion methods are verified.</p></div>}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,280px),1fr))', gap: 14 }}>
         {offers.map(offer => <article key={offer.id} style={{ ...panel, display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <b style={{ color: '#0369a1' }}>Offer #{offer.network_offer_id}</b>
+          <b style={{ color: '#0369a1' }}>Shopnoltd task</b>
           <h3 style={{ margin: 0 }}>{offer.title}</h3>
-          <p style={{ margin: 0, color: '#475569' }}>Network payout: {money(offer.network_payout, offer.currency)} · Your share: {offer.user_share_percent}%</p>
-          <p style={{ margin: 0, color: '#047857', fontWeight: 700 }}>Estimated user reward: {money(offer.estimated_user_reward, offer.currency)}</p>
-          <p style={{ margin: 0, color: '#64748b', fontSize: 13 }}>Platform share: {offer.platform_share_percent}% · Eligible countries: {offer.countries || 'Worldwide'} · Supported platform IDs: {offer.allowed_platform || 'unknown'}</p>
+          <p style={{ margin: 0, color: '#047857', fontWeight: 700 }}>Your reward: {money(offer.reward_amount, offer.currency)}</p>
+          <p style={{ margin: 0, color: '#64748b', fontSize: 13 }}>Task availability is checked for your account before a personal task link is created.</p>
           <button type="button" style={button} onClick={() => createLink(offer)}>Generate &amp; copy my tracking link</button>
           {links[offer.id] && <div><label htmlFor={'affiliate-link-' + offer.id}>Your personal tracking link</label><input id={'affiliate-link-' + offer.id} readOnly value={links[offer.id]} style={{ width: '100%', boxSizing: 'border-box', padding: 9, marginTop: 5 }} /><button type="button" style={{ ...button, marginTop: 8 }} onClick={() => navigator.clipboard.writeText(links[offer.id])}>Copy link</button></div>}
         </article>)}
