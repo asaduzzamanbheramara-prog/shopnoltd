@@ -40,12 +40,12 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [wallet, setWallet] = useState(null)
-  const [transactionCount, setTransactionCount] = useState(0)
-  const [domains, setDomains] = useState([])
-  const [freeDomains, setFreeDomains] = useState([])
-  const [notifications, setNotifications] = useState([])
-  const [works, setWorks] = useState([])
-  const [platformConnections, setPlatformConnections] = useState([])
+  const [transactionCount, setTransactionCount] = useState(null)
+  const [domains, setDomains] = useState(null)
+  const [freeDomains, setFreeDomains] = useState(null)
+  const [notifications, setNotifications] = useState(null)
+  const [works, setWorks] = useState(null)
+  const [platformConnections, setPlatformConnections] = useState(null)
   const [refreshing, setRefreshing] = useState(false)
   const inFlight = useRef(false)
 
@@ -149,9 +149,13 @@ export default function Dashboard() {
     ['platform_admin', 'admin', 'tenant_owner', 'customer'].includes(role),
   )
   const displayRoles = tokenAppRoles.length ? tokenAppRoles : (me.roles || [])
-  const activeDomains = domains.filter((domain) => String(domain.status || '').toLowerCase() === 'active').length
-  const unreadNotifications = notifications.filter((notification) => !notification.read && !notification.read_at).length
-  const connectedPlatforms = new Set(platformConnections.map((connection) => connection.platform)).size
+  // null means the API did not return data; an empty array means a confirmed zero.
+  const activeDomains = domains === null ? null : domains.filter((domain) => String(domain.status || '').toLowerCase() === 'active').length
+  const unreadNotifications = notifications === null ? null : notifications.filter((notification) => !notification.read && !notification.read_at).length
+  const notificationCount = notifications === null ? null : notifications.length
+  const activeWorkCount = works === null ? null : works.length
+  const platformConnectionList = platformConnections || []
+  const connectedPlatforms = new Set(platformConnectionList.map((connection) => connection.platform)).size
 
   return (
     <div style={{ maxWidth: 1180, margin: '0 auto', padding: 'clamp(28px, 6vw, 48px) clamp(14px, 4vw, 24px) 80px', fontFamily: 'system-ui, sans-serif' }}>
@@ -173,10 +177,10 @@ export default function Dashboard() {
             <div>
               <h2 style={{ margin: 0 }}>🔗 Platform Connections</h2>
               <p style={{ margin: '7px 0 0', color: '#64748b' }}>
-                {platformConnections.length ? (platformConnections.length + ' connected profile' + (platformConnections.length === 1 ? '' : 's') + ' across ' + connectedPlatforms + ' platform' + (connectedPlatforms === 1 ? '' : 's') + '.') : 'Connect Google, Facebook, Instagram, YouTube, WhatsApp and other supported platforms.'}
+                {platformConnections === null ? 'Connection status is unavailable. Open the connections page to check.' : (platformConnectionList.length ? (platformConnectionList.length + ' connected profile' + (platformConnectionList.length === 1 ? '' : 's') + ' across ' + connectedPlatforms + ' platform' + (connectedPlatforms === 1 ? '' : 's') + '.') : 'Connect Google, Facebook, Instagram, YouTube, WhatsApp and other supported platforms.')}
               </p>
             </div>
-            <span style={{ padding: '10px 16px', borderRadius: 8, background: '#0f172a', color: 'white', fontWeight: 700 }}>{platformConnections.length ? 'Manage Connections →' : 'Connect Platforms →'}</span>
+            <span style={{ padding: '10px 16px', borderRadius: 8, background: '#0f172a', color: 'white', fontWeight: 700 }}>{platformConnections === null ? 'View Connections →' : (platformConnectionList.length ? 'Manage Connections →' : 'Connect Platforms →')}</span>
           </div>
         </Link>
       </section>
@@ -204,10 +208,10 @@ export default function Dashboard() {
         <h2>Account overview</h2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginTop: 14 }}>
           <Metric label="BDT wallet" value={wallet?.balance ?? '—'} href="/wallet" note="Available balance" />
-          <Metric label="Transactions" value={transactionCount} href="/transactions" />
-          <Metric label="Active works" value={works.length} href="/my-active-work" />
-          <Metric label="Registered domains" value={activeDomains} href="/domain-management" />
-          <Metric label="Notifications" value={unreadNotifications || notifications.length} href="/notifications" note={unreadNotifications ? `${unreadNotifications} unread` : 'All caught up'} />
+          <Metric label="Transactions" value={transactionCount ?? '—'} href="/transactions" note={transactionCount === null ? 'Data unavailable' : undefined} />
+          <Metric label="Active works" value={activeWorkCount ?? '—'} href="/my-active-work" note={activeWorkCount === null ? 'Data unavailable' : undefined} />
+          <Metric label="Registered domains" value={activeDomains ?? '—'} href="/domain-management" note={activeDomains === null ? 'Data unavailable' : undefined} />
+          <Metric label="Notifications" value={notificationCount === null ? '—' : (unreadNotifications || notificationCount)} href="/notifications" note={notificationCount === null ? 'Data unavailable' : (unreadNotifications ? `${unreadNotifications} unread` : 'All caught up')} />
         </div>
       </section>
 
@@ -215,7 +219,7 @@ export default function Dashboard() {
         <h2>Financial overview</h2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 12, marginTop: 14 }}>
           <Link to="/wallet" style={{ padding: 18, background: 'white', border: '1px solid #e2e8f0', borderRadius: 10, textDecoration: 'none', color: 'inherit' }}><div style={{ color: '#64748b', fontSize: 14 }}>BDT wallet</div><div style={{ fontSize: 28, fontWeight: 800 }}>{wallet?.balance ?? '—'}</div></Link>
-          <Link to="/transactions" style={{ padding: 18, background: 'white', border: '1px solid #e2e8f0', borderRadius: 10, textDecoration: 'none', color: 'inherit' }}><div style={{ color: '#64748b', fontSize: 14 }}>Transactions</div><div style={{ fontSize: 28, fontWeight: 800 }}>{transactionCount}</div></Link>
+          <Link to="/transactions" style={{ padding: 18, background: 'white', border: '1px solid #e2e8f0', borderRadius: 10, textDecoration: 'none', color: 'inherit' }}><div style={{ color: '#64748b', fontSize: 14 }}>Transactions</div><div style={{ fontSize: 28, fontWeight: 800 }}>{transactionCount ?? '—'}</div></Link>
           <Link to="/checkout" style={{ padding: 18, background: '#0ea5e9', borderRadius: 10, textDecoration: 'none', color: 'white', fontWeight: 700 }}>Open checkout →</Link>
           <Link to="/exchange" style={{ padding: 18, background: '#0f172a', borderRadius: 10, textDecoration: 'none', color: 'white', fontWeight: 700 }}>Exchange currencies →</Link>
         </div>
@@ -224,8 +228,8 @@ export default function Dashboard() {
       <section style={{ marginTop: 32 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}><h2 style={{ marginBottom: 0 }}>Domains</h2><Link to="/domain-management">Manage domains →</Link></div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12, marginTop: 14 }}>
-          <Metric label="Paid domains" value={domains.length} href="/domain-management" />
-          <Metric label="Free Shopnoltd subdomains" value={freeDomains.length} href="/domain-management" />
+          <Metric label="Paid domains" value={domains === null ? '—' : domains.length} href="/domain-management" note={domains === null ? 'Data unavailable' : undefined} />
+          <Metric label="Free Shopnoltd subdomains" value={freeDomains === null ? '—' : freeDomains.length} href="/domain-management" note={freeDomains === null ? 'Data unavailable' : undefined} />
           <Link to="/domain-registration" style={{ padding: 18, borderRadius: 10, background: '#075985', color: 'white', textDecoration: 'none', fontWeight: 700 }}>Register a domain →</Link>
         </div>
       </section>
