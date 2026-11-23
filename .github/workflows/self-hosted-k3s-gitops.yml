@@ -71,8 +71,6 @@ jobs:
     runs-on: [self-hosted, linux]
     timeout-minutes: 30
     env:
-      GHCR_USERNAME: ${{ secrets.GHCR_PULL_USERNAME }}
-      GHCR_TOKEN: ${{ secrets.GHCR_PULL_TOKEN }}
       RECONCILE_KOBO_DATABASE: ${{ inputs.reconcile_kobo_database || 'false' }}
       RESTART_KOBO_WORKLOADS: ${{ inputs.restart_kobo_workloads || 'false' }}
       RUN_KOBO_MIGRATIONS: ${{ inputs.run_kobo_migrations || 'false' }}
@@ -142,34 +140,6 @@ jobs:
             echo 'ERROR: Kubernetes source did not render after four attempts.'
             exit 1
           fi
-
-      - name: Provision Android Cloud GHCR pull secret
-        if: ${{ inputs.refresh_ghcr_pull_secrets == true }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          test -n "${GHCR_USERNAME:-}" || { echo 'Set repository secret GHCR_PULL_USERNAME before requesting a registry credential refresh.'; exit 1; }
-          test -n "${GHCR_TOKEN:-}" || { echo 'Set repository secret GHCR_PULL_TOKEN to a long-lived read:packages token; GITHUB_TOKEN is not suitable for imagePullSecrets.'; exit 1; }
-          kubectl -n "$PLATFORM_NAMESPACE" create secret docker-registry ghcr-pull-secret \
-            --docker-server=ghcr.io \
-            --docker-username="$GHCR_USERNAME" \
-            --docker-password="$GHCR_TOKEN" \
-            --dry-run=client -o yaml | kubectl apply -f -
-          echo 'Android Cloud GHCR pull secret refreshed from the dedicated long-lived registry credential.'
-
-      - name: Provision remote-device GHCR pull secret
-        if: ${{ inputs.refresh_ghcr_pull_secrets == true }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          test -n "${GHCR_USERNAME:-}" || { echo 'Set repository secret GHCR_PULL_USERNAME before requesting a registry credential refresh.'; exit 1; }
-          test -n "${GHCR_TOKEN:-}" || { echo 'Set repository secret GHCR_PULL_TOKEN to a long-lived read:packages token; GITHUB_TOKEN is not suitable for imagePullSecrets.'; exit 1; }
-          kubectl -n shopno-tools create secret docker-registry ghcr-pull-secret \
-            --docker-server=ghcr.io \
-            --docker-username="$GHCR_USERNAME" \
-            --docker-password="$GHCR_TOKEN" \
-            --dry-run=client -o yaml | kubectl apply -f -
-          echo 'Remote-device GHCR pull secret refreshed from the dedicated long-lived registry credential.'
 
       - name: Provision domain service PostgreSQL secret
         shell: bash
@@ -1400,6 +1370,38 @@ jobs:
           done
           diagnostic 'PLATFORM PODS' -n "$PLATFORM_NAMESPACE" get pods -o wide
           diagnostic 'CLOUDFLARED PODS' -n "$CLOUDFLARED_NAMESPACE" get pods -o wide
+
+  refresh-ghcr-pull-secrets:
+    name: Refresh GHCR imagePullSecrets with a dedicated long-lived credential
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.refresh_ghcr_pull_secrets == true }}
+    runs-on: [self-hosted, linux]
+    timeout-minutes: 5
+    env:
+      GHCR_USERNAME: ${{ secrets.GHCR_PULL_USERNAME }}
+      GHCR_TOKEN: ${{ secrets.GHCR_PULL_TOKEN }}
+    steps:
+      - name: Verify runner and dedicated registry credential
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v kubectl
+          test -s "${KUBECONFIG:-$HOME/.kube/config}"
+          test -n "${GHCR_USERNAME:-}" || { echo 'Set repository secret GHCR_PULL_USERNAME.'; exit 1; }
+          test -n "${GHCR_TOKEN:-}" || { echo 'Set repository secret GHCR_PULL_TOKEN to a long-lived read:packages token.'; exit 1; }
+          kubectl --request-timeout=20s cluster-info >/dev/null
+
+      - name: Refresh only the two GHCR image pull secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          for namespace in "$PLATFORM_NAMESPACE" shopno-tools; do
+            kubectl -n "$namespace" create secret docker-registry ghcr-pull-secret \
+              --docker-server=ghcr.io \
+              --docker-username="$GHCR_USERNAME" \
+              --docker-password="$GHCR_TOKEN" \
+              --dry-run=client -o yaml | kubectl apply -f -
+          done
+          echo 'Only the Android Cloud and remote-device GHCR pull secrets were refreshed.'
 
   verify-passive-reconciliation:
     name: Verify Argo CD passive reconciliation
