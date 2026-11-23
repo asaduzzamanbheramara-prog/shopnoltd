@@ -6,7 +6,7 @@ from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import SessionLocal
-from app.core.security import verify_token
+from app.core.security import realm_roles, verify_token
 from app.models.referral import ReferralCode, Referral, ReferralPolicy, ReferralReward
 from app.services.referrals import ensure_fallback_referral, get_policy
 
@@ -30,9 +30,8 @@ async def current_user(creds: HTTPAuthorizationCredentials = Depends(bearer)):
         raise HTTPException(401, "Invalid authentication token") from exc
 
 def is_admin(u):
-    roles = set(u.get("roles") or [])
-    realm = set(((u.get("realm_access") or {}).get("roles") or []))
-    return bool(roles.intersection({"admin","platform_admin","shopnoltd-admin","administrator"}) or realm.intersection({"admin","platform_admin","shopnoltd-admin","administrator"}) or u.get("is_admin") is True)
+    roles = realm_roles(u)
+    return bool(roles.intersection({"admin", "platform_admin", "shopnoltd-admin", "administrator"}))
 
 def code_for(user_id: str) -> str:
     return "SNO-" + hashlib.sha256(("shopnoltd-referral:" + user_id).encode()).hexdigest()[:12].upper()
