@@ -19,6 +19,8 @@ class Work(Base):
     reference_image = Column(Text, nullable=True)
     before_post_screenshot = Column(Text, nullable=True)
     reward_amount = Column(Numeric(20, 8), nullable=False)
+    # Existing work keeps 100%; newly published Shopnoltd work uses 70/30.
+    payout_share_percent = Column(Integer, nullable=False, default=100)
     currency = Column(String(16), nullable=False, default="BDT")
     max_workers = Column(Integer, nullable=False, default=1)
     deadline = Column(DateTime, nullable=True)

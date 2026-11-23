@@ -14,7 +14,7 @@ from app.core.db import SessionLocal
 from app.core.security import verify_token
 from app.models.work import Work, WorkAssignment, WorkSubmission
 from app.models.work_rating import WorkRating
-from app.services.referrals import settle_referral_reward
+from app.services.referrals import preflight_referral_reward, resolve_referrer_recipient, settle_platform_commission, settle_referral_reward
 from app.core.currencies import SUPPORTED_CURRENCIES
 
 router = APIRouter()
@@ -84,27 +84,35 @@ async def settle_reward(user, submission_id: str, amount: Decimal, currency: str
     return response.json()
 
 
-def work_dict(w: Work, total_slots: int | None = None, active_slots: int | None = None, completed_slots: int | None = None):
+def work_dict(w: Work, total_slots: int | None = None, active_slots: int | None = None, completed_slots: int | None = None, viewer_id: str | None = None):
     total_slots = int(total_slots if total_slots is not None else w.max_workers)
     active_slots = int(active_slots if active_slots is not None else 0)
     completed_slots = int(completed_slots if completed_slots is not None else 0)
     remaining_slots = max(total_slots - active_slots - completed_slots, 0)
-    return {
+    gross_reward = Decimal(str(w.reward_amount))
+    worker_share = int(getattr(w, "payout_share_percent", 100) or 100)
+    worker_reward = (gross_reward * Decimal(worker_share) / Decimal(100)).quantize(Decimal("0.00000001"))
+    creator_view = viewer_id == w.creator_id
+    visible_reward = gross_reward if creator_view else worker_reward
+    result = {
         "id": w.id, "tenant_id": w.tenant_id, "creator_id": w.creator_id, "title": w.title,
         "description": w.description, "requirements": w.requirements, "reference_image": w.reference_image, "before_post_screenshot": getattr(w, "before_post_screenshot", None), "task_type": w.task_type, "platform": w.platform,
-        "reward_amount": str(w.reward_amount), "currency": w.currency, "max_workers": w.max_workers,
+        "reward_amount": str(visible_reward), "currency": w.currency, "max_workers": w.max_workers,
         "total_tasks": total_slots, "active_tasks": active_slots, "completed_tasks": completed_slots,
-        "remaining_tasks": remaining_slots, "total_amount": str(Decimal(str(w.reward_amount)) * total_slots),
-        "remaining_amount": str(Decimal(str(w.reward_amount)) * remaining_slots),
+        "remaining_tasks": remaining_slots, "total_amount": str(visible_reward * total_slots),
+        "remaining_amount": str(visible_reward * remaining_slots),
         "deadline": w.deadline.isoformat() if w.deadline else None, "status": w.status,
         "created_at": w.created_at.isoformat(),
     }
+    if creator_view:
+        result.update({"gross_reward_amount": str(gross_reward), "worker_share_percent": worker_share, "platform_share_percent": 100 - worker_share})
+    return result
 
 
-async def enriched_work(s: AsyncSession, w: Work):
+async def enriched_work(s: AsyncSession, w: Work, viewer_id: str | None = None):
     active = await s.scalar(select(func.count(WorkAssignment.id)).where(WorkAssignment.work_id == w.id, WorkAssignment.status == "active"))
     completed = await s.scalar(select(func.count(WorkAssignment.id)).where(WorkAssignment.work_id == w.id, WorkAssignment.status == "completed"))
-    return work_dict(w, w.max_workers, int(active or 0), int(completed or 0))
+    return work_dict(w, w.max_workers, int(active or 0), int(completed or 0), viewer_id)
 
 
 @router.get("/social/feed")
@@ -243,7 +251,7 @@ async def list_works(status: str = Query("open"), limit: int = Query(50, ge=1, l
     query = select(Work).where(Work.tenant_id == user.get("tenant_id", "default"))
     if status != "all": query = query.where(Work.status == status)
     result = await s.execute(query.order_by(desc(Work.created_at)).limit(limit).offset(offset))
-    return [await enriched_work(s, w) for w in result.scalars().all()]
+    return [await enriched_work(s, w, user["sub"]) for w in result.scalars().all()]
 
 
 @router.post("/works", status_code=201)
@@ -280,16 +288,16 @@ async def create_work(body: dict, s: AsyncSession = Depends(db), user=Depends(cu
         if len(reference_image) > 6_500_000: raise HTTPException(422, "reference_image is too large (max ~6MB)")
     work = Work(tenant_id=user.get("tenant_id", "default"), creator_id=user["sub"], title=title, description=description,
                 requirements=str(body.get("requirements", "")) or None, reference_image=reference_image, before_post_screenshot=before_post_screenshot, task_type=task_type, platform=platform,
-                reward_amount=reward_decimal, currency=currency, max_workers=max_workers, deadline=deadline, status="draft")
+                reward_amount=reward_decimal, payout_share_percent=70, currency=currency, max_workers=max_workers, deadline=deadline, status="draft")
     s.add(work); await s.commit(); await s.refresh(work)
-    return await enriched_work(s, work)
+    return await enriched_work(s, work, user["sub"])
 
 
 @router.get("/works/{work_id}")
 async def get_work(work_id: str, s: AsyncSession = Depends(db), user=Depends(current_user)):
     work = await s.get(Work, work_id)
     if not work or work.tenant_id != user.get("tenant_id", "default"): raise HTTPException(404, "work not found")
-    return await enriched_work(s, work)
+    return await enriched_work(s, work, user["sub"])
 
 
 @router.patch("/works/{work_id}")
@@ -325,7 +333,7 @@ async def update_work(work_id: str, body: dict, s: AsyncSession = Depends(db), u
         work.max_workers = value
     if "deadline" in body: work.deadline = datetime.fromisoformat(str(body["deadline"]).replace("Z", "+00:00")).replace(tzinfo=None) if body["deadline"] else None
     await s.commit(); await s.refresh(work)
-    return await enriched_work(s, work)
+    return await enriched_work(s, work, user["sub"])
 
 
 @router.post("/works/{work_id}/publish")
@@ -335,7 +343,7 @@ async def publish_work(work_id: str, s: AsyncSession = Depends(db), user=Depends
     if work.creator_id != user["sub"]: raise HTTPException(403, "only the creator can publish this work")
     if work.status not in {"draft", "open"}: raise HTTPException(409, "work cannot be published from its current stage")
     work.status = "open"; await s.commit(); await s.refresh(work)
-    return await enriched_work(s, work)
+    return await enriched_work(s, work, user["sub"])
 
 
 @router.post("/works/{work_id}/close")
@@ -343,9 +351,9 @@ async def close_work(work_id: str, s: AsyncSession = Depends(db), user=Depends(c
     work = await s.get(Work, work_id)
     if not work or work.tenant_id != user.get("tenant_id", "default"): raise HTTPException(404, "work not found")
     if work.creator_id != user["sub"]: raise HTTPException(403, "only the creator can close this work")
-    if work.status in {"closed", "completed"}: return await enriched_work(s, work)
+    if work.status in {"closed", "completed"}: return await enriched_work(s, work, user["sub"])
     work.status = "closed"; await s.commit(); await s.refresh(work)
-    return await enriched_work(s, work)
+    return await enriched_work(s, work, user["sub"])
 
 
 @router.post("/works/{work_id}/accept")
@@ -385,7 +393,7 @@ async def active_works(s: AsyncSession = Depends(db), user=Depends(current_user)
                              .order_by(desc(WorkAssignment.accepted_at)))
     return [
         {
-            "work": await enriched_work(s, w),
+            "work": await enriched_work(s, w, user["sub"]),
             "assignment_id": a.id,
             "accepted_at": a.accepted_at.isoformat() if a.accepted_at else None,
         }
@@ -419,7 +427,7 @@ async def my_submissions(s: AsyncSession = Depends(db), user=Depends(current_use
 async def creator_submissions(s: AsyncSession = Depends(db), user=Depends(current_user)):
     result = await s.execute(select(WorkSubmission, Work).join(Work, Work.id == WorkSubmission.work_id)
                              .where(Work.creator_id == user["sub"]).order_by(desc(WorkSubmission.submitted_at)))
-    return [{"id": x.id, "work": await enriched_work(s, w), "worker_id": x.worker_id, "proof": x.proof, "status": x.status,
+    return [{"id": x.id, "work": await enriched_work(s, w, user["sub"]), "worker_id": x.worker_id, "proof": x.proof, "status": x.status,
              "review_note": x.review_note, "submitted_at": x.submitted_at.isoformat()} for x, w in result.all()]
 
 
@@ -433,20 +441,36 @@ async def review_submission(submission_id: str, body: dict, creds: HTTPAuthoriza
     if not work or work.creator_id != user["sub"]: raise HTTPException(403, "only the creator can review this submission")
     if submission.status != "pending": raise HTTPException(409, "submission has already been reviewed")
     if decision == "approved":
-        amount = Decimal(str(work.reward_amount))
-        await settle_reward({"worker_id": submission.worker_id}, submission.id, amount, work.currency, creds.credentials)
-        # The referrer is paid only after the worker settlement succeeds. The
-        # referral transfer has its own idempotency key, so retries cannot double-pay.
-        await settle_referral_reward(
-            s,
-            referred_id=submission.worker_id,
-            work_id=work.id,
-            submission_id=submission.id,
-            base_amount=amount,
-            currency=work.currency,
-            tenant_id=work.tenant_id,
-            token=creds.credentials,
-        )
+        gross_amount = Decimal(str(work.reward_amount))
+        share = int(getattr(work, "payout_share_percent", 100) or 100)
+        worker_amount = (gross_amount * Decimal(share) / Decimal(100)).quantize(Decimal("0.00000001"))
+        if share < 100:
+            # Resolve the platform recipient before moving any money. New work
+            # uses the 70/30 split; historical work remains at its saved 100% rate.
+            platform_user_id = await resolve_referrer_recipient(s, "admin_office", work.tenant_id)
+            await preflight_referral_reward(
+                s, referred_id=submission.worker_id, submission_id=submission.id,
+                base_amount=gross_amount, currency=work.currency, tenant_id=work.tenant_id,
+                available_commission=gross_amount - worker_amount,
+            )
+            await settle_reward({"worker_id": submission.worker_id}, submission.id, worker_amount, work.currency, creds.credentials)
+            referral_reward = await settle_referral_reward(
+                s, referred_id=submission.worker_id, work_id=work.id, submission_id=submission.id,
+                base_amount=gross_amount, currency=work.currency, tenant_id=work.tenant_id,
+                token=creds.credentials, available_commission=gross_amount - worker_amount, payer_id=user["sub"],
+            )
+            referral_amount = Decimal(str(referral_reward.reward_amount)) if referral_reward else Decimal("0")
+            await settle_platform_commission(
+                payer_id=user["sub"], recipient_id=platform_user_id, submission_id=submission.id,
+                amount=gross_amount - worker_amount - referral_amount, currency=work.currency, token=creds.credentials,
+            )
+        else:
+            # Existing published work is grandfathered at its original 100% worker rate.
+            await settle_reward({"worker_id": submission.worker_id}, submission.id, gross_amount, work.currency, creds.credentials)
+            await settle_referral_reward(
+                s, referred_id=submission.worker_id, work_id=work.id, submission_id=submission.id,
+                base_amount=gross_amount, currency=work.currency, tenant_id=work.tenant_id, token=creds.credentials, payer_id=user["sub"],
+            )
     submission.status = decision; submission.reviewer_id = user["sub"]
     submission.review_note = str(body.get("note", "")) or None; submission.reviewed_at = datetime.utcnow()
     assignment = await s.scalar(select(WorkAssignment).where(WorkAssignment.work_id == work.id, WorkAssignment.worker_id == submission.worker_id))
