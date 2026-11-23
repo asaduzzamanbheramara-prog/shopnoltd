@@ -9,7 +9,7 @@ The affiliate marketplace is operated by Shopnoltd as the sole program intermedi
 - Active offers are listed from the API database, not from hard-coded marketing examples.
 - Every click start creates a unique click record tied to the authenticated Shopnoltd user.
 - Tracking destinations must use HTTPS.
-- Offer country restrictions are enforced using the Cloudflare country header. Restricted offers fail closed when the country is unknown.
+- Offer country restrictions are enforced using the Cloudflare country header. Restricted offers fail closed when the country is unknown. Device restrictions are enforced from the request User-Agent against Affmine platform IDs (1 Windows, 2 Mac, 3 Android, 4 iOS, 5 other mobile).
 - Admin offer management requires a platform-wide Keycloak realm role.
 - Admins can create offers as drafts, set the user commission share, confirm whether incentive promotion is permitted, and activate/pause offers.
 - User share is bounded to 0–90%; the platform retains at least 10%.
@@ -37,7 +37,7 @@ The affiliate marketplace is operated by Shopnoltd as the sole program intermedi
 
 ## API routes
 
-- GET /api/v1/affiliate/offers — active offers eligible for the requester's country.
+- GET /api/v1/affiliate/offers — active offers eligible for the requester's country and detected device platform.
 - POST /api/v1/affiliate/offers/{offer_id}/start — create a click and return the user's personal network tracking URL.
 - GET /api/v1/affiliate/me/summary — user's click and conversion summary.
 - GET /api/v1/affiliate/rates/usd-bdt — live USD/BDT reference rate.
@@ -77,8 +77,10 @@ The feature branch and PR must pass API tests, web build, security scans, and re
 - Configure `AFFMINE_AFF_ID` and `AFFMINE_API_KEY` only in the API service's server-side secret store. Never put either credential in React, browser storage, source control, logs, or a public URL.
 - The admin-only sync endpoint calls `https://network.affmine.com/api/v1/getCampaigns` with JSON output, active campaign status, all countries, all device platforms, both incentive types, and 200-row pagination.
 - New campaigns are inserted as Draft with incentive permission disabled. Sync does not activate offers or enable incentive traffic. Existing admin eligibility/status decisions are preserved.
-- Only USD campaigns with valid positive payout values are imported; unsupported currencies are counted and skipped because current user-facing earnings and FX handling are USD-based.
+- Campaigns with valid three-letter ISO currency codes and positive payout values are imported with the original network currency preserved. Offer cards format payouts and estimated user shares in that currency; they are not silently converted to USD. Invalid currency codes are counted and skipped. Conversion summaries and USD/BDT reference estimates remain USD-only until the network postback and FX contract are verified.
 - Missing or non-HTTPS campaign URLs are retained as empty tracking URLs; activation and click-start fail closed until a valid HTTPS URL and confirmed click-sub-ID macro are configured.
-- Affmine's `incentive=yes` field is recorded as network metadata only when available; it is not proof of campaign-level approval for Shopnoltd's exact reward/task model.
+- Affmine's allowed_platform and incentive values are stored as network metadata. Platform eligibility is applied to offer listing and click start. The network incentive flag is not proof of campaign-level approval for Shopnoltd's exact reward/task model.
 - The sample Affiliate ID/API key in the supplied documentation must not be used as account credentials. Use the actual account-issued credentials only in the server-side secret store.
 - Sync endpoint: `POST /api/v1/affiliate/admin/sync-affmine`.
+
+[executed on device: Shopnoltd (52cb1894-787c-49c2-9460-901a8f74a1e7)]
