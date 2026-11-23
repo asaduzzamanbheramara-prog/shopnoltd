@@ -48,3 +48,16 @@ class AffiliateConversion(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     available_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     settled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class AffiliateSandboxConversion(Base):
+    """Explicitly simulated commission records; never used for wallet settlement."""
+    __tablename__ = "shopnoltd_affiliate_sandbox_conversions"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    user_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    simulated_network_payout: Mapped[Decimal] = mapped_column(Numeric(12, 4), nullable=False)
+    simulated_user_amount: Mapped[Decimal] = mapped_column(Numeric(12, 4), nullable=False)
+    simulated_platform_amount: Mapped[Decimal] = mapped_column(Numeric(12, 4), nullable=False)
+    user_share_percent: Mapped[int] = mapped_column(Integer, nullable=False)
+    currency: Mapped[str] = mapped_column(String(3), nullable=False, default="USD")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
