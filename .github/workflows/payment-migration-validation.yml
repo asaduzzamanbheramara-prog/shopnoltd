@@ -63,7 +63,7 @@ jobs:
           PG_CONTAINER: ${{ steps.postgres.outputs.container_id }}
         run: |
           version="$(docker exec "$PG_CONTAINER" psql -U postgres -d payment_migration_ci -Atqc "SELECT version_num FROM alembic_version")"
-          test "$version" = "0008_transaction_idempotency"
+          test "$version" = "0009_transaction_status_varchar"
 
           old_constraint="$(docker exec "$PG_CONTAINER" psql -U postgres -d payment_migration_ci -Atqc "SELECT count(*) FROM pg_constraint WHERE conname='ix_wallet_user_currency' AND contype='u'")"
           test "$old_constraint" = "0"
@@ -78,6 +78,9 @@ jobs:
 
           idempotency_type="$(docker exec "$PG_CONTAINER" psql -U postgres -d payment_migration_ci -Atqc "SELECT data_type || ':' || character_maximum_length FROM information_schema.columns WHERE table_schema='public' AND table_name='transactions' AND column_name='idempotency_key'")"
           test "$idempotency_type" = "character varying:128"
+
+          status_type="$(docker exec "$PG_CONTAINER" psql -U postgres -d payment_migration_ci -Atqc "SELECT data_type || ':' || character_maximum_length FROM information_schema.columns WHERE table_schema='public' AND table_name='transactions' AND column_name='status'")"
+          test "$status_type" = "character varying:24"
 
           idempotency_index="$(docker exec "$PG_CONTAINER" psql -U postgres -d payment_migration_ci -Atqc "SELECT indexdef FROM pg_indexes WHERE schemaname='public' AND indexname='uq_transaction_deposit_idempotency'")"
           grep -q "CREATE UNIQUE INDEX" <<<"$idempotency_index"

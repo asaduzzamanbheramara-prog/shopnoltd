@@ -43,3 +43,17 @@ def test_same_key_with_changed_payload_is_rejected(body, currency, amount):
     with pytest.raises(HTTPException) as exc:
         _validate_existing_transfer(existing_transfer(), body, currency, amount)
     assert exc.value.status_code == 409
+
+
+
+def test_transaction_enums_match_existing_varchar_schema():
+    """Keep ORM predicates compatible with the VARCHAR columns in migration 0001."""
+    from sqlalchemy import Enum as SqlAlchemyEnum
+    from app.models.models import Transaction
+
+    expected_lengths = {"type": 16, "method": 16, "status": 24}
+    for column_name, expected_length in expected_lengths.items():
+        column_type = Transaction.__table__.c[column_name].type
+        assert isinstance(column_type, SqlAlchemyEnum)
+        assert column_type.native_enum is False
+        assert column_type.length == expected_length
