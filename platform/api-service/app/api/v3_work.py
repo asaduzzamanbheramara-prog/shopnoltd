@@ -11,7 +11,7 @@ from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import SessionLocal
-from app.core.security import verify_token
+from app.core.security import realm_roles, verify_token
 from app.core.currencies import SUPPORTED_CURRENCIES
 from app.models.work import Work, WorkAssignment, WorkSubmission
 from app.models.work_evidence import WorkTaskConfig, WorkSession, WorkEvidence, WorkEvent, GlobalTaskRate
@@ -73,9 +73,8 @@ MICRO_TASK_TYPES = {"simple", "follow", "like", "comment", "share", "view", "vis
 WORK_PLATFORMS = {"shopnoltd", "facebook", "instagram", "youtube", "tiktok", "telegram", "whatsapp", "website", "data", "custom"}
 
 def is_admin(u):
-    roles = set(u.get("roles") or [])
-    realm_roles = set(((u.get("realm_access") or {}).get("roles") or []))
-    return bool(roles.intersection({"admin", "platform_admin", "shopnoltd-admin", "administrator"}) or realm_roles.intersection({"admin", "platform_admin", "shopnoltd-admin", "administrator"}) or u.get("is_admin") is True)
+    roles = realm_roles(u)
+    return bool(roles.intersection({"admin", "platform_admin", "shopnoltd-admin", "administrator"}))
 
 def rate_dict(r):
     return {"platform": r.platform, "task_type": r.task_type, "rate": str(r.rate), "currency": r.currency, "enabled": bool(r.enabled)}
