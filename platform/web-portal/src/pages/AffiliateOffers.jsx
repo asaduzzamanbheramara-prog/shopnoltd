@@ -255,5 +255,3 @@ export default function AffiliateOffers() {
 function Metric({ label, value, detail }) {
   return <div style={{ background: '#f8fafc', borderRadius: 10, padding: 12 }}><small style={{ color: '#64748b', textTransform: 'capitalize' }}>{label}</small><div style={{ fontSize: 22, fontWeight: 800, marginTop: 4 }}>{value}</div>{detail && <small style={{ color: '#64748b' }}>{detail}</small>}</div>
 }
-
-[executed on device: Shopnoltd (52cb1894-787c-49c2-9460-901a8f74a1e7)]
