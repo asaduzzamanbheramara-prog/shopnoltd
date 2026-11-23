@@ -188,7 +188,10 @@ def test_affmine_sync_is_platform_admin_only_and_route_exists():
 def test_affmine_platform_metadata_is_normalized_and_enforced():
     assert _affmine_platform_codes("1,3,4") == "1,3,4"
     assert _affmine_platform_codes(["2", "5", "invalid"]) == "2,5"
-    assert _affmine_platform_codes("") == "unknown"
+    assert _affmine_platform_codes("") == "1,2,3,4,5"
+    assert _affmine_platform_codes(None) == "1,2,3,4,5"
+    assert _affmine_platform_codes("0") == "1,2,3,4,5"
+    assert _platform_ok(_affmine_platform_codes(""), "3")
     assert _platform_ok("1,3", "3")
     assert not _platform_ok("1,3", "4")
     assert not _platform_ok("unknown", "3")
