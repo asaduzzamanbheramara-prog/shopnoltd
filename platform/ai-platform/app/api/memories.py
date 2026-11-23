@@ -93,13 +93,13 @@ async def update_memory(memory_id: str, body: MemoryUpdate, user=Depends(current
     if not changes:
         raise HTTPException(422, "provide content or category to update")
     if "content" in changes:
-        row.content = changes["content"].strip()
-        if not row.content:
+        if changes["content"] is None or not changes["content"].strip():
             raise HTTPException(422, "memory content must not be blank")
+        row.content = changes["content"].strip()
     if "category" in changes:
-        row.category = changes["category"].strip()
-        if not row.category:
+        if changes["category"] is None or not changes["category"].strip():
             raise HTTPException(422, "memory category must not be blank")
+        row.category = changes["category"].strip()
     row.updated_at = datetime.now(timezone.utc)
     await db.commit()
     await db.refresh(row)
