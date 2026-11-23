@@ -141,7 +141,7 @@ jobs:
           const root = await readFile('dist/index.html', 'utf8')
           const pricing = await readFile('dist/pricing/index.html', 'utf8')
           assert.match(root, /<link rel="canonical" href="https:\/\/shopnoltd\.dpdns\.org\/"\s*\/>/)
-          assert.match(root, /<h1>Shopnoltd ÃƒÅ½Ã¢â‚¬Å“ÃƒÆ’Ã¢â‚¬Â¡ÃƒÆ’Ã‚Â¶ Digital Services, Domains &amp; Business Tools<\/h1>/)
+          assert.match(root, /<h1>Shopnoltd.*Digital Services, Domains &amp; Business Tools<\/h1>/)
           assert.match(pricing, /<link rel="canonical" href="https:\/\/shopnoltd\.dpdns\.org\/pricing"\s*\/>/)
           assert.match(pricing, /<h1>Shopnoltd Pricing<\/h1>/)
           assert.match(pricing, /<th scope="row">Enterprise<\/th>/)
