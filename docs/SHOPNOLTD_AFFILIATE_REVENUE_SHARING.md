@@ -75,10 +75,10 @@ The feature branch and PR must pass API tests, web build, security scans, and re
 ## Affmine Publisher API v1.0 campaign import
 
 - Configure `AFFMINE_AFF_ID` and `AFFMINE_API_KEY` only in the API service's server-side secret store. Never put either credential in React, browser storage, source control, logs, or a public URL.
-- The admin-only sync endpoint calls `https://network.affmine.com/api/v1/getCampaigns` with JSON output, active campaign status, all countries, all device platforms, both incentive types, and 200-row pagination.
+- The admin-only sync endpoint calls `https://network.affmine.com/api/v1/getCampaigns` with JSON output, active campaign status (`offer_status=1`), blank country and platform filters (the Affmine API's documented all-country/all-platform behavior), both incentive types (`incentive=0`), and 200-row pagination.
 - New campaigns are inserted as Draft with incentive permission disabled. Sync does not activate offers or enable incentive traffic. Existing admin eligibility/status decisions are preserved.
 - Campaigns with valid three-letter ISO currency codes and positive payout values are imported with the original network currency preserved. Offer cards format payouts and estimated user shares in that currency; they are not silently converted to USD. Invalid currency codes are counted and skipped. Conversion summaries and USD/BDT reference estimates remain USD-only until the network postback and FX contract are verified.
 - Missing or non-HTTPS campaign URLs are retained as empty tracking URLs; activation and click-start fail closed until a valid HTTPS URL and confirmed click-sub-ID macro are configured.
-- Affmine's allowed_platform and incentive values are stored as network metadata. Platform eligibility is applied to offer listing and click start. The network incentive flag is not proof of campaign-level approval for Shopnoltd's exact reward/task model.
+- Affmine's allowed_platform and incentive values are stored as network metadata. An empty/unrestricted allowed_platform value is normalized to all five documented platform IDs; platform eligibility is applied to offer listing and click start. The network incentive flag is not proof of campaign-level approval for Shopnoltd's exact reward/task model.
 - The sample Affiliate ID/API key in the supplied documentation must not be used as account credentials. Use the actual account-issued credentials only in the server-side secret store.
 - Sync endpoint: `POST /api/v1/affiliate/admin/sync-affmine`.
