@@ -126,14 +126,15 @@ class LoginBrokerFlowTests(TestCase):
             client_sync.ensure_login_first_broker_flow("test-token")
 
         updates = [body for method, path, body in calls if method == "PUT"]
-        self.assertEqual(len(updates), 2)
+        self.assertEqual(len(updates), 4)
         self.assertEqual(
             {item["id"]: item["requirement"] for item in updates},
-            {"create-user": "DISABLED", "confirm-link": "DISABLED"},
-        )
-        self.assertEqual(
-            next(item for item in executions if item["providerId"] == "idp-email-verification")["requirement"],
-            "ALTERNATIVE",
+            {
+                "create-user": "DISABLED",
+                "confirm-link": "DISABLED",
+                "verify-email": "REQUIRED",
+                "reauth": "DISABLED",
+            },
         )
         self.assertTrue(any(method == "POST" and path.endswith("/first%20broker%20login/copy") for method, path, _ in calls))
 
@@ -147,6 +148,7 @@ class LoginBrokerFlowTests(TestCase):
             {"id": "create-user", "providerId": "idp-create-user-if-unique", "requirement": "ALTERNATIVE", "level": 2},
             {"id": "confirm-link", "providerId": "idp-confirm-link", "requirement": "REQUIRED", "level": 2},
             {"id": "email", "providerId": "idp-email-verification", "requirement": "ALTERNATIVE", "level": 2},
+            {"id": "reauth", "providerId": "idp-username-password-form", "requirement": "REQUIRED", "level": 3},
         ]
         calls = []
         flow_reads = 0
@@ -174,7 +176,12 @@ class LoginBrokerFlowTests(TestCase):
         updates = [body for method, path, body in calls if method == "PUT"]
         self.assertEqual(
             {item["id"]: item["requirement"] for item in updates},
-            {"create-user": "DISABLED", "confirm-link": "DISABLED"},
+            {
+                "create-user": "DISABLED",
+                "confirm-link": "DISABLED",
+                "email": "REQUIRED",
+                "reauth": "DISABLED",
+            },
         )
         execution_reads = [
             path for method, path, _ in calls
