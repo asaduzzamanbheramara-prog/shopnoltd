@@ -4,7 +4,7 @@ from decimal import Decimal
 from fastapi import HTTPException
 import pytest
 
-from app.api.affiliate import _country, _geo_ok, _is_platform_admin, _percent, _require_sandbox_enabled, _safe_tracking_url, sandbox_user_summary, simulate_sandbox_earning
+from app.api.affiliate import _affmine_campaign_rows, _affmine_country_codes, _country, _geo_ok, _is_platform_admin, _percent, _require_sandbox_enabled, _safe_tracking_url, sandbox_user_summary, simulate_sandbox_earning
 from app.models.affiliate import AffiliateConversion, AffiliateOffer, AffiliateSandboxConversion
 from app.api.affiliate import router
 
@@ -161,3 +161,25 @@ def test_sandbox_simulation_calculates_user_and_platform_without_wallet_credit(m
     assert result["wallet_credited"] is False
     assert session.record.user_id == "sandbox-user"
     assert session.committed is True
+
+def test_affmine_campaign_feed_parses_xml_and_country_codes():
+    payload = """<offer_feed><row_count>1</row_count><success>true</success><offers><offer><offer_id>1256</offer_id><offer_name>Test offer</offer_name><payout>7.20</payout><currency>USD</currency><url>https://track.example/go?s1=subid</url><countries><country><country_code>US</country_code><country_name>United States</country_name></country></countries><incentive>yes</incentive></offer></offers></offer_feed>"""
+    rows = _affmine_campaign_rows(payload, "application/xml")
+    assert rows[0]["offer_id"] == "1256"
+    assert rows[0]["countries"][0]["country_code"] == "US"
+    assert _affmine_country_codes(rows[0]["countries"]) == "US"
+
+
+def test_affmine_campaign_feed_parses_json_and_fails_on_network_error():
+    payload = '{"offer_feed":{"success":true,"offers":{"offer":[{"offer_id":"99","offer_name":"JSON offer","payout":"1.25","currency":"USD","countries":[{"country_code":"CA"}]}]}}}'
+    rows = _affmine_campaign_rows(payload, "application/json")
+    assert rows[0]["offer_id"] == "99"
+    assert _affmine_country_codes(rows[0]["countries"]) == "CA"
+    with pytest.raises(HTTPException):
+        _affmine_campaign_rows('<offer_feed><success>false</success></offer_feed>', "application/xml")
+
+
+def test_affmine_sync_is_platform_admin_only_and_route_exists():
+    route = next(r for r in router.routes if r.path == "/affiliate/admin/sync-affmine")
+    assert "POST" in route.methods
+    assert route.endpoint.__name__ == "sync_affmine_campaigns"
