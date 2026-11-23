@@ -1,5 +1,6 @@
 import { KEYCLOAK_CLIENT_ID, KEYCLOAK_REALM, KEYCLOAK_URL, REDIRECT_URI, SOCIAL_LOGIN_PROVIDERS } from '../config'
 import { randomString, codeChallengeFor } from '../pkce'
+import { clearAuthSession } from '../lib/authSession'
 
 const PROVIDERS = [
   { id: 'google', label: 'Continue with Google', icon: 'G' },
@@ -8,6 +9,10 @@ const PROVIDERS = [
 ].filter((provider) => SOCIAL_LOGIN_PROVIDERS[provider.id])
 
 async function startLogin(provider = '') {
+  // A shared browser must not retain the previous account or stale OIDC state.
+  // This also makes any in-flight refresh from the previous session fail closed.
+  clearAuthSession(localStorage, sessionStorage)
+
   const verifier = randomString(64)
   const challenge = await codeChallengeFor(verifier)
   const state = randomString(32)
