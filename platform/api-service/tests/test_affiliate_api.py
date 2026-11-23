@@ -318,7 +318,8 @@ def test_affiliate_user_copy_hides_provider_identity_and_wholesale_rates():
     from pathlib import Path
     source_path = Path(__file__).resolve().parents[2] / "web-portal/src/pages/AffiliateOffers.jsx"
     source = source_path.read_text()
-    render_start = source.rfind("return (")
+    logged_out_start = source.index("if (!loggedIn) return")
+    render_start = source.index("return <main style={shell}>", logged_out_start)
     admin_start = source.index("{admin && <section", render_start)
     user_render = source[render_start:admin_start]
     sandbox_start = user_render.find("{admin && sandboxSummary?.enabled && <section")
