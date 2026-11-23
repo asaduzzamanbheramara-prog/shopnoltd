@@ -128,7 +128,8 @@ async def payout_from_work_escrow(body: PayoutIn, s: AsyncSession = Depends(db))
     currency = body.currency.upper().strip()
     if body.creator_id == body.recipient_id:
         raise HTTPException(422, "escrow payout recipient cannot be the creator")
-    reference = f"work-escrow-payout:{body.work_id}:{body.idempotency_key}"
+    reference_hash = hashlib.sha256(body.idempotency_key.encode()).hexdigest()[:16]
+    reference = f"work-escrow-payout:{body.work_id}:{reference_hash}"
     existing = await s.scalar(select(Transaction).where(
         Transaction.tenant_id == body.tenant_id, Transaction.user_id == body.creator_id,
         Transaction.type == TxType.transfer, Transaction.idempotency_key == body.idempotency_key,
