@@ -108,6 +108,17 @@ def test_offer_default_split_benefits_user_and_platform():
     assert "shopnoltd_affiliate_conversions" == AffiliateConversion.__tablename__
 
 
+def test_public_offer_contract_hides_provider_and_wholesale_economics():
+    import inspect
+    from app.api.affiliate import list_offers
+    source = inspect.getsource(list_offers)
+    assert '"network_offer_id"' not in source
+    assert '"network_payout"' not in source
+    assert '"platform_share_percent"' not in source
+    assert '"allowed_platform"' not in source
+    assert '"reward_amount"' in source
+
+
 def test_conversion_model_keeps_network_payment_and_fx_snapshots():
     columns = AffiliateConversion.__table__.columns
     assert "network_payout" in columns
