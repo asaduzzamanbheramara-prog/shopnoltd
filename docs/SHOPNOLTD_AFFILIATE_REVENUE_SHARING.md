@@ -41,6 +41,7 @@ The affiliate marketplace is operated by Shopnoltd as the sole program intermedi
 - POST /api/v1/affiliate/offers/{offer_id}/start — create a click and return the user's personal network tracking URL.
 - GET /api/v1/affiliate/me/summary — user's click and conversion summary.
 - GET /api/v1/affiliate/rates/usd-bdt — live USD/BDT reference rate.
+- POST /api/v1/affiliate/admin/sync-affmine — fetch active campaigns from Affmine Publisher API v1.0 and import/update them as Drafts.
 - GET /api/v1/affiliate/admin/offers — admin offer inventory.
 - POST /api/v1/affiliate/admin/offers — add a draft offer.
 - PATCH /api/v1/affiliate/admin/offers/{offer_id}/commission — set future user/platform split.
@@ -69,3 +70,15 @@ The feature branch and PR must pass API tests, web build, security scans, and re
 - Sandbox routes: `POST /api/v1/affiliate/sandbox/simulate`, `GET /api/v1/affiliate/sandbox/me/summary`, `DELETE /api/v1/affiliate/sandbox/me/reset`, and platform-admin-only `GET /api/v1/affiliate/sandbox/admin/summary`.
 - Sandbox results are never counted as Affmine conversions, real revenue, payable earnings, or wallet funds. Do not present simulated earnings as actual income.
 - This is application-level test functionality, not a substitute for Affmine's own sandbox or written permission for live incentivized campaigns.
+
+
+## Affmine Publisher API v1.0 campaign import
+
+- Configure `AFFMINE_AFF_ID` and `AFFMINE_API_KEY` only in the API service's server-side secret store. Never put either credential in React, browser storage, source control, logs, or a public URL.
+- The admin-only sync endpoint calls `https://network.affmine.com/api/v1/getCampaigns` with JSON output, active campaign status, all countries, all device platforms, both incentive types, and 200-row pagination.
+- New campaigns are inserted as Draft with incentive permission disabled. Sync does not activate offers or enable incentive traffic. Existing admin eligibility/status decisions are preserved.
+- Only USD campaigns with valid positive payout values are imported; unsupported currencies are counted and skipped because current user-facing earnings and FX handling are USD-based.
+- Missing or non-HTTPS campaign URLs are retained as empty tracking URLs; activation and click-start fail closed until a valid HTTPS URL and confirmed click-sub-ID macro are configured.
+- Affmine's `incentive=yes` field is recorded as network metadata only when available; it is not proof of campaign-level approval for Shopnoltd's exact reward/task model.
+- The sample Affiliate ID/API key in the supplied documentation must not be used as account credentials. Use the actual account-issued credentials only in the server-side secret store.
+- Sync endpoint: `POST /api/v1/affiliate/admin/sync-affmine`.
