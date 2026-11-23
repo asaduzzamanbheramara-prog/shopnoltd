@@ -247,6 +247,23 @@ async def update_commission(offer_id: int, request: Request, claims=Depends(curr
             "platform_share_percent": 100 - offer.user_share_percent}
 
 
+@router.patch("/admin/offers/{offer_id}/eligibility")
+async def update_offer_eligibility(offer_id: int, request: Request, claims=Depends(current_user), session: AsyncSession = Depends(db)):
+    _require_admin(claims)
+    body = await request.json()
+    allowed = body.get("incentive_allowed")
+    if not isinstance(allowed, bool):
+        raise HTTPException(422, "incentive_allowed must be true or false")
+    offer = await session.get(AffiliateOffer, offer_id)
+    if not offer:
+        raise HTTPException(404, "Offer not found")
+    offer.incentive_allowed = allowed
+    if not allowed:
+        offer.status = "paused"
+    await session.commit()
+    return {"id": offer.id, "incentive_allowed": offer.incentive_allowed, "status": offer.status}
+
+
 @router.post("/admin/offers/{offer_id}/activate")
 async def activate_offer(offer_id: int, claims=Depends(current_user), session: AsyncSession = Depends(db)):
     _require_admin(claims)
