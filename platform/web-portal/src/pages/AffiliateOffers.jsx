@@ -6,7 +6,7 @@ import { isPlatformAdmin } from '../lib/jwt'
 const shell = { maxWidth: 1120, margin: '0 auto', padding: '32px 18px 72px', fontFamily: 'system-ui,sans-serif', color: '#172033' }
 const panel = { border: '1px solid #e2e8f0', borderRadius: 14, padding: 18, background: '#fff' }
 const button = { border: 0, borderRadius: 9, padding: '10px 14px', background: '#0369a1', color: '#fff', fontWeight: 700, cursor: 'pointer' }
-const money = value => '$' + Number(value || 0).toFixed(2)
+const money = (value, currency = 'USD') => { try { return new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(Number(value || 0)) } catch { return Number(value || 0).toFixed(2) + ' ' + currency } }
 
 export default function AffiliateOffers() {
   const { slug } = useParams()
@@ -25,7 +25,7 @@ export default function AffiliateOffers() {
   const [loading, setLoading] = useState(false)
   const [syncingAffmine, setSyncingAffmine] = useState(false)
   const [shareEdits, setShareEdits] = useState({})
-  const [newOffer, setNewOffer] = useState({ network_offer_id: '', title: '', tracking_url: '', click_param: 's1', network_payout: '', countries: '', user_share_percent: 70, incentive_allowed: false })
+  const [newOffer, setNewOffer] = useState({ network_offer_id: '', title: '', tracking_url: '', click_param: 's1', network_payout: '', countries: '', currency: 'USD', user_share_percent: 70, incentive_allowed: false })
   const loggedIn = Boolean(localStorage.getItem('shopno_token'))
   const admin = loggedIn && isPlatformAdmin()
   const bdtEstimate = amount => rate ? '≈ ৳' + (Number(amount || 0) * Number(rate.rate)).toLocaleString('en-BD', { maximumFractionDigits: 2 }) : 'BDT rate unavailable'
@@ -124,7 +124,7 @@ export default function AffiliateOffers() {
     setError(''); setMessage(''); setSyncingAffmine(true)
     try {
       const result = await authenticatedRequest('/api/v1/affiliate/admin/sync-affmine', { method: 'POST' })
-      setMessage('Affmine sync complete: ' + result.inserted + ' new drafts, ' + result.updated + ' updated, ' + result.skipped_unsupported_currency + ' unsupported-currency offers skipped. No offers were activated and no incentives were enabled.')
+      setMessage('Affmine sync complete: ' + result.inserted + ' new drafts, ' + result.updated + ' updated, ' + result.skipped_invalid_currency + ' invalid-currency offers skipped. No offers were activated and no incentives were enabled.')
       await load()
     } catch (e) { setError(e.message || 'Affmine campaign sync failed') }
     finally { setSyncingAffmine(false) }
@@ -133,8 +133,8 @@ export default function AffiliateOffers() {
   async function addOffer(event) {
     event.preventDefault(); setError(''); setMessage('')
     try {
-      await authenticatedRequest('/api/v1/affiliate/admin/offers', { method: 'POST', body: JSON.stringify({ ...newOffer, network_payout: Number(newOffer.network_payout), user_share_percent: Number(newOffer.user_share_percent), currency: 'USD' }) })
-      setNewOffer({ network_offer_id: '', title: '', tracking_url: '', click_param: 's1', network_payout: '', countries: '', user_share_percent: 70, incentive_allowed: false })
+      await authenticatedRequest('/api/v1/affiliate/admin/offers', { method: 'POST', body: JSON.stringify({ ...newOffer, network_payout: Number(newOffer.network_payout), user_share_percent: Number(newOffer.user_share_percent), currency: newOffer.currency }) })
+      setNewOffer({ network_offer_id: '', title: '', tracking_url: '', click_param: 's1', network_payout: '', countries: '', currency: 'USD', user_share_percent: 70, incentive_allowed: false })
       setMessage('Offer added as Draft. Activate it only after written confirmation that Shopnoltd\'s incentivized task model and traffic source are permitted.')
       await load()
     } catch (e) { setError(e.message || 'Offer could not be added') }
@@ -196,9 +196,9 @@ export default function AffiliateOffers() {
         {offers.map(offer => <article key={offer.id} style={{ ...panel, display: 'flex', flexDirection: 'column', gap: 10 }}>
           <b style={{ color: '#0369a1' }}>Offer #{offer.network_offer_id}</b>
           <h3 style={{ margin: 0 }}>{offer.title}</h3>
-          <p style={{ margin: 0, color: '#475569' }}>Network payout: {money(offer.network_payout)} · Your share: {offer.user_share_percent}%</p>
-          <p style={{ margin: 0, color: '#047857', fontWeight: 700 }}>Estimated user reward: {money(offer.estimated_user_reward)} {offer.currency}</p>
-          <p style={{ margin: 0, color: '#64748b', fontSize: 13 }}>Platform share: {offer.platform_share_percent}% · Eligible countries: {offer.countries || 'Worldwide'}</p>
+          <p style={{ margin: 0, color: '#475569' }}>Network payout: {money(offer.network_payout, offer.currency)} · Your share: {offer.user_share_percent}%</p>
+          <p style={{ margin: 0, color: '#047857', fontWeight: 700 }}>Estimated user reward: {money(offer.estimated_user_reward, offer.currency)}</p>
+          <p style={{ margin: 0, color: '#64748b', fontSize: 13 }}>Platform share: {offer.platform_share_percent}% · Eligible countries: {offer.countries || 'Worldwide'} · Supported platform IDs: {offer.allowed_platform || 'unknown'}</p>
           <button type="button" style={button} onClick={() => createLink(offer)}>Generate &amp; copy my tracking link</button>
           {links[offer.id] && <div><label htmlFor={'affiliate-link-' + offer.id}>Your personal tracking link</label><input id={'affiliate-link-' + offer.id} readOnly value={links[offer.id]} style={{ width: '100%', boxSizing: 'border-box', padding: 9, marginTop: 5 }} /><button type="button" style={{ ...button, marginTop: 8 }} onClick={() => navigator.clipboard.writeText(links[offer.id])}>Copy link</button></div>}
         </article>)}
@@ -235,7 +235,8 @@ export default function AffiliateOffers() {
         <input required placeholder="Offer title" value={newOffer.title} onChange={e => setNewOffer(v => ({ ...v, title: e.target.value }))} />
         <input required type="url" placeholder="HTTPS tracking URL" value={newOffer.tracking_url} onChange={e => setNewOffer(v => ({ ...v, tracking_url: e.target.value }))} />
         <input required placeholder="Network click-ID parameter (confirm in publisher macros)" value={newOffer.click_param} onChange={e => setNewOffer(v => ({ ...v, click_param: e.target.value }))} />
-        <input required type="number" min="0.0001" step="0.0001" placeholder="Network payout (USD)" value={newOffer.network_payout} onChange={e => setNewOffer(v => ({ ...v, network_payout: e.target.value }))} />
+        <input required type="number" min="0.0001" step="0.0001" placeholder="Network payout (source currency)" value={newOffer.network_payout} onChange={e => setNewOffer(v => ({ ...v, network_payout: e.target.value }))} />
+        <input placeholder="Currency ISO code, e.g. USD, EUR, BDT" maxLength={3} value={newOffer.currency} onChange={e => setNewOffer(v => ({ ...v, currency: e.target.value.toUpperCase() }))} />
         <input placeholder="Countries, e.g. US,CA or WORLDWIDE" value={newOffer.countries} onChange={e => setNewOffer(v => ({ ...v, countries: e.target.value }))} />
         <label>User commission percentage (platform keeps at least 10%) <input type="number" min="0" max="90" value={newOffer.user_share_percent} onChange={e => setNewOffer(v => ({ ...v, user_share_percent: e.target.value }))} /></label>
         <label><input type="checkbox" checked={newOffer.incentive_allowed} onChange={e => setNewOffer(v => ({ ...v, incentive_allowed: e.target.checked }))} /> I have verified that the advertiser explicitly permits incentivized promotion for this offer.</label>
@@ -243,7 +244,7 @@ export default function AffiliateOffers() {
       </form>
       <div style={{ display: 'grid', gap: 10 }}>
         {adminOffers.map(offer => <div key={offer.id} style={{ ...panel, display: 'grid', gridTemplateColumns: 'minmax(0,1fr) auto', alignItems: 'center', gap: 12 }}>
-          <div><b>{offer.title}</b><p style={{ margin: '4px 0', color: '#64748b', fontSize: 13 }}>#{offer.network_offer_id} · {offer.status} · Incentive permitted: {String(offer.incentive_allowed)}</p><small>Network payout {money(offer.network_payout)} · Platform share {100 - Number(shareEdits[offer.id] ?? offer.user_share_percent)}%</small><div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}><button type="button" style={{ ...button, background: '#475569' }} onClick={() => toggleEligibility(offer)}>{offer.incentive_allowed ? 'Revoke incentive permission' : 'Confirm incentive permission'}</button><button type="button" style={{ ...button, background: offer.status === 'active' ? '#b45309' : '#15803d' }} onClick={() => setOfferStatus(offer, offer.status === 'active' ? 'deactivate' : 'activate')}>{offer.status === 'active' ? 'Pause offer' : 'Activate offer'}</button></div></div>
+          <div><b>{offer.title}</b><p style={{ margin: '4px 0', color: '#64748b', fontSize: 13 }}>#{offer.network_offer_id} · {offer.status} · Incentive permitted: {String(offer.incentive_allowed)}</p><small>Network payout {money(offer.network_payout, offer.currency)} · {offer.currency} · Platforms {offer.allowed_platform || 'unknown'} · Platform share {100 - Number(shareEdits[offer.id] ?? offer.user_share_percent)}%</small><div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}><button type="button" style={{ ...button, background: '#475569' }} onClick={() => toggleEligibility(offer)}>{offer.incentive_allowed ? 'Revoke incentive permission' : 'Confirm incentive permission'}</button><button type="button" style={{ ...button, background: offer.status === 'active' ? '#b45309' : '#15803d' }} onClick={() => setOfferStatus(offer, offer.status === 'active' ? 'deactivate' : 'activate')}>{offer.status === 'active' ? 'Pause offer' : 'Activate offer'}</button></div></div>
           <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}><input aria-label="User commission percentage" type="number" min="0" max="90" value={shareEdits[offer.id] ?? offer.user_share_percent} onChange={e => setShareEdits(v => ({ ...v, [offer.id]: e.target.value }))} style={{ width: 65, padding: 8 }} /><button type="button" style={button} onClick={() => updateShare(offer.id)}>Save split</button></div>
         </div>)}
       </div>
@@ -254,3 +255,5 @@ export default function AffiliateOffers() {
 function Metric({ label, value, detail }) {
   return <div style={{ background: '#f8fafc', borderRadius: 10, padding: 12 }}><small style={{ color: '#64748b', textTransform: 'capitalize' }}>{label}</small><div style={{ fontSize: 22, fontWeight: 800, marginTop: 4 }}>{value}</div>{detail && <small style={{ color: '#64748b' }}>{detail}</small>}</div>
 }
+
+[executed on device: Shopnoltd (52cb1894-787c-49c2-9460-901a8f74a1e7)]
