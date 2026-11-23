@@ -10,10 +10,10 @@ PAYMENTS = "http://payment-service.shopno-payments.svc.cluster.local:80"
 
 
 def _headers():
-    key = os.getenv("PAYMENT_INTERNAL_API_KEY", "").strip()
+    key = os.getenv("WORK_ESCROW_INTERNAL_API_KEY", "").strip()
     if not key:
-        raise HTTPException(503, "Work escrow payment bridge is not configured; task cannot be published or paid")
-    return {"X-Internal-API-Key": key}
+        raise HTTPException(503, "Dedicated work escrow bridge is not configured; task cannot be published or paid")
+    return {"X-Work-Escrow-API-Key": key}
 
 
 async def _request(path: str, payload: dict):

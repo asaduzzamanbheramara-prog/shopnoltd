@@ -4,6 +4,7 @@ Funds remain in the creator wallet balance but are marked frozen until a
 worker/platform payout or unused-budget release. Every movement is committed
 atomically with its transaction journal entries.
 """
+from datetime import datetime
 from decimal import Decimal
 import hashlib
 
@@ -14,10 +15,10 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import SessionLocal
-from app.core.security import require_affiliate_payment_key
+from app.core.security import require_work_escrow_key
 from app.models.models import PaymentMethod, Transaction, TxStatus, TxType, Wallet
 
-router = APIRouter(dependencies=[Depends(require_affiliate_payment_key)])
+router = APIRouter(dependencies=[Depends(require_work_escrow_key)])
 
 
 async def db():
@@ -176,18 +177,21 @@ async def payout_from_work_escrow(body: PayoutIn, s: AsyncSession = Depends(db))
     meta["remaining_amount"] = str((remaining - body.amount).quantize(Decimal("0.00000001")))
     meta["paid_amount"] = str((Decimal(str(meta.get("paid_amount", 0))) + body.amount).quantize(Decimal("0.00000001")))
     reservation.meta = meta
+    if remaining - body.amount == 0:
+        reservation.status = TxStatus.completed
+        reservation.completed_at = datetime.utcnow()
     debit = Transaction(
         tenant_id=body.tenant_id, user_id=body.creator_id, wallet_id=source.id,
         type=TxType.transfer, method=PaymentMethod.transfer, status=TxStatus.completed,
         amount=-body.amount, fee=0, currency=currency, reference=reference,
-        idempotency_key=body.idempotency_key,
+        idempotency_key=body.idempotency_key, completed_at=datetime.utcnow(),
         meta={"source": "work-marketplace-escrow", "work_id": body.work_id, "to": body.recipient_id, "note": body.note},
     )
     credit = Transaction(
         tenant_id=body.tenant_id, user_id=body.recipient_id, wallet_id=destination.id,
         type=TxType.transfer, method=PaymentMethod.transfer, status=TxStatus.completed,
         amount=body.amount, fee=0, currency=currency, reference=reference,
-        idempotency_key=body.idempotency_key,
+        idempotency_key=body.idempotency_key, completed_at=datetime.utcnow(),
         meta={"source": "work-marketplace-escrow", "work_id": body.work_id, "from": body.creator_id, "note": body.note},
     )
     s.add_all([debit, credit])

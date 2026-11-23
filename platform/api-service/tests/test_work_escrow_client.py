@@ -40,7 +40,7 @@ def test_escrow_payout_idempotency_key_is_stable_and_scoped_to_work(monkeypatch)
 
 
 def test_missing_bridge_key_fails_closed(monkeypatch):
-    monkeypatch.delenv("PAYMENT_INTERNAL_API_KEY", raising=False)
+    monkeypatch.delenv("WORK_ESCROW_INTERNAL_API_KEY", raising=False)
     with pytest.raises(HTTPException) as error:
         work_escrow._headers()
     assert "not configured" in error.value.detail

@@ -80,3 +80,15 @@ def test_escrow_request_contracts_require_positive_amount_and_stable_identifiers
         ReserveIn(tenant_id="tenant-1", creator_id="creator-1", work_id="work-1", currency="BDT", amount="0")
     with pytest.raises(ValidationError):
         ReleaseIn(tenant_id="tenant-1", creator_id="creator-1", work_id="work-1")
+
+
+def test_work_escrow_requires_its_own_internal_key(monkeypatch):
+    from app.core.config import settings
+    from app.core.security import require_work_escrow_key
+
+    monkeypatch.setattr(settings, "work_escrow_internal_api_key", "separate-escrow-key")
+    monkeypatch.setattr(settings, "affiliate_internal_api_key", "affiliate-credit-only-key")
+    assert require_work_escrow_key("separate-escrow-key") is True
+    with pytest.raises(HTTPException) as error:
+        require_work_escrow_key("affiliate-credit-only-key")
+    assert error.value.status_code == 403

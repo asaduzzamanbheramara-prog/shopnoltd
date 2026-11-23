@@ -86,6 +86,11 @@ spec:
                   name: affiliate-payment-bridge
                   key: AFFILIATE_INTERNAL_API_KEY
                   optional: true
+            - name: WORK_ESCROW_INTERNAL_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: work-escrow-bridge
+                  key: WORK_ESCROW_INTERNAL_API_KEY
             - name: POD_NAME
               valueFrom: { fieldRef: { fieldPath: metadata.name } }
             - name: POD_NAMESPACE
