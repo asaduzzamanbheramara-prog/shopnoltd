@@ -19,6 +19,7 @@ from app.models.work_evidence import WorkTaskConfig, WorkSession, WorkEvidence, 
 from app.models.work_rating import WorkRating  # noqa: F401
 from app.models.referral import ReferralCode, Referral, ReferralPolicy, ReferralReward, ReferralSystemIdentity  # noqa: F401
 from app.models.service_order import ServiceOrder, ServiceOrderEvent  # noqa: F401
+from app.models.affiliate import AffiliateOffer, AffiliateClick, AffiliateConversion  # noqa: F401
 
 log = structlog.get_logger()
 
@@ -161,6 +162,7 @@ app.include_router(__import__("app.api.v2_blog_user", fromlist=["router"]).route
 app.include_router(__import__("app.api.v2_blog", fromlist=["router"]).router, prefix="/api/v2", tags=["blog"])
 app.include_router(__import__("app.api.v3_work", fromlist=["router"]).router, prefix="/api/v3", tags=["verified-work"])
 app.include_router(__import__("app.api.referrals", fromlist=["router"]).router, prefix="/api/v1", tags=["referrals"])
+app.include_router(__import__("app.api.affiliate", fromlist=["router"]).router, prefix="/api/v1", tags=["affiliate"])
 app.include_router(__import__("app.api.service_orders", fromlist=["router"]).router, prefix="/api/v1", tags=["service-orders"])
 app.include_router(__import__("app.api.graphql", fromlist=["router"]).router, prefix="/graphql", tags=["graphql"])
 app.include_router(__import__("app.api.health", fromlist=["router"]).router, prefix="", tags=["health"])
