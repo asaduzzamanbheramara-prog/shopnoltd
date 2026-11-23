@@ -45,7 +45,16 @@ jobs:
           assert 'operation_revision" = "$GIT_REVISION"' in script
           assert 'known_retryable_migration' in script
           assert 'active or unknown pods' in script
-          print('GitOps recovery script parses and contains revision, migration allowlist, and active-pod guards.')
+          wait_step = next(
+              step for job in jobs.values() for step in job.get('steps', [])
+              if step.get('name') == 'Wait for Argo CD full sync'
+          )
+          wait_script = wait_step['run']
+          subprocess.run(['bash', '-n'], input=wait_script, text=True, check=True)
+          assert 'git merge-base --is-ancestor "$GIT_REVISION" "$sync_revision"' in wait_script
+          assert 'sync_revision_is_descendant' in wait_script
+          assert 'git fetch --quiet --no-tags origin main' in wait_script
+          print('GitOps recovery and Argo descendant-revision wait scripts parse and retain fail-closed ancestry guards.')
           PY
 
   python-syntax:
