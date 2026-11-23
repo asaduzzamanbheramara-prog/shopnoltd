@@ -133,11 +133,10 @@ jobs:
           grep -q "CREATE UNIQUE INDEX" <<<"$tenant_wallet_index"
           grep -q "(tenant_id, user_id, currency)" <<<"$tenant_wallet_index"
 
-      - name: Upgrade the repaired legacy database through the new status-width migration
-        working-directory: platform/payment-service
+      - name: Apply the GitOps transaction-status migration to the repaired legacy database
         env:
-          DATABASE_URL: postgresql+asyncpg://postgres:ci-only-password@127.0.0.1:5432/payments
-        run: alembic upgrade head
+          PG_CONTAINER: ${{ steps.postgres.outputs.container_id }}
+        run: docker exec -i "$PG_CONTAINER" psql -U postgres -d postgres -v ON_ERROR_STOP=1 < k8s/services/postgres/migration/030-payment-transaction-status-width.sql
 
       - name: Verify repaired legacy database reaches the current schema
         env:
