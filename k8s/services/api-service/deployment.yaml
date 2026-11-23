@@ -24,7 +24,7 @@ spec:
         prometheus.io/port: "8080"
         prometheus.io/path: "/metrics"
         # ConfigMap envFrom changes do not restart pods; bump this revision with API config changes.
-        shopnoltd.io/config-revision: "admin-office-referral-v1"
+        shopnoltd.io/config-revision: "adgem-postback-v3-secret-v2"
     spec:
       serviceAccountName: api-service
       automountServiceAccountToken: true
@@ -71,14 +71,14 @@ spec:
             - name: ADGEM_POSTBACK_KEY
               valueFrom:
                 secretKeyRef:
-                  name: shopnoltd-adgem-postback-secret
-                  key: postback-key
+                  name: adgem-integration
+                  key: ADGEM_POSTBACK_KEY
                   optional: true
             - name: ADGEM_APP_ID
               valueFrom:
                 secretKeyRef:
-                  name: shopnoltd-adgem-postback-secret
-                  key: app-id
+                  name: adgem-integration
+                  key: ADGEM_APP_ID
                   optional: true
             - name: POD_NAME
               valueFrom: { fieldRef: { fieldPath: metadata.name } }
