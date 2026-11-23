@@ -42,12 +42,12 @@ delegates to this loader. Responsive banner selection uses 320x50, 468x60, or
 
 The website Smartlink, Popunder, and Social Bar units are currently inactive
 according to the supplied dashboard. Do not represent them as active or
-expect delivery from them. The Popunder must not be enabled while Google
-AdSense is present unless the relevant publisher policies explicitly permit
-the combined experience. The Social Bar script currently present in the code
-must not be treated as a verified match for inactive unit `31843291`; obtain
-the current GET CODE snippet after the publisher activates that unit before
-relying on it.
+expect delivery from them. The old, unverified Social Bar script URL has been
+removed from automatic loading; the Adsterra integration remains in place for
+verified placements. Restore Social Bar only after unit `31843291` is activated
+and its current GET CODE snippet is supplied. The Popunder must not be enabled
+while Google AdSense is present unless the relevant publisher policies
+explicitly permit the combined experience.
 
 ## Consent and policy gates
 
