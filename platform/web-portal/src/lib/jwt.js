@@ -33,3 +33,13 @@ export function isPlatformAdmin() {
   for (const role of payload?.realm_access?.roles || []) realmRoles.add(role)
   return realmRoles.has('platform_admin')
 }
+
+export function isTenantOwner() {
+  const token = localStorage.getItem('shopno_token')
+  const payload = token ? decodeToken(token) : null
+  // Tenant-wide service-order access is granted only by the canonical realm role.
+  // Client-specific roles must not elevate a user into a tenant owner.
+  const realmRoles = new Set(payload?.roles || [])
+  for (const role of payload?.realm_access?.roles || []) realmRoles.add(role)
+  return realmRoles.has('tenant_owner')
+}

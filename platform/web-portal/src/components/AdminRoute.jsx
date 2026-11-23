@@ -1,7 +1,7 @@
 import { Navigate } from 'react-router-dom'
-import { isPlatformAdmin } from '../lib/jwt'
+import { isPlatformAdmin, isTenantOwner } from '../lib/jwt'
 
-export default function AdminRoute({ children }) {
+export default function AdminRoute({ children, allowTenantOwner = false }) {
   const token = localStorage.getItem('shopno_token')
 
   // Not authenticated.
@@ -9,9 +9,9 @@ export default function AdminRoute({ children }) {
     return <Navigate to="/login" replace />
   }
 
-  // Authenticated but not a platform administrator.
-  // This matches the backend platform_admin-only authorization policy.
-  if (!isPlatformAdmin()) {
+  // Platform administration stays platform_admin-only. Individual tenant
+  // management pages may explicitly opt in to the canonical tenant_owner role.
+  if (!isPlatformAdmin() && !(allowTenantOwner && isTenantOwner())) {
     return <Navigate to="/dashboard" replace />
   }
 

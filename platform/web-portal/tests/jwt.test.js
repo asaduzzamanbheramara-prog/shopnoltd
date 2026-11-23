@@ -1,6 +1,6 @@
 import { beforeEach, test } from 'node:test'
 import assert from 'node:assert/strict'
-import { isPlatformAdmin } from '../src/lib/jwt.js'
+import { isPlatformAdmin, isTenantOwner } from '../src/lib/jwt.js'
 
 let storedToken = null
 Object.defineProperty(globalThis, 'localStorage', {
@@ -50,4 +50,15 @@ test('unauthenticated and ordinary customer sessions are not platform admins', (
   assert.equal(isPlatformAdmin(), false)
   storedToken = tokenWith({ roles: ['customer'] })
   assert.equal(isPlatformAdmin(), false)
+})
+
+test('tenant_owner realm role grants tenant-scoped service-order UI access only', () => {
+  storedToken = tokenWith({ roles: ['tenant_owner'], tenant_id: 'tenant-a' })
+  assert.equal(isTenantOwner(), true)
+  assert.equal(isPlatformAdmin(), false)
+})
+
+test('client-specific tenant_owner role cannot grant tenant administration', () => {
+  storedToken = tokenWith({ resource_access: { 'api-service': { roles: ['tenant_owner'] } } })
+  assert.equal(isTenantOwner(), false)
 })
