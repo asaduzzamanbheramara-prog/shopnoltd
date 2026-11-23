@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     minio_access_key: str = "shopno"
     minio_secret_key: str = "CHANGE_ME"
     minio_secure: bool = False
+    # Used by app.core.security to retrieve Keycloak signing keys and validate token issuer.
+    keycloak_issuer: str = "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
     keycloak_audience: str = "storage-service"
 
     @property
