@@ -133,6 +133,8 @@ def _affmine_campaign_rows(payload, content_type: str):
 
 def _affmine_platform_codes(value):
     """Normalize Affmine platform IDs: 1 Windows, 2 Mac, 3 Android, 4 iOS, 5 other mobile."""
+    if value is None or str(value).strip().upper() in {"", "0", "ALL", "WORLDWIDE"}:
+        return "1,2,3,4,5"
     if isinstance(value, list):
         raw = ",".join(str(item.get("platform_id", item.get("id", ""))) if isinstance(item, dict) else str(item) for item in value)
     else:
@@ -307,8 +309,8 @@ async def sync_affmine_campaigns(claims=Depends(current_user), session: AsyncSes
                     "https://network.affmine.com/api/v1/getCampaigns",
                     params={
                         "aff_id": aff_id, "api_key": api_key, "format": "json",
-                        "offer_status": "1", "countries": "0",
-                        "platform": "1,2,3,4,5", "incentive": "0",
+                        "offer_status": "1", "countries": "",
+                        "platform": "", "incentive": "0",
                         "start_row": str(start_row), "limit_row": str(page_size),
                     },
                 )
