@@ -239,7 +239,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt pytest
       - name: Test idempotent transfer payload validation
-        run: pytest -q tests/test_transfer_idempotency.py tests/test_webhook_error_redaction.py
+        run: pytest -q tests/test_transfer_idempotency.py tests/test_webhook_error_redaction.py tests/test_work_escrow.py
 
   service-contract-tests:
     name: "${{ matrix.service }} isolated ASGI contract tests"
@@ -351,4 +351,4 @@ jobs:
         env:
           PYTHONPATH: platform/api-service:shared/libraries/python
           DATABASE_URL: postgresql+asyncpg://ci:ci@127.0.0.1:5432/ci_test
-        run: python -m pytest platform/api-service/tests/test_affiliate_api.py platform/api-service/tests/test_work_rate_privacy.py platform/api-service/tests/test_work_visibility_privacy.py -q
+        run: python -m pytest platform/api-service/tests/test_affiliate_api.py platform/api-service/tests/test_work_rate_privacy.py platform/api-service/tests/test_work_visibility_privacy.py platform/api-service/tests/test_work_escrow_client.py -q

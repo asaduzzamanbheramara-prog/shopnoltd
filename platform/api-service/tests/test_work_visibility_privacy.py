@@ -43,7 +43,11 @@ def test_ordinary_users_cannot_view_other_users_drafts_or_pending_review():
     user = {"sub": "worker-1", "tenant_id": "tenant-1"}
     assert not can_view_work(make_work(status="draft"), user)
     assert not can_view_work(make_work(status="pending_review"), user)
+    assert not can_view_work(make_work(status="paused"), user)
+    assert not can_view_work(make_work(status="closed"), user)
+    assert not can_view_work(make_work(status="rejected"), user)
     assert can_view_work(make_work(status="open"), user)
+    assert can_view_work(make_work(status="full"), user)
 
 
 def test_creator_and_admin_can_view_drafts():
