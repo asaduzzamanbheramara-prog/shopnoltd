@@ -7,6 +7,7 @@ credit is performed by this API.
 import os
 import re
 import uuid
+import xml.etree.ElementTree as ET
 from decimal import Decimal, InvalidOperation
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
@@ -96,6 +97,49 @@ def _percent(value, field="user_share_percent") -> int:
     if number < 0 or number > 90:
         raise HTTPException(422, f"{field} must be between 0 and 90 so the platform retains at least 10%")
     return number
+
+
+def _affmine_campaign_rows(payload, content_type: str):
+    """Normalize Affmine v1 JSON/XML feed rows without trusting remote markup."""
+    if "json" in (content_type or "").lower() or payload.lstrip().startswith("{"):
+        import json
+        data = json.loads(payload)
+        root = data.get("offer_feed", data)
+        if str(root.get("success", "true")).lower() not in {"true", "1", "yes"}:
+            raise HTTPException(502, "Affmine campaign feed reported an unsuccessful response")
+        offers = root.get("offers", [])
+        if isinstance(offers, dict):
+            offers = offers.get("offer", [])
+        if isinstance(offers, dict):
+            offers = [offers]
+        return offers or []
+    try:
+        root = ET.fromstring(payload)
+    except ET.ParseError as exc:
+        raise HTTPException(502, "Affmine returned an invalid XML campaign feed") from exc
+    if (root.findtext("success") or "true").lower() not in {"true", "1", "yes"}:
+        raise HTTPException(502, "Affmine campaign feed reported an unsuccessful response")
+    rows = []
+    for node in root.findall("./offers/offer"):
+        row = {child.tag: child.text or "" for child in node if child.tag != "countries"}
+        row["countries"] = [
+            {"country_code": country.findtext("country_code", ""),
+             "country_name": country.findtext("country_name", "")}
+            for country in node.findall("./countries/country")
+        ]
+        rows.append(row)
+    return rows
+
+
+def _affmine_country_codes(value):
+    if isinstance(value, list):
+        codes = [str(row.get("country_code", "")).upper() for row in value if isinstance(row, dict)]
+        return ",".join(code for code in codes if re.fullmatch(r"[A-Z]{2}", code)) or None
+    raw = str(value or "").strip().upper()
+    if raw in {"", "0", "ALL", "WORLDWIDE"}:
+        return None
+    codes = [part for part in re.split(r"[^A-Z]+", raw) if re.fullmatch(r"[A-Z]{2}", part)]
+    return ",".join(codes) or None
 
 
 @router.get("/offers")
@@ -193,6 +237,91 @@ async def usd_bdt_rate(_user=Depends(current_user)):
                 "source": data.get("source"), "fetched_at": data.get("fetched_at")}
     except (httpx.HTTPError, ValueError, TypeError, InvalidOperation) as exc:
         raise HTTPException(503, "A current USD/BDT rate is unavailable; no estimated conversion will be shown") from exc
+
+
+@router.post("/admin/sync-affmine")
+async def sync_affmine_campaigns(claims=Depends(current_user), session: AsyncSession = Depends(db)):
+    """Import Affmine active campaigns as inactive drafts; never auto-enable rewards."""
+    _require_admin(claims)
+    aff_id = os.getenv("AFFMINE_AFF_ID", "").strip()
+    api_key = os.getenv("AFFMINE_API_KEY", "").strip()
+    if not aff_id or not api_key:
+        raise HTTPException(503, "Affmine API credentials are not configured on the API service")
+    inserted = updated = skipped_currency = 0
+    start_row = 0
+    page_size = 200
+    try:
+        async with httpx.AsyncClient(timeout=25) as client:
+            while True:
+                response = await client.get(
+                    "https://network.affmine.com/api/v1/getCampaigns",
+                    params={
+                        "aff_id": aff_id, "api_key": api_key, "format": "json",
+                        "offer_status": "1", "countries": "0",
+                        "platform": "1,2,3,4,5", "incentive": "0",
+                        "start_row": str(start_row), "limit_row": str(page_size),
+                    },
+                )
+                response.raise_for_status()
+                rows = _affmine_campaign_rows(response.text, response.headers.get("content-type", ""))
+                if not rows:
+                    break
+                for row in rows:
+                    network_id = str(row.get("offer_id", "")).strip()
+                    title = str(row.get("offer_name", "")).strip()
+                    if not network_id or not title:
+                        continue
+                    currency = str(row.get("currency", "USD")).strip().upper()
+                    if currency != "USD":
+                        skipped_currency += 1
+                        continue
+                    try:
+                        payout = Decimal(str(row.get("payout", "0")))
+                    except (InvalidOperation, TypeError, ValueError):
+                        continue
+                    if not payout.is_finite() or payout <= 0:
+                        continue
+                    existing = await session.scalar(
+                        select(AffiliateOffer).where(AffiliateOffer.network_offer_id == network_id)
+                    )
+                    tracking_url = str(row.get("url", "") or "").strip()
+                    if tracking_url and (urlsplit(tracking_url).scheme != "https" or not urlsplit(tracking_url).hostname):
+                        tracking_url = ""
+                    countries = _affmine_country_codes(row.get("countries"))
+                    if existing:
+                        existing.title = title[:500]
+                        existing.network_payout = payout
+                        existing.currency = "USD"
+                        existing.countries = countries
+                        if tracking_url:
+                            existing.tracking_url = tracking_url
+                        # Keep existing admin decision/status unchanged on sync.
+                        updated += 1
+                    else:
+                        session.add(AffiliateOffer(
+                            network_offer_id=network_id[:128], title=title[:500],
+                            tracking_url=tracking_url, click_param="s1",
+                            network_payout=payout, user_share_percent=70,
+                            incentive_allowed=False, status="draft",
+                            countries=countries, currency="USD",
+                        ))
+                        inserted += 1
+                await session.commit()
+                if len(rows) < page_size:
+                    break
+                start_row += page_size
+    except httpx.HTTPStatusError as exc:
+        await session.rollback()
+        raise HTTPException(502, f"Affmine API returned HTTP {exc.response.status_code}") from exc
+    except (httpx.HTTPError, ValueError, InvalidOperation) as exc:
+        await session.rollback()
+        raise HTTPException(502, "Could not retrieve or parse Affmine campaign feed") from exc
+    return {
+        "source": "Affmine Publisher API v1.0", "status": "imported_as_drafts",
+        "inserted": inserted, "updated": updated, "skipped_unsupported_currency": skipped_currency,
+        "incentives_enabled": 0, "offers_activated": 0,
+        "note": "Imported campaigns remain Draft and incentive-disabled until campaign-level permission and tracking parameters are verified.",
+    }
 
 
 @router.get("/admin/offers")
