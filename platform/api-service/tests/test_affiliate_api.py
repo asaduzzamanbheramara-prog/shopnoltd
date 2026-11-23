@@ -1,7 +1,10 @@
+import asyncio
+from decimal import Decimal
+
 from fastapi import HTTPException
 import pytest
 
-from app.api.affiliate import _country, _geo_ok, _is_platform_admin, _percent, _require_sandbox_enabled, _safe_tracking_url
+from app.api.affiliate import _country, _geo_ok, _is_platform_admin, _percent, _require_sandbox_enabled, _safe_tracking_url, sandbox_user_summary, simulate_sandbox_earning
 from app.models.affiliate import AffiliateConversion, AffiliateOffer, AffiliateSandboxConversion
 from app.api.affiliate import router
 
@@ -117,3 +120,44 @@ def test_sandbox_requires_explicit_environment_enablement(monkeypatch):
     assert disabled.value.status_code == 404
     monkeypatch.setenv("AFFILIATE_SANDBOX_ENABLED", "true")
     _require_sandbox_enabled()
+
+def test_sandbox_summary_reports_enabled_flag(monkeypatch):
+    monkeypatch.setenv("AFFILIATE_SANDBOX_ENABLED", "true")
+
+    class Result:
+        def one(self):
+            return (0, Decimal("0"), Decimal("0"))
+
+    class Session:
+        async def execute(self, statement):
+            return Result()
+
+    result = asyncio.run(sandbox_user_summary({"sub": "sandbox-user"}, Session()))
+    assert result["enabled"] is True
+    assert result["sandbox"] is True
+    assert result["withdrawable"] is False
+    assert result["wallet_credited"] is False
+
+
+def test_sandbox_simulation_calculates_user_and_platform_without_wallet_credit(monkeypatch):
+    monkeypatch.setenv("AFFILIATE_SANDBOX_ENABLED", "true")
+
+    class Request:
+        async def json(self):
+            return {"network_payout_usd": "1.00", "user_share_percent": 70}
+
+    class Session:
+        def add(self, record):
+            self.record = record
+
+        async def commit(self):
+            self.committed = True
+
+    session = Session()
+    result = asyncio.run(simulate_sandbox_earning(Request(), {"sub": "sandbox-user"}, session))
+    assert result["simulated_user_amount"] == "0.7000"
+    assert result["simulated_platform_amount"] == "0.3000"
+    assert result["withdrawable"] is False
+    assert result["wallet_credited"] is False
+    assert session.record.user_id == "sandbox-user"
+    assert session.committed is True
