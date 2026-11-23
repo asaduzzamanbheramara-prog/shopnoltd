@@ -80,6 +80,8 @@ def test_admin_roles_and_platform_admin_scope_are_distinct():
     assert is_service_admin(platform_admin)
     assert _is_platform_admin(platform_admin)
     assert not is_service_admin(customer)
+    assert not is_service_admin({"sub": "ordinary", "roles": ["admin"]})
+    assert not is_service_admin({"sub": "ordinary", "is_admin": True})
 
 
 def test_identity_is_derived_from_verified_claims():

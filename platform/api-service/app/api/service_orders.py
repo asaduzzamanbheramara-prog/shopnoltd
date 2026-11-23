@@ -29,7 +29,7 @@ SERVICE_LABELS = {
     "business_it_care": "Business IT care subscription",
     "other": "Other software or OS service",
 }
-ADMIN_ROLES = {"platform_admin", "admin", "tenant_admin", "shopnoltd-admin", "administrator"}
+ADMIN_ROLES = {"platform_admin", "tenant_admin", "shopnoltd-admin"}
 EMAIL_PATTERN = re.compile(r"^[^@\s]{1,128}@[^@\s]{1,120}\.[^@\s]{2,63}$")
 
 
@@ -118,7 +118,7 @@ def _roles(user: dict) -> set[str]:
 
 
 def is_service_admin(user: dict) -> bool:
-    return bool(_roles(user).intersection(ADMIN_ROLES) or user.get("is_admin") is True)
+    return bool(_roles(user).intersection(ADMIN_ROLES))
 
 
 def _is_platform_admin(user: dict) -> bool:
