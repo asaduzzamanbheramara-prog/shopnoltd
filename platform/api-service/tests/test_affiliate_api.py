@@ -5,7 +5,7 @@ from fastapi import HTTPException
 import pytest
 
 from app.api.affiliate import _affmine_request_params, _affmine_campaign_rows, _affmine_country_codes, _affmine_platform_codes, _client_platform, _platform_ok, _country, _geo_ok, _is_platform_admin, _percent, _require_sandbox_enabled, _safe_tracking_url, sandbox_user_summary, simulate_sandbox_earning
-from app.models.affiliate import AffiliateConversion, AffiliateOffer, AffiliateSandboxConversion
+from app.models.affiliate import AdGemPostbackEvent, AffiliateConversion, AffiliateOffer, AffiliateSandboxConversion
 from app.api.affiliate import router, public_offer_dict
 
 
@@ -147,6 +147,12 @@ def test_sandbox_endpoints_are_separate_and_wallet_safe():
     assert "/affiliate/sandbox/admin/summary" in paths
     # The live network callback remains intentionally disabled.
     assert "/affiliate/postback" in paths
+    assert "/affiliate/adgem/postback/v3" in paths
+    assert AdGemPostbackEvent.__tablename__ == "shopnoltd_adgem_postback_events"
+    assert AdGemPostbackEvent.__table__.c.request_id.primary_key
+    assert AdGemPostbackEvent.__table__.c.conversion_id.unique
+    assert AdGemPostbackEvent.__table__.c.signature_verified.default.arg is False
+    assert AdGemPostbackEvent.__table__.c.status.default.arg == "pending_review"
 
 def test_sandbox_requires_explicit_environment_enablement(monkeypatch):
     monkeypatch.delenv("AFFILIATE_SANDBOX_ENABLED", raising=False)
