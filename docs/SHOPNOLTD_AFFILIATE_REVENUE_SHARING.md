@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The affiliate marketplace lets authenticated Shopnoltd users browse approved offers, generate unique tracking links, and review conversion status. Shopnoltd retains a configurable platform share of each network-confirmed payout.
+The affiliate marketplace is operated by Shopnoltd as the sole program intermediary. Authenticated Shopnoltd users browse Shopnoltd-managed tasks, generate unique tracking links, and review conversion status in their Shopnoltd account. Affmine's publisher relationship is with Shopnoltd; users do not need an Affmine account and must not be routed into direct Affmine support, account management, or communications. Shopnoltd manages user-facing task instructions, support, attribution presentation, commission calculations, and payout communication. Required advertiser/network tracking and legally or contractually required disclosures must remain accurate; this policy does not conceal traffic sources or bypass offer terms.
 
 ## Current implementation
 
@@ -15,6 +15,14 @@ The affiliate marketplace lets authenticated Shopnoltd users browse approved off
 - User share is bounded to 0–90%; the platform retains at least 10%.
 - A USD/BDT reference rate is read from the existing exchange service. If no current rate is available, the UI does not invent a BDT amount.
 - User and admin summary endpoints report conversion states separately.
+
+## Intermediary and user-communication policy
+
+1. Shopnoltd is the user's sole operator and support channel for this program. User-facing pages, notifications, task instructions, earnings statements, and payout communications are provided by Shopnoltd.
+2. Users are not asked to register with, contact, or open support cases with Affmine. Affmine publisher administration and reconciliation are handled by Shopnoltd.
+3. Personal tracking IDs are used only for attribution and reconciliation. Share only the minimum data required by the network contract; do not send user passwords, Shopnoltd credentials, or unnecessary personal/contact data to Affmine.
+4. Some offer destinations may be advertiser-operated. Do not promise that users will never see or interact with an advertiser's own landing page. Display material task conditions and required disclosures before a user starts.
+5. Never misrepresent traffic, identity, incentive status, or the relationship to an advertiser/network. Activate an offer only after written confirmation that the exact incentivized task model and intended traffic source are allowed.
 
 ## Revenue and settlement rules
 
