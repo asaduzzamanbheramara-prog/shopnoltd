@@ -147,32 +147,12 @@ export function AdsterraNativeBanner() {
 }
 
 export function AdsterraGlobalFormats() {
-  const consentAllowed = useAdvertisingConsent()
-  const policyAllowed = useExternalAdPolicy('adsterra')
-  const allowed = consentAllowed && policyAllowed
-  useEffect(() => {
-    if (!allowed) return undefined
-    // Google AdSense is loaded only after advertising consent. Do not enable Adsterra Popunder here:
-    // Google's publisher policies prohibit AdSense on sites that contain or trigger pop-unders.
-    // Keep the non-popunder Social Bar format; only add formats after policy compatibility is verified.
-    const scripts = [
-      { key: 'socialbar', src: 'https://bicea.org/14/6709e7550b64cb74dbb906dc2ebb08e0' },
-    ]
-    const added = []
-    for (const item of scripts) {
-      if (document.querySelector(`script[data-shopnoltd-adsterra-global="${item.key}"]`)) continue
-      const script = document.createElement('script')
-      script.src = item.src
-      script.async = true
-      script.setAttribute('data-cfasync', 'false')
-      script.dataset.shopnoltdAdsterraGlobal = item.key
-      document.body.appendChild(script)
-      added.push(script)
-    }
-    return () => {
-      added.forEach(script => script.remove())
-    }
-  }, [allowed])
+  // The publisher dashboard currently reports the website Social Bar unit as
+  // inactive. Do not load an older, unverified script URL. The Adsterra
+  // integration remains enabled for verified banner/native/click placements.
+  // Restore Social Bar here only after the owner activates unit 31843291 and
+  // supplies its current GET CODE snippet. Popunder remains excluded while
+  // AdSense is present unless combined-policy compatibility is confirmed.
   return null
 }
 
