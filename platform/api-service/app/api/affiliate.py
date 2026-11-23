@@ -1,10 +1,12 @@
 """Authenticated affiliate marketplace and click attribution.
 
-Network conversion callbacks stay disabled until Affmine confirms the publisher
-postback URL, secure-code mechanism, macros, and status lifecycle. No wallet
-credit is performed by this API.
+Affmine callbacks remain disabled until its publisher authentication and lifecycle
+are verified. AdGem v3 events are signature-checked and held for reconciliation;
+this API never credits wallets directly.
 """
 import os
+import hmac
+import json
 import re
 import uuid
 import xml.etree.ElementTree as ET
@@ -15,12 +17,13 @@ import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import RedirectResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, func, select, or_
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import SessionLocal
 from app.core.security import verify_token
-from app.models.affiliate import AffiliateClick, AffiliateConversion, AffiliateOffer, AffiliateSandboxConversion
+from app.models.affiliate import AdGemPostbackEvent, AffiliateClick, AffiliateConversion, AffiliateOffer, AffiliateSandboxConversion
 
 router = APIRouter(prefix="/affiliate", tags=["affiliate"])
 bearer = HTTPBearer()
@@ -631,6 +634,101 @@ async def sandbox_admin_summary(claims=Depends(current_user), session: AsyncSess
     }
 
 
+@router.post("/adgem/postback/v3", include_in_schema=False)
+async def adgem_postback_v3(request: Request, session: AsyncSession = Depends(db)):
+    """Verify AdGem v3 signatures and persist events for reconciliation; never credit wallets."""
+    secret = os.getenv("ADGEM_POSTBACK_KEY", "").strip()
+    if not secret:
+        raise HTTPException(503, "AdGem postback verification is not configured")
+    raw_body = await request.body()
+    if not raw_body or len(raw_body) > 65536:
+        raise HTTPException(413, "Invalid AdGem postback body size")
+    received = (request.headers.get("signature") or "").strip()
+    if received.lower().startswith("sha256="):
+        received = received[7:]
+    expected = hmac.new(secret.encode("utf-8"), raw_body, digestmod="sha256").hexdigest()
+    if not received or not hmac.compare_digest(expected, received.lower()):
+        raise HTTPException(401, "Invalid AdGem postback signature")
+    try:
+        body = json.loads(raw_body)
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise HTTPException(400, "Invalid AdGem JSON body") from exc
+    if not isinstance(body, dict) or not isinstance(body.get("data"), dict):
+        raise HTTPException(422, "AdGem postback data is missing")
+    data = body["data"]
+    request_id = str(body.get("request_id") or "").strip()
+    player_id = str(data.get("player_id") or "").strip()
+    click_id = str(data.get("c1") or "").strip()
+    conversion_id = str(data.get("conversion_id") or "").strip() or None
+    if not request_id or len(request_id) > 64 or not player_id or len(player_id) > 128 or not click_id or len(click_id) > 36:
+        raise HTTPException(422, "AdGem request_id, player_id and c1 click attribution are required")
+    configured_app_id = os.getenv("ADGEM_APP_ID", "").strip()
+    if not configured_app_id:
+        raise HTTPException(503, "AdGem property app_id is not configured")
+    app_id = str(data.get("app_id") or "").strip()
+    if configured_app_id and app_id != configured_app_id:
+        raise HTTPException(403, "AdGem app_id does not match the configured property")
+    try:
+        amount = Decimal(str(data.get("amount", "0")))
+        payout = Decimal(str(data.get("payout", "0")))
+    except (InvalidOperation, TypeError, ValueError) as exc:
+        raise HTTPException(422, "Invalid AdGem amount or payout") from exc
+    if not amount.is_finite() or not payout.is_finite() or amount < 0 or payout < 0:
+        raise HTTPException(422, "AdGem amount and payout must be finite and non-negative")
+    conversion_type = str(data.get("conversion_type") or ("install" if amount == 0 else "reward")).lower()
+    if conversion_type not in {"reward", "install"}:
+        raise HTTPException(422, "Unsupported AdGem conversion_type")
+    existing = await session.scalar(
+        select(AdGemPostbackEvent).where(
+            or_(AdGemPostbackEvent.request_id == request_id,
+                AdGemPostbackEvent.conversion_id == conversion_id) if conversion_id
+            else AdGemPostbackEvent.request_id == request_id
+        )
+    )
+    if existing:
+        return {"ok": True, "duplicate": True, "status": existing.status}
+    click = await session.scalar(
+        select(AffiliateClick).where(
+            AffiliateClick.id == click_id,
+            AffiliateClick.user_id == player_id,
+        )
+    )
+    if not click:
+        raise HTTPException(422, "AdGem player_id and c1 do not match a Shopnoltd offer click")
+    country = str(data.get("country") or "").upper()
+    if not re.fullmatch(r"[A-Z]{2}", country):
+        country = click.country or ""
+    event = AdGemPostbackEvent(
+        request_id=request_id,
+        conversion_id=conversion_id,
+        click_id=click.id,
+        user_id=click.user_id,
+        app_id=app_id[:64],
+        offer_id=str(data.get("offer_id") or "")[:128],
+        goal_id=str(data.get("goal_id") or "")[:128],
+        goal_name=str(data.get("goal_name") or "")[:500],
+        conversion_type=conversion_type,
+        amount=amount,
+        network_payout=payout,
+        currency="USD",
+        country=country,
+        status="pending_review",
+        signature_verified=True,
+    )
+    session.add(event)
+    try:
+        await session.commit()
+    except IntegrityError:
+        await session.rollback()
+        return {"ok": True, "duplicate": True, "status": "pending_review"}
+    return {
+        "ok": True,
+        "accepted": True,
+        "status": "pending_review",
+        "wallet_credited": False,
+    }
+
+
 @router.post("/postback", include_in_schema=False)
 async def disabled_postback():
-    raise HTTPException(503, "Callbacks disabled until Affmine confirms its publisher postback authentication, macros, and conversion status lifecycle")
+    raise HTTPException(503, "Affmine callbacks remain disabled until its publisher postback authentication and lifecycle are verified")

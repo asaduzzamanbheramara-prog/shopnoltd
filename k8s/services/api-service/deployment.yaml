@@ -68,6 +68,18 @@ spec:
                   name: shopnoltd-n8n-blog-draft-secret
                   key: token
                   optional: true
+            - name: ADGEM_POSTBACK_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: shopnoltd-adgem-postback-secret
+                  key: postback-key
+                  optional: true
+            - name: ADGEM_APP_ID
+              valueFrom:
+                secretKeyRef:
+                  name: shopnoltd-adgem-postback-secret
+                  key: app-id
+                  optional: true
             - name: POD_NAME
               valueFrom: { fieldRef: { fieldPath: metadata.name } }
             - name: POD_NAMESPACE
