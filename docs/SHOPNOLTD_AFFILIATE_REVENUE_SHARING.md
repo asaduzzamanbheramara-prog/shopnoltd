@@ -82,5 +82,3 @@ The feature branch and PR must pass API tests, web build, security scans, and re
 - Affmine's allowed_platform and incentive values are stored as network metadata. Platform eligibility is applied to offer listing and click start. The network incentive flag is not proof of campaign-level approval for Shopnoltd's exact reward/task model.
 - The sample Affiliate ID/API key in the supplied documentation must not be used as account credentials. Use the actual account-issued credentials only in the server-side secret store.
 - Sync endpoint: `POST /api/v1/affiliate/admin/sync-affmine`.
-
-[executed on device: Shopnoltd (52cb1894-787c-49c2-9460-901a8f74a1e7)]
