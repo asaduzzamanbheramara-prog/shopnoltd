@@ -61,9 +61,11 @@ def _safe_tracking_url(value: str, click_id: str, click_param: str = "s1") -> st
 
 
 def _is_platform_admin(claims: dict) -> bool:
+    # Match the API's platform-wide authorization contract: only the
+    # platform_admin realm role grants global affiliate administration.
     roles = set((claims.get("realm_access") or {}).get("roles") or [])
     roles.update(claims.get("realm_roles") or [])
-    return bool(roles.intersection({"platform_admin", "admin", "shopnoltd-admin"}))
+    return "platform_admin" in roles
 
 
 def _require_admin(claims: dict):
