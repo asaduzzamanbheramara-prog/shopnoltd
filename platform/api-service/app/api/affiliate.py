@@ -73,8 +73,11 @@ def _require_admin(claims: dict):
 
 def _percent(value, field="user_share_percent") -> int:
     try:
-        number = int(value)
-    except (TypeError, ValueError):
+        parsed = Decimal(str(value))
+        if not parsed.is_finite() or parsed != parsed.to_integral_value():
+            raise ValueError("not an integer")
+        number = int(parsed)
+    except (TypeError, ValueError, InvalidOperation):
         raise HTTPException(422, f"{field} must be an integer from 0 to 90")
     if number < 0 or number > 90:
         raise HTTPException(422, f"{field} must be between 0 and 90 so the platform retains at least 10%")
