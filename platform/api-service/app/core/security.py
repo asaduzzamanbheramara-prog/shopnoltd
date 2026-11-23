@@ -10,6 +10,15 @@ _jwks_cache = None
 logger = logging.getLogger(__name__)
 
 
+def realm_roles(payload: dict) -> set[str]:
+    """Return verified realm-level roles, excluding every client role."""
+    roles = set(payload.get("realm_roles", []) or [])
+    roles.update((payload.get("realm_access") or {}).get("roles", []) or [])
+    if "realm_roles" not in payload:
+        roles.update(payload.get("roles", []) or [])
+    return roles
+
+
 async def _jwks(force_refresh: bool = False):
     global _jwks_cache
     if force_refresh:
@@ -43,10 +52,12 @@ async def verify_token(token: str) -> dict:
             issuer=settings.keycloak_issuer,
             options={"verify_aud": True, "verify_iss": True},
         )
-        roles = set(claims.get("roles", []) or [])
-        roles.update((claims.get("realm_access") or {}).get("roles", []) or [])
+        realm = set(claims.get("roles", []) or [])
+        realm.update((claims.get("realm_access") or {}).get("roles", []) or [])
+        roles = set(realm)
         for client in (claims.get("resource_access") or {}).values():
             roles.update((client or {}).get("roles", []) or [])
+        claims["realm_roles"] = sorted(realm)
         claims["roles"] = sorted(roles)
         return claims
     except Exception as e:
@@ -70,6 +81,6 @@ async def verify_token(token: str) -> dict:
 
 async def verify_token_admin(token: str) -> dict:
     u = await verify_token(token)
-    if "admin" not in u.get("roles", []):
+    if "admin" not in realm_roles(u):
         raise PermissionError("admin only")
     return u
