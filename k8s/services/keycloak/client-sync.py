@@ -298,11 +298,16 @@ def sync_realm_smtp(token):
 
 
 LOGIN_FIRST_BROKER_FLOW = "shopnoltd social login existing users only"
-LOGIN_ONLY_AUTHENTICATORS = {"idp-create-user-if-unique", "idp-confirm-link"}
+LOGIN_ONLY_DISABLED_AUTHENTICATORS = {
+    "idp-create-user-if-unique",
+    "idp-confirm-link",
+    "idp-username-password-form",
+}
+LOGIN_ONLY_REQUIRED_AUTHENTICATORS = {"idp-email-verification"}
 
 
 def ensure_login_first_broker_flow(token):
-    """Copy the standard broker flow and disable account creation/linking at every level."""
+    """Require email ownership verification for existing users without a Shopnoltd password prompt."""
     code, flows = request("GET", f"/admin/realms/{REALM}/authentication/flows", token=token)
     if code != 200 or not isinstance(flows, list):
         raise RuntimeError(f"Unable to inspect Keycloak authentication flows (HTTP {code})")
@@ -334,21 +339,28 @@ def ensure_login_first_broker_flow(token):
         raise RuntimeError(f"Unable to inspect social Login first-broker flow (HTTP {code})")
 
     # Keycloak's executions endpoint returns nested subflow executions recursively.
+    # Existing-account ownership is proven by Keycloak's email action link, not by
+    # re-entering the Shopnoltd password. Never allow account creation in this flow.
+    required_policies = {
+        **{provider: "DISABLED" for provider in LOGIN_ONLY_DISABLED_AUTHENTICATORS},
+        **{provider: "REQUIRED" for provider in LOGIN_ONLY_REQUIRED_AUTHENTICATORS},
+    }
     found_authenticators = set()
     updates = []
     for execution in executions:
         provider_id = execution.get("providerId")
-        if provider_id in LOGIN_ONLY_AUTHENTICATORS:
+        if provider_id in required_policies:
             found_authenticators.add(provider_id)
-            if execution.get("requirement") != "DISABLED":
+            expected_requirement = required_policies[provider_id]
+            if execution.get("requirement") != expected_requirement:
                 updated = dict(execution)
-                updated["requirement"] = "DISABLED"
+                updated["requirement"] = expected_requirement
                 updates.append(updated)
 
-    missing = LOGIN_ONLY_AUTHENTICATORS - found_authenticators
+    missing = set(required_policies) - found_authenticators
     if missing:
         raise RuntimeError(
-            "Keycloak Login-only flow is missing expected safeguards: "
+            "Keycloak Login-only flow is missing required email-verification policy executions: "
             + ", ".join(sorted(missing))
         )
 
@@ -367,7 +379,7 @@ def ensure_login_first_broker_flow(token):
                 f"'{execution.get('id')}' (HTTP {code})"
             )
 
-    print("[OK] social Login flow disables automatic user creation and unverified link confirmation across nested subflows")
+    print("[OK] social Login flow requires email verification and disables password re-authentication and automatic account creation")
 
 def sync_social_provider(token, alias, provider, first_broker_flow_alias="first broker login"):
     client_id = os.environ.get(provider["clientIdEnv"], "").strip()
