@@ -13,6 +13,7 @@ from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import RedirectResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -265,8 +266,25 @@ async def start_offer(offer_id: int, request: Request, claims=Depends(current_us
         country=country,
     ))
     await session.commit()
-    # The returned URL is the user's unique network link. It can be copied/shared.
-    return {"url": _safe_tracking_url(offer.tracking_url, click_id, offer.click_param), "click_id": click_id}
+    # Return only a Shopnoltd-owned URL; the provider tracking destination stays
+    # server-side and is resolved only when the opaque click link is opened.
+    return {"url": str(request.url_for("redirect_offer", click_id=click_id)), "click_id": click_id}
+
+
+@router.get("/go/{click_id}", name="redirect_offer")
+async def redirect_offer(click_id: str, request: Request, session: AsyncSession = Depends(db)):
+    click = await session.get(AffiliateClick, click_id)
+    if not click:
+        raise HTTPException(404, "Task link not found")
+    offer = await session.get(AffiliateOffer, click.offer_id)
+    if not offer or offer.status != "active" or not offer.incentive_allowed:
+        raise HTTPException(404, "Task is no longer available")
+    country = _country(request)
+    platform = _client_platform(request)
+    if not _geo_ok(offer.countries, country) or not _platform_ok(offer.allowed_platform, platform):
+        raise HTTPException(404, "Task is not available for this location or device")
+    destination = _safe_tracking_url(offer.tracking_url, click.id, offer.click_param)
+    return RedirectResponse(destination, status_code=302)
 
 
 @router.get("/me/summary")
