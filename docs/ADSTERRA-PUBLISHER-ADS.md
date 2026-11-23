@@ -12,7 +12,7 @@ website `shopnoltd.dpdns.org`:
 - Native banner
 - Popunder
 - Social Bar
-- Smartlink, displayed as an explicitly labelled sponsored link
+- Smartlink, intentionally disabled until the publisher dashboard provides a confirmed active URL
 
 The standard display snippets share the global `window.atOptions` variable.
 `src/components/AdsterraAds.jsx` serializes their script loading so a zone's
@@ -22,8 +22,9 @@ The existing `AdsterraBanner.jsx` component retains the original homepage
 
 Popunder and Social Bar scripts are loaded from the homepage. They can affect
 visitor experience; monitor frequency, mobile behavior, browser console, and
-Adsterra's policy requirements. The Smartlink is a deliberate user action and
-is not an automatic redirect.
+Adsterra's policy requirements. The Smartlink placement is currently disabled because the publisher dashboard
+reports Smartlink_1 (31843363) as inactive. Re-enable only after confirming the
+active destination URL in the dashboard; never infer it from an inactive ID.
 
 ## Publisher-provided hosts and keys
 
