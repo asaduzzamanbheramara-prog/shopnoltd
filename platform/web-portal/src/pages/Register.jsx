@@ -3,9 +3,9 @@ import { randomString, codeChallengeFor } from '../pkce'
 import { clearAuthSession } from '../lib/authSession'
 
 const PROVIDERS = [
-  { id: 'google-signup', feature: 'google', label: 'Sign up with Google', icon: 'G' },
-  { id: 'facebook-signup', feature: 'facebook', label: 'Sign up with Facebook', icon: 'f' },
-  { id: 'github-signup', feature: 'github', label: 'Sign up with GitHub', icon: 'GH' },
+  { id: 'google', feature: 'google', label: 'Sign up with Google', icon: 'G' },
+  { id: 'facebook', feature: 'facebook', label: 'Sign up with Facebook', icon: 'f' },
+  { id: 'github', feature: 'github', label: 'Sign up with GitHub', icon: 'GH' },
 ].filter((provider) => SOCIAL_LOGIN_PROVIDERS[provider.feature])
 
 async function startSocialSignup(provider) {
