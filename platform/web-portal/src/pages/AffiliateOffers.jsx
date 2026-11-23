@@ -95,7 +95,7 @@ export default function AffiliateOffers() {
     try {
       await authenticatedRequest('/api/v1/affiliate/admin/offers', { method: 'POST', body: JSON.stringify({ ...newOffer, network_payout: Number(newOffer.network_payout), user_share_percent: Number(newOffer.user_share_percent), currency: 'USD' }) })
       setNewOffer({ network_offer_id: '', title: '', tracking_url: '', click_param: 's1', network_payout: '', countries: '', user_share_percent: 70, incentive_allowed: false })
-      setMessage('Offer added as Draft. Activate it only after checking its live terms and incentive permissions in Affmine.')
+      setMessage('Offer added as Draft. Activate it only after written confirmation that Shopnoltd's incentivized task model and traffic source are permitted.')
       await load()
     } catch (e) { setError(e.message || 'Offer could not be added') }
   }
@@ -111,7 +111,7 @@ export default function AffiliateOffers() {
     <header style={{ marginBottom: 24 }}>
       <b style={{ color: '#0284c7' }}>SHOPNOLTD PARTNER PROGRAM</b>
       <h1 style={{ fontSize: 'clamp(30px,5vw,44px)', marginBottom: 8 }}>Affiliate Offers &amp; Earnings</h1>
-      <p style={{ maxWidth: 820, color: '#64748b', lineHeight: 1.7 }}>Choose an eligible offer, generate your personal tracking link and share it honestly. Rewards depend on advertiser approval and actual network payment; clicks alone do not earn money.</p>
+      <p style={{ maxWidth: 820, color: '#64748b', lineHeight: 1.7 }}>Choose a Shopnoltd-managed task, generate your personal tracking link and follow the displayed conditions honestly. Shopnoltd manages your task support, earnings records and payout communication. You do not need a separate affiliate-network account or direct network support contact. The task destination may be operated by an advertiser; required terms and disclosures remain applicable. Rewards depend on verified approval and actual network payment; clicks alone do not earn money.</p>
     </header>
 
     {error && <p role="alert" style={{ ...panel, borderColor: '#fca5a5', color: '#991b1b' }}>{error}</p>}
@@ -158,11 +158,11 @@ export default function AffiliateOffers() {
         <p style={{ color: '#64748b', fontSize: 13 }}>No real conversion totals appear until verified network callbacks are enabled.</p>
       </div>
       <form onSubmit={addOffer} style={{ ...panel, display: 'grid', gap: 10, marginBottom: 16 }}>
-        <h3 style={{ margin: 0 }}>Add an Affmine offer</h3>
-        <input required placeholder="Affmine offer ID" value={newOffer.network_offer_id} onChange={e => setNewOffer(v => ({ ...v, network_offer_id: e.target.value }))} />
+        <h3 style={{ margin: 0 }}>Add a network offer (admin only)</h3>
+        <input required placeholder="Network offer ID" value={newOffer.network_offer_id} onChange={e => setNewOffer(v => ({ ...v, network_offer_id: e.target.value }))} />
         <input required placeholder="Offer title" value={newOffer.title} onChange={e => setNewOffer(v => ({ ...v, title: e.target.value }))} />
         <input required type="url" placeholder="HTTPS tracking URL" value={newOffer.tracking_url} onChange={e => setNewOffer(v => ({ ...v, tracking_url: e.target.value }))} />
-        <input required placeholder="Affmine click ID parameter (confirm in offer macros)" value={newOffer.click_param} onChange={e => setNewOffer(v => ({ ...v, click_param: e.target.value }))} />
+        <input required placeholder="Network click-ID parameter (confirm in publisher macros)" value={newOffer.click_param} onChange={e => setNewOffer(v => ({ ...v, click_param: e.target.value }))} />
         <input required type="number" min="0.0001" step="0.0001" placeholder="Network payout (USD)" value={newOffer.network_payout} onChange={e => setNewOffer(v => ({ ...v, network_payout: e.target.value }))} />
         <input placeholder="Countries, e.g. US,CA or WORLDWIDE" value={newOffer.countries} onChange={e => setNewOffer(v => ({ ...v, countries: e.target.value }))} />
         <label>User commission percentage (platform keeps at least 10%) <input type="number" min="0" max="90" value={newOffer.user_share_percent} onChange={e => setNewOffer(v => ({ ...v, user_share_percent: e.target.value }))} /></label>
