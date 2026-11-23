@@ -20,7 +20,7 @@ export default function AffiliateOffers() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [shareEdits, setShareEdits] = useState({})
-  const [newOffer, setNewOffer] = useState({ network_offer_id: '', title: '', tracking_url: '', network_payout: '', countries: '', user_share_percent: 70, incentive_allowed: false })
+  const [newOffer, setNewOffer] = useState({ network_offer_id: '', title: '', tracking_url: '', click_param: 's1', network_payout: '', countries: '', user_share_percent: 70, incentive_allowed: false })
   const loggedIn = Boolean(localStorage.getItem('shopno_token'))
   const admin = loggedIn && isPlatformAdmin()
   const bdtEstimate = amount => rate ? '≈ ৳' + (Number(amount || 0) * Number(rate.rate)).toLocaleString('en-BD', { maximumFractionDigits: 2 }) : 'BDT rate unavailable'
@@ -94,7 +94,7 @@ export default function AffiliateOffers() {
     event.preventDefault(); setError(''); setMessage('')
     try {
       await authenticatedRequest('/api/v1/affiliate/admin/offers', { method: 'POST', body: JSON.stringify({ ...newOffer, network_payout: Number(newOffer.network_payout), user_share_percent: Number(newOffer.user_share_percent), currency: 'USD' }) })
-      setNewOffer({ network_offer_id: '', title: '', tracking_url: '', network_payout: '', countries: '', user_share_percent: 70, incentive_allowed: false })
+      setNewOffer({ network_offer_id: '', title: '', tracking_url: '', click_param: 's1', network_payout: '', countries: '', user_share_percent: 70, incentive_allowed: false })
       setMessage('Offer added as Draft. Activate it only after checking its live terms and incentive permissions in Affmine.')
       await load()
     } catch (e) { setError(e.message || 'Offer could not be added') }
@@ -161,7 +161,7 @@ export default function AffiliateOffers() {
         <h3 style={{ margin: 0 }}>Add an Affmine offer</h3>
         <input required placeholder="Affmine offer ID" value={newOffer.network_offer_id} onChange={e => setNewOffer(v => ({ ...v, network_offer_id: e.target.value }))} />
         <input required placeholder="Offer title" value={newOffer.title} onChange={e => setNewOffer(v => ({ ...v, title: e.target.value }))} />
-        <input required type="url" placeholder="HTTPS tracking URL" value={newOffer.tracking_url} onChange={e => setNewOffer(v => ({ ...v, tracking_url: e.target.value }))} />
+        <input required type="url" placeholder="HTTPS tracking URL" value={newOffer.tracking_url} onChange={e => setNewOffer(v => ({ ...v, tracking_url: e.target.value }))} />\n        <input required placeholder="Affmine click ID parameter (confirm in offer macros)" value={newOffer.click_param} onChange={e => setNewOffer(v => ({ ...v, click_param: e.target.value }))} />
         <input required type="number" min="0.0001" step="0.0001" placeholder="Network payout (USD)" value={newOffer.network_payout} onChange={e => setNewOffer(v => ({ ...v, network_payout: e.target.value }))} />
         <input placeholder="Countries, e.g. US,CA or WORLDWIDE" value={newOffer.countries} onChange={e => setNewOffer(v => ({ ...v, countries: e.target.value }))} />
         <label>User commission percentage (platform keeps at least 10%) <input type="number" min="0" max="90" value={newOffer.user_share_percent} onChange={e => setNewOffer(v => ({ ...v, user_share_percent: e.target.value }))} /></label>
