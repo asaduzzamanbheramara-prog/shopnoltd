@@ -80,18 +80,47 @@ def rate_dict(r):
     return {"platform": r.platform, "task_type": r.task_type, "rate": str(r.rate), "currency": r.currency, "enabled": bool(r.enabled)}
 
 
-def config_dict(c):
-    return {
+def config_dict(c, include_admin_rates: bool = False):
+    result = {
         "id": c.id,
         "work_id": c.work_id,
         "task_url": c.task_url,
         "media_url": c.media_url,
         "media_type": c.media_type,
         "required_watch_seconds": c.required_watch_seconds,
-        "watch_rate_per_minute": str(c.watch_rate_per_minute),
         "rate_currency": c.rate_currency,
-        "rate_rules": parse_json(c.rate_rules, []),
-        "social_rates": parse_json(c.social_rates, {}),
+    }
+    if include_admin_rates:
+        result.update({
+            "watch_rate_per_minute": str(c.watch_rate_per_minute),
+            "rate_rules": parse_json(c.rate_rules, []),
+            "social_rates": parse_json(c.social_rates, {}),
+        })
+    return result
+
+
+def worker_rate_payload(work, config=None, global_rate=None):
+    """Expose the worker's effective task rate without revealing its pricing source."""
+    if work.task_type == "watch":
+        rate = config.watch_rate_per_minute if config else 0
+        currency = config.rate_currency if config else work.currency
+        unit = "per_minute"
+    else:
+        configured = parse_json(config.social_rates, {}) if config else {}
+        if work.task_type in configured:
+            rate = configured[work.task_type]
+            currency = config.rate_currency
+        elif global_rate is not None:
+            rate = global_rate.rate
+            currency = global_rate.currency
+        else:
+            rate = work.reward_amount
+            currency = work.currency
+        unit = "per_task"
+    return {
+        "worker_rate": str(rate),
+        "worker_rate_unit": unit,
+        "rate_currency": str(currency).upper(),
     }
 
 
@@ -139,6 +168,10 @@ async def last_playback(s, session_id):
 
 @router.get("/rates")
 async def get_task_rates(s: AsyncSession = Depends(db), u=Depends(user)):
+    # Global platform rate tables are an admin control surface. Workers receive
+    # only the reward and available slot count on each eligible task.
+    if not is_admin(u):
+        return {"supported_currencies": [], "platforms": [], "rates": {}}
     rows = (await s.execute(select(GlobalTaskRate).order_by(GlobalTaskRate.platform, GlobalTaskRate.task_type, GlobalTaskRate.currency))).scalars().all()
     rates = {}
     for r in rows:
@@ -238,17 +271,27 @@ async def get_config(work_id: str, s: AsyncSession = Depends(db), u=Depends(user
     if not tenant_ok(w, u):
         raise HTTPException(404, "work not found")
     c = await s.scalar(select(WorkTaskConfig).where(WorkTaskConfig.work_id == work_id))
-    return config_dict(c) if c else {
+    # Return one effective worker rate, not the platform-wide pricing table.
+    configured_rates = parse_json(c.social_rates, {}) if c else {}
+    global_rate = None
+    if w.task_type != "watch" and w.task_type not in configured_rates:
+        global_rate = await s.scalar(select(GlobalTaskRate).where(
+            GlobalTaskRate.platform == w.platform,
+            GlobalTaskRate.task_type == w.task_type,
+            GlobalTaskRate.currency == w.currency,
+            GlobalTaskRate.enabled == 1,
+        ))
+    include_admin_rates = is_admin(u) or w.creator_id == u["sub"]
+    result = config_dict(c, include_admin_rates=include_admin_rates) if c else {
         "work_id": work_id,
         "task_url": None,
         "media_url": None,
         "media_type": "none",
         "required_watch_seconds": 0,
-        "watch_rate_per_minute": "0",
-        "rate_currency": w.currency,
-        "rate_rules": [],
-        "social_rates": {},
+        **({"watch_rate_per_minute": "0", "rate_currency": w.currency, "rate_rules": [], "social_rates": {}} if include_admin_rates else {}),
     }
+    result.update(worker_rate_payload(w, c, global_rate))
+    return result
 
 
 @router.put("/{work_id}/config")
@@ -291,7 +334,7 @@ async def put_config(work_id: str, body: dict, s: AsyncSession = Depends(db), u=
     c.social_rates = json.dumps({str(k).lower(): str(v) for k,v in social_rates.items()})
     await s.commit()
     await s.refresh(c)
-    return config_dict(c)
+    return config_dict(c, include_admin_rates=True)
 
 
 @router.post("/{work_id}/sessions", status_code=201)

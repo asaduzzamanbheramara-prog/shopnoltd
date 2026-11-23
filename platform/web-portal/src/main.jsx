@@ -56,7 +56,7 @@ import DataManagementProfile from './pages/DataManagementProfile'
 import InteriorBusinessProfile from './pages/InteriorBusinessProfile'
 import MyProfessionalProfile from './pages/MyProfessionalProfile'
 import ProfessionalProfilePage from './pages/ProfessionalProfilePage'
-import { isPlatformAdmin } from './lib/jwt'
+import { isPlatformAdmin, isTenantOwner } from './lib/jwt'
 import AdminAnalytics from './pages/AdminAnalytics'
 import Affiliate from './pages/Affiliate'
 import AffiliateOffers from './pages/AffiliateOffers'
@@ -99,6 +99,7 @@ function Nav() {
   const token = localStorage.getItem('shopno_token')
   const loggedIn = !!token
   const isAdmin = loggedIn && isPlatformAdmin()
+  const isTenantOwnerUser = loggedIn && isTenantOwner()
   const [isMobile, setIsMobile] = React.useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 760px)').matches)
   const [menuOpen, setMenuOpen] = React.useState(false)
 
@@ -209,13 +210,13 @@ function Nav() {
           <Link to="/admin/analytics" style={{ color: 'white', textDecoration: 'none', padding: '8px 4px' }}>Analytics</Link>
           <Link to="/admin/advertising" style={{ color: 'white', textDecoration: 'none', padding: '8px 4px', fontWeight: location.pathname === '/admin/advertising' ? 700 : 400 }}>Advertising Control</Link>
           <Link to="/admin/payment-accounts" style={{ color: 'white', textDecoration: 'none', padding: '8px 4px' }}>Payment Accounts</Link>
-          <Link to="/admin/service-orders" style={{ color: 'white', textDecoration: 'none', padding: '8px 4px' }}>Service Orders</Link>
           <Link to="/admin/database" style={{ color: 'white', textDecoration: 'none', padding: '8px 4px' }}>Database</Link>
           <Link to="/admin/task-rates" style={{ color: 'white', textDecoration: 'none', padding: '8px 4px' }}>Task Rates</Link>
           <Link to="/admin/referrals" style={{ color: 'white', textDecoration: 'none', padding: '8px 4px' }}>Referral Rewards</Link>
           <Link to="/admin/infrastructure" style={{ color: 'white', textDecoration: 'none', padding: '8px 4px' }}>Infrastructure</Link>
           <Link to="/admin/profile-videos" style={{ color: 'white', textDecoration: 'none', padding: '8px 4px' }}>Profile Videos</Link>
         </>}
+        {(isAdmin || isTenantOwnerUser) && <Link to="/admin/service-orders" style={{ color: 'white', textDecoration: 'none', padding: '8px 4px' }}>Service Orders</Link>}
         <button onClick={handleLogout} style={{ alignSelf: isMobile ? 'flex-start' : 'auto', color: 'white', background: 'transparent', border: '1px solid rgba(255,255,255,0.5)', borderRadius: 6, padding: '8px 12px', cursor: 'pointer' }}>Logout</button>
       </>}
     </div>
@@ -378,7 +379,7 @@ function App() {
     <Route path="/login" element={<Login />} /><Route path="/register" element={<Register />} /><Route path="/callback" element={<Callback />} /><Route path="/connections/oauth/callback" element={<OAuthProviderCallback />} /><Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} /><Route path="/connections" element={<ProtectedRoute><OmnichannelConnections /></ProtectedRoute>} /><Route path="/app" element={<ProtectedRoute><AppWorkspace /></ProtectedRoute>} /><Route path="/ai" element={<ProtectedRoute><AIWorkspace /></ProtectedRoute>} /><Route path="/ai/connections" element={<ProtectedRoute><AIConnections /></ProtectedRoute>} /><Route path="/my-blog" element={<ProtectedRoute><MyBlog /></ProtectedRoute>} /><Route path="/domain-management" element={<ProtectedRoute><DomainManagement /></ProtectedRoute>} />
     <Route path="/billing" element={<ProtectedRoute><FinancialCenter view="billing" /></ProtectedRoute>} /><Route path="/subscriptions" element={<ProtectedRoute><FinancialCenter view="subscriptions" /></ProtectedRoute>} /><Route path="/invoices" element={<ProtectedRoute><FinancialCenter view="invoices" /></ProtectedRoute>} /><Route path="/checkout" element={<ProtectedRoute><CheckoutCurrencySafe /></ProtectedRoute>} /><Route path="/checkout/complete" element={<ProtectedRoute><CheckoutComplete /></ProtectedRoute>} /><Route path="/payments" element={<ProtectedRoute><FinancialCenter view="payments" /></ProtectedRoute>} /><Route path="/transactions" element={<ProtectedRoute><FinancialCenter view="transactions" /></ProtectedRoute>} /><Route path="/wallet" element={<ProtectedRoute><FinancialCenter view="wallet" /></ProtectedRoute>} /><Route path="/wallet/ledger" element={<ProtectedRoute><FinancialCenter view="ledger" /></ProtectedRoute>} /><Route path="/exchange" element={<ProtectedRoute><FinancialCenter view="exchange" /></ProtectedRoute>} /><Route path="/reports" element={<ProtectedRoute><FinancialCenter view="reports" /></ProtectedRoute>} />
     <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} /><Route path="/admin/analytics" element={<AdminRoute><AdminAnalytics /></AdminRoute>} /><Route path="/admin/advertising" element={<AdminRoute><AdvertisingControl /></AdminRoute>} /><Route path="/admin/payment-accounts" element={<AdminRoute><PaymentAccountsAdmin /></AdminRoute>} />
-    <Route path="/admin/service-orders" element={<AdminRoute><ServiceOrdersAdmin /></AdminRoute>} /><Route path="/admin/database" element={<AdminRoute><DatabaseControlPlane /></AdminRoute>} /><Route path="/admin/task-rates" element={<AdminRoute><TaskRatesAdmin /></AdminRoute>} /><Route path="/admin/referrals" element={<AdminRoute><ReferralAdmin /></AdminRoute>} /><Route path="/admin/blog" element={<AdminRoute><BlogAdmin /></AdminRoute>} /><Route path="/admin/infrastructure" element={<AdminRoute><AdminInfrastructure /></AdminRoute>} /><Route path="/admin/profile-videos" element={<AdminRoute><AdminProfileVideos /></AdminRoute>} /><Route path="/admin/ai-models" element={<AdminRoute><AIModels /></AdminRoute>} />
+    <Route path="/admin/service-orders" element={<AdminRoute allowTenantOwner><ServiceOrdersAdmin /></AdminRoute>} /><Route path="/admin/database" element={<AdminRoute><DatabaseControlPlane /></AdminRoute>} /><Route path="/admin/task-rates" element={<AdminRoute><TaskRatesAdmin /></AdminRoute>} /><Route path="/admin/referrals" element={<AdminRoute><ReferralAdmin /></AdminRoute>} /><Route path="/admin/blog" element={<AdminRoute><BlogAdmin /></AdminRoute>} /><Route path="/admin/infrastructure" element={<AdminRoute><AdminInfrastructure /></AdminRoute>} /><Route path="/admin/profile-videos" element={<AdminRoute><AdminProfileVideos /></AdminRoute>} /><Route path="/admin/ai-models" element={<AdminRoute><AIModels /></AdminRoute>} />
   </Routes></BrowserRouter>
 }
 
