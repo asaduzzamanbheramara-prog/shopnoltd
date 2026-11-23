@@ -16,7 +16,7 @@ class Request:
 
 def test_affmine_request_uses_only_documented_v1_parameters():
     params = _affmine_request_params("51406", "test-key-not-real")
-    assert params == {"aff_id": "51406", "api_key": "test-key-not-real", "format": "json"}
+    assert params == {"aff_id": "51406", "api_key": "test-key-not-real"}
 
 
 def test_affmine_json_feed_normalizes_valid_offer_shapes():
