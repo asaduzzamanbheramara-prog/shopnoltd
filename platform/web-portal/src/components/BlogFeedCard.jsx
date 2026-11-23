@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { platformApi } from '../lib/platformApi'
 
@@ -24,22 +24,8 @@ export default function BlogFeedCard({ post }) {
   const [busy, setBusy] = useState(false)
   const [expanded, setExpanded] = useState(false)
   const [message, setMessage] = useState('')
-  const [videoInView, setVideoInView] = useState(false)
   const [videoRequested, setVideoRequested] = useState(false)
-  const videoFrameRef = useRef(null)
   const videoId = extractYouTubeId(post.content)
-
-  useEffect(() => {
-    const frame = videoFrameRef.current
-    if (!frame || !videoId || typeof IntersectionObserver === 'undefined') return undefined
-    const observer = new IntersectionObserver(entries => {
-      const visible = entries.some(entry => entry.isIntersecting && entry.intersectionRatio >= 0.6)
-      setVideoInView(visible)
-      if (!visible) setVideoRequested(false)
-    }, { threshold: [0, 0.6, 1] })
-    observer.observe(frame)
-    return () => observer.disconnect()
-  }, [videoId])
 
   useEffect(() => {
     let active = true
@@ -127,8 +113,8 @@ export default function BlogFeedCard({ post }) {
       <button type="button" disabled={busy} onClick={toggleSave} style={{ ...actionStyle, background: saved ? '#e0f2fe' : '#fff', borderColor: saved ? '#0284c7' : '#cbd5e1' }}>{saved ? '🔖 Saved' : '🔖 Save'}</button>
     </div>
     {post.cover_image && <Link to={'/blog/' + encodeURIComponent(post.slug)}><img src={post.cover_image} alt="" loading="lazy" style={{ display: 'block', width: '100%', maxHeight: 420, objectFit: 'cover', borderRadius: 10, marginBottom: 12 }} /></Link>}
-    {videoId && <div ref={videoFrameRef} style={{ position: 'relative', width: '100%', aspectRatio: '16 / 9', margin: '0 0 14px', overflow: 'hidden', borderRadius: 12, background: '#0f172a' }}>
-      {(videoInView || videoRequested) ? <iframe
+    {videoId && <div style={{ position: 'relative', width: '100%', aspectRatio: '16 / 9', margin: '0 0 14px', overflow: 'hidden', borderRadius: 12, background: '#0f172a' }}>
+      {videoRequested ? <iframe
         title={post.title ? post.title + ' video' : 'Blog video'}
         src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&mute=1&controls=1&playsinline=1&rel=0`}
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
