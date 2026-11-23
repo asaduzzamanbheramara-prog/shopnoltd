@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { tryRefresh } from '../lib/tokenRefresh'
 
 const API = (import.meta.env.VITE_API_BASE || import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'https://api.shopnoltd.dpdns.org').replace(/\/+$/, '')
@@ -95,7 +94,7 @@ export default function CloudStorage() {
   return <main style={{ minHeight: '100vh', background: '#f1f5f9', color: '#0f172a', fontFamily: 'Inter,system-ui,sans-serif', padding: '28px clamp(16px,4vw,48px)' }}>
     <div style={{ maxWidth: 1120, margin: '0 auto' }}>
       <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', marginBottom: 30 }}>
-        <Link to="/" style={{ color: '#0369a1', fontWeight: 800, textDecoration: 'none' }}>← Shopnoltd</Link>
+        <a href="https://shopnoltd.dpdns.org/" style={{ color: '#0369a1', fontWeight: 800, textDecoration: 'none' }}>← Shopnoltd</a>
         <span style={{ color: '#64748b', fontSize: 13 }}>PRIVATE · ACCOUNT-ISOLATED STORAGE</span>
       </header>
       <section style={{ background: 'linear-gradient(130deg,#075985,#0ea5e9)', color: 'white', borderRadius: 22, padding: 'clamp(24px,5vw,44px)', boxShadow: '0 14px 35px rgba(2,132,199,.18)' }}>
