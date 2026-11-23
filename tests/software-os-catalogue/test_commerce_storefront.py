@@ -24,6 +24,19 @@ class CommerceStorefrontTests(unittest.TestCase):
         self.assertIn("has not received it until you send it", page)
         self.assertIn("No payment is collected on this page", page)
 
+    def test_page_is_branded_as_a_service_center_not_a_catalogue_preview(self):
+        page = PAGE.read_text(encoding="utf-8")
+        self.assertIn("<title>Software &amp; OS Services Center | Shopnoltd</title>", page)
+        self.assertIn("<h1>Software &amp; OS Services Center</h1>", page)
+        self.assertIn("Shopnoltd Software &amp; OS Services Center.", page)
+        self.assertNotIn("Catalogue preview", page)
+
+    def test_quote_uses_the_published_shopnoltd_support_address(self):
+        page = PAGE.read_text(encoding="utf-8")
+        contact = (ROOT / "platform/web-portal/src/pages/Contact.jsx").read_text(encoding="utf-8")
+        self.assertIn("mailto:support@shopnoltd.dpdns.org", page)
+        self.assertIn("const SUPPORT_EMAIL = 'support@shopnoltd.dpdns.org'", contact)
+
     def test_no_browser_side_payment_or_entitlement_unlock(self):
         page = PAGE.read_text(encoding="utf-8")
         self.assertNotIn("/billing/checkout", page)
