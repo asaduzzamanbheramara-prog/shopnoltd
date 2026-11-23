@@ -4,6 +4,7 @@ Network conversion callbacks stay disabled until Affmine confirms the publisher
 postback URL, secure-code mechanism, macros, and status lifecycle. No wallet
 credit is performed by this API.
 """
+import os
 import re
 import uuid
 from decimal import Decimal, InvalidOperation
@@ -34,6 +35,12 @@ async def current_user(credentials: HTTPAuthorizationCredentials = Depends(beare
     if not claims.get("sub"):
         raise HTTPException(401, "Authenticated user identity is missing")
     return claims
+
+
+
+def _require_sandbox_enabled():
+    if os.getenv("AFFILIATE_SANDBOX_ENABLED", "false").strip().lower() not in {"1", "true", "yes"}:
+        raise HTTPException(404, "Affiliate sandbox is disabled in this environment")
 
 
 def _country(request: Request) -> str:
@@ -326,6 +333,7 @@ async def admin_summary(claims=Depends(current_user), session: AsyncSession = De
 # Sandbox records are separate from network conversions and never settle to wallets.
 @router.post("/sandbox/simulate")
 async def simulate_sandbox_earning(request: Request, claims=Depends(current_user), session: AsyncSession = Depends(db)):
+    _require_sandbox_enabled()
     body = await request.json()
     try:
         payout = Decimal(str(body.get("network_payout_usd", "1")))
@@ -345,7 +353,7 @@ async def simulate_sandbox_earning(request: Request, claims=Depends(current_user
     session.add(record)
     await session.commit()
     return {
-        "id": record.id, "sandbox": True, "withdrawable": False, "wallet_credited": False,
+        "id": record.id, "sandbox": True, "enabled": True, "withdrawable": False, "wallet_credited": False,
         "currency": "USD", "simulated_network_payout": str(record.simulated_network_payout),
         "simulated_user_amount": str(record.simulated_user_amount),
         "simulated_platform_amount": str(record.simulated_platform_amount),
@@ -356,6 +364,7 @@ async def simulate_sandbox_earning(request: Request, claims=Depends(current_user
 
 @router.get("/sandbox/me/summary")
 async def sandbox_user_summary(claims=Depends(current_user), session: AsyncSession = Depends(db)):
+    _require_sandbox_enabled()
     result = await session.execute(
         select(func.count(AffiliateSandboxConversion.id),
                func.coalesce(func.sum(AffiliateSandboxConversion.simulated_network_payout), 0),
@@ -373,6 +382,7 @@ async def sandbox_user_summary(claims=Depends(current_user), session: AsyncSessi
 
 @router.delete("/sandbox/me/reset")
 async def reset_my_sandbox(claims=Depends(current_user), session: AsyncSession = Depends(db)):
+    _require_sandbox_enabled()
     result = await session.execute(
         delete(AffiliateSandboxConversion).where(AffiliateSandboxConversion.user_id == str(claims["sub"]))
     )
@@ -382,6 +392,7 @@ async def reset_my_sandbox(claims=Depends(current_user), session: AsyncSession =
 
 @router.get("/sandbox/admin/summary")
 async def sandbox_admin_summary(claims=Depends(current_user), session: AsyncSession = Depends(db)):
+    _require_sandbox_enabled()
     _require_admin(claims)
     result = await session.execute(
         select(func.count(AffiliateSandboxConversion.id),
