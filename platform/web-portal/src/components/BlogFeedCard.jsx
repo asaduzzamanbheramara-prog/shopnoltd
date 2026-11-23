@@ -128,9 +128,21 @@ export default function BlogFeedCard({ post }) {
     </div>
     {post.cover_image && <Link to={'/blog/' + encodeURIComponent(post.slug)}><img src={post.cover_image} alt="" loading="lazy" style={{ display: 'block', width: '100%', maxHeight: 420, objectFit: 'cover', borderRadius: 10, marginBottom: 12 }} /></Link>}
     {videoId && <div ref={videoFrameRef} style={{ position: 'relative', width: '100%', aspectRatio: '16 / 9', margin: '0 0 14px', overflow: 'hidden', borderRadius: 12, background: '#0f172a' }}>
-    {(videoInView || videoRequested) ? <iframe
+      {(videoInView || videoRequested) ? <iframe
+        title={post.title ? post.title + ' video' : 'Blog video'}
+        src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&mute=1&controls=1&playsinline=1&rel=0`}
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+        referrerPolicy="strict-origin-when-cross-origin"
+        allowFullScreen
+        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 0 }}
+      /> : <button
+        type="button"
+        onClick={() => setVideoRequested(true)}
+        aria-label={post.title ? 'Play ' + post.title : 'Play blog video'}
+        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', padding: 0, border: 0, cursor: 'pointer', background: '#0f172a' }}
+      >
         <img src={`https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`} alt={post.title ? post.title + ' video thumbnail' : 'Blog video thumbnail'} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-        <span style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%,-50%)', display: 'grid', placeItems: 'center', width: 64, height: 46, borderRadius: 12, background: '#dc2626', color: '#fff', fontSize: 25 }}>▶</span>
+        <span aria-hidden="true" style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%,-50%)', display: 'grid', placeItems: 'center', width: 64, height: 46, borderRadius: 12, background: '#dc2626', color: '#fff', fontSize: 25 }}>▶</span>
       </button>}
     </div>}
     <p style={{ color: '#475569', lineHeight: 1.7, whiteSpace: 'pre-wrap', margin: '0 0 12px' }}>{post.excerpt || String(post.content || '').slice(0, 280)}</p>
