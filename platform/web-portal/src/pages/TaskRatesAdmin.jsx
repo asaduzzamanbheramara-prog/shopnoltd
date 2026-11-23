@@ -3,7 +3,7 @@ import { RefreshCw, Save, Trash2, Globe2 } from 'lucide-react'
 import AdminRoute from '../components/AdminRoute'
 
 const TASK_TYPES=[['simple','Simple Task'],['job','Job / Work'],['follow','Follow'],['like','Like'],['comment','Comment'],['share','Share'],['view','View'],['visit','Visit'],['review','Review'],['social','Social Action'],['data','Data Task'],['upload','Upload'],['custom','Custom'],['watch','Watch']]
-const PLATFORM_LABELS={shopnoltd:'Shopnoltd',facebook:'Facebook',instagram:'Instagram',youtube:'YouTube',tiktok:'TikTok',telegram:'Telegram',whatsapp:'WhatsApp',website:'Website / App',data:'Data platform',custom:'Custom platform'}
+const PLATFORM_LABELS={shopnoltd:'Shopnoltd',facebook:'Facebook',instagram:'Instagram',youtube:'YouTube',tiktok:'TikTok',telegram:'Telegram',whatsapp:'WhatsApp',linkedin:'LinkedIn',x:'X',website:'Website / App',data:'Data platform',custom:'Custom platform'}
 
 async function api(path,options={}){const token=localStorage.getItem('shopno_token');const headers={Accept:'application/json',...(token?{Authorization:`Bearer ${token}`}:{}),...(options.body?{'Content-Type':'application/json'}:{}),...(options.headers||{})};const r=await fetch(path,{...options,headers});const text=await r.text();let data;try{data=text?JSON.parse(text):null}catch{data=text}if(!r.ok)throw new Error(data?.detail||data?.message||text||`HTTP ${r.status}`);return data}
 

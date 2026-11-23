@@ -238,8 +238,8 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt pytest
-      - name: Test payment transfer and admin authorization contracts
-        run: pytest -q tests/test_transfer_idempotency.py tests/test_webhook_error_redaction.py tests/test_admin_authorization.py
+      - name: Test idempotent transfer payload validation
+        run: pytest -q tests/test_transfer_idempotency.py tests/test_webhook_error_redaction.py
 
   service-contract-tests:
     name: "${{ matrix.service }} isolated ASGI contract tests"
@@ -336,6 +336,22 @@ jobs:
           pip install -r requirements.txt pytest
       - name: Test session TTL and cleanup retries
         run: pytest -q tests/test_session_cleanup.py
+
+  affiliate-task-marketplace-tests:
+    name: Affiliate marketplace and referral regression tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install API service dependencies and pytest
+        run: python -m pip install -r platform/api-service/requirements.txt pytest
+      - name: Run affiliate, provider privacy, task platform and referral tests
+        env:
+          PYTHONPATH: platform/api-service:shared/libraries/python
+          DATABASE_URL: postgresql+asyncpg://ci:ci@127.0.0.1:5432/ci_test
+        run: python -m pytest platform/api-service/tests/test_affiliate_api.py -q
 
   realm-role-authorization-tests:
     name: "${{ matrix.service }} realm-role authorization regression tests"

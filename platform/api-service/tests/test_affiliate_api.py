@@ -281,3 +281,34 @@ def test_public_affiliate_offer_exposes_only_shopnoltd_reward():
     forbidden = {"network_offer_id", "network_payout", "user_share_percent",
                  "platform_share_percent", "countries", "allowed_platform"}
     assert forbidden.isdisjoint(result)
+
+
+
+def test_verified_work_approval_runs_referral_transfer_after_worker_reward():
+    import inspect
+    from app.api.v3_work import approve_submission
+    source = inspect.getsource(approve_submission)
+    worker_transfer = source.index("await client.post(")
+    referral_transfer = source.index("await settle_referral_reward(")
+    approval = source.index('sub.status = "approved"')
+    assert worker_transfer < referral_transfer < approval
+    assert "tenant_id=w.tenant_id" in source
+    assert "submission_id=sub.id" in source
+
+
+def test_offer_links_use_shopnoltd_redirect_not_provider_destination():
+    import inspect
+    from app.api.affiliate import start_offer, redirect_offer, router as affiliate_router
+    start_source = inspect.getsource(start_offer)
+    redirect_source = inspect.getsource(redirect_offer)
+    assert 'request.url_for("redirect_offer"' in start_source
+    assert "_safe_tracking_url" not in start_source
+    assert "RedirectResponse(destination, status_code=302)" in redirect_source
+    assert any(route.path == "/affiliate/go/{click_id}" for route in affiliate_router.routes)
+
+
+def test_social_task_destinations_include_api_supported_linkedin_and_x():
+    from app.api.v3_work import WORK_PLATFORMS
+    from app.api.v2 import WORK_PLATFORMS as LEGACY_WORK_PLATFORMS
+    assert {"linkedin", "x"}.issubset(WORK_PLATFORMS)
+    assert WORK_PLATFORMS == LEGACY_WORK_PLATFORMS
