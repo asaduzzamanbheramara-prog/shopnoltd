@@ -22,6 +22,20 @@ def test_admin_role_cannot_use_platform_admin_guard(monkeypatch):
     assert exc.value.status_code == 403
 
 
+def test_client_scoped_platform_admin_cannot_use_platform_admin_guard(monkeypatch):
+    token = {"sub": "client-admin-test", "roles": ["platform_admin"], "realm_roles": []}
+    monkeypatch.setattr(
+        database_control,
+        "verify_token",
+        AsyncMock(return_value=token),
+    )
+    with pytest.raises(HTTPException) as exc:
+        asyncio.run(database_control.require_platform_admin(
+            SimpleNamespace(credentials="placeholder")
+        ))
+    assert exc.value.status_code == 403
+
+
 def test_platform_admin_passes_platform_admin_guard(monkeypatch):
     token = {"sub": "platform-admin-test", "roles": ["platform_admin"]}
     monkeypatch.setattr(
