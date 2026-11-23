@@ -373,7 +373,7 @@ async def sandbox_user_summary(claims=Depends(current_user), session: AsyncSessi
     )
     count, network, user_amount = result.one()
     return {
-        "sandbox": True, "withdrawable": False, "wallet_credited": False,
+        "sandbox": True, "enabled": True, "withdrawable": False, "wallet_credited": False,
         "conversions": int(count), "simulated_network_payout_usd": str(network),
         "simulated_user_amount_usd": str(user_amount),
         "note": "Simulation only; excluded from real earnings and wallet balance.",
@@ -402,7 +402,7 @@ async def sandbox_admin_summary(claims=Depends(current_user), session: AsyncSess
     )
     count, network, users, platform = result.one()
     return {
-        "sandbox": True, "withdrawable": False, "wallet_credited": False,
+        "sandbox": True, "enabled": True, "withdrawable": False, "wallet_credited": False,
         "test_conversions": int(count), "simulated_network_payout_usd": str(network),
         "simulated_user_share_usd": str(users), "simulated_platform_share_usd": str(platform),
         "note": "Simulated values only; excluded from real revenue, payable earnings, and wallet balances.",
