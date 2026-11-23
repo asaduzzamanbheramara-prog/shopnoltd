@@ -22,7 +22,9 @@ BEGIN
        AND a.attnum > 0
        AND NOT a.attisdropped;
 
-    IF existing_type = 'character varying(16)' THEN
+    IF existing_type IS NULL THEN
+        RAISE EXCEPTION 'transactions.status column is missing; refusing status-width migration';
+    ELSIF existing_type = 'character varying(16)' THEN
         ALTER TABLE public.transactions
             ALTER COLUMN status TYPE VARCHAR(24);
     ELSIF existing_type <> 'character varying(24)' THEN
@@ -57,7 +59,7 @@ BEGIN
     END IF;
 
     SELECT version_num INTO current_revision FROM public.alembic_version;
-    IF current_revision NOT IN ('0007_wallet_tenant_user_currency', '0008_transaction_idempotency', '0009_transaction_status_varchar') THEN
+    IF current_revision IS NULL OR current_revision NOT IN ('0007_wallet_tenant_user_currency', '0008_transaction_idempotency', '0009_transaction_status_varchar') THEN
         RAISE EXCEPTION 'unexpected payment Alembic revision: %', current_revision;
     END IF;
 
