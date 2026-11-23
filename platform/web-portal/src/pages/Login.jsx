@@ -75,6 +75,7 @@ export default function Login() {
         ))}
       </div>
       </>}
+      <p style={{ marginTop: 18, textAlign: 'center' }}><a href={KEYCLOAK_URL.replace(/\/$/, '') + '/realms/' + encodeURIComponent(KEYCLOAK_REALM) + '/login-actions/reset-credentials?client_id=' + encodeURIComponent(KEYCLOAK_CLIENT_ID)} style={{ color: '#0284c7', fontWeight: 600 }}>Forgot Password?</a></p>
       <p style={{ marginTop: 28, textAlign: 'center' }}>
         New to Shopnoltd? <a href="/register" style={{ color: '#0284c7' }}>Create an account</a>
       </p>
