@@ -61,6 +61,7 @@ The feature branch and PR must pass API tests, web build, security scans, and re
 
 ## Earnings sandbox (test-only)
 
+- Sandbox endpoints are disabled by default and return 404 unless the isolated test environment explicitly sets `AFFILIATE_SANDBOX_ENABLED=true`. Do not enable this flag in production.
 - Sandbox conversions are stored in the separate `shopnoltd_affiliate_sandbox_conversions` table, never in the live network conversion table.
 - Authenticated users can create mock conversions with a USD payout from 0.01 to 1,000 and a user share from 0% to 90%; the remainder is the simulated Shopnoltd share.
 - The user dashboard labels all values as simulated and non-withdrawable. The admin dashboard reports sandbox totals separately.
