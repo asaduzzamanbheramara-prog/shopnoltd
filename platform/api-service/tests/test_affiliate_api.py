@@ -28,6 +28,8 @@ def test_tracking_url_requires_https_and_sets_click_id():
     result = _safe_tracking_url("https://track.example/click?x=1", "click-123")
     assert "s1=click-123" in result
     assert "x=1" in result
+    custom = _safe_tracking_url("https://track.example/click", "click-456", "sub2")
+    assert "sub2=click-456" in custom
     with pytest.raises(HTTPException):
         _safe_tracking_url("http://track.example/click", "click-123")
     with pytest.raises(HTTPException):
