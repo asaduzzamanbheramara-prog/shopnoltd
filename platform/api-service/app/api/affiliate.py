@@ -103,7 +103,7 @@ def _affmine_request_params(aff_id: str, api_key: str) -> dict[str, str]:
     # Only send parameters documented in the supplied Affmine Publisher API v1.0 spec.
     # Do not guess filters or pagination keys: unsupported keys can silently return
     # the same first page and make an importer loop indefinitely.
-    return {"aff_id": aff_id, "api_key": api_key, "format": "json"}
+    return {"aff_id": aff_id, "api_key": api_key}
 
 
 def _affmine_campaign_rows(payload, content_type: str):
@@ -319,7 +319,13 @@ async def sync_affmine_campaigns(claims=Depends(current_user), session: AsyncSes
         raise HTTPException(503, "Affmine API credentials are not configured on the API service")
     inserted = updated = skipped_currency = 0
     try:
-        async with httpx.AsyncClient(timeout=25) as client:
+        async with httpx.AsyncClient(
+            timeout=25,
+            headers={
+                "Accept": "application/json",
+                "User-Agent": "Shopnoltd-Publisher/1.0",
+            },
+        ) as client:
             response = await client.get(
                 "https://network.affmine.com/api/v1/getCampaigns",
                 params=_affmine_request_params(aff_id, api_key),
