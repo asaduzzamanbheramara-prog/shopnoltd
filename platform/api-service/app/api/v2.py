@@ -84,7 +84,21 @@ async def settle_reward(user, submission_id: str, amount: Decimal, currency: str
     return response.json()
 
 
-def work_dict(w: Work, total_slots: int | None = None, active_slots: int | None = None, completed_slots: int | None = None, viewer_id: str | None = None):
+def is_admin_user(user: dict) -> bool:
+    roles = set(user.get("roles") or [])
+    realm_roles = set(((user.get("realm_access") or {}).get("roles") or []))
+    return bool(roles.intersection({"admin", "platform_admin", "shopnoltd-admin", "administrator"}) or realm_roles.intersection({"admin", "platform_admin", "shopnoltd-admin", "administrator"}) or user.get("is_admin") is True)
+
+
+def can_view_work(work: Work, user: dict) -> bool:
+    if not work or work.tenant_id != user.get("tenant_id", "default"):
+        return False
+    if work.status in {"draft", "pending_review"} and work.creator_id != user.get("sub") and not is_admin_user(user):
+        return False
+    return True
+
+
+def work_dict(w: Work, total_slots: int | None = None, active_slots: int | None = None, completed_slots: int | None = None, viewer_id: str | None = None, include_admin_fields: bool = False):
     total_slots = int(total_slots if total_slots is not None else w.max_workers)
     active_slots = int(active_slots if active_slots is not None else 0)
     completed_slots = int(completed_slots if completed_slots is not None else 0)
@@ -95,8 +109,8 @@ def work_dict(w: Work, total_slots: int | None = None, active_slots: int | None 
     creator_view = viewer_id == w.creator_id
     visible_reward = gross_reward if creator_view else worker_reward
     result = {
-        "id": w.id, "tenant_id": w.tenant_id, "creator_id": w.creator_id, "title": w.title,
-        "description": w.description, "requirements": w.requirements, "reference_image": w.reference_image, "before_post_screenshot": getattr(w, "before_post_screenshot", None), "task_type": w.task_type, "platform": w.platform,
+        "id": w.id, "title": w.title,
+        "description": w.description, "requirements": w.requirements, "reference_image": w.reference_image, "task_type": w.task_type, "platform": w.platform,
         "reward_amount": str(visible_reward), "currency": w.currency, "max_workers": w.max_workers,
         "total_tasks": total_slots, "active_tasks": active_slots, "completed_tasks": completed_slots,
         "remaining_tasks": remaining_slots, "total_amount": str(visible_reward * total_slots),
@@ -106,13 +120,16 @@ def work_dict(w: Work, total_slots: int | None = None, active_slots: int | None 
     }
     if creator_view:
         result.update({"gross_reward_amount": str(gross_reward), "worker_share_percent": worker_share, "platform_share_percent": 100 - worker_share})
+        result["before_post_screenshot"] = getattr(w, "before_post_screenshot", None)
+    if include_admin_fields:
+        result.update({"tenant_id": w.tenant_id, "creator_id": w.creator_id, "before_post_screenshot": getattr(w, "before_post_screenshot", None)})
     return result
 
 
-async def enriched_work(s: AsyncSession, w: Work, viewer_id: str | None = None):
+async def enriched_work(s: AsyncSession, w: Work, viewer_id: str | None = None, include_admin_fields: bool = False):
     active = await s.scalar(select(func.count(WorkAssignment.id)).where(WorkAssignment.work_id == w.id, WorkAssignment.status == "active"))
     completed = await s.scalar(select(func.count(WorkAssignment.id)).where(WorkAssignment.work_id == w.id, WorkAssignment.status == "completed"))
-    return work_dict(w, w.max_workers, int(active or 0), int(completed or 0), viewer_id)
+    return work_dict(w, w.max_workers, int(active or 0), int(completed or 0), viewer_id, include_admin_fields)
 
 
 @router.get("/social/feed")
@@ -249,9 +266,18 @@ async def profile_ratings(user_id: str, s: AsyncSession = Depends(db), user=Depe
 @router.get("/works")
 async def list_works(status: str = Query("open"), limit: int = Query(50, ge=1, le=100), offset: int = Query(0, ge=0), s: AsyncSession = Depends(db), user=Depends(current_user)):
     query = select(Work).where(Work.tenant_id == user.get("tenant_id", "default"))
-    if status != "all": query = query.where(Work.status == status)
+    admin_view = is_admin_user(user)
+    if status != "all":
+        query = query.where(Work.status == status)
+    # The UI uses status=all for “My Created Work”. Ordinary users must only
+    # see their own drafts; public task browsing must never reveal private drafts.
+    if not admin_view:
+        if status == "all":
+            query = query.where(Work.creator_id == user["sub"])
+        else:
+            query = query.where(Work.status.not_in(["draft", "pending_review"]))
     result = await s.execute(query.order_by(desc(Work.created_at)).limit(limit).offset(offset))
-    return [await enriched_work(s, w, user["sub"]) for w in result.scalars().all()]
+    return [await enriched_work(s, w, user["sub"], include_admin_fields=admin_view) for w in result.scalars().all()]
 
 
 @router.post("/works", status_code=201)
@@ -296,8 +322,8 @@ async def create_work(body: dict, s: AsyncSession = Depends(db), user=Depends(cu
 @router.get("/works/{work_id}")
 async def get_work(work_id: str, s: AsyncSession = Depends(db), user=Depends(current_user)):
     work = await s.get(Work, work_id)
-    if not work or work.tenant_id != user.get("tenant_id", "default"): raise HTTPException(404, "work not found")
-    return await enriched_work(s, work, user["sub"])
+    if not work or not can_view_work(work, user): raise HTTPException(404, "work not found")
+    return await enriched_work(s, work, user["sub"], include_admin_fields=is_admin_user(user))
 
 
 @router.patch("/works/{work_id}")
