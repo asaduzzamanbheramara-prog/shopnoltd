@@ -124,7 +124,7 @@ export default function AffiliateOffers() {
     try {
       await authenticatedRequest('/api/v1/affiliate/admin/offers', { method: 'POST', body: JSON.stringify({ ...newOffer, network_payout: Number(newOffer.network_payout), user_share_percent: Number(newOffer.user_share_percent), currency: 'USD' }) })
       setNewOffer({ network_offer_id: '', title: '', tracking_url: '', click_param: 's1', network_payout: '', countries: '', user_share_percent: 70, incentive_allowed: false })
-      setMessage('Offer added as Draft. Activate it only after written confirmation that Shopnoltd's incentivized task model and traffic source are permitted.')
+      setMessage('Offer added as Draft. Activate it only after written confirmation that Shopnoltd\\'s incentivized task model and traffic source are permitted.')
       await load()
     } catch (e) { setError(e.message || 'Offer could not be added') }
   }
