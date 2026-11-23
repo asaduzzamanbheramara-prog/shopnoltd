@@ -2,7 +2,8 @@ from fastapi import HTTPException
 import pytest
 
 from app.api.affiliate import _country, _geo_ok, _is_platform_admin, _percent, _safe_tracking_url
-from app.models.affiliate import AffiliateConversion, AffiliateOffer\nfrom app.api.affiliate import router
+from app.models.affiliate import AffiliateConversion, AffiliateOffer
+from app.api.affiliate import router
 
 
 class Request:
