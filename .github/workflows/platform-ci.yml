@@ -350,4 +350,5 @@ jobs:
       - name: Run affiliate, provider privacy, task platform and referral tests
         env:
           PYTHONPATH: platform/api-service
+          DATABASE_URL: postgresql+asyncpg://ci:ci@127.0.0.1:5432/ci_test
         run: python -m pytest platform/api-service/tests/test_affiliate_api.py -q
