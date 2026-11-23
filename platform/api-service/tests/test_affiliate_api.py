@@ -2,7 +2,7 @@ from fastapi import HTTPException
 import pytest
 
 from app.api.affiliate import _country, _geo_ok, _is_platform_admin, _percent, _safe_tracking_url
-from app.models.affiliate import AffiliateConversion, AffiliateOffer
+from app.models.affiliate import AffiliateConversion, AffiliateOffer\nfrom app.api.affiliate import router
 
 
 class Request:
@@ -68,3 +68,14 @@ def test_conversion_model_keeps_network_payment_and_fx_snapshots():
     assert "user_amount_bdt" in columns
     assert "payout_received" in columns
     assert "settled_at" in columns
+
+def test_affiliate_router_exposes_user_and_admin_automation_endpoints():
+    paths = {route.path for route in router.routes}
+    assert "/affiliate/offers" in paths
+    assert "/affiliate/offers/{offer_id}/start" in paths
+    assert "/affiliate/me/summary" in paths
+    assert "/affiliate/rates/usd-bdt" in paths
+    assert "/affiliate/admin/offers" in paths
+    assert "/affiliate/admin/offers/{offer_id}/commission" in paths
+    assert "/affiliate/admin/offers/{offer_id}/eligibility" in paths
+    assert "/affiliate/admin/summary" in paths
