@@ -1,0 +1,47 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: keycloak-social-provider-sync-v1
+  namespace: shopno-identity
+spec:
+  backoffLimit: 1
+  activeDeadlineSeconds: 180
+  ttlSecondsAfterFinished: 86400
+  template:
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      containers:
+      - name: sync
+        image: python:3.12-slim
+        imagePullPolicy: IfNotPresent
+        command: ["python", "/opt/sync/social-provider-sync.py"]
+        env:
+        - name: KEYCLOAK_URL
+          value: "http://keycloak.shopno-identity.svc.cluster.local"
+        - name: KEYCLOAK_REALM
+          value: "shopnoltd"
+        - name: KEYCLOAK_SYNC_CLIENT_ID
+          value: "shopnoltd-keycloak-readiness-audit"
+        - name: KEYCLOAK_SYNC_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: shopnoltd-keycloak-readiness-audit
+              key: CLIENT_SECRET
+        - {name: GOOGLE_CLIENT_ID, valueFrom: {secretKeyRef: {name: keycloak-social-providers, key: GOOGLE_CLIENT_ID, optional: true}}}
+        - {name: GOOGLE_CLIENT_SECRET, valueFrom: {secretKeyRef: {name: keycloak-social-providers, key: GOOGLE_CLIENT_SECRET, optional: true}}}
+        - {name: FACEBOOK_APP_ID, valueFrom: {secretKeyRef: {name: keycloak-social-providers, key: FACEBOOK_APP_ID, optional: true}}}
+        - {name: FACEBOOK_APP_SECRET, valueFrom: {secretKeyRef: {name: keycloak-social-providers, key: FACEBOOK_APP_SECRET, optional: true}}}
+        - {name: FACEBOOK_LOGIN_APP_ID, valueFrom: {secretKeyRef: {name: keycloak-social-providers, key: FACEBOOK_LOGIN_APP_ID, optional: true}}}
+        - {name: FACEBOOK_LOGIN_APP_SECRET, valueFrom: {secretKeyRef: {name: keycloak-social-providers, key: FACEBOOK_LOGIN_APP_SECRET, optional: true}}}
+        - {name: GITHUB_CLIENT_ID, valueFrom: {secretKeyRef: {name: keycloak-social-providers, key: GITHUB_CLIENT_ID, optional: true}}}
+        - {name: GITHUB_CLIENT_SECRET, valueFrom: {secretKeyRef: {name: keycloak-social-providers, key: GITHUB_CLIENT_SECRET, optional: true}}}
+        volumeMounts:
+        - {name: script, mountPath: /opt/sync, readOnly: true}
+        resources:
+          requests: {cpu: 25m, memory: 32Mi}
+          limits: {cpu: 250m, memory: 128Mi}
+      volumes:
+      - name: script
+        configMap:
+          name: keycloak-social-provider-sync-script
