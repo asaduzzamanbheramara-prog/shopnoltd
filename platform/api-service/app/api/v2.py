@@ -333,6 +333,10 @@ async def admin_moderate_work(work_id: str, body: dict, s: AsyncSession = Depend
         if work.status != "pending_review":
             raise HTTPException(409, "only pending-review tasks can be approved")
         if int(getattr(work, "payout_share_percent", 100) or 100) < 100:
+            # Fail moderation closed until the real admin-office wallet is
+            # configured; otherwise workers could complete tasks whose margin
+            # cannot be settled.
+            await resolve_referrer_recipient(s, "admin_office", work.tenant_id)
             await reserve_work_budget(work)
         work.status = "open"
     elif decision == "reject":
@@ -454,8 +458,9 @@ async def publish_work(work_id: str, s: AsyncSession = Depends(db), user=Depends
     if work.creator_id != user["sub"]: raise HTTPException(403, "only the creator can publish this work")
     if work.status not in {"draft", "open"}: raise HTTPException(409, "work cannot be published from its current stage")
     if int(getattr(work, "payout_share_percent", 100) or 100) < 100:
-        # Reserve the complete gross budget (reward × max workers) before the
-        # task becomes visible. Payment bridge failure leaves the task a draft.
+        # Verify the Shopnoltd margin recipient before freezing funds; then
+        # reserve the complete gross budget before admin moderation.
+        await resolve_referrer_recipient(s, "admin_office", work.tenant_id)
         await reserve_work_budget(work)
     work.status = "pending_review"; await s.commit(); await s.refresh(work)
     return await enriched_work(s, work, user["sub"])
