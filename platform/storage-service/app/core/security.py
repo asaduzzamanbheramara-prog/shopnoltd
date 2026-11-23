@@ -1,9 +1,12 @@
+import logging
+
 import httpx
 from shopno_core.security.jwt import JWTError, jwt
 
 from app.core.config import settings
 
 _jwks_cache = None
+logger = logging.getLogger(__name__)
 ACCEPTED_AUDIENCES = ("storage-service", "api-service")
 
 
@@ -47,9 +50,20 @@ async def verify_token(token: str) -> dict:
                 last_error = exc
         raise JWTError(f"invalid token audience: {last_error}")
     except Exception as e:
+        claims = locals().get("unverified_claims") or {}
+        logger.warning(
+            "Storage JWT validation failed category=%s kid=%s aud=%s iss=%s azp=%s exp=%s error=%s",
+            type(e).__name__,
+            (locals().get("h") or {}).get("kid"),
+            claims.get("aud"),
+            claims.get("iss"),
+            claims.get("azp"),
+            claims.get("exp"),
+            e,
+        )
         raise ValueError(
             f"invalid token: kid={locals().get('h', {}).get('kid')} "
-            f"aud={locals().get('unverified_claims', {}).get('aud')} error={e}"
+            f"aud={claims.get('aud')} error={e}"
         ) from e
 
 
