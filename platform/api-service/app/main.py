@@ -19,7 +19,7 @@ from app.models.work_evidence import WorkTaskConfig, WorkSession, WorkEvidence, 
 from app.models.work_rating import WorkRating  # noqa: F401
 from app.models.referral import ReferralCode, Referral, ReferralPolicy, ReferralReward, ReferralSystemIdentity  # noqa: F401
 from app.models.service_order import ServiceOrder, ServiceOrderEvent  # noqa: F401
-from app.models.affiliate import AffiliateOffer, AffiliateClick, AffiliateConversion  # noqa: F401
+from app.models.affiliate import AffiliateOffer, AffiliateClick, AffiliateConversion, AffiliateSandboxConversion  # noqa: F401
 
 log = structlog.get_logger()
 
