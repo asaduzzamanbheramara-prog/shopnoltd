@@ -15,6 +15,7 @@ from app.core.security import verify_token
 from app.core.currencies import SUPPORTED_CURRENCIES
 from app.models.work import Work, WorkAssignment, WorkSubmission
 from app.models.work_evidence import WorkTaskConfig, WorkSession, WorkEvidence, WorkEvent, GlobalTaskRate
+from app.services.referrals import settle_referral_reward
 
 router = APIRouter(prefix="/work")
 bearer = HTTPBearer()
@@ -772,6 +773,19 @@ async def approve_submission(submission_id: str, creds: HTTPAuthorizationCredent
         # fail its amount>0 check and leave the submission stuck pending
         # forever. Approve it directly as a no-payout review instead.
         sub.review_note = "Approved with no verified reward (calculated amount was zero)"
+    # Keep the referral commission path consistent with the legacy work API.
+    # It runs only after the worker reward transfer and uses a submission-scoped
+    # idempotency key inside settle_referral_reward to prevent duplicate payouts.
+    await settle_referral_reward(
+        s,
+        referred_id=sub.worker_id,
+        work_id=w.id,
+        submission_id=sub.id,
+        base_amount=amount,
+        currency=currency,
+        tenant_id=w.tenant_id,
+        token=creds.credentials,
+    )
     sub.status = "approved"
     sub.reviewer_id = u["sub"]
     sub.reviewed_at = datetime.utcnow()
