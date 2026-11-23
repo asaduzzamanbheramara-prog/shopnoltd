@@ -314,7 +314,7 @@ jobs:
               sleep 15
               continue
             fi
-            runs="$(jq -r --arg sha "$expected_sha" '[.workflow_runs[]? | select(.head_sha == $sha and (.event == "push" or .event == "workflow_dispatch"))] | sort_by(.created_at) | reverse | .[0] // empty' <<<"$response")"
+            runs="$(jq -r --arg sha "$expected_sha" '[.workflow_runs[]? | select(.head_sha == $sha and (.event == "push" or .event == "workflow_dispatch"))] | sort_by(.created_at) | reverse | map(select(.status != "completed" or .conclusion != "skipped")) | .[0] // empty' <<<"$response")"
             if [ -n "$runs" ]; then
               run_id="$(jq -r '.id' <<<"$runs")"
               status="$(jq -r '.status' <<<"$runs")"
