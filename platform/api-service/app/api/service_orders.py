@@ -29,7 +29,7 @@ SERVICE_LABELS = {
     "business_it_care": "Business IT care subscription",
     "other": "Other software or OS service",
 }
-ADMIN_ROLES = {"platform_admin", "tenant_admin", "shopnoltd-admin"}
+ADMIN_ROLES = {"platform_admin", "tenant_owner", "shopnoltd-admin"}
 EMAIL_PATTERN = re.compile(r"^[^@\s]{1,128}@[^@\s]{1,120}\.[^@\s]{2,63}$")
 
 

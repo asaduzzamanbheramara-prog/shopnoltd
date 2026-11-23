@@ -71,15 +71,17 @@ def test_quote_amount_and_expiry_are_server_validated():
         ServiceOrderQuote(amount=Decimal("1"), currency="EUR")
 
 
-def test_admin_roles_and_platform_admin_scope_are_distinct():
-    tenant_admin = {"sub": "tenant-admin", "tenant_id": "tenant-a", "roles": ["tenant_admin"]}
+def test_canonical_tenant_owner_and_platform_admin_scopes_are_distinct():
+    tenant_owner = {"sub": "tenant-owner", "tenant_id": "tenant-a", "roles": ["tenant_owner"]}
     platform_admin = {"sub": "platform-admin", "tenant_id": "default", "realm_access": {"roles": ["platform_admin"]}}
-    customer = {"sub": "customer", "tenant_id": "tenant-a", "roles": []}
-    assert is_service_admin(tenant_admin)
-    assert not _is_platform_admin(tenant_admin)
+    customer = {"sub": "customer", "tenant_id": "tenant-a", "roles": ["customer"]}
+    assert is_service_admin(tenant_owner)
+    assert not _is_platform_admin(tenant_owner)
     assert is_service_admin(platform_admin)
     assert _is_platform_admin(platform_admin)
     assert not is_service_admin(customer)
+    # Do not silently accept a role that is not part of the canonical Keycloak RBAC model.
+    assert not is_service_admin({"sub": "ordinary", "roles": ["tenant_admin"]})
     assert not is_service_admin({"sub": "ordinary", "roles": ["admin"]})
     assert not is_service_admin({"sub": "ordinary", "is_admin": True})
 
