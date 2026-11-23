@@ -378,6 +378,9 @@ def sync_social_provider(token, alias, provider, first_broker_flow_alias="first 
         "alias": alias,
         "providerId": provider["providerId"],
         "enabled": True,
+        # Keep signup-only aliases available to explicit kc_idp_hint flows,
+        # but do not render them as duplicate buttons on the normal login page.
+        "hideOnLogin": alias.endswith("-signup"),
         "trustEmail": provider.get("trustEmail", True),
         "storeToken": False,
         "firstBrokerLoginFlowAlias": first_broker_flow_alias,
