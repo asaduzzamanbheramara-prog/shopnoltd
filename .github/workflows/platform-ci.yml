@@ -87,6 +87,9 @@ jobs:
       - name: Verify durable conversation history and tenant isolation against PostgreSQL
         if: hashFiles('platform/ai-platform/tests/test_conversations_integration.py') != ''
         run: pytest -q tests/test_conversations_integration.py
+      - name: Verify user-controlled memory CRUD and isolation against PostgreSQL
+        if: hashFiles('platform/ai-platform/tests/test_memories_integration.py') != ''
+        run: pytest -q tests/test_memories_integration.py
 
   python-syntax:
     name: Python syntax validation
