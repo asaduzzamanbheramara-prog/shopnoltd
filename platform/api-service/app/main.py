@@ -38,6 +38,9 @@ async def lifespan(app: FastAPI):
             await conn.execute(text("ALTER TABLE works ADD COLUMN IF NOT EXISTS platform VARCHAR(64) NOT NULL DEFAULT 'shopnoltd'"))
             await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_works_task_type ON works (task_type)"))
             await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_works_platform ON works (platform)"))
+            # Affiliate feed metadata compatibility columns.
+            await conn.execute(text("ALTER TABLE shopnoltd_affiliate_offers ADD COLUMN IF NOT EXISTS allowed_platform VARCHAR(64) NOT NULL DEFAULT '1,2,3,4,5'"))
+            await conn.execute(text("ALTER TABLE shopnoltd_affiliate_offers ADD COLUMN IF NOT EXISTS network_incentive VARCHAR(16) NOT NULL DEFAULT 'unknown'"))
             # Referral compatibility columns preserve existing direct/legacy mappings.
             await conn.execute(text("ALTER TABLE referrals ADD COLUMN IF NOT EXISTS source VARCHAR(24) NOT NULL DEFAULT 'direct'"))
             await conn.execute(text("ALTER TABLE referral_policies ADD COLUMN IF NOT EXISTS fallback_referrer_id VARCHAR(128) NOT NULL DEFAULT 'admin_office'"))
@@ -185,3 +188,5 @@ async def readyz():
 @app.get("/metrics", include_in_schema=False)
 def metrics():
     return Response(generate_latest(), media_type="text/plain; version=0.0.4")
+
+[executed on device: Shopnoltd (52cb1894-787c-49c2-9460-901a8f74a1e7)]
