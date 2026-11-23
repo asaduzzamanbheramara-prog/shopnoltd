@@ -130,6 +130,11 @@ def _affmine_campaign_rows(payload, content_type: str):
             return []
         if not isinstance(offers, list) or any(not isinstance(row, dict) for row in offers):
             raise HTTPException(502, "Affmine returned an invalid campaign list")
+        # Live Publisher API v1 uses "name" for campaign titles.
+        # Normalize to the field consumed by the importer.
+        for row in offers:
+            if not row.get("offer_name") and row.get("name"):
+                row["offer_name"] = row["name"]
         return offers
     try:
         root = ET.fromstring(payload)
