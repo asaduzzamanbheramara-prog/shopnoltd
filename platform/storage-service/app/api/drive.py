@@ -32,13 +32,19 @@ def owner_prefix(user: dict) -> str:
 
 
 def owned_key(user: dict, key: str) -> str:
-    name = key.strip("/")
-    parts = PurePosixPath(name).parts
-    if not name or name.startswith("/") or any(part in {"", ".", ".."} for part in parts):
+    # Validate the raw path before pathlib normalization: PurePosixPath removes
+    # repeated separators and "." segments, which can hide malformed input.
+    if (
+        not key
+        or key.startswith("/")
+        or "\\" in key
+        or "\x00" in key
+        or any(part in {"", ".", ".."} for part in key.split("/"))
+    ):
         raise HTTPException(400, "Invalid file path")
-    if len(name.encode("utf-8")) > 480:
+    if len(key.encode("utf-8")) > 480:
         raise HTTPException(400, "File name is too long")
-    return owner_prefix(user) + name
+    return owner_prefix(user) + key
 
 
 def ensure_bucket():
