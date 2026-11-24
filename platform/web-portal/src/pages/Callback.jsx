@@ -31,6 +31,7 @@ export default function Callback() {
       setError('Authentication state validation failed. Please try again.')
       sessionStorage.removeItem('pkce_verifier')
       sessionStorage.removeItem('oidc_state')
+      sessionStorage.removeItem('oidc_nonce')
       return
     }
 
