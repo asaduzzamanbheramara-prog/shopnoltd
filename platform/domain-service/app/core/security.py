@@ -49,7 +49,7 @@ async def verify_token_admin(token: str) -> dict:
             headers={"WWW-Authenticate": "Bearer"},
         ) from None
 
-    if "admin" not in u.get("roles", []):
+    if not ({"admin", "platform_admin"} & (set(u.get("realm_roles") or u.get("roles") or []) | set((u.get("realm_access") or {}).get("roles", []) or []))):
         raise HTTPException(
             status_code=403,
             detail="Admin privileges required",
