@@ -60,7 +60,7 @@ async def verify_token_admin(token: str) -> dict:
 
 def _roles(payload: dict) -> set:
     # Tenant and platform privileges are realm roles only; client roles never elevate identity.
-    roles = set(payload.get("realm_roles") or payload.get("roles") or [])
+    roles = set(payload.get("realm_roles", payload.get("roles", [])) or [])
     roles.update((payload.get("realm_access") or {}).get("roles", []) or [])
     return roles
 
