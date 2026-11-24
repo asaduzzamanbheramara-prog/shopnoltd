@@ -38,7 +38,7 @@ async def verify_token(token: str) -> dict:
         claims = jwt.decode(
             token,
             key,
-            algorithms=[key["alg"]],
+            algorithms=["RS256"],
             audience=settings.keycloak_audience,
             issuer=settings.keycloak_issuer,
             options={"verify_aud": True, "verify_iss": True},
