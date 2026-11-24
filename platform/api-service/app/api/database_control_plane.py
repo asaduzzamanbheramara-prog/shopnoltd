@@ -17,7 +17,8 @@ bearer = HTTPBearer(auto_error=True)
 async def require_admin(credentials: HTTPAuthorizationCredentials = Depends(bearer)):
     """Allow administrators to inspect the guarded control-plane catalog."""
     token = await verify_token(credentials.credentials)
-    roles = set(token.get("roles", []))
+    roles = set(token.get("realm_roles", token.get("roles", [])) or [])
+    roles.update((token.get("realm_access") or {}).get("roles", []) or [])
     if not roles.intersection({"admin", "platform_admin"}):
         raise HTTPException(403, "admin privileges required")
     return token
