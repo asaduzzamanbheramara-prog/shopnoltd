@@ -37,6 +37,6 @@ async def verify_token(token: str) -> dict:
 
 async def verify_token_admin(token: str) -> dict:
     u = await verify_token(token)
-    if "admin" not in u.get("roles", []):
+    if not ({"admin", "platform_admin"} & (set(u.get("realm_roles") or u.get("roles") or []) | set((u.get("realm_access") or {}).get("roles", []) or []))):
         raise PermissionError("admin only")
     return u
