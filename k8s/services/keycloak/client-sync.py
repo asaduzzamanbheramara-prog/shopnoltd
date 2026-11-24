@@ -17,6 +17,7 @@ ADMIN_PASSWORD = os.environ.get("KEYCLOAK_ADMIN_PASSWORD")
 CLIENT_IDS = ["shopnoltd-web", "web-portal"]
 
 REQUIRED_REDIRECT_URIS = [
+    "https://mail-api.shopnoltd.dpdns.org/docs/oauth2-redirect",
     "http://localhost:5173/callback",
     "https://shopnoltd.dpdns.org/callback",
     "https://web-portal.shopnoltd.dpdns.org/callback",
@@ -33,6 +34,7 @@ REQUIRED_REDIRECT_URIS = [
 ]
 
 REQUIRED_WEB_ORIGINS = [
+    "https://mail-api.shopnoltd.dpdns.org",
     "http://localhost:5173",
     "https://shopnoltd.dpdns.org",
     "https://web-portal.shopnoltd.dpdns.org",
@@ -85,6 +87,8 @@ AI_AUDIENCE_MAPPER_NAME = "ai-platform-audience"
 AI_AUDIENCE_REPAIR_MAPPER_NAME = "ai-platform-audience-repaired"
 STORAGE_AUDIENCE_MAPPER_NAME = "storage-service-audience"
 STORAGE_AUDIENCE_REPAIR_MAPPER_NAME = "storage-service-audience-repaired"
+MAIL_AUDIENCE_MAPPER_NAME = "mail-service-audience"
+MAIL_AUDIENCE_REPAIR_MAPPER_NAME = "mail-service-audience-repaired"
 
 
 SOCIAL_PROVIDERS = {
@@ -193,6 +197,11 @@ def sync_storage_audience_mapper(token, client_uuid):
     sync_audience_mapper(token, client_uuid, canonical_name=STORAGE_AUDIENCE_MAPPER_NAME, repair_name=STORAGE_AUDIENCE_REPAIR_MAPPER_NAME, audience="storage-service")
 
 
+def sync_mail_audience_mapper(token, client_uuid):
+    # Preserve the Mail API audience and its existing authorization checks.
+    sync_audience_mapper(token, client_uuid, canonical_name=MAIL_AUDIENCE_MAPPER_NAME, repair_name=MAIL_AUDIENCE_REPAIR_MAPPER_NAME, audience="mail-service")
+
+
 def sync_client(token, client_id):
     config = CLIENT_CONFIG[client_id]
     required_redirect_uris = config["redirect_uris"]
@@ -217,7 +226,8 @@ def sync_client(token, client_id):
         sync_api_audience_mapper(token, client_uuid)
         sync_ai_audience_mapper(token, client_uuid)
         sync_storage_audience_mapper(token, client_uuid)
-        print(f"[OK] synchronized {client_id} with api-service, ai-platform and storage-service JWT audiences")
+        sync_mail_audience_mapper(token, client_uuid)
+        print(f"[OK] synchronized {client_id} with api-service, ai-platform, storage-service and mail-service JWT audiences")
     else:
         payload = {"clientId": client_id, "publicClient": True, "protocol": "openid-connect", "standardFlowEnabled": True, "directAccessGrantsEnabled": False, "redirectUris": required_redirect_uris, "webOrigins": required_web_origins, "attributes": {"pkce.code.challenge.method": "S256", "post.logout.redirect.uris": POST_LOGOUT_REDIRECT_URIS[client_id]}}
         code, _ = request("POST", f"/admin/realms/{REALM}/clients", token=token, body=payload)
@@ -230,8 +240,9 @@ def sync_client(token, client_id):
         sync_api_audience_mapper(token, client_uuid)
         sync_ai_audience_mapper(token, client_uuid)
         sync_storage_audience_mapper(token, client_uuid)
+        sync_mail_audience_mapper(token, client_uuid)
         print(f"[OK] created {client_id} client")
-        print(f"[OK] synchronized {client_id} with api-service, ai-platform and storage-service JWT audiences")
+        print(f"[OK] synchronized {client_id} with api-service, ai-platform, storage-service and mail-service JWT audiences")
 
 
 
