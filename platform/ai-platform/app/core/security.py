@@ -87,9 +87,15 @@ def user_roles(user: dict) -> set[str]:
 
 
 
+def realm_roles(user: dict) -> set[str]:
+    roles = set(user.get("roles") or [])
+    roles.update((user.get("realm_access") or {}).get("roles") or [])
+    return roles
+
+
 async def verify_token_admin(token: str) -> dict:
     user = await verify_token(token)
-    if not ({"admin", "platform_admin"} & user_roles(user)):
+    if not ({"admin", "platform_admin"} & realm_roles(user)):
         raise PermissionError("admin only")
     return user
 
@@ -111,7 +117,7 @@ async def require_admin(credentials: HTTPAuthorizationCredentials = Depends(bear
             headers={"WWW-Authenticate": "Bearer"},
         ) from exc
 
-    if not ({"admin", "platform_admin"} & user_roles(user)):
+    if not ({"admin", "platform_admin"} & realm_roles(user)):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required",
