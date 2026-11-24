@@ -27,6 +27,14 @@ class SocialTokenIn(BaseModel):
     device: str = "web"
 
 
+class RefreshIn(BaseModel):
+    refresh_token: str
+
+
+class LogoutIn(BaseModel):
+    refresh_token: str | None = None
+
+
 class LoginOut(BaseModel):
     access_token: str
     refresh_token: str
