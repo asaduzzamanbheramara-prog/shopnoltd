@@ -54,10 +54,10 @@ function PaymentAccounts() {
   }
 
   return <section style={{ marginTop: 52 }}>
-    <div style={{ marginBottom: 18 }}><h2 style={{ marginBottom: 6 }}>Shopno Database Firm — Admin Payment Accounts</h2><p style={{ color: '#64748b', margin: 0, lineHeight: 1.6 }}>Use the configured payment method shown below. Public pages display only safe, masked account information; sensitive account values remain restricted to authorized administrators.</p></div>
+    <div style={{ marginBottom: 18 }}><h2 style={{ marginBottom: 6 }}>Payment options</h2><p style={{ color: '#64748b', margin: 0, lineHeight: 1.6 }}>Available payment methods for Shopnoltd services. Only public, masked payment details are displayed here.</p></div>
     {loading && <div style={{ padding: 18, background: '#f8fafc', borderRadius: 14, color: '#64748b' }}>Loading available payment accounts…</div>}
     {!loading && error && <div style={{ padding: 18, background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 14, color: '#9a3412' }}>Payment accounts are temporarily unavailable.</div>}
-    {!loading && !error && !accounts.length && <div style={{ padding: 18, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 14, color: '#64748b' }}>No payment accounts are currently active.</div>}
+    {!loading && !error && !accounts.length && <div style={{ padding: 18, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 14, color: '#64748b' }}>Online payment options are not configured yet. Please check back later.</div>}
     {!loading && !error && accounts.length > 0 && <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(260px,1fr))', gap: 16 }}>
       {accounts.map((account) => <article key={account.id} style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: 16, padding: 20, boxShadow: '0 3px 12px rgba(15,23,42,.06)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start' }}><div><div style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: .7, color: '#64748b', fontWeight: 800 }}>{account.provider}</div><h3 style={{ margin: '6px 0' }}>{account.account_label}</h3></div><span style={{ padding: '4px 8px', borderRadius: 999, background: '#ecfdf5', color: '#047857', fontSize: 11, fontWeight: 800 }}>{account.currency}</span></div>
