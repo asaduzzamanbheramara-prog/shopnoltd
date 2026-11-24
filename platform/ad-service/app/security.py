@@ -36,7 +36,7 @@ async def current_user(
         claims = jwt.decode(
             token,
             key,
-            algorithms=[key.get("alg", "RS256")],
+            algorithms=["RS256"],
             audience=settings.keycloak_audience,
             issuer=settings.keycloak_issuer,
         )
