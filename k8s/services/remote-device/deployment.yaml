@@ -15,15 +15,26 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: remote-device-gateway
+      annotations:
+        checksum/gateway-source: f5b972c3892aa879c4351ec27b4081859cd90722
     spec:
       automountServiceAccountToken: false
       imagePullSecrets:
         - name: ghcr-pull-secret
+      volumes:
+        - name: gateway-source
+          configMap:
+            name: remote-device-gateway-source-hotfix
 
       containers:
         - name: remote-device-gateway
-          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-remote-device-gateway:c01ad7b84507689ba227f883a3bdc360a21b954f
+          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-remote-device-gateway@sha256:ecebbce54911730832e87b454a74607fb7a4545983dd78948a4d10b5498922ab
           imagePullPolicy: IfNotPresent
+          volumeMounts:
+            - name: gateway-source
+              mountPath: /app/app.py
+              subPath: app.py
+              readOnly: true
           env:
             - name: REGISTRY_URL
               value: http://remote-device-registry.shopno-tools.svc.cluster.local:8080

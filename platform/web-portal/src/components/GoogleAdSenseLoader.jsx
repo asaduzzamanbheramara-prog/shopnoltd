@@ -1,10 +1,13 @@
 import { useEffect } from 'react'
 import { useAdvertisingConsent } from '../lib/useAdvertisingConsent'
+import { useExternalAdPolicy } from '../lib/useExternalAdPolicy'
 
 const ADSENSE_CLIENT = 'ca-pub-4532970890139771'
 
 export default function GoogleAdSenseLoader() {
-  const allowed = useAdvertisingConsent()
+  const consentAllowed = useAdvertisingConsent()
+  const policyAllowed = useExternalAdPolicy('adsense')
+  const allowed = consentAllowed && policyAllowed
 
   useEffect(() => {
     const selector = 'script[data-shopnoltd-adsense="true"]'

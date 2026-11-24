@@ -34,3 +34,5 @@ jobs:
         run: docker build -f platform/android-cloud/gateway/Dockerfile -t shopnoltd/android-cloud-gateway:test platform/android-cloud/gateway
       - name: Build browser workspace image
         run: docker build -f platform/android-cloud/web/Dockerfile -t shopnoltd/android-cloud-web:test .
+      - name: Validate nginx configuration without resolving the controller at startup
+        run: docker run --rm shopnoltd/android-cloud-web:test nginx -t

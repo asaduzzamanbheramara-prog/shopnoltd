@@ -236,13 +236,19 @@ jobs:
           echo 'Changed files from push comparison:'
           printf '%s\n' "$files"
 
+          # The Web Portal is deployed independently by its dedicated workflow.
+          # Do not hold its release gate on an unrelated K3s/Argo CD reconciliation.
+          deployment_files="$(awk '!/^platform\/web-portal\//' <<<"$files")"
+          echo 'Files requiring image build or self-hosted GitOps:'
+          printf '%s\n' "$deployment_files"
+
           image_build_required=false
-          if grep -Eq '^(platform/|enketo/|billing-engine/|services/vpn-service/|shared/|\.github/workflows/build-platform\.yml$)' <<<"$files"; then
+          if grep -Eq '^(platform/|enketo/|billing-engine/|services/vpn-service/|shared/|\.github/workflows/build-platform\.yml$)' <<<"$deployment_files"; then
             image_build_required=true
           fi
           echo "image_build_required=$image_build_required" >> "$GITHUB_OUTPUT"
 
-          if grep -Eq '^(k8s/|ops/cloudflare/|platform/|services/|billing-engine/|enketo/|shared/|\.github/workflows/(self-hosted-k3s-gitops|build-platform)\.yml$)' <<<"$files"; then
+          if grep -Eq '^(k8s/|ops/cloudflare/|platform/|services/|billing-engine/|enketo/|shared/|\.github/workflows/build-platform\.yml$)' <<<"$deployment_files"; then
             echo 'deployment_required=true' >> "$GITHUB_OUTPUT"
             echo 'This push changes application or deployment-controlled files; image promotion and/or matching self-hosted GitOps reconciliation is required.'
           else
@@ -308,7 +314,7 @@ jobs:
               sleep 15
               continue
             fi
-            runs="$(jq -r --arg sha "$expected_sha" '[.workflow_runs[]? | select(.head_sha == $sha and (.event == "push" or .event == "workflow_dispatch"))] | sort_by(.created_at) | reverse | .[0] // empty' <<<"$response")"
+            runs="$(jq -r --arg sha "$expected_sha" '[.workflow_runs[]? | select(.head_sha == $sha and (.event == "push" or .event == "workflow_dispatch"))] | sort_by(.created_at) | reverse | map(select(.status != "completed" or .conclusion != "skipped")) | .[0] // empty' <<<"$response")"
             if [ -n "$runs" ]; then
               run_id="$(jq -r '.id' <<<"$runs")"
               status="$(jq -r '.status' <<<"$runs")"
@@ -348,7 +354,6 @@ jobs:
           - { name: api, url: 'https://api.shopnoltd.dpdns.org/healthz' }
           - { name: auth, url: 'https://auth.shopnoltd.dpdns.org' }
           - { name: kobo, url: 'https://kobo.shopnoltd.dpdns.org' }
-          - { name: chat, url: 'https://chat.shopnoltd.dpdns.org' }
           # The Meet backend is deployed, but its current public ingress exposes
           # only authenticated application routes; there is no public unauthenticated
           # Meet health route or Jitsi frontend hostname. The API gateway health check
@@ -358,7 +363,8 @@ jobs:
           # therefore are not mandatory production endpoints.
           - { name: mail, url: 'https://mail-api.shopnoltd.dpdns.org/healthz' }
           - { name: enketo, url: 'https://enketo.shopnoltd.dpdns.org' }
-          - { name: chatwoot, url: 'https://chatwoot.shopnoltd.dpdns.org' }
+          # Chatwoot and its chat alias were retired and scaled to zero (commit 6ceffdfb4fc9276e7ef0636ba82e61b3d8491e64).
+          # They are intentionally excluded from mandatory active-production endpoint checks.
           - { name: remote, url: 'https://remote.shopnoltd.dpdns.org' }
           - { name: vpn, url: 'https://vpn.shopnoltd.dpdns.org/healthz' }
           - { name: webmail, url: 'https://webmail.shopnoltd.dpdns.org' }

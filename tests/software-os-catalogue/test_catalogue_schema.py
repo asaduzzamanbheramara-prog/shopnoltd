@@ -79,6 +79,9 @@ class CatalogueSchemaTests(unittest.TestCase):
             "checksum_algorithm": "sha256",
             "checksum": "a" * 64,
             "evidence_url": "https://example.com/verification",
+            "compatibility_scope": "Windows 11 x64 desktop and laptop",
+            "compatibility_evidence_url": "https://example.com/compatibility",
+            "compatibility_reviewed_at": "2026-11-23",
         })
         self.assertEqual(list(VALIDATOR.iter_errors(entry)), [])
         entry["verification"]["checksum"] = "a" * 128
@@ -92,6 +95,9 @@ class CatalogueSchemaTests(unittest.TestCase):
             "checksum_algorithm": "sha512",
             "checksum": "b" * 128,
             "evidence_url": "https://example.com/verification",
+            "compatibility_scope": "Windows 11 x64 desktop and laptop",
+            "compatibility_evidence_url": "https://example.com/compatibility",
+            "compatibility_reviewed_at": "2026-11-23",
         })
         self.assertEqual(list(VALIDATOR.iter_errors(entry)), [])
         entry["verification"]["checksum"] = "b" * 64
@@ -105,6 +111,47 @@ class CatalogueSchemaTests(unittest.TestCase):
             page,
         )
         self.assertNotIn("entry.kind==='operating-system').forEach(entry=>catalogue.append(renderEntry(entry))", page)
+
+    def test_every_tutorial_declares_provenance(self):
+        for path in sorted((ROOT / "catalogue/entries").glob("*.json")):
+            entry = json.loads(path.read_text(encoding="utf-8"))
+            for tutorial in entry.get("tutorials", []):
+                with self.subTest(entry=path.name, tutorial=tutorial.get("title")):
+                    self.assertIn(tutorial.get("source_kind"), {
+                        "official-vendor", "community-reference", "shopnoltd-owned"
+                    })
+
+    def test_frontend_explains_pending_verification_and_provenance(self):
+        page = (ROOT / "frontend/software-os-center.html").read_text(encoding="utf-8")
+        self.assertIn("Review pending", page)
+        self.assertIn("installer integrity and exact device compatibility", page)
+        self.assertIn("Provenance:", page)
+        self.assertNotIn("tutorial.source_kind||'unspecified'", page)
+        self.assertIn("awaiting review", page)
+
+    def test_frontend_displays_verified_compatibility_evidence(self):
+        page = (ROOT / "frontend/software-os-center.html").read_text(encoding="utf-8")
+        public_page = (ROOT / "platform/shopnoltd-web/public/software-os-center.html").read_text(encoding="utf-8")
+        self.assertEqual(page, public_page)
+        self.assertIn("Compatibility scope: ", page)
+        self.assertIn("Compatibility evidence reviewed: ", page)
+        self.assertIn("compatibility_evidence_url", page)
+        self.assertIn("Compatibility evidence", page)
+
+    def test_verified_entry_requires_explicit_compatibility_evidence(self):
+        entry = json.loads(json.dumps(SAMPLE))
+        entry["verification"].update({
+            "method": "publisher-signature",
+            "status": "verified",
+            "evidence_url": "https://example.com/integrity",
+        })
+        self.assertTrue(list(VALIDATOR.iter_errors(entry)))
+        entry["verification"].update({
+            "compatibility_scope": "Windows 11 x64 desktop and laptop",
+            "compatibility_evidence_url": "https://example.com/compatibility",
+            "compatibility_reviewed_at": "2026-11-23",
+        })
+        self.assertEqual(list(VALIDATOR.iter_errors(entry)), [])
 
     def test_rejects_non_https_source(self):
         entry = json.loads(json.dumps(SAMPLE))

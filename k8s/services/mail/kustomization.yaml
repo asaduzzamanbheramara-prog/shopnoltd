@@ -4,6 +4,8 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - configmap.yaml
+  - roundcube-tls-config.yaml
+  - roundcube-mail-ca.yaml
   - deployment.yaml
   - roundcube-deployment.yaml
   - service.yaml

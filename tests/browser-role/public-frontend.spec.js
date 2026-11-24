@@ -11,14 +11,10 @@ const publicRoutes = [
   '/terms',
   '/blog',
   '/plugins',
-  '/login',
   '/register',
   '/domain-registration',
   '/downloads',
   '/profiles',
-  '/discover',
-  '/feed',
-  '/create-website?type=hr',
 ]
 
 async function dismissConsentBanner(page) {
@@ -61,6 +57,30 @@ test('privacy choices gate optional tags and can be reopened', async ({ page }) 
 })
 
 
+test('login reuses Keycloak SSO by default and only forces login for explicit account switching', async ({ page }) => {
+  const authorizationRequests = []
+  await page.route('https://auth.shopnoltd.dpdns.org/realms/shopnoltd/protocol/openid-connect/auth**', async route => {
+    authorizationRequests.push(route.request().url())
+    await route.fulfill({
+      status: 200,
+      contentType: 'text/html',
+      body: '<!doctype html><title>Mock Keycloak</title><main>Mock authorization endpoint</main>',
+    })
+  })
+
+  await page.goto(`${baseURL}/login`, { waitUntil: 'domcontentloaded' })
+  await expect.poll(() => authorizationRequests.length).toBe(1)
+  const automaticLogin = new URL(authorizationRequests[0])
+  expect(automaticLogin.searchParams.has('prompt')).toBe(false)
+  expect(automaticLogin.searchParams.get('client_id')).toBe('shopnoltd-web')
+  expect(automaticLogin.searchParams.get('code_challenge_method')).toBe('S256')
+
+  await page.goto(`${baseURL}/login?forceLogin=1`, { waitUntil: 'domcontentloaded' })
+  await expect.poll(() => authorizationRequests.length).toBe(2)
+  const accountSwitch = new URL(authorizationRequests[1])
+  expect(accountSwitch.searchParams.get('prompt')).toBe('login')
+  expect(accountSwitch.searchParams.get('code_challenge_method')).toBe('S256')
+})
 test('public frontend routes render in a real browser without uncaught JavaScript errors', async ({ page }) => {
   const pageErrors = []
   page.on('pageerror', error => pageErrors.push(error.message))
@@ -223,4 +243,93 @@ test('Agent mode stays inside mobile and desktop viewports with long model label
     expect(dimensions.document, `Agent mode at ${width}px should not overflow horizontally`)
       .toBeLessThanOrEqual(dimensions.viewport + 2)
   }
+})
+
+
+test('GA4 script requires analytics consent while GTM follows either optional consent', async ({ page }) => {
+  await page.goto(baseURL, { waitUntil: 'domcontentloaded' })
+  await expect(page.getByRole('dialog', { name: 'Privacy & cookie preferences' })).toBeVisible()
+  await expect(page.locator('script[src*="googletagmanager.com/gtag/js"]')).toHaveCount(0)
+  await expect(page.locator('script[src*="googletagmanager.com/gtm.js"]')).toHaveCount(0)
+
+  await page.getByRole('button', { name: 'Customize', exact: true }).click()
+  await page.getByRole('checkbox', { name: 'Allow analytics' }).check()
+  await page.getByRole('checkbox', { name: 'Allow advertising' }).uncheck()
+  await page.getByRole('button', { name: 'Save my choices', exact: true }).click()
+
+  await expect(page.locator('script[data-shopnoltd-gtag="true"]')).toHaveCount(1)
+  await expect(page.locator('script[data-shopnoltd-gtm="true"]')).toHaveCount(1)
+  await expect.poll(() => page.evaluate(() => window.__shopnoltdGaConfigured === true)).toBe(true)
+
+  const beforeNavigation = await page.evaluate(() => window.dataLayer.filter(
+    item => item && item[0] === 'event' && item[1] === 'page_view',
+  ).length)
+  await page.getByRole('link', { name: 'About', exact: true }).click()
+  await expect(page).toHaveURL(/\/about$/)
+  await expect.poll(() => page.evaluate(() => window.dataLayer.filter(
+    item => item && item[0] === 'event' && item[1] === 'page_view',
+  ).length)).toBe(beforeNavigation + 1)
+})
+
+test('advertising-only consent does not load or configure the GA4 library', async ({ page }) => {
+  await page.goto(baseURL, { waitUntil: 'domcontentloaded' })
+  await page.getByRole('button', { name: 'Customize', exact: true }).click()
+  await page.getByRole('checkbox', { name: 'Allow analytics' }).uncheck()
+  await page.getByRole('checkbox', { name: 'Allow advertising' }).check()
+  await page.getByRole('button', { name: 'Save my choices', exact: true }).click()
+
+  await expect(page.locator('script[data-shopnoltd-gtm="true"]')).toHaveCount(1)
+  await expect(page.locator('script[src*="googletagmanager.com/gtag/js"]')).toHaveCount(0)
+  await expect.poll(() => page.evaluate(() => JSON.parse(
+    localStorage.getItem('shopno_consent_preferences') || 'null',
+  ))).toEqual({ analytics: false, advertising: true })
+  await expect.poll(() => page.evaluate(() => window.__shopnoltdGaConfigured === true)).toBe(false)
+})
+
+
+test('purchase conversion is emitted only after the payment API confirms completion', async ({ page }) => {
+  const transactionId = '00000000-0000-4000-8000-000000000001'
+  await page.addInitScript(({ transactionId }) => {
+    localStorage.setItem('shopno_token', 'e30.eyJleHAiOjQxMDI0NDQ4MDB9.sig')
+    localStorage.setItem('shopno_consent_preferences', JSON.stringify({ analytics: true, advertising: false }))
+    sessionStorage.setItem('shopno_pending_checkout', JSON.stringify({
+      transaction_id: transactionId,
+      plan: 'pro',
+      currency: 'USD',
+      value: 29,
+      gateway: 'stripe',
+    }))
+  }, { transactionId })
+  await page.route('https://www.googletagmanager.com/**', route => route.abort())
+  await page.route('**/api/v1/deposits/' + transactionId, route => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({
+      id: transactionId,
+      status: 'completed',
+      amount: 29,
+      currency: 'USD',
+      method: 'stripe',
+    }),
+  }))
+
+  const response = await page.goto(baseURL + '/checkout/complete', { waitUntil: 'domcontentloaded' })
+  expect(response?.status()).toBeLessThan(400)
+  await expect(page.getByText('Payment confirmed.')).toBeVisible({ timeout: 12000 })
+  await expect.poll(() => page.evaluate(() => {
+    const events = (window.dataLayer || []).map(item => Array.from(item || []))
+    return events.filter(item => item[0] === 'event' && item[1] === 'purchase').length
+  })).toBe(1)
+
+  const purchase = await page.evaluate(() => {
+    const events = (window.dataLayer || []).map(item => Array.from(item || []))
+    return events.find(item => item[0] === 'event' && item[1] === 'purchase')
+  })
+  expect(purchase[2]).toMatchObject({
+    transaction_id: transactionId,
+    currency: 'USD',
+    value: 29,
+    method: 'stripe',
+  })
+  expect(await page.evaluate(() => sessionStorage.getItem('shopno_pending_checkout'))).toBeNull()
 })

@@ -17,10 +17,6 @@ spec:
       port: 80
       protocol: TCP
       targetPort: 8000
-    - name: vnc
-      port: 6080
-      protocol: TCP
-      targetPort: 6080
   selector:
     app: session-manager
   sessionAffinity: None

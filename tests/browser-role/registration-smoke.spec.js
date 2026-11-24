@@ -90,7 +90,8 @@ for (const provider of ['google', 'facebook', 'github']) {
       '/realms/shopnoltd/protocol/openid-connect/auth',
       '?ref=SMOKE123&category=business',
     )
-    expect(url.searchParams.get('kc_idp_hint')).toBe(provider)
+    // Keycloak keeps separate aliases so signup can use the first-broker-login flow.
+    expect(url.searchParams.get('kc_idp_hint')).toBe(`${provider}-signup`)
     expect(storage.pending_referral_code).toBe('SMOKE123')
     expect(storage.pending_referral_category).toBe('business')
   })

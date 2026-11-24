@@ -6,5 +6,4 @@ resources:
 - pvc.yaml
 - session-manager-service.yaml
 - session-manager-ingress.yaml
-- session-manager-vnc-ingress.yaml
 - session-manager-networkpolicy.yaml

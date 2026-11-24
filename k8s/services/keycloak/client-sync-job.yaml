@@ -29,12 +29,37 @@ spec:
             - name: KEYCLOAK_REALM
               value: "shopnoltd"
             - name: KEYCLOAK_ADMIN_USER
-              value: "admin"
+              value: "shopnoltd-admin"
             - name: KEYCLOAK_ADMIN_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: keycloak-secret
-                  key: KC_BOOTSTRAP_ADMIN_PASSWORD
+                  name: keycloak-admin-sync-credentials
+                  key: KEYCLOAK_ADMIN_PASSWORD
+            - name: SMTP_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: keycloak-smtp-config
+                  key: SMTP_HOST
+            - name: SMTP_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: keycloak-smtp-config
+                  key: SMTP_PORT
+            - name: SMTP_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-smtp-secret
+                  key: SMTP_USERNAME
+            - name: SMTP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-smtp-secret
+                  key: SMTP_PASSWORD
+            - name: SMTP_ENVELOPE_FROM
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-smtp-secret
+                  key: SMTP_ENVELOPE_FROM
           # Social provider credentials are optional until the provider consoles
           # have been provisioned. When present, the sync job reconciles them.
             - name: GOOGLE_CLIENT_ID
@@ -49,17 +74,17 @@ spec:
                   name: keycloak-social-providers
                   key: GOOGLE_CLIENT_SECRET
                   optional: true
-            - name: FACEBOOK_APP_ID
+            - name: FACEBOOK_LOGIN_APP_ID
               valueFrom:
                 secretKeyRef:
                   name: keycloak-social-providers
-                  key: FACEBOOK_APP_ID
+                  key: FACEBOOK_LOGIN_APP_ID
                   optional: true
-            - name: FACEBOOK_APP_SECRET
+            - name: FACEBOOK_LOGIN_APP_SECRET
               valueFrom:
                 secretKeyRef:
                   name: keycloak-social-providers
-                  key: FACEBOOK_APP_SECRET
+                  key: FACEBOOK_LOGIN_APP_SECRET
                   optional: true
             - name: GITHUB_CLIENT_ID
               valueFrom:

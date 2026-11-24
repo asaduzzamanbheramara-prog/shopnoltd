@@ -21,6 +21,12 @@ configMapGenerator:
   - 020-payment-runtime-permissions.sql
   - 023-exchange-social-model-tables.sql
   - 024-payment-wallet-tenant-unique.sql
+  - 025-omnichannel-oauth-pending-selection.sql
+  - 026-omnichannel-user-ownership.sql
+  - 027-payment-transaction-idempotency.sql
+  - 028-external-advertising-policy.sql
+  - 029-external-advertising-policy-permissions.sql
+  - 030-payment-transaction-status-width.sql
   options:
     disableNameSuffixHash: true
 

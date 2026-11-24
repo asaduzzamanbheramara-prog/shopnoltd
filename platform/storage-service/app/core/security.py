@@ -1,9 +1,12 @@
+import logging
+
 import httpx
 from shopno_core.security.jwt import JWTError, jwt
 
 from app.core.config import settings
 
 _jwks_cache = None
+logger = logging.getLogger(__name__)
 ACCEPTED_AUDIENCES = ("storage-service", "api-service")
 
 
@@ -14,7 +17,8 @@ async def _jwks(force_refresh: bool = False):
     if _jwks_cache:
         return _jwks_cache
     async with httpx.AsyncClient(timeout=10) as c:
-        r = await c.get(f"{settings.keycloak_issuer}/protocol/openid-connect/certs")
+        jwks_url = settings.keycloak_jwks_url or f"{settings.keycloak_issuer}/protocol/openid-connect/certs"
+        r = await c.get(jwks_url)
         r.raise_for_status()
         _jwks_cache = r.json()
     return _jwks_cache
@@ -47,9 +51,20 @@ async def verify_token(token: str) -> dict:
                 last_error = exc
         raise JWTError(f"invalid token audience: {last_error}")
     except Exception as e:
+        claims = locals().get("unverified_claims") or {}
+        logger.warning(
+            "Storage JWT validation failed category=%s kid=%s aud=%s iss=%s azp=%s exp=%s error=%s",
+            type(e).__name__,
+            (locals().get("h") or {}).get("kid"),
+            claims.get("aud"),
+            claims.get("iss"),
+            claims.get("azp"),
+            claims.get("exp"),
+            e,
+        )
         raise ValueError(
             f"invalid token: kid={locals().get('h', {}).get('kid')} "
-            f"aud={locals().get('unverified_claims', {}).get('aud')} error={e}"
+            f"aud={claims.get('aud')} error={e}"
         ) from e
 
 

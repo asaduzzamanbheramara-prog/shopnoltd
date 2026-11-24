@@ -26,6 +26,7 @@ import SavedArticles from './pages/SavedArticles'
 import Plugins from './pages/Plugins'
 import Services from './pages/Services'
 import Downloads from './pages/Downloads'
+import CloudStorage from './pages/CloudStorage'
 import Phone from './pages/Phone'
 import DomainRegistration from './pages/DomainRegistration'
 import VPN from './pages/VPN'
@@ -36,6 +37,7 @@ import AdminProfileVideos from './pages/AdminProfileVideos'
 import PaymentAccountsAdmin from './pages/PaymentAccountsAdmin'
 import DatabaseControlPlane from './pages/DatabaseControlPlaneFull'
 import TaskRatesAdmin from './pages/TaskRatesAdmin'
+import WorkMarketplaceAdmin from './pages/WorkMarketplaceAdmin'
 import AdminRoute from './components/AdminRoute'
 import FinancialCenter from './pages/FinancialCenter'
 import CheckoutCurrencySafe from './pages/CheckoutCurrencySafe'
@@ -46,6 +48,7 @@ import PostDetail from './pages/PostDetail'
 import WorkHub, { WorkDetail } from './pages/WorkHub'
 import ReferralHub from './pages/ReferralHub'
 import ReferralAdmin from './pages/ReferralAdmin'
+import ServiceOrdersAdmin from './pages/ServiceOrdersAdmin'
 import AccountHub from './pages/AccountHub'
 import Discover from './pages/Discover'
 import WebsiteBuilder from './pages/WebsiteBuilder'
@@ -55,15 +58,17 @@ import DataManagementProfile from './pages/DataManagementProfile'
 import InteriorBusinessProfile from './pages/InteriorBusinessProfile'
 import MyProfessionalProfile from './pages/MyProfessionalProfile'
 import ProfessionalProfilePage from './pages/ProfessionalProfilePage'
-import { isPlatformAdmin } from './lib/jwt'
+import { isPlatformAdmin, isTenantOwner } from './lib/jwt'
 import AdminAnalytics from './pages/AdminAnalytics'
 import Affiliate from './pages/Affiliate'
 import AffiliateOffers from './pages/AffiliateOffers'
 import AdNetwork from './pages/AdNetwork'
+import AdvertisingControl from './pages/AdvertisingControl'
 import { trackPageView } from './lib/analytics'
 import ConsentManager from './components/ConsentManager'
 import GoogleAdSenseLoader from './components/GoogleAdSenseLoader'
 import GoogleTagLoader from './components/GoogleTagLoader'
+import GoogleTagManagerLoader from './components/GoogleTagManagerLoader'
 import ProfitOnContentAds from './components/ProfitOnContentAds'
 import { KEYCLOAK_CLIENT_ID, KEYCLOAK_REALM, KEYCLOAK_URL } from './config'
 
@@ -87,15 +92,17 @@ function InstallPrompt() {
   return <button type="button" onClick={async () => { await prompt.prompt(); setPrompt(null) }} style={{ color: 'white', background: 'rgba(255,255,255,0.14)', border: '1px solid rgba(255,255,255,0.5)', borderRadius: 6, padding: '5px 12px', cursor: 'pointer', whiteSpace: 'nowrap' }}>Install Shopnoltd</button>
 }
 
-const PUBLIC_LINKS = [['About', '/about'], ['Services', '/services'], ['Pricing', '/pricing'], ['Profiles', '/profiles'], ['Interior', '/profile/interior-business'], ['VPN', '/vpn'], ['Create Website', '/create-website'], ['Discover', '/discover'], ['Feed', '/feed'], ['Work', '/work'], ['Blog', '/blog'], ['AI', '/ai'], ['Phone', '/phone'], ['Domains', '/domain-registration'], ['Downloads', '/downloads'], ['Affiliate & Tools', '/affiliate'], ['Offers', '/offers'], ['Android Cloud', '/android-cloud'], ['Contact', '/contact']]
+const PUBLIC_LINKS = [['About', '/about'], ['Services', '/services'], ['Pricing', '/pricing'], ['Advertise', '/ads'], ['Profiles', '/profiles'], ['Interior', '/profile/interior-business'], ['VPN', '/vpn'], ['Create Website', '/create-website'], ['Discover', '/discover'], ['Feed', '/feed'], ['Work', '/work'], ['Blog', '/blog'], ['AI', '/ai'], ['Phone', '/phone'], ['Domains', '/domain-registration'], ['Downloads', '/downloads'], ['Affiliate & Tools', '/affiliate'], ['Offers', '/offers'], ['Android Cloud', '/android-cloud'], ['Contact', '/contact']]
 const STANDALONE_APP_PATHS = new Set(['/android-cloud'])
 
 function Nav() {
+  const isFilesHost = window.location.hostname === 'files.shopnoltd.dpdns.org'
   const navigate = useNavigate()
   const location = useLocation()
   const token = localStorage.getItem('shopno_token')
   const loggedIn = !!token
   const isAdmin = loggedIn && isPlatformAdmin()
+  const isTenantOwnerUser = loggedIn && isTenantOwner()
   const [isMobile, setIsMobile] = React.useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 760px)').matches)
   const [menuOpen, setMenuOpen] = React.useState(false)
 
@@ -142,6 +149,8 @@ function Nav() {
       ? <a key={path} href={path} style={style}>{label}</a>
       : <Link key={path} to={path} style={style}>{label}</Link>
   }
+
+  if (isFilesHost) return null
 
   return <nav aria-label="Main navigation" style={{
     display: 'flex',
@@ -201,17 +210,19 @@ function Nav() {
         <Link to="/my-submission" style={{ color: 'white', textDecoration: 'none', padding: '8px 4px' }}>My Submission</Link>
         <Link to="/work-review" style={{ color: 'white', textDecoration: 'none', padding: '8px 4px' }}>Work Review</Link>
         <Link to="/my-blog" style={{ color: 'white', textDecoration: 'none', padding: '8px 4px' }}>My Blog</Link>
-        <Link to="/ads" style={{ color: 'white', textDecoration: 'none', padding: '8px 4px', fontWeight: location.pathname === '/ads' ? 700 : 400 }}>Ads Network</Link>
         {isAdmin && <>
           <Link to="/admin" style={{ color: 'white', textDecoration: 'none', padding: '8px 4px', fontWeight: 700 }}>Admin</Link>
           <Link to="/admin/analytics" style={{ color: 'white', textDecoration: 'none', padding: '8px 4px' }}>Analytics</Link>
+          <Link to="/admin/advertising" style={{ color: 'white', textDecoration: 'none', padding: '8px 4px', fontWeight: location.pathname === '/admin/advertising' ? 700 : 400 }}>Advertising Control</Link>
           <Link to="/admin/payment-accounts" style={{ color: 'white', textDecoration: 'none', padding: '8px 4px' }}>Payment Accounts</Link>
           <Link to="/admin/database" style={{ color: 'white', textDecoration: 'none', padding: '8px 4px' }}>Database</Link>
           <Link to="/admin/task-rates" style={{ color: 'white', textDecoration: 'none', padding: '8px 4px' }}>Task Rates</Link>
+          <Link to="/admin/work-marketplace" style={{ color: 'white', textDecoration: 'none', padding: '8px 4px' }}>Work Marketplace</Link>
           <Link to="/admin/referrals" style={{ color: 'white', textDecoration: 'none', padding: '8px 4px' }}>Referral Rewards</Link>
           <Link to="/admin/infrastructure" style={{ color: 'white', textDecoration: 'none', padding: '8px 4px' }}>Infrastructure</Link>
           <Link to="/admin/profile-videos" style={{ color: 'white', textDecoration: 'none', padding: '8px 4px' }}>Profile Videos</Link>
         </>}
+        {(isAdmin || isTenantOwnerUser) && <Link to="/admin/service-orders" style={{ color: 'white', textDecoration: 'none', padding: '8px 4px' }}>Service Orders</Link>}
         <button onClick={handleLogout} style={{ alignSelf: isMobile ? 'flex-start' : 'auto', color: 'white', background: 'transparent', border: '1px solid rgba(255,255,255,0.5)', borderRadius: 6, padding: '8px 12px', cursor: 'pointer' }}>Logout</button>
       </>}
     </div>
@@ -365,15 +376,16 @@ function RouteMetadata() {
 }
 
 function App() {
-  return <BrowserRouter basename={import.meta.env.BASE_URL}><AnalyticsTracker /><ProfileProvisioner /><RouteMetadata /><Nav /><SubdomainRedirect /><ProfitOnContentAds /><ConsentManager /><GoogleTagLoader /><GoogleAdSenseLoader /><Routes>
-    <Route path="/" element={<Home />} /><Route path="/pricing" element={<Pricing />} /><Route path="/privacy" element={<Privacy />} /><Route path="/about" element={<About />} /><Route path="/contact" element={<Contact />} /><Route path="/terms" element={<Terms />} /><Route path="/create-website" element={<ProtectedRoute><WebsiteBuilder /></ProtectedRoute>} /><Route path="/discover" element={<ProtectedRoute><Discover /></ProtectedRoute>} /><Route path="/feed" element={<ProtectedRoute><SocialFeed /></ProtectedRoute>} /><Route path="/saved-posts" element={<ProtectedRoute><SavedPosts /></ProtectedRoute>} /><Route path="/post/:id" element={<ProtectedRoute><PostDetail /></ProtectedRoute>} />
+  return <BrowserRouter basename={import.meta.env.BASE_URL}><AnalyticsTracker /><ProfileProvisioner /><RouteMetadata /><Nav /><SubdomainRedirect /><ProfitOnContentAds /><ConsentManager /><GoogleTagLoader /><GoogleTagManagerLoader /><GoogleAdSenseLoader /><Routes>
+    <Route path="/" element={window.location.hostname === 'files.shopnoltd.dpdns.org' ? <ProtectedRoute><CloudStorage /></ProtectedRoute> : <Home />} /><Route path="/cloud-storage" element={<ProtectedRoute><CloudStorage /></ProtectedRoute>} /><Route path="/pricing" element={<Pricing />} /><Route path="/privacy" element={<Privacy />} /><Route path="/about" element={<About />} /><Route path="/contact" element={<Contact />} /><Route path="/terms" element={<Terms />} /><Route path="/create-website" element={<ProtectedRoute><WebsiteBuilder /></ProtectedRoute>} /><Route path="/discover" element={<ProtectedRoute><Discover /></ProtectedRoute>} /><Route path="/feed" element={<ProtectedRoute><SocialFeed /></ProtectedRoute>} /><Route path="/saved-posts" element={<ProtectedRoute><SavedPosts /></ProtectedRoute>} /><Route path="/post/:id" element={<ProtectedRoute><PostDetail /></ProtectedRoute>} />
     <Route path="/work" element={<ProtectedRoute><WorkHub /></ProtectedRoute>} /><Route path="/referrals" element={<ProtectedRoute><ReferralHub /></ProtectedRoute>} /><Route path="/work/:id" element={<ProtectedRoute><WorkDetail /></ProtectedRoute>} /><Route path="/create-work" element={<ProtectedRoute><WorkHub /></ProtectedRoute>} /><Route path="/my-created-work" element={<ProtectedRoute><WorkHub /></ProtectedRoute>} /><Route path="/my-active-work" element={<ProtectedRoute><WorkHub /></ProtectedRoute>} /><Route path="/my-submission" element={<ProtectedRoute><WorkHub /></ProtectedRoute>} /><Route path="/work-review" element={<ProtectedRoute><WorkHub /></ProtectedRoute>} />
     <Route path="/account" element={<ProtectedRoute><AccountHub /></ProtectedRoute>} /><Route path="/notifications" element={<ProtectedRoute><AccountHub /></ProtectedRoute>} /><Route path="/my-professional-profile" element={<ProtectedRoute><MyProfessionalProfile /></ProtectedRoute>} />
     <Route path="/profiles" element={<Profiles />} /><Route path="/profile/data-management" element={<DataManagementProfile />} /><Route path="/profile/interior-business" element={<InteriorBusinessProfile />} /><Route path="/profile-view/:slug" element={<ProfessionalProfilePage />} />
     <Route path="/blog" element={<Blog />} /> <Route path="/saved-articles" element={<ProtectedRoute><SavedArticles /></ProtectedRoute>} /><Route path="/ads" element={<ProtectedRoute><AdNetwork /></ProtectedRoute>} /><Route path="/affiliate" element={<Affiliate />} /><Route path="/offers" element={<AffiliateOffers />} /><Route path="/offers/:slug" element={<AffiliateOffers />} /><Route path="/blog/:slug" element={<BlogPost />} /><Route path="/plugins" element={<Plugins />} /><Route path="/services" element={<Services />} /><Route path="/vpn" element={<ProtectedRoute><VPN /></ProtectedRoute>} /><Route path="/downloads" element={<Downloads />} /><Route path="/phone" element={<Phone />} /><Route path="/domain-registration" element={<DomainRegistration />} />
     <Route path="/login" element={<Login />} /><Route path="/register" element={<Register />} /><Route path="/callback" element={<Callback />} /><Route path="/connections/oauth/callback" element={<OAuthProviderCallback />} /><Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} /><Route path="/connections" element={<ProtectedRoute><OmnichannelConnections /></ProtectedRoute>} /><Route path="/app" element={<ProtectedRoute><AppWorkspace /></ProtectedRoute>} /><Route path="/ai" element={<ProtectedRoute><AIWorkspace /></ProtectedRoute>} /><Route path="/ai/connections" element={<ProtectedRoute><AIConnections /></ProtectedRoute>} /><Route path="/my-blog" element={<ProtectedRoute><MyBlog /></ProtectedRoute>} /><Route path="/domain-management" element={<ProtectedRoute><DomainManagement /></ProtectedRoute>} />
     <Route path="/billing" element={<ProtectedRoute><FinancialCenter view="billing" /></ProtectedRoute>} /><Route path="/subscriptions" element={<ProtectedRoute><FinancialCenter view="subscriptions" /></ProtectedRoute>} /><Route path="/invoices" element={<ProtectedRoute><FinancialCenter view="invoices" /></ProtectedRoute>} /><Route path="/checkout" element={<ProtectedRoute><CheckoutCurrencySafe /></ProtectedRoute>} /><Route path="/checkout/complete" element={<ProtectedRoute><CheckoutComplete /></ProtectedRoute>} /><Route path="/payments" element={<ProtectedRoute><FinancialCenter view="payments" /></ProtectedRoute>} /><Route path="/transactions" element={<ProtectedRoute><FinancialCenter view="transactions" /></ProtectedRoute>} /><Route path="/wallet" element={<ProtectedRoute><FinancialCenter view="wallet" /></ProtectedRoute>} /><Route path="/wallet/ledger" element={<ProtectedRoute><FinancialCenter view="ledger" /></ProtectedRoute>} /><Route path="/exchange" element={<ProtectedRoute><FinancialCenter view="exchange" /></ProtectedRoute>} /><Route path="/reports" element={<ProtectedRoute><FinancialCenter view="reports" /></ProtectedRoute>} />
-    <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} /><Route path="/admin/analytics" element={<AdminRoute><AdminAnalytics /></AdminRoute>} /><Route path="/admin/payment-accounts" element={<AdminRoute><PaymentAccountsAdmin /></AdminRoute>} /><Route path="/admin/database" element={<AdminRoute><DatabaseControlPlane /></AdminRoute>} /><Route path="/admin/task-rates" element={<AdminRoute><TaskRatesAdmin /></AdminRoute>} /><Route path="/admin/referrals" element={<AdminRoute><ReferralAdmin /></AdminRoute>} /><Route path="/admin/blog" element={<AdminRoute><BlogAdmin /></AdminRoute>} /><Route path="/admin/infrastructure" element={<AdminRoute><AdminInfrastructure /></AdminRoute>} /><Route path="/admin/profile-videos" element={<AdminRoute><AdminProfileVideos /></AdminRoute>} /><Route path="/admin/ai-models" element={<AdminRoute><AIModels /></AdminRoute>} />
+    <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} /><Route path="/admin/analytics" element={<AdminRoute><AdminAnalytics /></AdminRoute>} /><Route path="/admin/advertising" element={<AdminRoute><AdvertisingControl /></AdminRoute>} /><Route path="/admin/payment-accounts" element={<AdminRoute><PaymentAccountsAdmin /></AdminRoute>} />
+    <Route path="/admin/service-orders" element={<AdminRoute allowTenantOwner><ServiceOrdersAdmin /></AdminRoute>} /><Route path="/admin/database" element={<AdminRoute><DatabaseControlPlane /></AdminRoute>} /><Route path="/admin/task-rates" element={<AdminRoute><TaskRatesAdmin /></AdminRoute>} /><Route path="/admin/work-marketplace" element={<AdminRoute><WorkMarketplaceAdmin /></AdminRoute>} /><Route path="/admin/referrals" element={<AdminRoute><ReferralAdmin /></AdminRoute>} /><Route path="/admin/blog" element={<AdminRoute><BlogAdmin /></AdminRoute>} /><Route path="/admin/infrastructure" element={<AdminRoute><AdminInfrastructure /></AdminRoute>} /><Route path="/admin/profile-videos" element={<AdminRoute><AdminProfileVideos /></AdminRoute>} /><Route path="/admin/ai-models" element={<AdminRoute><AIModels /></AdminRoute>} />
   </Routes></BrowserRouter>
 }
 

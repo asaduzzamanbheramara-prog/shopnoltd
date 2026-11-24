@@ -1,80 +1,311 @@
-import React from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { authenticatedRequest } from '../lib/financialApi'
+import { isPlatformAdmin } from '../lib/jwt'
 
-const OFFERS = [
- {id:35682,slug:'iphone-18-pro-rewards-us',name:'Rewards US – iPhone 18 Pro',payout:2,category:'Rewards',geo:'United States',trackingUrl:'https://www.af9m8trk.com/ZPC11ES8/UQ711VGP/',description:'Email-submit rewards campaign advertised as an opportunity to get $1,000 towards an iPhone 18 Pro. Reward eligibility and fulfilment are controlled by the advertiser.'},
- {id:35333,slug:'kelly-services-jobs-us',name:'DailyJobs – Kelly Services Jobs',payout:1.30,category:'Jobs',geo:'United States',description:'Email-submit lead campaign associated with Kelly Services job listings. This is not a job offer or a guarantee of employment.'},
- {id:35332,slug:'dollar-tree-jobs-us',name:'JobsListings – Dollar Tree Jobs',payout:2,category:'Jobs',geo:'United States',description:'Email-submit lead campaign associated with Dollar Tree job listings. Verify vacancies and application details with the advertiser.'},
- {id:32421,slug:'ai-jobs-us',name:'DailyJobs – AI Jobs',payout:2,category:'Jobs',geo:'United States',description:'Email-submit lead campaign for AI-related job listings. Openings and hiring decisions are determined by employers.'},
- {id:32419,slug:'fedex-jobs-us',name:'DailyJobs – FedEx Jobs',payout:2,category:'Jobs',geo:'United States',description:'Email-submit lead campaign associated with FedEx job listings. Confirm current openings with the advertiser.'},
- {id:32418,slug:'netflix-jobs-us',name:'DailyJobs – Netflix Jobs',payout:2,category:'Jobs',geo:'United States',description:'Email-submit lead campaign associated with Netflix job listings. It is not an official hiring promise.'},
- {id:31047,slug:'ups-jobs-us',name:'DailyJobs – UPS Jobs',payout:1.30,category:'Jobs',geo:'United States',description:'Email-submit lead campaign associated with UPS job listings. Check openings and requirements on the advertiser page.'},
- {id:30223,slug:'part-time-jobs-us',name:'DailyJobs – Part Time Jobs',payout:2,category:'Jobs',geo:'United States',description:'Email-submit lead campaign for part-time job listings. Availability and requirements are determined by the advertiser.'},
- {id:23038,slug:'housekeeping-jobs-us',name:'JobsListings – Housekeeping Jobs',payout:2.40,category:'Jobs',geo:'United States',description:'Email-submit lead campaign associated with housekeeping job listings. Confirm role details with the advertiser.'},
- {id:22826,slug:'construction-jobs-us',name:'JobsListings – Construction Jobs',payout:2,category:'Jobs',geo:'United States',description:'Email-submit lead campaign associated with construction job listings. The advertiser provides actual vacancy information.'},
- {id:22825,slug:'airport-jobs-us',name:'JobsListings – Airport Jobs',payout:2,category:'Jobs',geo:'United States',description:'Email-submit lead campaign associated with airport job listings. Confirm employers and requirements on the advertiser page.'},
- {id:22103,slug:'amazon-jobs-us',name:'JobsListings – Amazon Jobs',payout:1.30,category:'Jobs',geo:'United States',description:'Email-submit lead campaign associated with Amazon job listings. This campaign does not itself represent an official job offer.'},
- {id:22102,slug:'walmart-work-from-home-us',name:'JobsListings – Walmart Work From Home',payout:1.30,category:'Jobs',geo:'United States',description:'Email-submit lead campaign associated with work-from-home listings. Verify roles and availability before applying.'},
- {id:33617,slug:'costco-100-rewards-us',name:'Rewards US – Costco $100',payout:3,category:'Rewards',geo:'United States',description:'Email-submit rewards campaign advertised with a $100 Costco reward. Terms and fulfilment are controlled by the advertiser.'},
- {id:33616,slug:'paypal-1000-rewards-us',name:'Rewards US – PayPal $1000',payout:3,category:'Rewards',geo:'United States',description:'Email-submit rewards campaign advertised with a $1,000 PayPal reward. The advertised reward is not guaranteed.'},
- {id:33614,slug:'cash-750-rewards-us',name:'Rewards US – Cash $750',payout:3,category:'Rewards',geo:'United States',description:'Email-submit rewards campaign advertised with a $750 cash reward. Eligibility is controlled by the advertiser.'},
- {id:34909,slug:'grocery-750-rewards-us',name:'Rewards US – Grocery $750',payout:2,category:'Rewards',geo:'United States',description:'Email-submit rewards campaign advertised with a $750 grocery reward. Review the advertiser terms.'},
- {id:27283,slug:'costco-750-rewards-us',name:'UpLevelRewards – Costco $750',payout:2.50,category:'Rewards',geo:'United States',previewUrl:'https://www.uplevelrewards.com/?Flow=6b51d955-0748-462e-9eb5-0ccdd7eceb37&isPrePop=true&RBC=1&reward=costco750&bckm=1',description:'Email-submit rewards campaign advertised as $750 towards Costco. Reward eligibility and fulfilment are determined by the advertiser.'},
- {id:27282,slug:'mcdonalds-100-rewards-us',name:'UpLevelRewards – McDonald’s $100',payout:2.50,category:'Rewards',geo:'United States',previewUrl:'https://www.uplevelrewards.com/?Flow=656AE1C3-D3CE-3C2C-D9AE-1CBE7395FA7DE8814900&isPrePop=true&RBC=1&lp=fastfoodreviewer&reward=mcds100foodrvwrbns&bckm=1',description:'Email-submit rewards campaign advertised as $100 for food or drinks at McDonald’s. Review advertiser terms; the reward is not guaranteed.'},
- {id:27281,slug:'target-750-rewards-us',name:'Rewards US – Target $750',payout:2.50,category:'Rewards',geo:'United States',previewUrl:'https://www.uplevelrewards.com/?Flow=656AE1C3-D3CE-3C2C-D9AE-1CBE7395FA7DE8814900&isPrePop=true&RBC=1&lp=flashpolllimitedtime&reward=target750limitedpoll',description:'Email-submit rewards campaign advertised as $750 towards Target shopping. Eligibility and fulfilment are controlled by the advertiser.'},
- {id:27279,slug:'zelle-750-rewards-us',name:'UpLevelRewards – Zelle $750',payout:2.50,category:'Rewards',geo:'United States',previewUrl:'https://www.surveysandpromoonline.com/?Flow=6b51d955-0748-462e-9eb5-0ccdd7eceb37&isPrePop=true&RBC=1&reward=zelle750',description:'Email-submit rewards campaign advertised as $750 on Zelle. Review advertiser terms and eligibility; reward is not guaranteed.'},
- {id:27034,slug:'ebike-1000-rewards-us',name:'UpLevelRewards – $1,000 eBike',payout:2.50,category:'Rewards',geo:'United States',previewUrl:'https://www.uplevelrewards.com/?Flow=656AE1C3-D3CE-3C2C-D9AE-1CBE7395FA7DE8814900&isPrePop=true&RBC=1&lp=flashpollshopping&reward=ebikepoll1000&bckm=1',description:'Email-submit rewards campaign advertised as $1,000 towards an eBike. Review all advertiser conditions; reward is not guaranteed.'},
- {id:21982,slug:'pepsi-jobs-us',name:'JobListings – Pepsi Jobs',payout:2.40,category:'Jobs',geo:'United States',description:'Email-submit lead campaign associated with Pepsi job listings. No specific job availability or interview may be claimed. Any wage claims must be substantiated.',restrictions:['No misleading or incentive traffic.','Do not state or imply that a particular job is currently available.','Do not state or imply that the visitor has an interview scheduled or will be scheduled.','Any claims about hourly wages must be substantiated.']}
-]
-const money = n => '$' + Number(n).toFixed(2)
-const shell = {maxWidth:1120,margin:'0 auto',padding:'36px 18px 80px',fontFamily:'system-ui,sans-serif',color:'#172033'}
-const box = {border:'1px solid #e2e8f0',borderRadius:14,padding:18,background:'#fff'}
-const cta = {display:'inline-block',background:'#0369a1',color:'#fff',borderRadius:9,padding:'10px 15px',textDecoration:'none',fontWeight:700}
-function Card({offer}) {
- return <article style={{...box,display:'flex',flexDirection:'column',gap:10}}>
-  <div style={{display:'flex',justifyContent:'space-between',gap:10,flexWrap:'wrap'}}><b style={{color:'#0369a1'}}>{offer.category}</b><b style={{color:'#047857'}}>{money(offer.payout)} per approved lead</b></div>
-  <h2 style={{fontSize:19,margin:0}}>{offer.name}</h2>
-  <p style={{color:'#64748b',fontSize:13,margin:0}}>Campaign #{offer.id} · {offer.geo} · Email submit</p>
-  <p style={{color:'#475569',lineHeight:1.6,margin:0}}>{offer.description}</p>
-  <Link to={'/offers/'+offer.slug} style={{...cta,background:'#0f172a',alignSelf:'flex-start',marginTop:5}}>View offer details</Link>
- </article>
-}
+const shell = { maxWidth: 1120, margin: '0 auto', padding: '32px 18px 72px', fontFamily: 'system-ui,sans-serif', color: '#172033' }
+const panel = { border: '1px solid #e2e8f0', borderRadius: 14, padding: 18, background: '#fff' }
+const button = { border: 0, borderRadius: 9, padding: '10px 14px', background: '#0369a1', color: '#fff', fontWeight: 700, cursor: 'pointer' }
+const money = (value, currency = 'USD') => { try { return new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(Number(value || 0)) } catch { return Number(value || 0).toFixed(2) + ' ' + currency } }
+
 export default function AffiliateOffers() {
- const {slug} = useParams()
- const offer = OFFERS.find(item=>item.slug===slug)
- if (slug && !offer) return <main style={shell}><h1>Offer not found</h1><Link to="/offers">Browse offers</Link></main>
- if (offer) return <main style={{...shell,maxWidth:850}}>
-  <Link to="/offers">← All affiliate offers</Link>
-  <article style={{...box,marginTop:22,padding:'clamp(20px,4vw,36px)'}}>
-   <b style={{color:'#0369a1'}}>SHOPNOLTD PARTNER OFFER · {offer.category}</b>
-   <h1 style={{fontSize:'clamp(30px,5vw,44px)',lineHeight:1.15}}>{offer.name}</h1>
-   <p style={{fontSize:22,fontWeight:800,color:'#047857'}}>{money(offer.payout)} potential payout per approved lead</p>
-   <p style={{color:'#64748b'}}>Campaign #{offer.id} · Eligible geography: {offer.geo} · Conversion: email submit</p>
-   <p style={{lineHeight:1.8}}>{offer.description}</p>
-   <aside style={{background:'#f8fafc',padding:15,borderRadius:10,border:'1px solid #e2e8f0'}}>
-    <b>Before you continue</b>
-    <ul style={{lineHeight:1.8,color:'#475569'}}>
-     <li>This campaign is intended for visitors in {offer.geo}; visitors elsewhere may not qualify.</li>
-     <li>Review advertiser terms, eligibility, privacy notice and any costs before submitting information.</li>
-     <li>Shopnoltd does not guarantee employment, prizes, gift cards, cash or rewards.</li>
-     <li>Never provide passwords, payment-card details or government identity numbers through an offer form.</li>
-    </ul>
-   </aside>
-   {offer.previewUrl ? <p><a href={offer.previewUrl} target="_blank" rel="nofollow noopener noreferrer">View advertiser preview ↗</a></p> : null}
-   {offer.restrictions?.length ? <aside><b>Mandatory advertiser restrictions</b><ul>{offer.restrictions.map(rule=><li key={rule}>{rule}</li>)}</ul></aside> : null}
-   <p style={{fontSize:13,color:'#64748b'}}>Affiliate disclosure: Shopnoltd may earn a commission if the advertiser accepts a qualifying lead. The advertiser's page and terms govern the actual offer.</p>
-   {offer.trackingUrl ? <a href={(() => { const url = new URL(offer.trackingUrl); url.searchParams.set('s1','shopnoltd'); url.searchParams.set('s2',String(offer.id)); url.searchParams.set('s3','offer-detail'); return url.toString() })()} target="_blank" rel="sponsored nofollow noopener noreferrer" style={cta}>Continue to advertiser ↗</a> : <p style={{color:'#92400e',background:'#fffbeb',padding:12,borderRadius:8}}>Affiliate tracking link pending. This offer is listed for review, but its advertiser tracking link has not been supplied yet, so applications are not enabled.</p>}
-  </article>
- </main>
- return <main style={shell}>
-  <header style={{marginBottom:26}}>
-   <b style={{color:'#0284c7'}}>SHOPNOLTD · AFFILIATE PARTNERS</b>
-   <h1 style={{fontSize:'clamp(32px,5vw,46px)',marginBottom:8}}>Jobs &amp; Rewards Offers</h1>
-   <p style={{maxWidth:780,color:'#64748b',lineHeight:1.7}}>Browse partner campaigns. Each offer has its own Shopnoltd information page. When you choose to continue, you go to the advertiser's page to review its terms and submit an email if eligible.</p>
-   <small style={{color:'#64748b'}}>Sponsored affiliate links · Campaign terms and eligibility are set by the advertiser.</small>
-  </header>
-  <section aria-label="Affiliate offers" style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(min(100%,280px),1fr))',gap:16}}>
-   {OFFERS.map(item=><Card key={item.id} offer={item}/>)}
-  </section>
- </main>
+  const { slug } = useParams()
+  const [offers, setOffers] = useState([])
+  const [summary, setSummary] = useState(null)
+  const [rate, setRate] = useState(null)
+  const [adminOffers, setAdminOffers] = useState([])
+  const [adminSummary, setAdminSummary] = useState({})
+  const [adminEvents, setAdminEvents] = useState([])
+  const [providerRefs, setProviderRefs] = useState({})
+  const [sandboxSummary, setSandboxSummary] = useState(null)
+  const [sandboxAdmin, setSandboxAdmin] = useState(null)
+  const [sandboxPayout, setSandboxPayout] = useState('1.00')
+  const [sandboxShare, setSandboxShare] = useState(70)
+  const [links, setLinks] = useState({})
+  const [message, setMessage] = useState('')
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [syncingAffmine, setSyncingAffmine] = useState(false)
+  const [shareEdits, setShareEdits] = useState({})
+  const [newOffer, setNewOffer] = useState({ network_offer_id: '', title: '', tracking_url: '', click_param: 's1', network_payout: '', countries: '', currency: 'USD', user_share_percent: 70, incentive_allowed: false })
+  const loggedIn = Boolean(localStorage.getItem('shopno_token'))
+  const admin = loggedIn && isPlatformAdmin()
+  const bdtEstimate = amount => rate ? '≈ ৳' + (Number(amount || 0) * Number(rate.rate)).toLocaleString('en-BD', { maximumFractionDigits: 2 }) : 'BDT rate unavailable'
+
+  const load = useCallback(async () => {
+    if (!loggedIn) return
+    setLoading(true); setError('')
+    try {
+      const [offersData, summaryData, rateData] = await Promise.all([
+        authenticatedRequest('/api/v1/affiliate/offers'),
+        authenticatedRequest('/api/v1/affiliate/me/summary'),
+        authenticatedRequest('/api/v1/affiliate/rates/usd-bdt').catch(() => null),
+      ])
+      setOffers(Array.isArray(offersData) ? offersData : [])
+      setSummary(summaryData)
+      setRate(rateData)
+      const sandboxData = await authenticatedRequest('/api/v1/affiliate/sandbox/me/summary').catch(() => null)
+      setSandboxSummary(sandboxData)
+      if (admin) {
+        const [adminRows, adminTotals, eventRows] = await Promise.all([
+          authenticatedRequest('/api/v1/affiliate/admin/offers'),
+          authenticatedRequest('/api/v1/affiliate/admin/summary'),
+          authenticatedRequest('/api/v1/affiliate/admin/adgem/events'),
+        ])
+        setAdminOffers(Array.isArray(adminRows) ? adminRows : [])
+        setAdminSummary(adminTotals || {})
+        setAdminEvents(Array.isArray(eventRows) ? eventRows : [])
+        const sandboxTotals = await authenticatedRequest('/api/v1/affiliate/sandbox/admin/summary').catch(() => null)
+        setSandboxAdmin(sandboxTotals || null)
+      }
+    } catch (e) { setError(e.message || 'Could not load affiliate data') }
+    finally { setLoading(false) }
+  }, [loggedIn, admin])
+
+  useEffect(() => { load() }, [load])
+
+  async function simulateEarning() {
+    setError(''); setMessage('')
+    try {
+      const result = await authenticatedRequest('/api/v1/affiliate/sandbox/simulate', {
+        method: 'POST',
+        body: JSON.stringify({ network_payout_usd: Number(sandboxPayout), user_share_percent: Number(sandboxShare) }),
+      })
+      setMessage('Sandbox conversion created: user ' + money(result.simulated_user_amount) + ', Shopnoltd ' + money(result.simulated_platform_amount) + '. This is simulated only; no wallet credit.')
+      await load()
+    } catch (e) { setError(e.message || 'Sandbox simulation failed') }
+  }
+
+  async function resetSandbox() {
+    setError(''); setMessage('')
+    try {
+      const result = await authenticatedRequest('/api/v1/affiliate/sandbox/me/reset', { method: 'DELETE' })
+      setMessage('Removed ' + result.deleted_test_records + ' of your sandbox test records. Wallet unchanged.')
+      await load()
+    } catch (e) { setError(e.message || 'Could not reset sandbox records') }
+  }
+
+  async function createLink(offer) {
+    setError(''); setMessage('')
+    try {
+      const result = await authenticatedRequest('/api/v1/affiliate/offers/' + offer.id + '/start', { method: 'POST' })
+      setLinks(current => ({ ...current, [offer.id]: result.url }))
+      try { await navigator.clipboard.writeText(result.url); setMessage('Your personal tracking link was copied. Share this link to attribute eligible clicks to your account.') }
+      catch { setMessage('Your personal tracking link is ready below. Copy it to share.') }
+    } catch (e) { setError(e.message || 'Could not create a tracking link') }
+  }
+
+  async function updateShare(offerId) {
+    setError(''); setMessage('')
+    try {
+      await authenticatedRequest('/api/v1/affiliate/admin/offers/' + offerId + '/commission', {
+        method: 'PATCH', body: JSON.stringify({ user_share_percent: Number(shareEdits[offerId]) }),
+      })
+      setMessage('Commission split updated for future conversions. Existing conversion snapshots are not changed.')
+      await load()
+    } catch (e) { setError(e.message || 'Commission update failed') }
+  }
+
+  async function toggleEligibility(offer) {
+    setError(''); setMessage('')
+    try {
+      await authenticatedRequest('/api/v1/affiliate/admin/offers/' + offer.id + '/eligibility', { method: 'PATCH', body: JSON.stringify({ incentive_allowed: !offer.incentive_allowed }) })
+      setMessage('Offer incentive eligibility updated. Disabling incentive permission automatically pauses the offer.')
+      await load()
+    } catch (e) { setError(e.message || 'Eligibility update failed') }
+  }
+
+  async function setOfferStatus(offer, action) {
+    setError(''); setMessage('')
+    try {
+      await authenticatedRequest('/api/v1/affiliate/admin/offers/' + offer.id + '/' + action, { method: 'POST' })
+      setMessage('Offer status updated.')
+      await load()
+    } catch (e) { setError(e.message || 'Offer status update failed') }
+  }
+
+  async function syncAffmine() {
+    setError(''); setMessage(''); setSyncingAffmine(true)
+    try {
+      const result = await authenticatedRequest('/api/v1/affiliate/admin/sync-affmine', { method: 'POST' })
+      setMessage('Affmine sync complete: ' + result.inserted + ' new drafts, ' + result.updated + ' updated, ' + result.skipped_invalid_currency + ' invalid-currency offers skipped. No offers were activated and no incentives were enabled.')
+      await load()
+    } catch (e) { setError(e.message || 'Affmine campaign sync failed') }
+    finally { setSyncingAffmine(false) }
+  }
+
+  async function approveAdGemEvent(requestId) {
+    setError(''); setMessage('')
+    try {
+      await authenticatedRequest('/api/v1/affiliate/admin/adgem/events/' + encodeURIComponent(requestId) + '/approve', { method: 'POST' })
+      setMessage('Conversion approved for reconciliation. It is not payable until Shopnoltd receives the provider payout.')
+      await load()
+    } catch (e) { setError(e.message || 'Conversion approval failed') }
+  }
+
+  async function markProviderPaid(txn) {
+    const reference = String(providerRefs[txn] || '').trim()
+    if (!reference) { setError('Enter the actual provider payout reference before marking funds received.'); return }
+    setError(''); setMessage('')
+    try {
+      await authenticatedRequest('/api/v1/affiliate/admin/conversions/' + encodeURIComponent(txn) + '/provider-paid', {
+        method: 'POST', body: JSON.stringify({ provider_payment_reference: reference }),
+      })
+      setMessage('Provider payout marked received. The user wallet is still unchanged until settlement is run.')
+      await load()
+    } catch (e) { setError(e.message || 'Provider payout reconciliation failed') }
+  }
+
+  async function settleConversion(txn) {
+    setError(''); setMessage('')
+    try {
+      const result = await authenticatedRequest('/api/v1/affiliate/admin/conversions/' + encodeURIComponent(txn) + '/settle', { method: 'POST' })
+      setMessage('Wallet settlement confirmed. Payment transaction: ' + result.wallet_transaction_id)
+      await load()
+    } catch (e) { setError(e.message || 'Wallet settlement failed') }
+  }
+
+  async function addOffer(event) {
+    event.preventDefault(); setError(''); setMessage('')
+    try {
+      await authenticatedRequest('/api/v1/affiliate/admin/offers', { method: 'POST', body: JSON.stringify({ ...newOffer, network_payout: Number(newOffer.network_payout), user_share_percent: Number(newOffer.user_share_percent), currency: newOffer.currency }) })
+      setNewOffer({ network_offer_id: '', title: '', tracking_url: '', click_param: 's1', network_payout: '', countries: '', currency: 'USD', user_share_percent: 70, incentive_allowed: false })
+      setMessage('Offer added as Draft. Activate it only after written confirmation that Shopnoltd\'s incentivized task model and traffic source are permitted.')
+      await load()
+    } catch (e) { setError(e.message || 'Offer could not be added') }
+  }
+
+  if (slug) return <main style={shell}><h1>Offer detail</h1><p>Offers are now loaded from the authenticated, country-filtered affiliate API. Open the Offers page to select an active offer and generate your personal tracking link.</p><Link to="/offers">Browse available offers</Link></main>
+
+  if (!loggedIn) return <main style={shell}>
+    <header style={{ marginBottom: 24 }}><b style={{ color: '#0284c7' }}>SHOPNOLTD PARTNER PROGRAM</b><h1 style={{ fontSize: 'clamp(30px,5vw,44px)' }}>Affiliate Offers &amp; Earnings</h1><p>Sign in to see offers available in your country, create your own tracking links and track approved earnings.</p></header>
+    <section style={panel}><h2>Sign in required</h2><p>Your personal affiliate links and earnings are tied to your verified Shopnoltd account.</p><Link to="/login" style={{ ...button, display: 'inline-block', textDecoration: 'none' }}>Sign in to continue</Link></section>
+  </main>
+
+  return <main style={shell}>
+    <header style={{ marginBottom: 24 }}>
+      <b style={{ color: '#0284c7' }}>SHOPNOLTD PARTNER PROGRAM</b>
+      <h1 style={{ fontSize: 'clamp(30px,5vw,44px)', marginBottom: 8 }}>Affiliate Offers &amp; Earnings</h1>
+      <p style={{ maxWidth: 820, color: '#64748b', lineHeight: 1.7 }}>Choose a Shopnoltd-managed task, generate your personal tracking link and follow the displayed conditions honestly. Shopnoltd manages your task support, earnings records and payout communication. You do not need a separate affiliate-network account or direct network support contact. The task destination may be operated by an advertiser; required terms and disclosures remain applicable. Rewards depend on verified approval and actual network payment; clicks alone do not earn money.</p>
+    </header>
+
+    {error && <p role="alert" style={{ ...panel, borderColor: '#fca5a5', color: '#991b1b' }}>{error}</p>}
+    {message && <p role="status" style={{ ...panel, borderColor: '#86efac', color: '#166534' }}>{message}</p>}
+    {loading && <p>Loading your affiliate data…</p>}
+
+    <section style={{ ...panel, marginBottom: 18 }}>
+      <h2 style={{ marginTop: 0 }}>My performance</h2>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(130px,1fr))', gap: 12 }}>
+        <Metric label="Tracked clicks" value={summary?.clicks ?? '—'} />
+        <Metric label="Conversions" value={summary?.conversions ?? '—'} />
+        <Metric label="Pending" value={money(summary?.pending?.amount_usd)} detail={bdtEstimate(summary?.pending?.amount_usd)} />
+        <Metric label="Approved, unpaid" value={money(summary?.approved_unpaid?.amount_usd)} detail={bdtEstimate(summary?.approved_unpaid?.amount_usd)} />
+        <Metric label="Payable" value={money(summary?.payable?.amount_usd)} detail={bdtEstimate(summary?.payable?.amount_usd)} />
+        <Metric label="Paid" value={money(summary?.paid?.amount_usd)} detail={bdtEstimate(summary?.paid?.amount_usd)} />
+      </div>
+      <p style={{ color: '#64748b', fontSize: 13 }}>Rewards become payable only after provider approval and Shopnoltd confirms the corresponding payout was received. The Paid amount reflects completed wallet settlements; pending and approved-unpaid amounts are not spendable.</p>
+      {rate ? <p style={{ fontSize: 13, color: '#475569' }}>Current USD/BDT reference: ৳{Number(rate.rate).toFixed(4)} per USD · {rate.source || 'Exchange service'} · {rate.fetched_at || 'Timestamp unavailable'}</p> : <p style={{ fontSize: 13, color: '#92400e' }}>Live USD/BDT reference is temporarily unavailable; no estimated BDT value is shown.</p>}
+    </section>
+
+    {admin && sandboxSummary?.enabled && <section style={{ ...panel, marginBottom: 18, borderStyle: 'dashed', borderColor: '#d97706' }}>
+      <h2 style={{ marginTop: 0 }}>Earnings Sandbox — Test Only</h2>
+      <p style={{ color: '#92400e', fontWeight: 700 }}>These are simulated figures, not real partner earnings, not payable, and never added to your wallet.</p>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: 12, alignItems: 'end' }}>
+        <label>Mock network payout (USD)<input type="number" min="0.01" max="1000" step="0.01" value={sandboxPayout} onChange={e => setSandboxPayout(e.target.value)} style={{ display: 'block', width: '100%', padding: 9, boxSizing: 'border-box' }} /></label>
+        <label>User share (%)<input type="number" min="0" max="90" step="1" value={sandboxShare} onChange={e => setSandboxShare(e.target.value)} style={{ display: 'block', width: '100%', padding: 9, boxSizing: 'border-box' }} /></label>
+        <button type="button" style={button} onClick={simulateEarning}>Create mock conversion</button>
+        <button type="button" style={{ ...button, background: '#475569' }} onClick={resetSandbox}>Reset my test records</button>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: 12, marginTop: 14 }}>
+        <Metric label="Sandbox conversions" value={sandboxSummary?.conversions ?? 0} />
+        <Metric label="Mock network total" value={money(sandboxSummary?.simulated_network_payout_usd)} />
+        <Metric label="Mock user share" value={money(sandboxSummary?.simulated_user_amount_usd)} />
+      </div>
+      <small style={{ color: '#64748b' }}>Separate sandbox storage. Reset deletes only your sandbox records; real conversions and wallet balances are untouched.</small>
+    </section>}
+
+    <section>
+      <h2>Shopnoltd tasks available to your account</h2>
+      <p style={{ color: '#64748b', fontSize: 13 }}>{offers.length} available task{offers.length === 1 ? '' : 's'} - Each card shows only your reward. Availability is filtered automatically for your account.</p>
+      {offers.length === 0 && !loading && <div style={panel}><p>No approved tasks are currently available for your account. New tasks appear only after their terms and permitted promotion methods are verified.</p></div>}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,280px),1fr))', gap: 14 }}>
+        {offers.map(offer => <article key={offer.id} style={{ ...panel, display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <b style={{ color: '#0369a1' }}>Shopnoltd task</b>
+          <h3 style={{ margin: 0 }}>{offer.title}</h3>
+          <p style={{ margin: 0, color: '#047857', fontWeight: 700 }}>Your reward: {money(offer.reward_amount, offer.currency)}</p>
+          <p style={{ margin: 0, color: '#64748b', fontSize: 13 }}>Task availability is checked for your account before a personal task link is created.</p>
+          <button type="button" style={button} onClick={() => createLink(offer)}>Generate &amp; copy my tracking link</button>
+          {links[offer.id] && <div><label htmlFor={'affiliate-link-' + offer.id}>Your personal tracking link</label><input id={'affiliate-link-' + offer.id} readOnly value={links[offer.id]} style={{ width: '100%', boxSizing: 'border-box', padding: 9, marginTop: 5 }} /><button type="button" style={{ ...button, marginTop: 8 }} onClick={() => navigator.clipboard.writeText(links[offer.id])}>Copy link</button></div>}
+        </article>)}
+      </div>
+    </section>
+
+    {admin && <section style={{ marginTop: 36 }}>
+      <h2>Admin Affiliate Center</h2>
+      <div style={{ ...panel, marginBottom: 16 }}>
+        <h3 style={{ marginTop: 0 }}>Affmine Publisher API v1.0</h3>
+        <p style={{ color: '#64748b', lineHeight: 1.6 }}>Import active campaigns from Affmine into Shopnoltd. Every imported campaign stays Draft and incentive-disabled until its tracking URL, click macro, campaign terms, GEO and incentivized-traffic permission are verified.</p>
+        <button type="button" style={button} onClick={syncAffmine} disabled={syncingAffmine}>{syncingAffmine ? 'Syncing Affmine campaigns…' : 'Sync campaigns from Affmine'}</button>
+        <small style={{ display: 'block', marginTop: 8, color: '#64748b' }}>Requires server-side AFFMINE_AFF_ID and AFFMINE_API_KEY. Credentials are never sent to the browser.</small>
+      </div>
+      <div style={{ ...panel, marginBottom: 16 }}>
+        <h3 style={{ marginTop: 0 }}>Network conversion summary</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: 12 }}>
+          {Object.entries(adminSummary).map(([status, data]) => <Metric key={status} label={status.replaceAll('_',' ')} value={money(data.user_share_usd)} detail={'Platform: ' + money(data.platform_share_usd)} />)}
+        </div>
+        <p style={{ color: '#64748b', fontSize: 13 }}>Provider revenue is not Shopnoltd cash received until matched to an actual payout statement. User rewards are settled only after this reconciliation.</p>
+      </div>
+      <div style={{ ...panel, marginBottom: 16 }}>
+        <h3 style={{ marginTop: 0 }}>AdGem conversion review &amp; settlement</h3>
+        <p style={{ color: '#64748b', fontSize: 13 }}>Approve genuine signed conversions, record the actual provider payout reference when funds arrive, then settle the user's wallet. Do not enter a reference until the payout is visible in your publisher/payment account.</p>
+        {adminEvents.length === 0 && <p>No AdGem conversion events have been received yet.</p>}
+        <div style={{ display: 'grid', gap: 12 }}>
+          {adminEvents.map(event => <article key={event.request_id} style={{ border: '1px solid #e2e8f0', borderRadius: 10, padding: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+              <b>{event.goal_name || event.offer_id || 'AdGem conversion'}</b>
+              <b>{event.status}</b>
+            </div>
+            <p style={{ margin: '6px 0', color: '#64748b', fontSize: 13 }}>User: {event.user_id} · Provider payout: {money(event.network_payout)} · User reward: {money(event.user_amount)} · Shopnoltd share: {money(event.platform_amount)}</p>
+            <small style={{ color: '#64748b' }}>Request {event.request_id} · Signature verified: {String(event.signature_verified)} · {event.created_at || ''}</small>
+            {event.status === 'pending_review' && event.conversion_txn && <div style={{ marginTop: 10 }}><button type="button" style={button} onClick={() => approveAdGemEvent(event.request_id)}>Approve conversion</button></div>}
+            {event.status === 'approved_unpaid' && event.conversion_txn && <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}><input aria-label="Provider payout reference" placeholder="Actual provider payout reference" value={providerRefs[event.conversion_txn] || ''} onChange={e => setProviderRefs(v => ({ ...v, [event.conversion_txn]: e.target.value }))} style={{ flex: '1 1 240px', padding: 9 }} /><button type="button" style={button} onClick={() => markProviderPaid(event.conversion_txn)}>Confirm provider funds received</button></div>}
+            {event.status === 'payable' && event.conversion_txn && <div style={{ marginTop: 10 }}><p style={{ color: '#166534', fontSize: 13 }}>Provider payout reference: {event.provider_payment_reference || 'recorded'}</p><button type="button" style={button} onClick={() => settleConversion(event.conversion_txn)}>Settle user wallet</button></div>}
+            {event.status === 'paid' && <p style={{ color: '#166534', fontSize: 13, marginBottom: 0 }}>Wallet transaction: {event.wallet_transaction_id || 'settled'}</p>}
+          </article>)}
+        </div>
+      </div>
+      {sandboxAdmin?.enabled && <div style={{ ...panel, marginBottom: 16, borderStyle: 'dashed', borderColor: '#d97706' }}>
+        <h3 style={{ marginTop: 0 }}>Platform Sandbox Totals — Test Only</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', gap: 12 }}>
+          <Metric label="Mock conversions" value={sandboxAdmin?.test_conversions ?? 0} />
+          <Metric label="Mock user share" value={money(sandboxAdmin?.simulated_user_share_usd)} />
+          <Metric label="Mock Shopnoltd share" value={money(sandboxAdmin?.simulated_platform_share_usd)} />
+        </div>
+        <small style={{ color: '#92400e' }}>Never included in real affiliate revenue, payable amounts, or wallet funds.</small>
+      </div>}
+      <form onSubmit={addOffer} style={{ ...panel, display: 'grid', gap: 10, marginBottom: 16 }}>
+        <h3 style={{ margin: 0 }}>Add a network offer (admin only)</h3>
+        <input required placeholder="Network offer ID" value={newOffer.network_offer_id} onChange={e => setNewOffer(v => ({ ...v, network_offer_id: e.target.value }))} />
+        <input required placeholder="Offer title" value={newOffer.title} onChange={e => setNewOffer(v => ({ ...v, title: e.target.value }))} />
+        <input required type="url" placeholder="HTTPS tracking URL" value={newOffer.tracking_url} onChange={e => setNewOffer(v => ({ ...v, tracking_url: e.target.value }))} />
+        <input required placeholder="Network click-ID parameter (confirm in publisher macros)" value={newOffer.click_param} onChange={e => setNewOffer(v => ({ ...v, click_param: e.target.value }))} />
+        <input required type="number" min="0.0001" step="0.0001" placeholder="Network payout (source currency)" value={newOffer.network_payout} onChange={e => setNewOffer(v => ({ ...v, network_payout: e.target.value }))} />
+        <input placeholder="Currency ISO code, e.g. USD, EUR, BDT" maxLength={3} value={newOffer.currency} onChange={e => setNewOffer(v => ({ ...v, currency: e.target.value.toUpperCase() }))} />
+        <input placeholder="Countries, e.g. US,CA or WORLDWIDE" value={newOffer.countries} onChange={e => setNewOffer(v => ({ ...v, countries: e.target.value }))} />
+        <label>User commission percentage (platform keeps at least 10%) <input type="number" min="0" max="90" value={newOffer.user_share_percent} onChange={e => setNewOffer(v => ({ ...v, user_share_percent: e.target.value }))} /></label>
+        <label><input type="checkbox" checked={newOffer.incentive_allowed} onChange={e => setNewOffer(v => ({ ...v, incentive_allowed: e.target.checked }))} /> I have verified that the advertiser explicitly permits incentivized promotion for this offer.</label>
+        <button type="submit" style={button}>Add offer as Draft</button>
+      </form>
+      <div style={{ display: 'grid', gap: 10 }}>
+        {adminOffers.map(offer => <div key={offer.id} style={{ ...panel, display: 'grid', gridTemplateColumns: 'minmax(0,1fr) auto', alignItems: 'center', gap: 12 }}>
+          <div><b>{offer.title}</b><p style={{ margin: '4px 0', color: '#64748b', fontSize: 13 }}>#{offer.network_offer_id} · {offer.status} · Incentive permitted: {String(offer.incentive_allowed)}</p><small>Network payout {money(offer.network_payout, offer.currency)} · {offer.currency} · Platforms {offer.allowed_platform || 'unknown'} · Platform share {100 - Number(shareEdits[offer.id] ?? offer.user_share_percent)}%</small><div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}><button type="button" style={{ ...button, background: '#475569' }} onClick={() => toggleEligibility(offer)}>{offer.incentive_allowed ? 'Revoke incentive permission' : 'Confirm incentive permission'}</button><button type="button" style={{ ...button, background: offer.status === 'active' ? '#b45309' : '#15803d' }} onClick={() => setOfferStatus(offer, offer.status === 'active' ? 'deactivate' : 'activate')}>{offer.status === 'active' ? 'Pause offer' : 'Activate offer'}</button></div></div>
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}><input aria-label="User commission percentage" type="number" min="0" max="90" value={shareEdits[offer.id] ?? offer.user_share_percent} onChange={e => setShareEdits(v => ({ ...v, [offer.id]: e.target.value }))} style={{ width: 65, padding: 8 }} /><button type="button" style={button} onClick={() => updateShare(offer.id)}>Save split</button></div>
+        </div>)}
+      </div>
+    </section>}
+  </main>
+}
+
+function Metric({ label, value, detail }) {
+  return <div style={{ background: '#f8fafc', borderRadius: 10, padding: 12 }}><small style={{ color: '#64748b', textTransform: 'capitalize' }}>{label}</small><div style={{ fontSize: 22, fontWeight: 800, marginTop: 4 }}>{value}</div>{detail && <small style={{ color: '#64748b' }}>{detail}</small>}</div>
 }

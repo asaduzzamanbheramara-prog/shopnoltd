@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     smtp_envelope_from: str = ""
     smtp_timeout_seconds: int = 15
     keycloak_issuer: str = "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
+    keycloak_client_id: str = "shopnoltd-web"
     keycloak_audience: str = "mail-service"
 
     @property

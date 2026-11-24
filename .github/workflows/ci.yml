@@ -31,6 +31,16 @@ jobs:
           LITELLM_MASTER_KEY: ci-only-not-a-real-key
           WORKSPACE: ${{ runner.temp }}/shopno-agent-tests
         run: python -m unittest discover -s agent-service/tests -v
+  test-backup-integrity:
+    name: Test encrypted backup integrity and tamper detection
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run backup integrity regression tests
+        run: python -m unittest discover -s ops/backup -p test_authenticated_backup.py -v
   validate-k8s:
     name: Validate Kubernetes manifests
     runs-on: ubuntu-latest

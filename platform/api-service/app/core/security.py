@@ -43,10 +43,15 @@ async def verify_token(token: str) -> dict:
             issuer=settings.keycloak_issuer,
             options={"verify_aud": True, "verify_iss": True},
         )
-        roles = set(claims.get("roles", []) or [])
-        roles.update((claims.get("realm_access") or {}).get("roles", []) or [])
+        # Keep authoritative Keycloak realm roles separate from client roles.
+        # Some API consumers need the combined list for ordinary permissions,
+        # but tenant/platform administration must never be granted by a client role.
+        realm_roles = set(claims.get("roles", []) or [])
+        realm_roles.update((claims.get("realm_access") or {}).get("roles", []) or [])
+        roles = set(realm_roles)
         for client in (claims.get("resource_access") or {}).values():
             roles.update((client or {}).get("roles", []) or [])
+        claims["realm_roles"] = sorted(realm_roles)
         claims["roles"] = sorted(roles)
         return claims
     except Exception as e:

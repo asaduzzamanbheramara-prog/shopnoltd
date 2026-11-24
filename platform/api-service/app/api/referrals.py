@@ -128,7 +128,7 @@ async def set_admin_policy(body: dict, u=Depends(current_user), s: AsyncSession 
     maximum = body.get("max_amount")
     maximum = Decimal(str(maximum)) if maximum not in (None, "") else None
     currency = str(body.get("currency", "MATCH_TASK")).upper()
-    if percent < 0 or percent > 100 or fixed < 0 or (maximum is not None and maximum < 0): raise HTTPException(422, "invalid referral reward values")
+    if percent < 0 or percent > 30 or fixed < 0 or (maximum is not None and maximum < 0): raise HTTPException(422, "referral percentage cannot exceed the 30% platform commission pool")
     p = await get_policy(s, tenant, currency)
     p.mode, p.percent, p.fixed_amount, p.max_amount, p.currency, p.enabled = mode, percent, fixed, maximum, currency, 1 if body.get("enabled", True) else 0
     p.all_users_can_refer = 1 if body.get("all_users_can_refer", True) else 0

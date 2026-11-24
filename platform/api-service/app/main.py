@@ -15,9 +15,11 @@ from starlette.responses import Response
 from app.core.config import settings
 from app.core.db import Base, engine
 from app.models.work import Work, WorkAssignment, WorkSubmission  # noqa: F401
-from app.models.work_evidence import WorkTaskConfig, WorkSession, WorkEvidence, WorkEvent, GlobalTaskRate
+from app.models.work_evidence import WorkTaskConfig, WorkSession, WorkEvidence, WorkEvent, GlobalTaskRate  # noqa: F401
 from app.models.work_rating import WorkRating  # noqa: F401
 from app.models.referral import ReferralCode, Referral, ReferralPolicy, ReferralReward, ReferralSystemIdentity  # noqa: F401
+from app.models.service_order import ServiceOrder, ServiceOrderEvent  # noqa: F401
+from app.models.affiliate import AffiliateOffer, AffiliateClick, AffiliateConversion, AffiliateSandboxConversion, AdGemPostbackEvent  # noqa: F401
 
 log = structlog.get_logger()
 
@@ -34,8 +36,16 @@ async def lifespan(app: FastAPI):
             await conn.execute(text("ALTER TABLE works ADD COLUMN IF NOT EXISTS before_post_screenshot TEXT"))
             await conn.execute(text("ALTER TABLE works ADD COLUMN IF NOT EXISTS task_type VARCHAR(32) NOT NULL DEFAULT 'simple'"))
             await conn.execute(text("ALTER TABLE works ADD COLUMN IF NOT EXISTS platform VARCHAR(64) NOT NULL DEFAULT 'shopnoltd'"))
+            # Preserve historical task promises; only newly created tasks opt into the 70/30 split.
+            await conn.execute(text("ALTER TABLE works ADD COLUMN IF NOT EXISTS payout_share_percent INTEGER NOT NULL DEFAULT 100"))
+            await conn.execute(text("ALTER TABLE work_sessions ADD COLUMN IF NOT EXISTS payout_share_percent INTEGER NOT NULL DEFAULT 100"))
             await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_works_task_type ON works (task_type)"))
             await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_works_platform ON works (platform)"))
+            # Affiliate feed metadata compatibility columns.
+            await conn.execute(text("ALTER TABLE shopnoltd_affiliate_offers ADD COLUMN IF NOT EXISTS allowed_platform VARCHAR(64) NOT NULL DEFAULT '1,2,3,4,5'"))
+            await conn.execute(text("ALTER TABLE shopnoltd_affiliate_offers ADD COLUMN IF NOT EXISTS network_incentive VARCHAR(16) NOT NULL DEFAULT 'unknown'"))
+            await conn.execute(text("ALTER TABLE shopnoltd_affiliate_conversions ADD COLUMN IF NOT EXISTS provider_payment_reference VARCHAR(128)"))
+            await conn.execute(text("ALTER TABLE shopnoltd_affiliate_conversions ADD COLUMN IF NOT EXISTS wallet_transaction_id VARCHAR(64)"))
             # Referral compatibility columns preserve existing direct/legacy mappings.
             await conn.execute(text("ALTER TABLE referrals ADD COLUMN IF NOT EXISTS source VARCHAR(24) NOT NULL DEFAULT 'direct'"))
             await conn.execute(text("ALTER TABLE referral_policies ADD COLUMN IF NOT EXISTS fallback_referrer_id VARCHAR(128) NOT NULL DEFAULT 'admin_office'"))
@@ -50,6 +60,16 @@ async def lifespan(app: FastAPI):
                     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
                 )
             """))
+            # CREATE TABLE IF NOT EXISTS does not add defaults to an existing table.
+            # Upgrade legacy tables so inserts that omit timestamps remain valid.
+            await conn.execute(text(
+                "ALTER TABLE referral_system_identities "
+                "ALTER COLUMN created_at SET DEFAULT CURRENT_TIMESTAMP"
+            ))
+            await conn.execute(text(
+                "ALTER TABLE referral_system_identities "
+                "ALTER COLUMN updated_at SET DEFAULT CURRENT_TIMESTAMP"
+            ))
             await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_referral_system_identities_user_id ON referral_system_identities (user_id)"))
             await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_referral_system_identities_tenant_id ON referral_system_identities (tenant_id)"))
             # Prefer an explicitly configured canonical identity ID. For deployments
@@ -132,7 +152,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Shopnoltd Unified API Service", version="0.4.2", lifespan=lifespan)
-app.add_middleware(CORSMiddleware, allow_origin_regex=settings.cors_origin_regex, allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+app.add_middleware(CORSMiddleware, allow_origins=settings.cors_origins_list, allow_origin_regex=settings.cors_origin_regex, allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 app.include_router(__import__("app.api.analytics_proxy", fromlist=["router"]).router, prefix="/api/v1", tags=["analytics"])
 app.include_router(__import__("app.api.ad_proxy", fromlist=["router"]).router, prefix="/api/v1", tags=["advertising"])
 app.include_router(__import__("app.api.v1", fromlist=["router"]).router, prefix="/api/v1", tags=["v1"])
@@ -150,6 +170,8 @@ app.include_router(__import__("app.api.v2_blog_user", fromlist=["router"]).route
 app.include_router(__import__("app.api.v2_blog", fromlist=["router"]).router, prefix="/api/v2", tags=["blog"])
 app.include_router(__import__("app.api.v3_work", fromlist=["router"]).router, prefix="/api/v3", tags=["verified-work"])
 app.include_router(__import__("app.api.referrals", fromlist=["router"]).router, prefix="/api/v1", tags=["referrals"])
+app.include_router(__import__("app.api.affiliate", fromlist=["router"]).router, prefix="/api/v1", tags=["affiliate"])
+app.include_router(__import__("app.api.service_orders", fromlist=["router"]).router, prefix="/api/v1", tags=["service-orders"])
 app.include_router(__import__("app.api.graphql", fromlist=["router"]).router, prefix="/graphql", tags=["graphql"])
 app.include_router(__import__("app.api.health", fromlist=["router"]).router, prefix="", tags=["health"])
 

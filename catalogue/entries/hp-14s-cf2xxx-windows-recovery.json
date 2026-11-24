@@ -51,7 +51,8 @@
         "The video is published by the verified HP Support YouTube channel.",
         "Use HP Cloud Recovery only if the exact HP product number is eligible.",
         "Creating recovery media can erase the selected USB; preserve existing E2B media."
-      ]
+      ],
+      "source_kind": "official-vendor"
     },
     {
       "title": "Creating and Using a Microsoft Recovery USB Drive | HP Computers",
@@ -64,7 +65,8 @@
         "The video is published by the verified HP Support YouTube channel.",
         "Creating the recovery USB removes data from the selected USB; use a separate blank drive.",
         "Back up the target PC before using recovery media."
-      ]
+      ],
+      "source_kind": "official-vendor"
     },
     {
       "title": "HP PCs — Software recovery options (Windows)",
@@ -76,7 +78,8 @@
       "notes": [
         "Review the model's exact support page before choosing a recovery image.",
         "Back up files before factory recovery or reinstall."
-      ]
+      ],
+      "source_kind": "official-vendor"
     }
   ]
 }

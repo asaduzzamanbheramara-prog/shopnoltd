@@ -3,9 +3,10 @@
 Default is dry-run. --apply performs an idempotent reconciliation:
 * legacy rows are matched to Keycloak by normalized email;
 * existing Keycloak identities keep their real Keycloak UUID;
-* missing Keycloak identities are created without importing legacy passwords;
-* new identities receive a temporary random password and UPDATE_PASSWORD
-  action; reset emails are sent only when --send-reset-emails is explicitly set;
+* missing Keycloak identities are created without importing legacy passwords
+  or assigning a temporary password / login-time required action;
+* password setup is user-initiated through Keycloak self-service recovery;
+  reset emails are sent only when --send-reset-emails is explicitly set;
 * legacy balances/passwords/tokens/secrets are never imported;
 * unmatched records are never represented by synthetic identities.
 """
@@ -13,7 +14,6 @@ import argparse
 import asyncio
 import json
 import re
-import secrets
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -209,7 +209,6 @@ async def _create_keycloak_user(client, token, row, email_value):
     first_name = first(row, {"first_name", "firstname", "given_name"}) or ""
     last_name = first(row, {"last_name", "lastname", "family_name"}) or ""
 
-    temporary_password = secrets.token_urlsafe(32)
     payload = {
         "username": email_value,
         "email": email_value,
@@ -217,8 +216,6 @@ async def _create_keycloak_user(client, token, row, email_value):
         "lastName": last_name,
         "enabled": True,
         "emailVerified": False,
-        "requiredActions": ["UPDATE_PASSWORD"],
-        "credentials": [{"type": "password", "value": temporary_password, "temporary": True}],
     }
     r = await client.post(url, headers={"Authorization": f"Bearer {token}"}, json=payload)
     if r.status_code == 409:
@@ -324,6 +321,9 @@ async def run(path, apply, send_reset_emails=False):
                     # Sending reset emails is deferred until identity/profile
                     # reconciliation commits and only happens with explicit opt-in.
                 else:
+                    # Existing Keycloak credentials and requiredActions are canonical.
+                    # Never overwrite a real password or clear/change an account action
+                    # merely because a legacy source row was imported.
                     report["keycloak_matched"] += 1
 
                 keycloak_id = kc["id"]

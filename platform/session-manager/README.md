@@ -35,8 +35,7 @@ Open http://localhost:8000
    ```bash
    cp -r branding/* platform/session-manager/branding/
    ```
-3. Add a matrix entry for it in `.github/workflows/build-platform.yml` so CI
-   builds and pushes `ghcr.io/asaduzzamanbheramara-prog/shopnoltd/session-manager:latest`.
+3. The existing `.github/workflows/build-platform.yml` already builds this service when `platform/session-manager/**` changes.
 4. Create the secret (real values, run from WSL2):
    ```bash
    kubectl create namespace shopno-tools --dry-run=client -o yaml | kubectl apply -f -
@@ -55,43 +54,24 @@ Open http://localhost:8000
    kubectl -n shopno-tools rollout restart deployment/session-manager
    ```
 
-## API surface
+## API authentication and ownership
 
-- `POST /api/profiles` — create a named profile (`purpose`: qa | staff | scraping)
-- `GET /api/profiles` — list profiles
-- `POST /api/proxies` — register a proxy (credentials encrypted at rest with Fernet)
-- `POST /api/sessions/launch` — launch an isolated session for a profile against a target URL
+All `/api/profiles/*` and `/api/sessions/*` endpoints require a Keycloak RS256 access token in `Authorization: Bearer <token>`. Tokens are checked against the Shopnoltd realm issuer, `api-service` audience, expiry, and realm JWKS. The owner is taken only from the verified token `sub`; a request body cannot choose or override it.
 
-## Live session viewing (noVNC)
+- `POST /api/profiles` — create a profile (`purpose`: `qa`, `staff`, or `scraping`).
+- `GET /api/profiles` — list only the caller's profiles.
+- `GET/DELETE /api/profiles/{profile_id}` — read/delete only an owned profile.
+- `POST /api/sessions/launch` — launch a session for an owned profile.
+- `POST /api/sessions/{profile_id}/close` and `GET /api/sessions/active` — operate on/list only the caller's sessions.
+- Proxy CRUD and profile proxy assignment are disabled until proxy records have equivalent tenant ownership.
 
-Sessions now run persistently, non-headless, on a virtual display (`Xvfb :99`)
-inside the container. `x11vnc` exposes that display over VNC, and
-`websockify`/noVNC bridge it to a browser-viewable page at `/vnc.html` on
-port 6080.
+## Live session viewing
 
-- **Local (docker-compose):** open http://localhost:8000, create a profile,
-  click Launch — it opens a viewer at http://localhost:6080/vnc.html.
-- **k8s:** routed through a second Ingress (`session-manager-vnc`) at
-  `https://sessions.shopnoltd.dpdns.org/vnc/vnc.html`, since the noVNC
-  static assets need a path rewrite that would otherwise conflict with the
-  main API ingress.
+The Kubernetes noVNC ingress and Service port are intentionally removed until a short-lived, owner-bound viewer token and authenticated WebSocket gateway are implemented. Do not expose port 6080 directly. Browser processes remain single-replica and in-memory; do not scale the deployment horizontally without a shared session broker.
 
-Sessions stay open until you hit **Close** (or the container restarts) —
-this is a single in-memory pool per pod, matching this cluster's
-single-replica pattern for stateful services.
+## Migration and rollout gates
 
-## Notes / next steps
-
-- Single-process session pool: fine at `replicas: 1` (which the manifest
-  already pins per this cluster's conventions). If this ever needs to scale
-  beyond one pod, sessions would need sticky routing or a shared registry —
-  not needed yet.
-- Wire `owner` on profiles to your Keycloak `auth-service-admin` client so
-  staff sessions map to real identities instead of free-text strings.
-- **Before exposing `sessions.shopnoltd.dpdns.org` externally**, put this
-  behind Keycloak auth on the ingress (e.g. `oauth2-proxy` or ingress-level
-  auth annotations) — it's currently unauthenticated and can drive live
-  browser sessions holding saved credentials/cookies.
-- `x11vnc` currently runs with `-nopw` (no password) for simplicity inside
-  the pod network — acceptable since it's only reachable via the
-  NetworkPolicy-gated Service, but tighten this if that assumption changes.
+- Existing profiles may have legacy username/email values in `owner`. They are not automatically converted to Keycloak `sub`; prepare and review an identity mapping before migrating them. No database migration is performed by this change.
+- Verify the Keycloak `api-service` audience mapper for tokens issued to the Shopnoltd web client.
+- Confirm that the running Session Manager image is built from this PR and that GitOps removed the `session-manager-vnc` Ingress before considering the external viewer safe.
+- Do not restart or roll out production until the PR checks pass and a capacity/rollback review is recorded.

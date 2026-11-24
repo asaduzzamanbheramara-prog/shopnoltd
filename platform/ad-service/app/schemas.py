@@ -29,3 +29,9 @@ class CreativeCreate(BaseModel):
     width: int = Field(gt=0,le=4096)
     height: int = Field(gt=0,le=4096)
     mime_type: str = Field(pattern="^(image/jpeg|image/png|image/webp|text/html)$")
+
+
+class ExternalAdPolicyUpdate(BaseModel):
+    enabled: bool = False
+    networks: dict[str, bool] = Field(default_factory=dict)
+    placements: dict[str, bool] = Field(default_factory=dict)

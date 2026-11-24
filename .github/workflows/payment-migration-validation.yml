@@ -63,7 +63,7 @@ jobs:
           PG_CONTAINER: ${{ steps.postgres.outputs.container_id }}
         run: |
           version="$(docker exec "$PG_CONTAINER" psql -U postgres -d payment_migration_ci -Atqc "SELECT version_num FROM alembic_version")"
-          test "$version" = "0007_wallet_tenant_user_currency"
+          test "$version" = "0009_transaction_status_varchar"
 
           old_constraint="$(docker exec "$PG_CONTAINER" psql -U postgres -d payment_migration_ci -Atqc "SELECT count(*) FROM pg_constraint WHERE conname='ix_wallet_user_currency' AND contype='u'")"
           test "$old_constraint" = "0"
@@ -75,6 +75,16 @@ jobs:
 
           user_nullable="$(docker exec "$PG_CONTAINER" psql -U postgres -d payment_migration_ci -Atqc "SELECT is_nullable FROM information_schema.columns WHERE table_schema='public' AND table_name='transactions' AND column_name='user_id'")"
           test "$user_nullable" = "NO"
+
+          status_type="$(docker exec "$PG_CONTAINER" psql -U postgres -d payment_migration_ci -Atqc "SELECT data_type || ':' || character_maximum_length FROM information_schema.columns WHERE table_schema='public' AND table_name='transactions' AND column_name='status'")"
+          test "$status_type" = "character varying:24"
+
+          idempotency_type="$(docker exec "$PG_CONTAINER" psql -U postgres -d payment_migration_ci -Atqc "SELECT data_type || ':' || character_maximum_length FROM information_schema.columns WHERE table_schema='public' AND table_name='transactions' AND column_name='idempotency_key'")"
+          test "$idempotency_type" = "character varying:128"
+
+          idempotency_index="$(docker exec "$PG_CONTAINER" psql -U postgres -d payment_migration_ci -Atqc "SELECT indexdef FROM pg_indexes WHERE schemaname='public' AND indexname='uq_transaction_deposit_idempotency'")"
+          grep -q "CREATE UNIQUE INDEX" <<<"$idempotency_index"
+          grep -q "WHERE (idempotency_key IS NOT NULL)" <<<"$idempotency_index"
 
       - name: Build an existing 0006 database with the wallet index missing
         working-directory: platform/payment-service
@@ -93,6 +103,24 @@ jobs:
             docker exec -i "$PG_CONTAINER" psql -U postgres -d postgres -v ON_ERROR_STOP=1 < k8s/services/postgres/migration/024-payment-wallet-tenant-unique.sql
           done
 
+      - name: Apply idempotency schema reconciliation twice to an existing 0006 database
+        env:
+          PG_CONTAINER: ${{ steps.postgres.outputs.container_id }}
+        run: |
+          for attempt in 1 2; do
+            docker exec -i "$PG_CONTAINER" psql -U postgres -d postgres -v ON_ERROR_STOP=1 < k8s/services/postgres/migration/027-payment-transaction-idempotency.sql
+          done
+
+      - name: Verify idempotency schema reconciliation
+        env:
+          PG_CONTAINER: ${{ steps.postgres.outputs.container_id }}
+        run: |
+          idempotency_type="$(docker exec "$PG_CONTAINER" psql -U postgres -d payments -Atqc "SELECT data_type || ':' || character_maximum_length FROM information_schema.columns WHERE table_schema='public' AND table_name='transactions' AND column_name='idempotency_key'")"
+          test "$idempotency_type" = "character varying:128"
+          idempotency_index="$(docker exec "$PG_CONTAINER" psql -U postgres -d payments -Atqc "SELECT indexdef FROM pg_indexes WHERE schemaname='public' AND indexname='uq_transaction_deposit_idempotency'")"
+          grep -q "CREATE UNIQUE INDEX" <<<"$idempotency_index"
+          grep -q "WHERE (idempotency_key IS NOT NULL)" <<<"$idempotency_index"
+
       - name: Verify forward repair from 0006
         env:
           PG_CONTAINER: ${{ steps.postgres.outputs.container_id }}
@@ -105,13 +133,41 @@ jobs:
           grep -q "CREATE UNIQUE INDEX" <<<"$tenant_wallet_index"
           grep -q "(tenant_id, user_id, currency)" <<<"$tenant_wallet_index"
 
+      - name: Apply the GitOps transaction-status migration to the repaired legacy database
+        env:
+          PG_CONTAINER: ${{ steps.postgres.outputs.container_id }}
+        run: docker exec -i "$PG_CONTAINER" psql -U postgres -d postgres -v ON_ERROR_STOP=1 < k8s/services/postgres/migration/030-payment-transaction-status-width.sql
+
+      - name: Verify repaired legacy database reaches the current schema
+        env:
+          PG_CONTAINER: ${{ steps.postgres.outputs.container_id }}
+        run: |
+          version="$(docker exec "$PG_CONTAINER" psql -U postgres -d payments -Atqc "SELECT version_num FROM alembic_version")"
+          test "$version" = "0009_transaction_status_varchar"
+          status_type="$(docker exec "$PG_CONTAINER" psql -U postgres -d payments -Atqc "SELECT data_type || ':' || character_maximum_length FROM information_schema.columns WHERE table_schema='public' AND table_name='transactions' AND column_name='status'")"
+          test "$status_type" = "character varying:24"
+
+      - name: Re-run wallet uniqueness repair on a current 0009 database
+        env:
+          PG_CONTAINER: ${{ steps.postgres.outputs.container_id }}
+        run: |
+          docker exec "$PG_CONTAINER" psql -U postgres -d payments -v ON_ERROR_STOP=1 -c "DROP INDEX IF EXISTS public.ix_wallet_tenant_user_currency"
+          for attempt in 1 2; do
+            docker exec -i "$PG_CONTAINER" psql -U postgres -d postgres -v ON_ERROR_STOP=1 < k8s/services/postgres/migration/024-payment-wallet-tenant-unique.sql
+          done
+          version="$(docker exec "$PG_CONTAINER" psql -U postgres -d payments -Atqc "SELECT version_num FROM alembic_version")"
+          test "$version" = "0009_transaction_status_varchar"
+          tenant_wallet_index="$(docker exec "$PG_CONTAINER" psql -U postgres -d payments -Atqc "SELECT indexdef FROM pg_indexes WHERE schemaname='public' AND indexname='ix_wallet_tenant_user_currency'")"
+          grep -q "CREATE UNIQUE INDEX" <<<"$tenant_wallet_index"
+          grep -q "(tenant_id, user_id, currency)" <<<"$tenant_wallet_index"
+
       - name: Downgrade through wallet ownership migration
         working-directory: platform/payment-service
         env:
           DATABASE_URL: postgresql+asyncpg://postgres:ci-only-password@127.0.0.1:5432/payment_migration_ci
         run: alembic downgrade 0003_webhook_events
 
-      - name: Verify downgrade restores original wallet constraint
+      - name: Verify downgrade preserves idempotency keys while releasing index dependencies
         env:
           PG_CONTAINER: ${{ steps.postgres.outputs.container_id }}
         run: |
@@ -120,6 +176,12 @@ jobs:
 
           tenant_wallet_index="$(docker exec "$PG_CONTAINER" psql -U postgres -d payment_migration_ci -Atqc "SELECT count(*) FROM pg_indexes WHERE schemaname='public' AND indexname='ix_wallet_tenant_user_currency'")"
           test "$tenant_wallet_index" = "0"
+
+          idempotency_type="$(docker exec "$PG_CONTAINER" psql -U postgres -d payment_migration_ci -Atqc "SELECT data_type || ':' || character_maximum_length FROM information_schema.columns WHERE table_schema='public' AND table_name='transactions' AND column_name='idempotency_key'")"
+          test "$idempotency_type" = "character varying:128"
+
+          idempotency_index_count="$(docker exec "$PG_CONTAINER" psql -U postgres -d payment_migration_ci -Atqc "SELECT count(*) FROM pg_indexes WHERE schemaname='public' AND indexname='uq_transaction_deposit_idempotency'")"
+          test "$idempotency_index_count" = "0"
 
       - name: Re-apply all payment migrations
         working-directory: platform/payment-service

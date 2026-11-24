@@ -1,9 +1,10 @@
 """Safe XLSX importer for Shopnoltd users, profiles, and source records.
 
 Every imported email is reconciled to the canonical Keycloak identity store. Existing
-Keycloak users are linked; new imported identities are created in Keycloak with a
-required password-update action. Application mirror/profile rows are then created
-or updated without duplicating users.
+Keycloak users are linked; new imported identities are created without a
+temporary password or login-time required action. Users can set a password
+through the self-service recovery flow when ready. Application mirror/profile
+rows are then created or updated without duplicating users.
 """
 import asyncio, hashlib, json, re, sys, uuid, zipfile, xml.etree.ElementTree as ET
 from pathlib import Path
@@ -121,11 +122,14 @@ async def ensure_keycloak_user(email, name, tok, client):
     r = await client.get(f"{base}/users", params={"email": email, "exact": "true"}, headers=headers)
     r.raise_for_status()
     matches = r.json()
-    if matches: return matches[0]["id"], False
+    if matches:
+        # Existing Keycloak identity is authoritative: preserve its password,
+        # email-verification state, and requiredActions exactly as they are.
+        return matches[0]["id"], False
     r = await client.post(
         f"{base}/users",
         json={"username": email, "email": email, "firstName": name, "enabled": True,
-              "emailVerified": False, "requiredActions": ["UPDATE_PASSWORD"]},
+              "emailVerified": False},
         headers=headers,
     )
     if r.status_code == 409:

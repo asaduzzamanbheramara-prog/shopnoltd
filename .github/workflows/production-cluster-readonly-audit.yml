@@ -141,8 +141,18 @@ jobs:
           kubectl -n shopno-platform get deployment interior-service -o custom-columns='NAME:.metadata.name,DESIRED:.spec.replicas,READY:.status.readyReplicas,AVAILABLE:.status.availableReplicas,UPDATED:.status.updatedReplicas'
           kubectl -n shopno-platform get pods -l app.kubernetes.io/name=interior-service -o wide
           kubectl -n shopno-platform get endpoints interior-service -o wide
-          if kubectl -n shopno-platform rollout status deployment/interior-service --timeout=120s; then
-            echo "PASS: interior-service rollout is complete."
+          desired_replicas="$(kubectl -n shopno-platform get deployment interior-service -o jsonpath='{.spec.replicas}')"
+          ready_replicas="$(kubectl -n shopno-platform get deployment interior-service -o jsonpath='{.status.readyReplicas}')"
+          desired_replicas="${desired_replicas:-0}"
+          ready_replicas="${ready_replicas:-0}"
+          if [[ "$desired_replicas" -lt 1 ]]; then
+            echo "BLOCKED: interior-service is disabled (desired replicas=$desired_replicas); rollout status alone must not be treated as service health."
+          elif [[ "$ready_replicas" -lt "$desired_replicas" ]]; then
+            echo "BLOCKED: interior-service has $ready_replicas/$desired_replicas ready replicas."
+            kubectl -n shopno-platform describe deployment interior-service || true
+            kubectl -n shopno-platform get events --sort-by=.lastTimestamp | tail -n 40 || true
+          elif kubectl -n shopno-platform rollout status deployment/interior-service --timeout=120s; then
+            echo "PASS: interior-service has $ready_replicas/$desired_replicas ready replicas."
           else
             echo "BLOCKED: interior-service rollout is not complete; showing pod status and recent events."
             kubectl -n shopno-platform describe deployment interior-service || true
@@ -151,7 +161,11 @@ jobs:
           echo "=== PUBLIC INTERIOR HEALTH ENDPOINTS ==="
           for path in healthz readyz; do
             code="$(curl -k -sS --connect-timeout 8 --max-time 15 -o /dev/null -w '%{http_code}' "https://interior.shopnoltd.dpdns.org/$path" 2>/dev/null || true)"
-            echo "https://interior.shopnoltd.dpdns.org/$path -> HTTP ${code:-no-response}"
+            if [[ "$code" == "200" ]]; then
+              echo "PASS: https://interior.shopnoltd.dpdns.org/$path -> HTTP 200"
+            else
+              echo "BLOCKED: https://interior.shopnoltd.dpdns.org/$path -> HTTP ${code:-no-response}"
+            fi
           done
       - name: Audit Keycloak social providers (metadata only; read-only)
         shell: bash
@@ -195,7 +209,7 @@ jobs:
           admin_data = read_secret("keycloak-secret")
           expected = {
               "google": ("GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET"),
-              "facebook": ("FACEBOOK_APP_ID", "FACEBOOK_APP_SECRET"),
+              "facebook": ("FACEBOOK_LOGIN_APP_ID", "FACEBOOK_LOGIN_APP_SECRET"),
               "github": ("GITHUB_CLIENT_ID", "GITHUB_CLIENT_SECRET"),
           }
           print("Keycloak social Secret:")

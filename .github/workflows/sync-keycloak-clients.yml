@@ -1,0 +1,95 @@
+name: Sync Keycloak OIDC Clients
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "k8s/services/keycloak/client-sync.py"
+      - "k8s/services/keycloak/client-sync-job.yaml"
+      - ".github/workflows/sync-keycloak-clients.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: keycloak-oidc-client-sync
+  cancel-in-progress: false
+
+jobs:
+  sync-keycloak-clients:
+    runs-on: [self-hosted, linux]
+    timeout-minutes: 15
+    steps:
+      - name: Checkout trusted main revision
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Verify runner and cluster access
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v kubectl
+          test -s "${KUBECONFIG:-$HOME/.kube/config}"
+          kubectl --request-timeout=20s cluster-info >/dev/null
+          kubectl -n shopno-identity get secret keycloak-secret >/dev/null
+
+      - name: Mirror the configured SMTP relay settings into the Keycloak namespace
+        shell: bash
+        run: |
+          set -euo pipefail
+          kubectl -n shopno-mail get configmap mail-service-config -o json |
+            jq -e 'select(.data.SMTP_HOST and .data.SMTP_PORT) | {
+              apiVersion: "v1",
+              kind: "ConfigMap",
+              metadata: {name: "keycloak-smtp-config", namespace: "shopno-identity"},
+              data: {SMTP_HOST: .data.SMTP_HOST, SMTP_PORT: .data.SMTP_PORT}
+            }' | kubectl apply -f -
+          kubectl -n shopno-mail get secret mail-service-smtp -o json |
+            jq -e 'select(.data.SMTP_USERNAME and .data.SMTP_PASSWORD and .data.SMTP_ENVELOPE_FROM) | {
+              apiVersion: "v1",
+              kind: "Secret",
+              metadata: {name: "keycloak-smtp-secret", namespace: "shopno-identity"},
+              type: "Opaque",
+              data: {
+                SMTP_USERNAME: .data.SMTP_USERNAME,
+                SMTP_PASSWORD: .data.SMTP_PASSWORD,
+                SMTP_ENVELOPE_FROM: .data.SMTP_ENVELOPE_FROM
+              }
+            }' | kubectl apply -f -
+          echo 'Configured SMTP relay settings mirrored into the Keycloak namespace without printing secret values.'
+
+      - name: Provision permanent Keycloak master-realm admin credential
+        shell: bash
+        env:
+          KEYCLOAK_ADMIN_PASSWORD: ${{ secrets.KEYCLOAK_ADMIN_PASSWORD }}
+        run: |
+          set -euo pipefail
+          test -n "${KEYCLOAK_ADMIN_PASSWORD:-}" || { echo "::error::Set Actions secret KEYCLOAK_ADMIN_PASSWORD for the enabled master-realm account shopnoltd-admin."; exit 1; }
+          umask 077
+          password_file="$(mktemp)"
+          trap 'rm -f "$password_file"' EXIT
+          printf '%s' "$KEYCLOAK_ADMIN_PASSWORD" > "$password_file"
+          kubectl -n shopno-identity create secret generic keycloak-admin-sync-credentials \
+            --from-file=KEYCLOAK_ADMIN_PASSWORD="$password_file" \
+            --dry-run=client -o yaml | kubectl apply -f -
+          echo 'Permanent Keycloak admin sync credential provisioned without printing its value.'
+
+      - name: Apply only the Keycloak client-sync script
+        shell: bash
+        run: |
+          set -euo pipefail
+          kubectl -n shopno-identity create configmap keycloak-client-sync-script \
+            --from-file=client-sync.py=k8s/services/keycloak/client-sync.py \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Run and verify the Keycloak OIDC client sync
+        shell: bash
+        run: |
+          set -euo pipefail
+          kubectl -n shopno-identity delete job keycloak-client-sync --ignore-not-found=true --wait=true
+          kubectl -n shopno-identity apply -f k8s/services/keycloak/client-sync-job.yaml
+          kubectl -n shopno-identity wait --for=condition=complete job/keycloak-client-sync --timeout=10m
+          kubectl -n shopno-identity logs job/keycloak-client-sync

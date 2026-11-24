@@ -7,7 +7,17 @@ const kc = (process.env.KEYCLOAK_BASE_URL || 'https://auth.shopnoltd.dpdns.org')
 const realm = process.env.KEYCLOAK_REALM || 'shopnoltd'
 const adminRole = process.env.ADMIN_ROLE || 'platform_admin'
 const authRoutes = (process.env.AUTH_ROUTES || '/dashboard').split(',').map(s => s.trim()).filter(Boolean)
-const admin = `${kc}/admin/realms/${realm}`
+const admin = kc + '/admin/realms/' + realm
+const shardIndex = Number(process.env.USER_SHARD_INDEX || 0)
+const shardCount = Math.max(1, Number(process.env.USER_SHARD_COUNT || 1))
+const perUserTimeoutMs = Math.max(30000, Number(process.env.PER_USER_TIMEOUT_MS || 120000))
+
+function writeReport(rows) {
+  fs.mkdirSync('reports', { recursive: true })
+  const header = 'user_ref,status,failed_step,detail'
+  const csv = [header, ...rows.map(r => [r.user_ref, r.status, r.failed_step, '"' + r.detail.replaceAll('"', "'") + '"'].join(','))]
+  fs.writeFileSync(`reports/all-users-e2e-shard-${shardIndex}.csv`, csv.join('\n') + '\n')
+}
 
 async function getToken(request) {
   const res = await request.post(`${kc}/realms/${realm}/protocol/openid-connect/token`, {
@@ -16,13 +26,14 @@ async function getToken(request) {
       client_id: process.env.KEYCLOAK_E2E_CLIENT_ID,
       client_secret: process.env.KEYCLOAK_E2E_CLIENT_SECRET,
     },
+    timeout: 15000,
   })
   if (!res.ok()) throw new Error(`token HTTP ${res.status()}`)
   return (await res.json()).access_token
 }
 
 test('every real user: login via impersonation + read-only functionality checks', async ({ browser, request }) => {
-  test.setTimeout(2 * 60 * 60 * 1000)
+  test.setTimeout(345 * 60 * 1000)
   for (const k of ['KEYCLOAK_E2E_CLIENT_ID', 'KEYCLOAK_E2E_CLIENT_SECRET']) {
     if (!process.env[k]) throw new Error(`Missing ${k}`)
   }
@@ -32,7 +43,7 @@ test('every real user: login via impersonation + read-only functionality checks'
   const users = []
   for (let first = 0; ; first += 100) {
     const r = await request.get(`${admin}/users?first=${first}&max=100&briefRepresentation=false`, {
-      headers: { Authorization: `Bearer ${token0}` },
+      headers: { Authorization: `Bearer ${token0}` }, timeout: 30000,
     })
     if (!r.ok()) throw new Error(`users HTTP ${r.status()}`)
     const page = await r.json()
@@ -41,36 +52,58 @@ test('every real user: login via impersonation + read-only functionality checks'
   }
   let targets = users.filter(u => !u.username?.startsWith('service-account-') && !u.username?.startsWith('autotest_'))
   if (process.env.LIMIT_USERS) targets = targets.slice(0, Number(process.env.LIMIT_USERS))
+  const totalTargets = targets.length
+  targets = targets.filter((_, index) => index % shardCount === shardIndex)
+  console.log(`Shard ${shardIndex + 1}/${shardCount}: ${targets.length}/${totalTargets} users assigned`)
 
   const rows = []
   for (const u of targets) {
     const row = {
       user_ref: crypto.createHash('sha256').update(u.id).digest('hex').slice(0, 16),
-      status: 'PASS', failed_step: '', detail: '',
+      status: 'IN_PROGRESS', failed_step: '', detail: '',
     }
     rows.push(row)
-    if (!u.enabled) { row.status = 'SKIPPED_DISABLED'; continue }
+    console.log(`Shard ${shardIndex + 1}: starting user ${row.user_ref}`)
+    // Persist a checkpoint before starting each account. If the suite hits its
+    // global timeout, the artifact still identifies the last account reached.
+    writeReport(rows)
+    if (!u.enabled) { row.status = 'SKIPPED_DISABLED'; writeReport(rows); continue }
 
     let step = 'start'
     const ctx = await browser.newContext()
+    ctx.setDefaultTimeout(15000)
+    ctx.setDefaultNavigationTimeout(20000)
     const page = await ctx.newPage()
     const problems = []
     page.on('pageerror', () => problems.push('uncaught_js_error'))
     page.on('response', r => {
       if (r.url().startsWith(`${app}/api`) && (r.status() >= 500 || r.status() === 401)) problems.push(`api_${r.status()}`)
     })
+    let timeoutHandle
     try {
+      await Promise.race([
+        (async () => {
       const token = await getToken(request)
 
       const headers = { Authorization: `Bearer ${token}` }
       if ((u.requiredActions || []).length) row.detail = 'has_required_actions'
 
       step = 'impersonate'
-      const imp = await ctx.request.post(`${admin}/users/${u.id}/impersonation`, { headers })
+      const imp = await ctx.request.post(`${admin}/users/${u.id}/impersonation`, { headers, timeout: 20000 })
       if (!imp.ok()) throw new Error(`impersonation HTTP ${imp.status()}`)
 
       step = 'login'
       await page.goto(`${app}/login`, { waitUntil: 'domcontentloaded' })
+
+      // The site-wide privacy dialog blocks pointer events until the visitor makes
+      // a choice. Reject optional analytics/advertising in this ephemeral test
+      // context, matching the authenticated production smoke test.
+      const consentDialog = page.getByRole('dialog', { name: /Privacy & cookie preferences/i })
+      if (await consentDialog.isVisible().catch(() => false)) {
+        await consentDialog.getByRole('button', { name: /Reject all/i }).click()
+        await expect(consentDialog).toBeHidden()
+      }
+
       await page.getByRole('button', { name: 'Continue with Shopnoltd' }).click()
 
       if ((u.requiredActions || []).includes('UPDATE_PASSWORD') || (u.requiredActions || []).includes('VERIFY_EMAIL')) {
@@ -85,9 +118,8 @@ test('every real user: login via impersonation + read-only functionality checks'
         row.status = 'NOT_TESTABLE'
         row.failed_step = ''
         row.detail = 'blocked_by_required_action:' + (u.requiredActions || []).join('|')
-        await ctx.close()
-        await new Promise(r => setTimeout(r, 500))
-        continue
+        writeReport(rows)
+        return
       }
 
       await page.waitForURL(url => new URL(url).pathname === '/dashboard', { timeout: 30000 })
@@ -97,23 +129,23 @@ test('every real user: login via impersonation + read-only functionality checks'
       ).toBe(true)
 
       step = 'role-access'
-      const rr = await request.get(`${admin}/users/${u.id}/role-mappings/realm/composite`, { headers })
+      const rr = await request.get(`${admin}/users/${u.id}/role-mappings/realm/composite`, { headers, timeout: 15000 })
       const roles = rr.ok() ? (await rr.json()).map(x => x.name) : []
-      await page.goto(`${app}/admin`, { waitUntil: 'networkidle' })
+      await page.goto(`${app}/admin`, { waitUntil: 'domcontentloaded', timeout: 20000 })
       const onAdmin = new URL(page.url()).pathname.startsWith('/admin')
       if (roles.includes(adminRole) && !onAdmin) throw new Error('admin role but /admin not accessible')
       if (!roles.includes(adminRole) && onAdmin) throw new Error('non-admin can open /admin')
 
       step = 'routes'
       for (const route of authRoutes) {
-        const res = await page.goto(`${app}${route}`, { waitUntil: 'networkidle' })
+        const res = await page.goto(`${app}${route}`, { waitUntil: 'domcontentloaded', timeout: 20000 })
         if (!res || res.status() >= 400) throw new Error(`${route} HTTP ${res?.status()}`)
         if (new URL(page.url()).pathname.startsWith('/login')) throw new Error(`${route} bounced to /login`)
       }
 
       step = 'logout'
 
-      await page.goto(`${app}/dashboard`, { waitUntil: 'networkidle' })
+      await page.goto(`${app}/dashboard`, { waitUntil: 'domcontentloaded', timeout: 20000 })
       const out = page.getByRole('button', { name: /log ?out|sign ?out/i })
         .or(page.getByRole('link', { name: /log ?out|sign ?out/i })).first()
       if (await out.count()) {
@@ -128,23 +160,51 @@ test('every real user: login via impersonation + read-only functionality checks'
 
       step = 'errors'
       if (problems.length) throw new Error([...new Set(problems)].join(','))
+        })(),
+        new Promise((_, reject) => {
+          timeoutHandle = setTimeout(() => reject(new Error(`user_timeout_${perUserTimeoutMs}ms`)), perUserTimeoutMs)
+        }),
+      ])
+      if (row.status === 'IN_PROGRESS') row.status = 'PASS'
     } catch (e) {
-      row.status = 'FAIL'
-      row.failed_step = step
-      row.detail = String(e.message).split('\n')[0].slice(0, 200)
+      const message = String(e.message)
+      row.status = message.startsWith('user_timeout_') ? 'TIMEOUT' : 'FAIL'
+      row.failed_step = message.startsWith('user_timeout_') ? 'user-timeout' : step
+
+      // Record only allowlisted, non-sensitive login diagnostics. Never capture
+      // full page text, query strings, tokens, usernames, email addresses or codes.
+      let location = 'location_unavailable'
+      try {
+        const current = new URL(page.url())
+        location = `${current.hostname}${current.pathname}`
+      } catch {}
+      const authMessage = await page.locator('body').innerText().catch(() => '')
+      const safeAuthMessage = authMessage.split('\n')
+        .map(line => line.trim())
+        .find(line => /invalid username|invalid password|account disabled|account is disabled|invalid authenticator|invalid one-time|verify your email|temporarily disabled|too many attempts|update password|verify email/i.test(line))
+        ?.replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, '[EMAIL]')
+        ?.slice(0, 100)
+      const safeError = message.split('\n')[0]
+        .replace(/Bearer\s+\S+/gi, 'Bearer [REDACTED]')
+        .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, '[EMAIL]')
+        .replace(/https?:\/\/[^\s)]+/gi, '[URL]')
+        .slice(0, 120)
+      row.detail = `${safeError}; location=${location}${safeAuthMessage ? `; auth_message=${safeAuthMessage}` : ''}`.slice(0, 200)
     } finally {
-      await ctx.close()
+      clearTimeout(timeoutHandle)
+      // A context can already be closed when Playwright aborts a timed-out
+      // test. Cleanup must not mask the real result or prevent CSV checkpointing.
+      await ctx.close().catch(() => {})
+      writeReport(rows)
     }
-    await new Promise(r => setTimeout(r, 500))
+    console.log(`Shard ${shardIndex + 1}: ${row.user_ref} => ${row.status}${row.failed_step ? ` | step=${row.failed_step}` : ''}${row.detail ? ` | detail=${row.detail}` : ''}`)
+    await new Promise(r => setTimeout(r, 150))
   }
 
-  fs.mkdirSync('reports', { recursive: true })
-  const header = 'user_ref,status,failed_step,detail'
-  const csv = [header, ...rows.map(r => [r.user_ref, r.status, r.failed_step, `"${r.detail.replaceAll('"', "'")}"`].join(','))]
-  fs.writeFileSync('reports/all-users-e2e.csv', csv.join('\n') + '\n')
+  writeReport(rows)
 
   const count = s => rows.filter(r => r.status === s).length
-  console.log(`Total: ${rows.length} | PASS: ${count('PASS')} | FAIL: ${count('FAIL')} | SKIPPED_DISABLED: ${count('SKIPPED_DISABLED')} | NOT_TESTABLE: ${count('NOT_TESTABLE')}`)
+  console.log(`Shard ${shardIndex + 1}/${shardCount} | Total: ${rows.length} | PASS: ${count('PASS')} | FAIL: ${count('FAIL')} | TIMEOUT: ${count('TIMEOUT')} | SKIPPED_DISABLED: ${count('SKIPPED_DISABLED')} | NOT_TESTABLE: ${count('NOT_TESTABLE')}`)
 
-  expect(rows.filter(r => r.status === 'FAIL').map(r => r.user_ref), 'users that failed').toEqual([])
+  expect(rows.filter(r => ['FAIL', 'TIMEOUT'].includes(r.status)).map(r => r.user_ref), 'users that failed or timed out').toEqual([])
 })

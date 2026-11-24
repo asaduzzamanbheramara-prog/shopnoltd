@@ -14,7 +14,8 @@ from app.core.db import SessionLocal
 from app.core.security import verify_token
 from app.models.work import Work, WorkAssignment, WorkSubmission
 from app.models.work_rating import WorkRating
-from app.services.referrals import settle_referral_reward
+from app.services.referrals import preflight_referral_reward, resolve_referrer_recipient, settle_referral_reward, settle_referral_reward_from_work_escrow, settle_platform_commission_from_work_escrow
+from app.services.work_escrow import reserve_work_budget, payout_work_escrow, release_unused_work_budget
 from app.core.currencies import SUPPORTED_CURRENCIES
 
 router = APIRouter()
@@ -27,7 +28,7 @@ TASK_TYPES = {
     "review", "social", "data", "upload", "custom", "watch",
 }
 
-WORK_PLATFORMS = {"shopnoltd", "facebook", "instagram", "youtube", "tiktok", "telegram", "whatsapp", "website", "data", "custom"}
+WORK_PLATFORMS = {"shopnoltd", "facebook", "instagram", "youtube", "tiktok", "telegram", "whatsapp", "linkedin", "x", "website", "data", "custom"}
 
 async def current_user(creds: HTTPAuthorizationCredentials = Depends(bearer)):
     try:
@@ -84,27 +85,56 @@ async def settle_reward(user, submission_id: str, amount: Decimal, currency: str
     return response.json()
 
 
-def work_dict(w: Work, total_slots: int | None = None, active_slots: int | None = None, completed_slots: int | None = None):
+def is_admin_user(user: dict) -> bool:
+    roles = set(user.get("roles") or [])
+    realm_roles = set(((user.get("realm_access") or {}).get("roles") or []))
+    return bool(roles.intersection({"admin", "platform_admin", "shopnoltd-admin", "administrator"}) or realm_roles.intersection({"admin", "platform_admin", "shopnoltd-admin", "administrator"}) or user.get("is_admin") is True)
+
+
+def can_view_work(work: Work, user: dict) -> bool:
+    if not work or work.tenant_id != user.get("tenant_id", "default"):
+        return False
+    if work.status not in {"open", "full"} and work.creator_id != user.get("sub") and not is_admin_user(user):
+        return False
+    return True
+
+
+def remaining_work_slots(max_workers: int, active_slots: int, completed_slots: int) -> int:
+    return max(int(max_workers) - int(active_slots) - int(completed_slots), 0)
+
+
+def work_dict(w: Work, total_slots: int | None = None, active_slots: int | None = None, completed_slots: int | None = None, viewer_id: str | None = None, include_admin_fields: bool = False):
     total_slots = int(total_slots if total_slots is not None else w.max_workers)
     active_slots = int(active_slots if active_slots is not None else 0)
     completed_slots = int(completed_slots if completed_slots is not None else 0)
-    remaining_slots = max(total_slots - active_slots - completed_slots, 0)
-    return {
-        "id": w.id, "tenant_id": w.tenant_id, "creator_id": w.creator_id, "title": w.title,
-        "description": w.description, "requirements": w.requirements, "reference_image": w.reference_image, "before_post_screenshot": getattr(w, "before_post_screenshot", None), "task_type": w.task_type, "platform": w.platform,
-        "reward_amount": str(w.reward_amount), "currency": w.currency, "max_workers": w.max_workers,
+    remaining_slots = remaining_work_slots(total_slots, active_slots, completed_slots)
+    gross_reward = Decimal(str(w.reward_amount))
+    worker_share = int(getattr(w, "payout_share_percent", 100) or 100)
+    worker_reward = (gross_reward * Decimal(worker_share) / Decimal(100)).quantize(Decimal("0.00000001"))
+    creator_view = viewer_id == w.creator_id
+    visible_reward = gross_reward if creator_view else worker_reward
+    result = {
+        "id": w.id, "title": w.title,
+        "description": w.description, "requirements": w.requirements, "reference_image": w.reference_image, "task_type": w.task_type, "platform": w.platform,
+        "reward_amount": str(visible_reward), "currency": w.currency, "max_workers": w.max_workers,
         "total_tasks": total_slots, "active_tasks": active_slots, "completed_tasks": completed_slots,
-        "remaining_tasks": remaining_slots, "total_amount": str(Decimal(str(w.reward_amount)) * total_slots),
-        "remaining_amount": str(Decimal(str(w.reward_amount)) * remaining_slots),
+        "remaining_tasks": remaining_slots, "total_amount": str(visible_reward * total_slots),
+        "remaining_amount": str(visible_reward * remaining_slots),
         "deadline": w.deadline.isoformat() if w.deadline else None, "status": w.status,
         "created_at": w.created_at.isoformat(),
     }
+    if creator_view:
+        result.update({"gross_reward_amount": str(gross_reward), "worker_share_percent": worker_share, "platform_share_percent": 100 - worker_share})
+        result["before_post_screenshot"] = getattr(w, "before_post_screenshot", None)
+    if include_admin_fields:
+        result.update({"tenant_id": w.tenant_id, "creator_id": w.creator_id, "before_post_screenshot": getattr(w, "before_post_screenshot", None)})
+    return result
 
 
-async def enriched_work(s: AsyncSession, w: Work):
+async def enriched_work(s: AsyncSession, w: Work, viewer_id: str | None = None, include_admin_fields: bool = False):
     active = await s.scalar(select(func.count(WorkAssignment.id)).where(WorkAssignment.work_id == w.id, WorkAssignment.status == "active"))
     completed = await s.scalar(select(func.count(WorkAssignment.id)).where(WorkAssignment.work_id == w.id, WorkAssignment.status == "completed"))
-    return work_dict(w, w.max_workers, int(active or 0), int(completed or 0))
+    return work_dict(w, w.max_workers, int(active or 0), int(completed or 0), viewer_id, include_admin_fields)
 
 
 @router.get("/social/feed")
@@ -241,9 +271,102 @@ async def profile_ratings(user_id: str, s: AsyncSession = Depends(db), user=Depe
 @router.get("/works")
 async def list_works(status: str = Query("open"), limit: int = Query(50, ge=1, le=100), offset: int = Query(0, ge=0), s: AsyncSession = Depends(db), user=Depends(current_user)):
     query = select(Work).where(Work.tenant_id == user.get("tenant_id", "default"))
-    if status != "all": query = query.where(Work.status == status)
+    admin_view = is_admin_user(user)
+    if status != "all":
+        query = query.where(Work.status == status)
+    if status == "open":
+        query = query.where((Work.deadline.is_(None)) | (Work.deadline > datetime.utcnow()))
+    # The UI uses status=all for “My Created Work”. Ordinary users must only
+    # see their own drafts; public task browsing must never reveal private drafts.
+    if not admin_view:
+        if status == "all":
+            query = query.where(Work.creator_id == user["sub"])
+        else:
+            query = query.where(Work.status.in_(["open", "full"]))
     result = await s.execute(query.order_by(desc(Work.created_at)).limit(limit).offset(offset))
-    return [await enriched_work(s, w) for w in result.scalars().all()]
+    return [await enriched_work(s, w, user["sub"], include_admin_fields=admin_view) for w in result.scalars().all()]
+
+
+@router.get("/admin/works")
+async def admin_work_dashboard(status: str = Query("all"), limit: int = Query(100, ge=1, le=500), offset: int = Query(0, ge=0), s: AsyncSession = Depends(db), user=Depends(current_user)):
+    if not is_admin_user(user):
+        raise HTTPException(403, "admin role required")
+    query = select(Work).where(Work.tenant_id == user.get("tenant_id", "default"))
+    if status != "all":
+        query = query.where(Work.status == status)
+    rows = (await s.execute(query.order_by(desc(Work.created_at)).limit(limit).offset(offset))).scalars().all()
+    items = []
+    totals = {"tasks": 0, "pending_review": 0, "open": 0, "pending_submissions": 0}
+    budgets_by_currency = {}
+    for work in rows:
+        pending = int(await s.scalar(select(func.count(WorkSubmission.id)).where(WorkSubmission.work_id == work.id, WorkSubmission.status == "pending")) or 0)
+        gross = (Decimal(str(work.reward_amount)) * Decimal(int(work.max_workers))).quantize(Decimal("0.00000001"))
+        share = int(getattr(work, "payout_share_percent", 100) or 100)
+        totals["tasks"] += 1
+        totals["pending_review"] += int(work.status == "pending_review")
+        totals["open"] += int(work.status in {"open", "full"})
+        totals["pending_submissions"] += pending
+        currency_budget = budgets_by_currency.setdefault(work.currency, {"gross_budget_estimate": Decimal("0"), "platform_share_estimate": Decimal("0")})
+        currency_budget["gross_budget_estimate"] += gross
+        currency_budget["platform_share_estimate"] += (gross * Decimal(100 - share) / Decimal(100))
+        item = await enriched_work(s, work, user["sub"], include_admin_fields=True)
+        item["pending_submissions"] = pending
+        item["gross_budget_estimate"] = str(gross)
+        item["platform_share_estimate"] = str((gross * Decimal(100 - share) / Decimal(100)).quantize(Decimal("0.00000001")))
+        items.append(item)
+    budgets_by_currency = {
+        currency: {key: str(value.quantize(Decimal("0.00000001"))) for key, value in amounts.items()}
+        for currency, amounts in budgets_by_currency.items()
+    }
+    return {"summary": totals, "budget_by_currency": budgets_by_currency, "items": items, "budget_note": "Estimates from task caps, not realized revenue or confirmed wallet settlement."}
+
+
+@router.post("/admin/works/{work_id}/moderate")
+async def admin_moderate_work(work_id: str, body: dict, s: AsyncSession = Depends(db), user=Depends(current_user)):
+    if not is_admin_user(user):
+        raise HTTPException(403, "admin role required")
+    work = await s.scalar(select(Work).where(Work.id == work_id, Work.tenant_id == user.get("tenant_id", "default")).with_for_update())
+    if not work:
+        raise HTTPException(404, "work not found")
+    decision = str(body.get("decision", "")).strip().lower()
+    if decision == "approve":
+        if work.status != "pending_review":
+            raise HTTPException(409, "only pending-review tasks can be approved")
+        if int(getattr(work, "payout_share_percent", 100) or 100) < 100:
+            # Fail moderation closed until the real admin-office wallet is
+            # configured; otherwise workers could complete tasks whose margin
+            # cannot be settled.
+            await resolve_referrer_recipient(s, "admin_office", work.tenant_id)
+            await reserve_work_budget(work)
+        work.status = "open"
+    elif decision == "reject":
+        if work.status != "pending_review":
+            raise HTTPException(409, "only pending-review tasks can be rejected")
+        if int(getattr(work, "payout_share_percent", 100) or 100) < 100:
+            await release_unused_work_budget(work)
+        work.status = "rejected"
+    elif decision == "pause":
+        if work.status not in {"open", "full"}:
+            raise HTTPException(409, "only open or full tasks can be paused")
+        work.status = "paused"
+    elif decision == "resume":
+        if work.status != "paused":
+            raise HTTPException(409, "only paused tasks can be resumed")
+        active = int(await s.scalar(select(func.count(WorkAssignment.id)).where(WorkAssignment.work_id == work.id, WorkAssignment.status == "active")) or 0)
+        completed = int(await s.scalar(select(func.count(WorkAssignment.id)).where(WorkAssignment.work_id == work.id, WorkAssignment.status == "completed")) or 0)
+        work.status = "full" if active + completed >= work.max_workers else "open"
+    elif decision == "close":
+        active = int(await s.scalar(select(func.count(WorkAssignment.id)).where(WorkAssignment.work_id == work.id, WorkAssignment.status == "active")) or 0)
+        pending = int(await s.scalar(select(func.count(WorkSubmission.id)).where(WorkSubmission.work_id == work.id, WorkSubmission.status == "pending")) or 0)
+        if active or pending:
+            raise HTTPException(409, "accepted work and pending submissions must be finished or reviewed before closing")
+        if int(getattr(work, "payout_share_percent", 100) or 100) < 100:
+            await release_unused_work_budget(work)
+        work.status = "closed"
+    else:
+        raise HTTPException(422, "decision must be approve, reject, pause, resume, or close")
+    await s.commit()
+    return await enriched_work(s, work, user["sub"], include_admin_fields=True)
 
 
 @router.post("/works", status_code=201)
@@ -280,16 +403,16 @@ async def create_work(body: dict, s: AsyncSession = Depends(db), user=Depends(cu
         if len(reference_image) > 6_500_000: raise HTTPException(422, "reference_image is too large (max ~6MB)")
     work = Work(tenant_id=user.get("tenant_id", "default"), creator_id=user["sub"], title=title, description=description,
                 requirements=str(body.get("requirements", "")) or None, reference_image=reference_image, before_post_screenshot=before_post_screenshot, task_type=task_type, platform=platform,
-                reward_amount=reward_decimal, currency=currency, max_workers=max_workers, deadline=deadline, status="draft")
+                reward_amount=reward_decimal, payout_share_percent=70, currency=currency, max_workers=max_workers, deadline=deadline, status="draft")
     s.add(work); await s.commit(); await s.refresh(work)
-    return await enriched_work(s, work)
+    return await enriched_work(s, work, user["sub"])
 
 
 @router.get("/works/{work_id}")
 async def get_work(work_id: str, s: AsyncSession = Depends(db), user=Depends(current_user)):
     work = await s.get(Work, work_id)
-    if not work or work.tenant_id != user.get("tenant_id", "default"): raise HTTPException(404, "work not found")
-    return await enriched_work(s, work)
+    if not work or not can_view_work(work, user): raise HTTPException(404, "work not found")
+    return await enriched_work(s, work, user["sub"], include_admin_fields=is_admin_user(user))
 
 
 @router.patch("/works/{work_id}")
@@ -297,7 +420,7 @@ async def update_work(work_id: str, body: dict, s: AsyncSession = Depends(db), u
     work = await s.get(Work, work_id)
     if not work or work.tenant_id != user.get("tenant_id", "default"): raise HTTPException(404, "work not found")
     if work.creator_id != user["sub"]: raise HTTPException(403, "only the creator can edit this work")
-    if work.status not in {"draft", "open"}: raise HTTPException(409, "only draft or open work can be edited")
+    if work.status != "draft": raise HTTPException(409, "published work cannot be edited; close it and create a new funded task")
     if "task_type" in body:
         task_type = str(body["task_type"]).strip().lower()
         if task_type not in TASK_TYPES: raise HTTPException(422, f"Unsupported task_type: {task_type}")
@@ -325,7 +448,7 @@ async def update_work(work_id: str, body: dict, s: AsyncSession = Depends(db), u
         work.max_workers = value
     if "deadline" in body: work.deadline = datetime.fromisoformat(str(body["deadline"]).replace("Z", "+00:00")).replace(tzinfo=None) if body["deadline"] else None
     await s.commit(); await s.refresh(work)
-    return await enriched_work(s, work)
+    return await enriched_work(s, work, user["sub"])
 
 
 @router.post("/works/{work_id}/publish")
@@ -334,8 +457,13 @@ async def publish_work(work_id: str, s: AsyncSession = Depends(db), user=Depends
     if not work or work.tenant_id != user.get("tenant_id", "default"): raise HTTPException(404, "work not found")
     if work.creator_id != user["sub"]: raise HTTPException(403, "only the creator can publish this work")
     if work.status not in {"draft", "open"}: raise HTTPException(409, "work cannot be published from its current stage")
-    work.status = "open"; await s.commit(); await s.refresh(work)
-    return await enriched_work(s, work)
+    if int(getattr(work, "payout_share_percent", 100) or 100) < 100:
+        # Verify the Shopnoltd margin recipient before freezing funds; then
+        # reserve the complete gross budget before admin moderation.
+        await resolve_referrer_recipient(s, "admin_office", work.tenant_id)
+        await reserve_work_budget(work)
+    work.status = "pending_review"; await s.commit(); await s.refresh(work)
+    return await enriched_work(s, work, user["sub"])
 
 
 @router.post("/works/{work_id}/close")
@@ -343,9 +471,14 @@ async def close_work(work_id: str, s: AsyncSession = Depends(db), user=Depends(c
     work = await s.get(Work, work_id)
     if not work or work.tenant_id != user.get("tenant_id", "default"): raise HTTPException(404, "work not found")
     if work.creator_id != user["sub"]: raise HTTPException(403, "only the creator can close this work")
-    if work.status in {"closed", "completed"}: return await enriched_work(s, work)
+    active_count = await s.scalar(select(func.count(WorkAssignment.id)).where(WorkAssignment.work_id == work.id, WorkAssignment.status == "active"))
+    pending_count = await s.scalar(select(func.count(WorkSubmission.id)).where(WorkSubmission.work_id == work.id, WorkSubmission.status == "pending"))
+    if int(active_count or 0) or int(pending_count or 0):
+        raise HTTPException(409, "finish or review all accepted work and pending submissions before closing; reserved funds remain protected")
+    if int(getattr(work, "payout_share_percent", 100) or 100) < 100:
+        await release_unused_work_budget(work)
     work.status = "closed"; await s.commit(); await s.refresh(work)
-    return await enriched_work(s, work)
+    return await enriched_work(s, work, user["sub"])
 
 
 @router.post("/works/{work_id}/accept")
@@ -357,22 +490,30 @@ async def accept_work(work_id: str, s: AsyncSession = Depends(db), user=Depends(
     if work.creator_id == user["sub"]: raise HTTPException(400, "creator cannot accept own work")
     if work.status not in {"open", "full"}:
         raise HTTPException(409, "work is not available")
+    if work.deadline and work.deadline <= datetime.utcnow():
+        raise HTTPException(409, "task deadline has passed; creator or admin must close it to release unused funds")
     existing = await s.scalar(select(WorkAssignment).where(WorkAssignment.work_id == work_id, WorkAssignment.worker_id == user["sub"]))
     if existing and existing.status == "completed":
         return {"accepted": False, "completed": True, "work_id": work_id}
     if existing and existing.status == "active":
         return {"accepted": True, "already": True, "work_id": work_id}
-    count = await s.scalar(select(func.count(WorkAssignment.id)).where(WorkAssignment.work_id == work_id, WorkAssignment.status == "active"))
-    if int(count or 0) >= work.max_workers:
+    active_count = await s.scalar(select(func.count(WorkAssignment.id)).where(WorkAssignment.work_id == work_id, WorkAssignment.status == "active"))
+    completed_count = await s.scalar(select(func.count(WorkAssignment.id)).where(WorkAssignment.work_id == work_id, WorkAssignment.status == "completed"))
+    occupied_slots = int(active_count or 0) + int(completed_count or 0)
+    if remaining_work_slots(work.max_workers, int(active_count or 0), int(completed_count or 0)) <= 0:
         work.status = "full"
         await s.commit()
         raise HTTPException(409, "work has no remaining slots")
+    if int(getattr(work, "payout_share_percent", 100) or 100) < 100:
+        # Backfill an idempotent reserve for previously-open 70/30 tasks only
+        # after confirming this worker can actually claim a remaining slot.
+        await reserve_work_budget(work)
     if existing:
         existing.status = "active"
         existing.accepted_at = datetime.utcnow()
     else:
         s.add(WorkAssignment(work_id=work_id, worker_id=user["sub"], status="active"))
-    if int(count or 0) + 1 >= work.max_workers: work.status = "full"
+    if occupied_slots + 1 >= work.max_workers: work.status = "full"
     else: work.status = "open"
     await s.commit()
     return {"accepted": True, "work_id": work_id, "reopened": bool(existing)}
@@ -385,7 +526,7 @@ async def active_works(s: AsyncSession = Depends(db), user=Depends(current_user)
                              .order_by(desc(WorkAssignment.accepted_at)))
     return [
         {
-            "work": await enriched_work(s, w),
+            "work": await enriched_work(s, w, user["sub"]),
             "assignment_id": a.id,
             "accepted_at": a.accepted_at.isoformat() if a.accepted_at else None,
         }
@@ -419,8 +560,27 @@ async def my_submissions(s: AsyncSession = Depends(db), user=Depends(current_use
 async def creator_submissions(s: AsyncSession = Depends(db), user=Depends(current_user)):
     result = await s.execute(select(WorkSubmission, Work).join(Work, Work.id == WorkSubmission.work_id)
                              .where(Work.creator_id == user["sub"]).order_by(desc(WorkSubmission.submitted_at)))
-    return [{"id": x.id, "work": await enriched_work(s, w), "worker_id": x.worker_id, "proof": x.proof, "status": x.status,
+    return [{"id": x.id, "work_id": w.id, "work_title": w.title, "work": await enriched_work(s, w, user["sub"]), "worker_id": x.worker_id, "proof": x.proof, "status": x.status,
              "review_note": x.review_note, "submitted_at": x.submitted_at.isoformat()} for x, w in result.all()]
+
+
+@router.get("/admin/submissions")
+async def admin_pending_submissions(limit: int = Query(100, ge=1, le=500), s: AsyncSession = Depends(db), user=Depends(current_user)):
+    if not is_admin_user(user):
+        raise HTTPException(403, "admin role required")
+    result = await s.execute(
+        select(WorkSubmission, Work)
+        .join(Work, Work.id == WorkSubmission.work_id)
+        .where(Work.tenant_id == user.get("tenant_id", "default"), WorkSubmission.status.in_(["pending", "disputed"]))
+        .order_by(desc(WorkSubmission.submitted_at)).limit(limit)
+    )
+    return [{
+        "id": sub.id, "work_id": work.id, "work_title": work.title,
+        "creator_id": work.creator_id, "worker_id": sub.worker_id,
+        "proof": sub.proof, "status": sub.status,
+        "reward_amount": str(work.reward_amount), "currency": work.currency,
+        "submitted_at": sub.submitted_at.isoformat(),
+    } for sub, work in result.all()]
 
 
 @router.post("/submissions/{submission_id}/review")
@@ -430,26 +590,57 @@ async def review_submission(submission_id: str, body: dict, creds: HTTPAuthoriza
     submission = await s.get(WorkSubmission, submission_id)
     if not submission: raise HTTPException(404, "submission not found")
     work = await s.get(Work, submission.work_id)
-    if not work or work.creator_id != user["sub"]: raise HTTPException(403, "only the creator can review this submission")
+    if not work or (work.creator_id != user["sub"] and not is_admin_user(user)): raise HTTPException(403, "creator or admin role required to review this submission")
     if submission.status != "pending": raise HTTPException(409, "submission has already been reviewed")
+    share = int(getattr(work, "payout_share_percent", 100) or 100)
+    if decision == "approved" and work.creator_id != user["sub"] and share >= 100:
+        raise HTTPException(403, "legacy unfunded tasks must be approved by their creator")
     if decision == "approved":
-        amount = Decimal(str(work.reward_amount))
-        await settle_reward({"worker_id": submission.worker_id}, submission.id, amount, work.currency, creds.credentials)
-        # The referrer is paid only after the worker settlement succeeds. The
-        # referral transfer has its own idempotency key, so retries cannot double-pay.
-        await settle_referral_reward(
-            s,
-            referred_id=submission.worker_id,
-            work_id=work.id,
-            submission_id=submission.id,
-            base_amount=amount,
-            currency=work.currency,
-            tenant_id=work.tenant_id,
-            token=creds.credentials,
-        )
+        gross_amount = Decimal(str(work.reward_amount))
+        worker_amount = (gross_amount * Decimal(share) / Decimal(100)).quantize(Decimal("0.00000001"))
+        if share < 100:
+            # The entire task budget was frozen before any worker could accept.
+            # Each approval atomically consumes worker, referral and platform
+            # shares from that escrow; creator funds cannot be spent elsewhere.
+            await reserve_work_budget(work)
+            platform_user_id = await resolve_referrer_recipient(s, "admin_office", work.tenant_id)
+            await preflight_referral_reward(
+                s, referred_id=submission.worker_id, submission_id=submission.id,
+                base_amount=gross_amount, currency=work.currency, tenant_id=work.tenant_id,
+                available_commission=gross_amount - worker_amount,
+            )
+
+            async def escrow_payout(recipient_id, amount, scope, note):
+                return await payout_work_escrow(work, recipient_id, amount, scope, note)
+
+            await escrow_payout(submission.worker_id, worker_amount, f"worker:{submission.id}", f"work:{submission.id}")
+            referral_reward = await settle_referral_reward_from_work_escrow(
+                s, referred_id=submission.worker_id, work_id=work.id, submission_id=submission.id,
+                base_amount=gross_amount, currency=work.currency, tenant_id=work.tenant_id,
+                available_commission=gross_amount - worker_amount, payer_id=work.creator_id,
+                escrow_payout=escrow_payout,
+            )
+            referral_amount = Decimal(str(referral_reward.reward_amount)) if referral_reward else Decimal("0")
+            await settle_platform_commission_from_work_escrow(
+                payer_id=work.creator_id, recipient_id=platform_user_id, submission_id=submission.id,
+                amount=gross_amount - worker_amount - referral_amount, escrow_payout=escrow_payout,
+            )
+        else:
+            # Existing published work is grandfathered at its original 100% worker rate.
+            await settle_reward({"worker_id": submission.worker_id}, submission.id, gross_amount, work.currency, creds.credentials)
+            await settle_referral_reward(
+                s, referred_id=submission.worker_id, work_id=work.id, submission_id=submission.id,
+                base_amount=gross_amount, currency=work.currency, tenant_id=work.tenant_id, token=creds.credentials, payer_id=user["sub"],
+            )
     submission.status = decision; submission.reviewer_id = user["sub"]
     submission.review_note = str(body.get("note", "")) or None; submission.reviewed_at = datetime.utcnow()
     assignment = await s.scalar(select(WorkAssignment).where(WorkAssignment.work_id == work.id, WorkAssignment.worker_id == submission.worker_id))
-    if assignment and decision == "approved": assignment.status = "completed"
+    if assignment:
+        assignment.status = "completed" if decision == "approved" else "rejected"
+    if decision == "rejected" and work.status == "full":
+        active_count = int(await s.scalar(select(func.count(WorkAssignment.id)).where(WorkAssignment.work_id == work.id, WorkAssignment.status == "active")) or 0)
+        completed_count = int(await s.scalar(select(func.count(WorkAssignment.id)).where(WorkAssignment.work_id == work.id, WorkAssignment.status == "completed")) or 0)
+        if active_count + completed_count < work.max_workers:
+            work.status = "open"
     await s.commit()
     return {"id": submission.id, "status": submission.status, "settlement": "completed" if decision == "approved" else "not_required"}

@@ -23,6 +23,8 @@ spec:
         prometheus.io/scrape: "true"
         prometheus.io/port: "8080"
         prometheus.io/path: "/metrics"
+        # ConfigMap envFrom changes do not restart pods; bump this revision with API config changes.
+        shopnoltd.io/config-revision: "adgem-postback-v3-secret-v2"
     spec:
       serviceAccountName: api-service
       automountServiceAccountToken: true
@@ -35,7 +37,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: api-service
-          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/api-service:039fcbdd2a98790cf2de03db34572a9264410424
+          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/api-service:5468d204f5927652ced9cea50428350080d91b03
           imagePullPolicy: Always
           ports:
             - name: http
@@ -46,6 +48,8 @@ spec:
                 name: api-service-config
             - secretRef:
                 name: api-service-secret
+            - secretRef:
+                name: api-service-affmine
           env:
             - name: SHOPNOLTD_INTERNAL_AUTOMATION_TOKEN
               valueFrom:
@@ -64,6 +68,29 @@ spec:
                   name: shopnoltd-n8n-blog-draft-secret
                   key: token
                   optional: true
+            - name: ADGEM_POSTBACK_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: adgem-integration
+                  key: ADGEM_POSTBACK_KEY
+                  optional: true
+            - name: ADGEM_APP_ID
+              valueFrom:
+                secretKeyRef:
+                  name: adgem-integration
+                  key: ADGEM_APP_ID
+                  optional: true
+            - name: PAYMENT_INTERNAL_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: affiliate-payment-bridge
+                  key: AFFILIATE_INTERNAL_API_KEY
+                  optional: true
+            - name: WORK_ESCROW_INTERNAL_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: work-escrow-bridge
+                  key: WORK_ESCROW_INTERNAL_API_KEY
             - name: POD_NAME
               valueFrom: { fieldRef: { fieldPath: metadata.name } }
             - name: POD_NAMESPACE

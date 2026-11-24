@@ -6,6 +6,7 @@ export default defineConfig({
   use: {
     headless: true,
     ignoreHTTPSErrors: false,
-    trace: 'retain-on-failure',
+    // This suite handles passwords and generated TOTP values; never retain traces.
+    trace: 'off',
   },
 })

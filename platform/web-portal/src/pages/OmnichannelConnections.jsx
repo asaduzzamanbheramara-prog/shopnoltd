@@ -65,11 +65,28 @@ export default function OmnichannelConnections() {
   const [capabilities, setCapabilities] = useState([])
   const [providers, setProviders] = useState([])
   const [oauthProfiles, setOauthProfiles] = useState([])
+  const [pendingSelection, setPendingSelection] = useState(null)
+  const [selectedOAuthAccounts, setSelectedOAuthAccounts] = useState([])
   const [form, setForm] = useState(EMPTY)
   const [editing, setEditing] = useState(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
+
+  async function beginOAuth(provider, platform) {
+    setError('')
+    setBusy(true)
+    try {
+      const result = await platformApi.omnichannelOAuthAuthorizeUrl(provider, platform)
+      if (!result?.authorization_url || !/^https:\/\//i.test(result.authorization_url)) {
+        throw new Error('The provider did not return a valid authorization URL.')
+      }
+      window.location.assign(result.authorization_url)
+    } catch (e) {
+      setError(e.message || 'Could not start provider authorization.')
+      setBusy(false)
+    }
+  }
 
   async function load() {
     setError('')
@@ -89,7 +106,44 @@ export default function OmnichannelConnections() {
     }
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    const query = new URLSearchParams(window.location.search)
+    const oauthResult = query.get('oauth')
+    const provider = query.get('provider')
+    const reason = query.get('reason')
+    const pendingId = query.get('pending_id')
+    if (oauthResult) {
+      query.delete('oauth')
+      query.delete('provider')
+      query.delete('connection_id')
+      query.delete('reason')
+      if (oauthResult !== 'pending') query.delete('pending_id')
+      const remaining = query.toString()
+      window.history.replaceState({}, '', `${window.location.pathname}${remaining ? `?${remaining}` : ''}`)
+    }
+    load().then(async () => {
+      if (pendingId) {
+        try {
+          const pending = await platformApi.omnichannelOAuthPending(pendingId)
+          setPendingSelection({ ...pending, pendingId })
+          setSelectedOAuthAccounts((pending.choices || []).map(choice => choice.id))
+        } catch (e) {
+          setError(e.message || 'The account selection expired. Please reconnect the provider.')
+        }
+      }
+      if (oauthResult === 'success') setNotice(`${provider || 'Provider'} account connected successfully.`)
+      if (oauthResult === 'error') {
+        const messages = {
+          access_denied: 'You cancelled the provider authorization.',
+          temporarily_unavailable: 'The provider is temporarily unavailable. Please try again.',
+          server_error: 'The provider could not complete authorization. Please try again.',
+          multiple_accounts: 'This login has multiple Pages or channels. Account selection is required; no account was connected.',
+          no_eligible_account: 'No eligible Page, channel, or professional account was found. Check provider permissions and account type.',
+        }
+        setError(messages[reason] || 'Provider authorization failed. Check the provider app permissions and try again.')
+      }
+    })
+  }, [])
 
   const capabilityMap = useMemo(() => {
     const map = {}
@@ -139,6 +193,33 @@ export default function OmnichannelConnections() {
     setError('')
     setNotice('')
     window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  async function chooseOAuthAccounts(accountIds = selectedOAuthAccounts) {
+    if (!pendingSelection?.pendingId || !accountIds.length) return
+    setBusy(true)
+    setError('')
+    try {
+      const result = await platformApi.omnichannelOAuthSelect(pendingSelection.pendingId, accountIds)
+      setPendingSelection(null)
+      setSelectedOAuthAccounts([])
+      const currentQuery = new URLSearchParams(window.location.search)
+      currentQuery.delete('pending_id')
+      const remaining = currentQuery.toString()
+      window.history.replaceState({}, '', window.location.pathname + (remaining ? '?' + remaining : ''))
+      setNotice((result.connected_count || accountIds.length) + ' ' + result.platform + ' profile(s) connected successfully.')
+      await load()
+    } catch (e) {
+      setError(e.message || 'Could not connect the selected accounts.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  function toggleOAuthAccount(accountId, checked) {
+    setSelectedOAuthAccounts(current => checked
+      ? [...new Set([...current, accountId])]
+      : current.filter(id => id !== accountId))
   }
 
   async function remove(item) {
@@ -220,20 +301,48 @@ export default function OmnichannelConnections() {
           <div key={provider.provider} style={{ border: '1px solid #e5e7eb', borderRadius: 10, padding: 11 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
               <strong>{provider.provider}</strong>
-              <span style={{ fontSize: 12, fontWeight: 700, color: provider.configured ? '#166534' : '#92400e' }}>
-                {provider.configured ? 'Configured' : 'Not configured'}
+              <span style={{ fontSize: 12, fontWeight: 700, color: ['ready_to_authorize', 'bot_configured'].includes(provider.setup_status) ? '#166534' : '#92400e' }}>
+                {provider.setup_status === 'ready_to_authorize' ? 'Ready to authorize'
+                  : provider.setup_status === 'bot_configured' ? 'Bot configured'
+                  : provider.setup_status === 'business_onboarding_required' ? 'Business onboarding required'
+                  : provider.setup_status === 'api_config_present_adapter_unverified' ? 'API details present — validation needed'
+                  : 'Needs configuration'}
               </span>
             </div>
             <div style={{ color: '#6b7280', fontSize: 12, marginTop: 5 }}>
               {provider.platforms.join(', ')} · {provider.mode || 'oauth2'}
             </div>
             <div style={{ color: '#6b7280', fontSize: 11, marginTop: 5 }}>
+              {provider.setup_status ? provider.setup_status.replaceAll('_', ' ') + '. ' : ''}
               {provider.authorization_supported ? 'Direct authorization is available when the server credentials are configured.' : 'Uses provider-specific business/API authorization.'}
             </div>
           </div>
         ))}
       </div>
     </section>
+
+    {pendingSelection && <section style={{ ...styles.card, marginBottom: 20 }} aria-live="polite">
+      <h2 style={{ margin: '0 0 8px', fontSize: 18 }}>Choose profiles to connect</h2>
+      <p style={{ margin: '0 0 12px', color: '#6b7280' }}>
+        Select one, several, or all discovered {pendingSelection.platform} profiles from {pendingSelection.provider}. Each selected profile is saved as its own connection with separate account identity and credentials.
+      </p>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
+        <button type="button" disabled={busy} onClick={() => setSelectedOAuthAccounts(pendingSelection.choices.map(choice => choice.id))} style={styles.button}>Select all ({pendingSelection.choices.length})</button>
+        <button type="button" disabled={busy} onClick={() => setSelectedOAuthAccounts([])} style={styles.button}>Clear selection</button>
+      </div>
+      <div style={{ display: 'grid', gap: 8 }}>
+        {pendingSelection.choices.map(choice => <label
+          key={choice.id}
+          style={{ ...styles.button, justifyContent: 'flex-start', width: '100%', boxSizing: 'border-box', cursor: busy ? 'default' : 'pointer' }}
+        >
+          <input type="checkbox" disabled={busy} checked={selectedOAuthAccounts.includes(choice.id)} onChange={event => toggleOAuthAccount(choice.id, event.target.checked)} />
+          <span>{choice.name}{choice.username ? ' (@' + choice.username + ')' : ''}</span>
+        </label>)}
+      </div>
+      <button type="button" disabled={busy || !selectedOAuthAccounts.length} onClick={() => chooseOAuthAccounts()} style={{ ...styles.button, marginTop: 12, background: '#111827', color: '#fff', borderColor: '#111827' }}>
+        {busy ? 'Connecting...' : 'Connect ' + selectedOAuthAccounts.length + ' selected profile(s)'}
+      </button>
+    </section>}
 
     <section style={{ ...styles.card, marginBottom: 20 }}>
       <h2 style={{ margin: '0 0 12px', fontSize: 18 }}>Authorize provider accounts</h2>
@@ -249,15 +358,16 @@ export default function OmnichannelConnections() {
             </span>
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 9 }}>
-            {provider.platforms.map(platform => (
-              provider.configured && provider.authorization_supported
-                ? <button key={platform} type="button" onClick={() => { window.location.href = platformApi.omnichannelOAuthStart(provider.provider, platform) }} style={styles.button}>
-                    <Link2 size={14} /> Connect {platform}
+            {provider.platforms.map(platform => {
+              const connectedCount = oauthProfiles.filter(x => x.provider === provider.provider && x.platform === platform).length
+              return provider.configured && provider.authorization_supported
+                ? <button key={platform} type="button" onClick={() => beginOAuth(provider.provider, platform)} disabled={busy} style={styles.button}>
+                    <Link2 size={14} /> {connectedCount ? 'Connect another ' + platform + ' account' : 'Connect ' + platform}
                   </button>
                 : <span key={platform} style={{ ...styles.button, color: '#92400e', cursor: 'default' }}>
                     {provider.mode === 'oauth2' ? 'Configure ' : 'Manual/API '} {platform}
                   </span>
-            ))}
+            })}
           </div>
         </div>
       ))}

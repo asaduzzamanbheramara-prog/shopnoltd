@@ -65,6 +65,7 @@ resources:
 - services/remote-device
 - services/enketo
 - services/argocd/public-ingress.yaml
+- services/argocd/core-rbac.yaml
 - services/kobotoolbox
 - shopno-apps/kobo-worker.yaml
 - shopno-apps/kobo-beat.yaml

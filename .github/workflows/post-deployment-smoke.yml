@@ -9,6 +9,7 @@ on:
     paths:
       - 'k8s/**'
       - '.github/workflows/post-deployment-smoke.yml'
+      - '.github/workflows/self-hosted-k3s-gitops.yml'
   workflow_dispatch:
 
 permissions:
@@ -34,15 +35,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 50
     steps:
-      - name: Dispatch reconciliation when explicitly requested or when only this workflow changed
+      - name: Keep manual smoke checks read-only
         shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
-            gh workflow run self-hosted-k3s-gitops.yml --repo "$GITHUB_REPOSITORY" --ref main
-            echo 'Dispatched GitOps reconciliation for an explicit manual request.'
+            echo 'Manual smoke checks validate the currently deployed revision and never trigger a full cluster reconciliation.'
           else
             echo 'Push-triggered checks never dispatch a duplicate GitOps run.'
           fi
@@ -53,6 +51,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            echo 'Manual smoke request: validate public endpoints for the currently deployed cluster; no GitOps operation is required.'
+            exit 0
+          fi
           workflow='self-hosted-k3s-gitops.yml'
           if [ "$GITHUB_EVENT_NAME" = "workflow_run" ] && [ "$(jq -r '.workflow_run.name' "$GITHUB_EVENT_PATH")" = "Shopnoltd Self-Hosted K3s GitOps" ]; then
             expected_sha="$(jq -r '.workflow_run.head_sha' "$GITHUB_EVENT_PATH")"
@@ -185,6 +187,12 @@ jobs:
           - name: social-feed-page
             url: https://shopnoltd.dpdns.org/feed
             mode: web
+          - name: software-os-center
+            url: https://shopnoltd.dpdns.org/software-os-center.html
+            mode: web
+          - name: software-os-catalogue
+            url: https://shopnoltd.dpdns.org/catalogue.json
+            mode: web
           - name: api
             url: https://api.shopnoltd.dpdns.org/healthz
             mode: health
@@ -218,9 +226,8 @@ jobs:
           - name: android-cloud
             url: https://android.shopnoltd.dpdns.org
             mode: web
-          - name: chat
-            url: https://chat.shopnoltd.dpdns.org
-            mode: web
+          # Chatwoot/chat alias is intentionally retired and scaled to zero; see commit 6ceffdfb4fc9276e7ef0636ba82e61b3d8491e64.
+          # Do not gate active production readiness on this retired endpoint.
           - name: social
             url: https://social.shopnoltd.dpdns.org/healthz
             mode: health
