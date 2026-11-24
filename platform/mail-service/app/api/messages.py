@@ -5,17 +5,15 @@ from email.message import EmailMessage
 from email.utils import parseaddr
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.db import SessionLocal
-from app.core.security import verify_token
+from app.core.security import oauth2_scheme, verify_token
 from app.models.models import Mailbox, Message
 
 router = APIRouter()
-bearer = HTTPBearer()
 
 
 async def db():
@@ -23,8 +21,8 @@ async def db():
         yield s
 
 
-async def current_user(creds: HTTPAuthorizationCredentials = Depends(bearer)):
-    return await verify_token(creds.credentials)
+async def current_user(token: str = Depends(oauth2_scheme)):
+    return await verify_token(token)
 
 
 def _is_platform_admin(user: dict) -> bool:
