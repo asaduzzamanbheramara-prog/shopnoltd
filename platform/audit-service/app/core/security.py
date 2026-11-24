@@ -25,9 +25,10 @@ async def verify_token(token: str) -> dict:
         return jwt.decode(
             token,
             key,
-            algorithms=[key["alg"]],
+            algorithms=["RS256"],
             audience=settings.keycloak_audience,
-            options={"verify_aud": True},
+            issuer=settings.keycloak_issuer,
+            options={"verify_aud": True, "verify_iss": True},
         )
     except (JWTError, StopIteration) as e:
         raise ValueError(f"invalid token: {e}") from e
