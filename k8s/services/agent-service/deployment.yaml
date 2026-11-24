@@ -31,7 +31,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: agent-service
-          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-agent-service:4892013377e124600d70325df5158e47cff5db4a
+          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-agent-service:d54a677f84b8a066fcf6f1cb823305138a4290e4
           ports:
             - name: http
               containerPort: 8080
