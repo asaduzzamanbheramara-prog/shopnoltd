@@ -64,7 +64,10 @@ def _claim_roles(user: dict[str, Any]) -> set[str]:
 
 
 def is_admin(user: dict[str, Any]) -> bool:
-    return bool(_claim_roles(user) & {"admin", "platform_admin"})
+    # Platform privileges must come from realm roles, never an API-client role.
+    realm_roles = set(user.get("roles", []) or [])
+    realm_roles.update((user.get("realm_access") or {}).get("roles", []) or [])
+    return bool(realm_roles & {"admin", "platform_admin"})
 
 
 async def require_admin(user: dict[str, Any] = Depends(current_user)) -> dict[str, Any]:
