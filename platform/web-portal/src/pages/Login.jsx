@@ -15,9 +15,11 @@ async function startLogin(provider = '') {
   const verifier = randomString(64)
   const challenge = await codeChallengeFor(verifier)
   const state = randomString(32)
+  const nonce = randomString(32)
 
   sessionStorage.setItem('pkce_verifier', verifier)
   sessionStorage.setItem('oidc_state', state)
+  sessionStorage.setItem('oidc_nonce', nonce)
 
   const paramsIn = new URLSearchParams(window.location.search)
   const incomingDomain = paramsIn.get('domain')
@@ -44,6 +46,7 @@ async function startLogin(provider = '') {
     // Require fresh authentication on shared browsers instead of silently reusing the prior SSO user.
     prompt: 'login',
     state,
+    nonce,
     code_challenge: challenge,
     code_challenge_method: 'S256',
   })
