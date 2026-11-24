@@ -1,5 +1,6 @@
 import httpx
 from fastapi import HTTPException
+from fastapi.security import OAuth2AuthorizationCodeBearer
 from shopno_core.security.jwt import JWTError, jwt
 
 from app.core.config import settings
@@ -42,3 +43,16 @@ async def verify_token_admin(token: str) -> dict:
     if "admin" not in roles:
         raise HTTPException(status_code=403, detail="admin only")
     return u
+
+
+# Reuse the Shopnoltd browser OIDC client. The corresponding Keycloak client
+# is public and enforces PKCE S256; no client secret is sent to Swagger UI.
+oauth2_scheme = OAuth2AuthorizationCodeBearer(
+    authorizationUrl=f"{settings.keycloak_issuer}/protocol/openid-connect/auth",
+    tokenUrl=f"{settings.keycloak_issuer}/protocol/openid-connect/token",
+    scopes={
+        "openid": "OpenID Connect",
+        "profile": "Basic profile",
+        "email": "Email address",
+    },
+)
