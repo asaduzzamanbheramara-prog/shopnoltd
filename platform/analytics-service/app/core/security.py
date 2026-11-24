@@ -59,7 +59,7 @@ async def verify_token_admin(token: str) -> dict:
     roles.update((u.get("realm_access") or {}).get("roles", []) or [])
     for client in (u.get("resource_access") or {}).values():
         roles.update((client or {}).get("roles", []) or [])
-    if not roles.intersection({"admin", "platform_admin"}):
+    if not realm_role_claims.intersection({"admin", "platform_admin"}):
         raise PermissionError("admin only")
     u["roles"] = sorted(roles)
     return u
