@@ -2,7 +2,7 @@ from datetime import datetime
 from urllib.parse import urlencode
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Body, Depends, HTTPException, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,7 +11,7 @@ from app.core.config import settings
 from app.core.db import SessionLocal
 from app.core.security import verify_token
 from app.models.models import Session
-from app.schemas.schemas import LoginIn, LoginOut, SignupIn, SignupOut, SocialTokenIn
+from app.schemas.schemas import LoginIn, LoginOut, LogoutIn, RefreshIn, SignupIn, SignupOut, SocialTokenIn
 
 router = APIRouter()
 bearer = HTTPBearer()
@@ -221,27 +221,62 @@ async def login(body: LoginIn, request: Request, s: AsyncSession = Depends(db)):
 
 
 @router.post("/refresh")
-async def refresh(refresh_token: str, s: AsyncSession = Depends(db)):
-    async with httpx.AsyncClient() as c:
+async def refresh(body: RefreshIn):
+    # Keep bearer refresh credentials in the POST body, never in URL query strings
+    # where reverse-proxy and access logs commonly record them.
+    async with httpx.AsyncClient(timeout=15) as c:
         r = await c.post(
             f"{settings.keycloak_url}/realms/{settings.keycloak_realm}/protocol/openid-connect/token",
             data={
                 "grant_type": "refresh_token",
                 "client_id": settings.keycloak_web_client_id,
-                "refresh_token": refresh_token,
+                "refresh_token": body.refresh_token,
             },
         )
-    r.raise_for_status()
+    if r.status_code in (400, 401):
+        raise HTTPException(401, "refresh token is invalid or expired")
+    if r.status_code != 200:
+        raise HTTPException(503, "identity provider is temporarily unavailable")
     return r.json()
 
 
 @router.post("/logout")
 async def logout(
-    creds: HTTPAuthorizationCredentials = Depends(bearer), s: AsyncSession = Depends(db)
+    creds: HTTPAuthorizationCredentials = Depends(bearer),
+    body: LogoutIn | None = Body(default=None),
+    s: AsyncSession = Depends(db),
 ):
     payload = await verify_token(creds.credentials)
-    # Revoke stable-sub and legacy email/username session rows.
-    identities = {v for v in (payload.get("sub"), payload.get("email"), payload.get("preferred_username")) if v}
+    keycloak_revoked = False
+
+    # Revoke the supplied refresh token at Keycloak when available. The caller
+    # should clear its local tokens and use the OIDC end-session redirect for
+    # browser SSO logout as well.
+    if body and body.refresh_token:
+        async with httpx.AsyncClient(timeout=15) as c:
+            try:
+                response = await c.post(
+                    f"{settings.keycloak_url}/realms/{settings.keycloak_realm}/protocol/openid-connect/revoke",
+                    data={
+                        "client_id": settings.keycloak_web_client_id,
+                        "token": body.refresh_token,
+                        "token_type_hint": "refresh_token",
+                    },
+                )
+                keycloak_revoked = response.status_code == 200
+            except httpx.HTTPError:
+                keycloak_revoked = False
+
+    # Revoke stable-sub and legacy email/username session rows locally.
+    identities = {
+        value
+        for value in (
+            payload.get("sub"),
+            payload.get("email"),
+            payload.get("preferred_username"),
+        )
+        if value
+    }
     res = await s.execute(
         select(Session).where(Session.user_id.in_(identities), Session.active.is_(True))
     )
@@ -249,4 +284,4 @@ async def logout(
         sess.active = False
         sess.revoked_at = datetime.utcnow()
     await s.commit()
-    return {"ok": True}
+    return {"ok": True, "keycloak_revoked": keycloak_revoked}
