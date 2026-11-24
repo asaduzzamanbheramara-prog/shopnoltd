@@ -1,17 +1,27 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useAdvertisingConsent } from '../lib/useAdvertisingConsent'
 import { useExternalAdPolicy } from '../lib/useExternalAdPolicy'
 
-// Single publisher-approved 300x250 display banner. Other Adsterra formats are disabled.
-const ZONE = {
-  key: '253592d9ff11f220f7c319ff3ec1bde2',
-  width: 300,
-  height: 250,
-  scriptUrl: 'https://bicea.org/22/253592d9ff11f220f7c319ff3ec1bde2',
+const ZONES = {
+  '468x60': { key: '7747061d0c5ae776f68405dbeeab89fd', width: 468, height: 60, scriptUrl: 'https://bicea.org/22/7747061d0c5ae776f68405dbeeab89fd' },
+  '160x300': { key: '01485acb7eefc95c30f7e25fb2986c58', width: 160, height: 300, scriptUrl: 'https://bicea.org/22/01485acb7eefc95c30f7e25fb2986c58' },
+  '320x50': { key: '08bbf4b2a46b97a005c4d26ef1570b52', width: 320, height: 50, scriptUrl: 'https://bicea.org/22/08bbf4b2a46b97a005c4d26ef1570b52' },
+  '728x90': { key: '8e53ca766e19e7f2777fbecab4ca6040', width: 728, height: 90, scriptUrl: 'https://bicea.org/22/8e53ca766e19e7f2777fbecab4ca6040' },
+  '160x600': { key: '747cdd280fdc0b463f184d4662beaceb', width: 160, height: 600, scriptUrl: 'https://bicea.org/22/747cdd280fdc0b463f184d4662beaceb' },
+  '300x250': { key: '253592d9ff11f220f7c319ff3ec1bde2', width: 300, height: 250, scriptUrl: 'https://bicea.org/22/253592d9ff11f220f7c319ff3ec1bde2' },
 }
 
+const NATIVE = {
+  scriptUrl: 'https://bicea.org/21/38ffa3db02659ab0b305ed8c29df5ea3',
+  containerId: 'container-38ffa3db02659ab0b305ed8c29df5ea3',
+}
+const SOCIAL_BAR = 'https://bicea.org/14/6709e7550b64cb74dbb906dc2ebb08e0'
+const SMARTLINK = 'https://arwf.org/4/e15a69f3ca91af71dfca281a544d18e9'
+
 function enqueueZoneLoad(job) {
-  if (!window.__shopnoltdAdsterraQueue) window.__shopnoltdAdsterraQueue = { jobs: [], running: false, current: null }
+  if (!window.__shopnoltdAdsterraQueue) {
+    window.__shopnoltdAdsterraQueue = { jobs: [], running: false, current: null }
+  }
   const queue = window.__shopnoltdAdsterraQueue
   job.cancelled = false
   queue.jobs.push(job)
@@ -35,13 +45,14 @@ function enqueueZoneLoad(job) {
     next.script = script
     script.src = next.zone.scriptUrl
     script.async = false
-    script.dataset.shopnoltdAdsterra = '300x250'
+    script.dataset.shopnoltdAdsterra = next.name
     script.setAttribute('data-cfasync', 'false')
     script.onload = () => finish(next)
     script.onerror = () => finish(next)
     next.container.appendChild(script)
   }
   runNext()
+
   return () => {
     job.cancelled = true
     const index = queue.jobs.indexOf(job)
@@ -57,27 +68,113 @@ function enqueueZoneLoad(job) {
 }
 
 const shellStyle = {
-  boxSizing: 'border-box', margin: '24px auto', padding: 4, width: '100%', maxWidth: '100%', minWidth: 0,
+  boxSizing: 'border-box', margin: '24px auto', padding: 10, width: '100%', maxWidth: '100%', minWidth: 0,
   display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, overflow: 'hidden',
   border: '1px solid #e2e8f0', borderRadius: 12, background: '#fff',
 }
 
-export function AdsterraBannerZone({ maxWidth = 340 }) {
+function AdLabel() {
+  return <span style={{ fontSize: 11, color: '#64748b', letterSpacing: '.06em', textTransform: 'uppercase' }}>Advertisement</span>
+}
+
+export function AdsterraBannerZone({ name, maxWidth = 760 }) {
+  const consentAllowed = useAdvertisingConsent()
+  const policyAllowed = useExternalAdPolicy('adsterra')
+  const allowed = consentAllowed && policyAllowed
+  const zone = ZONES[name]
+  const containerRef = useRef(null)
+
+  useEffect(() => {
+    const container = containerRef.current
+    if (!allowed || !container || !zone) return undefined
+    return enqueueZoneLoad({ name, zone, container })
+  }, [allowed, name, zone])
+
+  if (!allowed || !zone) return null
+  return <section aria-label={`Advertisement ${name}`} style={{ ...shellStyle, maxWidth }}>
+    <AdLabel />
+    <div ref={containerRef} style={{ width: zone.width, maxWidth: '100%', minHeight: zone.height, overflow: 'hidden', display: 'flex', justifyContent: 'center' }} />
+  </section>
+}
+
+export function AdsterraNativeBanner() {
   const consentAllowed = useAdvertisingConsent()
   const policyAllowed = useExternalAdPolicy('adsterra')
   const allowed = consentAllowed && policyAllowed
   const containerRef = useRef(null)
+
   useEffect(() => {
     const container = containerRef.current
-    if (!allowed || !container) return undefined
-    return enqueueZoneLoad({ zone: ZONE, container })
+    if (!allowed || !container || container.querySelector('script[data-shopnoltd-native]')) return undefined
+    const host = document.createElement('div')
+    host.id = NATIVE.containerId
+    host.style.minHeight = '100px'
+    container.appendChild(host)
+    const script = document.createElement('script')
+    script.src = NATIVE.scriptUrl
+    script.async = true
+    script.setAttribute('data-cfasync', 'false')
+    script.dataset.shopnoltdNative = 'true'
+    container.appendChild(script)
+    return () => { script.remove(); host.remove() }
   }, [allowed])
+
   if (!allowed) return null
-  return <section aria-label="Advertisement 300x250" style={{ ...shellStyle, maxWidth }}>
-    <span style={{ fontSize: 11, color: '#64748b', letterSpacing: '.06em', textTransform: 'uppercase' }}>Advertisement</span>
-    <div ref={containerRef} style={{ width: 300, maxWidth: '100%', minHeight: 250, overflow: 'hidden', display: 'flex', justifyContent: 'center' }} />
+  return <section aria-label="Native advertisement" style={{ ...shellStyle, maxWidth: 760, alignItems: 'stretch' }}>
+    <AdLabel />
+    <div ref={containerRef} style={{ width: '100%', minHeight: 100 }} />
   </section>
 }
 
-// Kept as a compatibility export for routes/components that referenced it. No ad loads.
-export function AdsterraResponsiveBanner() { return null }
+export function AdsterraGlobalFormats() {
+  const consentAllowed = useAdvertisingConsent()
+  const policyAllowed = useExternalAdPolicy('adsterra')
+  const allowed = consentAllowed && policyAllowed
+
+  useEffect(() => {
+    if (!allowed || document.querySelector('script[data-shopnoltd-adsterra-global="socialbar"]')) return undefined
+    const script = document.createElement('script')
+    script.src = SOCIAL_BAR
+    script.async = true
+    script.setAttribute('data-cfasync', 'false')
+    script.dataset.shopnoltdAdsterraGlobal = 'socialbar'
+    document.body.appendChild(script)
+    // Provider listeners may persist after load; don't claim DOM removal disables them.
+    return () => {}
+  }, [allowed])
+
+  return null
+}
+
+export function AdsterraSmartlink() {
+  const consentAllowed = useAdvertisingConsent()
+  const policyAllowed = useExternalAdPolicy('adsterra')
+  if (!consentAllowed || !policyAllowed) return null
+  return <section aria-label="Sponsored link" style={{ ...shellStyle, maxWidth: 760, alignItems: 'flex-start', padding: 16 }}>
+    <AdLabel />
+    <p style={{ margin: 0, color: '#475569', lineHeight: 1.5 }}>Sponsored link. Opening it takes you to an external advertiser destination.</p>
+    <a href={SMARTLINK} target="_blank" rel="sponsored noopener noreferrer" style={{ display: 'inline-block', padding: '9px 14px', borderRadius: 8, background: '#0369a1', color: '#fff', fontWeight: 700, textDecoration: 'none' }}>Visit sponsored link ↗</a>
+  </section>
+}
+
+export function AdsterraResponsiveBanner() {
+  const [zoneName, setZoneName] = useState('320x50')
+  useEffect(() => {
+    const choose = () => {
+      if (window.matchMedia('(min-width: 1000px)').matches) setZoneName('728x90')
+      else if (window.matchMedia('(min-width: 560px)').matches) setZoneName('468x60')
+      else setZoneName('320x50')
+    }
+    choose()
+    window.addEventListener('resize', choose)
+    return () => window.removeEventListener('resize', choose)
+  }, [])
+  return <AdsterraBannerZone name={zoneName} maxWidth={760} />
+}
+
+export function AdsterraTallBannerPair() {
+  return <section aria-label="Additional advertisements" style={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-start', gap: 24, flexWrap: 'wrap', margin: '32px auto', maxWidth: 520 }}>
+    <AdsterraBannerZone name="160x300" maxWidth={190} />
+    <AdsterraBannerZone name="160x600" maxWidth={190} />
+  </section>
+}
