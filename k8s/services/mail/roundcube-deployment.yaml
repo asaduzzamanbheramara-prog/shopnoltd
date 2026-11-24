@@ -74,7 +74,26 @@ spec:
           volumeMounts:
             - name: roundcube-data
               mountPath: /var/roundcube/db
+            - name: roundcube-tls-config
+              mountPath: /var/www/html/config/config.inc.php
+              subPath: config.inc.php
+              readOnly: true
+            - name: roundcube-mail-ca
+              mountPath: /etc/roundcube/certs
+              readOnly: true
       volumes:
         - name: roundcube-data
           persistentVolumeClaim:
             claimName: roundcube-data
+        - name: roundcube-tls-config
+          configMap:
+            name: roundcube-tls-config
+            items:
+              - key: config.inc.php
+                path: config.inc.php
+        - name: roundcube-mail-ca
+          configMap:
+            name: roundcube-mail-ca
+            items:
+              - key: shopnoltd-mail-ca.pem
+                path: shopnoltd-mail-ca.pem
