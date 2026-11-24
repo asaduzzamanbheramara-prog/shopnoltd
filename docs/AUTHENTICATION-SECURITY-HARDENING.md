@@ -3,8 +3,8 @@
 ## Scope
 
 Shopnoltd uses Keycloak as its primary OIDC identity provider. Browser login uses the
-Authorization Code flow with PKCE (S256), transaction-bound `state`, and a registered
-callback. Backend services validate Keycloak access tokens using the realm JWKS.
+Authorization Code flow with PKCE (S256), transaction-bound `state` and `nonce`, and a registered
+callback. The callback checks the ID-token nonce against the value generated for that login. Backend services validate Keycloak access tokens using the realm JWKS.
 
 This hardening change standardizes the main service verifiers and closes several
 authorization inconsistencies. It does not claim that every legacy or separately
@@ -14,6 +14,8 @@ deployed authentication surface has been migrated.
 
 - Main FastAPI service verifiers validate the configured Keycloak issuer as well as
   the service audience.
+- The web portal generates a per-login OIDC nonce and rejects callbacks whose ID token
+  does not carry the expected nonce; regression tests cover matching and mismatching values.
 - Keycloak JWT verification is pinned to RS256 instead of trusting an algorithm value
   selected from a token header or JWKS entry.
 - Platform-admin checks use realm-level role claims; a client-specific role cannot
