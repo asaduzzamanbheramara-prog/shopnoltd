@@ -98,7 +98,7 @@ async def verify_user(request: Request) -> dict:
         claims = jwt.decode(
             token,
             key,
-            algorithms=[key["alg"]],
+            algorithms=["RS256"],
             audience=KEYCLOAK_AUDIENCE,
             issuer=KEYCLOAK_ISSUER,
             options={
