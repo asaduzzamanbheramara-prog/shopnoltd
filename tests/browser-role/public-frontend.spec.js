@@ -128,6 +128,13 @@ test('homepage navigation remains usable on a narrow mobile viewport', async ({ 
 test('public routes stay within phone, tablet and desktop viewport widths', async ({ page }) => {
   const pageErrors = []
   page.on('pageerror', error => pageErrors.push(error.message))
+  await page.route('https://auth.shopnoltd.dpdns.org/**', async route => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'text/html',
+      body: '<!doctype html><title>Mock Keycloak</title><main>Mock authorization endpoint</main>',
+    })
+  })
 
   for (const width of [320, 390, 768, 1280]) {
     await page.setViewportSize({ width, height: 900 })
@@ -135,6 +142,7 @@ test('public routes stay within phone, tablet and desktop viewport widths', asyn
       const response = await page.goto(`${baseURL}${route}`, { waitUntil: 'domcontentloaded' })
       expect(response, `${route} at ${width}px should return a document response`).not.toBeNull()
       expect(response.status(), `${route} at ${width}px should not return an HTTP error`).toBeLessThan(400)
+      if (new URL(page.url()).hostname === 'auth.shopnoltd.dpdns.org') continue
       const dimensions = await page.evaluate(() => ({
         viewport: document.documentElement.clientWidth,
         document: document.documentElement.scrollWidth,
