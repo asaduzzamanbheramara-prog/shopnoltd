@@ -53,8 +53,10 @@ deployed authentication surface has been migrated.
    session using Secure, HttpOnly, SameSite cookies, CSRF protection, and server-side
    token storage. Do not switch to `sessionStorage` and call that a security fix.
 2. **Legacy AI backend:** `ai-platform/backend` contains a separate password-hash and
-   locally signed JWT implementation. Confirm whether it is deployed or referenced;
-   migrate it to Keycloak or retire it before describing identity as fully centralized.
+   locally signed HS256 JWT implementation. The active Kubernetes deployment points to
+   the separate `platform/ai-platform` service, and the old `docker-build.yml` and
+   `build-all.yml` workflows are disabled. Keep the legacy backend out of production
+   build/deploy paths and archive or remove it when compatibility review is complete.
 3. **Password grant:** `platform/auth-service/app/api/auth.py` retains a legacy
    Resource Owner Password Credentials (password grant) endpoint. Prefer the OIDC
    browser Authorization Code + PKCE flow and disable Direct Access Grants in
