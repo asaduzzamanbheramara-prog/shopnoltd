@@ -195,3 +195,20 @@ class AffmineAgentToolTests(unittest.IsolatedAsyncioTestCase):
     async def test_affmine_tool_rejects_unknown_action(self):
         result = await main.affmine_admin_action({"roles": ["platform_admin"]}, mock.AsyncMock(), "activate")
         self.assertIn("Unsupported", result)
+
+
+class AffmineInspectionRoutingTests(unittest.TestCase):
+    def test_explicit_read_only_inspection_is_routed_to_tool(self):
+        goal = "Inspect Affmine offers in Shopnoltd. Report total offers and incentive eligibility. Do not sync or activate anything."
+        self.assertTrue(main.is_affmine_inspection_request(goal))
+
+    def test_sync_request_is_not_misrouted_as_read_only(self):
+        self.assertFalse(main.is_affmine_inspection_request("Sync Affmine campaigns now"))
+
+    def test_summary_uses_api_payload_values(self):
+        payload = '{"total_offers": 12, "statuses": {"draft": 12}, "incentive_enabled_count": 0}'
+        summary = main.format_affmine_inspection(payload)
+        self.assertIn("Total offers: 12", summary)
+        self.assertIn("draft: 12", summary)
+        self.assertIn("Incentive-enabled offers: 0", summary)
+        self.assertIn("No sync", summary)

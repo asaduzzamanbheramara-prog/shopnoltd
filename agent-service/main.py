@@ -613,6 +613,35 @@ SYSTEM = ("You are Shopno Agent. First call update_plan with the steps, then wor
           "and never type passwords or payment details. For Affmine admin work, use affmine_admin: inspect is read-only; sync requires UI approval and imports drafts only. Never activate offers or enable incentives.")
 
 
+def is_affmine_inspection_request(goal: str) -> bool:
+    """Route explicit read-only Affmine inspection requests without relying on model tool-call support."""
+    text = str(goal or "").lower()
+    mentions_affmine = "affmine" in text
+    asks_inspection = any(word in text for word in ("inspect", "report", "status", "eligibility", "eligible", "how many", "total offers", "offer count"))
+    explicitly_read_only = any(word in text for word in ("do not sync", "don't sync", "without sync", "read-only", "read only", "do not activate", "don't activate"))
+    asks_mutation = any(word in text for word in ("sync affmine", "sync campaigns", "activate offer", "enable incentives"))
+    return mentions_affmine and asks_inspection and not asks_mutation and (explicitly_read_only or "inspect" in text)
+
+
+def format_affmine_inspection(result: str) -> str:
+    """Render only the verified inventory payload; never invent totals."""
+    try:
+        data = json.loads(result)
+    except (TypeError, json.JSONDecodeError):
+        return result
+    if not isinstance(data, dict) or "total_offers" not in data:
+        return result
+    statuses = data.get("statuses") if isinstance(data.get("statuses"), dict) else {}
+    lines = [
+        "Affmine offer inventory (read-only)",
+        f"Total offers: {data.get('total_offers', 0)}",
+        "Statuses: " + (", ".join(f"{key}: {value}" for key, value in sorted(statuses.items())) if statuses else "No offers returned"),
+        f"Incentive-enabled offers: {data.get('incentive_enabled_count', 0)}",
+        "No sync, activation, incentive changes, or wallet operations were performed.",
+    ]
+    return "\n".join(lines)
+
+
 def trim(hist: list) -> None:
     if len(hist) > HISTORY_LIMIT:
         del hist[:-HISTORY_LIMIT]
@@ -648,6 +677,15 @@ async def run_task(claims: dict, sink: TaskSink, goal: str, model: str, catalog:
             nonlocal active_model
             hist.append({"role": "user", "content": goal})
             await sink.send_json({"type": "user", "text": goal})
+            if is_affmine_inspection_request(goal):
+                args = {"action": "inspect"}
+                await sink.send_json({"type": "tool", "name": "affmine_admin", "args": args})
+                result = await call_tool(claims, sink, "affmine_admin", args)
+                await sink.send_json({"type": "result", "name": "affmine_admin", "result": result[:2000]})
+                final_text = format_affmine_inspection(result)
+                await sink.send_json({"type": "text", "text": final_text})
+                hist.append({"role": "assistant", "content": final_text})
+                return
             for _ in range(MAX_STEPS):
                 reply, active_model = await llm_with_failover(
                     [{"role": "system", "content": SYSTEM}] + hist, model, active_model, catalog, failed_models, sink)
