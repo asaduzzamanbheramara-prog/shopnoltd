@@ -31,8 +31,10 @@ async def verify_token(token: str) -> dict:
             issuer=settings.keycloak_issuer,
             options={"verify_aud": True, "verify_iss": True},
         )
-        roles = set(claims.get("roles", []) or [])
-        roles.update((claims.get("realm_access") or {}).get("roles", []) or [])
+        realm_roles = set(claims.get("roles", []) or [])
+        realm_roles.update((claims.get("realm_access") or {}).get("roles", []) or [])
+        roles = set(realm_roles)
+        claims["realm_roles"] = sorted(realm_roles)
         for client in (claims.get("resource_access") or {}).values():
             roles.update((client or {}).get("roles", []) or [])
         claims["roles"] = sorted(roles)
@@ -57,7 +59,10 @@ async def verify_token_admin(token: str) -> dict:
 
 
 def _roles(payload: dict) -> set:
-    return set(payload.get("roles", []))
+    # Tenant and platform privileges are realm roles only; client roles never elevate identity.
+    roles = set(payload.get("realm_roles") or payload.get("roles") or [])
+    roles.update((payload.get("realm_access") or {}).get("roles", []) or [])
+    return roles
 
 
 async def require_roles(token: str, allowed: set) -> dict:
