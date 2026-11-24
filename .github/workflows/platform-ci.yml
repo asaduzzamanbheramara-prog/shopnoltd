@@ -242,7 +242,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt pytest
       - name: Test transfer idempotency, model compatibility and work escrow
-        run: pytest -q tests/test_transfer_idempotency.py tests/test_webhook_error_redaction.py tests/test_model_schema_compatibility.py tests/test_work_escrow.py
+        run: pytest -q tests/test_transfer_idempotency.py tests/test_webhook_error_redaction.py tests/test_model_schema_compatibility.py tests/test_work_escrow.py tests/test_authz_roles.py
 
   service-contract-tests:
     name: "${{ matrix.service }} isolated ASGI contract tests"
