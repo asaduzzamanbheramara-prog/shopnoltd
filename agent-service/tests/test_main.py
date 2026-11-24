@@ -179,5 +179,73 @@ class WebSocketAuthenticationDisconnectTests(unittest.IsolatedAsyncioTestCase):
         self.assertIsNone(claims)
 
 
+
+
+class BrowserApprovalModeTests(unittest.IsolatedAsyncioTestCase):
+    async def _check_policy(self, mode, action, approval_expected):
+        args = {"action": action}
+        if action == "open":
+            args["url"] = "https://example.com/"
+        elif action in {"click", "type", "press", "select", "check", "uncheck", "submit", "upload", "wait_for"}:
+            args["selector"] = "#target"
+        if action == "type":
+            args["text"] = "hello"
+        if action == "press":
+            args["key"] = "Enter"
+        if action == "select":
+            args["value"] = "option-a"
+        if action == "upload":
+            args["path"] = "file.txt"
+
+        ui = mock.AsyncMock()
+        with (
+            mock.patch.object(main, "ask_approval", new=mock.AsyncMock(return_value=True)) as approval,
+            mock.patch.object(main, "browser_action", new=mock.AsyncMock(return_value='{"ok": true}')) as execute,
+        ):
+            result = await main.call_tool({"sub": "user-a"}, ui, "browser_action", args, mode)
+
+        self.assertEqual(result, '{"ok": true}')
+        self.assertEqual(approval.await_count, 1 if approval_expected else 0)
+        execute.assert_awaited_once()
+
+    async def test_auto_runs_routine_actions_without_approval(self):
+        for action in ("open", "get_text", "click", "type", "scroll", "select", "check", "uncheck"):
+            with self.subTest(action=action):
+                await self._check_policy("auto", action, False)
+
+    async def test_auto_still_requires_approval_for_sensitive_actions(self):
+        for action in ("press", "submit", "upload"):
+            with self.subTest(action=action):
+                await self._check_policy("auto", action, True)
+
+    async def test_hybrid_approves_mutations_but_allows_inspection(self):
+        for action, expected in (("open", False), ("get_text", False), ("screenshot", False),
+                                 ("wait_for", False), ("click", True), ("type", True),
+                                 ("scroll", False), ("submit", True), ("upload", True)):
+            with self.subTest(action=action):
+                await self._check_policy("hybrid", action, expected)
+
+    async def test_manual_approves_state_changing_browser_actions(self):
+        for action, expected in (("open", True), ("get_text", False), ("screenshot", False),
+                                 ("wait_for", False), ("click", True), ("type", True),
+                                 ("scroll", True), ("press", True), ("submit", True),
+                                 ("upload", True)):
+            with self.subTest(action=action):
+                await self._check_policy("manual", action, expected)
+
+    async def test_denied_action_never_reaches_browser(self):
+        ui = mock.AsyncMock()
+        with (
+            mock.patch.object(main, "ask_approval", new=mock.AsyncMock(return_value=False)),
+            mock.patch.object(main, "browser_action", new=mock.AsyncMock()) as execute,
+        ):
+            result = await main.call_tool(
+                {"sub": "user-a"}, ui, "browser_action",
+                {"action": "click", "selector": "#delete"}, "hybrid",
+            )
+        self.assertEqual(result, "user denied this action")
+        execute.assert_not_awaited()
+
+
 if __name__ == "__main__":
     unittest.main()
