@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     jwt_audience: str = "shopnoltd"
     internal_api_key: str = ""
     affiliate_internal_api_key: str = ""
+    work_escrow_internal_api_key: str = ""
     exchange_service_url: str = "http://exchange-service.shopno-payments.svc.cluster.local:80"
     billing_engine_url: str = "http://billing-engine.shopno-payments.svc.cluster.local:80"
     stripe_secret_key: str = ""

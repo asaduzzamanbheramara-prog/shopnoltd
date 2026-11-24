@@ -312,3 +312,66 @@ async def settle_platform_commission(
             },
         )
     return response.json() if response.text else {}
+
+
+async def settle_referral_reward_from_work_escrow(
+    s: AsyncSession, *, referred_id: str, work_id: str, submission_id: str,
+    base_amount: Decimal, currency: str, tenant_id: str, available_commission: Decimal,
+    payer_id: str, escrow_payout,
+):
+    """Create/settle the referral ledger entry using already-reserved task funds."""
+    referral = await s.scalar(select(Referral).where(Referral.referred_id == referred_id, Referral.active == 1))
+    if not referral:
+        referral = await ensure_fallback_referral(s, referred_id, tenant_id, currency)
+    if not referral or referral.referrer_id == referred_id:
+        return None
+    existing = await s.scalar(select(ReferralReward).where(ReferralReward.submission_id == submission_id))
+    if existing and existing.status == "settled":
+        return existing
+    policy = await get_policy(s, tenant_id, currency)
+    if not policy.enabled and not existing:
+        return None
+    if existing:
+        amount = Decimal(str(existing.reward_amount)).quantize(Decimal("0.00000001"))
+        reward_currency = str(existing.currency).upper()
+        recipient_alias = existing.referrer_id
+    else:
+        amount = (Decimal(str(policy.fixed_amount)) if policy.mode == "fixed" else base_amount * Decimal(str(policy.percent)) / Decimal("100"))
+        if policy.max_amount is not None:
+            amount = min(amount, Decimal(str(policy.max_amount)))
+        amount = amount.quantize(Decimal("0.00000001"))
+        reward_currency = str(policy.currency or "MATCH_TASK").upper()
+        if reward_currency == "MATCH_TASK":
+            reward_currency = currency
+        recipient_alias = referral.referrer_id
+    if amount > available_commission:
+        raise HTTPException(409, "configured referral reward exceeds the available Shopnoltd commission share")
+    if reward_currency != currency:
+        raise HTTPException(409, "referral reward currency must match the completed task currency")
+    if amount <= 0:
+        return None
+    reward = existing or ReferralReward(
+        referral_id=referral.id, referred_id=referred_id, referrer_id=referral.referrer_id,
+        work_id=work_id, submission_id=submission_id, base_amount=base_amount,
+        reward_amount=amount, currency=reward_currency, status="pending",
+    )
+    if not existing:
+        s.add(reward)
+        await s.flush()
+    recipient_id = await resolve_referrer_recipient(s, recipient_alias, tenant_id)
+    if recipient_id != payer_id:
+        result = await escrow_payout(recipient_id, amount, f"referral:{submission_id}", f"referral:{submission_id}")
+        reward.payment_id = str(result.get("transaction_id") or "") or None
+    reward.status = "settled"
+    reward.settled_at = datetime.utcnow()
+    return reward
+
+
+async def settle_platform_commission_from_work_escrow(
+    *, payer_id: str, recipient_id: str, submission_id: str, amount: Decimal,
+    escrow_payout,
+):
+    amount = Decimal(str(amount)).quantize(Decimal("0.00000001"))
+    if amount <= 0 or recipient_id == payer_id:
+        return None
+    return await escrow_payout(recipient_id, amount, f"platform-commission:{submission_id}", f"shopnoltd-platform-commission:{submission_id}")

@@ -49,6 +49,8 @@ spec:
             - secretRef:
                 name: affiliate-payment-bridge
                 optional: true
+            - secretRef:
+                name: work-escrow-bridge
           env:
             - name: DATABASE_URL
               valueFrom:

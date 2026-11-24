@@ -29,6 +29,15 @@ def require_affiliate_payment_key(x_internal_api_key: str = Header(...)):
     return True
 
 
+def require_work_escrow_key(x_work_escrow_api_key: str = Header(..., alias="X-Work-Escrow-API-Key")):
+    """Separate trusted bridge for reserved task debits and escrow releases."""
+    if not settings.work_escrow_internal_api_key:
+        raise HTTPException(500, "WORK_ESCROW_INTERNAL_API_KEY is not configured")
+    if not secrets.compare_digest(x_work_escrow_api_key, settings.work_escrow_internal_api_key):
+        raise HTTPException(403, "Invalid work escrow bridge key")
+    return True
+
+
 async def _jwks():
     global _jwks_cache
     if _jwks_cache:
