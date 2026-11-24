@@ -5,6 +5,8 @@ on:
     paths:
       - "platform/mail-service/**"
       - "platform/oauth-service/**"
+      - "k8s/services/keycloak/client-sync.py"
+      - "k8s/services/keycloak/test_client_sync.py"
       - ".github/workflows/mail-service-tests.yml"
   push:
     branches:
@@ -13,6 +15,8 @@ on:
     paths:
       - "platform/mail-service/**"
       - "platform/oauth-service/**"
+      - "k8s/services/keycloak/client-sync.py"
+      - "k8s/services/keycloak/test_client_sync.py"
       - ".github/workflows/mail-service-tests.yml"
 
 permissions:
@@ -39,7 +43,21 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r platform/mail-service/requirements.txt pytest==8.4.1
       - name: Run mailbox security tests
-        run: python -m pytest -q platform/mail-service/tests/test_mailboxes_security.py platform/mail-service/tests/test_mail_domains_provisioning.py platform/mail-service/tests/test_messages_access.py
+        run: python -m pytest -q platform/mail-service/tests/test_mailboxes_security.py platform/mail-service/tests/test_mail_domains_provisioning.py platform/mail-service/tests/test_messages_access.py platform/mail-service/tests/test_swagger_oauth.py
+
+  keycloak-client-sync-tests:
+    name: Keycloak client sync regression tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run Keycloak client sync tests
+        run: python -m unittest discover -s k8s/services/keycloak -p "test_client_sync.py" -v
 
   oauth-provisioning-tests:
     name: OAuth provisioning outbox and PostgreSQL migration tests
