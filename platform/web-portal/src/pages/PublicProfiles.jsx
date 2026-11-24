@@ -4,7 +4,7 @@ import { useEffect } from 'react'
 const DATA_PROFILE = {
   title: 'Md. Asaduzzaman', subtitle: 'Data Management Expert · Data Analyst · Database & Survey Specialist',
   description: 'A professional profile focused on database development, data management, statistical analysis, survey systems, ETL, reporting and digital data-collection workflows.',
-  pdf: '/cv/md-asaduzzaman-data-management-cv.pdf',
+  pdf: '/cv/md-asaduzzaman-data-management-cv.html',
   sections: [
     ['Education', ['M.Sc. in Statistics — Rajshahi University, 2002', 'B.Sc. Honours in Statistics — Rajshahi University, 2001']],
     ['Core expertise', ['Database development and administration', 'Data cleaning, validation and quality control', 'SQL / T-SQL, CSPro, FoxPro, SPSS and Excel', 'Kobo Collect and digital data collection', 'ETL, data warehousing, survey methodology and M&E', 'Data analysis, reporting and visualization']],
