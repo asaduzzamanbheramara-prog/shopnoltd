@@ -2,44 +2,35 @@
 
 ## Current integration
 
-The public Shopnoltd homepage integrates the ten publisher units supplied for
-website `shopnoltd.dpdns.org`:
+The public Shopnoltd homepage loads **one Adsterra 300x250 display banner**,
+only after a visitor opts into advertising consent.
 
-- 300x250 display banner
-- Responsive display banner: 320x50 on narrow screens, 468x60 on medium screens,
-  and 728x90 on wide screens (one of these loads per viewport)
-- 160x300 and 160x600 display banners
+Other formats are disabled in the web portal:
 - Native banner
 - Popunder
 - Social Bar
-- Smartlink, displayed as an explicitly labelled sponsored link
+- Smartlink
+- Alternate display sizes (468x60, 320x50, 728x90, 160x300, 160x600)
 
-The standard display snippets share the global `window.atOptions` variable.
-`src/components/AdsterraAds.jsx` serializes their script loading so a zone's
-configuration is not overwritten by another zone before its script executes.
-The existing `AdsterraBanner.jsx` component retains the original homepage
-300x250 placement and delegates to this loader.
+The standard display snippet uses the publisher's `window.atOptions` global.
+The web portal serializes script loading and keeps the original homepage
+300x250 placement.
 
-Popunder and Social Bar scripts are loaded from the homepage. They can affect
-visitor experience; monitor frequency, mobile behavior, browser console, and
-Adsterra's policy requirements. The Smartlink is a deliberate user action and
-is not an automatic redirect.
+## Publisher-provided host and key
 
-## Publisher-provided hosts and keys
-
-The supplied code uses `afders.org`, `arwf.org`, and `bicea.org`. These are
-the exact hosts supplied in the publisher snippets. Confirm in the official
-Adsterra dashboard that each host and key matches the intended active unit
-before release. Do not substitute hosts or keys without publisher confirmation.
+The configured banner uses the publisher-provided `bicea.org` host and the
+300x250 zone key. Confirm the exact host and key in the official Adsterra
+dashboard before release. Do not substitute a host or key without publisher
+confirmation.
 
 ## Release verification
 
-1. Confirm the website is approved and each zone is active in Adsterra.
-2. Confirm all keys and URLs match the publisher dashboard.
+1. Confirm the website is approved and the 300x250 zone is active in Adsterra.
+2. Confirm the key and script URL match the publisher dashboard.
 3. Run the web portal production build and public-route prerender.
-4. Check desktop and mobile layouts, including the responsive banner selection.
-5. In DevTools, verify each expected request and check Console for errors.
-6. Review privacy disclosures and consent requirements for the visitors served.
+4. Check desktop and mobile layout, browser console, and Network requests.
+5. Confirm the banner script is absent until advertising consent is granted.
+6. Review privacy disclosures and consent requirements.
 7. Confirm impressions and revenue in Adsterra reporting after legitimate traffic.
 
 An active unit or successful script request does not guarantee an ad impression
