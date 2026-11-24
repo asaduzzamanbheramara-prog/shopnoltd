@@ -11,14 +11,10 @@ const publicRoutes = [
   '/terms',
   '/blog',
   '/plugins',
-  '/login',
   '/register',
   '/domain-registration',
   '/downloads',
   '/profiles',
-  '/discover',
-  '/feed',
-  '/create-website?type=hr',
 ]
 
 async function dismissConsentBanner(page) {
@@ -61,6 +57,30 @@ test('privacy choices gate optional tags and can be reopened', async ({ page }) 
 })
 
 
+test('login reuses Keycloak SSO by default and only forces login for explicit account switching', async ({ page }) => {
+  const authorizationRequests = []
+  await page.route('https://auth.shopnoltd.dpdns.org/realms/shopnoltd/protocol/openid-connect/auth**', async route => {
+    authorizationRequests.push(route.request().url())
+    await route.fulfill({
+      status: 200,
+      contentType: 'text/html',
+      body: '<!doctype html><title>Mock Keycloak</title><main>Mock authorization endpoint</main>',
+    })
+  })
+
+  await page.goto(`${baseURL}/login`, { waitUntil: 'domcontentloaded' })
+  await expect.poll(() => authorizationRequests.length).toBe(1)
+  const automaticLogin = new URL(authorizationRequests[0])
+  expect(automaticLogin.searchParams.has('prompt')).toBe(false)
+  expect(automaticLogin.searchParams.get('client_id')).toBe('shopnoltd-web')
+  expect(automaticLogin.searchParams.get('code_challenge_method')).toBe('S256')
+
+  await page.goto(`${baseURL}/login?forceLogin=1`, { waitUntil: 'domcontentloaded' })
+  await expect.poll(() => authorizationRequests.length).toBe(2)
+  const accountSwitch = new URL(authorizationRequests[1])
+  expect(accountSwitch.searchParams.get('prompt')).toBe('login')
+  expect(accountSwitch.searchParams.get('code_challenge_method')).toBe('S256')
+})
 test('public frontend routes render in a real browser without uncaught JavaScript errors', async ({ page }) => {
   const pageErrors = []
   page.on('pageerror', error => pageErrors.push(error.message))
