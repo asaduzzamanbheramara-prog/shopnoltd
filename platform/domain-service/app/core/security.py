@@ -1,4 +1,5 @@
 import httpx
+import secrets
 from fastapi import HTTPException
 from shopno_core.security.jwt import JWTError, jwt
 
@@ -37,7 +38,7 @@ async def verify_token(token: str) -> dict:
 
 
 async def verify_token_admin(token: str) -> dict:
-    if settings.freedomain_internal_key and token == settings.freedomain_internal_key:
+    if settings.freedomain_internal_key and secrets.compare_digest(token, settings.freedomain_internal_key):
         return {"service": "freedomain-service", "roles": ["service:freedomain"]}
 
     try:
