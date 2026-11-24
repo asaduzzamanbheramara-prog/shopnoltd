@@ -1405,7 +1405,7 @@ jobs:
 
   verify-passive-reconciliation:
     name: Verify Argo CD passive reconciliation
-    if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.perform_gitops_sync != 'true') }}
+    if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.perform_gitops_sync != 'true' && inputs.refresh_ghcr_pull_secrets != true) }}
     runs-on: [self-hosted, linux]
     # Image promotion commits and Argo CD reconciliation happen after the
     # application-code push. Wait for that normal GitOps chain instead of
