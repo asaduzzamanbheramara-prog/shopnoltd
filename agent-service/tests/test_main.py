@@ -181,3 +181,17 @@ class WebSocketAuthenticationDisconnectTests(unittest.IsolatedAsyncioTestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class AffmineAgentToolTests(unittest.IsolatedAsyncioTestCase):
+    async def test_affmine_admin_tool_is_registered(self):
+        tool = next(t for t in main.TOOLS if t["function"]["name"] == "affmine_admin")
+        self.assertEqual(tool["function"]["parameters"]["properties"]["action"]["enum"], ["inspect", "sync"])
+
+    async def test_affmine_tool_rejects_non_platform_admin(self):
+        result = await main.affmine_admin_action({"roles": [], "_access_token": "unused"}, mock.AsyncMock(), "inspect")
+        self.assertIn("platform_admin", result)
+
+    async def test_affmine_tool_rejects_unknown_action(self):
+        result = await main.affmine_admin_action({"roles": ["platform_admin"]}, mock.AsyncMock(), "activate")
+        self.assertIn("Unsupported", result)

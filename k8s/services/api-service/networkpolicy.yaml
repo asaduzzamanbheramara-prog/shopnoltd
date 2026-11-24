@@ -23,6 +23,12 @@ spec:
               name: shopno-platform
         - namespaceSelector:
             matchLabels:
+              kubernetes.io/metadata.name: shopno-apps
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: agent-service
+        - namespaceSelector:
+            matchLabels:
               name: shopno-monitoring
       ports:
         - port: 8080
