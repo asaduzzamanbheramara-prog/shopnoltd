@@ -26,9 +26,10 @@ async def verify_token(token: str) -> dict:
         claims = jwt.decode(
             token,
             key,
-            algorithms=[key["alg"]],
+            algorithms=["RS256"],
             audience=settings.keycloak_audience,
-            options={"verify_aud": True},
+            issuer=settings.keycloak_issuer,
+            options={"verify_aud": True, "verify_iss": True},
         )
         roles = set(claims.get("roles", []) or [])
         roles.update((claims.get("realm_access") or {}).get("roles", []) or [])
