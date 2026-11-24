@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom'
 const STORAGE_API = import.meta.env.VITE_STORAGE_API_URL || 'https://storage-service.shopnoltd.dpdns.org'
 
 const cards = [
-  { icon: '📊', title: 'Data Management & Research', text: 'Professional CV covering statistics, databases, data management, surveys, ETL, analysis and research assignments.', path: '/profile/data-management', pdf: '/cv/md-asaduzzaman-data-management-cv.pdf' },
+  { icon: '📊', title: 'Data Management & Research', text: 'Professional CV covering statistics, databases, data management, surveys, ETL, analysis and research assignments.', path: '/profile/data-management', pdf: '/cv/md-asaduzzaman-data-management-cv.html' },
   { icon: '🏠', title: 'Business & Interior Design', text: 'Shopno business profile covering interior design and decoration services, team capability and the broader Shopno background.', path: '/profile/interior-business', pdf: '/cv/shopno-business-interior-profile.pdf' },
 ]
 
