@@ -34,7 +34,16 @@ async def lifespan(app: FastAPI):
     await redis_client.aclose()
 
 
-app = FastAPI(title="Shopnoltd Mail Service", version="0.1.0", lifespan=lifespan)
+app = FastAPI(
+    title="Shopnoltd Mail Service",
+    version="0.1.0",
+    lifespan=lifespan,
+    swagger_ui_init_oauth={
+        "clientId": settings.keycloak_client_id,
+        "usePkceWithAuthorizationCodeGrant": True,
+        "scopes": "openid profile email",
+    },
+)
 app.add_middleware(
     CORSMiddleware,
     allow_origin_regex=settings.cors_origin_regex,
