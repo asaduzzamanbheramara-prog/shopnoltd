@@ -1,0 +1,11 @@
+{
+  "apiVersion": "v1",
+  "kind": "ConfigMap",
+  "metadata": {
+    "name": "roundcube-tls-config",
+    "namespace": "shopno-mail"
+  },
+  "data": {
+    "config.inc.php": "<?php\n$config['plugins'] = [];\n$config['log_driver'] = 'stdout';\n$config['zipdownload_selection'] = true;\n$config['enable_spellcheck'] = true;\n$config['spellcheck_engine'] = 'pspell';\ninclude(__DIR__ . '/config.docker.inc.php');\n$roundcubeMailSsl = [\n    'verify_peer' => true,\n    'verify_peer_name' => true,\n    'allow_self_signed' => false,\n    'cafile' => '/etc/roundcube/certs/shopnoltd-mail-ca.pem',\n    'peer_name' => 'mail.shopnoltd.dpdns.org',\n];\n$config['imap_conn_options'] = ['ssl' => $roundcubeMailSsl];\n$config['smtp_conn_options'] = ['ssl' => $roundcubeMailSsl];\n"
+  }
+}\n
