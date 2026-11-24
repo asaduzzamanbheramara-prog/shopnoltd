@@ -29,7 +29,7 @@ _IDENTIFIER = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 async def require_admin(credentials: HTTPAuthorizationCredentials = Depends(bearer)):
     token = await verify_token(credentials.credentials)
-    if not set(token.get("roles", [])).intersection({"admin", "platform_admin"}):
+    if not (set(token.get("realm_roles", token.get("roles", [])) or []) | set((token.get("realm_access") or {}).get("roles", []) or [])).intersection({"admin", "platform_admin"}):
         raise HTTPException(403, "admin privileges required")
     return token
 
