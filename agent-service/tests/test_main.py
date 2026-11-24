@@ -183,6 +183,21 @@ if __name__ == "__main__":
     unittest.main()
 
 
+class RealmRoleExtractionTests(unittest.TestCase):
+    def test_top_level_and_realm_access_roles_are_recognized(self):
+        claims = {"roles": ["platform_admin"], "realm_access": {"roles": ["offline_access"]},
+                  "resource_access": {"shopnoltd-web": {"roles": ["platform_admin"]}}}
+        roles = set(claims.get("roles", []) or [])
+        roles.update((claims.get("realm_access") or {}).get("roles", []) or [])
+        self.assertEqual(roles, {"platform_admin", "offline_access"})
+
+    def test_client_role_alone_does_not_grant_platform_admin(self):
+        claims = {"resource_access": {"shopnoltd-web": {"roles": ["platform_admin"]}}}
+        roles = set(claims.get("roles", []) or [])
+        roles.update((claims.get("realm_access") or {}).get("roles", []) or [])
+        self.assertNotIn("platform_admin", roles)
+
+
 class AffmineAgentToolTests(unittest.IsolatedAsyncioTestCase):
     async def test_affmine_admin_tool_is_registered(self):
         tool = next(t for t in main.TOOLS if t["function"]["name"] == "affmine_admin")
