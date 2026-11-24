@@ -86,9 +86,9 @@ async def settle_reward(user, submission_id: str, amount: Decimal, currency: str
 
 
 def is_admin_user(user: dict) -> bool:
-    roles = set(user.get("roles") or [])
-    realm_roles = set(((user.get("realm_access") or {}).get("roles") or []))
-    return bool(roles.intersection({"admin", "platform_admin", "shopnoltd-admin", "administrator"}) or realm_roles.intersection({"admin", "platform_admin", "shopnoltd-admin", "administrator"}) or user.get("is_admin") is True)
+    roles = set(user.get("realm_roles", user.get("roles", [])) or [])
+    roles.update((user.get("realm_access") or {}).get("roles", []) or [])
+    return bool(roles.intersection({"admin", "platform_admin", "shopnoltd-admin", "administrator"}))
 
 
 def can_view_work(work: Work, user: dict) -> bool:
