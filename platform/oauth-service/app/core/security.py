@@ -46,7 +46,7 @@ async def verify_token(token: str) -> dict:
 async def verify_token_admin(token: str) -> dict:
     """Require a platform-wide administrator role from the validated JWT."""
     u = await verify_token(token)
-    if not set(u.get("roles", [])).intersection({"admin", "platform_admin"}):
+    if not (_roles(u) & {"admin", "platform_admin"}):
         raise PermissionError("admin only")
     return u
 
