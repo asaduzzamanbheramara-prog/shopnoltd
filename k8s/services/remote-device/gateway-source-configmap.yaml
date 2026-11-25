@@ -11,6 +11,7 @@ data:
 
     import httpx
     from fastapi import FastAPI, HTTPException, Request, status
+    from fastapi.middleware.cors import CORSMiddleware
     from fastapi.responses import RedirectResponse, Response
     from jose import JWTError, jwt
 
@@ -18,6 +19,17 @@ data:
     app = FastAPI(
         title="Shopnoltd Remote Device Gateway",
         version="3.2.0",
+    )
+
+    # Allow the authenticated main Shopnoltd SPA to call the gateway directly.
+    # Browser requests still require a verified Keycloak bearer token.
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["https://shopnoltd.dpdns.org"],
+        allow_credentials=False,
+        allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
+        allow_headers=["Authorization", "Content-Type", "Accept"],
+        max_age=600,
     )
 
 
