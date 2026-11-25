@@ -74,9 +74,6 @@ jobs:
           sha256sum -c latest.all-databases.tar.gz.enc.sha256
           sha256sum -c latest.kubernetes-secrets.json.enc.sha256
           python3 "$GITHUB_WORKSPACE/source/ops/backup/authenticated_backup.py" verify latest.dump.enc latest.all-databases.tar.gz.enc latest.kubernetes-secrets.json.enc
-          openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 \\
-            -in latest.dump.enc -out "$RUNNER_TEMP/shopnoltd-primary.dump" \\
-            -pass env:BACKUP_ENCRYPTION_KEY
           openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 \
             -in latest.dump.enc -out "$RUNNER_TEMP/shopnoltd-primary.dump" \
             -pass env:BACKUP_ENCRYPTION_KEY
