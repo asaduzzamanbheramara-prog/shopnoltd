@@ -1,12 +1,17 @@
 #!/usr/bin/env python3
-"""Publish encrypted Shopnoltd backup artifacts to a private GitHub repository."""
+"""Publish encrypted Shopnoltd backup artifacts through Git transport.
+
+Large encrypted artifacts are written to a local clone and pushed with Git,
+avoiding the Git Database API's JSON/base64 request-size limitation.
+"""
 from __future__ import annotations
 
-import base64
 import json
 import os
 import pathlib
+import subprocess
 import sys
+import tempfile
 import urllib.error
 import urllib.request
 
@@ -37,31 +42,29 @@ and the encryption key separately in a secure password manager.
 """
 
 
-class GitHubAPIError(RuntimeError):
-    pass
-
-
-def api(token: str, method: str, path: str, payload: dict | None = None) -> dict:
-    data = None if payload is None else json.dumps(payload).encode()
+def api(token: str, method: str, path: str) -> dict:
     request = urllib.request.Request(
         API + path,
-        data=data,
         method=method,
         headers={
             "Accept": "application/vnd.github+json",
             "Authorization": "Bearer " + token,
             "X-GitHub-Api-Version": "2022-11-28",
-            "Content-Type": "application/json",
             "User-Agent": "Shopnoltd-Encrypted-Backup",
         },
     )
     try:
-        with urllib.request.urlopen(request, timeout=60) as response:
+        with urllib.request.urlopen(request, timeout=30) as response:
             raw = response.read()
             return json.loads(raw) if raw else {}
     except urllib.error.HTTPError as exc:
-        detail = exc.read().decode("utf-8", "replace")[:1000]
-        raise GitHubAPIError(f"GitHub API {method} {path} failed ({exc.code}): {detail}") from None
+        raise RuntimeError(
+            f"GitHub API {method} {path} failed ({exc.code})."
+        ) from None
+
+
+def run(args: list[str], *, env: dict[str, str], cwd: pathlib.Path | None = None) -> None:
+    subprocess.run(args, cwd=cwd, env=env, check=True, stdin=subprocess.DEVNULL)
 
 
 def main() -> int:
@@ -69,75 +72,91 @@ def main() -> int:
     token = os.environ["BACKUP_REPOSITORY_TOKEN"]
     branch = os.environ.get("BACKUP_BRANCH", "database-backups")
     workdir = pathlib.Path(os.environ.get("BACKUP_WORKDIR", "/tmp/shopnoltd-dr-backup"))
-    if "/" not in repo or repo == os.environ.get("GITHUB_REPOSITORY"):
+    if not repo.count("/") == 1 or repo == os.environ.get("GITHUB_REPOSITORY"):
         raise SystemExit("Backup repository must be a separate owner/repository destination.")
+    if not branch or branch.startswith("-") or any(c.isspace() for c in branch):
+        raise SystemExit("Invalid backup branch name.")
 
     destination = api(token, "GET", f"/repos/{repo}")
     if destination.get("private") is not True:
         raise SystemExit("Refusing to publish: destination repository is not private.")
 
-    entries = []
     for filename in FILES:
         path = workdir / filename
         if not path.is_file() or path.stat().st_size == 0:
             raise SystemExit(f"Required encrypted backup artifact is missing or empty: {filename}")
-        size = path.stat().st_size
-        if size > 90 * 1024 * 1024:
-            raise SystemExit(f"{filename} exceeds the safe GitHub Git Database API limit (90 MiB).")
-        blob = api(token, "POST", f"/repos/{repo}/git/blobs", {
-            "content": base64.b64encode(path.read_bytes()).decode("ascii"),
-            "encoding": "base64",
+        if path.stat().st_size > 90 * 1024 * 1024:
+            raise SystemExit(f"{filename} exceeds the safe GitHub file-size limit (90 MiB).")
+
+    with tempfile.TemporaryDirectory(prefix="shopnoltd-backup-publish-") as temp:
+        root = pathlib.Path(temp)
+        clone = root / "backup-repo"
+        askpass = root / "git-askpass.sh"
+        askpass.write_text(
+            '#!/bin/sh\ncase "$1" in\n'
+            '  *Username*) printf "%s\\n" "x-access-token" ;;\n'
+            '  *Password*) printf "%s\\n" "$BACKUP_REPOSITORY_TOKEN" ;;\n'
+            '  *) exit 1 ;;\nesac\n',
+            encoding="utf-8",
+        )
+        askpass.chmod(0o700)
+        env = os.environ.copy()
+        env.update({
+            "GIT_ASKPASS": str(askpass),
+            "GIT_TERMINAL_PROMPT": "0",
+            "GIT_CONFIG_NOSYSTEM": "1",
         })
-        entries.append({"path": f"backup/{filename}", "mode": "100644", "type": "blob", "sha": blob["sha"]})
+        remote = f"https://github.com/{repo}.git"
 
-    readme_blob = api(token, "POST", f"/repos/{repo}/git/blobs", {
-        "content": base64.b64encode(README.encode()).decode("ascii"),
-        "encoding": "base64",
-    })
-    entries.append({"path": "backup/README.md", "mode": "100644", "type": "blob", "sha": readme_blob["sha"]})
+        # Fetch the existing backup branch if present; otherwise start at main.
+        refs = api(token, "GET", f"/repos/{repo}/git/ref/heads/{branch}")
+        if refs.get("object", {}).get("sha"):
+            run(["git", "clone", "--quiet", "--single-branch", "--branch", branch, remote, str(clone)], env=env)
+        else:
+            run(["git", "clone", "--quiet", "--single-branch", "--branch", "main", remote, str(clone)], env=env)
+            run(["git", "checkout", "-b", branch], env=env, cwd=clone)
 
-    # Keep each backup commit based on the previous backup branch; initialize from main.
-    branch_exists = True
-    try:
-        ref = api(token, "GET", f"/repos/{repo}/git/ref/heads/{branch}")
-        parent_sha = ref["object"]["sha"]
-    except GitHubAPIError as exc:
-        if "(404)" not in str(exc):
-            raise
-        branch_exists = False
-        main_ref = api(token, "GET", f"/repos/{repo}/git/ref/heads/main")
-        parent_sha = main_ref["object"]["sha"]
+        run(["git", "config", "user.name", "Shopnoltd Backup Automation"], env=env, cwd=clone)
+        run(["git", "config", "user.email", "shopnoltd-backup[bot]@users.noreply.github.com"], env=env, cwd=clone)
 
-    parent = api(token, "GET", f"/repos/{repo}/git/commits/{parent_sha}")
-    tree = api(token, "POST", f"/repos/{repo}/git/trees", {
-        "base_tree": parent["tree"]["sha"],
-        "tree": entries,
-    })
-    commit = api(token, "POST", f"/repos/{repo}/git/commits", {
-        "message": "backup: encrypted PostgreSQL and Kubernetes Secrets snapshot",
-        "tree": tree["sha"],
-        "parents": [parent_sha],
-    })
+        backup_dir = clone / "backup"
+        backup_dir.mkdir(parents=True, exist_ok=True)
+        for filename in FILES:
+            target = backup_dir / filename
+            target.write_bytes((workdir / filename).read_bytes())
+            target.chmod(0o600)
+        (backup_dir / "README.md").write_text(README, encoding="utf-8")
 
-    if branch_exists:
-        api(token, "PATCH", f"/repos/{repo}/git/refs/heads/{branch}", {
-            "sha": commit["sha"],
-            "force": True,
-        })
-    else:
-        api(token, "POST", f"/repos/{repo}/git/refs", {
-            "ref": f"refs/heads/{branch}",
-            "sha": commit["sha"],
-        })
+        run(["git", "add", "--", "backup"], env=env, cwd=clone)
+        changed = subprocess.run(
+            ["git", "diff", "--cached", "--quiet"],
+            cwd=clone, env=env, check=False, stdin=subprocess.DEVNULL,
+        ).returncode
+        if changed == 0:
+            print("PASS: encrypted backup artifacts already match the private backup branch.")
+            return 0
+        if changed != 1:
+            raise RuntimeError("Unable to inspect staged backup changes.")
 
-    print(f"PASS: published {len(entries)} encrypted backup metadata/artifact files.")
-    print(f"PASS: private repository {repo}, branch {branch}, commit {commit['sha']}.")
+        run(
+            ["git", "commit", "--quiet", "-m", "backup: encrypted PostgreSQL and Kubernetes Secrets snapshot"],
+            env=env, cwd=clone,
+        )
+        # Normal fast-forward push only. Never force-update or rewrite backup history.
+        run(["git", "push", "origin", f"HEAD:refs/heads/{branch}"], env=env, cwd=clone)
+
+        head = subprocess.run(
+            ["git", "rev-parse", "HEAD"], cwd=clone, env=env,
+            check=True, capture_output=True, text=True,
+        ).stdout.strip()
+        print(f"PASS: published {len(FILES)} encrypted backup artifacts to private repository {repo}.")
+        print(f"PASS: branch {branch}, commit {head}; previous backup history preserved.")
     return 0
 
 
 if __name__ == "__main__":
     try:
         raise SystemExit(main())
-    except (GitHubAPIError, KeyError, OSError, ValueError) as exc:
+    except (RuntimeError, KeyError, OSError, subprocess.CalledProcessError, ValueError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         raise SystemExit(1)
