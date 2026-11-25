@@ -4,7 +4,7 @@
 
 Production PostgreSQL remains on the k3s PostgreSQL PVC. Application code, Kubernetes manifests and migrations are version-controlled in the public `shopnoltd` source repository. Encrypted recovery artifacts are published to a separate private repository configured by the GitHub Actions secrets `BACKUP_REPOSITORY` and `BACKUP_REPOSITORY_TOKEN`.
 
-The nightly/manual `.github/workflows/postgres-backup.yml` workflow currently publishes 11 encrypted backup artifacts/sidecars:
+The nightly/manual `.github/workflows/postgres-backup.yml` workflow currently publishes 11 backup artifacts (three encrypted data files, integrity sidecars and metadata):
 - the primary PostgreSQL custom-format dump;
 - an archive containing all connectable non-template databases and global roles;
 - an all-namespace Kubernetes Secret export;
