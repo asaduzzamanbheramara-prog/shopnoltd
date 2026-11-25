@@ -187,13 +187,9 @@ async def billing_gateways(creds: HTTPAuthorizationCredentials = Depends(bearer)
 
 @router.get("/currencies")
 async def currencies(creds: HTTPAuthorizationCredentials = Depends(bearer)):
-    catalog = await billing_gateways(creds)
-    available = sorted({
-        str(currency).upper()
-        for gateway in catalog.get("gateways", [])
-        if gateway.get("available")
-        for currency in gateway.get("currencies", [])
-    })
+    methods = await call("GET", f"{PAYMENT}/api/v1/methods", creds.credentials)
+    items = methods.get("methods", []) if isinstance(methods, dict) else []
+    available = sorted({str(c).upper() for item in items if item.get("enabled", True) for c in item.get("currencies", [])})
     return {"currencies": available}
 
 
