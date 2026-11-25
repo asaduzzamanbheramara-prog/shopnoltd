@@ -125,6 +125,7 @@ async def provider_status(user=Depends(current_user)):
             "provider": provider,
             "platforms": cfg["platforms"],
             "configured": configured,
+            "executor_enabled": settings.omnichannel_executor_enabled,
             "mode": mode,
             "setup_status": setup_status,
             "required_credentials": cfg.get("credential_keys", []),
