@@ -15,7 +15,19 @@ GATEWAY_REGISTRY = {
         "capabilities": ["checkout", "webhook", "verification"],
         "currencies": ["USD", "EUR", "GBP", "AUD", "CAD", "SGD", "JPY", "HKD", "NZD", "CHF"],
         "payment_methods": ["card", "google_pay", "apple_pay", "link"],
-        "notes": "Google Pay is a Stripe payment method/wallet capability, not a separate processor.",
+        "notes": "Stripe merchant onboarding is limited to supported countries; verify the merchant's legal registration country before enabling live payments. Google Pay is a Stripe payment method/wallet capability, not a separate processor.",
+    },
+    "bank": {
+        "id": "bank", "name": "Bank transfer", "provider": "bank", "supported": True,
+        "integration": "manual", "capabilities": ["manual_deposit"],
+        "currencies": ["BDT", "USD", "EUR", "GBP", "INR"],
+        "notes": "Manual bank transfer requires an active receiving account in Admin Payment Accounts.",
+    },
+    "manual": {
+        "id": "manual", "name": "Manual payment", "provider": "manual", "supported": True,
+        "integration": "manual", "capabilities": ["manual_deposit"],
+        "currencies": ["BDT", "USD", "EUR", "GBP", "INR"],
+        "notes": "Manual payment requires an active receiving account in Admin Payment Accounts.",
     },
     "paypal": {
         "id": "paypal", "name": "PayPal", "provider": "paypal", "supported": True,
