@@ -7,6 +7,7 @@ on:
     paths:
       - '.github/workflows/postgres-backup.yml'
       - 'ops/backup/check-postgres-storage.sh'
+      - 'ops/backup/publish_github_backup.py'
   schedule:
     - cron: '17 18 * * *'
   workflow_dispatch:
