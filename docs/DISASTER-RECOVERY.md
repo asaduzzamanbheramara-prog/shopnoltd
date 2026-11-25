@@ -1,112 +1,66 @@
 # Shopnoltd backup and automatic recovery
 
-## Database model
+## Current verified backup scope
 
-Production PostgreSQL data remains on the k3s PostgreSQL PVC. GitHub is the source of truth for application code, Kubernetes manifests and migrations. The `database-backups` branch is a separate recovery copy containing encrypted PostgreSQL, Kubernetes Secret, and host recovery-material snapshots.
+Production PostgreSQL remains on the k3s PostgreSQL PVC. Application code, Kubernetes manifests and migrations are version-controlled in the public `shopnoltd` source repository. Encrypted recovery artifacts are published to a separate private repository configured by the GitHub Actions secrets `BACKUP_REPOSITORY` and `BACKUP_REPOSITORY_TOKEN`.
 
-The live database is never committed to `main`, and plaintext SQL/dump files are excluded by `.gitignore`.
+The nightly/manual `.github/workflows/postgres-backup.yml` workflow currently publishes 11 encrypted backup artifacts/sidecars:
+- the primary PostgreSQL custom-format dump;
+- an archive containing all connectable non-template databases and global roles;
+- an all-namespace Kubernetes Secret export;
+- SHA-256 and keyed HMAC-SHA256 integrity sidecars, timestamp and source revision metadata.
 
-## Database storage capacity
+The publisher uses a normal Git clone/commit/push to the private destination and preserves prior backup history. It does not force-update the destination branch.
 
-The current PostgreSQL PVC request is **10 GiB**. That is a reasonable starting capacity, but it is tight for the full Shopnoltd platform because database growth can come from users/authentication, domains, billing/payment/wallet ledgers, work/evidence records, social/chat/messaging, AI/provider usage, CMS/blog data and audit/event records.
+Verified run evidence (2026-11-25 UTC):
+- Backup run [45630157073](https://github.com/asaduzzamanbheramara-prog/shopnoltd/actions/runs/45630157073): successful; encrypted artifacts published to the separate private repository.
+- Isolated recovery run [45654952994](https://github.com/asaduzzamanbheramara-prog/shopnoltd/actions/runs/45654952994): successful; 35 PostgreSQL databases restored and connection-tested in disposable PostgreSQL 16; the independent primary dump was also restored.
+- The same recovery run validated 100 Kubernetes Secret objects across 13 namespaces. 97 eligible application-managed Secrets were restored into a disposable kind cluster; 3 cluster-bound/controller-managed objects were intentionally excluded from that unrelated cluster. All 100 remain represented in the encrypted source archive.
 
-Do not delete or recreate `postgres-data` to increase capacity. First verify that the live `standard` StorageClass supports volume expansion, then perform a controlled PVC expansion. A practical next capacity target is **20 GiB or larger**, based on measured usage and the available host disk; do not blindly resize until the live storage backend is confirmed expandable.
+These tests did not restore or modify production PostgreSQL, production Kubernetes Secrets, or production workloads.
 
-The repository now includes `ops/backup/check-postgres-storage.sh` and `.github/workflows/postgres-storage-check.yml`. The check fails when the PostgreSQL filesystem reaches 80% usage so capacity can be expanded before exhaustion. The guard does not resize or recreate the PVC.
+## Explicitly uncovered recovery assets
 
-Extra host storage is also useful for the overall platform because PostgreSQL, OpenSearch, MinIO, Redis and other stateful workloads share the k3s node. Backup working files are temporary and are removed after the encrypted backup completes, so they should not be treated as PostgreSQL data capacity.
+The verified nightly workflow does **not** currently back up:
+- PersistentVolume/PersistentVolumeClaim file data or volume snapshots;
+- live Kubernetes ConfigMaps;
+- a complete K3s control-plane state archive;
+- Cloudflare tunnel credential/configuration files;
+- GitHub Actions/repository/environment secret values (GitHub does not expose saved secret values for export).
 
-## Required environment/secret
+Git-tracked manifests can recreate declared resources, but do not replace runtime ConfigMaps, PVC contents, uploaded files, object-store data, or credentials.
 
-Create the GitHub Actions repository secret:
+A read-only live inventory on 2026-11-25 observed 49 PVCs, all Bound. This includes PostgreSQL, MongoDB, Redis, MinIO, Keycloak, Gitea, mail, code-server, monitoring and application data claims. The matching PVs reported reclaim policy `Delete`; do not delete/recreate PVCs or PVs as part of troubleshooting or capacity work.
 
-- `BACKUP_ENCRYPTION_KEY` — a long, randomly generated encryption password kept outside Git.
+The live `local-path` and `standard` StorageClasses both use `rancher.io/local-path` and reported `allowVolumeExpansion=false`. Do not attempt a PVC size increase until a supported storage migration/expansion procedure is designed and verified against the actual host storage.
 
-The workflow passes it to the backup process through the environment. It is never written to a repository file. The Kubernetes PostgreSQL password is read only at runtime from `shopno-data/postgres-secret` and is not printed.
+The current workflow's publisher artifact list contains database and Kubernetes Secret exports only. Older documentation referring to `C:\\Users\\asadu\\k3s-state-backup.tgz` and `C:\\Users\\asadu\\.cloudflared` as required inputs to that workflow was stale; those host assets must be inventoried and tested separately before they can be treated as recoverable.
 
-A local environment can follow `ops/backup/backup.env.example`, but the real `.env` must remain outside Git.
+## Required follow-up work
 
-## Automatic backup
+1. Design application-consistent backup/restore for every stateful PVC. Prefer native database dumps for PostgreSQL/MongoDB/Redis as appropriate, object replication for MinIO/uploads, and quiesced snapshots or application-native exports for other workloads.
+2. Test restore of each stateful workload into a disposable environment. A PVC being Bound is not proof that its contents are backed up.
+3. Export and compare live ConfigMap metadata/content against the deployed Git revision without exposing Secret values; identify runtime-generated ConfigMaps that need independent backup.
+4. Locate and verify the current K3s server-state archive and Cloudflare tunnel files. Encrypt them and store them in the private recovery destination only after validating source age, archive contents and restore procedure.
+5. Keep `BACKUP_ENCRYPTION_KEY`, `BACKUP_REPOSITORY_TOKEN` and other non-exportable GitHub secret values in an independent encrypted password manager. If a value is lost, rotate/reissue it at its source and update the GitHub secret; never put it in Git or chat.
+6. Keep the isolated restore drill separate from production. Do not automatically restore during boot. Any production database, Secret, PVC or cluster recovery requires an explicit reviewed plan and approval.
 
-`.github/workflows/postgres-backup.yml` runs nightly on the trusted self-hosted k3s runner and can also be started manually. It:
+## PostgreSQL capacity guard
 
-1. verifies the runner and Kubernetes connection;
-2. runs `pg_dump` inside the PostgreSQL container;
-3. encrypts the custom-format dump with OpenSSL AES-256-CBC + PBKDF2;
-4. verifies the encrypted file checksum;
-5. decrypts it as an integrity test without restoring it;
-6. force-updates the `database-backups` branch so GitHub keeps the latest encrypted snapshot;
-7. removes plaintext and temporary backup material from the runner.
+The PostgreSQL PVC request observed in the live cluster is 10 GiB. The repository includes `ops/backup/check-postgres-storage.sh`, which checks filesystem usage and fails at the configured 80% threshold; it does not resize or recreate a PVC.
 
-The backup branch is deliberately single-snapshot to prevent unbounded Git history growth. For longer historical retention, use an external object-storage backup in addition to this GitHub recovery copy. The encrypted GitHub copy is a recovery layer, not a replacement for capacity planning or an independent backup target.
+The live StorageClasses currently report `allowVolumeExpansion=false`. Do not assume a PVC patch can expand the underlying local-path volume. First design and test a safe data migration/host-capacity plan; never delete `postgres-data` to increase capacity.
 
-## Kubernetes secrets backup
+## Manual recovery safety
 
-The nightly self-hosted workflow exports Kubernetes Secret objects from every namespace using `kubectl get secrets --all-namespaces -o json`. It encrypts the export with `BACKUP_ENCRYPTION_KEY`, publishes only the encrypted file and checksum to `database-backups`, and removes plaintext temporary files. The independent GitHub-hosted verifier checks checksums, decryption, JSON structure and PostgreSQL archive readability.
+Use the private backup repository and the isolated recovery workflow to validate a snapshot before any production recovery. A successful checksum/decryption check alone is not a restore test. The disposable restore workflow is the current reference for PostgreSQL and eligible Kubernetes Secret recovery.
 
-The workflow requires the configured Windows-mounted `C:\\Users\\asadu\\k3s-state-backup.tgz` archive and the `C:\\Users\\asadu\\.cloudflared` directory. It refuses to publish a snapshot if either source is missing or empty. It validates that the nested K3s archive contains the server `token` and `db/state.db`, and that the Cloudflare folder contains files. The archive is a snapshot, not a live K3s backup; its age and full restoreability still require a separate restore test. GitHub Actions/repository/environment secret values cannot be retrieved through the GitHub API or workflow; keep those values separately in an encrypted password manager or re-create them from their original source. Never commit or upload decrypted secret exports.
+A Kubernetes Secret export is not a complete cluster restore image. Restore must be deliberate and reviewed after namespaces and dependent resources are prepared; do not blindly apply an old export to a running production cluster.
 
-A Kubernetes Secret export is not a complete cluster restore image. Restore must be a deliberate, reviewed operation after namespaces and dependent resources are prepared; do not blindly apply an old export to a running production cluster.
+## Windows/WSL recovery boundary
 
-## Manual restore
+Starting WSL and k3s after Windows boot can recover services when the host is available. It does not provide availability while the physical PC is powered off. The K3s server-state archive, host files, PVC contents and external credentials each require their own verified backup and restore path.
 
-Do not restore automatically during boot. A database restore is destructive and must be explicitly started.
+## Repository and credential handling
 
-After checking out the `database-backups` branch, set `BACKUP_ENCRYPTION_KEY` in the environment and run:
-
-```bash
-BACKUP_ENCRYPTION_KEY='...' ./ops/backup/restore-postgres.sh
-```
-
-The script decrypts the backup locally and streams it to `pg_restore` inside the trusted PostgreSQL pod. It never commits the decrypted database to Git.
-
-## Windows reboot recovery
-
-Run `ops/windows/install-shopnoltd-autostart.ps1` once from an elevated PowerShell prompt on the Windows host. It creates a Windows Scheduled Task that starts the configured WSL distribution at Windows boot.
-
-Inside WSL, systemd must be enabled and the following services must be enabled:
-
-```bash
-sudo systemctl enable k3s
-sudo systemctl enable actions.runner.*.service
-```
-
-The existing `ops/github-runner/bootstrap-k3s-runner.sh` installs the GitHub runner as a system service. It requires a short-lived `RUNNER_TOKEN` only during initial registration and does not store that token in Git.
-
-Normal recovery chain:
-
-```text
-Windows boot
-  -> WSL starts
-  -> WSL systemd
-  -> k3s
-  -> PostgreSQL PVC
-  -> ArgoCD
-  -> GitHub main reconciliation
-  -> Kubernetes services
-  -> Cloudflared
-  -> Cloudflare
-  -> public Shopnoltd services
-```
-
-This makes a normal PC/Windows reboot self-recovering. It does not provide availability while the physical PC is completely powered off; for that, production must eventually run on an always-on node or external cluster.
-
-## Verification checklist
-
-After installation, verify:
-
-```bash
-systemctl is-enabled k3s
-systemctl is-active k3s
-systemctl list-units 'actions.runner.*.service' --all
-kubectl get nodes
-kubectl -n argocd get application shopnoltd
-bash ops/backup/check-postgres-storage.sh
-```
-
-Then run the normal public smoke/release gates. A successful backup workflow alone does not prove that the public website is healthy.
-
-
-## Repository visibility and credential handling
-
-The `shopnoltd` repository is currently **public**. Encrypted backups on `database-backups` are therefore publicly downloadable ciphertext. Do not rely on repository privacy as encryption: use a strong random `BACKUP_ENCRYPTION_KEY` stored outside Git, and consider moving backups to private object storage or making the repository private after reviewing deployment/integration impact. No credential values are stored in source control. GitHub Actions secret values cannot be read back once saved; inventory names only and preserve/reissue values separately. Never paste tokens, private keys, Cloudflare JSON credentials, or encryption keys into chat or workflow logs.
+The source repository is public; the encrypted backup destination is separately configured and verified by the backup workflow to be private. Keep encryption keys and repository tokens outside Git. GitHub Actions secret values cannot be read back after saving. Never paste tokens, private keys, Cloudflare credential files, Secret values or encryption keys into chat or workflow logs.
