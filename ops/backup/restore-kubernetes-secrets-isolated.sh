@@ -38,7 +38,7 @@ actual=json.loads(subprocess.check_output(["kubectl","get","secrets","-A","-o","
 have={(x["metadata"]["namespace"],x["metadata"]["name"]):x for x in actual}
 for x in expected:
  k=(x["metadata"]["namespace"],x["metadata"]["name"])
- if k not in have: raise SystemExit("A Secret object was not restored")
+ if k not in have: raise SystemExit("Secret not restored: "+k[0]+"/"+k[1])
  if set((x.get("data") or {}))-set((have[k].get("data") or {})): raise SystemExit("A restored Secret is missing data keys")
 print(f"PASS: all {len(expected)} Kubernetes Secret objects restored into disposable kind cluster.")
 PY
