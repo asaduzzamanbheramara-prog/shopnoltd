@@ -22,3 +22,12 @@ def test_queue_action_rejects_requests_when_executor_is_disabled(monkeypatch):
 
     assert exc.value.status_code == 503
     assert "no action was queued" in exc.value.detail
+
+def test_provider_status_exposes_executor_readiness(monkeypatch):
+    from app.api.omnichannel import provider_status
+
+    monkeypatch.setattr("app.api.omnichannel.settings.omnichannel_executor_enabled", False)
+    providers = asyncio.run(provider_status(user={"sub": "user-123"}))
+
+    assert providers
+    assert all(provider["executor_enabled"] is False for provider in providers)
