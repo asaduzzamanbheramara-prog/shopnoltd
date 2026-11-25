@@ -23,7 +23,7 @@ metadata:
   name: litellm-migrations
   namespace: shopno-ai
   annotations:
-    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook: Skip
     argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
 spec:
   backoffLimit: 2

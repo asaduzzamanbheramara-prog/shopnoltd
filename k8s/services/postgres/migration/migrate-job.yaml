@@ -5,7 +5,7 @@ metadata:
   name: postgres-platform-migration
   namespace: shopno-data
   annotations:
-    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook: Skip
     argocd.argoproj.io/sync-wave: "-10"
     argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
 

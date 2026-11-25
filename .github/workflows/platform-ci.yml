@@ -54,7 +54,25 @@ jobs:
           assert 'git merge-base --is-ancestor "$GIT_REVISION" "$sync_revision"' in wait_script
           assert 'sync_revision_is_descendant' in wait_script
           assert 'git fetch --quiet --no-tags origin main' in wait_script
-          print('GitOps recovery and Argo descendant-revision wait scripts parse and retain fail-closed ancestry guards.')
+          migration_jobs = [
+              (Path("k8s/services/postgres/migration/migrate-job.yaml"), "postgres-platform-migration"),
+              (Path("k8s/services/ai-gateway/01-litellm-proxy.yaml"), "litellm-migrations"),
+              (Path("k8s/services/chatwoot/migrate-job.yaml"), "chatwoot-rails-migration"),
+          ]
+          for manifest, job_name in migration_jobs:
+              documents = list(yaml.safe_load_all(manifest.read_text()))
+              job = next(
+                  (doc for doc in documents if isinstance(doc, dict)
+                   and doc.get("kind") == "Job"
+                   and doc.get("metadata", {}).get("name") == job_name),
+                  None,
+              )
+              if job is None:
+                  raise SystemExit(f"missing migration Job manifest: {job_name}")
+              hook = job.get("metadata", {}).get("annotations", {}).get("argocd.argoproj.io/hook")
+              if hook != "Skip":
+                  raise SystemExit(f"{job_name} must be manual-only; expected Argo hook Skip, got {hook!r}")
+          print('GitOps recovery scripts parse; database migration Jobs are excluded from automatic Argo sync.')
           PY
 
   python-syntax:
