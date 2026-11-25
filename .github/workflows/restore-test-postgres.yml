@@ -95,7 +95,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          bash ops/backup/restore-kubernetes-secrets-isolated.sh "$RUNNER_TEMP/shopnoltd-secrets.json"
+          bash source/ops/backup/restore-kubernetes-secrets-isolated.sh "$RUNNER_TEMP/shopnoltd-secrets.json"
 
       - name: Restore roles and all database archives with PostgreSQL 16 tools
         shell: bash
