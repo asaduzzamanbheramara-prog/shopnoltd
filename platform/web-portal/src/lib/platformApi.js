@@ -97,6 +97,7 @@ export const platformApi = {
   omnichannelOAuthSelect: (id, account_ids) => request('/api/v1/omnichannel/oauth/pending/' + encodeURIComponent(id) + '/select', { method: 'POST', body: JSON.stringify({ account_ids: Array.isArray(account_ids) ? account_ids : [account_ids] }) }),
   omnichannelCapabilities: () => request('/api/v1/omnichannel/capabilities'),
   omnichannelConnections: () => request('/api/v1/omnichannel/connections'),
+  omnichannelQueueAction: (body) => request('/api/v1/omnichannel/actions', { method: 'POST', body: JSON.stringify(body) }),
   addOmnichannelConnection: (body) => request('/api/v1/omnichannel/connections', { method: 'POST', body: JSON.stringify(body) }),
   getOmnichannelConnection: (id) => request(`/api/v1/omnichannel/connections/${encodeURIComponent(id)}`),
   updateOmnichannelConnection: (id, body) => request(`/api/v1/omnichannel/connections/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(body) }),
