@@ -109,8 +109,14 @@ def main() -> int:
         remote = f"https://github.com/{repo}.git"
 
         # Fetch the existing backup branch if present; otherwise start at main.
-        refs = api(token, "GET", f"/repos/{repo}/git/ref/heads/{branch}")
-        if refs.get("object", {}).get("sha"):
+        try:
+            refs = api(token, "GET", f"/repos/{repo}/git/ref/heads/{branch}")
+            branch_exists = bool(refs.get("object", {}).get("sha"))
+        except RuntimeError as exc:
+            if "(404)" not in str(exc):
+                raise
+            branch_exists = False
+        if branch_exists:
             run(["git", "clone", "--quiet", "--single-branch", "--branch", branch, remote, str(clone)], env=env)
         else:
             run(["git", "clone", "--quiet", "--single-branch", "--branch", "main", remote, str(clone)], env=env)
