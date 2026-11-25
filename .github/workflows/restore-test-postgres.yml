@@ -38,7 +38,8 @@ jobs:
       - name: Checkout encrypted backup branch
         uses: actions/checkout@v4
         with:
-          repository: ${{ github.repository }}
+          repository: ${{ secrets.BACKUP_REPOSITORY }}
+          token: ${{ secrets.BACKUP_REPOSITORY_TOKEN }}
           ref: database-backups
           path: backup-source
           fetch-depth: 1
@@ -54,19 +55,30 @@ jobs:
           test -n "${BACKUP_ENCRYPTION_KEY:-}" || { echo "::error::BACKUP_ENCRYPTION_KEY is missing."; exit 1; }
           echo "::add-mask::$BACKUP_ENCRYPTION_KEY"
           cd backup-source/backup
-          for file in latest.all-databases.tar.gz.enc latest.all-databases.tar.gz.enc.sha256; do
+          for file in timestamp.txt latest.all-databases.tar.gz.enc latest.all-databases.tar.gz.enc.sha256 latest.all-databases.tar.gz.enc.hmac latest.kubernetes-secrets.json.enc latest.kubernetes-secrets.json.enc.sha256 latest.kubernetes-secrets.json.enc.hmac; do
             test -s "$file" || { echo "::error::Required encrypted database backup is missing: $file"; exit 1; }
           done
+          timestamp="$(tr -d '\r\n' < timestamp.txt)"
+          [[ "$timestamp" =~ ^[0-9]{8}T[0-9]{6}Z$ ]] || { echo "::error::Invalid backup timestamp."; exit 1; }
+          iso="${timestamp:0:4}-${timestamp:4:2}-${timestamp:6:2}T${timestamp:9:2}:${timestamp:11:2}:${timestamp:13:2}Z"
+          age=$(( $(date -u +%s) - $(date -u -d "$iso" +%s) ))
+          (( age >= 0 && age <= 172800 )) || { echo "::error::Backup is future-dated or older than 48 hours."; exit 1; }
           sha256sum -c latest.all-databases.tar.gz.enc.sha256
+          sha256sum -c latest.kubernetes-secrets.json.enc.sha256
+          python3 "$GITHUB_WORKSPACE/ops/backup/authenticated_backup.py" verify latest.all-databases.tar.gz.enc latest.kubernetes-secrets.json.enc
           openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 \
             -in latest.all-databases.tar.gz.enc \
             -out "$RUNNER_TEMP/shopnoltd-all-databases.tar.gz" \
+            -pass env:BACKUP_ENCRYPTION_KEY
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 \
+            -in latest.kubernetes-secrets.json.enc \
+            -out "$RUNNER_TEMP/shopnoltd-secrets.json" \
             -pass env:BACKUP_ENCRYPTION_KEY
           mkdir -p "$RUNNER_TEMP/shopnoltd-restore-source"
           tar -xzf "$RUNNER_TEMP/shopnoltd-all-databases.tar.gz" -C "$RUNNER_TEMP/shopnoltd-restore-source"
           test -s "$RUNNER_TEMP/shopnoltd-restore-source/globals.sql"
           test -s "$RUNNER_TEMP/shopnoltd-restore-source/database-list.txt"
-          echo "PASS: encrypted backup decrypted and extracted on the disposable GitHub-hosted runner."
+          echo "PASS: encrypted database and Secret exports authenticated, decrypted and extracted on the disposable GitHub-hosted runner."
 
       - name: Restore roles and all database archives with PostgreSQL 16 tools
         shell: bash
