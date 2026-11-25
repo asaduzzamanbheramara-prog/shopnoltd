@@ -32,7 +32,6 @@ class StateStoreTests(unittest.TestCase):
 
         store = PostgresStateStore()
         self.assertTrue(store.enabled)
-        self.assertEqual(store.health(), "postgres")
 
         connection = MagicMock()
         cursor = connection.cursor.return_value.__enter__.return_value
@@ -45,27 +44,54 @@ class StateStoreTests(unittest.TestCase):
             store.initialize()
             loaded = store.load(["wallets"])
             store.save({"wallets": {"w1": {"balance": 5}}})
+            self.assertEqual(store.health(), "postgres")
 
         self.assertEqual(loaded["wallets"]["w1"]["balance"], 5)
         self.assertGreaterEqual(cursor.execute.call_count, 3)
 
-    def test_middleware_returns_response_when_persistence_save_fails(self):
+    def test_middleware_rejects_writes_without_durable_storage(self):
         import app_platform.api.main as main
 
         original_store = main.state_store
-        failing_store = MagicMock(enabled=True)
-        failing_store.save.side_effect = RuntimeError("temporary database outage")
-        main.state_store = failing_store
+        main.state_store = MagicMock(enabled=False)
+        request = MagicMock(method="POST")
 
         async def call_next(_request):
-            return object()
+            self.fail("write must be blocked before the route executes")
 
         try:
-            response = asyncio.run(main.persist_state_after_request(object(), call_next))
+            response = asyncio.run(main.persist_state_after_request(request, call_next))
         finally:
             main.state_store = original_store
 
-        self.assertIsNotNone(response)
+        self.assertEqual(response.status_code, 503)
+
+    def test_middleware_rolls_back_memory_and_returns_503_when_save_fails(self):
+        import app_platform.api.main as main
+        from starlette.responses import JSONResponse
+
+        original_store = main.state_store
+        original_wallets = dict(main.wallets_db)
+        main.wallets_db.clear()
+        main.wallets_db["before"] = {"balance": 10}
+        failing_store = MagicMock(enabled=True)
+        failing_store.save.side_effect = RuntimeError("temporary database outage")
+        main.state_store = failing_store
+        request = MagicMock(method="POST")
+
+        async def call_next(_request):
+            main.wallets_db["after"] = {"balance": 999}
+            return JSONResponse({"ok": True})
+
+        try:
+            response = asyncio.run(main.persist_state_after_request(request, call_next))
+        finally:
+            main.state_store = original_store
+            main.wallets_db.clear()
+            main.wallets_db.update(original_wallets)
+
+        self.assertEqual(response.status_code, 503)
+        self.assertEqual(main.wallets_db, original_wallets)
         failing_store.save.assert_called_once()
 
 

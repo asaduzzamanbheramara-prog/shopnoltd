@@ -65,7 +65,15 @@ class PostgresStateStore:
                 )
 
     def health(self) -> str:
-        return "postgres" if self.enabled else "memory"
+        if not self.enabled:
+            return "memory"
+        try:
+            with self._connect() as conn, conn.cursor() as cur:
+                cur.execute("SELECT 1")
+                cur.fetchone()
+            return "postgres"
+        except Exception:
+            return "unavailable"
 
 
 STATE_KEYS = [
