@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 import os
 import pathlib
+import re
 import subprocess
 import sys
 import tempfile
@@ -72,14 +73,17 @@ def main() -> int:
     token = os.environ["BACKUP_REPOSITORY_TOKEN"]
     branch = os.environ.get("BACKUP_BRANCH", "database-backups")
     workdir = pathlib.Path(os.environ.get("BACKUP_WORKDIR", "/tmp/shopnoltd-dr-backup"))
-    if not repo.count("/") == 1 or repo == os.environ.get("GITHUB_REPOSITORY"):
+    if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repo) or repo == os.environ.get("GITHUB_REPOSITORY"):
         raise SystemExit("Backup repository must be a separate owner/repository destination.")
-    if not branch or branch.startswith("-") or any(c.isspace() for c in branch):
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._/-]*", branch) or ".." in branch or branch.endswith(("/", ".")):
         raise SystemExit("Invalid backup branch name.")
 
     destination = api(token, "GET", f"/repos/{repo}")
     if destination.get("private") is not True:
         raise SystemExit("Refusing to publish: destination repository is not private.")
+    default_branch = destination.get("default_branch")
+    if not isinstance(default_branch, str) or not default_branch:
+        raise SystemExit("Backup destination has no readable default branch.")
 
     for filename in FILES:
         path = workdir / filename
@@ -119,7 +123,7 @@ def main() -> int:
         if branch_exists:
             run(["git", "clone", "--quiet", "--single-branch", "--branch", branch, remote, str(clone)], env=env)
         else:
-            run(["git", "clone", "--quiet", "--single-branch", "--branch", "main", remote, str(clone)], env=env)
+            run(["git", "clone", "--quiet", "--single-branch", "--branch", default_branch, remote, str(clone)], env=env)
             run(["git", "checkout", "-b", branch], env=env, cwd=clone)
 
         run(["git", "config", "user.name", "Shopnoltd Backup Automation"], env=env, cwd=clone)
