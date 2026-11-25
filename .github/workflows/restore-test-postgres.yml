@@ -35,6 +35,13 @@ jobs:
           --health-retries 12
 
     steps:
+      - name: Checkout Shopnoltd recovery scripts
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: source
+          persist-credentials: false
+
       - name: Checkout encrypted backup branch
         uses: actions/checkout@v4
         with:
