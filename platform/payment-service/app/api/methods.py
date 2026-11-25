@@ -22,7 +22,14 @@ async def list_methods():
                 "id": method.value,
                 "display_name": method.value.replace("_", " ").title(),
                 "enabled": enabled,
-                "credentials_configured": bool(getattr(provider, "enabled", False)),
+                # ManualProvider is intentionally enabled to create an
+                # approval workflow; that does not mean merchant credentials
+                # or a receiving account have been configured.
+                "credentials_configured": bool(
+                    getattr(provider, "enabled", False)
+                    and not isinstance(provider, ManualProvider)
+                ),
+                "manual_account_required": isinstance(provider, ManualProvider),
                 "currencies": currencies,
             }
         )
