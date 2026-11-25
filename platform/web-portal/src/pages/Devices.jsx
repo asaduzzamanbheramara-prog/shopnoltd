@@ -29,7 +29,7 @@ async function request(path, options = {}) {
   return data
 }
 
-function DeviceCard({ device, admin, onDelete, onShare, onToken }) {
+function DeviceCard({ device, admin, onDelete, onShare, onToken, onConnect }) {
   const [busy, setBusy] = useState(false)
   return <article style={card}>
     <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', flexWrap: 'wrap' }}>
@@ -49,7 +49,7 @@ function DeviceCard({ device, admin, onDelete, onShare, onToken }) {
     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
       {!admin && !device.shared_access && !device.executor_enabled && <button type="button" style={button} disabled={busy} onClick={async () => { setBusy(true); try { await onToken(device) } finally { setBusy(false) } }}>Get enrollment token</button>}
       {!admin && !device.shared_access && <button type="button" style={{ ...button, background: '#334155' }} onClick={() => onShare(device)}>Share device</button>}
-      {device.meshcentral_node_id && <a href={`${API}/connect/${encodeURIComponent(device.id)}`} onClick={e => { e.preventDefault(); alert('Use the Connect action from the device portal, which obtains a short-lived authorized session URL.') }} style={{ ...button, textDecoration: 'none', background: '#0369a1' }}><ExternalLink size={15}/> Connect</a>}
+      {device.meshcentral_node_id && <button type="button" style={{ ...button, background: '#0369a1' }} onClick={() => onConnect(device)}><ExternalLink size={15}/> Connect</button>}
       {!device.shared_access && <button type="button" style={{ ...button, background: '#b91c1c' }} onClick={() => onDelete(device)}><Trash2 size={15}/> {admin ? 'Revoke device' : 'Remove device'}</button>}
     </div>
   </article>
@@ -114,6 +114,19 @@ export default function Devices({ admin = false }) {
     } catch (e) { setError(e.message) }
   }
 
+  async function connectDevice(device) {
+    const popup = window.open('about:blank', '_blank', 'noopener,noreferrer')
+    try {
+      const result = await request('/api/connect/' + encodeURIComponent(device.id))
+      if (!result.connect_url) throw new Error('Gateway did not return a connection URL.')
+      if (popup) popup.location = result.connect_url
+      else window.location.assign(result.connect_url)
+    } catch (e) {
+      if (popup) popup.close()
+      setError(e.message)
+    }
+  }
+
   async function copy(value) {
     try { await navigator.clipboard.writeText(value); setNotice('Copied to clipboard.') }
     catch { window.prompt('Copy this value:', value) }
@@ -146,7 +159,7 @@ export default function Devices({ admin = false }) {
     </form>}
 
     <div style={{ display: 'flex', gap: 8, alignItems: 'center', margin: '18px 0 12px', color: '#475569' }}><ShieldCheck size={17}/><b>{devices.length} {adminView ? 'registered devices across Shopnoltd' : 'devices available to your account'}</b></div>
-    {loading ? <div style={card}>Loading devices…</div> : devices.length ? devices.map(device => <DeviceCard key={device.id} device={device} admin={adminView} onDelete={deleteDevice} onShare={shareDevice} onToken={createToken}/>) : <div style={card}><h2 style={{ marginTop: 0 }}>No devices registered</h2><p style={{ color: '#64748b' }}>Add a device above to create its account-owned enrollment record. An agent must be installed separately before the device can report online.</p></div>}
+    {loading ? <div style={card}>Loading devices…</div> : devices.length ? devices.map(device => <DeviceCard key={device.id} device={device} admin={adminView} onDelete={deleteDevice} onShare={shareDevice} onToken={createToken} onConnect={connectDevice}/>) : <div style={card}><h2 style={{ marginTop: 0 }}>No devices registered</h2><p style={{ color: '#64748b' }}>Add a device above to create its account-owned enrollment record. An agent must be installed separately before the device can report online.</p></div>}
     <p style={{ color: '#64748b', fontSize: 12, lineHeight: 1.6 }}>Security: ownership is assigned by the authenticated gateway, not by browser-supplied user IDs. Remote control is available only after a device agent is enrolled and linked. Android/iOS support depends on a compatible native agent and platform permissions.</p>
   </main>
 }
