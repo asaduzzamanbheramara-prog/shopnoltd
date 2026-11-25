@@ -4,6 +4,7 @@ from datetime import datetime
 
 import stripe
 from fastapi import FastAPI, Header, HTTPException, Request
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 from app_platform.api.state_store import PostgresStateStore, STATE_KEYS, serialize_state
@@ -48,6 +49,30 @@ def load_persistent_state():
 
 @app.middleware("http")
 async def persist_state_after_request(request: Request, call_next):
+    # This API owns wallet/payment state. Never acknowledge a write when its only
+    # copy would live in Render's ephemeral process memory.
+    if request.method not in {"GET", "HEAD", "OPTIONS"} and not state_store.enabled:
+        return JSONResponse(
+            status_code=503,
+            content={
+                "detail": "Durable storage is not configured; write operations are disabled.",
+                "code": "PERSISTENCE_UNAVAILABLE",
+            },
+        )
+
+    before = None
+    if state_store.enabled:
+        before = serialize_state(
+            {
+                "wallets": wallets_db,
+                "transactions": transactions_db,
+                "users": users_db,
+                "payment_methods": payment_methods_db,
+                "audit_log": audit_log_db,
+                "exchange_orders": exchange_orders_db,
+            }
+        )
+
     response = await call_next(request)
     if state_store.enabled:
         try:
@@ -64,9 +89,27 @@ async def persist_state_after_request(request: Request, call_next):
                 )
             )
         except Exception:
-            # A transient database outage must not turn a successful API response
-            # into a 500. The next request retries the state snapshot.
-            pass
+            # Restore the in-process snapshot as well as rejecting the response:
+            # a later request must not accidentally persist a failed mutation.
+            wallets_db.clear()
+            wallets_db.update(before["wallets"])
+            transactions_db.clear()
+            transactions_db.update(before["transactions"])
+            users_db.clear()
+            users_db.update(before["users"])
+            payment_methods_db.clear()
+            payment_methods_db.update(before["payment_methods"])
+            audit_log_db[:] = before["audit_log"]
+            exchange_orders_db.clear()
+            exchange_orders_db.update(before["exchange_orders"])
+            if response.status_code < 400:
+                return JSONResponse(
+                    status_code=503,
+                    content={
+                        "detail": "The operation was not saved; durable storage is unavailable.",
+                        "code": "PERSISTENCE_WRITE_FAILED",
+                    },
+                )
     return response
 
 # ==================== EXCHANGE RATES (Updated) ====================
@@ -159,10 +202,11 @@ def root():
 
 @app.get("/health")
 def health():
+    persistence = state_store.health()
     return {
-        "status": "healthy",
+        "status": "healthy" if persistence == "postgres" else "degraded",
         "service": "shopnoltd-platform",
-        "persistence": state_store.health(),
+        "persistence": persistence,
         "wallets": len(wallets_db),
         "transactions": len(transactions_db),
         "users": len(users_db),
