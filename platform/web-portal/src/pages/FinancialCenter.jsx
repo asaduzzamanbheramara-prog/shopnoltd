@@ -353,9 +353,16 @@ function GatewayView() {
                 <strong>{gateway.available ? 'AVAILABLE' : 'NOT AVAILABLE'}</strong>
               </p>
               <p style={{ margin: 0, color: '#64748b' }}>
-                Credentials:{' '}
-                {gateway.credentials_configured ? 'configured' : 'not configured'}
+                {gateway.integration === 'manual' ? 'Receiving account: ' : 'Credentials: '}
+                {gateway.integration === 'manual'
+                  ? (gateway.account_configured ? 'configured' : 'not configured')
+                  : (gateway.credentials_configured ? 'configured' : 'not configured')}
               </p>
+              {gateway.notes && (
+                <p style={{ margin: '8px 0 0', color: '#64748b', fontSize: 12 }}>
+                  {gateway.notes}
+                </p>
+              )}
             </div>
           ))}
         </div>

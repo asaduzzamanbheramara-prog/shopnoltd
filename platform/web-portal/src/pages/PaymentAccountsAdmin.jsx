@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { authenticatedRequest } from '../lib/financialApi'
 
-const PROVIDERS = ['binance', 'bkash', 'bank', 'manual', 'nagad', 'payeer', 'payoneer', 'paypal']
+const PROVIDERS = ['binance', 'bkash', 'bank', 'manual', 'nagad', 'payeer', 'payoneer', 'paypal', 'rocket']
 const EMPTY = { provider: 'manual', account_label: '', account_type: 'manual', currency: 'BDT', display_name: '', masked_account: '', public_identifier: '', private_value: '', instructions: '', qr_url: '', payment_url: '', details: {}, status: 'active', sort_order: 0 }
 const DETAIL_FIELDS = [['name','Name'],['email_id','Email Id'],['mobile_number','Mobile Number'],['account_number','Account Number'],['account_name','Account Name'],['branch_name','Branch Name'],['card_number','Card Number'],['routing_number','Routing Number'],['swift_code','SWIFT Code']]
 const DETAIL_LABELS = Object.fromEntries(DETAIL_FIELDS)
