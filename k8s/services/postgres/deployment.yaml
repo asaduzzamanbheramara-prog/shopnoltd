@@ -61,6 +61,15 @@ spec:
           ports:
             - name: postgres
               containerPort: 5432
+          startupProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - 'pg_isready -U "$POSTGRES_USER"'
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 90
           livenessProbe:
             exec:
               command:
