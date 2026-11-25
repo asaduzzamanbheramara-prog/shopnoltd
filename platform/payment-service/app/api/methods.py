@@ -1,5 +1,6 @@
 """Live payment method / gateway listing for the checkout UI."""
 
+from app.providers.manual import ManualProvider
 from app.providers.registry import _REG, supported_deposit_currencies
 from fastapi import APIRouter
 
