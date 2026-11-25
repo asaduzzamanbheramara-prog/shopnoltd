@@ -318,7 +318,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt pytest
       - name: Test provider request contracts and fail-closed approval
-        run: pytest -q tests/test_omnichannel_executor.py
+        run: pytest -q tests/test_omnichannel_executor.py tests/test_omnichannel_queue_guard.py
 
   android-cloud-controller-tests:
     name: Android Cloud controller session lifecycle tests
