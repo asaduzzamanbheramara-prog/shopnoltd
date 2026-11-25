@@ -35,14 +35,31 @@ jobs:
       - name: Verify runner and live Web Portal before changing anything
         shell: bash
         run: |
-          set -euo pipefail
-          command -v kubectl
-          command -v curl
-          command -v jq
-          test -s "${KUBECONFIG:-$HOME/.kube/config}"
-          kubectl --request-timeout=20s cluster-info >/dev/null
+          set -Eeuo pipefail
+          trap 'rc=$?; printf "::error::Web Portal preflight command failed (exit=%s): %s\\n" "$rc" "$BASH_COMMAND"; exit "$rc"' ERR
+
+          for binary in kubectl curl jq; do
+            if ! command -v "$binary" >/dev/null 2>&1; then
+              echo "::error::Required command is missing on the self-hosted runner: $binary"
+              exit 1
+            fi
+            printf 'Preflight tool available: %s (%s)\\n' "$binary" "$(command -v "$binary")"
+          done
+
+          kubeconfig="${KUBECONFIG:-$HOME/.kube/config}"
+          if [ ! -s "$kubeconfig" ]; then
+            echo "::error::Kubeconfig is missing or empty for runner user $(id -un): $kubeconfig"
+            echo "No Kubernetes resource was read or changed."
+            exit 1
+          fi
+          printf 'Kubeconfig file exists and is non-empty: %s\\n' "$kubeconfig"
+
+          echo "Checking Kubernetes API connectivity..."
+          kubectl --request-timeout=20s cluster-info
+          echo "Checking active Kubernetes context..."
           kubectl config current-context
 
+          echo "Reading shopno-platform/web-portal deployment..."
           deployment="$(kubectl --request-timeout=20s -n shopno-platform get deployment web-portal -o json)"
           desired="$(jq -r '.spec.replicas // 1' <<<"$deployment")"
           ready="$(jq -r '.status.readyReplicas // 0' <<<"$deployment")"
