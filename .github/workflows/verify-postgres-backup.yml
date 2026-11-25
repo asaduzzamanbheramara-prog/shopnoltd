@@ -27,6 +27,8 @@ jobs:
       - name: Checkout encrypted backup branch
         uses: actions/checkout@v4
         with:
+          repository: ${{ secrets.BACKUP_REPOSITORY }}
+          token: ${{ secrets.BACKUP_REPOSITORY_TOKEN }}
           ref: database-backups
           path: backup-source
           fetch-depth: 1
