@@ -14,7 +14,7 @@ from pathlib import Path
 src,out,nsfile=map(Path,sys.argv[1:])
 d=json.loads(src.read_text()); items=d.get("items",[])
 if d.get("kind")!="List" or not items: raise SystemExit("Invalid Secret List")
-seen=set(); ns=set()
+seen=set(); ns=set(); importable=[]; excluded=0
 for x in items:
  m=x.get("metadata") or {}; n=m.get("name"); s=m.get("namespace")
  if x.get("kind")!="Secret" or x.get("apiVersion")!="v1" or not n or not s or (s,n) in seen: raise SystemExit("Invalid/duplicate Secret identity")
@@ -23,9 +23,16 @@ for x in items:
  for v in (x.get("data") or {}).values():
   try: base64.b64decode(v,validate=True)
   except (binascii.Error,ValueError,TypeError): raise SystemExit("Invalid Secret base64")
+ secret_type=x.get("type","Opaque")
+ if secret_type in ("kubernetes.io/service-account-token","bootstrap.kubernetes.io/token") or n.endswith(".node-password.k3s") or m.get("ownerReferences"):
+  excluded+=1
+  continue
  for k in ("uid","resourceVersion","creationTimestamp","managedFields","selfLink","generation"): m.pop(k,None)
+ importable.append(x)
+if not importable: raise SystemExit("No application-managed Secrets are eligible for isolated restore")
+d["items"]=importable
 out.write_text(json.dumps(d)); nsfile.write_text("\n".join(sorted(ns))+"\n")
-print(f"PASS: {len(seen)} Secret objects validated across {len(ns)} namespaces.")
+print(f"PASS: validated {len(seen)} Secret objects across {len(ns)} namespaces; {len(importable)} eligible for restore, {excluded} cluster-bound objects excluded.")
 PY
 while read -r n; do
   kubectl get ns "$n" >/dev/null 2>&1 || kubectl create ns "$n" >/dev/null
