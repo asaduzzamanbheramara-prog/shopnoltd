@@ -50,3 +50,29 @@ async def mongodb_catalog(_: dict = Depends(require_admin)):
         return {"read_only": True, **await discover_mongodb()}
     except Exception as exc:
         raise HTTPException(503, "live MongoDB discovery unavailable") from exc
+
+
+@router.get("/live-catalog")
+async def database_live_catalog(_: dict = Depends(require_admin)):
+    """Return the live PostgreSQL inventory in the shape used by the admin portal.
+
+    Keep this compatibility endpoint read-only; /reconcile remains the full
+    PostgreSQL + MongoDB diagnostic response.
+    """
+    try:
+        result = await reconcile_postgres()
+        postgres = result["postgres"]
+        databases = postgres["databases"]
+        return {
+            "version": result.get("version", 2),
+            "source": "live-postgresql",
+            "read_only": True,
+            "summary": {
+                "live_databases": len(databases),
+                "reachable_databases": sum(1 for item in databases if item.get("reachable")),
+                "declared_not_live": len(postgres.get("declared_not_live", [])),
+            },
+            "databases": databases,
+        }
+    except Exception as exc:
+        raise HTTPException(503, "live PostgreSQL inventory unavailable") from exc
