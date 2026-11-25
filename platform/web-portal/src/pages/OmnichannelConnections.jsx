@@ -236,11 +236,13 @@ export default function OmnichannelConnections() {
   }
   const automationProfiles = items.filter(item => item.platform === automationPlatform && item.status === 'connected')
   const executableActions = EXECUTABLE_ACTIONS[automationPlatform] || []
+  const executorEnabled = providers.length > 0 && providers.every(provider => provider.executor_enabled === true)
   async function runAutomation(event) {
     event.preventDefault()
     setError('')
     setNotice('')
     setAutomationResults([])
+    if (!executorEnabled) { setError('The server automation executor is disabled. No action was sent or queued.'); return }
     if (!automationSelected.length) { setError('Select at least one connected profile.'); return }
     if (!automationApproved) { setError('Explicit human approval is required before queuing provider actions.'); return }
     let payload
@@ -444,6 +446,9 @@ export default function OmnichannelConnections() {
       <p style={{ margin: '0 0 12px', color: '#6b7280', lineHeight: 1.5 }}>
         Select one platform and one or more of your connected profiles. Each action is queued against its own connection; credentials are never substituted across profiles.
       </p>
+      {!executorEnabled && <div role="status" style={{ padding: 10, borderRadius: 8, background: '#fffbeb', color: '#92400e', fontSize: 13 }}>
+        Automation executor is disabled on the server. Run is unavailable until provider credentials and sandbox end-to-end tests are complete. No messages or posts will be sent.
+      </div>}
       <form onSubmit={runAutomation} style={{ display: 'grid', gap: 10 }}>
         <label>Platform
           <select value={automationPlatform} onChange={e => { setAutomationPlatform(e.target.value); setAutomationAction(''); setAutomationSelected([]); setAutomationResults([]) }} style={styles.input}>
@@ -475,8 +480,8 @@ export default function OmnichannelConnections() {
           <input type="checkbox" checked={automationApproved} onChange={e => setAutomationApproved(e.target.checked)} />
           I reviewed the selected profiles and payload, and explicitly approve this external action for each selected account.
         </label>
-        <button type="submit" disabled={busy || !automationPlatform || !automationAction || !automationSelected.length || !automationApproved} style={{ ...styles.button, background: '#111827', color: '#fff', borderColor: '#111827', justifyContent: 'center' }}>
-          {busy ? 'Queueing actions…' : 'Run on ' + automationSelected.length + ' selected profile(s)'}
+        <button type="submit" disabled={busy || !executorEnabled || !automationPlatform || !automationAction || !automationSelected.length || !automationApproved} style={{ ...styles.button, background: '#111827', color: '#fff', borderColor: '#111827', justifyContent: 'center' }}>
+          {busy ? 'Queueing actions…' : !executorEnabled ? 'Automation executor disabled' : 'Run on ' + automationSelected.length + ' selected profile(s)'}
         </button>
       </form>
       {automationResults.length > 0 && <div role="status" style={{ marginTop: 12, display: 'grid', gap: 6 }}>

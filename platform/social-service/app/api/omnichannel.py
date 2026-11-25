@@ -125,6 +125,7 @@ async def provider_status(user=Depends(current_user)):
             "provider": provider,
             "platforms": cfg["platforms"],
             "configured": configured,
+            "executor_enabled": settings.omnichannel_executor_enabled,
             "mode": mode,
             "setup_status": setup_status,
             "required_credentials": cfg.get("credential_keys", []),
@@ -331,6 +332,14 @@ async def queue_action(body: ActionIn, user=Depends(action_user), s: AsyncSessio
     action = body.action.lower().strip()
     if platform not in PLATFORMS:
         raise HTTPException(400, f"unsupported platform: {platform}")
+    # Do not acknowledge work that has no active consumer. The executor is
+    # intentionally disabled until provider credentials and sandbox E2E tests
+    # pass; returning 202 here would leave approved messages/posts queued forever.
+    if not settings.omnichannel_executor_enabled:
+        raise HTTPException(
+            status_code=503,
+            detail="omnichannel action executor is disabled; no action was queued",
+        )
     tenant_id = user.get("tenant_id", "default")
     capability = (await s.execute(text(
         "SELECT availability FROM platform_capabilities WHERE platform=:platform AND action=:action"
