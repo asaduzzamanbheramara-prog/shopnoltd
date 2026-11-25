@@ -115,7 +115,8 @@ export default function Devices({ admin = false }) {
   }
 
   async function connectDevice(device) {
-    const popup = window.open('about:blank', '_blank', 'noopener,noreferrer')
+    const popup = window.open('about:blank', '_blank')
+    if (popup) popup.opener = null
     try {
       const result = await request('/api/connect/' + encodeURIComponent(device.id))
       if (!result.connect_url) throw new Error('Gateway did not return a connection URL.')
