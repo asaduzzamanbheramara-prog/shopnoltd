@@ -16,7 +16,7 @@ spec:
       labels:
         app.kubernetes.io/name: remote-device-gateway
       annotations:
-        checksum/gateway-source: f5b972c3892aa879c4351ec27b4081859cd90722
+        checksum/gateway-source: 86563850f76b01aaddb702469c1e71e49b7295db
     spec:
       automountServiceAccountToken: false
       imagePullSecrets:
