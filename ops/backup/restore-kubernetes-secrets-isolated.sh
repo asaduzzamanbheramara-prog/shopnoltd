@@ -30,7 +30,7 @@ PY
 while read -r n; do
   kubectl get ns "$n" >/dev/null 2>&1 || kubectl create ns "$n" >/dev/null
 done < "$RUNNER_TEMP/namespaces.txt"
-kubectl apply -f "$RUNNER_TEMP/secrets-import.json" >/dev/null
+kubectl create -f "$RUNNER_TEMP/secrets-import.json" >/dev/null
 python3 - "$RUNNER_TEMP/secrets-import.json" <<'PY'
 import json,subprocess,sys
 expected=json.load(open(sys.argv[1]))["items"]
