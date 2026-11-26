@@ -126,8 +126,13 @@ async def lifespan(app: FastAPI):
             if admin_office_user_id and admin_office_tenant_id:
                 await conn.execute(
                     text("""
-                        INSERT INTO referral_system_identities (alias, user_id, tenant_id, active)
-                        VALUES ('admin_office', :user_id, :tenant_id, 1)
+                        INSERT INTO referral_system_identities (
+                            alias, user_id, tenant_id, active, created_at, updated_at
+                        )
+                        VALUES (
+                            'admin_office', :user_id, :tenant_id, 1,
+                            CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+                        )
                         ON CONFLICT DO NOTHING
                     """),
                     {"user_id": admin_office_user_id, "tenant_id": admin_office_tenant_id},
