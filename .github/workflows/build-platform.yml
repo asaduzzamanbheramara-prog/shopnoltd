@@ -258,6 +258,7 @@ jobs:
             VITE_SOCIAL_LOGIN_GOOGLE=${{ matrix.service == 'web-portal' && 'true' || 'false' }}
             VITE_SOCIAL_LOGIN_FACEBOOK=${{ matrix.service == 'web-portal' && 'true' || 'false' }}
             VITE_SOCIAL_LOGIN_GITHUB=${{ matrix.service == 'web-portal' && 'true' || 'false' }}
+            VITE_SOCIAL_LOGIN_APPLE=false
           push: true
           tags: |
             ghcr.io/${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
