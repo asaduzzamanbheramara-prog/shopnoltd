@@ -130,8 +130,11 @@ The web portal exposes an authenticated platform-admin control at
   consent. Only the five named public placements are supported.
 - Login, registration, dashboard, admin, wallet, payment, checkout, billing,
   and account routes are always excluded.
-- Monetag stays disabled until its separate content host is reachable and the
-  publisher approval plus browser/CSP test is complete.
+- Monetag zone `12129960` is integrated on editorial article pages at
+  `content.shopnoltd.dpdns.org`. Monetag's publisher guidance permits an
+  approved root-domain zone code on its subdomains; Shopnoltd still requires
+  the exact content hostname in `MONETAG_APPROVED_HOSTS`, visitor consent,
+  enabled network/Blog policy, and successful browser/CSP verification.
 - ProfitOn is currently restricted to `shopnoltd.dpdns.org`. Smartlink zone
   `162185` remains an explicit sponsored link. Shuffle Box `162186` and Pops
   `162184` are not loaded until the exact vendor script and SPA teardown

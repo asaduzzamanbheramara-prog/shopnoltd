@@ -7,7 +7,7 @@ const NETWORKS = [
   ['adsense', 'Google AdSense'],
   ['adsterra', 'Adsterra'],
   ['profiton', 'ProfitOn'],
-  ['monetag', 'Monetag (manual test only)'],
+  ['monetag', 'Monetag (approved host only)'],
 ]
 const PLACEMENTS = [
   ['home', 'Home'],
@@ -172,8 +172,8 @@ export default function AdvertisingControl() {
         <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, padding: 14 }}>
           <h3 style={{ marginTop: 0 }}>Ad networks</h3>
           {NETWORKS.map(([key, label]) => <label key={key} style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '12px 0' }}>
-            <input type="checkbox" checked={draft.networks[key]} disabled={key === 'monetag' || (key === 'profiton' && selectedHost !== 'shopnoltd.dpdns.org')} onChange={e => toggle('networks', key, e.target.checked)} />
-            <span>{label}{key === 'monetag' ? ' — locked pending host test/approval' : key === 'profiton' && selectedHost !== 'shopnoltd.dpdns.org' ? ' — apex host only until vendor approval' : ''}</span>
+            <input type="checkbox" checked={draft.networks[key]} disabled={key === 'profiton' && selectedHost !== 'shopnoltd.dpdns.org'} onChange={e => toggle('networks', key, e.target.checked)} />
+            <span>{label}{key === 'monetag' ? ' — requires exact-host publisher approval and MONETAG_APPROVED_HOSTS allowlist' : key === 'profiton' && selectedHost !== 'shopnoltd.dpdns.org' ? ' — apex host only until vendor approval' : ''}</span>
           </label>)}
         </div>
         <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, padding: 14 }}>
@@ -185,7 +185,7 @@ export default function AdvertisingControl() {
         </div>
       </div>
       <p style={{ color: '#92400e', background: '#fffbeb', borderRadius: 8, padding: 12, lineHeight: 1.5 }}>
-        Login, registration, admin, dashboard, wallet, payment, checkout and account routes are always excluded in code. Consent is still required before optional ad scripts load. Monetag stays test-only until its content-host route and publisher approval are verified. ProfitOn is restricted to the apex host; its Smartlink 162185 is a user-click link. Shuffle Box 162186 and Pops 162184 remain off until the exact vendor code and SPA cleanup are verified. AdSense currently has a publisher loader but no explicit ad-unit slot ID in this repository.
+        Login, registration, admin, dashboard, wallet, payment, checkout and account routes are always excluded in code. Consent is still required before optional ad scripts load. Monetag can be enabled only for exact hostnames listed in the ad-service MONETAG_APPROVED_HOSTS deployment setting after publisher approval and the content-host browser test. ProfitOn is restricted to the apex host; its Smartlink 162185 is a user-click link. Shuffle Box 162186 and Pops 162184 remain off until the exact vendor code and SPA cleanup are verified. AdSense currently has a publisher loader but no explicit ad-unit slot ID in this repository.
       </p>
       <button type="button" disabled={saving || !selected} onClick={() => save()} style={button}>{saving ? 'Saving…' : 'Save advertising settings'}</button>
     </section>}

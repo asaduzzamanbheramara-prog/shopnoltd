@@ -147,35 +147,17 @@ export function AdsterraNativeBanner() {
 }
 
 export function AdsterraGlobalFormats() {
-  const consentAllowed = useAdvertisingConsent()
-  const policyAllowed = useExternalAdPolicy('adsterra')
-  const allowed = consentAllowed && policyAllowed
-  useEffect(() => {
-    if (!allowed) return undefined
-    // Google AdSense is loaded only after advertising consent. Do not enable Adsterra Popunder here:
-    // Google's publisher policies prohibit AdSense on sites that contain or trigger pop-unders.
-    // Keep the non-popunder Social Bar format; only add formats after policy compatibility is verified.
-    const scripts = [
-      { key: 'socialbar', src: 'https://bicea.org/14/6709e7550b64cb74dbb906dc2ebb08e0' },
-    ]
-    const added = []
-    for (const item of scripts) {
-      if (document.querySelector(`script[data-shopnoltd-adsterra-global="${item.key}"]`)) continue
-      const script = document.createElement('script')
-      script.src = item.src
-      script.async = true
-      script.setAttribute('data-cfasync', 'false')
-      script.dataset.shopnoltdAdsterraGlobal = item.key
-      document.body.appendChild(script)
-      added.push(script)
-    }
-    return () => {
-      added.forEach(script => script.remove())
-    }
-  }, [allowed])
+  // The publisher dashboard currently reports the website Social Bar unit as
+  // inactive. Do not load an older, unverified script URL. The Adsterra
+  // integration remains enabled for verified banner/native/click placements.
+  // Restore Social Bar here only after the owner activates unit 31843291 and
+  // supplies its current GET CODE snippet. Popunder remains excluded while
+  // AdSense is present unless combined-policy compatibility is confirmed.
   return null
 }
 
+// Adsterra dashboard confirms Smartlink_1 (31843363) is Active; use the owner-supplied URL.
+// Keep the placement gated by advertising consent and the exact-host ad policy.
 export function AdsterraSmartlink() {
   const consentAllowed = useAdvertisingConsent()
   const policyAllowed = useExternalAdPolicy('adsterra')
@@ -184,7 +166,7 @@ export function AdsterraSmartlink() {
   return <section aria-label="Sponsored link" style={{ ...shellStyle, maxWidth: 760, alignItems: 'flex-start', padding: 16 }}>
     <AdLabel />
     <p style={{ margin: 0, color: '#475569', lineHeight: 1.5 }}>Sponsored link. Opening it takes you to an external advertiser destination.</p>
-    <a href="https://arwf.org/4/e15a69f3ca91af71dfca281a544d18e9" target="_blank" rel="sponsored noopener noreferrer" style={{ display: 'inline-block', padding: '9px 14px', borderRadius: 8, background: '#0369a1', color: '#fff', fontWeight: 700, textDecoration: 'none' }}>Visit sponsored link ↗</a>
+    <a href="https://asiafilm.org/4/bd6b0eff0d812e506d7bb51d544a1f92" target="_blank" rel="sponsored noopener noreferrer" style={{ display: 'inline-block', padding: '9px 14px', borderRadius: 8, background: '#0369a1', color: '#fff', fontWeight: 700, textDecoration: 'none' }}>Visit sponsored link ↗</a>
   </section>
 }
 

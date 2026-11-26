@@ -10,6 +10,9 @@ class Settings(BaseSettings):
     keycloak_jwks_url: str = "https://auth.shopnoltd.dpdns.org/realms/shopnoltd/protocol/openid-connect/certs"
     payment_service_url: str = "http://payment-service.shopno-payments.svc.cluster.local:80"
     internal_api_key: str = ""
+    # Comma-separated exact hostnames approved in the Monetag publisher dashboard.
+    # Empty by default so Monetag cannot be activated accidentally.
+    monetag_approved_hosts: str = ""
 
 
 settings = Settings()
