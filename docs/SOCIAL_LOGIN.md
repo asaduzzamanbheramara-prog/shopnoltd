@@ -1,18 +1,17 @@
-# Social Login (Google, Facebook, GitHub)
+# Social Login (Google, Facebook, GitHub, Apple)
 
 ## Design decision
 
 Social login is added as **Keycloak Identity Providers**, not as new code in
 `oauth-service`. Every service in this platform already authenticates via
-Keycloak OIDC (`docs/SERVICE_TOPOLOGY.md`), so brokering Google/Facebook/GitHub
-through Keycloak means every service gets social login automatically, with
+Keycloak OIDC (`docs/SERVICE_TOPOLOGY.md`), so brokering Google/Facebook/GitHub through Keycloak and the optional Apple extension means every service gets social login automatically, with
 one integration point instead of duplicating OAuth flows.
 
 ## One-time setup
 
 1. Provision the runtime Kubernetes Secret `shopno-identity/keycloak-social-providers` using the interactive provisioning procedure documented in `docs/SECRETS.md`. Never commit the real values or put them in a ConfigMap, PR, issue, or shell script.
 
-2. The Keycloak GitOps sync hook reconciles Google, Facebook, and GitHub from that Secret. If the Secret is absent or a provider is incomplete, the sync hook leaves social providers unchanged and does not break the Keycloak deployment.
+2. The Keycloak GitOps sync hook reconciles Google, Facebook, and GitHub from that Secret. Apple is an optional community-extension integration; follow `docs/SIGN_IN_WITH_APPLE.md` before adding Apple credentials. If the Secret is absent or a provider is incomplete, the sync hook leaves social providers unchanged and does not break the Keycloak deployment.
 
 3. In each provider's developer console, set the redirect/callback URI:
    - Google Cloud Console -> Credentials -> OAuth client -> Authorized redirect URIs
@@ -45,3 +44,8 @@ The Keycloak client-sync hook is the durable source-controlled integration. It r
   etc.) directly into bash** -- bash will try to execute the prose as
   commands. Copy only the fenced code blocks, one command at a time, not the
   surrounding explanation.
+
+
+## Apple Sign in
+
+Apple is not a built-in Keycloak provider in the pinned distribution. Do not enable an Apple button until the compatible extension, Apple Developer Services ID, Team ID, Key ID, private key, and callback have all been configured and verified. See `docs/SIGN_IN_WITH_APPLE.md`.
