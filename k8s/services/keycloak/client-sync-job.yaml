@@ -98,6 +98,30 @@ spec:
                   name: keycloak-social-providers
                   key: GITHUB_CLIENT_SECRET
                   optional: true
+            - name: APPLE_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-social-providers
+                  key: APPLE_CLIENT_ID
+                  optional: true
+            - name: APPLE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-social-providers
+                  key: APPLE_CLIENT_SECRET
+                  optional: true
+            - name: APPLE_TEAM_ID
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-social-providers
+                  key: APPLE_TEAM_ID
+                  optional: true
+            - name: APPLE_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-social-providers
+                  key: APPLE_KEY_ID
+                  optional: true
           volumeMounts:
             - name: script
               mountPath: /opt/sync
