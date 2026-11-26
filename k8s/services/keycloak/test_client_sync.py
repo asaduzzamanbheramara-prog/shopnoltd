@@ -19,6 +19,10 @@ class LoginBrokerFlowTests(TestCase):
             "FACEBOOK_LOGIN_APP_SECRET": "facebook-secret",
             "GITHUB_CLIENT_ID": "github-id",
             "GITHUB_CLIENT_SECRET": "github-secret",
+            "APPLE_CLIENT_ID": "shopnoltd.apple.web",
+            "APPLE_CLIENT_SECRET": "-----BEGIN PRIVATE KEY-----\\nredacted-test-key\\n-----END PRIVATE KEY-----",
+            "APPLE_TEAM_ID": "TEAM123456",
+            "APPLE_KEY_ID": "KEY1234567",
         }
         with patch.dict("os.environ", environment, clear=False):
             with patch.object(client_sync, "ensure_login_first_broker_flow") as ensure_flow:
@@ -35,6 +39,8 @@ class LoginBrokerFlowTests(TestCase):
                 ("facebook-signup", "first broker login"),
                 ("github", client_sync.LOGIN_FIRST_BROKER_FLOW),
                 ("github-signup", "first broker login"),
+                ("apple", client_sync.LOGIN_FIRST_BROKER_FLOW),
+                ("apple-signup", "first broker login"),
             ],
         )
 
@@ -224,6 +230,51 @@ class MailApiSwaggerClientTests(TestCase):
         self.assertEqual(created["config"]["included.custom.audience"], "mail-service")
         self.assertEqual(created["config"]["access.token.claim"], "true")
         self.assertEqual(created["config"]["id.token.claim"], "false")
+
+
+    def test_apple_provider_requires_all_apple_credentials_and_uses_extension_fields(self):
+        provider = client_sync.SOCIAL_PROVIDERS["apple"]
+        environment = {
+            "APPLE_CLIENT_ID": "shopnoltd.apple.web",
+            "APPLE_CLIENT_SECRET": "-----BEGIN PRIVATE KEY-----\\nredacted-test-key\\n-----END PRIVATE KEY-----",
+            "APPLE_TEAM_ID": "TEAM123456",
+            "APPLE_KEY_ID": "KEY1234567",
+        }
+        requests = []
+
+        def fake_request(method, path, token=None, body=None, form=False):
+            requests.append((method, path, body))
+            if method == "GET":
+                return 404, None
+            if method == "POST":
+                return 201, None
+            self.fail("Unexpected Keycloak API call: {} {}".format(method, path))
+
+        with patch.dict("os.environ", environment, clear=True):
+            with patch.object(client_sync, "request", side_effect=fake_request):
+                self.assertTrue(client_sync.sync_social_provider("test-token", "apple", provider))
+
+        created = next(body for method, path, body in requests if method == "POST")
+        self.assertEqual(created["providerId"], "apple")
+        self.assertEqual(created["config"]["clientId"], "shopnoltd.apple.web")
+        self.assertIn("BEGIN PRIVATE KEY", created["config"]["clientSecret"])
+        self.assertEqual(created["config"]["teamId"], "TEAM123456")
+        self.assertEqual(created["config"]["keyId"], "KEY1234567")
+        self.assertEqual(created["config"]["defaultScope"], "name email")
+
+    def test_apple_provider_is_not_reconciled_when_team_or_key_id_is_missing(self):
+        provider = client_sync.SOCIAL_PROVIDERS["apple"]
+        environment = {
+            "APPLE_CLIENT_ID": "shopnoltd.apple.web",
+            "APPLE_CLIENT_SECRET": "test-private-key",
+            "APPLE_TEAM_ID": "TEAM123456",
+        }
+        with patch.dict("os.environ", environment, clear=True):
+            with patch.object(client_sync, "ensure_login_first_broker_flow") as ensure_flow:
+                with patch.object(client_sync, "sync_social_provider") as sync_provider:
+                    client_sync.sync_social_providers("test-token")
+        ensure_flow.assert_not_called()
+        sync_provider.assert_not_called()
 
 
 if __name__ == "__main__":
