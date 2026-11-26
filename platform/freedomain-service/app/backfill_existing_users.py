@@ -39,7 +39,21 @@ async def admin_token(client: httpx.AsyncClient) -> str:
             if not token:
                 raise RuntimeError("Keycloak admin token was not returned")
             return token
-        except (httpx.HTTPError, RuntimeError) as exc:
+        except httpx.HTTPStatusError as exc:
+            # Invalid credentials and other client-side rejections will not
+            # become valid by retrying. Only retry throttling/timeouts and
+            # upstream server errors.
+            status = exc.response.status_code
+            if 400 <= status < 500 and status not in {408, 425, 429}:
+                raise RuntimeError(
+                    f"Keycloak rejected the admin token request (HTTP {status}); "
+                    "verify the configured master-realm admin credential"
+                ) from None
+            last_error = exc
+            if attempt == 8:
+                break
+            await asyncio.sleep(min(5 * attempt, 30))
+        except (httpx.TransportError, RuntimeError) as exc:
             last_error = exc
             if attempt == 8:
                 break
