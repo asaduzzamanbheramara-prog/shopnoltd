@@ -195,6 +195,67 @@ jobs:
             --dry-run=client -o yaml | kubectl apply -f -
           echo 'Permanent Keycloak master-realm admin credential provisioned in identity and free-domain namespaces without printing its value.'
 
+      - name: Verify Keycloak master-realm credential before dependent hooks
+        shell: bash
+        env:
+          KEYCLOAK_ADMIN_PASSWORD: ${{ secrets.KEYCLOAK_ADMIN_PASSWORD }}
+        run: |
+          set -euo pipefail
+          test -n "${KEYCLOAK_ADMIN_PASSWORD:-}"
+          echo "::add-mask::$KEYCLOAK_ADMIN_PASSWORD"
+          port_forward_log="${RUNNER_TEMP:-/tmp}/keycloak-gitops-preflight-port-forward.log"
+          kubectl --request-timeout=20s -n shopno-identity port-forward --address 127.0.0.1 svc/keycloak 18081:80 >"$port_forward_log" 2>&1 &
+          port_forward_pid=$!
+          trap 'kill "$port_forward_pid" 2>/dev/null || true; wait "$port_forward_pid" 2>/dev/null || true' EXIT
+          ready=0
+          for attempt in {1..30}; do
+            if curl --fail --silent --max-time 2 http://127.0.0.1:18081/realms/master/.well-known/openid-configuration >/dev/null; then
+              ready=1
+              break
+            fi
+            sleep 1
+          done
+          if [ "$ready" -ne 1 ]; then
+            echo "::error::Keycloak master realm did not become reachable; refusing to start dependent GitOps hooks."
+            exit 1
+          fi
+          export KEYCLOAK_ADMIN_PASSWORD
+          python3 - <<'PY'
+          import json
+          import os
+          import urllib.error
+          import urllib.parse
+          import urllib.request
+
+          form = urllib.parse.urlencode({
+              "grant_type": "password",
+              "client_id": "admin-cli",
+              "username": "shopnoltd-admin",
+              "password": os.environ["KEYCLOAK_ADMIN_PASSWORD"],
+          }).encode()
+          request = urllib.request.Request(
+              "http://127.0.0.1:18081/realms/master/protocol/openid-connect/token",
+              data=form,
+              headers={"Content-Type": "application/x-www-form-urlencoded"},
+          )
+          try:
+              with urllib.request.urlopen(request, timeout=15) as response:
+                  payload = json.loads(response.read())
+          except urllib.error.HTTPError as exc:
+              raise SystemExit(
+                  f"::error::Keycloak master-realm admin credential preflight failed (HTTP {exc.code}); no Argo sync or backfill should proceed. Update Actions secret KEYCLOAK_ADMIN_PASSWORD."
+              ) from None
+          except Exception as exc:
+              raise SystemExit(
+                  f"::error::Keycloak master-realm admin credential preflight could not complete ({type(exc).__name__}); no Argo sync or backfill should proceed."
+              ) from None
+          if not isinstance(payload, dict) or not payload.get("access_token"):
+              raise SystemExit(
+                  "::error::Keycloak did not return an admin access token; refusing dependent GitOps hooks."
+              )
+          print("[PASS] shopnoltd-admin authenticated to the Keycloak master realm. Credential value was not printed.")
+          PY
+
       - name: Provision ad-service PostgreSQL secret
         shell: bash
         run: |
