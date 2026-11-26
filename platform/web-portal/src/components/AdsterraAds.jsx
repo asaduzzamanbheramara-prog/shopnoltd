@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useAdvertisingConsent } from '../lib/useAdvertisingConsent'
 import { useExternalAdPolicy } from '../lib/useExternalAdPolicy'
 
@@ -15,12 +15,12 @@ const NATIVE = {
   scriptUrl: 'https://bicea.org/21/38ffa3db02659ab0b305ed8c29df5ea3',
   containerId: 'container-38ffa3db02659ab0b305ed8c29df5ea3',
 }
+const SOCIAL_BAR = 'https://bicea.org/14/6709e7550b64cb74dbb906dc2ebb08e0'
+const SMARTLINK = 'https://arwf.org/4/e15a69f3ca91af71dfca281a544d18e9'
 
-// Adsterra's standard banner snippets share window.atOptions. Serialize loading so
-// a later zone cannot overwrite another zone's settings before its script executes.
 function enqueueZoneLoad(job) {
   if (!window.__shopnoltdAdsterraQueue) {
-    window.__shopnoltdAdsterraQueue = { jobs: [], running: false }
+    window.__shopnoltdAdsterraQueue = { jobs: [], running: false, current: null }
   }
   const queue = window.__shopnoltdAdsterraQueue
   job.cancelled = false
@@ -33,7 +33,6 @@ function enqueueZoneLoad(job) {
     if (window.atOptions?.key === current.zone.key) delete window.atOptions
     runNext()
   }
-
   const runNext = () => {
     if (queue.running) return
     const next = queue.jobs.shift()
@@ -41,13 +40,7 @@ function enqueueZoneLoad(job) {
     if (next.cancelled || !next.container.isConnected) return runNext()
     queue.running = true
     queue.current = next
-    window.atOptions = {
-      key: next.zone.key,
-      format: 'iframe',
-      height: next.zone.height,
-      width: next.zone.width,
-      params: {},
-    }
+    window.atOptions = { key: next.zone.key, format: 'iframe', height: next.zone.height, width: next.zone.width, params: {} }
     const script = document.createElement('script')
     next.script = script
     script.src = next.zone.scriptUrl
@@ -58,8 +51,8 @@ function enqueueZoneLoad(job) {
     script.onerror = () => finish(next)
     next.container.appendChild(script)
   }
-
   runNext()
+
   return () => {
     job.cancelled = true
     const index = queue.jobs.indexOf(job)
@@ -75,20 +68,9 @@ function enqueueZoneLoad(job) {
 }
 
 const shellStyle = {
-  boxSizing: 'border-box',
-  margin: '24px auto',
-  padding: '4px',
-  width: '100%',
-  maxWidth: '100%',
-  minWidth: 0,
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  gap: 8,
-  overflow: 'hidden',
-  border: '1px solid #e2e8f0',
-  borderRadius: 12,
-  background: '#fff',
+  boxSizing: 'border-box', margin: '24px auto', padding: 10, width: '100%', maxWidth: '100%', minWidth: 0,
+  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, overflow: 'hidden',
+  border: '1px solid #e2e8f0', borderRadius: 12, background: '#fff',
 }
 
 function AdLabel() {
@@ -105,12 +87,11 @@ export function AdsterraBannerZone({ name, maxWidth = 760 }) {
   useEffect(() => {
     const container = containerRef.current
     if (!allowed || !container || !zone) return undefined
-    const job = { name, zone, container }
-    return enqueueZoneLoad(job)
+    return enqueueZoneLoad({ name, zone, container })
   }, [allowed, name, zone])
 
   if (!allowed || !zone) return null
-  return <section aria-label={`Advertisement ${name}`} style={{ ...shellStyle, width: '100%', maxWidth }}>
+  return <section aria-label={`Advertisement ${name}`} style={{ ...shellStyle, maxWidth }}>
     <AdLabel />
     <div ref={containerRef} style={{ width: zone.width, maxWidth: '100%', minHeight: zone.height, overflow: 'hidden', display: 'flex', justifyContent: 'center' }} />
   </section>
@@ -121,6 +102,7 @@ export function AdsterraNativeBanner() {
   const policyAllowed = useExternalAdPolicy('adsterra')
   const allowed = consentAllowed && policyAllowed
   const containerRef = useRef(null)
+
   useEffect(() => {
     const container = containerRef.current
     if (!allowed || !container || container.querySelector('script[data-shopnoltd-native]')) return undefined
@@ -134,11 +116,9 @@ export function AdsterraNativeBanner() {
     script.setAttribute('data-cfasync', 'false')
     script.dataset.shopnoltdNative = 'true'
     container.appendChild(script)
-    return () => {
-      script.remove()
-      host.remove()
-    }
+    return () => { script.remove(); host.remove() }
   }, [allowed])
+
   if (!allowed) return null
   return <section aria-label="Native advertisement" style={{ ...shellStyle, maxWidth: 760, alignItems: 'stretch' }}>
     <AdLabel />
@@ -150,51 +130,37 @@ export function AdsterraGlobalFormats() {
   const consentAllowed = useAdvertisingConsent()
   const policyAllowed = useExternalAdPolicy('adsterra')
   const allowed = consentAllowed && policyAllowed
+
   useEffect(() => {
-    if (!allowed) return undefined
-    // Google AdSense is loaded only after advertising consent. Do not enable Adsterra Popunder here:
-    // Google's publisher policies prohibit AdSense on sites that contain or trigger pop-unders.
-    // Keep the non-popunder Social Bar format; only add formats after policy compatibility is verified.
-    const scripts = [
-      { key: 'socialbar', src: 'https://bicea.org/14/6709e7550b64cb74dbb906dc2ebb08e0' },
-    ]
-    const added = []
-    for (const item of scripts) {
-      if (document.querySelector(`script[data-shopnoltd-adsterra-global="${item.key}"]`)) continue
-      const script = document.createElement('script')
-      script.src = item.src
-      script.async = true
-      script.setAttribute('data-cfasync', 'false')
-      script.dataset.shopnoltdAdsterraGlobal = item.key
-      document.body.appendChild(script)
-      added.push(script)
-    }
-    return () => {
-      added.forEach(script => script.remove())
-    }
+    if (!allowed || document.querySelector('script[data-shopnoltd-adsterra-global="socialbar"]')) return undefined
+    const script = document.createElement('script')
+    script.src = SOCIAL_BAR
+    script.async = true
+    script.setAttribute('data-cfasync', 'false')
+    script.dataset.shopnoltdAdsterraGlobal = 'socialbar'
+    document.body.appendChild(script)
+    // Provider listeners may persist after load; don't claim DOM removal disables them.
+    return () => {}
   }, [allowed])
+
   return null
 }
 
 export function AdsterraSmartlink() {
   const consentAllowed = useAdvertisingConsent()
   const policyAllowed = useExternalAdPolicy('adsterra')
-  const allowed = consentAllowed && policyAllowed
-  if (!allowed) return null
+  if (!consentAllowed || !policyAllowed) return null
   return <section aria-label="Sponsored link" style={{ ...shellStyle, maxWidth: 760, alignItems: 'flex-start', padding: 16 }}>
     <AdLabel />
     <p style={{ margin: 0, color: '#475569', lineHeight: 1.5 }}>Sponsored link. Opening it takes you to an external advertiser destination.</p>
-    <a href="https://arwf.org/4/e15a69f3ca91af71dfca281a544d18e9" target="_blank" rel="sponsored noopener noreferrer" style={{ display: 'inline-block', padding: '9px 14px', borderRadius: 8, background: '#0369a1', color: '#fff', fontWeight: 700, textDecoration: 'none' }}>Visit sponsored link ↗</a>
+    <a href={SMARTLINK} target="_blank" rel="sponsored noopener noreferrer" style={{ display: 'inline-block', padding: '9px 14px', borderRadius: 8, background: '#0369a1', color: '#fff', fontWeight: 700, textDecoration: 'none' }}>Visit sponsored link ↗</a>
   </section>
 }
 
-
 export function AdsterraResponsiveBanner() {
   const [zoneName, setZoneName] = useState('320x50')
-  const [tooNarrow, setTooNarrow] = useState(false)
   useEffect(() => {
     const choose = () => {
-      setTooNarrow(window.matchMedia('(max-width: 359px)').matches)
       if (window.matchMedia('(min-width: 1000px)').matches) setZoneName('728x90')
       else if (window.matchMedia('(min-width: 560px)').matches) setZoneName('468x60')
       else setZoneName('320x50')
@@ -203,17 +169,10 @@ export function AdsterraResponsiveBanner() {
     window.addEventListener('resize', choose)
     return () => window.removeEventListener('resize', choose)
   }, [])
-  // A fixed 320px iframe cannot fit in the narrowest 320px viewport once page gutters are applied.
-  // Prefer a clean layout over rendering a clipped banner on those screens.
-  if (tooNarrow) return null
   return <AdsterraBannerZone name={zoneName} maxWidth={760} />
 }
 
 export function AdsterraTallBannerPair() {
-  const consentAllowed = useAdvertisingConsent()
-  const policyAllowed = useExternalAdPolicy('adsterra')
-  const allowed = consentAllowed && policyAllowed
-  if (!allowed) return null
   return <section aria-label="Additional advertisements" style={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-start', gap: 24, flexWrap: 'wrap', margin: '32px auto', maxWidth: 520 }}>
     <AdsterraBannerZone name="160x300" maxWidth={190} />
     <AdsterraBannerZone name="160x600" maxWidth={190} />
