@@ -116,6 +116,16 @@ SOCIAL_PROVIDERS = {
         # verified flag, so require Shopnoltd-side verification.
         "trustEmail": False,
     },
+    "apple": {
+        "providerId": "apple",
+        "clientIdEnv": "APPLE_CLIENT_ID",  # Apple Services ID
+        "clientSecretEnv": "APPLE_CLIENT_SECRET",  # Raw .p8 private-key content for the Keycloak extension
+        "scope": "name email",
+        "trustEmail": True,
+        "requiredEnv": ("APPLE_TEAM_ID", "APPLE_KEY_ID"),
+        "teamIdEnv": "APPLE_TEAM_ID",
+        "keyIdEnv": "APPLE_KEY_ID",
+    },
 }
 
 
@@ -413,6 +423,7 @@ def sync_social_provider(token, alias, provider, first_broker_flow_alias="first 
             "clientId": client_id,
             "clientSecret": client_secret,
             "defaultScope": provider["scope"],
+            **({"teamId": os.environ[provider["teamIdEnv"]].strip(), "keyId": os.environ[provider["keyIdEnv"]].strip()} if provider.get("teamIdEnv") and provider.get("keyIdEnv") else {}),
         },
     }
     code, _ = request("GET", f"/admin/realms/{REALM}/identity-provider/instances/{alias}", token=token)
@@ -435,6 +446,7 @@ def sync_social_providers(token):
         for alias, provider in SOCIAL_PROVIDERS.items()
         if os.environ.get(provider["clientIdEnv"], "").strip()
         and os.environ.get(provider["clientSecretEnv"], "").strip()
+        and all(os.environ.get(name, "").strip() for name in provider.get("requiredEnv", ()))
     ]
     if not configured:
         print("[INFO] no social provider credentials configured; leaving Keycloak social providers unchanged")
