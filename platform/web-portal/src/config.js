@@ -16,4 +16,6 @@ export const SOCIAL_LOGIN_PROVIDERS = {
   google: env.VITE_SOCIAL_LOGIN_GOOGLE === 'true',
   facebook: env.VITE_SOCIAL_LOGIN_FACEBOOK === 'true',
   github: env.VITE_SOCIAL_LOGIN_GITHUB === 'true',
+  // Keep Apple hidden until the Keycloak Apple extension and Apple credentials are installed.
+  apple: env.VITE_SOCIAL_LOGIN_APPLE === 'true',
 }
