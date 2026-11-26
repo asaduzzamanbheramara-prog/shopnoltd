@@ -1368,6 +1368,14 @@ jobs:
             diagnostic "POSTGRES POD DETAILS $pod" -n shopno-data describe "$pod"
             diagnostic "POSTGRES POD LOGS $pod" -n shopno-data logs "$pod" --all-containers=true --tail=200
           done
+          diagnostic 'FREEDOMAIN BACKFILL JOB' -n "$PLATFORM_NAMESPACE" get job freedomain-user-backfill -o yaml
+          diagnostic 'FREEDOMAIN BACKFILL PODS' -n "$PLATFORM_NAMESPACE" get pods -l job-name=freedomain-user-backfill -o wide
+          diagnostic 'FREEDOMAIN BACKFILL EVENTS' -n "$PLATFORM_NAMESPACE" get events --sort-by=.lastTimestamp
+          for pod in $(kubectl --request-timeout=20s -n "$PLATFORM_NAMESPACE" get pods -l job-name=freedomain-user-backfill -o name 2>/dev/null); do
+            diagnostic "FREEDOMAIN BACKFILL POD DETAILS $pod" -n "$PLATFORM_NAMESPACE" describe "$pod"
+            diagnostic "FREEDOMAIN BACKFILL POD LOGS $pod" -n "$PLATFORM_NAMESPACE" logs "$pod" --all-containers=true --tail=300
+            diagnostic "FREEDOMAIN BACKFILL PREVIOUS LOGS $pod" -n "$PLATFORM_NAMESPACE" logs "$pod" --all-containers=true --previous --tail=200
+          done
           diagnostic 'PLATFORM PODS' -n "$PLATFORM_NAMESPACE" get pods -o wide
           diagnostic 'CLOUDFLARED PODS' -n "$CLOUDFLARED_NAMESPACE" get pods -o wide
 
