@@ -13,6 +13,7 @@ resources:
 - networkpolicy.yaml
 - poddisruptionbudget.yaml
 - client-sync-job.yaml
+- social-provider-sync-job.yaml
 
 configMapGenerator:
 - name: keycloak-realm
@@ -23,6 +24,11 @@ configMapGenerator:
 - name: keycloak-client-sync-script
   files:
   - client-sync.py
+- name: keycloak-social-provider-sync-script
+  options:
+    disableNameSuffixHash: true
+  files:
+  - social-provider-sync.py
 labels:
 - includeSelectors: true
   pairs:
