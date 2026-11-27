@@ -90,3 +90,30 @@ A single portal does not mean one shared VM. Each customer session must be isola
 ## Safety boundary
 
 The `/cloud` UI and this document are an entry point and implementation specification only. They do not represent free quotas, paid OS Cloud checkout, provider settlement, licensing approval, provisioned Windows/Linux/Mac hosts, additional Android versions, active sessions or production deployment.
+
+
+## Verified integration boundary (repository audit)
+
+The current payment implementation must not be mistaken for a Cloud order/entitlement system:
+
+- payment-service has wallet, direct-payment, provider-webhook and transaction flows. Direct-number TxID submissions are evidence; the manual verification endpoint is an Admin-reviewed wallet-credit flow, not an OS Cloud product grant.
+- Existing provider webhooks process payment-service transactions. They are not yet bound to a server-priced Cloud SKU/order, a Cloud entitlement transition, or a provisioning request.
+- The repository's separate secure-entitlement contract is explicitly design-only. Do not treat its illustrative GET /api/v1/me/entitlements response as a deployed API.
+- No Cloud-specific product catalogue, paid order table, entitlement table, provider procurement/invoice ledger, or fail-closed provisioning authorization endpoint is connected to the Cloud UI.
+- Android Cloud currently authenticates the account and enforces its configured session capacity/TTL. It does not consult a paid Cloud entitlement. Keep its existing access policy separate; do not silently reclassify it as a paid service.
+
+### Required Cloud order state machine
+
+ draft → awaiting_customer_payment → payment_verified → awaiting_provider_approval → provider_funded → provisionable → provisioning → active
+
+Terminal/exception states must include payment_failed, payment_mismatch, provider_rejected, licensing_blocked, capacity_unavailable, provisioning_failed, cancelled, refunded, and revoked. Only a server-side transition to provisionable may authorize a provider adapter to create a session. Browser redirects and client-supplied statuses never advance this state machine.
+
+### Minimum server-owned records
+
+- Cloud SKU/price version: OS, image/version, plan, currency, amount, billing period, resource limits, retention and licensing class.
+- Customer order: authenticated subject, tenant, immutable SKU/price snapshot, unique order/idempotency keys, verified payment transaction/provider event and lifecycle timestamps.
+- Entitlement: subject, tenant, SKU, validity interval, status, concurrency/duration/usage quotas, source order and revocation reason.
+- Provider procurement/settlement: provider, OS/licensing scope, invoice/reference, amount/currency, period, evidence reference, Admin approver and append-only audit events. Never store provider credentials or secrets in this ledger.
+- Provisioning operation: order/entitlement reference, selected provider/host, idempotency key, capacity/licensing check result, session reference and cleanup status.
+
+All reads/writes must enforce tenant ownership and role checks. Webhook processing, entitlement grants, provider approval and provisioning must be idempotent and auditable. If payment, entitlement, licensing, provider approval, capacity or the authorization service is unavailable, paid provisioning must fail closed.
