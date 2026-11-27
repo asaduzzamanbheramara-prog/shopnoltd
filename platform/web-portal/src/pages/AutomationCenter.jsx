@@ -71,7 +71,7 @@ const modules = [
   { title: 'Email & Communications', detail: 'Mailbox and supported messaging integrations.', to: '/connections', icon: Mail },
   { title: 'Payments & Orders', detail: 'Wallet, transactions and service checkout entry points.', to: '/wallet', icon: Activity },
   { title: 'OS, Software & USB', detail: 'Downloads and supported installation/recovery resources.', to: '/downloads', icon: HardDrive },
-  { title: 'Android Cloud', detail: 'Android cloud workspace; availability depends on its service health.', to: '/android-cloud', icon: Smartphone },
+  { title: 'Android Cloud', detail: 'Check the current Android Cloud service listing and availability.', to: '/services', icon: Smartphone },
   { title: 'Cloud & Developer Tools', detail: 'Hosting, source control, CI/CD and infrastructure connectors.', to: '/platforms', icon: Cloud },
   { title: 'Workflow Integrations', detail: 'CRM, support, productivity, analytics, logistics and learning providers.', to: '/platforms', icon: Workflow },
 ]
