@@ -24,6 +24,18 @@ Shopnoltd is also intended to be a universal online software discovery, installa
 
 The existing foundation and constraints are documented in `docs/universal-software-os-center/README.md`, `device-installation-support-matrix.md` and `bootable-usb-recovery.md`. Catalogue, planner and documentation work must not be described as a completed USB writer, verified universal installer, or successful physical-device recovery.
 
+## Universal OS & Software Center connection
+
+The Cloud portal is one part of the broader Shopnoltd device platform. Its `/cloud` page links directly to the existing `/software-os-center.html` catalogue/service-request experience and `/offline-recovery-guide.html` guide. Keep these journeys distinct:
+
+- **Cloud Workspace:** remote browser sessions on provider hosts, subject to OS licensing, account, capacity and entitlement gates.
+- **Software & OS Center:** official-source discovery, compatibility information, service requests and vendor-specific installation/recovery guidance for supported device classes.
+- **Pendrive workflow:** verified OS/recovery image plus compatible media-writing tool on a separate working computer. The current web UI does not write physical disks; a future writer must be a signed local helper with explicit target-drive selection and destructive confirmation.
+- **Online software setup:** a catalogue link or browser guide is not remote installation. Actual local installation needs a supported OS/package manager or separately reviewed signed helper with least privilege and user consent.
+- **Device support:** Windows/Linux PCs and compatible Macs may use bootable installers; iPhone/iPad and most Android phones, TVs, routers and embedded devices require model-specific vendor recovery rather than a generic PC boot USB.
+
+Do not advertise a universal one-click installer, automatic physical-device repair, or USB writing until the relevant helper, exact-device compatibility tests, image verification and recovery safeguards are shipped.
+
 ## Current implementation and truthful availability
 
 - Portal: `/cloud`.
