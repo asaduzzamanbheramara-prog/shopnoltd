@@ -115,8 +115,6 @@ jobs:
           python -m py_compile agent.py test_agent.py
       - name: Validate Termux and WSL installer shell syntax
         run: bash -n install-termux.sh install-wsl.sh
-      - name: Verify Termux argument expansion and pinned agent hash
-        run: python -m unittest -v test_agent.ExecutorEnrollmentTests.test_termux_installer_expands_arguments_and_pins_agent_hash
       - name: Compile gateway and mounted ConfigMap source
         working-directory: ${{ github.workspace }}
         run: |

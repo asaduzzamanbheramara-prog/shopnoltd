@@ -39,7 +39,7 @@ if ($LASTEXITCODE -ne 0) { throw 'Could not restrict the Shopnoltd agent directo
 $agentPath = Join-Path $root 'agent.py'
 $configPath = Join-Path $root 'executor.json'
 $agentUrl = 'https://raw.githubusercontent.com/asaduzzamanbheramara-prog/shopnoltd/main/platform/remote-device/executor/agent.py'
-$expectedAgentHash = 'c821f33ce4d9650d042b2ee091e64edf02283c161013fc337fa5bc0294825608'
+$expectedAgentHash = '28b01956c9360f7efd642a9a87740240514c4a5c5ed11ffd16e9e69ae626171e'
 Invoke-WebRequest -UseBasicParsing -Uri $agentUrl -OutFile $agentPath
 $actualAgentHash = (Get-FileHash -Path $agentPath -Algorithm SHA256).Hash.ToLowerInvariant()
 if ($actualAgentHash -ne $expectedAgentHash) {

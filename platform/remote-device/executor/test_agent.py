@@ -35,7 +35,8 @@ class ExecutorEnrollmentTests(unittest.TestCase):
     def test_termux_installer_expands_arguments_and_pins_agent_hash(self):
         installer = Path(__file__).with_name("install-termux.sh").read_text(encoding="utf-8")
         windows_installer = Path(__file__).with_name("install-windows.ps1").read_text(encoding="utf-8")
-        expected_hash = agent.hashlib.sha256(Path(__file__).with_name("agent.py").read_bytes()).hexdigest()
+        agent_source = Path(__file__).with_name("agent.py").read_text(encoding="utf-8").replace("\r\n", "\n").encode("utf-8")
+        expected_hash = agent.hashlib.sha256(agent_source).hexdigest()
         self.assertIn('DEVICE_ID="${1:-}"', installer)
         self.assertIn('GATEWAY_URL="${2:-https://devices.shopnoltd.dpdns.org}"', installer)
         self.assertIn('if [[ -z "${PREFIX:-}"', installer)
