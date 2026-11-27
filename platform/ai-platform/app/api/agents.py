@@ -21,10 +21,19 @@ async def current_user(creds: HTTPAuthorizationCredentials = Depends(bearer)):
     return await verify_token(creds.credentials)
 
 
+def _tenant_id(user: dict) -> str:
+    """Use the explicit tenant claim, or isolate users when no tenant is present."""
+    tenant_id = user.get("tenant_id")
+    subject = user.get("sub")
+    if not tenant_id and not subject:
+        raise HTTPException(403, "authenticated identity has no tenant or subject")
+    return str(tenant_id or f"user:{subject}")
+
+
 @router.post("", status_code=201)
 async def create(body: AgentIn, user=Depends(current_user), s: AsyncSession = Depends(db)):
     a = Agent(
-        tenant_id=user.get("tenant_id", "default"),
+        tenant_id=_tenant_id(user),
         name=body.name,
         system_prompt=body.system_prompt,
         model=body.model,
@@ -36,7 +45,7 @@ async def create(body: AgentIn, user=Depends(current_user), s: AsyncSession = De
 
 @router.get("")
 async def list_(user=Depends(current_user), s: AsyncSession = Depends(db)):
-    res = await s.execute(select(Agent).where(Agent.tenant_id == user.get("tenant_id", "default")))
+    res = await s.execute(select(Agent).where(Agent.tenant_id == _tenant_id(user)))
     return [{"id": a.id, "name": a.name, "model": a.model} for a in res.scalars().all()]
 
 
@@ -44,7 +53,15 @@ async def list_(user=Depends(current_user), s: AsyncSession = Depends(db)):
 async def chat(
     agent_id: str, message: str, user=Depends(current_user), s: AsyncSession = Depends(db)
 ):
-    a = (await s.execute(select(Agent).where(Agent.id == agent_id))).scalar_one_or_none()
+    # Scope lookup to caller's tenant; do not disclose foreign-tenant agent IDs.
+    a = (
+        await s.execute(
+            select(Agent).where(
+                Agent.id == agent_id,
+                Agent.tenant_id == _tenant_id(user),
+            )
+        )
+    ).scalar_one_or_none()
     if not a:
         raise HTTPException(404, "agent not found")
     s.add(Conversation(agent_id=a.id, user_id=user["sub"], role="user", content=message))
