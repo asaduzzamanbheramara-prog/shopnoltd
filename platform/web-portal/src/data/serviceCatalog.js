@@ -22,7 +22,7 @@ export const SERVICES = [
   SERVICE('🤖', 'AI Workspace', 'Authenticated Shopnoltd AI chat with active-model routing.', '/ai', 'AI'),
   SERVICE('⬇️', 'Downloads', 'Official Shopnoltd installers and native applications for Windows, Linux, macOS and Android.', '/downloads', 'Downloads'),
   SERVICE('🖥️', 'Software & OS Services Center', 'Request operating-system installation, recovery, software and driver setup, bootable USB preparation, technical troubleshooting and business IT maintenance quotes.', '/software-os-center.html', 'Software & OS'),
-  SERVICE('☁️', 'Cloud Workspace', 'Unified entry point for Android Cloud and the planned, licensing-gated Mac Cloud subscription service.', '/cloud', 'Cloud Devices'),
+  SERVICE('☁️', 'Cloud Workspace', 'Unified browser entry point for Android, Windows, Linux and licensing-gated macOS cloud workspaces.', '/cloud', 'Cloud Devices'),
   SERVICE('📱', 'Android Cloud', 'Browser-accessible Android Cloud workspace integrated directly into the main Shopnoltd domain.', '/android-cloud', 'Cloud Devices'),
   SERVICE('💻', 'Code Server', 'Browser-based development environment in the isolated Shopnoltd app workspace.', '/app?panel=code', 'Developer'),
   SERVICE('🔗', 'API', 'Platform APIs for applications, services, automation and integrations.', 'https://api.shopnoltd.dpdns.org/openapi.json', 'Developer'),
