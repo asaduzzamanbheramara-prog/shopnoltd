@@ -32,6 +32,20 @@ class ExecutorEnrollmentTests(unittest.TestCase):
         self.assertEqual(result["total_bytes"], 1000)
         self.assertEqual(result["free_bytes"], 400)
 
+    def test_termux_installer_expands_arguments_and_pins_agent_hash(self):
+        installer = Path(__file__).with_name("install-termux.sh").read_text(encoding="utf-8")
+        windows_installer = Path(__file__).with_name("install-windows.ps1").read_text(encoding="utf-8")
+        agent_source = Path(__file__).with_name("agent.py").read_text(encoding="utf-8").replace("\r\n", "\n").encode("utf-8")
+        expected_hash = agent.hashlib.sha256(agent_source).hexdigest()
+        self.assertIn('DEVICE_ID="${1:-}"', installer)
+        self.assertIn('GATEWAY_URL="${2:-https://devices.shopnoltd.dpdns.org}"', installer)
+        self.assertIn('if [[ -z "${PREFIX:-}"', installer)
+        self.assertNotIn(r"\${1:-}", installer)
+        self.assertNotIn(r"\${2:-", installer)
+        self.assertNotIn(r"\${PREFIX:-}", installer)
+        self.assertIn(expected_hash, installer)
+        self.assertIn(expected_hash, windows_installer)
+
     def test_complete_enrollment_persists_agent_credentials_without_token(self):
         original = {"gateway_url": "https://remote.example", "device_id": "device-1", "enrollment_token": "one-time"}
         response = {"ok": True, "agent_id": "agent-1", "secret": "base64-secret"}
