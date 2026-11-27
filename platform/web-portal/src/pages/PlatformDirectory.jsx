@@ -17,16 +17,20 @@ const PROVIDER_BY_PLATFORM = {
   gmail: 'google', outlook: 'microsoft', '3cx': '3cx',
 }
 
-function RuntimeReadiness({ item, providerMap, capabilities }) {
+function RuntimeReadiness({ item, providerMap, capabilities, onConnect, connecting }) {
   const providerKey = PROVIDER_BY_PLATFORM[item.id]
   if (!providerKey) return null
   const provider = providerMap[providerKey]
   const actions = capabilities.filter(capability => capability.platform === item.id)
+  const canAuthorize = Boolean(provider?.configured && provider?.authorization_supported)
   return <div style={{ borderTop: '1px solid var(--border, #e2e8f0)', marginTop: 12, paddingTop: 10 }}>
     {provider
-      ? <p style={styles.muted}>Provider setup: <strong>{provider.setup_status}</strong>. {provider.configured ? 'Credentials are present; account authorization and action verification are still required.' : 'Provider credentials are not configured.'}</p>
+      ? <p style={styles.muted}>Provider setup: <strong>{provider.setup_status}</strong>. {provider.configured ? 'Credentials are present; authorize your own account and verify requested permissions.' : 'Provider credentials are not configured by Shopnoltd.'}</p>
       : <p style={styles.muted}>Provider runtime status could not be loaded.</p>}
     {actions.length > 0 && <p style={styles.muted}>Declared actions: {actions.map(action => `${action.action} (${action.availability})`).join(' · ')}</p>}
+    {canAuthorize && <button type="button" disabled={Boolean(connecting)} onClick={() => onConnect(providerKey, item.id)} style={{ border: '1px solid var(--border, #cbd5e1)', borderRadius: 8, padding: '8px 11px', background: 'var(--surface, #fff)', color: 'inherit', cursor: connecting ? 'wait' : 'pointer', fontWeight: 700 }}>
+      {connecting ? 'Opening authorization…' : `Connect ${item.name}`}
+    </button>}
   </div>
 }
 
@@ -38,6 +42,22 @@ export default function PlatformDirectory() {
   const [query, setQuery] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [connectingPlatform, setConnectingPlatform] = useState('')
+
+  async function beginProviderAuthorization(provider, platform) {
+    setError('')
+    setConnectingPlatform(platform)
+    try {
+      const result = await platformApi.omnichannelOAuthAuthorizeUrl(provider, platform)
+      if (!result?.authorization_url || !/^https:\/\//i.test(result.authorization_url)) {
+        throw new Error('The provider did not return a valid HTTPS authorization URL.')
+      }
+      window.location.assign(result.authorization_url)
+    } catch (err) {
+      setError(err.message || 'Could not start provider authorization.')
+      setConnectingPlatform('')
+    }
+  }
 
   useEffect(() => {
     let active = true
@@ -97,7 +117,7 @@ export default function PlatformDirectory() {
         </div>
         <p style={{ ...styles.muted, margin: '8px 0' }}>{item.category} · {item.connection_type.replaceAll('_', ' ')}</p>
         <p style={{ ...styles.muted, minHeight: 58 }}>{item.note}</p>
-        <RuntimeReadiness item={item} providerMap={providerMap} capabilities={capabilities} />
+        <RuntimeReadiness item={item} providerMap={providerMap} capabilities={capabilities} onConnect={beginProviderAuthorization} connecting={connectingPlatform === item.id} />
         {item.status === 'existing_connector_flow'
           ? <Link to="/connections" style={{ fontWeight: 700, fontSize: 13 }}>Open connection manager →</Link>
           : <span style={{ ...styles.muted, fontWeight: 700 }}>Not yet available for automated execution</span>}
