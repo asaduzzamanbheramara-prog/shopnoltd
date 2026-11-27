@@ -70,7 +70,7 @@ export default function CloudWorkspace() {
 
       <section style={{ marginTop: 28, padding: 22, border: '1px solid #e2e8f0', borderRadius: 16 }}>
         <h2 style={{ marginTop: 0 }}>Subscriptions and access</h2>
-        <p style={{ color: '#64748b', lineHeight: 1.65 }}>Shopnoltd plans are the intended access model for cloud workspaces. A plan must grant an explicit platform entitlement and a session quota before a workspace can be provisioned. This page does not claim that a subscription has been charged or that Mac access is enabled.</p>
+        <p style={{ color: '#64748b', lineHeight: 1.65 }}>Browsing the Cloud Workspace is free. When a customer chooses a paid cloud plan or usage package, they pay Shopnoltd first through the existing checkout. Admin verifies the receipt and separately pays the selected platform provider; provider invoices and customer payments must be reconciled. A session is only provisioned after customer payment, Admin approval/provider capacity, licensing and entitlement checks all pass. This page does not claim that a payment has been collected or that Mac access is enabled.</p>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           <Link to="/pricing" style={{ ...actionStyle, marginTop: 0 }}>View plans</Link>
           <Link to="/billing" style={{ ...actionStyle, marginTop: 0, background: '#0f172a' }}>Billing & subscriptions</Link>
