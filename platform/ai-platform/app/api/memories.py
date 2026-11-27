@@ -8,7 +8,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import current_user
-from app.db.models import AIPersonalMemory
+from app.db.models import AIPersonalMemory, AIPersonalMemorySettings
 from app.db.session import get_db
 
 router = APIRouter()
@@ -75,6 +75,37 @@ async def create_memory(body: MemoryCreate, user=Depends(current_user), db: Asyn
     await db.commit()
     await db.refresh(row)
     return serialize(row)
+
+
+class MemorySettingsUpdate(BaseModel):
+    enabled: bool
+
+
+@router.get("/settings")
+async def get_memory_settings(user=Depends(current_user), db: AsyncSession = Depends(get_db)):
+    tenant_id, user_id = ownership(user)
+    row = await db.get(AIPersonalMemorySettings, (tenant_id, user_id))
+    return {"enabled": row.memory_enabled if row is not None else True}
+
+
+@router.patch("/settings")
+async def update_memory_settings(
+    body: MemorySettingsUpdate,
+    user=Depends(current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    tenant_id, user_id = ownership(user)
+    row = await db.get(AIPersonalMemorySettings, (tenant_id, user_id))
+    if row is None:
+        row = AIPersonalMemorySettings(
+            tenant_id=tenant_id, user_id=user_id, memory_enabled=body.enabled
+        )
+        db.add(row)
+    else:
+        row.memory_enabled = body.enabled
+        row.updated_at = datetime.now(timezone.utc)
+    await db.commit()
+    return {"enabled": row.memory_enabled}
 
 
 @router.patch("/{memory_id}")

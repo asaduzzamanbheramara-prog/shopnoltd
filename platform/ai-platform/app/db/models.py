@@ -144,6 +144,18 @@ class AIPersonalMemory(Base):
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), index=True
     )
 
+class AIPersonalMemorySettings(Base):
+    """Per-account memory consent switch; saved items remain reviewable when paused."""
+
+    __tablename__ = "ai_personal_memory_settings"
+
+    tenant_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    user_id: Mapped[str] = mapped_column(String(255), primary_key=True)
+    memory_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
 class Agent(Base):
     """Agent table registered on the same metadata initialized by the AI Platform lifespan.
 

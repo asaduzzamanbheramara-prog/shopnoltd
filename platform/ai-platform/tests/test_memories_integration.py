@@ -12,6 +12,7 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT.parents[1] / "shared" / "libraries" / "python"))
 
 from app.api import memories
+from app.api.inference import _load_personal_memories
 from app.core.security import current_user
 from app.db.base import Base
 from app.db.session import get_db
@@ -52,15 +53,35 @@ def test_personal_memory_crud_is_explicit_and_isolated_by_tenant_and_user():
                 memory_id = created.json()["id"]
                 assert created.json()["content"] == "Use concise answers"
                 assert (await client.get("/memories")).json()[0]["id"] == memory_id
+                default_settings = await client.get("/memories/settings")
+                assert default_settings.status_code == 200
+                assert default_settings.json() == {"enabled": True}
+
+                async with sessions() as db:
+                    assert await _load_personal_memories(db, claims) == [
+                        {"category": "preferences", "content": "Use concise answers"}
+                    ]
+
+                paused = await client.patch("/memories/settings", json={"enabled": False})
+                assert paused.status_code == 200
+                assert paused.json() == {"enabled": False}
+                async with sessions() as db:
+                    assert await _load_personal_memories(db, claims) == []
 
                 claims.clear()
                 claims.update({"sub": "user-b", "tenant_id": "tenant-a"})
                 assert (await client.get("/memories")).json() == []
+                assert (await client.get("/memories/settings")).json() == {"enabled": True}
                 assert (await client.patch(f"/memories/{memory_id}", json={"content": "tamper"})).status_code == 404
                 assert (await client.delete(f"/memories/{memory_id}")).status_code == 204
 
                 claims.clear()
                 claims.update({"sub": "user-a", "tenant_id": "tenant-a"})
+                resumed = await client.patch("/memories/settings", json={"enabled": True})
+                assert resumed.status_code == 200
+                assert resumed.json() == {"enabled": True}
+                async with sessions() as db:
+                    assert len(await _load_personal_memories(db, claims)) == 1
                 still_owned = await client.get("/memories")
                 assert still_owned.status_code == 200
                 assert still_owned.json()[0]["content"] == "Use concise answers"

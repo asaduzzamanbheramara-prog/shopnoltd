@@ -7,7 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import current_user
-from app.db.models import AIModel, AIProvider, AIPersonalMemory
+from app.db.models import AIModel, AIProvider, AIPersonalMemory, AIPersonalMemorySettings
 from app.db.session import AsyncSessionLocal, get_db
 from app.schemas.schemas import InferIn, InferOut
 from app.services.model_router import ModelNotAvailableError, ProviderInferenceError, run_inference
@@ -22,6 +22,9 @@ async def _load_personal_memories(db: AsyncSession, user: dict) -> list[dict]:
     if not isinstance(tenant_id, str) or not tenant_id.strip():
         return []
     if not isinstance(user_id, str) or not user_id.strip():
+        return []
+    preferences = await db.get(AIPersonalMemorySettings, (tenant_id.strip(), user_id.strip()))
+    if preferences is not None and not preferences.memory_enabled:
         return []
     result = await db.execute(
         select(AIPersonalMemory)
