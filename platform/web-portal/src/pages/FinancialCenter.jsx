@@ -9,6 +9,8 @@ import {
   getWallet,
   getWalletLedger,
 } from '../lib/financialApi'
+import { useFinancialCurrency, formatFinancialAmount } from '../lib/financialCurrency'
+import ExchangeCalculator from './ExchangeCalculator'
 
 const PLAN_PRICES = {
   free: 0,
@@ -106,7 +108,7 @@ function FinancialNavigation() {
 }
 
 function WalletView() {
-  const [currency, setCurrency] = useState('BDT')
+  const [currency, setCurrency] = useFinancialCurrency()
   const [wallet, setWallet] = useState(null)
   const [ledger, setLedger] = useState([])
   const [error, setError] = useState(null)
@@ -192,7 +194,7 @@ function WalletView() {
           >
             <div style={{ color: '#64748b' }}>{wallet?.currency || currency}</div>
             <div style={{ fontSize: 36, fontWeight: 800 }}>
-              {wallet?.balance ?? '0.00'}
+              {wallet ? formatFinancialAmount(wallet.balance, wallet.currency || currency) : `No ${currency} wallet yet`}
             </div>
           </div>
         )}
@@ -298,7 +300,7 @@ function TransactionsView() {
                 <tr key={tx.id}>
                   <td style={{ padding: 8 }}>{tx.id}</td>
                   <td style={{ padding: 8 }}>{tx.gateway}</td>
-                  <td style={{ padding: 8, textAlign: 'right' }}>{tx.amount}</td>
+                  <td style={{ padding: 8, textAlign: 'right' }}>{formatFinancialAmount(tx.amount, tx.currency || 'USD')}</td>
                   <td style={{ padding: 8 }}>{tx.currency}</td>
                   <td style={{ padding: 8 }}>
                     {tx.status}
@@ -382,7 +384,7 @@ function CheckoutView() {
   const plan = PLAN_NAMES[requestedPlan] ? requestedPlan : 'starter'
 
   const [amount, setAmount] = useState(String(PLAN_PRICES[plan]))
-  const [currency, setCurrency] = useState('USD')
+  const [currency, setCurrency] = useFinancialCurrency()
   const [gateway, setGateway] = useState('stripe')
   const [phone, setPhone] = useState('')
   const [gateways, setGateways] = useState([])
@@ -403,7 +405,7 @@ function CheckoutView() {
         }
       })
       .catch((err) => setError(err.message))
-  }, [])
+  }, [currency])
 
   async function submit(e) {
     e.preventDefault()
@@ -764,7 +766,7 @@ export default function FinancialCenter({ view = 'billing' }) {
         {view === 'transactions' || view === 'payments' ? <TransactionsView /> : null}
         {view === 'billing' ? <GatewayView /> : null}
         {view === 'checkout' ? <CheckoutView /> : null}
-        {view === 'exchange' ? <ExchangeView /> : null}
+        {view === 'exchange' ? <ExchangeCalculator /> : null}
         {view === 'subscriptions' ? (
           <UnsupportedView title="Subscriptions" />
         ) : null}

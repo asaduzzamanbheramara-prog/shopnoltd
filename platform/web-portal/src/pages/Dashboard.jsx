@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { SERVICES, ADMIN_SERVICES } from '../data/serviceCatalog'
 import { getRoles, isPlatformAdmin } from '../lib/jwt'
 import { authenticatedRequest, getTransactions, getWallet } from '../lib/financialApi'
+import { useFinancialCurrency, formatFinancialAmount } from '../lib/financialCurrency'
 import { platformApi } from '../lib/platformApi'
 
 const API_ORIGIN = (import.meta.env.VITE_API_URL || 'https://api.shopnoltd.dpdns.org').replace(/\/+$/, '').replace(/\/api\/v1$/, '')
@@ -44,6 +45,7 @@ function Metric({ label, value, href, note }) {
 
 export default function Dashboard() {
   const navigate = useNavigate()
+  const [currency] = useFinancialCurrency()
   const [me, setMe] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -75,7 +77,7 @@ export default function Dashboard() {
     try {
       const results = await Promise.allSettled([
         authenticatedRequest('/api/v1/users/me'),
-        getWallet('BDT'),
+        getWallet(currency),
         getTransactions(),
         platformApi.notifications(),
         platformApi.activeWorks(),
@@ -134,7 +136,7 @@ export default function Dashboard() {
       window.clearInterval(timer)
       document.removeEventListener('visibilitychange', refreshWhenVisible)
     }
-  }, [])
+  }, [currency])
 
   if (loading) return <div style={{ padding: 32 }}>Loading your dashboard…</div>
 
@@ -218,7 +220,7 @@ export default function Dashboard() {
       <section style={{ marginTop: 28 }}>
         <h2>Account overview</h2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginTop: 14 }}>
-          <Metric label="BDT wallet" value={wallet?.balance ?? '—'} href="/wallet" note="Available balance" />
+          <Metric label={`${currency} wallet`} value={wallet?.balance == null ? '—' : formatFinancialAmount(wallet.balance, wallet.currency || currency)} href="/wallet" note="Available balance" />
           <Metric label="Transactions" value={transactionCount ?? '—'} href="/transactions" note={transactionCount === null ? 'Data unavailable' : undefined} />
           <Metric label="Active works" value={activeWorkCount ?? '—'} href="/my-active-work" note={activeWorkCount === null ? 'Data unavailable' : undefined} />
           <Metric label="Registered domains" value={activeDomains ?? '—'} href="/domain-management" note={activeDomains === null ? 'Data unavailable' : undefined} />
@@ -229,7 +231,7 @@ export default function Dashboard() {
       <section style={{ marginTop: 32 }}>
         <h2>Financial overview</h2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 12, marginTop: 14 }}>
-          <Link to="/wallet" style={{ padding: 18, background: 'white', border: '1px solid #e2e8f0', borderRadius: 10, textDecoration: 'none', color: 'inherit' }}><div style={{ color: '#64748b', fontSize: 14 }}>BDT wallet</div><div style={{ fontSize: 28, fontWeight: 800 }}>{wallet?.balance ?? '—'}</div></Link>
+          <Link to="/wallet" style={{ padding: 18, background: 'white', border: '1px solid #e2e8f0', borderRadius: 10, textDecoration: 'none', color: 'inherit' }}><div style={{ color: '#64748b', fontSize: 14 }}>{currency} wallet</div><div style={{ fontSize: 28, fontWeight: 800 }}>{wallet?.balance == null ? '—' : formatFinancialAmount(wallet.balance, wallet.currency || currency)}</div></Link>
           <Link to="/transactions" style={{ padding: 18, background: 'white', border: '1px solid #e2e8f0', borderRadius: 10, textDecoration: 'none', color: 'inherit' }}><div style={{ color: '#64748b', fontSize: 14 }}>Transactions</div><div style={{ fontSize: 28, fontWeight: 800 }}>{transactionCount ?? '—'}</div></Link>
           <Link to="/checkout" style={{ padding: 18, background: '#0ea5e9', borderRadius: 10, textDecoration: 'none', color: 'white', fontWeight: 700 }}>Open checkout →</Link>
           <Link to="/exchange" style={{ padding: 18, background: '#0f172a', borderRadius: 10, textDecoration: 'none', color: 'white', fontWeight: 700 }}>Exchange currencies →</Link>

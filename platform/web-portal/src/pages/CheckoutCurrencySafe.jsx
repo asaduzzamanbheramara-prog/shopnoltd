@@ -2,10 +2,11 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { createCheckout, getExchangeRate, getPaymentGateways } from '../lib/financialApi'
 import { trackEvent } from '../lib/analytics'
+import { useFinancialCurrency } from '../lib/financialCurrency'
 
 const PLAN_PRICES_USD = { free: 0, starter: 9, pro: 29, business: 99, enterprise: 299 }
 const PLAN_NAMES = { free: 'Free', starter: 'Starter', pro: 'Pro', business: 'Business', enterprise: 'Enterprise' }
-const FALLBACK_CURRENCIES = ['USD', 'BDT', 'EUR', 'GBP', 'INR', 'AUD', 'CAD', 'SGD']
+const FALLBACK_CURRENCIES = ['USD', 'EUR', 'GBP', 'BDT', 'INR', 'PKR', 'MYR', 'NGN', 'ZAR']
 
 export default function CheckoutCurrencySafe() {
   const location = useLocation()
@@ -16,7 +17,7 @@ export default function CheckoutCurrencySafe() {
   }, [location.search])
 
   const baseAmount = PLAN_PRICES_USD[plan]
-  const [currency, setCurrency] = useState('USD')
+  const [currency, setCurrency] = useFinancialCurrency()
   const [amount, setAmount] = useState(String(baseAmount))
   const [rate, setRate] = useState(1)
   const [gateway, setGateway] = useState('stripe')
