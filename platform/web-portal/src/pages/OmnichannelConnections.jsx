@@ -3,7 +3,7 @@ import { ArrowLeft, CheckCircle2, Link2, Pencil, Plus, RefreshCw, Trash2, XCircl
 import { Link } from 'react-router-dom'
 import { platformApi } from '../lib/platformApi'
 
-const PLATFORMS = ['whatsapp', 'facebook', 'instagram', 'linkedin', 'x', 'telegram', 'tiktok', 'youtube', 'gmail', 'outlook', '3cx']
+const PLATFORMS = ['whatsapp', 'facebook', 'instagram', 'linkedin', 'github', 'x', 'telegram', 'tiktok', 'youtube', 'gmail', 'outlook', '3cx']
 
 const EMPTY = {
   platform: 'whatsapp',
