@@ -281,3 +281,36 @@ def test_recovery_queues_gateway_pods_without_emulator_pods(monkeypatch) -> None
     assert session_id not in main.sessions
     assert len(deleted) == 1
     assert deleted[0].gateway_name == gateway.metadata.name
+
+
+def test_physical_session_cleanup_fails_closed_without_deleting_emulator_resources(monkeypatch) -> None:
+    import pytest
+
+    session = make_session(last_seen=600)
+    session.backend = "physical_device"
+    session.device_id = "device-test"
+
+    deleted = []
+    monkeypatch.setattr(main, "delete_resources", lambda item: deleted.append(item))
+
+    with pytest.raises(RuntimeError, match="physical_device_release_not_implemented"):
+        main.cleanup_session(session)
+
+    assert deleted == []
+
+
+def test_expired_physical_session_is_retained_until_device_release_is_implemented(monkeypatch) -> None:
+    session = make_session(last_seen=600)
+    session.backend = "physical_device"
+    session.device_id = "device-test"
+    main.sessions[session.session_id] = session
+
+    monkeypatch.setattr(main.time, "time", lambda: 1000)
+    deleted = []
+    monkeypatch.setattr(main, "delete_resources", lambda item: deleted.append(item))
+
+    main.cleanup_expired()
+
+    assert main.sessions[session.session_id] is session
+    assert session.session_id not in main.stopping_sessions
+    assert deleted == []
