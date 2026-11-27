@@ -27,6 +27,7 @@ import Plugins from './pages/Plugins'
 import Services from './pages/Services'
 import Downloads from './pages/Downloads'
 import CloudStorage from './pages/CloudStorage'
+import CloudWorkspace from './pages/CloudWorkspace'
 import Phone from './pages/Phone'
 import DomainRegistration from './pages/DomainRegistration'
 import VPN from './pages/VPN'
@@ -93,7 +94,7 @@ function InstallPrompt() {
   return <button type="button" onClick={async () => { await prompt.prompt(); setPrompt(null) }} style={{ color: 'white', background: 'rgba(255,255,255,0.14)', border: '1px solid rgba(255,255,255,0.5)', borderRadius: 6, padding: '5px 12px', cursor: 'pointer', whiteSpace: 'nowrap' }}>Install Shopnoltd</button>
 }
 
-const PUBLIC_LINKS = [['About', '/about'], ['Services', '/services'], ['Pricing', '/pricing'], ['Advertise', '/ads'], ['Profiles', '/profiles'], ['Interior', '/profile/interior-business'], ['VPN', '/vpn'], ['Create Website', '/create-website'], ['Discover', '/discover'], ['Feed', '/feed'], ['Work', '/work'], ['Blog', '/blog'], ['AI', '/ai'], ['Phone', '/phone'], ['Domains', '/domain-registration'], ['Downloads', '/downloads'], ['Affiliate & Tools', '/affiliate'], ['Offers', '/offers'], ['Android Cloud', '/android-cloud'], ['Contact', '/contact']]
+const PUBLIC_LINKS = [['About', '/about'], ['Services', '/services'], ['Pricing', '/pricing'], ['Advertise', '/ads'], ['Profiles', '/profiles'], ['Interior', '/profile/interior-business'], ['VPN', '/vpn'], ['Create Website', '/create-website'], ['Discover', '/discover'], ['Feed', '/feed'], ['Work', '/work'], ['Blog', '/blog'], ['AI', '/ai'], ['Phone', '/phone'], ['Domains', '/domain-registration'], ['Downloads', '/downloads'], ['Affiliate & Tools', '/affiliate'], ['Offers', '/offers'], ['Cloud Workspace', '/cloud'], ['Android Cloud', '/android-cloud'], ['Contact', '/contact']]
 const STANDALONE_APP_PATHS = new Set(['/android-cloud'])
 
 function Nav() {
@@ -315,6 +316,10 @@ const ROUTE_METADATA = {
     title: 'Shopnoltd Plugins | Integrations and Tools',
     description: 'Explore available Shopnoltd plugins, integrations, and tools for extending your digital workspace.',
   },
+  '/cloud': {
+    title: 'Shopnoltd Cloud Workspace | Android and Mac Cloud',
+    description: 'Launch Shopnoltd Android Cloud and view the licensing-gated Mac Cloud workspace roadmap.',
+  },
   '/downloads': {
     title: 'Shopnoltd Downloads | Official Applications',
     description: 'Find official Shopnoltd applications and downloads for supported devices and operating systems.',
@@ -380,7 +385,7 @@ function RouteMetadata() {
 
 function App() {
   return <BrowserRouter basename={import.meta.env.BASE_URL}><AnalyticsTracker /><ProfileProvisioner /><RouteMetadata /><Nav /><SubdomainRedirect /><ProfitOnContentAds /><ConsentManager /><GoogleTagLoader /><GoogleTagManagerLoader /><GoogleAdSenseLoader /><Routes>
-    <Route path="/" element={window.location.hostname === 'files.shopnoltd.dpdns.org' ? <ProtectedRoute><CloudStorage /></ProtectedRoute> : <Home />} /><Route path="/cloud-storage" element={<ProtectedRoute><CloudStorage /></ProtectedRoute>} /><Route path="/pricing" element={<Pricing />} /><Route path="/privacy" element={<Privacy />} /><Route path="/about" element={<About />} /><Route path="/contact" element={<Contact />} /><Route path="/terms" element={<Terms />} /><Route path="/create-website" element={<ProtectedRoute><WebsiteBuilder /></ProtectedRoute>} /><Route path="/discover" element={<ProtectedRoute><Discover /></ProtectedRoute>} /><Route path="/feed" element={<ProtectedRoute><SocialFeed /></ProtectedRoute>} /><Route path="/saved-posts" element={<ProtectedRoute><SavedPosts /></ProtectedRoute>} /><Route path="/post/:id" element={<ProtectedRoute><PostDetail /></ProtectedRoute>} />
+    <Route path="/" element={window.location.hostname === 'files.shopnoltd.dpdns.org' ? <ProtectedRoute><CloudStorage /></ProtectedRoute> : <Home />} /><Route path="/cloud-storage" element={<ProtectedRoute><CloudStorage /></ProtectedRoute>} /><Route path="/cloud" element={<CloudWorkspace />} /><Route path="/pricing" element={<Pricing />} /><Route path="/privacy" element={<Privacy />} /><Route path="/about" element={<About />} /><Route path="/contact" element={<Contact />} /><Route path="/terms" element={<Terms />} /><Route path="/create-website" element={<ProtectedRoute><WebsiteBuilder /></ProtectedRoute>} /><Route path="/discover" element={<ProtectedRoute><Discover /></ProtectedRoute>} /><Route path="/feed" element={<ProtectedRoute><SocialFeed /></ProtectedRoute>} /><Route path="/saved-posts" element={<ProtectedRoute><SavedPosts /></ProtectedRoute>} /><Route path="/post/:id" element={<ProtectedRoute><PostDetail /></ProtectedRoute>} />
     <Route path="/work" element={<ProtectedRoute><WorkHub /></ProtectedRoute>} /><Route path="/referrals" element={<ProtectedRoute><ReferralHub /></ProtectedRoute>} /><Route path="/work/:id" element={<ProtectedRoute><WorkDetail /></ProtectedRoute>} /><Route path="/create-work" element={<ProtectedRoute><WorkHub /></ProtectedRoute>} /><Route path="/my-created-work" element={<ProtectedRoute><WorkHub /></ProtectedRoute>} /><Route path="/my-active-work" element={<ProtectedRoute><WorkHub /></ProtectedRoute>} /><Route path="/my-submission" element={<ProtectedRoute><WorkHub /></ProtectedRoute>} /><Route path="/work-review" element={<ProtectedRoute><WorkHub /></ProtectedRoute>} />
     <Route path="/account" element={<ProtectedRoute><AccountHub /></ProtectedRoute>} /><Route path="/devices" element={<ProtectedRoute><Devices /></ProtectedRoute>} /><Route path="/admin/devices" element={<AdminRoute><Devices admin /></AdminRoute>} /><Route path="/notifications" element={<ProtectedRoute><AccountHub /></ProtectedRoute>} /><Route path="/my-professional-profile" element={<ProtectedRoute><MyProfessionalProfile /></ProtectedRoute>} />
     <Route path="/profiles" element={<Profiles />} /><Route path="/profile/data-management" element={<DataManagementProfile />} /><Route path="/profile/interior-business" element={<InteriorBusinessProfile />} /><Route path="/profile-view/:slug" element={<ProfessionalProfilePage />} />
