@@ -8,7 +8,7 @@ from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -66,18 +66,35 @@ async def action_user(creds: HTTPAuthorizationCredentials = Depends(bearer)):
         return {"sub": "n8n-action-queue", "tenant_id": "default", "automation": True}
     return await current_user(creds)
 
+def _validate_manual_connection_status(value: str | None) -> str | None:
+    if value is None:
+        return None
+    normalized = value.strip().lower()
+    if normalized == "connected":
+        raise ValueError("Connected status is reserved for verified provider authorization")
+    if normalized not in {"pending", "expired", "disabled"}:
+        raise ValueError("status must be pending, expired, or disabled for manual profiles")
+    return normalized
+
+
 class ConnectionIn(BaseModel):
     platform: str
     account_type: str = "user"
     platform_account_id: str = Field(min_length=1, max_length=255)
     username: str | None = None
     display_name: str | None = None
-    status: str = "connected"
+    status: str = "pending"
     scopes: list[str] = Field(default_factory=list)
     access_token_ref: str | None = None
     refresh_token_ref: str | None = None
     token_expires_at: str | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)
+
+    @field_validator("status")
+    @classmethod
+    def validate_status(cls, value: str) -> str:
+        return _validate_manual_connection_status(value)
+
 
 class ConnectionPatch(BaseModel):
     account_type: str | None = None
@@ -89,6 +106,11 @@ class ConnectionPatch(BaseModel):
     refresh_token_ref: str | None = None
     token_expires_at: str | None = None
     metadata: dict[str, Any] | None = None
+
+    @field_validator("status")
+    @classmethod
+    def validate_status(cls, value: str | None) -> str | None:
+        return _validate_manual_connection_status(value)
 
 
 class ActionIn(BaseModel):
