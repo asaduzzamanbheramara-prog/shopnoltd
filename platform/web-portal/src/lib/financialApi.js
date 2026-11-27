@@ -174,11 +174,15 @@ export async function authenticatedStreamRequest(path, options = {}) {
   return response
 }
 
-export function getWallet(currency = 'BDT') {
-  return authenticatedRequest(`/api/v1/wallets/${encodeURIComponent(currency.toUpperCase())}`)
+export async function getWallet(currency = 'USD') {
+  const wallets = await authenticatedRequest('/api/v1/wallets')
+  const requested = String(currency || 'USD').toUpperCase()
+  return Array.isArray(wallets)
+    ? wallets.find((wallet) => String(wallet?.currency || '').toUpperCase() === requested) || null
+    : null
 }
 
-export function getWalletLedger(currency = 'BDT', limit = 50) {
+export function getWalletLedger(currency = 'USD', limit = 50) {
   const boundedLimit = Math.min(Math.max(Number(limit) || 50, 1), 200)
   return authenticatedRequest(`/api/v1/wallets/${encodeURIComponent(currency.toUpperCase())}/ledger?limit=${boundedLimit}`)
 }
