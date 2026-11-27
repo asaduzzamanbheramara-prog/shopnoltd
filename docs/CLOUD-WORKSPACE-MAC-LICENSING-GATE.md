@@ -40,6 +40,20 @@ The existing Shopnoltd billing system must be integrated through explicit server
 - Provisioning must fail closed if the entitlement service is unavailable or licensing approval is absent.
 - Do not charge customers for Mac Cloud while the relevant Mac entitlement is unavailable.
 
+## Customer payment and provider settlement model
+
+Shopnoltd uses a customer-pays-Shopnoltd, admin-pays-provider model. Cloud access is free to browse and discover; actual metered or subscription use is paid by the customer before capacity is committed.
+
+1. Show the customer the platform, plan, billing period or usage unit, price, limits, and refund/cancellation terms before checkout.
+2. Customer pays Shopnoltd through the existing approved payment channels. The payment must be verified server-side; a browser success screen is not proof of payment.
+3. Record the customer payment against a cloud order/usage ledger with a unique reference and idempotency key.
+4. Only an authorized Admin can approve provider procurement/renewal and mark the provider invoice as paid. Store provider, invoice reference, currency, amount, payment date, evidence reference, and approving admin in an auditable provider-cost ledger. Never store card credentials or expose provider secrets.
+5. Reserve capacity only when the customer payment is verified, the provider capacity is available, and the provider-cost budget/coverage is approved. Do not start a paid host or incur provider charges automatically.
+6. Reconcile customer receipts, refunds, provider invoices, taxes/fees, and Shopnoltd margin. Keep customer money and provider costs traceable per service and billing period.
+7. If payment, admin approval, provider funding, licensing, or capacity is missing, fail closed and do not launch a billable session.
+
+The intended admin workflow is manual approval/payment to the provider initially; automated provider settlement is out of scope unless separately approved and securely implemented. Never represent an unpaid provider invoice as paid or use a customer's payment for another purpose without an explicit disclosed policy.
+
 ## Security and operations requirements
 
 - Dedicated customer identity and isolated Mac workspace.
