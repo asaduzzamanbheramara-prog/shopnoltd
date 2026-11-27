@@ -24,6 +24,19 @@ Shopnoltd is also intended to be a universal online software discovery, installa
 
 The existing foundation and constraints are documented in `docs/universal-software-os-center/README.md`, `device-installation-support-matrix.md` and `bootable-usb-recovery.md`. Catalogue, planner and documentation work must not be described as a completed USB writer, verified universal installer, or successful physical-device recovery.
 
+## Any-device Auto-Connect and Remote Access
+
+The unified Cloud portal links to the existing authenticated `/devices` page and `devices.shopnoltd.dpdns.org` device console. Existing remote-device components include account-owned device records, one-time enrollment tokens, executor heartbeat/online status, device sharing, and a MeshCentral connection gateway.
+
+Important implementation boundaries:
+
+- The current guided Auto Connect installer path is Windows + WSL-specific; do not label it as a universal installer.
+- The outbound executor supports first enrollment, heartbeat/job polling and retrying transient network failures. Persistent unattended reconnect after reboot depends on a correctly installed OS service/startup task; verify each platform separately.
+- The executor documentation explicitly states it does not automatically create a MeshCentral node link. A device must be linked to MeshCentral before remote desktop connect is available.
+- Gateway `/api/connect/{device_id}` returns a MeshCentral URL; browser connect redirects to that URL. This is not proof of an authenticated, device-specific one-click remote session.
+- Android/iOS, macOS, Linux and other platform agents require their own tested installers, permissions and supported remote-control capabilities. Mobile OS restrictions may prohibit unattended full-device control.
+- Remote connection is owner/shared-user/admin authorized. Never bypass consent, OS permission prompts, enrollment-token secrecy or access controls. Auto-connect means reconnection of an already authorized agent, not silent enrollment or covert control.
+
 ## Universal OS & Software Center connection
 
 The Cloud portal is one part of the broader Shopnoltd device platform. Its `/cloud` page links directly to the existing `/software-os-center.html` catalogue/service-request experience and `/offline-recovery-guide.html` guide. Keep these journeys distinct:
