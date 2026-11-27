@@ -172,6 +172,7 @@ app.include_router(__import__("app.api.v3_work", fromlist=["router"]).router, pr
 app.include_router(__import__("app.api.referrals", fromlist=["router"]).router, prefix="/api/v1", tags=["referrals"])
 app.include_router(__import__("app.api.affiliate", fromlist=["router"]).router, prefix="/api/v1", tags=["affiliate"])
 app.include_router(__import__("app.api.service_orders", fromlist=["router"]).router, prefix="/api/v1", tags=["service-orders"])
+app.include_router(__import__("app.api.integrations", fromlist=["router"]).router, prefix="/api/v1", tags=["integrations"])
 app.include_router(__import__("app.api.graphql", fromlist=["router"]).router, prefix="/graphql", tags=["graphql"])
 app.include_router(__import__("app.api.health", fromlist=["router"]).router, prefix="", tags=["health"])
 
