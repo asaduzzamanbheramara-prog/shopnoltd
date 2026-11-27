@@ -12,6 +12,18 @@ One browser portal will offer separate, isolated environments:
 
 A single portal does not mean one shared VM. Each customer session must be isolated and provisioned on an OS-appropriate host.
 
+## Relationship to the Universal Software & OS Center
+
+Shopnoltd is also intended to be a universal online software discovery, installation-guidance and device-recovery destination—not only a cloud desktop provider. Keep this as a distinct but connected product area:
+
+- **Online software and OS catalogue:** discover supported operating systems, applications, drivers and recovery utilities; filter by device, OS/version, architecture and package format; prefer official publisher sources and show licence and verification status.
+- **Online installation guidance:** provide platform-specific, permission-aware instructions and supported package-manager/helper workflows. A browser catalogue or download link alone does not install software on a customer's device.
+- **Pendrive / offline recovery:** guide users to obtain verified images and create bootable media on a supported working computer. Actual USB writing requires a separately signed, least-privilege local helper with explicit target-drive selection and destructive-write confirmation; a normal web page cannot safely write arbitrary physical disks.
+- **Device-specific recovery:** use manufacturer-supported methods for phones, tablets, Macs, PCs, TVs, routers and embedded devices. Do not claim that a generic PC bootable USB installs or repairs every device.
+- **Cloud Workspace connection:** offer browser-based Windows/Linux/Mac/Android environments as a separate way to use supported systems online. A cloud session is not the same as installing an OS onto a user's physical device.
+
+The existing foundation and constraints are documented in `docs/universal-software-os-center/README.md`, `device-installation-support-matrix.md` and `bootable-usb-recovery.md`. Catalogue, planner and documentation work must not be described as a completed USB writer, verified universal installer, or successful physical-device recovery.
+
 ## Current implementation and truthful availability
 
 - Portal: `/cloud`.
