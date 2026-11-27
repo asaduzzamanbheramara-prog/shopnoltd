@@ -104,6 +104,19 @@ async def _exchange(provider: str, code: str, verifier: str) -> dict:
                 },
                 headers={"Content-Type": "application/x-www-form-urlencoded"},
             )
+        elif provider == "github":
+            # GitHub returns JSON only when the client explicitly requests it.
+            response = await client.post(
+                cfg["token_url"],
+                data={
+                    "client_id": cfg["client_id"],
+                    "client_secret": cfg["client_secret"],
+                    "code": code,
+                    "redirect_uri": settings.provider_oauth_redirect_uri,
+                    "code_verifier": verifier,
+                },
+                headers={"Accept": "application/json", "Content-Type": "application/x-www-form-urlencoded"},
+            )
         elif provider == "x":
             # X Web App is a confidential client: authenticate with HTTP Basic.
             response = await client.post(
@@ -201,6 +214,7 @@ async def _identity(provider: str, access_token: str, platform: str) -> dict:
         "google": ("https://openidconnect.googleapis.com/v1/userinfo", {}),
         "microsoft": ("https://graph.microsoft.com/v1.0/me", {}),
         "linkedin": ("https://api.linkedin.com/v2/userinfo", {}),
+        "github": ("https://api.github.com/user", {}),
         "x": ("https://api.x.com/2/users/me", {"user.fields": "name,username,profile_image_url"}),
         "tiktok": ("https://open.tiktokapis.com/v2/user/info/", {"fields": "open_id,union_id,display_name,avatar_url"}),
         "facebook": ("https://graph.facebook.com/v24.0/me", {"fields": "id,name"}),
@@ -337,6 +351,8 @@ def _identity_fields(provider: str, data: dict, platform: str | None = None) -> 
         return str(data.get("id") or ""), data.get("userPrincipalName") or data.get("mail"), data.get("displayName")
     if provider == "linkedin":
         return str(data.get("sub") or ""), data.get("email"), data.get("name")
+    if provider == "github":
+        return str(data.get("id") or ""), data.get("login"), data.get("name") or data.get("login")
     if provider == "x":
         return str(data.get("id") or ""), data.get("username"), data.get("name")
     if provider == "tiktok":
