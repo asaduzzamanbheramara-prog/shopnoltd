@@ -45,17 +45,26 @@ export default function CloudWorkspace() {
         <div style={{ fontSize: 38 }} aria-hidden="true">☁️</div>
         <p style={{ margin: '8px 0', fontSize: 12, letterSpacing: 1.2, fontWeight: 800, opacity: .8 }}>SHOPNOLTD CLOUD</p>
         <h1 style={{ margin: 0, fontSize: 'clamp(32px,5vw,48px)' }}>Your cloud workspaces</h1>
-        <p style={{ maxWidth: 720, lineHeight: 1.7, marginBottom: 0, opacity: .9 }}>Launch supported browser-based environments from one Shopnoltd entry point. Each platform keeps its own runtime, security boundary and availability requirements.</p>
+        <p style={{ maxWidth: 720, lineHeight: 1.7, marginBottom: 0, opacity: .9 }}>Explore browser-based workspaces from one Shopnoltd entry point. Free discovery does not create a paid cloud session or a provider charge.</p>
       </section>
 
-      <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,300px),1fr))', gap: 18, marginTop: 24 }}>
+      <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,280px),1fr))', gap: 18, marginTop: 24 }}>
+        <article style={cardStyle}>
+          <div style={{ fontSize: 36 }} aria-hidden="true">⌨️</div>
+          <Status>Existing workspace</Status>
+          <h2 style={{ margin: '12px 0 6px' }}>Browser Code Workspace</h2>
+          <p style={{ color: '#64748b', lineHeight: 1.6, flex: 1 }}>Use Shopnoltd's existing authenticated browser-based development workspace. This reuses the current app environment; it does not create a new cloud host.</p>
+          <Link to="/app?panel=code" style={actionStyle}>Open Code Workspace →</Link>
+          <p style={{ color: '#64748b', fontSize: 12, lineHeight: 1.5, marginBottom: 0 }}>Availability follows the existing account and workspace controls. This is a coding workspace, not a full Linux desktop.</p>
+        </article>
+
         <article style={cardStyle}>
           <div style={{ fontSize: 36 }} aria-hidden="true">🤖</div>
           <Status>Existing service</Status>
           <h2 style={{ margin: '12px 0 6px' }}>Android Cloud</h2>
-          <p style={{ color: '#64748b', lineHeight: 1.6, flex: 1 }}>Start a private browser-based Android emulator, install APK files, and manage apps in your session. Session availability depends on current cluster capacity.</p>
+          <p style={{ color: '#64748b', lineHeight: 1.6, flex: 1 }}>Open the existing browser-based Android emulator, install APK files, and manage apps in your session. Session availability depends on current cluster capacity.</p>
           <Link to="/android-cloud" style={actionStyle}>Open Android Cloud →</Link>
-          <p style={{ color: '#64748b', fontSize: 12, lineHeight: 1.5, marginBottom: 0 }}>Current infrastructure default: one active session. Session-local emulator data is temporary and is not a permanent cloud drive.</p>
+          <p style={{ color: '#64748b', fontSize: 12, lineHeight: 1.5, marginBottom: 0 }}>Current infrastructure default: one active session. Session-local emulator data is temporary, not a permanent cloud drive. A Cloud-specific free quota is not yet configured.</p>
         </article>
 
         <article style={{ ...cardStyle, background: '#f8fafc' }}>
@@ -64,16 +73,22 @@ export default function CloudWorkspace() {
           <h2 style={{ margin: '12px 0 6px' }}>Mac Cloud</h2>
           <p style={{ color: '#64748b', lineHeight: 1.6, flex: 1 }}>Planned developer workspace (Xcode, Swift, builds and testing) plus a separately approved general macOS desktop offering.</p>
           <button type="button" disabled aria-disabled="true" style={{ ...mutedActionStyle, border: 0 }}>Not available yet</button>
-          <p style={{ color: '#64748b', fontSize: 12, lineHeight: 1.5, marginBottom: 0 }}>Activation is blocked until Apple licensing, eligible Apple hardware/provider terms, and secure session isolation are verified.</p>
+          <p style={{ color: '#64748b', fontSize: 12, lineHeight: 1.5, marginBottom: 0 }}>Activation remains blocked until Apple licensing, eligible Apple hardware/provider terms, and secure session isolation are verified.</p>
         </article>
       </section>
 
       <section style={{ marginTop: 28, padding: 22, border: '1px solid #e2e8f0', borderRadius: 16 }}>
-        <h2 style={{ marginTop: 0 }}>Subscriptions and access</h2>
-        <p style={{ color: '#64748b', lineHeight: 1.65 }}>Browsing the Cloud Workspace is free. When a customer chooses a paid cloud plan or usage package, they pay Shopnoltd first through the existing checkout. Admin verifies the receipt and separately pays the selected platform provider; provider invoices and customer payments must be reconciled. A session is only provisioned after customer payment, Admin approval/provider capacity, licensing and entitlement checks all pass. This page does not claim that a payment has been collected or that Mac access is enabled.</p>
+        <h2 style={{ marginTop: 0 }}>Free access and paid cloud plans</h2>
+        <p style={{ color: '#64748b', lineHeight: 1.65 }}>Browsing this page is free. The existing Code Workspace and Android Cloud links use their current access controls; no new free-session allowance is promised here. Cloud-specific product checkout, server-side entitlements, usage metering, and provider invoice/settlement approval are not connected yet. Do not pay for a Cloud plan through the generic checkout until a Cloud order is shown with its exact price, limits, and terms.</p>
+        <ol style={{ color: '#475569', lineHeight: 1.8, paddingLeft: 22 }}>
+          <li>Customer selects a published Cloud plan and pays Shopnoltd.</li>
+          <li>Shopnoltd verifies payment server-side and records the order.</li>
+          <li>An authorized Admin approves provider funding and records the provider invoice/payment evidence.</li>
+          <li>Only after entitlement, licensing, provider capacity and Admin approval pass may a paid session be provisioned.</li>
+        </ol>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-          <Link to="/pricing" style={{ ...actionStyle, marginTop: 0 }}>View plans</Link>
-          <Link to="/billing" style={{ ...actionStyle, marginTop: 0, background: '#0f172a' }}>Billing & subscriptions</Link>
+          <Link to="/pricing" style={{ ...actionStyle, marginTop: 0 }}>View general plans</Link>
+          <Link to="/billing" style={{ ...actionStyle, marginTop: 0, background: '#0f172a' }}>Open billing center</Link>
         </div>
       </section>
     </main>
