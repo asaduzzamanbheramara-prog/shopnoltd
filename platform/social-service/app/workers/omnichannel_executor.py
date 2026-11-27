@@ -72,6 +72,12 @@ async def _refresh_access_token(provider: str, refresh_token: str) -> dict[str, 
              "client_id": settings.linkedin_client_id, "client_secret": settings.linkedin_client_secret},
             None,
         ),
+        "github": (
+            "https://github.com/login/oauth/access_token",
+            {"grant_type": "refresh_token", "refresh_token": refresh_token,
+             "client_id": settings.github_client_id, "client_secret": settings.github_client_secret},
+            None,
+        ),
         "x": (
             "https://api.x.com/2/oauth2/token",
             {"grant_type": "refresh_token", "refresh_token": refresh_token},
@@ -97,7 +103,10 @@ async def _refresh_access_token(provider: str, refresh_token: str) -> dict[str, 
     async with httpx.AsyncClient(timeout=httpx.Timeout(20.0, connect=5.0)) as http:
         response = await http.post(
             url, data=data, auth=auth,
-            headers={"Content-Type": "application/x-www-form-urlencoded"},
+            headers={
+                "Content-Type": "application/x-www-form-urlencoded",
+                **({"Accept": "application/json"} if provider == "github" else {}),
+            },
         )
     if response.status_code >= 400:
         raise RuntimeError("provider refresh was rejected")
