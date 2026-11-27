@@ -4,7 +4,7 @@ import { useEffect } from 'react'
 const DATA_PROFILE = {
   title: 'Md. Asaduzzaman', subtitle: 'Data Management Expert · Data Analyst · Database & Survey Specialist',
   description: 'A professional profile focused on database development, data management, statistical analysis, survey systems, ETL, reporting and digital data-collection workflows.',
-  pdf: '/cv/md-asaduzzaman-data-management-cv.pdf',
+  pdf: '/cv/md-asaduzzaman-data-management-cv.html',
   sections: [
     ['Education', ['M.Sc. in Statistics — Rajshahi University, 2002', 'B.Sc. Honours in Statistics — Rajshahi University, 2001']],
     ['Core expertise', ['Database development and administration', 'Data cleaning, validation and quality control', 'SQL / T-SQL, CSPro, FoxPro, SPSS and Excel', 'Kobo Collect and digital data collection', 'ETL, data warehousing, survey methodology and M&E', 'Data analysis, reporting and visualization']],
@@ -63,7 +63,7 @@ export default function PublicProfiles() {
       <h2 style={{ fontSize: 'clamp(18px,3vw,25px)', fontWeight: 600, margin: 0, opacity: .95 }}>{profile.subtitle}</h2>
       <p style={{ maxWidth: 820, lineHeight: 1.75, fontSize: 17, opacity: .92 }}>{profile.description}</p>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 22 }}>
-        <a href={profile.pdf} download style={{ background: 'white', color: '#0369a1', padding: '12px 18px', borderRadius: 10, fontWeight: 800, textDecoration: 'none' }}>Download PDF / CV</a>
+        <a href={profile.pdf} target={type === 'data-management' ? '_blank' : undefined} rel={type === 'data-management' ? 'noopener noreferrer' : undefined} download={type === 'data-management' ? undefined : true} style={{ background: 'white', color: '#0369a1', padding: '12px 18px', borderRadius: 10, fontWeight: 800, textDecoration: 'none' }}>{type === 'data-management' ? 'View / Print CV' : 'Download PDF / CV'}</a>
         <button type="button" onClick={() => shareProfile(profileUrl, profile.title)} style={{ border: '1px solid rgba(255,255,255,.55)', background: 'transparent', color: 'white', padding: '12px 18px', borderRadius: 10, fontWeight: 700, cursor: 'pointer' }}>↗ Share profile</button>
         {referralRegisterUrl && <a href={referralRegisterUrl} style={{ border: '1px solid rgba(255,255,255,.55)', color: 'white', padding: '12px 18px', borderRadius: 10, fontWeight: 800, textDecoration: 'none' }}>Join via referral</a>}<Link to="/profiles" style={{ border: '1px solid rgba(255,255,255,.55)', color: 'white', padding: '12px 18px', borderRadius: 10, fontWeight: 700, textDecoration: 'none' }}>All profiles</Link>
         {type === 'interior-business' && <a href="https://shopnoltd.wixsite.com/shopno/home-decoration" target="_blank" rel="noopener noreferrer" style={{ border: '1px solid rgba(255,255,255,.55)', color: 'white', padding: '12px 18px', borderRadius: 10, fontWeight: 700, textDecoration: 'none' }}>Original interior portfolio</a>}

@@ -107,7 +107,7 @@ export default function DataManagementProfile() {
         </div>
 
         <div className="dm-actions">
-          <a className="dm-btn dm-btn-primary" href="/cv/md-asaduzzaman-data-management-cv.pdf" download>Download CV</a>
+          <a className="dm-btn dm-btn-primary" href="/cv/md-asaduzzaman-data-management-cv.html" target="_blank" rel="noopener noreferrer">View / Print CV</a>
           <Link className="dm-btn dm-btn-ghost" to="/profiles">All profiles</Link>
           <button type="button" className="dm-btn dm-btn-ghost dm-btn-button" onClick={() => shareProfile(profileUrl, 'Md. Asaduzzaman — Data Management Profile')}>Share profile</button>
           <a className="dm-btn dm-btn-whatsapp" href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer">Chat on WhatsApp</a>
