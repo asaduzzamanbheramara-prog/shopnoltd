@@ -11,7 +11,7 @@ const EMPTY = {
   platform_account_id: '',
   username: '',
   display_name: '',
-  status: 'connected',
+  status: 'pending',
   scopes: '',
   access_token_ref: '',
   refresh_token_ref: '',
@@ -35,7 +35,7 @@ function toPayload(form) {
     platform_account_id: form.platform_account_id.trim(),
     username: form.username.trim() || null,
     display_name: form.display_name.trim() || null,
-    status: form.status || 'connected',
+    status: form.status || 'pending',
     scopes: form.scopes.split(',').map(x => x.trim()).filter(Boolean),
     access_token_ref: form.access_token_ref.trim() || null,
     refresh_token_ref: form.refresh_token_ref.trim() || null,
@@ -51,7 +51,7 @@ function fromConnection(item) {
     platform_account_id: item.platform_account_id || '',
     username: item.username || '',
     display_name: item.display_name || '',
-    status: item.status || 'connected',
+    status: item.status || 'pending',
     scopes: Array.isArray(item.scopes) ? item.scopes.join(', ') : '',
     access_token_ref: item.access_token_ref || '',
     refresh_token_ref: item.refresh_token_ref || '',
@@ -320,7 +320,7 @@ export default function OmnichannelConnections() {
         <label>Platform account ID<input required value={form.platform_account_id} onChange={e => update('platform_account_id', e.target.value)} style={styles.input} /></label>
         <label>Username<input value={form.username} onChange={e => update('username', e.target.value)} style={styles.input} /></label>
         <label>Display name<input value={form.display_name} onChange={e => update('display_name', e.target.value)} style={styles.input} /></label>
-        <label>Status<select value={form.status} onChange={e => update('status', e.target.value)} style={styles.input}><option>connected</option><option>pending</option><option>expired</option><option>disabled</option></select></label>
+        <label>Status<select value={form.status} onChange={e => update('status', e.target.value)} style={styles.input}><option>pending</option><option>expired</option><option>disabled</option></select></label>
       </div>
 
       <label>Scopes <input value={form.scopes} onChange={e => update('scopes', e.target.value)} placeholder="scope.one, scope.two" style={styles.input} /></label>

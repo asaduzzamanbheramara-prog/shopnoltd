@@ -491,3 +491,27 @@ def test_microsoft_authorization_url_prompts_for_account_selection(monkeypatch):
     assert params["prompt"] == ["select_account"]
     assert params["client_id"] == ["microsoft-client-id"]
     assert "server-only-secret" not in url
+
+
+
+def test_manual_connection_defaults_to_pending_and_cannot_claim_connected():
+    import pytest
+    from pydantic import ValidationError
+    from app.api.omnichannel import ConnectionIn
+
+    connection = ConnectionIn(platform="facebook", platform_account_id="page-1")
+    assert connection.status == "pending"
+
+    with pytest.raises(ValidationError):
+        ConnectionIn(platform="facebook", platform_account_id="page-1", status="connected")
+
+
+def test_manual_connection_patch_cannot_mark_profile_connected():
+    import pytest
+    from pydantic import ValidationError
+    from app.api.omnichannel import ConnectionPatch
+
+    with pytest.raises(ValidationError):
+        ConnectionPatch(status="connected")
+
+    assert ConnectionPatch(status="pending").status == "pending"
