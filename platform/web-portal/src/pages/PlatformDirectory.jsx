@@ -11,8 +11,29 @@ const styles = {
   pill: { display: 'inline-block', borderRadius: 20, padding: '4px 9px', fontSize: 11, fontWeight: 700, background: '#eef2ff', color: '#3730a3' },
 }
 
+const PROVIDER_BY_PLATFORM = {
+  facebook: 'facebook', instagram: 'instagram', youtube: 'google', tiktok: 'tiktok',
+  linkedin: 'linkedin', x: 'x', telegram: 'telegram', whatsapp: 'whatsapp',
+  gmail: 'google', outlook: 'microsoft', '3cx': '3cx',
+}
+
+function RuntimeReadiness({ item, providerMap, capabilities }) {
+  const providerKey = PROVIDER_BY_PLATFORM[item.id]
+  if (!providerKey) return null
+  const provider = providerMap[providerKey]
+  const actions = capabilities.filter(capability => capability.platform === item.id)
+  return <div style={{ borderTop: '1px solid var(--border, #e2e8f0)', marginTop: 12, paddingTop: 10 }}>
+    {provider
+      ? <p style={styles.muted}>Provider setup: <strong>{provider.setup_status}</strong>. {provider.configured ? 'Credentials are present; account authorization and action verification are still required.' : 'Provider credentials are not configured.'}</p>
+      : <p style={styles.muted}>Provider runtime status could not be loaded.</p>}
+    {actions.length > 0 && <p style={styles.muted}>Declared actions: {actions.map(action => `${action.action} (${action.availability})`).join(' · ')}</p>}
+  </div>
+}
+
 export default function PlatformDirectory() {
   const [catalog, setCatalog] = useState({ integrations: [], categories: [], total: 0, catalog_total: 0 })
+  const [providers, setProviders] = useState([])
+  const [capabilities, setCapabilities] = useState([])
   const [category, setCategory] = useState('')
   const [query, setQuery] = useState('')
   const [loading, setLoading] = useState(true)
@@ -21,13 +42,23 @@ export default function PlatformDirectory() {
   useEffect(() => {
     let active = true
     setLoading(true)
-    platformApi.integrationCatalog(category, query)
-      .then(data => { if (active) { setCatalog(data); setError('') } })
-      .catch(err => { if (active) setError(err.message || 'Could not load the platform directory.') })
+    Promise.allSettled([
+      platformApi.integrationCatalog(category, query),
+      platformApi.omnichannelProviders(),
+      platformApi.omnichannelCapabilities(),
+    ]).then(([catalogResult, providerResult, capabilityResult]) => {
+      if (!active) return
+      if (catalogResult.status === 'rejected') throw catalogResult.reason
+      setCatalog(catalogResult.value)
+      setProviders(providerResult.status === 'fulfilled' && Array.isArray(providerResult.value) ? providerResult.value : [])
+      setCapabilities(capabilityResult.status === 'fulfilled' && Array.isArray(capabilityResult.value) ? capabilityResult.value : [])
+      setError('')
+    }).catch(err => { if (active) setError(err.message || 'Could not load the platform directory.') })
       .finally(() => { if (active) setLoading(false) })
     return () => { active = false }
   }, [category, query])
 
+  const providerMap = useMemo(() => Object.fromEntries(providers.map(item => [item.provider, item])), [providers])
   const existing = useMemo(() => catalog.integrations.filter(item => item.status === 'existing_connector_flow').length, [catalog])
 
   return <main style={styles.page}>
@@ -66,6 +97,7 @@ export default function PlatformDirectory() {
         </div>
         <p style={{ ...styles.muted, margin: '8px 0' }}>{item.category} · {item.connection_type.replaceAll('_', ' ')}</p>
         <p style={{ ...styles.muted, minHeight: 58 }}>{item.note}</p>
+        <RuntimeReadiness item={item} providerMap={providerMap} capabilities={capabilities} />
         {item.status === 'existing_connector_flow'
           ? <Link to="/connections" style={{ fontWeight: 700, fontSize: 13 }}>Open connection manager →</Link>
           : <span style={{ ...styles.muted, fontWeight: 700 }}>Not yet available for automated execution</span>}
