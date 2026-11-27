@@ -1153,7 +1153,7 @@
     "id": "macos-bootable-installer",
     "name": "macOS bootable installer",
     "kind": "operating-system",
-    "description": "Apple's supported bootable macOS installer workflow for compatible Intel and Apple silicon Macs. Create the installer on a working Mac; it is not a universal image for arbitrary PCs.",
+    "description": "Apple-supported macOS bootable installation media is created on a compatible Mac from the full macOS installer app using createinstallmedia. Apple does not provide a generic macOS ISO for ordinary PC installation.",
     "platforms": [
       "macos"
     ],
@@ -1166,9 +1166,8 @@
       "laptop"
     ],
     "package_formats": [
-      "iso",
-      "zip",
-      "other"
+      "app",
+      "bootable-usb"
     ],
     "source": {
       "type": "documentation",
@@ -1186,9 +1185,11 @@
     },
     "installation_guide": "https://support.apple.com/101578",
     "notes": [
-      "A bootable USB installer works only on compatible Mac models.",
-      "Intel and Apple silicon Macs use different startup procedures.",
-      "Some model-specific firmware components may still require internet access."
+      "Not a direct Shopnoltd-hosted download and not a generic ISO image.",
+      "Download the full macOS installer app using Apple's supported Software Update, App Store, or Terminal method for the target Mac.",
+      "Create bootable media with Apple's createinstallmedia instructions; the selected USB drive is erased.",
+      "Intel and Apple silicon Macs have different startup and recovery procedures.",
+      "Use only on Mac models supported by the selected macOS release; do not treat this as an installer for ordinary Windows PCs."
     ]
   },
   {
