@@ -1,10 +1,10 @@
 #!/data/data/com.termux/files/usr/bin/bash
 set -euo pipefail
 
-DEVICE_ID="\${1:-}"
-GATEWAY_URL="\${2:-https://devices.shopnoltd.dpdns.org}"
+DEVICE_ID="${1:-}"
+GATEWAY_URL="${2:-https://devices.shopnoltd.dpdns.org}"
 
-if [[ -z "\${PREFIX:-}" || "$PREFIX" != *"/com.termux/"* ]]; then
+if [[ -z "${PREFIX:-}" || "$PREFIX" != *"/com.termux/"* ]]; then
   echo "Run this installer inside the Termux app on the Android device." >&2
   exit 2
 fi

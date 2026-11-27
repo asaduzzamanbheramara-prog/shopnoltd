@@ -115,6 +115,15 @@ jobs:
           python -m py_compile agent.py test_agent.py
       - name: Validate Termux and WSL installer shell syntax
         run: bash -n install-termux.sh install-wsl.sh
+      - name: Verify Termux argument expansion and pinned agent hash
+        run: |
+          grep -Fq 'DEVICE_ID="${1:-}"' install-termux.sh
+          grep -Fq 'GATEWAY_URL="${2:-https://devices.shopnoltd.dpdns.org}"' install-termux.sh
+          grep -Fq 'if [[ -z "${PREFIX:-}"' install-termux.sh
+          if grep -Fq '\${1:-}' install-termux.sh; then exit 1; fi
+          expected="$(sha256sum agent.py | cut -d ' ' -f1)"
+          grep -Fq "$expected" install-termux.sh
+          grep -Fq "$expected" install-windows.ps1
       - name: Compile gateway and mounted ConfigMap source
         working-directory: ${{ github.workspace }}
         run: |
