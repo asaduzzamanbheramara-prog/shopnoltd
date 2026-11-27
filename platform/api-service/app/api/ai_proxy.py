@@ -126,6 +126,11 @@ async def memories(request: Request, token: str = Depends(raw_token)):
     return await proxy(request, "/api/v1/memories", token)
 
 
+@router.api_route("/ai/memories/settings", methods=["GET", "PATCH"])
+async def memory_settings(request: Request, token: str = Depends(raw_token)):
+    return await proxy(request, "/api/v1/memories/settings", token)
+
+
 @router.api_route("/ai/memories/{memory_id}", methods=["PATCH", "DELETE"])
 async def memory_item(request: Request, memory_id: str, token: str = Depends(raw_token)):
     return await proxy(request, f"/api/v1/memories/{memory_id}", token)
