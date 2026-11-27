@@ -98,6 +98,42 @@ jobs:
             platform/training-service/app \
             shared/libraries/python/shopno_core
 
+  remote-device-executor-tests:
+    name: Remote device executor tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: platform/remote-device/executor
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Run executor enrollment and security tests
+        run: |
+          python -m unittest -v test_agent.py
+          python -m py_compile agent.py test_agent.py
+      - name: Validate Termux and WSL installer shell syntax
+        run: bash -n install-termux.sh install-wsl.sh
+      - name: Compile gateway and mounted ConfigMap source
+        working-directory: ${{ github.workspace }}
+        run: |
+          python -m py_compile platform/remote-device/gateway/app.py
+          python -m pip install pyyaml
+          python - <<'PY'
+          import yaml
+          from pathlib import Path
+
+          manifest = yaml.safe_load(Path('k8s/services/remote-device/gateway-source-configmap.yaml').read_text())
+          source = manifest['data']['app.py']
+          compile(source, 'remote-device-gateway-configmap:app.py', 'exec')
+          expected = 'MeshCentral remote desktop is not supported for this mobile platform.'
+          for name, text in [('gateway app.py', Path('platform/remote-device/gateway/app.py').read_text()), ('gateway ConfigMap', source)]:
+              if expected not in text:
+                  raise SystemExit(f'{name} is missing the mobile remote-control guard')
+          print('Gateway source and mounted ConfigMap compile; mobile screen-control guard is present.')
+          PY
+
   web-portal:
     name: Web portal build
     runs-on: ubuntu-latest
@@ -372,4 +408,4 @@ jobs:
         env:
           PYTHONPATH: platform/api-service:shared/libraries/python
           DATABASE_URL: postgresql+asyncpg://ci:ci@127.0.0.1:5432/ci_test
-        run: python -m pytest platform/api-service/tests/test_affiliate_api.py platform/api-service/tests/test_work_rate_privacy.py platform/api-service/tests/test_work_visibility_privacy.py platform/api-service/tests/test_work_escrow_client.py -q
+        run: python -m pytest platform/api-service/tests/test_affiliate_api.py platform/api-service/tests/test_work_rate_privacy.py platform/api-service/tests/test_work_visibility_privacy.py platform/api-service/tests/test_work_escrow_client.py platform/api-service/tests/test_integration_catalog.py -q

@@ -90,6 +90,7 @@ export const platformApi = {
   adminServiceOrders: (status = '') => request('/api/v1/service-orders/admin/list' + (status ? `?status=${encodeURIComponent(status)}` : '')),
   quoteServiceOrder: (id, body) => request(`/api/v1/service-orders/admin/${encodeURIComponent(id)}/quote`, { method: 'POST', body: JSON.stringify(body) }),
   cancelServiceOrder: (id) => request(`/api/v1/service-orders/admin/${encodeURIComponent(id)}/cancel`, { method: 'POST' }),
+  integrationCatalog: (category = '', q = '') => request('/api/v1/integrations/catalog' + (category || q ? `?${new URLSearchParams({ ...(category ? { category } : {}), ...(q ? { q } : {}) })}` : '')),
   omnichannelProviders: () => request('/api/v1/omnichannel/providers'),
   omnichannelOAuthStatus: () => request('/api/v1/omnichannel/oauth/status'),
   omnichannelOAuthAuthorizeUrl: (provider, platform) => request('/api/v1/omnichannel/oauth/authorize-url/' + encodeURIComponent(provider) + '/' + encodeURIComponent(platform)),

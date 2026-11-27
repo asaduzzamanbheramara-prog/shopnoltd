@@ -10,6 +10,8 @@ spec:
       app: remote-device-ui
   template:
     metadata:
+      annotations:
+        checksum/ui-source: 478b34dac920547f9ae70193b2e025ed1963ddee9e1b9a0f0e5c4b3f070bba96
       labels:
         app: remote-device-ui
     spec:
