@@ -317,8 +317,8 @@ const ROUTE_METADATA = {
     description: 'Explore available Shopnoltd plugins, integrations, and tools for extending your digital workspace.',
   },
   '/cloud': {
-    title: 'Shopnoltd Cloud Workspace | Android and Mac Cloud',
-    description: 'Launch Shopnoltd Android Cloud and view the licensing-gated Mac Cloud workspace roadmap.',
+    title: 'Shopnoltd Cloud Workspace | Windows, Linux, Mac and Android',
+    description: 'Explore Shopnoltd browser-based Android Cloud and planned Windows, Linux and licensing-gated Mac cloud workspaces.',
   },
   '/downloads': {
     title: 'Shopnoltd Downloads | Official Applications',
