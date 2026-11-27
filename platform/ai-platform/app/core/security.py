@@ -63,8 +63,9 @@ async def verify_token(token: str) -> dict:
             token,
             key,
             algorithms=[key["alg"]],
-            audience=settings.keycloak_audience,
-            options={"verify_aud": True},
+            audience=settings.keycloak_audiences_list,
+            issuer=settings.keycloak_issuer,
+            options={"verify_aud": True, "verify_iss": True},
         )
     except (JWTError, StopIteration, KeyError) as exc:
         raise ValueError(f"invalid token: {exc}") from exc

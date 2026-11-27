@@ -84,6 +84,16 @@ app.include_router(
     tags=["agents"],
 )
 app.include_router(
+    __import__("app.api.conversations", fromlist=["router"]).router,
+    prefix="/api/v1/conversations",
+    tags=["conversations"],
+)
+app.include_router(
+    __import__("app.api.memories", fromlist=["router"]).router,
+    prefix="/api/v1/memories",
+    tags=["memories"],
+)
+app.include_router(
     __import__("app.api.media", fromlist=["router"]).router,
 )
 app.include_router(
@@ -92,11 +102,9 @@ app.include_router(
 app.include_router(
     __import__("app.api.ai_corrections", fromlist=["router"]).router,
 )
-
 app.include_router(
     __import__("app.api.ai_providers", fromlist=["router"]).router,
 )
-
 app.include_router(
     __import__("app.api.ai_models", fromlist=["router"]).router,
 )

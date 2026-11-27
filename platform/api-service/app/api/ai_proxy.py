@@ -104,3 +104,33 @@ async def documents(request: Request, path: str, token: str = Depends(raw_token)
 @router.api_route("/ai/agents/{path:path}", methods=["GET", "POST", "PUT", "PATCH", "DELETE"])
 async def agents(request: Request, path: str, token: str = Depends(raw_token)):
     return await proxy(request, f"/api/v1/agents/{path}", token)
+
+
+@router.api_route("/ai/conversations", methods=["GET"])
+async def conversations(request: Request, token: str = Depends(raw_token)):
+    return await proxy(request, "/api/v1/conversations", token)
+
+
+@router.api_route("/ai/conversations/sync", methods=["PUT"])
+async def sync_conversations(request: Request, token: str = Depends(raw_token)):
+    return await proxy(request, "/api/v1/conversations/sync", token)
+
+
+@router.api_route("/ai/conversations/{chat_id}", methods=["DELETE"])
+async def delete_conversation(request: Request, chat_id: str, token: str = Depends(raw_token)):
+    return await proxy(request, f"/api/v1/conversations/{chat_id}", token)
+
+
+@router.api_route("/ai/memories", methods=["GET", "POST"])
+async def memories(request: Request, token: str = Depends(raw_token)):
+    return await proxy(request, "/api/v1/memories", token)
+
+
+@router.api_route("/ai/memories/settings", methods=["GET", "PATCH"])
+async def memory_settings(request: Request, token: str = Depends(raw_token)):
+    return await proxy(request, "/api/v1/memories/settings", token)
+
+
+@router.api_route("/ai/memories/{memory_id}", methods=["PATCH", "DELETE"])
+async def memory_item(request: Request, memory_id: str, token: str = Depends(raw_token)):
+    return await proxy(request, f"/api/v1/memories/{memory_id}", token)

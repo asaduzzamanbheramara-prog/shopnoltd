@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { ArrowDown, Bot, Check, ChevronDown, Copy, Download, Eye, FileText, FolderKanban, ListTodo, Maximize2, Menu, MessageSquare, Mic, Minimize2, Monitor, Paperclip, Plus, PlusCircle, RefreshCw, Send, Sparkles, Square, Trash2, Volume2, X } from 'lucide-react'
 import { authenticatedRequest, authenticatedStreamRequest } from '../lib/financialApi'
 import AgentWorkspace from './AgentWorkspace'
+import AIMemoryManager from './AIMemoryManager'
 import { MAX_IMAGE_INPUT_BYTES, MAX_VIDEO_INPUT_BYTES, copyToClipboard, downloadBlob, friendlyError, prepareImage, prepareVideo, resolveLanguage, splitBlocks, svgDataUrl, svgToJpegBlob, svgToPngBlob } from './aiChatHelpers'
 
 async function request(path, options = {}) {
@@ -151,6 +152,8 @@ export default function AIWorkspace() {
   const [loadingModels, setLoadingModels] = useState(true)
   const [listening, setListening] = useState(false)
   const [error, setError] = useState('')
+  const [memoryOpen, setMemoryOpen] = useState(false)
+  const [historyStatus, setHistoryStatus] = useState('syncing')
   const [canRetry, setCanRetry] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [focusMode, setFocusMode] = useState(false)
@@ -167,6 +170,7 @@ export default function AIWorkspace() {
   const lastRequestRef = useRef(null)
   const lastMultimodalRef = useRef([])
   const explicitModelSelectionRef = useRef(false)
+  const serverHistoryReadyRef = useRef(false)
 
   const activeChat = chats.find((chat) => chat.id === activeId) || chats[0]
   const activeMessages = activeChat?.messages || []
@@ -179,6 +183,70 @@ export default function AIWorkspace() {
   const activeModelId = modelId || activeChat?.modelId || null
 
   useEffect(() => { localStorage.setItem(STORAGE_KEY, JSON.stringify(chats)) }, [chats])
+
+  useEffect(() => {
+    let cancelled = false
+    async function hydrateServerHistory() {
+      try {
+        const saved = await request('/conversations')
+        if (cancelled) return
+        if (!Array.isArray(saved)) throw new Error('The account chat-history response was invalid.')
+        if (saved.length) {
+          const localById = new Map(chats.map((chat) => [chat.id, chat]))
+          const savedIds = new Set(saved.map((chat) => chat.id))
+          const restored = saved.map((chat) => ({
+            ...chat,
+            modelId: chat.modelId || null,
+            messages: (chat.messages || []).map((message) => {
+              const local = localById.get(chat.id)?.messages?.find((item) => item.id === message.id)
+              return local ? { ...message, ...local } : message
+            })
+          }))
+          const localOnly = chats.filter((chat) => !savedIds.has(chat.id))
+          setChats([...restored, ...localOnly])
+          setActiveId(saved[0].id)
+        } else if (chats.length) {
+          await request('/conversations/sync', {
+            method: 'PUT',
+            body: JSON.stringify({ chats: chats.map((chat) => ({
+              id: chat.id, title: chat.title, model: chat.model, modelId: chat.modelId,
+              messages: (chat.messages || []).map(({ id, role, content }) => ({ id, role, content }))
+            })) })
+          })
+        }
+        if (!cancelled) {
+          serverHistoryReadyRef.current = true
+          setHistoryStatus('synced')
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setHistoryStatus('local-only')
+          setError(friendlyError(err))
+        }
+      }
+    }
+    hydrateServerHistory()
+    return () => { cancelled = true }
+  }, [])
+
+  useEffect(() => {
+    if (!serverHistoryReadyRef.current) return undefined
+    const timer = setTimeout(() => {
+      setHistoryStatus('saving')
+      request('/conversations/sync', {
+        method: 'PUT',
+        body: JSON.stringify({ chats: chats.map((chat) => ({
+          id: chat.id, title: chat.title, model: chat.model, modelId: chat.modelId,
+          messages: (chat.messages || []).map(({ id, role, content }) => ({ id, role, content }))
+        })) })
+      }).then(() => setHistoryStatus('synced')).catch((err) => {
+        setHistoryStatus('local-only')
+        setError(friendlyError(err))
+      })
+    }, 500)
+    return () => clearTimeout(timer)
+  }, [chats])
+
 
   // The site menu can be one to three rows tall, so measure what is left under it instead of guessing.
   useLayoutEffect(() => {
@@ -299,6 +367,7 @@ export default function AIWorkspace() {
   }
 
   function deleteChat(id) {
+    request(`/conversations/${encodeURIComponent(id)}`, { method: 'DELETE' }).catch((err) => setError(friendlyError(err)))
     setChats((current) => {
       const remaining = current.filter((chat) => chat.id !== id)
       const next = remaining.length ? remaining : [createChat(activeModel, resolvedModelId)]
@@ -545,7 +614,7 @@ export default function AIWorkspace() {
         </nav>
         <div style={{ padding: '6px 10px 10px', fontSize: 11, color: '#6b7280', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em' }}>Recent chats</div>
         <div style={{ overflowY: 'auto', overscrollBehavior: 'contain', flex: 1, minHeight: 0, padding: '0 8px' }}>{chats.map((chat) => <div key={chat.id} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}><button onClick={() => { setActiveId(chat.id); setSidebarOpen(false) }} style={{ flex: 1, minWidth: 0, textAlign: 'left', display: 'flex', alignItems: 'center', gap: 9, border: 0, borderRadius: 8, background: chat.id === activeId ? '#e5e7eb' : 'transparent', padding: '9px 10px', cursor: 'pointer', color: '#374151' }}><MessageSquare size={16} /><span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{chat.title}</span></button><button onClick={() => deleteChat(chat.id)} aria-label="Delete chat" title="Delete chat" style={{ border: 0, background: 'transparent', color: '#9ca3af', padding: 5, cursor: 'pointer' }}><Trash2 size={14} /></button></div>)}</div>
-        <div style={{ padding: 12, borderTop: '1px solid #e5e7eb', fontSize: 12, color: '#6b7280' }}>Shopnoltd AI · Your chats are stored locally in this browser.</div>
+        <div style={{ padding: 12, borderTop: '1px solid #e5e7eb', fontSize: 12, color: '#6b7280' }}>Shopnoltd AI · {historyStatus === 'synced' ? 'Chats are saved to your Shopnoltd account.' : historyStatus === 'saving' ? 'Saving chats to your Shopnoltd account…' : historyStatus === 'syncing' ? 'Syncing account chat history…' : 'Account sync unavailable; chats are stored only in this browser.'}</div>
       </aside>
       <section className="shopno-ai-main" style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
         <header style={{ height: 58, flex: '0 0 58px', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', gap: 10, padding: '0 14px 0 18px', background: 'rgba(255,255,255,.96)' }}>
@@ -556,8 +625,10 @@ export default function AIWorkspace() {
           <button onClick={() => setFocusMode((value) => !value)} aria-label={focusMode ? 'Exit full screen' : 'Full screen'} title={focusMode ? 'Exit full screen (Esc)' : 'Full screen'} style={actionStyle}>{focusMode ? <Minimize2 size={18} /> : <Maximize2 size={18} />}</button>
           <button className="shopno-ai-mobile-only" onClick={() => setSidebarOpen(false)} aria-label="Close history" style={{ ...actionStyle, alignItems: 'center' }}><X size={18} /></button>
           <Link to="/ai/connections" style={{ ...actionStyle, textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }} title="Connections">Connections</Link>
+          <button type="button" onClick={() => setMemoryOpen(true)} aria-label="Manage saved memory" title="Review and manage saved memory" style={{ ...actionStyle, fontWeight: 700 }}>Memory</button>
           <button type="button" onClick={() => setMode((value) => (value === 'agent' ? 'chat' : 'agent'))} aria-pressed={mode === 'agent'} title="Autonomous agent mode" style={{ ...actionStyle, display: 'inline-flex', alignItems: 'center', gap: 5, fontWeight: 700, color: mode === 'agent' ? '#10a37f' : '#4b5563' }}><Bot size={16} /> Agent</button>
         </header>
+        {memoryOpen && <AIMemoryManager onClose={() => setMemoryOpen(false)} />}
         {workspaceView === 'projects' ? <div style={{ flex: 1, overflowY: 'auto', padding: '34px max(18px, calc((100% - 820px) / 2))' }}><div style={{ color: '#6b7280', fontSize: 13, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase' }}>Projects</div><h1 style={{ margin: '8px 0 10px', fontSize: 30 }}>Organize your AI work</h1><p style={{ color: '#6b7280', lineHeight: 1.6 }}>Projects keep related tasks, chats, and files together. Your default Shopnoltd workspace is ready.</p><div style={{ marginTop: 22, border: '1px solid #e5e7eb', borderRadius: 14, padding: 18, background: '#fff' }}><div style={{ display: 'flex', alignItems: 'center', gap: 12 }}><FolderKanban size={20} color="#10a37f" /><div><strong>Shopnoltd AI</strong><div style={{ color: '#6b7280', fontSize: 13, marginTop: 3 }}>Default project · {chats.length} chat{chats.length === 1 ? '' : 's'}</div></div></div></div></div> : mode === 'agent' ? <AgentWorkspace /> : (<>
         <div style={{ position: 'relative', flex: 1, minHeight: 0, display: 'flex' }}>
           <div ref={scrollRef} onScroll={onScroll} className="shopno-ai-content" style={{ flex: 1, minHeight: 0, overflowY: 'auto', overscrollBehavior: 'contain', padding: '0 max(18px, calc((100% - 820px) / 2))' }}>

@@ -27,6 +27,12 @@ class Settings(BaseSettings):
     media_service_timeout_seconds: int = 120
     keycloak_issuer: str = "https://auth.shopnoltd.dpdns.org/realms/shopnoltd"
     keycloak_audience: str = "ai-platform"
+    keycloak_audiences: str = "ai-platform,api-service"
+
+    @property
+    def keycloak_audiences_list(self) -> list[str]:
+        values = self.keycloak_audiences or self.keycloak_audience
+        return list(dict.fromkeys(value.strip() for value in values.split(",") if value.strip()))
 
     @property
     def cors_origins_list(self) -> list[str]:

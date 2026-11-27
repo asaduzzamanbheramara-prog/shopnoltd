@@ -7,12 +7,39 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import current_user
-from app.db.models import AIModel, AIProvider
+from app.db.models import AIModel, AIProvider, AIPersonalMemory, AIPersonalMemorySettings
 from app.db.session import AsyncSessionLocal, get_db
 from app.schemas.schemas import InferIn, InferOut
 from app.services.model_router import ModelNotAvailableError, ProviderInferenceError, run_inference
 
 router = APIRouter()
+
+
+async def _load_personal_memories(db: AsyncSession, user: dict) -> list[dict]:
+    """Load only the authenticated user's saved memories; missing scope fails closed."""
+    tenant_id = user.get("tenant_id") if isinstance(user, dict) else None
+    user_id = user.get("sub") if isinstance(user, dict) else None
+    if not isinstance(tenant_id, str) or not tenant_id.strip():
+        return []
+    if not isinstance(user_id, str) or not user_id.strip():
+        return []
+    preferences = await db.get(AIPersonalMemorySettings, (tenant_id.strip(), user_id.strip()))
+    if preferences is not None and not preferences.memory_enabled:
+        return []
+    result = await db.execute(
+        select(AIPersonalMemory)
+        .where(
+            AIPersonalMemory.tenant_id == tenant_id.strip(),
+            AIPersonalMemory.user_id == user_id.strip(),
+        )
+        .order_by(AIPersonalMemory.updated_at.desc())
+        .limit(20)
+    )
+    return [
+        {"category": row.category[:60], "content": row.content[:1000]}
+        for row in result.scalars().all()
+        if isinstance(row.content, str) and row.content.strip()
+    ]
 
 
 @router.get("/models")
@@ -41,7 +68,7 @@ async def list_active_models(
     ]
 
 
-async def _stream_result(body: InferIn):
+async def _stream_result(body: InferIn, personal_memories: list[dict]):
     async with AsyncSessionLocal() as db:
         task = asyncio.create_task(
             run_inference(
@@ -51,6 +78,7 @@ async def _stream_result(body: InferIn):
                 model_id=body.model_id,
                 attachments=body.attachments,
                 history=body.history,
+                personal_memories=personal_memories,
             )
         )
         try:
@@ -82,10 +110,12 @@ async def _stream_result(body: InferIn):
 @router.post("/stream")
 async def infer_stream(
     body: InferIn,
-    _user=Depends(current_user),
+    user=Depends(current_user),
+    db: AsyncSession = Depends(get_db),
 ):
+    personal_memories = await _load_personal_memories(db, user)
     return StreamingResponse(
-        _stream_result(body),
+        _stream_result(body, personal_memories),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache, no-transform", "X-Accel-Buffering": "no"},
     )
@@ -98,6 +128,7 @@ async def infer(
     db: AsyncSession = Depends(get_db),
 ):
     try:
+        personal_memories = await _load_personal_memories(db, user)
         result, resolved_model = await run_inference(
             db=db,
             prompt=body.prompt,
@@ -105,6 +136,7 @@ async def infer(
             model_id=body.model_id,
             attachments=body.attachments,
             history=body.history,
+            personal_memories=personal_memories,
         )
         return InferOut(
             response=result.text,
