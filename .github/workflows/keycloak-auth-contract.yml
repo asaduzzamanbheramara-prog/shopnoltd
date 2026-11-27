@@ -1,0 +1,37 @@
+name: Keycloak authentication contract
+
+on:
+  pull_request:
+    paths:
+      - 'platform/web-portal/src/pages/Login.jsx'
+      - 'platform/web-portal/src/pages/Callback.jsx'
+      - 'platform/web-portal/src/config.js'
+      - 'k8s/services/keycloak/client-sync.py'
+      - 'scripts/validate-keycloak-auth-contract.py'
+      - '.github/workflows/keycloak-auth-contract.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'platform/web-portal/src/pages/Login.jsx'
+      - 'platform/web-portal/src/pages/Callback.jsx'
+      - 'platform/web-portal/src/config.js'
+      - 'k8s/services/keycloak/client-sync.py'
+      - 'scripts/validate-keycloak-auth-contract.py'
+      - '.github/workflows/keycloak-auth-contract.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  oidc-contract:
+    name: Validate browser OIDC configuration
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check PKCE, state validation, grant policy and smoke coverage
+        run: python scripts/validate-keycloak-auth-contract.py
