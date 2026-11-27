@@ -22,7 +22,7 @@ AUTOMATION_TOKEN = os.getenv("SHOPNOLTD_INTERNAL_AUTOMATION_TOKEN", "")
 N8N_ACTION_TOKEN = os.getenv("SHOPNOLTD_N8N_ACTION_TOKEN", "")
 
 PLATFORMS = {
-    "whatsapp", "facebook", "instagram", "linkedin", "x", "telegram",
+    "whatsapp", "facebook", "instagram", "linkedin", "github", "x", "telegram",
     "tiktok", "youtube", "gmail", "outlook", "3cx",
 }
 
@@ -33,6 +33,7 @@ PROVIDER_CONFIG = {
     "google": {"platforms": ["gmail", "youtube"], "client_id": settings.google_client_id, "client_secret": settings.google_client_secret, "auth_url": "https://accounts.google.com/o/oauth2/v2/auth", "token_url": "https://oauth2.googleapis.com/token", "scopes": ["openid", "email", "profile"], "credential_keys": ["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET"]},
     "microsoft": {"platforms": ["outlook"], "client_id": settings.microsoft_client_id, "client_secret": settings.microsoft_client_secret, "auth_url": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize", "token_url": "https://login.microsoftonline.com/common/oauth2/v2.0/token", "scopes": ["openid", "profile", "email", "offline_access", "https://graph.microsoft.com/User.Read"], "credential_keys": ["MICROSOFT_CLIENT_ID", "MICROSOFT_CLIENT_SECRET"]},
     "linkedin": {"platforms": ["linkedin"], "client_id": settings.linkedin_client_id, "client_secret": settings.linkedin_client_secret, "auth_url": "https://www.linkedin.com/oauth/v2/authorization", "token_url": "https://www.linkedin.com/oauth/v2/accessToken", "scopes": ["openid", "profile", "email"], "credential_keys": ["LINKEDIN_CLIENT_ID", "LINKEDIN_CLIENT_SECRET"]},
+    "github": {"platforms": ["github"], "client_id": settings.github_client_id, "client_secret": settings.github_client_secret, "auth_url": "https://github.com/login/oauth/authorize", "token_url": "https://github.com/login/oauth/access_token", "scopes": ["read:user", "user:email", "offline_access"], "credential_keys": ["GITHUB_CLIENT_ID", "GITHUB_CLIENT_SECRET"]},
     "x": {"platforms": ["x"], "client_id": settings.x_client_id, "client_secret": settings.x_client_secret, "auth_url": "https://x.com/i/oauth2/authorize", "token_url": "https://api.x.com/2/oauth2/token", "scopes": ["tweet.read", "users.read", "offline.access"], "credential_keys": ["X_CLIENT_ID", "X_CLIENT_SECRET"]},
     "facebook": {"platforms": ["facebook"], "client_id": settings.facebook_client_id, "client_secret": settings.facebook_client_secret, "auth_url": "https://www.facebook.com/v24.0/dialog/oauth", "token_url": "https://graph.facebook.com/v24.0/oauth/access_token", "scopes": [], "credential_keys": ["FACEBOOK_CLIENT_ID", "FACEBOOK_CLIENT_SECRET"]},
     "instagram": {"platforms": ["instagram"], "client_id": settings.instagram_client_id or settings.facebook_client_id, "client_secret": settings.instagram_client_secret or settings.facebook_client_secret, "auth_url": "https://www.facebook.com/v24.0/dialog/oauth", "token_url": "https://graph.facebook.com/v24.0/oauth/access_token", "scopes": [], "credential_keys": ["INSTAGRAM_CLIENT_ID", "INSTAGRAM_CLIENT_SECRET"]},

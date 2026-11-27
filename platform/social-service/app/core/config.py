@@ -27,6 +27,8 @@ class Settings(BaseSettings):
     microsoft_client_secret: str | None = None
     linkedin_client_id: str | None = None
     linkedin_client_secret: str | None = None
+    github_client_id: str | None = None
+    github_client_secret: str | None = None
     x_client_id: str | None = None
     x_client_secret: str | None = None
     facebook_client_id: str | None = None

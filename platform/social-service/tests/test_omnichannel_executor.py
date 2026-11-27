@@ -124,3 +124,36 @@ def test_unsupported_or_invalid_requests_fail_closed(platform, action, payload):
 )
 def test_provider_response_disposition_is_fail_closed(status, expected):
     assert _response_disposition(status) == expected
+
+
+def test_github_refresh_uses_rotating_refresh_token_and_json_response(monkeypatch):
+    import asyncio
+    import app.workers.omnichannel_executor as executor
+
+    class Response:
+        status_code = 200
+        def json(self):
+            return {"access_token": "new-access", "refresh_token": "new-refresh", "expires_in": 28800}
+
+    class Client:
+        request = None
+        async def __aenter__(self):
+            return self
+        async def __aexit__(self, *args):
+            return False
+        async def post(self, url, **kwargs):
+            self.request = (url, kwargs)
+            return Response()
+
+    client = Client()
+    monkeypatch.setattr(executor.settings, "github_client_id", "github-client-id")
+    monkeypatch.setattr(executor.settings, "github_client_secret", "server-only-secret")
+    monkeypatch.setattr(executor.httpx, "AsyncClient", lambda **kwargs: client)
+
+    tokens = asyncio.run(executor._refresh_access_token("github", "old-refresh"))
+    url, request = client.request
+    assert url == "https://github.com/login/oauth/access_token"
+    assert request["data"]["grant_type"] == "refresh_token"
+    assert request["data"]["refresh_token"] == "old-refresh"
+    assert request["headers"]["Accept"] == "application/json"
+    assert tokens["refresh_token"] == "new-refresh"

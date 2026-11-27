@@ -515,3 +515,69 @@ def test_manual_connection_patch_cannot_mark_profile_connected():
         ConnectionPatch(status="connected")
 
     assert ConnectionPatch(status="pending").status == "pending"
+
+
+
+def test_github_authorization_url_uses_pkce_and_offline_access(monkeypatch):
+    monkeypatch.setitem(oauth.PROVIDER_CONFIG, "github", {
+        "platforms": ["github"],
+        "client_id": "github-client-id",
+        "client_secret": "server-only-secret",
+        "auth_url": "https://github.com/login/oauth/authorize",
+        "token_url": "https://github.com/login/oauth/access_token",
+        "scopes": ["read:user", "user:email", "offline_access"],
+    })
+    monkeypatch.setattr(oauth.settings, "provider_oauth_redirect_uri", "https://shopnoltd.example/callback")
+    monkeypatch.setattr(oauth, "_sign_state", lambda payload: "signed-github-state")
+
+    url = oauth._authorization_url("github", "github", {"sub": "user-1"})
+    params = parse_qs(urlparse(url).query)
+
+    assert params["client_id"] == ["github-client-id"]
+    assert params["scope"] == ["read:user user:email offline_access"]
+    assert params["code_challenge_method"] == ["S256"]
+    assert params["state"] == ["signed-github-state"]
+    assert "server-only-secret" not in url
+
+
+def test_github_identity_fields_use_numeric_id_and_login():
+    assert oauth._identity_fields("github", {
+        "id": 12345, "login": "shopno-dev", "name": "Shopno Developer"
+    }) == ("12345", "shopno-dev", "Shopno Developer")
+
+
+def test_github_token_exchange_uses_json_response_and_pkce_verifier(monkeypatch):
+    import asyncio
+
+    class Response:
+        status_code = 200
+        def json(self):
+            return {"access_token": "github-access", "refresh_token": "github-refresh", "expires_in": 28800}
+
+    class Client:
+        request = None
+        async def __aenter__(self):
+            return self
+        async def __aexit__(self, *args):
+            return False
+        async def post(self, url, **kwargs):
+            self.request = (url, kwargs)
+            return Response()
+
+    client = Client()
+    monkeypatch.setitem(oauth.PROVIDER_CONFIG, "github", {
+        "platforms": ["github"],
+        "client_id": "github-client-id",
+        "client_secret": "server-only-secret",
+        "token_url": "https://github.com/login/oauth/access_token",
+    })
+    monkeypatch.setattr(oauth.settings, "provider_oauth_redirect_uri", "https://shopnoltd.example/callback")
+    monkeypatch.setattr(oauth.httpx, "AsyncClient", lambda **kwargs: client)
+
+    tokens = asyncio.run(oauth._exchange("github", "one-time-code", "original-verifier"))
+    url, request = client.request
+    assert url == "https://github.com/login/oauth/access_token"
+    assert request["headers"]["Accept"] == "application/json"
+    assert request["data"]["code_verifier"] == "original-verifier"
+    assert request["data"]["client_secret"] == "server-only-secret"
+    assert tokens["refresh_token"] == "github-refresh"

@@ -21,6 +21,7 @@ Store only the keys needed for providers you are enabling. Existing keys in `soc
 | Google / Gmail / YouTube | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | OAuth; enable Gmail API and YouTube Data API and request only required scopes. |
 | Microsoft / Outlook | `MICROSOFT_CLIENT_ID`, `MICROSOFT_CLIENT_SECRET` | Microsoft Entra app + delegated Graph permissions and admin consent if required. |
 | LinkedIn | `LINKEDIN_CLIENT_ID`, `LINKEDIN_CLIENT_SECRET` | OAuth; product/API access and member/org permissions depend on action. |
+| GitHub | `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` | OAuth authorization-code + PKCE; connects the GitHub user identity. Repository automation needs a separate GitHub App with explicit repository permissions. |
 | X | `X_CLIENT_ID`, `X_CLIENT_SECRET` | OAuth 2.0; X API access/tier and write permissions required for posting. |
 | TikTok | `TIKTOK_CLIENT_KEY`, `TIKTOK_CLIENT_SECRET` | Web Login Kit; app review and Content Posting approval are separate from basic identity access. |
 | Telegram | `TELEGRAM_BOT_TOKEN` | Bot API, not user OAuth. Admin creates the bot; user must add the bot to the relevant chat/channel with the required permissions. |
