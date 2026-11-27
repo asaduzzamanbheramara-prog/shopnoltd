@@ -83,7 +83,7 @@ export default function Home() {
     <AdsterraBanner />
     <AdsterraResponsiveBanner />
     <PreviewSection title="Core services" description="Start with services managed inside your Shopnoltd workspace, including messaging, calls, notifications and live media." items={SERVICES} />
-    <PreviewSection title="Cloud devices" description="Launch browser-accessible Shopnoltd device workspaces." items={SERVICES.filter(service => service.category === 'Cloud Devices')} limit={6} href="/android-cloud" />
+    <PreviewSection title="Cloud devices" description="Launch browser-accessible Shopnoltd device workspaces." items={SERVICES.filter(service => service.category === 'Cloud Devices')} limit={6} href="/cloud" />
     <PreviewSection title="Downloads" description="Install the official Shopnoltd applications on Windows, Linux, macOS or Android." items={SERVICES.filter(service => service.category === 'Downloads')} limit={3} href="/downloads" />
     <PreviewSection title="Software & Operating System Installation" description="Online software and driver resources, supported OS installation guidance, and offline USB recovery preparation for compatible devices. Actual installation is performed with the device owner's approval using official vendor tools." items={SERVICES.filter(service => service.category === 'Software & OS')} limit={3} href="/software-os-center.html" />
     <AdsterraNativeBanner />
