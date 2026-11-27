@@ -32,8 +32,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Install auth-service dependencies
-        run: python -m pip install -r platform/auth-service/requirements.txt
+      - name: Install auth-service dependencies and test tooling
+        run: python -m pip install -r platform/auth-service/requirements.txt pytest==8.4.1 pytest-asyncio==0.24.0
       - name: Run authentication security tests
         env:
           PYTHONPATH: platform/auth-service:shared/libraries/python
