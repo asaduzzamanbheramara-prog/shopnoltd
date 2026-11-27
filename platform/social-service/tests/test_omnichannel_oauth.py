@@ -515,3 +515,32 @@ def test_manual_connection_patch_cannot_mark_profile_connected():
         ConnectionPatch(status="connected")
 
     assert ConnectionPatch(status="pending").status == "pending"
+
+
+
+def test_github_authorization_url_uses_pkce_and_offline_access(monkeypatch):
+    monkeypatch.setitem(oauth.PROVIDER_CONFIG, "github", {
+        "platforms": ["github"],
+        "client_id": "github-client-id",
+        "client_secret": "server-only-secret",
+        "auth_url": "https://github.com/login/oauth/authorize",
+        "token_url": "https://github.com/login/oauth/access_token",
+        "scopes": ["read:user", "user:email", "offline_access"],
+    })
+    monkeypatch.setattr(oauth.settings, "provider_oauth_redirect_uri", "https://shopnoltd.example/callback")
+    monkeypatch.setattr(oauth, "_sign_state", lambda payload: "signed-github-state")
+
+    url = oauth._authorization_url("github", "github", {"sub": "user-1"})
+    params = parse_qs(urlparse(url).query)
+
+    assert params["client_id"] == ["github-client-id"]
+    assert params["scope"] == ["read:user user:email offline_access"]
+    assert params["code_challenge_method"] == ["S256"]
+    assert params["state"] == ["signed-github-state"]
+    assert "server-only-secret" not in url
+
+
+def test_github_identity_fields_use_numeric_id_and_login():
+    assert oauth._identity_fields("github", {
+        "id": 12345, "login": "shopno-dev", "name": "Shopno Developer"
+    }) == ("12345", "shopno-dev", "Shopno Developer")
