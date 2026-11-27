@@ -27,4 +27,18 @@ export default function CloudWorkspace(){return <main style={{maxWidth:1120,marg
 </div>
 <p style={{color:'#64748b',fontSize:12,lineHeight:1.5,marginBottom:0}}>Current status: catalogue, service request page and recovery guidance exist. Automated cross-device installation, a physical USB writer and universal device recovery are not yet implemented or validated.</p>
 </section>
+<section style={{marginTop:28,padding:22,border:'1px solid #c7d2fe',borderRadius:16,background:'#eef2ff'}}>
+<h2 style={{marginTop:0}}>Any-device Auto-Connect &amp; Remote Access</h2>
+<p style={{color:'#475569',lineHeight:1.7}}>Register a device to your Shopnoltd account, enroll its supported agent, and monitor its online/offline heartbeat from one device console. Authorized remote sessions are available only when the device is enrolled, linked to the remote-access engine, online, and permitted by the device owner.</p>
+<div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(min(100%,210px),1fr))',gap:12}}>
+<div><strong>1. Register &amp; pair</strong><p style={{color:'#64748b',lineHeight:1.55}}>Create an account-owned device record and use a one-time enrollment token in the supported installer. Never expose tokens in public or run them as shell commands.</p></div>
+<div><strong>2. Auto reconnect</strong><p style={{color:'#64748b',lineHeight:1.55}}>The outbound executor renews heartbeat and retries transient network errors. Unattended reconnect after reboot requires its supported OS service/startup configuration.</p></div>
+<div><strong>3. Remote connect</strong><p style={{color:'#64748b',lineHeight:1.55}}>Connect through the authorized remote engine after agent enrollment and device linking. Pairing/heartbeat alone does not create a remote desktop session.</p></div>
+</div>
+<div style={{display:'flex',gap:10,flexWrap:'wrap'}}>
+<Link to="/devices" style={actionStyle}>Open My Devices &amp; Auto-Connect →</Link>
+<a href="https://devices.shopnoltd.dpdns.org/" style={{...actionStyle,background:'#fff',color:'#3730a3',border:'1px solid #6366f1'}}>Open Device Console →</a>
+</div>
+<p style={{color:'#64748b',fontSize:12,lineHeight:1.5,marginBottom:0}}>Current implementation is platform-dependent: Windows/WSL has a guided setup path; other platforms need their matching native executor/agent. Android/iOS and other devices are not automatically controllable by a generic desktop agent. Remote sessions also require a linked MeshCentral node and valid authorization.</p>
+</section>
 <section style={{marginTop:28,padding:22,border:'1px solid #e2e8f0',borderRadius:16}}><h2 style={{marginTop:0}}>Current access and future paid cloud plans</h2><p style={{color:'#64748b',lineHeight:1.65}}>Browsing this page is free. Existing Code Workspace and Android Cloud remain governed by current access controls. No free quota, unlimited sessions or persistent storage is promised until enforced by the backend. Cloud-specific checkout, entitlements, usage metering and provider invoice/settlement approval are not connected yet. Do not buy a Cloud plan through generic checkout until an OS Cloud order shows its exact platform, price, limits and terms.</p><ol style={{color:'#475569',lineHeight:1.8,paddingLeft:22}}><li>Customer selects a published OS plan and pays Shopnoltd.</li><li>Shopnoltd verifies payment server-side and records the order.</li><li>An authorized Admin approves provider funding and records provider invoice/payment evidence.</li><li>Only after entitlement, licensing, provider capacity and Admin approval pass may a session be provisioned.</li></ol><div style={{display:'flex',gap:10,flexWrap:'wrap'}}><Link to="/pricing" style={{...actionStyle,marginTop:0}}>View general plans</Link></div></section></main>}
