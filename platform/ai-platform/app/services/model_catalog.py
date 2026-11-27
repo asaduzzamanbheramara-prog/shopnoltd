@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any
 
+import httpx
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -32,6 +33,33 @@ def _recommended(model: dict[str, Any]) -> bool:
         return value
     name = (_model_id(model) or "").lower()
     return any(token in name for token in ("sonnet", "opus", "gpt-5", "gpt-4", "gemini-2.5", "gemini-2.0", "llama-4", "qwen3", "deepseek-v3"))
+
+
+def _safe_provider_error(exc: Exception) -> dict[str, Any]:
+    """Return actionable provider diagnostics without leaking request URLs or credentials."""
+    detail: dict[str, Any] = {"error_type": type(exc).__name__}
+    if isinstance(exc, httpx.HTTPStatusError):
+        response = exc.response
+        detail["http_status"] = response.status_code
+        try:
+            payload = response.json()
+        except (ValueError, TypeError):
+            payload = {}
+        provider_error = payload.get("error") if isinstance(payload, dict) else None
+        if isinstance(provider_error, dict):
+            if provider_error.get("code") is not None:
+                detail["provider_error_code"] = provider_error["code"]
+            if provider_error.get("status"):
+                detail["provider_error_status"] = str(provider_error["status"])[:80]
+            if provider_error.get("message"):
+                # Google/provider error messages are useful for diagnosis; never include
+                # the exception string because it can contain a URL with a query key.
+                detail["provider_error_message"] = str(provider_error["message"])[:300]
+    elif isinstance(exc, httpx.TimeoutException):
+        detail["provider_error_message"] = "Provider request timed out."
+    elif isinstance(exc, httpx.RequestError):
+        detail["provider_error_message"] = "Provider network request failed."
+    return detail
 
 
 async def sync_provider_models(
@@ -135,14 +163,16 @@ async def sync_all_providers(
             reports.append(
                 await sync_provider_models(db, provider, activation=activation)
             )
-        except Exception:
+        except Exception as exc:
             # A provider outage must never erase its existing model catalog.
+            # Keep diagnostics actionable while excluding request URLs/API keys.
             reports.append({
                 "provider": provider.name,
                 "status": "error",
                 "discovered": 0,
                 "created": 0,
                 "updated": 0,
+                "diagnostic": _safe_provider_error(exc),
             })
     await db.commit()
     return reports
