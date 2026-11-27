@@ -39,6 +39,22 @@ jobs:
             "
           '
 
+      - name: Audit PostgreSQL filesystem and WAL usage
+        shell: bash
+        run: |
+          set -euo pipefail
+          kubectl --request-timeout=20s -n shopno-data exec deployment/postgres -- sh -c '
+            set -eu
+            data_dir=$(psql -X -U "$POSTGRES_USER" -d postgres -v ON_ERROR_STOP=1 -At -c "SHOW data_directory;")
+            printf "PostgreSQL data directory: %s\\n" "$data_dir"
+            echo "=== Filesystem capacity ==="
+            df -h "$data_dir"
+            echo "=== PostgreSQL data directory size ==="
+            du -sh "$data_dir"
+            echo "=== PostgreSQL WAL directory size ==="
+            du -sh "$data_dir/pg_wal"
+          '
+
       - name: Collect read-only workload inventory
         shell: bash
         run: |
