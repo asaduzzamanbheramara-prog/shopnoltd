@@ -7,6 +7,7 @@ const PROVIDERS = [
   { id: 'google', label: 'Continue with Google', icon: 'G' },
   { id: 'facebook', label: 'Continue with Facebook', icon: 'f' },
   { id: 'github', label: 'Continue with GitHub', icon: 'GH' },
+  { id: 'apple', label: 'Continue with Apple', icon: 'A' },
 ].filter((provider) => SOCIAL_LOGIN_PROVIDERS[provider.id])
 
 async function startLogin(provider = '', forceLogin = false) {
