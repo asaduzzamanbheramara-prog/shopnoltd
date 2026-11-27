@@ -81,3 +81,18 @@ jobs:
             k8s/argocd \
             k8s/overlays \
             k8s/system
+
+  test-integration-catalog:
+    name: Test integration catalog metadata and filtering
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install catalog test runner
+        run: python -m pip install pytest
+      - name: Test provider catalogue and readiness metadata
+        env:
+          PYTHONPATH: platform/api-service
+        run: python -m pytest platform/api-service/tests/test_integration_catalog.py -q
