@@ -15,7 +15,7 @@ jobs:
   restore:
     name: Restore all databases in disposable PostgreSQL
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
     services:
       postgres:
         image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-postgres-combined:pg16-postgis3.5-pgvector0.8.6
@@ -35,10 +35,18 @@ jobs:
           --health-retries 12
 
     steps:
+      - name: Checkout Shopnoltd recovery scripts
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: source
+          persist-credentials: false
+
       - name: Checkout encrypted backup branch
         uses: actions/checkout@v4
         with:
-          repository: ${{ github.repository }}
+          repository: ${{ secrets.BACKUP_REPOSITORY }}
+          token: ${{ secrets.BACKUP_REPOSITORY_TOKEN }}
           ref: database-backups
           path: backup-source
           fetch-depth: 1
@@ -54,19 +62,40 @@ jobs:
           test -n "${BACKUP_ENCRYPTION_KEY:-}" || { echo "::error::BACKUP_ENCRYPTION_KEY is missing."; exit 1; }
           echo "::add-mask::$BACKUP_ENCRYPTION_KEY"
           cd backup-source/backup
-          for file in latest.all-databases.tar.gz.enc latest.all-databases.tar.gz.enc.sha256; do
+          for file in timestamp.txt latest.dump.enc latest.dump.enc.sha256 latest.dump.enc.hmac latest.all-databases.tar.gz.enc latest.all-databases.tar.gz.enc.sha256 latest.all-databases.tar.gz.enc.hmac latest.kubernetes-secrets.json.enc latest.kubernetes-secrets.json.enc.sha256 latest.kubernetes-secrets.json.enc.hmac; do
             test -s "$file" || { echo "::error::Required encrypted database backup is missing: $file"; exit 1; }
           done
+          timestamp="$(tr -d '\r\n' < timestamp.txt)"
+          [[ "$timestamp" =~ ^[0-9]{8}T[0-9]{6}Z$ ]] || { echo "::error::Invalid backup timestamp."; exit 1; }
+          iso="${timestamp:0:4}-${timestamp:4:2}-${timestamp:6:2}T${timestamp:9:2}:${timestamp:11:2}:${timestamp:13:2}Z"
+          age=$(( $(date -u +%s) - $(date -u -d "$iso" +%s) ))
+          (( age >= 0 && age <= 172800 )) || { echo "::error::Backup is future-dated or older than 48 hours."; exit 1; }
+          sha256sum -c latest.dump.enc.sha256
           sha256sum -c latest.all-databases.tar.gz.enc.sha256
+          sha256sum -c latest.kubernetes-secrets.json.enc.sha256
+          python3 "$GITHUB_WORKSPACE/source/ops/backup/authenticated_backup.py" verify latest.dump.enc latest.all-databases.tar.gz.enc latest.kubernetes-secrets.json.enc
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 \
+            -in latest.dump.enc -out "$RUNNER_TEMP/shopnoltd-primary.dump" \
+            -pass env:BACKUP_ENCRYPTION_KEY
           openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 \
             -in latest.all-databases.tar.gz.enc \
             -out "$RUNNER_TEMP/shopnoltd-all-databases.tar.gz" \
+            -pass env:BACKUP_ENCRYPTION_KEY
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 \
+            -in latest.kubernetes-secrets.json.enc \
+            -out "$RUNNER_TEMP/shopnoltd-secrets.json" \
             -pass env:BACKUP_ENCRYPTION_KEY
           mkdir -p "$RUNNER_TEMP/shopnoltd-restore-source"
           tar -xzf "$RUNNER_TEMP/shopnoltd-all-databases.tar.gz" -C "$RUNNER_TEMP/shopnoltd-restore-source"
           test -s "$RUNNER_TEMP/shopnoltd-restore-source/globals.sql"
           test -s "$RUNNER_TEMP/shopnoltd-restore-source/database-list.txt"
-          echo "PASS: encrypted backup decrypted and extracted on the disposable GitHub-hosted runner."
+          echo "PASS: encrypted database and Secret exports authenticated, decrypted and extracted on the disposable GitHub-hosted runner."
+
+      - name: Restore Kubernetes Secrets into a disposable kind cluster
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash source/ops/backup/restore-kubernetes-secrets-isolated.sh "$RUNNER_TEMP/shopnoltd-secrets.json"
 
       - name: Restore roles and all database archives with PostgreSQL 16 tools
         shell: bash
@@ -124,11 +153,16 @@ jobs:
 
           echo "PASS: restored and connected to all $verified databases in the disposable PostgreSQL 16 instance."
           echo "PASS: production PostgreSQL and Kubernetes Secrets were not accessed or modified by this restore job."
+          docker cp "$RUNNER_TEMP/shopnoltd-primary.dump" "$container_id:/tmp/shopnoltd-primary.dump"
+          docker exec --user root -e PGPASSWORD="$PGPASSWORD" "$container_id" createdb --username="$PGUSER" --template=template0 primary_dump_validation
+          docker exec --user root -e PGPASSWORD="$PGPASSWORD" "$container_id" pg_restore --exit-on-error --no-owner --no-acl --username="$PGUSER" --dbname=primary_dump_validation /tmp/shopnoltd-primary.dump
+          echo "PASS: independent primary PostgreSQL dump restored into disposable instance."
           docker exec --user root "$container_id" rm -rf "$restore_dir"
 
       - name: Remove decrypted backup material
         if: always()
         shell: bash
         run: |
-          rm -f "$RUNNER_TEMP/shopnoltd-all-databases.tar.gz"
+          rm -f "$RUNNER_TEMP/shopnoltd-primary.dump" "$RUNNER_TEMP/shopnoltd-all-databases.tar.gz" "$RUNNER_TEMP/shopnoltd-secrets.json" "$RUNNER_TEMP/secrets-import.json" "$RUNNER_TEMP/namespaces.txt" "$RUNNER_TEMP/kind" "$RUNNER_TEMP/kubectl"
           rm -rf "$RUNNER_TEMP/shopnoltd-restore-source"
+          kind delete cluster --name shopnoltd-recovery >/dev/null 2>&1 || true

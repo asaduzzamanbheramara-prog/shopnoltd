@@ -126,14 +126,15 @@ class LoginBrokerFlowTests(TestCase):
             client_sync.ensure_login_first_broker_flow("test-token")
 
         updates = [body for method, path, body in calls if method == "PUT"]
-        self.assertEqual(len(updates), 2)
+        self.assertEqual(len(updates), 4)
         self.assertEqual(
             {item["id"]: item["requirement"] for item in updates},
-            {"create-user": "DISABLED", "confirm-link": "DISABLED"},
-        )
-        self.assertEqual(
-            next(item for item in executions if item["providerId"] == "idp-email-verification")["requirement"],
-            "ALTERNATIVE",
+            {
+                "create-user": "DISABLED",
+                "confirm-link": "DISABLED",
+                "verify-email": "REQUIRED",
+                "reauth": "DISABLED",
+            },
         )
         self.assertTrue(any(method == "POST" and path.endswith("/first%20broker%20login/copy") for method, path, _ in calls))
 
@@ -147,6 +148,7 @@ class LoginBrokerFlowTests(TestCase):
             {"id": "create-user", "providerId": "idp-create-user-if-unique", "requirement": "ALTERNATIVE", "level": 2},
             {"id": "confirm-link", "providerId": "idp-confirm-link", "requirement": "REQUIRED", "level": 2},
             {"id": "email", "providerId": "idp-email-verification", "requirement": "ALTERNATIVE", "level": 2},
+            {"id": "reauth", "providerId": "idp-username-password-form", "requirement": "REQUIRED", "level": 3},
         ]
         calls = []
         flow_reads = 0
@@ -174,7 +176,12 @@ class LoginBrokerFlowTests(TestCase):
         updates = [body for method, path, body in calls if method == "PUT"]
         self.assertEqual(
             {item["id"]: item["requirement"] for item in updates},
-            {"create-user": "DISABLED", "confirm-link": "DISABLED"},
+            {
+                "create-user": "DISABLED",
+                "confirm-link": "DISABLED",
+                "email": "REQUIRED",
+                "reauth": "DISABLED",
+            },
         )
         execution_reads = [
             path for method, path, _ in calls
@@ -182,6 +189,41 @@ class LoginBrokerFlowTests(TestCase):
         ]
         self.assertEqual(len(execution_reads), 1)
         self.assertIn(urllib.parse.quote(client_sync.LOGIN_FIRST_BROKER_FLOW, safe=""), execution_reads[0])
+
+
+
+
+class MailApiSwaggerClientTests(TestCase):
+    def test_swagger_callback_and_origin_are_allowed_for_browser_client(self):
+        self.assertIn(
+            "https://mail-api.shopnoltd.dpdns.org/docs/oauth2-redirect",
+            client_sync.CLIENT_CONFIG["shopnoltd-web"]["redirect_uris"],
+        )
+        self.assertIn(
+            "https://mail-api.shopnoltd.dpdns.org",
+            client_sync.CLIENT_CONFIG["shopnoltd-web"]["web_origins"],
+        )
+
+    def test_mail_service_audience_mapper_is_created_for_browser_client(self):
+        calls = []
+
+        def fake_request(method, path, token=None, body=None, form=False):
+            calls.append((method, path, body))
+            if method == "GET":
+                return 200, []
+            if method == "POST":
+                return 201, None
+            self.fail("Unexpected Keycloak API call: {} {}".format(method, path))
+
+        with patch.object(client_sync, "request", side_effect=fake_request):
+            client_sync.sync_mail_audience_mapper("test-token", "client-uuid")
+
+        created = next(body for method, _path, body in calls if method == "POST")
+        self.assertEqual(created["name"], "mail-service-audience")
+        self.assertEqual(created["protocolMapper"], "oidc-audience-mapper")
+        self.assertEqual(created["config"]["included.custom.audience"], "mail-service")
+        self.assertEqual(created["config"]["access.token.claim"], "true")
+        self.assertEqual(created["config"]["id.token.claim"], "false")
 
 
 if __name__ == "__main__":

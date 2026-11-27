@@ -139,20 +139,46 @@ async def transactions(creds: HTTPAuthorizationCredentials = Depends(bearer), li
 async def billing_gateways(creds: HTTPAuthorizationCredentials = Depends(bearer)):
     methods = await call("GET", f"{PAYMENT}/api/v1/methods", creds.credentials)
     items = methods.get("methods", []) if isinstance(methods, dict) else []
+    try:
+        manual_accounts = await public_call("GET", f"{PAYMENT}/api/v1/payment-accounts/public")
+    except HTTPException:
+        # Native gateways remain visible if the optional manual-account
+        # registry is temporarily unavailable; manual methods fail closed.
+        manual_accounts = []
+    if not isinstance(manual_accounts, list):
+        manual_accounts = []
+
     gateways = []
     for item in items:
         method = item.get("id") or item.get("name")
-        meta = GATEWAY_REGISTRY.get(method, {})
-        enabled = bool(item.get("enabled", True))
-        native = meta.get("integration") == "native"
+        meta = GATEWAY_REGISTRY.get(method)
+        # Payout-only integrations are returned separately, never as checkout
+        # gateways (for example, Payoneer).
+        if not meta:
+            continue
+        enabled = bool(item.get("enabled", False))
+        integration = meta.get("integration", "unknown")
+        currencies = item.get("currencies") or meta.get("currencies", [])
+        account_configured = integration == "manual" and any(
+            account.get("provider") == method
+            and str(account.get("currency", "")).upper() in {str(c).upper() for c in currencies}
+            and account.get("status") == "active"
+            for account in manual_accounts
+            if isinstance(account, dict)
+        )
+        available = enabled and (
+            integration == "native"
+            or (integration == "manual" and account_configured)
+        )
         gateways.append({
             "name": method, "id": method,
             "display_name": item.get("display_name") or meta.get("name") or str(method).replace("_", " ").title(),
-            "enabled": enabled, "available": enabled and native,
-            "credentials_configured": bool(item.get("credentials_configured", enabled)),
-            "integration": meta.get("integration", "unknown"),
+            "enabled": enabled, "available": available,
+            "credentials_configured": bool(item.get("credentials_configured", False)) if integration != "manual" else False,
+            "account_configured": account_configured,
+            "integration": integration,
             "capabilities": meta.get("capabilities", []),
-            "currencies": item.get("currencies") or meta.get("currencies", []),
+            "currencies": currencies,
             "payment_methods": meta.get("payment_methods", []),
             "notes": meta.get("notes"),
         })

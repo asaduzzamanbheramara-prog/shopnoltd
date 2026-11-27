@@ -8,7 +8,7 @@ from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -66,18 +66,35 @@ async def action_user(creds: HTTPAuthorizationCredentials = Depends(bearer)):
         return {"sub": "n8n-action-queue", "tenant_id": "default", "automation": True}
     return await current_user(creds)
 
+def _validate_manual_connection_status(value: str | None) -> str | None:
+    if value is None:
+        return None
+    normalized = value.strip().lower()
+    if normalized == "connected":
+        raise ValueError("Connected status is reserved for verified provider authorization")
+    if normalized not in {"pending", "expired", "disabled"}:
+        raise ValueError("status must be pending, expired, or disabled for manual profiles")
+    return normalized
+
+
 class ConnectionIn(BaseModel):
     platform: str
     account_type: str = "user"
     platform_account_id: str = Field(min_length=1, max_length=255)
     username: str | None = None
     display_name: str | None = None
-    status: str = "connected"
+    status: str = "pending"
     scopes: list[str] = Field(default_factory=list)
     access_token_ref: str | None = None
     refresh_token_ref: str | None = None
     token_expires_at: str | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)
+
+    @field_validator("status")
+    @classmethod
+    def validate_status(cls, value: str) -> str:
+        return _validate_manual_connection_status(value)
+
 
 class ConnectionPatch(BaseModel):
     account_type: str | None = None
@@ -89,6 +106,11 @@ class ConnectionPatch(BaseModel):
     refresh_token_ref: str | None = None
     token_expires_at: str | None = None
     metadata: dict[str, Any] | None = None
+
+    @field_validator("status")
+    @classmethod
+    def validate_status(cls, value: str | None) -> str | None:
+        return _validate_manual_connection_status(value)
 
 
 class ActionIn(BaseModel):
@@ -125,6 +147,7 @@ async def provider_status(user=Depends(current_user)):
             "provider": provider,
             "platforms": cfg["platforms"],
             "configured": configured,
+            "executor_enabled": settings.omnichannel_executor_enabled,
             "mode": mode,
             "setup_status": setup_status,
             "required_credentials": cfg.get("credential_keys", []),
@@ -331,6 +354,14 @@ async def queue_action(body: ActionIn, user=Depends(action_user), s: AsyncSessio
     action = body.action.lower().strip()
     if platform not in PLATFORMS:
         raise HTTPException(400, f"unsupported platform: {platform}")
+    # Do not acknowledge work that has no active consumer. The executor is
+    # intentionally disabled until provider credentials and sandbox E2E tests
+    # pass; returning 202 here would leave approved messages/posts queued forever.
+    if not settings.omnichannel_executor_enabled:
+        raise HTTPException(
+            status_code=503,
+            detail="omnichannel action executor is disabled; no action was queued",
+        )
     tenant_id = user.get("tenant_id", "default")
     capability = (await s.execute(text(
         "SELECT availability FROM platform_capabilities WHERE platform=:platform AND action=:action"

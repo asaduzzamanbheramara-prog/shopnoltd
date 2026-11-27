@@ -18,6 +18,7 @@ resources:
   - registry-networkpolicy.yaml
 
   # Shopnoltd remote gateway
+  - gateway-source-configmap.yaml
   - deployment.yaml
   - service.yaml
   - ingress.yaml

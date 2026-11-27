@@ -4,7 +4,7 @@ import { decodeToken } from './jwt'
 // Keep browser financial traffic on the unified API origin. The API service
 // proxies to payment-service internally, so payment/exchange hosts are never
 // exposed as browser dependencies.
-const FINANCIAL_API_URL =
+export const FINANCIAL_API_URL =
   import.meta.env.VITE_API_URL ||
   import.meta.env.VITE_API_BASE_URL ||
   'https://api.shopnoltd.dpdns.org'

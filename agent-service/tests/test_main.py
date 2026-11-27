@@ -181,3 +181,49 @@ class WebSocketAuthenticationDisconnectTests(unittest.IsolatedAsyncioTestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class RealmRoleExtractionTests(unittest.TestCase):
+    def test_top_level_and_realm_access_roles_are_recognized(self):
+        claims = {"roles": ["platform_admin"], "realm_access": {"roles": ["offline_access"]},
+                  "resource_access": {"shopnoltd-web": {"roles": ["platform_admin"]}}}
+        roles = set(claims.get("roles", []) or [])
+        roles.update((claims.get("realm_access") or {}).get("roles", []) or [])
+        self.assertEqual(roles, {"platform_admin", "offline_access"})
+
+    def test_client_role_alone_does_not_grant_platform_admin(self):
+        claims = {"resource_access": {"shopnoltd-web": {"roles": ["platform_admin"]}}}
+        roles = set(claims.get("roles", []) or [])
+        roles.update((claims.get("realm_access") or {}).get("roles", []) or [])
+        self.assertNotIn("platform_admin", roles)
+
+
+class AffmineAgentToolTests(unittest.IsolatedAsyncioTestCase):
+    async def test_affmine_admin_tool_is_registered(self):
+        tool = next(t for t in main.TOOLS if t["function"]["name"] == "affmine_admin")
+        self.assertEqual(tool["function"]["parameters"]["properties"]["action"]["enum"], ["inspect", "sync"])
+
+    async def test_affmine_tool_rejects_non_platform_admin(self):
+        result = await main.affmine_admin_action({"roles": [], "_access_token": "unused"}, mock.AsyncMock(), "inspect")
+        self.assertIn("platform_admin", result)
+
+    async def test_affmine_tool_rejects_unknown_action(self):
+        result = await main.affmine_admin_action({"roles": ["platform_admin"]}, mock.AsyncMock(), "activate")
+        self.assertIn("Unsupported", result)
+
+
+class AffmineInspectionRoutingTests(unittest.TestCase):
+    def test_explicit_read_only_inspection_is_routed_to_tool(self):
+        goal = "Inspect Affmine offers in Shopnoltd. Report total offers and incentive eligibility. Do not sync or activate anything."
+        self.assertTrue(main.is_affmine_inspection_request(goal))
+
+    def test_sync_request_is_not_misrouted_as_read_only(self):
+        self.assertFalse(main.is_affmine_inspection_request("Sync Affmine campaigns now"))
+
+    def test_summary_uses_api_payload_values(self):
+        payload = '{"total_offers": 12, "statuses": {"draft": 12}, "incentive_enabled_count": 0}'
+        summary = main.format_affmine_inspection(payload)
+        self.assertIn("Total offers: 12", summary)
+        self.assertIn("draft: 12", summary)
+        self.assertIn("Incentive-enabled offers: 0", summary)
+        self.assertIn("No sync", summary)

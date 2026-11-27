@@ -78,8 +78,8 @@
 <h2>Guided recovery planner · Preview</h2>
 <p class="muted">Choose the target device and goal to get a safer, device-specific checklist. This page does not download images, inspect connected drives, or write a pendrive.</p>
 <div class="grid">
-<div><label for="recovery-device">Device family</label><select class="search" id="recovery-device"><option value="pc">PC / laptop / workstation</option><option value="android">Android phone / tablet</option><option value="apple-mobile">iPhone / iPad</option><option value="tv">TV / streaming device</option><option value="router">Router / embedded device</option><option value="other">Other device</option></select></div>
-<div><label for="recovery-os">Target OS / platform</label><select class="search" id="recovery-os"><option value="windows">Windows</option><option value="linux">Linux</option><option value="android">Android</option><option value="ios">iOS / iPadOS</option><option value="vendor">Vendor-specific / unknown</option></select></div>
+<div><label for="recovery-device">Device family</label><select class="search" id="recovery-device"><option value="pc">PC / laptop / workstation</option><option value="mac">Mac (Intel / Apple silicon)</option><option value="android">Android phone / tablet</option><option value="apple-mobile">iPhone / iPad</option><option value="tv">TV / streaming device</option><option value="router">Router / embedded device</option><option value="other">Other device</option></select></div>
+<div><label for="recovery-os">Target OS / platform</label><select class="search" id="recovery-os"><option value="windows">Windows</option><option value="linux">Linux</option><option value="macos">macOS</option><option value="android">Android</option><option value="ios">iOS / iPadOS</option><option value="vendor">Vendor-specific / unknown</option></select></div>
 <div><label for="recovery-goal">Recovery goal</label><select class="search" id="recovery-goal"><option value="repair">Repair startup / system</option><option value="rescue">Rescue files / back up data</option><option value="reinstall">Reinstall OS / factory recovery</option></select></div>
 <div><label for="recovery-firmware">PC firmware (PC only)</label><select class="search" id="recovery-firmware"><option value="unknown">Unknown / not checked</option><option value="uefi">UEFI</option><option value="legacy">Legacy BIOS</option></select></div>
 </div>
@@ -179,8 +179,13 @@
     const serviceCode=serviceCodes[serviceLabel];
     if(!serviceCode){quoteStatus.textContent='Please choose a valid service.';return;}
     if(!localStorage.getItem('shopno_token')){
-      quoteStatus.replaceChildren(document.createTextNode('Please sign in before submitting your request. '));
-      const login=document.createElement('a');login.href='/login';login.textContent='Sign in to Shopnoltd';quoteStatus.append(login);
+      quoteStatus.replaceChildren(document.createTextNode('Sign in in a new tab, then return here to submit your request. Your form details will stay in this tab. '));
+      const login=document.createElement('a');
+      login.href='/login?next='+encodeURIComponent('/software-os-center.html');
+      login.target='_blank';
+      login.rel='noopener noreferrer';
+      login.textContent='Open Shopnoltd sign in in a new tab';
+      quoteStatus.append(login);
       return;
     }
     const submit=quoteForm.querySelector('button[type="submit"]');
@@ -226,7 +231,13 @@
   document.getElementById('build-recovery-guide').addEventListener('click',function(){
     const device=recoveryDevice.value, os=recoveryOS.value, goal=recoveryGoal.value;
     const lines=[];
-    if(device==='pc'){
+    if(device==='mac'||os==='macos'){
+      lines.push('Identify the exact Mac model and whether it uses an Intel processor or Apple silicon (M-series). Startup and recovery key sequences differ.');
+      lines.push('For repair or data rescue, start with macOS Recovery. On Apple silicon, shut down and hold the power button until startup options appear, then choose Options. On Intel Macs, start while holding Command-R.');
+      lines.push('For reinstall, use the macOS version offered by Recovery for this Mac. Back up important files first; erase/reinstall steps can destroy local data.');
+      lines.push('A bootable macOS installer is created from Apple’s full macOS installer app using Apple’s createinstallmedia procedure. It is not a generic Windows/Linux-style ISO and must match a supported Mac.');
+      lines.push('Use a separate USB drive and verify its identity before creating installation media; the selected drive will be erased.');
+    }else if(device==='pc'){
       lines.push('Use a separate working computer if the target PC cannot boot.');
       lines.push(os==='windows'?'Start with Microsoft’s official Windows recovery/installation instructions.':'Start with the selected Linux distribution’s official live/recovery image and verification instructions.');
       lines.push('Confirm CPU architecture, image requirements, '+(recoveryFirmware.value==='unknown'?'UEFI versus Legacy BIOS':'firmware mode '+recoveryFirmware.value)+', and Secure Boot compatibility.');
@@ -245,10 +256,17 @@
     if(goal==='reinstall')lines.push('Reinstall/factory recovery can erase data. Confirm backups, device identity, correct image, and licence/vendor instructions first.');
     lines.push('This preview only generates guidance. It does not download, verify, install, or write any image.');
     recoveryResult.replaceChildren();
-    const title=document.createElement('strong');title.textContent=device==='pc'?'PC recovery checklist':'Device-specific recovery checklist';recoveryResult.append(title);
+    const title=document.createElement('strong');title.textContent=device==='pc'?'PC recovery checklist':(device==='mac'||os==='macos'?'Mac recovery and installer checklist':'Device-specific recovery checklist');recoveryResult.append(title);
     const list=document.createElement('ol');list.className='list';
     lines.forEach(line=>{const item=document.createElement('li');item.textContent=line;list.append(item);});
     recoveryResult.append(list);
+    if(device==='mac'||os==='macos'){
+      const links=document.createElement('p');
+      const recoveryLink=document.createElement('a');recoveryLink.href='https://support.apple.com/guide/mac-help/macos-recovery-a-mac-apple-silicon-mchl82829c17/mac';recoveryLink.target='_blank';recoveryLink.rel='noopener noreferrer';recoveryLink.textContent='Apple macOS Recovery guide';links.append(recoveryLink);
+      links.append(document.createTextNode(' · '));
+      const installerLink=document.createElement('a');installerLink.href='https://support.apple.com/101578';installerLink.target='_blank';installerLink.rel='noopener noreferrer';installerLink.textContent='Apple bootable installer instructions';links.append(installerLink);
+      recoveryResult.append(links);
+    }
   });
 
 

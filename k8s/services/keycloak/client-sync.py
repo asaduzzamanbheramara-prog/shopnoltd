@@ -17,9 +17,11 @@ ADMIN_PASSWORD = os.environ.get("KEYCLOAK_ADMIN_PASSWORD")
 CLIENT_IDS = ["shopnoltd-web", "web-portal"]
 
 REQUIRED_REDIRECT_URIS = [
+    "https://mail-api.shopnoltd.dpdns.org/docs/oauth2-redirect",
     "http://localhost:5173/callback",
     "https://shopnoltd.dpdns.org/callback",
     "https://web-portal.shopnoltd.dpdns.org/callback",
+    "https://files.shopnoltd.dpdns.org/callback",
     "https://shopnoltd.dpdns.org/android-cloud/callback",
     "https://admin-portal.shopnoltd.dpdns.org/callback",
     "https://devices.shopnoltd.dpdns.org/",
@@ -32,9 +34,11 @@ REQUIRED_REDIRECT_URIS = [
 ]
 
 REQUIRED_WEB_ORIGINS = [
+    "https://mail-api.shopnoltd.dpdns.org",
     "http://localhost:5173",
     "https://shopnoltd.dpdns.org",
     "https://web-portal.shopnoltd.dpdns.org",
+    "https://files.shopnoltd.dpdns.org",
     "https://admin-portal.shopnoltd.dpdns.org",
     "https://devices.shopnoltd.dpdns.org",
     "https://device.shopnoltd.dpdns.org",
@@ -83,6 +87,8 @@ AI_AUDIENCE_MAPPER_NAME = "ai-platform-audience"
 AI_AUDIENCE_REPAIR_MAPPER_NAME = "ai-platform-audience-repaired"
 STORAGE_AUDIENCE_MAPPER_NAME = "storage-service-audience"
 STORAGE_AUDIENCE_REPAIR_MAPPER_NAME = "storage-service-audience-repaired"
+MAIL_AUDIENCE_MAPPER_NAME = "mail-service-audience"
+MAIL_AUDIENCE_REPAIR_MAPPER_NAME = "mail-service-audience-repaired"
 
 
 SOCIAL_PROVIDERS = {
@@ -191,6 +197,11 @@ def sync_storage_audience_mapper(token, client_uuid):
     sync_audience_mapper(token, client_uuid, canonical_name=STORAGE_AUDIENCE_MAPPER_NAME, repair_name=STORAGE_AUDIENCE_REPAIR_MAPPER_NAME, audience="storage-service")
 
 
+def sync_mail_audience_mapper(token, client_uuid):
+    # Preserve the Mail API audience and its existing authorization checks.
+    sync_audience_mapper(token, client_uuid, canonical_name=MAIL_AUDIENCE_MAPPER_NAME, repair_name=MAIL_AUDIENCE_REPAIR_MAPPER_NAME, audience="mail-service")
+
+
 def sync_client(token, client_id):
     config = CLIENT_CONFIG[client_id]
     required_redirect_uris = config["redirect_uris"]
@@ -215,7 +226,8 @@ def sync_client(token, client_id):
         sync_api_audience_mapper(token, client_uuid)
         sync_ai_audience_mapper(token, client_uuid)
         sync_storage_audience_mapper(token, client_uuid)
-        print(f"[OK] synchronized {client_id} with api-service, ai-platform and storage-service JWT audiences")
+        sync_mail_audience_mapper(token, client_uuid)
+        print(f"[OK] synchronized {client_id} with api-service, ai-platform, storage-service and mail-service JWT audiences")
     else:
         payload = {"clientId": client_id, "publicClient": True, "protocol": "openid-connect", "standardFlowEnabled": True, "directAccessGrantsEnabled": False, "redirectUris": required_redirect_uris, "webOrigins": required_web_origins, "attributes": {"pkce.code.challenge.method": "S256", "post.logout.redirect.uris": POST_LOGOUT_REDIRECT_URIS[client_id]}}
         code, _ = request("POST", f"/admin/realms/{REALM}/clients", token=token, body=payload)
@@ -228,8 +240,9 @@ def sync_client(token, client_id):
         sync_api_audience_mapper(token, client_uuid)
         sync_ai_audience_mapper(token, client_uuid)
         sync_storage_audience_mapper(token, client_uuid)
+        sync_mail_audience_mapper(token, client_uuid)
         print(f"[OK] created {client_id} client")
-        print(f"[OK] synchronized {client_id} with api-service, ai-platform and storage-service JWT audiences")
+        print(f"[OK] synchronized {client_id} with api-service, ai-platform, storage-service and mail-service JWT audiences")
 
 
 
@@ -298,11 +311,16 @@ def sync_realm_smtp(token):
 
 
 LOGIN_FIRST_BROKER_FLOW = "shopnoltd social login existing users only"
-LOGIN_ONLY_AUTHENTICATORS = {"idp-create-user-if-unique", "idp-confirm-link"}
+LOGIN_ONLY_DISABLED_AUTHENTICATORS = {
+    "idp-create-user-if-unique",
+    "idp-confirm-link",
+    "idp-username-password-form",
+}
+LOGIN_ONLY_REQUIRED_AUTHENTICATORS = {"idp-email-verification"}
 
 
 def ensure_login_first_broker_flow(token):
-    """Copy the standard broker flow and disable account creation/linking at every level."""
+    """Require email ownership verification for existing users without a Shopnoltd password prompt."""
     code, flows = request("GET", f"/admin/realms/{REALM}/authentication/flows", token=token)
     if code != 200 or not isinstance(flows, list):
         raise RuntimeError(f"Unable to inspect Keycloak authentication flows (HTTP {code})")
@@ -334,21 +352,28 @@ def ensure_login_first_broker_flow(token):
         raise RuntimeError(f"Unable to inspect social Login first-broker flow (HTTP {code})")
 
     # Keycloak's executions endpoint returns nested subflow executions recursively.
+    # Existing-account ownership is proven by Keycloak's email action link, not by
+    # re-entering the Shopnoltd password. Never allow account creation in this flow.
+    required_policies = {
+        **{provider: "DISABLED" for provider in LOGIN_ONLY_DISABLED_AUTHENTICATORS},
+        **{provider: "REQUIRED" for provider in LOGIN_ONLY_REQUIRED_AUTHENTICATORS},
+    }
     found_authenticators = set()
     updates = []
     for execution in executions:
         provider_id = execution.get("providerId")
-        if provider_id in LOGIN_ONLY_AUTHENTICATORS:
+        if provider_id in required_policies:
             found_authenticators.add(provider_id)
-            if execution.get("requirement") != "DISABLED":
+            expected_requirement = required_policies[provider_id]
+            if execution.get("requirement") != expected_requirement:
                 updated = dict(execution)
-                updated["requirement"] = "DISABLED"
+                updated["requirement"] = expected_requirement
                 updates.append(updated)
 
-    missing = LOGIN_ONLY_AUTHENTICATORS - found_authenticators
+    missing = set(required_policies) - found_authenticators
     if missing:
         raise RuntimeError(
-            "Keycloak Login-only flow is missing expected safeguards: "
+            "Keycloak Login-only flow is missing required email-verification policy executions: "
             + ", ".join(sorted(missing))
         )
 
@@ -367,7 +392,7 @@ def ensure_login_first_broker_flow(token):
                 f"'{execution.get('id')}' (HTTP {code})"
             )
 
-    print("[OK] social Login flow disables automatic user creation and unverified link confirmation across nested subflows")
+    print("[OK] social Login flow requires email verification and disables password re-authentication and automatic account creation")
 
 def sync_social_provider(token, alias, provider, first_broker_flow_alias="first broker login"):
     client_id = os.environ.get(provider["clientIdEnv"], "").strip()

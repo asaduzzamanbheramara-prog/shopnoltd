@@ -1,0 +1,174 @@
+name: Isolated Shopnoltd PostgreSQL and Kubernetes Secret recovery test
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_restore:
+        description: Type RESTORE-ONLY-ISOLATED to confirm this disposable restore test
+        required: true
+        type: string
+        default: RESTORE-ONLY-ISOLATED
+
+permissions:
+  contents: read
+
+concurrency:
+  group: shopnoltd-isolated-recovery-test
+  cancel-in-progress: false
+
+jobs:
+  isolated-restore:
+    if: inputs.confirm_restore == 'RESTORE-ONLY-ISOLATED'
+    name: Restore backups into disposable PostgreSQL and validate Secret export
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    services:
+      postgres:
+        image: postgis/postgis:16-3.6
+        env:
+          POSTGRES_USER: restore_admin
+          POSTGRES_PASSWORD: restore-only-${{ github.run_id }}-${{ github.run_attempt }}
+          POSTGRES_DB: restore_admin
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U restore_admin -d restore_admin"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: "5432"
+      PGUSER: restore_admin
+      PGPASSWORD: restore-only-${{ github.run_id }}-${{ github.run_attempt }}
+      PGCONNECT_TIMEOUT: "10"
+      BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
+    steps:
+      - name: Checkout Shopnoltd recovery verifier code
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: source
+          persist-credentials: false
+
+      - name: Checkout encrypted backup branch from private repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ secrets.BACKUP_REPOSITORY }}
+          token: ${{ secrets.BACKUP_REPOSITORY_TOKEN }}
+          ref: database-backups
+          path: backup-source
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Verify backup freshness, checksums, HMAC and decrypt to runner temp
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${BACKUP_ENCRYPTION_KEY:-}" || { echo "::error::BACKUP_ENCRYPTION_KEY is missing."; exit 1; }
+          echo "::add-mask::$BACKUP_ENCRYPTION_KEY"
+          cd backup-source/backup
+          for file in timestamp.txt latest.dump.enc latest.dump.enc.sha256 latest.dump.enc.hmac latest.all-databases.tar.gz.enc latest.all-databases.tar.gz.enc.sha256 latest.all-databases.tar.gz.enc.hmac latest.kubernetes-secrets.json.enc latest.kubernetes-secrets.json.enc.sha256 latest.kubernetes-secrets.json.enc.hmac; do
+            test -s "$file" || { echo "::error::Required backup artifact missing: $file"; exit 1; }
+          done
+          timestamp="$(tr -d '\r\n' < timestamp.txt)"
+          [[ "$timestamp" =~ ^[0-9]{8}T[0-9]{6}Z$ ]] || { echo "::error::Invalid backup timestamp."; exit 1; }
+          iso="${timestamp:0:4}-${timestamp:4:2}-${timestamp:6:2}T${timestamp:9:2}:${timestamp:11:2}:${timestamp:13:2}Z"
+          age=$(( $(date -u +%s) - $(date -u -d "$iso" +%s) ))
+          (( age >= 0 && age <= 172800 )) || { echo "::error::Backup timestamp is future-dated or older than 48 hours."; exit 1; }
+          echo "PASS: backup timestamp is fresh ($((age / 3600)) hours old)."
+          sha256sum -c latest.dump.enc.sha256
+          sha256sum -c latest.all-databases.tar.gz.enc.sha256
+          sha256sum -c latest.kubernetes-secrets.json.enc.sha256
+          python3 "$GITHUB_WORKSPACE/source/ops/backup/authenticated_backup.py" verify latest.dump.enc latest.all-databases.tar.gz.enc latest.kubernetes-secrets.json.enc
+          umask 077
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 -in latest.dump.enc -out "$RUNNER_TEMP/shopnoltd-primary.dump" -pass env:BACKUP_ENCRYPTION_KEY
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 -in latest.all-databases.tar.gz.enc -out "$RUNNER_TEMP/shopnoltd-all-databases.tar.gz" -pass env:BACKUP_ENCRYPTION_KEY
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 -in latest.kubernetes-secrets.json.enc -out "$RUNNER_TEMP/shopnoltd-secrets.json" -pass env:BACKUP_ENCRYPTION_KEY
+          tar -tzf "$RUNNER_TEMP/shopnoltd-all-databases.tar.gz" >/dev/null
+          echo "PASS: encrypted backups authenticated, decrypted and archive container is readable."
+
+      - name: Validate Kubernetes Secret export without applying it
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - "$RUNNER_TEMP/shopnoltd-secrets.json" <<'PY'
+          import base64, binascii, json, sys
+          from pathlib import Path
+          data = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+          if data.get("kind") != "List" or not isinstance(data.get("items"), list) or not data["items"]:
+              raise SystemExit("Kubernetes Secret export is empty or malformed")
+          seen = set()
+          namespaces = set()
+          total_keys = 0
+          for item in data["items"]:
+              if item.get("apiVersion") != "v1" or item.get("kind") != "Secret":
+                  raise SystemExit("Unexpected object type in Kubernetes Secret export")
+              meta = item.get("metadata") or {}
+              name, namespace = meta.get("name"), meta.get("namespace")
+              if not name or not namespace or (namespace, name) in seen:
+                  raise SystemExit("Missing or duplicate Kubernetes Secret identity")
+              seen.add((namespace, name))
+              namespaces.add(namespace)
+              values = item.get("data") or {}
+              if not isinstance(values, dict):
+                  raise SystemExit("Malformed Secret data map")
+              for value in values.values():
+                  try:
+                      base64.b64decode(value, validate=True)
+                  except (binascii.Error, ValueError, TypeError):
+                      raise SystemExit("Secret contains invalid base64 data")
+              total_keys += len(values)
+          print(f"PASS: {len(seen)} Secret objects, {len(namespaces)} namespaces and {total_keys} encoded data fields validated.")
+          print("PASS: no Kubernetes Secret was applied to any cluster.")
+          PY
+
+      - name: Install PostgreSQL 16 client
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client-16
+          pg_restore --version
+          pg_isready -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d restore_admin
+
+      - name: Restore global roles and all databases into disposable PostgreSQL
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          mkdir -p "$RUNNER_TEMP/shopnoltd-restore"
+          tar -xzf "$RUNNER_TEMP/shopnoltd-all-databases.tar.gz" -C "$RUNNER_TEMP/shopnoltd-restore"
+          globals="$RUNNER_TEMP/shopnoltd-restore/globals.sql"
+          database_list="$RUNNER_TEMP/shopnoltd-restore/database-list.txt"
+          dumps_dir="$RUNNER_TEMP/shopnoltd-restore/all-databases"
+          test -s "$globals"
+          test -s "$database_list"
+          grep -qE '^CREATE ROLE|^CREATE USER' "$globals"
+          psql -v ON_ERROR_STOP=1 -d restore_admin -f "$globals" >/dev/null
+          echo "PASS: PostgreSQL global roles and grants restored into disposable instance."
+          count=0
+          while IFS= read -r database; do
+            [[ -n "$database" ]] || continue
+            [[ "$database" =~ ^[A-Za-z0-9_]+$ ]] || { echo "::error::Unsafe database name in archive."; exit 1; }
+            dump="$dumps_dir/$database.dump"
+            test -s "$dump" || { echo "::error::Missing database archive: $database"; exit 1; }
+            createdb --template=template0 "$database"
+            pg_restore --exit-on-error --dbname="$database" "$dump"
+            object_count="$(psql -v ON_ERROR_STOP=1 -At -d "$database" -c "SELECT count(*) FROM pg_class WHERE relkind IN ('r','p','v','m','S','f') AND relnamespace NOT IN ('pg_catalog'::regnamespace, 'information_schema'::regnamespace)")"
+            echo "PASS: restored database $database (catalog objects: $object_count)."
+            count=$((count + 1))
+          done < "$database_list"
+          (( count > 0 )) || { echo "::error::No databases restored."; exit 1; }
+          createdb --template=template0 primary_dump_validation
+          pg_restore --exit-on-error --dbname=primary_dump_validation "$RUNNER_TEMP/shopnoltd-primary.dump"
+          echo "PASS: primary database dump restored independently."
+          echo "PASS: full isolated PostgreSQL restore completed ($count databases plus independent primary dump)."
+
+      - name: Remove all decrypted backup and restore files
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          rm -f "$RUNNER_TEMP/shopnoltd-primary.dump" "$RUNNER_TEMP/shopnoltd-all-databases.tar.gz" "$RUNNER_TEMP/shopnoltd-secrets.json"
+          rm -rf "$RUNNER_TEMP/shopnoltd-restore"

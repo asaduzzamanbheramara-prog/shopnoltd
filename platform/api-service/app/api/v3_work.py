@@ -15,6 +15,8 @@ from app.core.security import verify_token
 from app.core.currencies import SUPPORTED_CURRENCIES
 from app.models.work import Work, WorkAssignment, WorkSubmission
 from app.models.work_evidence import WorkTaskConfig, WorkSession, WorkEvidence, WorkEvent, GlobalTaskRate
+from app.services.referrals import preflight_referral_reward, resolve_referrer_recipient, settle_referral_reward, settle_referral_reward_from_work_escrow, settle_platform_commission_from_work_escrow
+from app.services.work_escrow import reserve_work_budget, payout_work_escrow
 
 router = APIRouter(prefix="/work")
 bearer = HTTPBearer()
@@ -48,6 +50,8 @@ def parse_json(value, default):
 
 
 def session_dict(x):
+    share = int(getattr(x, "payout_share_percent", 100) or 100)
+    worker_amount = (Decimal(str(x.calculated_amount)) * Decimal(share) / Decimal(100)).quantize(Decimal("0.00000001"))
     return {
         "id": x.id,
         "work_id": x.work_id,
@@ -59,7 +63,7 @@ def session_dict(x):
         "watch_seconds": x.watch_seconds,
         "interaction_seconds": x.interaction_seconds,
         "eligible_watch_seconds": x.eligible_watch_seconds,
-        "calculated_amount": str(x.calculated_amount),
+        "calculated_amount": str(worker_amount),
         "currency": x.currency,
     }
 
@@ -70,7 +74,7 @@ TASK_TYPES = {
 }
 
 MICRO_TASK_TYPES = {"simple", "follow", "like", "comment", "share", "view", "visit", "review", "social", "data", "upload", "custom"}
-WORK_PLATFORMS = {"shopnoltd", "facebook", "instagram", "youtube", "tiktok", "telegram", "whatsapp", "website", "data", "custom"}
+WORK_PLATFORMS = {"shopnoltd", "facebook", "instagram", "youtube", "tiktok", "telegram", "whatsapp", "linkedin", "x", "website", "data", "custom"}
 
 def is_admin(u):
     roles = set(u.get("roles") or [])
@@ -118,8 +122,11 @@ def worker_rate_payload(work, config=None, global_rate=None):
             rate = work.reward_amount
             currency = work.currency
         unit = "per_task"
+    share = Decimal(str(getattr(work, "payout_share_percent", 100) or 100))
+    worker_rate = (Decimal(str(rate)) * share / Decimal(100)).quantize(Decimal("0.00000001"))
+    worker_rate_text = str(rate) if share == 100 else format(worker_rate.normalize(), "f")
     return {
-        "worker_rate": str(rate),
+        "worker_rate": worker_rate_text,
         "worker_rate_unit": unit,
         "rate_currency": str(currency).upper(),
     }
@@ -302,6 +309,8 @@ async def put_config(work_id: str, body: dict, s: AsyncSession = Depends(db), u=
         raise HTTPException(404, "work not found")
     if w.creator_id != u["sub"]:
         raise HTTPException(403, "only the creator can configure work")
+    if w.status != "draft":
+        raise HTTPException(409, "task configuration is locked after submission for moderation; create a new draft to change funded task terms")
     if "task_type" in body:
         task_type = str(body["task_type"]).strip().lower()
         if task_type not in TASK_TYPES:
@@ -321,6 +330,8 @@ async def put_config(work_id: str, body: dict, s: AsyncSession = Depends(db), u=
     c.rate_currency = str(body.get("rate_currency") or w.currency).upper()
     if c.rate_currency not in SUPPORTED_CURRENCIES:
         raise HTTPException(422, "unsupported rate currency")
+    if int(getattr(w, "payout_share_percent", 100) or 100) < 100 and c.rate_currency != w.currency:
+        raise HTTPException(422, "task currency and earning-rate currency must match for funded work")
     c.rate_rules = json.dumps(body.get("rate_rules") or [])
     social_rates = body.get("social_rates") or {}
     if not isinstance(social_rates, dict):
@@ -357,7 +368,7 @@ async def create_session(work_id: str, s: AsyncSession = Depends(db), u=Depends(
     ))
     if active:
         return session_dict(active)
-    x = WorkSession(work_id=work_id, worker_id=u["sub"], stage="before", currency=w.currency)
+    x = WorkSession(work_id=work_id, worker_id=u["sub"], stage="before", currency=w.currency, payout_share_percent=int(getattr(w, "payout_share_percent", 100) or 100))
     s.add(x)
     await s.commit()
     await s.refresh(x)
@@ -647,10 +658,13 @@ async def finish_session(session_id: str, s: AsyncSession = Depends(db), u=Depen
     x.stage = "finished"
     c = await s.scalar(select(WorkTaskConfig).where(WorkTaskConfig.work_id == x.work_id))
     if c:
-        x.calculated_amount = calculate_amount(
-            x.eligible_watch_seconds,
-            Decimal(str(c.watch_rate_per_minute)),
-            parse_json(c.rate_rules, []),
+        x.calculated_amount = min(
+            calculate_amount(
+                x.eligible_watch_seconds,
+                Decimal(str(c.watch_rate_per_minute)),
+                parse_json(c.rate_rules, []),
+            ),
+            Decimal(str(w.reward_amount)) if w else Decimal("0"),
         )
         x.currency = c.rate_currency
     s.add(WorkEvent(
@@ -706,7 +720,7 @@ async def submit_session(session_id: str, s: AsyncSession = Depends(db), u=Depen
                 if global_rate:
                     rate = Decimal(str(global_rate.rate))
                     earning_currency = global_rate.currency
-            x.calculated_amount = rate
+            x.calculated_amount = min(rate, Decimal(str(w.reward_amount)))
             x.currency = earning_currency
     pending = await s.scalar(select(WorkSubmission).where(
         WorkSubmission.work_id == x.work_id,
@@ -715,12 +729,17 @@ async def submit_session(session_id: str, s: AsyncSession = Depends(db), u=Depen
     ))
     if pending:
         raise HTTPException(409, "a submission is already pending")
+    gross_amount = Decimal(str(x.calculated_amount))
+    share = int(getattr(x, "payout_share_percent", 100) or 100)
+    worker_amount = (gross_amount * Decimal(share) / Decimal(100)).quantize(Decimal("0.00000001"))
     proof = json.dumps({
         "session_id": x.id,
         "work_seconds": x.work_seconds,
         "watch_seconds": x.watch_seconds,
         "eligible_watch_seconds": x.eligible_watch_seconds,
-        "calculated_amount": str(x.calculated_amount),
+        "calculated_amount": str(worker_amount),
+        "gross_amount": str(gross_amount),
+        "payout_share_percent": share,
         "currency": x.currency,
         "verification": "server_calculated",
     })
@@ -729,7 +748,7 @@ async def submit_session(session_id: str, s: AsyncSession = Depends(db), u=Depen
     x.stage = "submitted"
     await s.commit()
     await s.refresh(sub)
-    return {"id": sub.id, "session_id": x.id, "status": sub.status, "calculated_amount": str(x.calculated_amount), "currency": x.currency}
+    return {"id": sub.id, "session_id": x.id, "status": sub.status, "calculated_amount": str(worker_amount), "currency": x.currency}
 
 
 @router.post("/submissions/{submission_id}/approve")
@@ -738,39 +757,66 @@ async def approve_submission(submission_id: str, creds: HTTPAuthorizationCredent
     w = await s.get(Work, sub.work_id) if sub else None
     if not sub or not w:
         raise HTTPException(404, "submission not found")
-    if w.creator_id != u["sub"]:
-        raise HTTPException(403, "only the creator can approve")
+    if w.creator_id != u["sub"] and not is_admin(u):
+        raise HTTPException(403, "creator or admin role required to approve")
     if sub.status != "pending":
         raise HTTPException(409, "submission already reviewed")
     data = parse_json(sub.proof, {})
-    amount = Decimal(str(data.get("calculated_amount", 0)))
+    gross_amount = Decimal(str(data.get("gross_amount", data.get("calculated_amount", 0))))
+    share = int(data.get("payout_share_percent", getattr(w, "payout_share_percent", 100)) or 100)
+    if w.creator_id != u["sub"] and share >= 100:
+        raise HTTPException(403, "legacy unfunded tasks must be approved by their creator")
+    amount = (gross_amount * Decimal(share) / Decimal(100)).quantize(Decimal("0.00000001"))
     currency = str(data.get("currency") or w.currency)
-    if amount > 0:
-        key = "work-evidence-settle:" + hashlib.sha256(sub.id.encode()).hexdigest()
-        payload = {
-            "to_user_id": sub.worker_id,
-            "currency": currency,
-            "amount": float(amount),
-            "note": f"work:{sub.id}:verified-time",
-            "idempotency_key": key,
-        }
-        try:
-            async with httpx.AsyncClient(timeout=15) as client:
-                r = await client.post(
-                    f"{PAYMENTS}/api/v1/transfers",
-                    headers={"Authorization": f"Bearer {creds.credentials}"},
-                    json=payload,
-                )
-        except (httpx.ConnectError, httpx.ConnectTimeout, httpx.ReadTimeout) as exc:
-            raise HTTPException(503, "Payment service unavailable; submission remains pending") from exc
-        if r.status_code >= 400:
-            raise HTTPException(409, {"message": "verified reward settlement failed; submission remains pending", "payment_error": r.text})
+    if gross_amount > 0:
+        if share < 100:
+            if currency.upper() != w.currency.upper():
+                raise HTTPException(409, "verified reward currency does not match the funded task currency")
+            await reserve_work_budget(w)
+            platform_user_id = await resolve_referrer_recipient(s, "admin_office", w.tenant_id)
+            await preflight_referral_reward(
+                s, referred_id=sub.worker_id, submission_id=sub.id, base_amount=gross_amount,
+                currency=currency, tenant_id=w.tenant_id, available_commission=gross_amount - amount,
+            )
+
+            async def escrow_payout(recipient_id, payout_amount, scope, note):
+                return await payout_work_escrow(w, recipient_id, payout_amount, scope, note)
+
+            await escrow_payout(sub.worker_id, amount, f"verified-worker:{sub.id}", f"work:{sub.id}:verified-time")
+            referral_reward = await settle_referral_reward_from_work_escrow(
+                s, referred_id=sub.worker_id, work_id=w.id, submission_id=sub.id,
+                base_amount=gross_amount, currency=currency, tenant_id=w.tenant_id,
+                available_commission=gross_amount - amount, payer_id=w.creator_id,
+                escrow_payout=escrow_payout,
+            )
+            referral_amount = Decimal(str(referral_reward.reward_amount)) if referral_reward else Decimal("0")
+            await settle_platform_commission_from_work_escrow(
+                payer_id=w.creator_id, recipient_id=platform_user_id, submission_id=sub.id,
+                amount=gross_amount - amount - referral_amount, escrow_payout=escrow_payout,
+            )
+        else:
+            key = "work-evidence-settle:" + hashlib.sha256(sub.id.encode()).hexdigest()
+            payload = {
+                "to_user_id": sub.worker_id, "currency": currency, "amount": float(amount),
+                "note": f"work:{sub.id}:verified-time", "idempotency_key": key,
+            }
+            try:
+                async with httpx.AsyncClient(timeout=15) as client:
+                    r = await client.post(
+                        f"{PAYMENTS}/api/v1/transfers",
+                        headers={"Authorization": f"Bearer {creds.credentials}"}, json=payload,
+                    )
+            except (httpx.ConnectError, httpx.ConnectTimeout, httpx.ReadTimeout) as exc:
+                raise HTTPException(503, "Payment service unavailable; submission remains pending") from exc
+            if r.status_code >= 400:
+                raise HTTPException(409, {"message": "verified reward settlement failed; submission remains pending", "payment_error": r.text})
+            await settle_referral_reward(
+                s, referred_id=sub.worker_id, work_id=w.id, submission_id=sub.id,
+                base_amount=gross_amount, currency=currency, tenant_id=w.tenant_id,
+                token=creds.credentials, payer_id=u["sub"],
+            )
         sub.review_note = f"Verified reward settled: {amount} {currency}"
     else:
-        # No verified watch time / no configured rate produced a zero reward.
-        # There is nothing to transfer, so calling payment-service would only
-        # fail its amount>0 check and leave the submission stuck pending
-        # forever. Approve it directly as a no-payout review instead.
         sub.review_note = "Approved with no verified reward (calculated amount was zero)"
     sub.status = "approved"
     sub.reviewer_id = u["sub"]
@@ -788,8 +834,8 @@ async def reject_submission(submission_id: str, body: dict = None, s: AsyncSessi
     w = await s.get(Work, sub.work_id) if sub else None
     if not sub or not w:
         raise HTTPException(404, "submission not found")
-    if w.creator_id != u["sub"]:
-        raise HTTPException(403, "only the creator can reject")
+    if w.creator_id != u["sub"] and not is_admin(u):
+        raise HTTPException(403, "creator or admin role required to reject")
     if sub.status != "pending":
         raise HTTPException(409, "submission already reviewed")
     sub.status = "rejected"
@@ -805,7 +851,8 @@ async def reject_submission(submission_id: str, body: dict = None, s: AsyncSessi
         a.status = "rejected"
     if w.status == "full":
         active_count = await s.scalar(select(func.count(WorkAssignment.id)).where(WorkAssignment.work_id == w.id, WorkAssignment.status == "active"))
-        if int(active_count or 0) < w.max_workers:
+        completed_count = await s.scalar(select(func.count(WorkAssignment.id)).where(WorkAssignment.work_id == w.id, WorkAssignment.status == "completed"))
+        if int(active_count or 0) + int(completed_count or 0) < w.max_workers:
             w.status = "open"
     await s.commit()
     return {"id": sub.id, "status": sub.status, "work_status": w.status}

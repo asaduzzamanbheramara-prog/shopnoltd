@@ -5,7 +5,7 @@ metadata:
   namespace: shopno-tools
 data:
   app.py: |
-    from datetime import datetime, timezone
+    from datetime import datetime, timezone, timedelta
     from pathlib import Path
     from typing import Optional
     import base64
@@ -51,6 +51,14 @@ data:
     class MeshCentralLink(BaseModel):
         meshcentral_node_id: str = Field(min_length=1, max_length=500)
         meshcentral_mesh_id: Optional[str] = Field(default=None, max_length=500)
+
+    class DeviceShareCreate(BaseModel):
+        created_by: str = Field(min_length=1, max_length=200)
+        expires_in_hours: int = Field(default=24, ge=1, le=168)
+
+    class DeviceShareRedeem(BaseModel):
+        token: str = Field(min_length=20, max_length=500)
+        user_id: str = Field(min_length=1, max_length=200)
 
     class ExecutorEnroll(BaseModel):
         enrollment_token: str = Field(min_length=10, max_length=500)
@@ -98,6 +106,7 @@ data:
         network_profile: dict = {}
         meshcentral_node_id: Optional[str] = None
         meshcentral_mesh_id: Optional[str] = None
+        shared_user_ids: list[str] = Field(default_factory=list)
 
     class DeviceCreated(DevicePublic):
         enrollment_token: str
@@ -153,6 +162,7 @@ data:
             network_profile=device.get("network_profile") or {},
             meshcentral_node_id=device.get("meshcentral_node_id"),
             meshcentral_mesh_id=device.get("meshcentral_mesh_id"),
+            shared_user_ids=[share.get("user_id") for share in device.get("shares", []) if isinstance(share, dict) and share.get("user_id")],
         )
 
     def sanitize_network(network: Optional[dict]) -> dict:
@@ -241,6 +251,62 @@ data:
                     save_devices(devices)
                     return public_device(device)
         raise HTTPException(status_code=404, detail="device not found")
+
+
+    @app.post("/api/devices/{device_id}/shares")
+    def create_device_share(device_id: str, req: DeviceShareCreate, request: Request):
+        authenticate_control(request)
+        with LOCK:
+            devices = load_devices()
+            for device in devices:
+                if device["id"] == device_id:
+                    token = secrets.token_urlsafe(36)
+                    token_hash = hashlib.sha256(token.encode()).hexdigest()
+                    expires_at = datetime.now(timezone.utc) + timedelta(hours=req.expires_in_hours)
+                    invites = device.setdefault("share_invites", [])
+                    invites.append({"token_hash": token_hash, "created_by": req.created_by, "created_at": datetime.now(timezone.utc).isoformat(), "expires_at": expires_at.isoformat()})
+                    device["share_invites"] = invites[-100:]
+                    save_devices(devices)
+                    return {"ok": True, "device_id": device_id, "token": token, "expires_at": expires_at.isoformat()}
+        raise HTTPException(status_code=404, detail="device not found")
+
+    @app.post("/api/shares/redeem")
+    def redeem_device_share(req: DeviceShareRedeem, request: Request):
+        authenticate_control(request)
+        token_hash = hashlib.sha256(req.token.encode()).hexdigest()
+        now = datetime.now(timezone.utc)
+        with LOCK:
+            devices = load_devices()
+            for device in devices:
+                invites = device.get("share_invites", [])
+                match = next((item for item in invites if hmac.compare_digest(item.get("token_hash", ""), token_hash)), None)
+                if match is None:
+                    continue
+                if datetime.fromisoformat(match["expires_at"]) <= now:
+                    device["share_invites"] = [item for item in invites if item is not match]
+                    save_devices(devices)
+                    raise HTTPException(status_code=410, detail="share link expired")
+                shares = device.setdefault("shares", [])
+                if not any(item.get("user_id") == req.user_id for item in shares):
+                    shares.append({"user_id": req.user_id, "role": "control", "granted_at": now.isoformat(), "granted_by": match.get("created_by")})
+                device["share_invites"] = [item for item in invites if item is not match]
+                save_devices(devices)
+                return public_device(device).model_dump()
+        raise HTTPException(status_code=404, detail="share link invalid or already used")
+
+    @app.delete("/api/devices/{device_id}/shares/{shared_user_id}")
+    def revoke_device_share(device_id: str, shared_user_id: str, request: Request):
+        authenticate_control(request)
+        with LOCK:
+            devices = load_devices()
+            for device in devices:
+                if device["id"] == device_id:
+                    before = len(device.get("shares", []))
+                    device["shares"] = [item for item in device.get("shares", []) if item.get("user_id") != shared_user_id]
+                    save_devices(devices)
+                    return {"ok": True, "revoked": len(device["shares"]) != before}
+        raise HTTPException(status_code=404, detail="device not found")
+
 
     @app.post("/api/devices/{device_id}/enrollment-token")
     def regenerate_enrollment_token(device_id: str, request: Request):

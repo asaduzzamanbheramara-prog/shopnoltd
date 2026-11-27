@@ -18,6 +18,52 @@ def load_config():
     return value
 
 
+def prepare_config_storage():
+    """Create a private config directory before exchanging one-time credentials."""
+    CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    if platform.system().lower() == "windows":
+        command = [
+            "icacls.exe", str(CONFIG_PATH.parent), "/inheritance:r", "/grant:r",
+            "*S-1-5-18:(OI)(CI)F", "*S-1-5-32-544:(OI)(CI)F",
+        ]
+        result = subprocess.run(command, capture_output=True, text=True, check=False)
+        if result.returncode != 0:
+            raise RuntimeError(
+                "Could not restrict executor config directory permissions: "
+                + (result.stderr or result.stdout).strip()
+            )
+    else:
+        os.chmod(CONFIG_PATH.parent, 0o700)
+
+
+def save_config_secure(config):
+    """Atomically persist long-lived credentials with owner/admin-only access."""
+    prepare_config_storage()
+    temporary = CONFIG_PATH.with_name(CONFIG_PATH.name + ".tmp")
+    try:
+        temporary.write_text(json.dumps(config, indent=2), encoding="utf-8")
+        if platform.system().lower() == "windows":
+            command = [
+                "icacls.exe", str(temporary), "/inheritance:r", "/grant:r",
+                "*S-1-5-18:F", "*S-1-5-32-544:F",
+            ]
+            result = subprocess.run(command, capture_output=True, text=True, check=False)
+            if result.returncode != 0:
+                raise RuntimeError(
+                    "Could not restrict executor credential file permissions: "
+                    + (result.stderr or result.stdout).strip()
+                )
+        else:
+            os.chmod(temporary, 0o600)
+        os.replace(temporary, CONFIG_PATH)
+    finally:
+        try:
+            if temporary.exists():
+                temporary.unlink()
+        except OSError:
+            pass
+
+
 def canonical_json(value): return json.dumps(value,separators=(",",":"),sort_keys=True)
 
 
@@ -124,6 +170,27 @@ def enroll(config):
     except URLError as exc: raise RuntimeError(f"executor enrollment connection failed: {exc}") from exc
 
 
+def complete_enrollment(config, response):
+    if not response.get("ok"):
+        raise RuntimeError(f"executor enrollment failed: {response}")
+    agent_id=response.get("agent_id")
+    secret=response.get("secret")
+    if not agent_id or not secret:
+        raise RuntimeError("Enrollment response did not include agent_id and secret; request a new enrollment token.")
+    updated=dict(config)
+    updated["agent_id"]=agent_id
+    updated["secret"]=secret
+    updated.pop("enrollment_token",None)
+    try:
+        save_config_secure(updated)
+    except Exception as exc:
+        raise RuntimeError(
+            "Enrollment succeeded but secure credential persistence failed. "
+            "Revoke/reissue this device enrollment token before retrying."
+        ) from exc
+    return updated
+
+
 def heartbeat(config):
     return request(config,"POST",f"/api/executor/heartbeat/{config['device_id']}",{"agent_id":config["agent_id"],"version":"2.0","platform":platform.system(),"hostname":socket.gethostname(),"profile":system_profile(),"network":interface_profile()})
 def poll(config): return request(config,"GET",f"/api/executor/jobs/{config['device_id']}")
@@ -133,9 +200,12 @@ def submit_result(config,job_id,result): return request(config,"POST",f"/api/exe
 def main():
     config=load_config()
     if config.get("enrollment_token") and (not config.get("agent_id") or not config.get("secret")):
+        # Restrict and preflight the credential directory before consuming the
+        # server-side one-time token. The returned secret is only shown once.
+        prepare_config_storage()
         response=enroll(config)
-        if not response.get("ok"): raise RuntimeError(f"executor enrollment failed: {response}")
-        raise RuntimeError("Enrollment succeeded. Persist returned agent_id and secret securely, remove enrollment_token, then restart.")
+        config=complete_enrollment(config,response)
+        print("Shopnoltd Executor enrollment completed; credentials saved with restricted permissions.", flush=True)
     last=0.0
     while True:
         try:

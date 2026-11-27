@@ -1,19 +1,17 @@
 import secrets
 
 from fastapi import APIRouter, Depends, HTTPException
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import SessionLocal
 from app.core.mailcow import call_mailcow
-from app.core.security import verify_token, verify_token_admin
+from app.core.security import oauth2_scheme, verify_token, verify_token_admin
 from app.models.models import Domain, Mailbox
 from app.schemas.schemas import MailboxIn, MailboxOwnerIn
 
 router = APIRouter()
-bearer = HTTPBearer()
 
 
 async def db():
@@ -21,12 +19,12 @@ async def db():
         yield s
 
 
-async def admin(creds: HTTPAuthorizationCredentials = Depends(bearer)):
-    return await verify_token_admin(creds.credentials)
+async def admin(token: str = Depends(oauth2_scheme)):
+    return await verify_token_admin(token)
 
 
-async def current_user(creds: HTTPAuthorizationCredentials = Depends(bearer)):
-    return await verify_token(creds.credentials)
+async def current_user(token: str = Depends(oauth2_scheme)):
+    return await verify_token(token)
 
 
 @router.get("/mine")

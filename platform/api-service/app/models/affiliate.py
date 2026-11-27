@@ -50,6 +50,29 @@ class AffiliateConversion(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     available_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     settled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    provider_payment_reference: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    wallet_transaction_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+
+
+class AdGemPostbackEvent(Base):
+    """Verified AdGem events retained for reconciliation; never auto-credits wallets."""
+    __tablename__ = "shopnoltd_adgem_postback_events"
+    request_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    conversion_id: Mapped[str | None] = mapped_column(String(128), unique=True, nullable=True)
+    click_id: Mapped[str] = mapped_column(ForeignKey("shopnoltd_affiliate_clicks.id"), nullable=False, index=True)
+    user_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    app_id: Mapped[str] = mapped_column(String(64), nullable=False, default="")
+    offer_id: Mapped[str] = mapped_column(String(128), nullable=False, default="")
+    goal_id: Mapped[str] = mapped_column(String(128), nullable=False, default="")
+    goal_name: Mapped[str] = mapped_column(String(500), nullable=False, default="")
+    conversion_type: Mapped[str] = mapped_column(String(16), nullable=False, default="reward")
+    amount: Mapped[Decimal] = mapped_column(Numeric(18, 4), nullable=False, default=0)
+    network_payout: Mapped[Decimal] = mapped_column(Numeric(18, 4), nullable=False, default=0)
+    currency: Mapped[str] = mapped_column(String(3), nullable=False, default="USD")
+    country: Mapped[str] = mapped_column(String(2), nullable=False, default="")
+    status: Mapped[str] = mapped_column(String(24), nullable=False, default="pending_review")
+    signature_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
 class AffiliateSandboxConversion(Base):

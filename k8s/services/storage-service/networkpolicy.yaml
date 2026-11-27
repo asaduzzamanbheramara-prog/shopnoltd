@@ -52,3 +52,12 @@ spec:
           protocol: TCP
         - port: 9000
           protocol: TCP
+    # Storage Service fetches Keycloak JWKS through the internal HTTP service.
+    # Keep this allowance scoped to the identity namespace and Keycloak HTTP port.
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: shopno-identity
+      ports:
+        - port: 8080
+          protocol: TCP

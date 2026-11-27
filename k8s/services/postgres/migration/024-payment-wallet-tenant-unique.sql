@@ -23,10 +23,12 @@ BEGIN
     IF current_version IS NULL
        OR current_version NOT IN (
            '0006_payment_accounts',
-           '0007_wallet_tenant_user_currency'
+           '0007_wallet_tenant_user_currency',
+           '0008_transaction_idempotency',
+           '0009_transaction_status_varchar'
        ) THEN
         RAISE EXCEPTION
-            'unexpected payment Alembic version %, expected 0006 or 0007; refusing repair',
+            'unexpected payment Alembic version %, expected 0006, 0007, 0008, or 0009; refusing repair',
             current_version;
     END IF;
 

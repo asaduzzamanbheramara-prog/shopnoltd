@@ -5,7 +5,7 @@ from fastapi import HTTPException
 import pytest
 
 from app.api.affiliate import _affmine_request_params, _affmine_campaign_rows, _affmine_country_codes, _affmine_platform_codes, _client_platform, _platform_ok, _country, _geo_ok, _is_platform_admin, _percent, _require_sandbox_enabled, _safe_tracking_url, sandbox_user_summary, simulate_sandbox_earning
-from app.models.affiliate import AffiliateConversion, AffiliateOffer, AffiliateSandboxConversion
+from app.models.affiliate import AdGemPostbackEvent, AffiliateConversion, AffiliateOffer, AffiliateSandboxConversion
 from app.api.affiliate import router, public_offer_dict
 
 
@@ -147,6 +147,12 @@ def test_sandbox_endpoints_are_separate_and_wallet_safe():
     assert "/affiliate/sandbox/admin/summary" in paths
     # The live network callback remains intentionally disabled.
     assert "/affiliate/postback" in paths
+    assert "/affiliate/adgem/postback/v3" in paths
+    assert AdGemPostbackEvent.__tablename__ == "shopnoltd_adgem_postback_events"
+    assert AdGemPostbackEvent.__table__.c.request_id.primary_key
+    assert AdGemPostbackEvent.__table__.c.conversion_id.unique
+    assert AdGemPostbackEvent.__table__.c.signature_verified.default.arg is False
+    assert AdGemPostbackEvent.__table__.c.status.default.arg == "pending_review"
 
 def test_sandbox_requires_explicit_environment_enablement(monkeypatch):
     monkeypatch.delenv("AFFILIATE_SANDBOX_ENABLED", raising=False)
@@ -281,3 +287,71 @@ def test_public_affiliate_offer_exposes_only_shopnoltd_reward():
     forbidden = {"network_offer_id", "network_payout", "user_share_percent",
                  "platform_share_percent", "countries", "allowed_platform"}
     assert forbidden.isdisjoint(result)
+
+
+
+def test_verified_work_approval_runs_referral_transfer_after_worker_reward():
+    import inspect
+    from app.api.v3_work import approve_submission
+    source = inspect.getsource(approve_submission)
+    worker_transfer = source.index("await client.post(")
+    referral_transfer = source.index("await settle_referral_reward(")
+    approval = source.index('sub.status = "approved"')
+    assert worker_transfer < referral_transfer < approval
+    assert "tenant_id=w.tenant_id" in source
+    assert "submission_id=sub.id" in source
+
+
+def test_offer_links_use_shopnoltd_redirect_not_provider_destination():
+    import inspect
+    from app.api.affiliate import start_offer, redirect_offer, router as affiliate_router
+    start_source = inspect.getsource(start_offer)
+    redirect_source = inspect.getsource(redirect_offer)
+    assert 'request.url_for("redirect_offer"' in start_source
+    assert "_safe_tracking_url" not in start_source
+    assert "RedirectResponse(destination, status_code=302)" in redirect_source
+    assert any(route.path == "/affiliate/go/{click_id}" for route in affiliate_router.routes)
+
+
+def test_social_task_destinations_include_api_supported_linkedin_and_x():
+    from app.api.v3_work import WORK_PLATFORMS
+    from app.api.v2 import WORK_PLATFORMS as LEGACY_WORK_PLATFORMS
+    assert {"linkedin", "x"}.issubset(WORK_PLATFORMS)
+    assert WORK_PLATFORMS == LEGACY_WORK_PLATFORMS
+
+
+def test_affiliate_user_copy_hides_provider_identity_and_wholesale_rates():
+    from pathlib import Path
+    source_path = Path(__file__).resolve().parents[2] / "web-portal/src/pages/AffiliateOffers.jsx"
+    source = source_path.read_text()
+    logged_out_start = source.index("if (!loggedIn) return")
+    render_start = source.index("return <main style={shell}>", logged_out_start)
+    admin_start = source.index("{admin && <section", render_start)
+    user_render = source[render_start:admin_start]
+    sandbox_start = user_render.find("{admin && sandboxSummary?.enabled && <section")
+    if sandbox_start >= 0:
+        sandbox_end = user_render.index("</section>}", sandbox_start) + len("</section>}")
+        user_render = user_render[:sandbox_start] + user_render[sandbox_end:]
+    assert "Affmine" not in user_render
+    assert "Network payout" not in user_render
+    assert "Platform share" not in user_render
+    assert "Your reward" in user_render
+    assert "available task" in user_render
+
+
+def test_affiliate_settlement_fields_and_admin_lifecycle_routes_exist():
+    columns = AffiliateConversion.__table__.columns
+    assert "provider_payment_reference" in columns
+    assert "wallet_transaction_id" in columns
+    paths = {route.path for route in router.routes}
+    assert "/affiliate/admin/adgem/events" in paths
+    assert "/affiliate/admin/adgem/events/{request_id}/approve" in paths
+    assert "/affiliate/admin/conversions/{txn}/provider-paid" in paths
+    assert "/affiliate/admin/conversions/{txn}/settle" in paths
+
+
+def test_adgem_amount_and_payout_are_distinct_fields():
+    columns = AdGemPostbackEvent.__table__.columns
+    assert "amount" in columns
+    assert "network_payout" in columns
+    assert columns["amount"] is not columns["network_payout"]

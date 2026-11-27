@@ -11,7 +11,7 @@ const EMPTY = {
   platform_account_id: '',
   username: '',
   display_name: '',
-  status: 'connected',
+  status: 'pending',
   scopes: '',
   access_token_ref: '',
   refresh_token_ref: '',
@@ -35,7 +35,7 @@ function toPayload(form) {
     platform_account_id: form.platform_account_id.trim(),
     username: form.username.trim() || null,
     display_name: form.display_name.trim() || null,
-    status: form.status || 'connected',
+    status: form.status || 'pending',
     scopes: form.scopes.split(',').map(x => x.trim()).filter(Boolean),
     access_token_ref: form.access_token_ref.trim() || null,
     refresh_token_ref: form.refresh_token_ref.trim() || null,
@@ -51,7 +51,7 @@ function fromConnection(item) {
     platform_account_id: item.platform_account_id || '',
     username: item.username || '',
     display_name: item.display_name || '',
-    status: item.status || 'connected',
+    status: item.status || 'pending',
     scopes: Array.isArray(item.scopes) ? item.scopes.join(', ') : '',
     access_token_ref: item.access_token_ref || '',
     refresh_token_ref: item.refresh_token_ref || '',
@@ -72,6 +72,12 @@ export default function OmnichannelConnections() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
+  const [automationPlatform, setAutomationPlatform] = useState('')
+  const [automationAction, setAutomationAction] = useState('')
+  const [automationSelected, setAutomationSelected] = useState([])
+  const [automationPayload, setAutomationPayload] = useState('{}')
+  const [automationApproved, setAutomationApproved] = useState(false)
+  const [automationResults, setAutomationResults] = useState([])
 
   async function beginOAuth(provider, platform) {
     setError('')
@@ -222,6 +228,52 @@ export default function OmnichannelConnections() {
       : current.filter(id => id !== accountId))
   }
 
+  const EXECUTABLE_ACTIONS = {
+    gmail: ['send_message'],
+    outlook: ['send_message'],
+    x: ['create_post'],
+    linkedin: ['create_post'],
+  }
+  const automationProfiles = items.filter(item => item.platform === automationPlatform && item.status === 'connected')
+  const executableActions = EXECUTABLE_ACTIONS[automationPlatform] || []
+  const executorEnabled = providers.length > 0 && providers.every(provider => provider.executor_enabled === true)
+  async function runAutomation(event) {
+    event.preventDefault()
+    setError('')
+    setNotice('')
+    setAutomationResults([])
+    if (!executorEnabled) { setError('The server automation executor is disabled. No action was sent or queued.'); return }
+    if (!automationSelected.length) { setError('Select at least one connected profile.'); return }
+    if (!automationApproved) { setError('Explicit human approval is required before queuing provider actions.'); return }
+    let payload
+    try { payload = JSON.parse(automationPayload || '{}') } catch { setError('Action payload must be valid JSON.'); return }
+    if (!payload || Array.isArray(payload) || typeof payload !== 'object') { setError('Action payload must be a JSON object.'); return }
+    setBusy(true)
+    const results = []
+    try {
+      for (const connectionId of automationSelected) {
+        try {
+          const result = await platformApi.omnichannelQueueAction({
+            platform: automationPlatform,
+            action: automationAction,
+            connection_id: connectionId,
+            idempotency_key: 'ui-' + crypto.randomUUID(),
+            payload,
+            approved: true,
+          })
+          results.push({ connectionId, ok: true, result })
+        } catch (e) {
+          results.push({ connectionId, ok: false, error: e.message })
+        }
+      }
+      setAutomationResults(results)
+      const queued = results.filter(x => x.ok).length
+      setNotice(queued + ' of ' + results.length + ' action(s) queued. Queueing is not proof of provider delivery.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   async function remove(item) {
     if (!window.confirm(`Disconnect ${item.display_name || item.username || item.platform_account_id} from Shopnoltd?`)) return
     setBusy(true)
@@ -268,7 +320,7 @@ export default function OmnichannelConnections() {
         <label>Platform account ID<input required value={form.platform_account_id} onChange={e => update('platform_account_id', e.target.value)} style={styles.input} /></label>
         <label>Username<input value={form.username} onChange={e => update('username', e.target.value)} style={styles.input} /></label>
         <label>Display name<input value={form.display_name} onChange={e => update('display_name', e.target.value)} style={styles.input} /></label>
-        <label>Status<select value={form.status} onChange={e => update('status', e.target.value)} style={styles.input}><option>connected</option><option>pending</option><option>expired</option><option>disabled</option></select></label>
+        <label>Status<select value={form.status} onChange={e => update('status', e.target.value)} style={styles.input}><option>pending</option><option>expired</option><option>disabled</option></select></label>
       </div>
 
       <label>Scopes <input value={form.scopes} onChange={e => update('scopes', e.target.value)} placeholder="scope.one, scope.two" style={styles.input} /></label>
@@ -386,6 +438,60 @@ export default function OmnichannelConnections() {
             {caps.some(x => x.availability === 'provider_dependent') && <div style={{ color: '#92400e', fontSize: 11, marginTop: 5 }}>Provider approval may be required</div>}
           </div>
         })}
+      </div>
+    </section>
+
+    <section style={{ ...styles.card, marginBottom: 20 }}>
+      <h2 style={{ margin: '0 0 8px', fontSize: 18 }}>One-command automation</h2>
+      <p style={{ margin: '0 0 12px', color: '#6b7280', lineHeight: 1.5 }}>
+        Select one platform and one or more of your connected profiles. Each action is queued against its own connection; credentials are never substituted across profiles.
+      </p>
+      {!executorEnabled && <div role="status" style={{ padding: 10, borderRadius: 8, background: '#fffbeb', color: '#92400e', fontSize: 13 }}>
+        Automation executor is disabled on the server. Run is unavailable until provider credentials and sandbox end-to-end tests are complete. No messages or posts will be sent.
+      </div>}
+      <form onSubmit={runAutomation} style={{ display: 'grid', gap: 10 }}>
+        <label>Platform
+          <select value={automationPlatform} onChange={e => { setAutomationPlatform(e.target.value); setAutomationAction(''); setAutomationSelected([]); setAutomationResults([]) }} style={styles.input}>
+            <option value="">Choose a platform</option>
+            {Object.keys(EXECUTABLE_ACTIONS).map(platform => <option key={platform} value={platform}>{platform}</option>)}
+          </select>
+        </label>
+        <label>Action
+          <select value={automationAction} onChange={e => setAutomationAction(e.target.value)} style={styles.input} disabled={!executableActions.length}>
+            <option value="">Choose an executable action</option>
+            {executableActions.map(action => <option key={action} value={action}>{action}</option>)}
+          </select>
+        </label>
+        <div>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
+            <strong>Target profiles ({automationSelected.length} selected)</strong>
+            <button type="button" style={styles.button} disabled={!automationProfiles.length || busy} onClick={() => setAutomationSelected(automationProfiles.map(x => x.id))}>Select all</button>
+            <button type="button" style={styles.button} disabled={busy} onClick={() => setAutomationSelected([])}>Clear</button>
+          </div>
+          {automationProfiles.length ? automationProfiles.map(item => <label key={item.id} style={{ display: 'flex', gap: 8, alignItems: 'center', padding: 7, border: '1px solid #e5e7eb', borderRadius: 8, marginBottom: 6 }}>
+            <input type="checkbox" checked={automationSelected.includes(item.id)} onChange={e => setAutomationSelected(current => e.target.checked ? [...new Set([...current, item.id])] : current.filter(id => id !== item.id))} />
+            {item.display_name || item.username || item.platform_account_id} · {item.account_type}
+          </label>) : <div style={{ color: '#92400e', fontSize: 13 }}>No connected profiles for this platform. Connect an account first.</div>}
+        </div>
+        <label>Action payload (JSON)
+          <textarea rows={4} value={automationPayload} onChange={e => setAutomationPayload(e.target.value)} style={{ ...styles.input, fontFamily: 'monospace' }} placeholder='{"text":"Your approved message or post content"}' />
+        </label>
+        <label style={{ display: 'flex', gap: 8, alignItems: 'start' }}>
+          <input type="checkbox" checked={automationApproved} onChange={e => setAutomationApproved(e.target.checked)} />
+          I reviewed the selected profiles and payload, and explicitly approve this external action for each selected account.
+        </label>
+        <button type="submit" disabled={busy || !executorEnabled || !automationPlatform || !automationAction || !automationSelected.length || !automationApproved} style={{ ...styles.button, background: '#111827', color: '#fff', borderColor: '#111827', justifyContent: 'center' }}>
+          {busy ? 'Queueing actions…' : !executorEnabled ? 'Automation executor disabled' : 'Run on ' + automationSelected.length + ' selected profile(s)'}
+        </button>
+      </form>
+      {automationResults.length > 0 && <div role="status" style={{ marginTop: 12, display: 'grid', gap: 6 }}>
+        <strong>Queue results</strong>
+        {automationResults.map(item => <div key={item.connectionId} style={{ fontSize: 12, color: item.ok ? '#166534' : '#991b1b' }}>
+          {item.connectionId}: {item.ok ? 'queued (' + (item.result?.id || item.result?.status || 'accepted') + ')' : item.error}
+        </div>)}
+      </div>}
+      <div style={{ color: '#92400e', fontSize: 12, marginTop: 10 }}>
+        Currently wired only for Gmail/Outlook send_message and X/LinkedIn create_post. Other platforms remain unavailable until their provider adapters are implemented and verified. Country, provider policy, app review and IP restrictions still apply.
       </div>
     </section>
 

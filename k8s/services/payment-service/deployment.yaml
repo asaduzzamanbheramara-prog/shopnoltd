@@ -35,7 +35,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: payment-service
-          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/payment-service@sha256:6d5f3a7beea3290d2aa2754054ca38559ff8dbd79c4f7f271c2cee68b3547936
+          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd/payment-service@sha256:70df9b3913b999bc6a4e0f53831a412decca658ce2c07e3af373f0693e26c948
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
@@ -46,6 +46,11 @@ spec:
                 name: payment-service-config
             - secretRef:
                 name: payment-service-secret
+            - secretRef:
+                name: affiliate-payment-bridge
+                optional: true
+            - secretRef:
+                name: work-escrow-bridge
           env:
             - name: DATABASE_URL
               valueFrom:

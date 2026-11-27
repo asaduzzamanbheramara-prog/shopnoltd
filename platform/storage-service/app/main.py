@@ -47,6 +47,11 @@ app.include_router(
     tags=["objects"],
 )
 app.include_router(
+    __import__("app.api.drive", fromlist=["router"]).router,
+    prefix="/api/v1/drive",
+    tags=["private-drive"],
+)
+app.include_router(
     __import__("app.api.profile_videos", fromlist=["router"]).router,
     prefix="/api/v1/profile-videos",
     tags=["profile-videos"],

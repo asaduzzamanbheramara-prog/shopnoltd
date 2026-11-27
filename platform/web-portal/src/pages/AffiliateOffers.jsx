@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { authenticatedRequest } from '../lib/financialApi'
+import { authenticatedRequest, FINANCIAL_API_URL } from '../lib/financialApi'
+import { resolveAffiliateTaskUrl } from '../lib/affiliateTaskUrl'
 import { isPlatformAdmin } from '../lib/jwt'
 
 const shell = { maxWidth: 1120, margin: '0 auto', padding: '32px 18px 72px', fontFamily: 'system-ui,sans-serif', color: '#172033' }
@@ -15,6 +16,8 @@ export default function AffiliateOffers() {
   const [rate, setRate] = useState(null)
   const [adminOffers, setAdminOffers] = useState([])
   const [adminSummary, setAdminSummary] = useState({})
+  const [adminEvents, setAdminEvents] = useState([])
+  const [providerRefs, setProviderRefs] = useState({})
   const [sandboxSummary, setSandboxSummary] = useState(null)
   const [sandboxAdmin, setSandboxAdmin] = useState(null)
   const [sandboxPayout, setSandboxPayout] = useState('1.00')
@@ -23,6 +26,8 @@ export default function AffiliateOffers() {
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [hasLoaded, setHasLoaded] = useState(false)
+  const [startingTask, setStartingTask] = useState(false)
   const [syncingAffmine, setSyncingAffmine] = useState(false)
   const [shareEdits, setShareEdits] = useState({})
   const [newOffer, setNewOffer] = useState({ network_offer_id: '', title: '', tracking_url: '', click_param: 's1', network_payout: '', countries: '', currency: 'USD', user_share_percent: 70, incentive_allowed: false })
@@ -45,17 +50,19 @@ export default function AffiliateOffers() {
       const sandboxData = await authenticatedRequest('/api/v1/affiliate/sandbox/me/summary').catch(() => null)
       setSandboxSummary(sandboxData)
       if (admin) {
-        const [adminRows, adminTotals] = await Promise.all([
+        const [adminRows, adminTotals, eventRows] = await Promise.all([
           authenticatedRequest('/api/v1/affiliate/admin/offers'),
           authenticatedRequest('/api/v1/affiliate/admin/summary'),
+          authenticatedRequest('/api/v1/affiliate/admin/adgem/events'),
         ])
         setAdminOffers(Array.isArray(adminRows) ? adminRows : [])
         setAdminSummary(adminTotals || {})
+        setAdminEvents(Array.isArray(eventRows) ? eventRows : [])
         const sandboxTotals = await authenticatedRequest('/api/v1/affiliate/sandbox/admin/summary').catch(() => null)
         setSandboxAdmin(sandboxTotals || null)
       }
     } catch (e) { setError(e.message || 'Could not load affiliate data') }
-    finally { setLoading(false) }
+    finally { setLoading(false); setHasLoaded(true) }
   }, [loggedIn, admin])
 
   useEffect(() => { load() }, [load])
@@ -79,6 +86,17 @@ export default function AffiliateOffers() {
       setMessage('Removed ' + result.deleted_test_records + ' of your sandbox test records. Wallet unchanged.')
       await load()
     } catch (e) { setError(e.message || 'Could not reset sandbox records') }
+  }
+
+  async function startTask(offer) {
+    if (startingTask) return
+    setError(''); setMessage(''); setStartingTask(true)
+    try {
+      const result = await authenticatedRequest('/api/v1/affiliate/offers/' + offer.id + '/start', { method: 'POST' })
+      const destination = resolveAffiliateTaskUrl(result?.url, FINANCIAL_API_URL)
+      window.location.assign(destination)
+    } catch (e) { setError(e.message || 'Could not start this task') }
+    finally { setStartingTask(false) }
   }
 
   async function createLink(offer) {
@@ -130,6 +148,37 @@ export default function AffiliateOffers() {
     finally { setSyncingAffmine(false) }
   }
 
+  async function approveAdGemEvent(requestId) {
+    setError(''); setMessage('')
+    try {
+      await authenticatedRequest('/api/v1/affiliate/admin/adgem/events/' + encodeURIComponent(requestId) + '/approve', { method: 'POST' })
+      setMessage('Conversion approved for reconciliation. It is not payable until Shopnoltd receives the provider payout.')
+      await load()
+    } catch (e) { setError(e.message || 'Conversion approval failed') }
+  }
+
+  async function markProviderPaid(txn) {
+    const reference = String(providerRefs[txn] || '').trim()
+    if (!reference) { setError('Enter the actual provider payout reference before marking funds received.'); return }
+    setError(''); setMessage('')
+    try {
+      await authenticatedRequest('/api/v1/affiliate/admin/conversions/' + encodeURIComponent(txn) + '/provider-paid', {
+        method: 'POST', body: JSON.stringify({ provider_payment_reference: reference }),
+      })
+      setMessage('Provider payout marked received. The user wallet is still unchanged until settlement is run.')
+      await load()
+    } catch (e) { setError(e.message || 'Provider payout reconciliation failed') }
+  }
+
+  async function settleConversion(txn) {
+    setError(''); setMessage('')
+    try {
+      const result = await authenticatedRequest('/api/v1/affiliate/admin/conversions/' + encodeURIComponent(txn) + '/settle', { method: 'POST' })
+      setMessage('Wallet settlement confirmed. Payment transaction: ' + result.wallet_transaction_id)
+      await load()
+    } catch (e) { setError(e.message || 'Wallet settlement failed') }
+  }
+
   async function addOffer(event) {
     event.preventDefault(); setError(''); setMessage('')
     try {
@@ -140,7 +189,32 @@ export default function AffiliateOffers() {
     } catch (e) { setError(e.message || 'Offer could not be added') }
   }
 
-  if (slug) return <main style={shell}><h1>Offer detail</h1><p>Offers are now loaded from the authenticated, country-filtered affiliate API. Open the Offers page to select an active offer and generate your personal tracking link.</p><Link to="/offers">Browse available offers</Link></main>
+  if (slug) {
+    const detailOffer = offers.find(item => String(item.id) === String(slug))
+    if (!loggedIn) return <main style={shell}><h1>Sign in to view this task</h1><p>Task availability and reward information are account- and location-specific.</p><Link to="/login" style={button}>Sign in</Link></main>
+    return <main style={shell}>
+      <p><Link to="/offers">← Back to available tasks</Link></p>
+      {error && <p role="alert" style={{ ...panel, borderColor: '#fca5a5', color: '#991b1b' }}>{error}</p>}
+      {message && <p role="status" style={{ ...panel, borderColor: '#86efac', color: '#166534' }}>{message}</p>}
+      {!detailOffer && !hasLoaded && <section style={panel}><p>Checking task availability for your account…</p></section>}
+      {!detailOffer && hasLoaded && error && <section style={panel}><h1>Could not verify this task</h1><p>We could not confirm task availability right now. Your account and reward records have not been changed.</p><button type="button" style={button} onClick={load} disabled={loading}>{loading ? 'Checking…' : 'Try again'}</button></section>}
+      {!detailOffer && hasLoaded && !error && <section style={panel}><h1>Task unavailable</h1><p>This task is not currently available for your account, country or device. It may have been paused or its eligibility may have changed.</p><Link to="/offers">Browse available tasks</Link></section>}
+      {detailOffer && <article style={{ ...panel, maxWidth: 760, margin: '24px auto' }}>
+        <b style={{ color: '#0369a1' }}>SHOPNOLTD TASK DETAILS</b>
+        <h1 style={{ fontSize: 'clamp(28px,4vw,40px)' }}>{detailOffer.title}</h1>
+        <p style={{ color: '#047857', fontWeight: 800, fontSize: 22 }}>Potential reward: {money(detailOffer.reward_amount, detailOffer.currency)}</p>
+        <h2>Before you start</h2>
+        <ul style={{ lineHeight: 1.8, paddingLeft: 22 }}>
+          <li>Review the advertiser's instructions, eligibility rules, privacy notice and terms on the destination page.</li>
+          <li>Only complete actions you genuinely choose to do and are eligible for. Do not make purchases or provide sensitive information unless you independently understand and accept the advertiser's terms.</li>
+          <li>Some actions or traffic sources may not qualify. A click is not a completed conversion and does not guarantee a reward.</li>
+          <li>Rewards remain subject to advertiser/network validation and Shopnoltd's confirmation of the corresponding provider payment.</li>
+        </ul>
+        <p style={{ color: '#64748b', fontSize: 13 }}>The available feed currently supplies the task title and potential reward only; it does not supply full campaign instructions. The advertiser's landing page is the authoritative source for task requirements.</p>
+        <button type="button" style={button} disabled={startingTask} onClick={() => startTask(detailOffer)}>{startingTask ? 'Preparing task…' : 'Continue to advertiser task'}</button>
+      </article>}
+    </main>
+  }
 
   if (!loggedIn) return <main style={shell}>
     <header style={{ marginBottom: 24 }}><b style={{ color: '#0284c7' }}>SHOPNOLTD PARTNER PROGRAM</b><h1 style={{ fontSize: 'clamp(30px,5vw,44px)' }}>Affiliate Offers &amp; Earnings</h1><p>Sign in to see offers available in your country, create your own tracking links and track approved earnings.</p></header>
@@ -168,13 +242,13 @@ export default function AffiliateOffers() {
         <Metric label="Payable" value={money(summary?.payable?.amount_usd)} detail={bdtEstimate(summary?.payable?.amount_usd)} />
         <Metric label="Paid" value={money(summary?.paid?.amount_usd)} detail={bdtEstimate(summary?.paid?.amount_usd)} />
       </div>
-      <p style={{ color: '#64748b', fontSize: 13 }}>Wallet credits are disabled until Affmine postback verification and payout reconciliation are completed. These figures are not spendable wallet balance.</p>
+      <p style={{ color: '#64748b', fontSize: 13 }}>Rewards become payable only after provider approval and Shopnoltd confirms the corresponding payout was received. The Paid amount reflects completed wallet settlements; pending and approved-unpaid amounts are not spendable.</p>
       {rate ? <p style={{ fontSize: 13, color: '#475569' }}>Current USD/BDT reference: ৳{Number(rate.rate).toFixed(4)} per USD · {rate.source || 'Exchange service'} · {rate.fetched_at || 'Timestamp unavailable'}</p> : <p style={{ fontSize: 13, color: '#92400e' }}>Live USD/BDT reference is temporarily unavailable; no estimated BDT value is shown.</p>}
     </section>
 
-    {sandboxSummary?.enabled && <section style={{ ...panel, marginBottom: 18, borderStyle: 'dashed', borderColor: '#d97706' }}>
+    {admin && sandboxSummary?.enabled && <section style={{ ...panel, marginBottom: 18, borderStyle: 'dashed', borderColor: '#d97706' }}>
       <h2 style={{ marginTop: 0 }}>Earnings Sandbox — Test Only</h2>
-      <p style={{ color: '#92400e', fontWeight: 700 }}>These are simulated figures, not Affmine earnings, not payable, and never added to your wallet.</p>
+      <p style={{ color: '#92400e', fontWeight: 700 }}>These are simulated figures, not real partner earnings, not payable, and never added to your wallet.</p>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: 12, alignItems: 'end' }}>
         <label>Mock network payout (USD)<input type="number" min="0.01" max="1000" step="0.01" value={sandboxPayout} onChange={e => setSandboxPayout(e.target.value)} style={{ display: 'block', width: '100%', padding: 9, boxSizing: 'border-box' }} /></label>
         <label>User share (%)<input type="number" min="0" max="90" step="1" value={sandboxShare} onChange={e => setSandboxShare(e.target.value)} style={{ display: 'block', width: '100%', padding: 9, boxSizing: 'border-box' }} /></label>
@@ -197,9 +271,10 @@ export default function AffiliateOffers() {
         {offers.map(offer => <article key={offer.id} style={{ ...panel, display: 'flex', flexDirection: 'column', gap: 10 }}>
           <b style={{ color: '#0369a1' }}>Shopnoltd task</b>
           <h3 style={{ margin: 0 }}>{offer.title}</h3>
+          <Link to={'/offers/' + offer.id} style={{ color: '#0369a1', fontWeight: 700 }}>View task details</Link>
           <p style={{ margin: 0, color: '#047857', fontWeight: 700 }}>Your reward: {money(offer.reward_amount, offer.currency)}</p>
           <p style={{ margin: 0, color: '#64748b', fontSize: 13 }}>Task availability is checked for your account before a personal task link is created.</p>
-          <button type="button" style={button} onClick={() => createLink(offer)}>Generate &amp; copy my tracking link</button>
+          <button type="button" style={button} onClick={() => createLink(offer)}>Create shareable tracking link</button>
           {links[offer.id] && <div><label htmlFor={'affiliate-link-' + offer.id}>Your personal tracking link</label><input id={'affiliate-link-' + offer.id} readOnly value={links[offer.id]} style={{ width: '100%', boxSizing: 'border-box', padding: 9, marginTop: 5 }} /><button type="button" style={{ ...button, marginTop: 8 }} onClick={() => navigator.clipboard.writeText(links[offer.id])}>Copy link</button></div>}
         </article>)}
       </div>
@@ -218,7 +293,26 @@ export default function AffiliateOffers() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: 12 }}>
           {Object.entries(adminSummary).map(([status, data]) => <Metric key={status} label={status.replaceAll('_',' ')} value={money(data.user_share_usd)} detail={'Platform: ' + money(data.platform_share_usd)} />)}
         </div>
-        <p style={{ color: '#64748b', fontSize: 13 }}>No real conversion totals appear until verified network callbacks are enabled.</p>
+        <p style={{ color: '#64748b', fontSize: 13 }}>Provider revenue is not Shopnoltd cash received until matched to an actual payout statement. User rewards are settled only after this reconciliation.</p>
+      </div>
+      <div style={{ ...panel, marginBottom: 16 }}>
+        <h3 style={{ marginTop: 0 }}>AdGem conversion review &amp; settlement</h3>
+        <p style={{ color: '#64748b', fontSize: 13 }}>Approve genuine signed conversions, record the actual provider payout reference when funds arrive, then settle the user's wallet. Do not enter a reference until the payout is visible in your publisher/payment account.</p>
+        {adminEvents.length === 0 && <p>No AdGem conversion events have been received yet.</p>}
+        <div style={{ display: 'grid', gap: 12 }}>
+          {adminEvents.map(event => <article key={event.request_id} style={{ border: '1px solid #e2e8f0', borderRadius: 10, padding: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+              <b>{event.goal_name || event.offer_id || 'AdGem conversion'}</b>
+              <b>{event.status}</b>
+            </div>
+            <p style={{ margin: '6px 0', color: '#64748b', fontSize: 13 }}>User: {event.user_id} · Provider payout: {money(event.network_payout)} · User reward: {money(event.user_amount)} · Shopnoltd share: {money(event.platform_amount)}</p>
+            <small style={{ color: '#64748b' }}>Request {event.request_id} · Signature verified: {String(event.signature_verified)} · {event.created_at || ''}</small>
+            {event.status === 'pending_review' && event.conversion_txn && <div style={{ marginTop: 10 }}><button type="button" style={button} onClick={() => approveAdGemEvent(event.request_id)}>Approve conversion</button></div>}
+            {event.status === 'approved_unpaid' && event.conversion_txn && <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}><input aria-label="Provider payout reference" placeholder="Actual provider payout reference" value={providerRefs[event.conversion_txn] || ''} onChange={e => setProviderRefs(v => ({ ...v, [event.conversion_txn]: e.target.value }))} style={{ flex: '1 1 240px', padding: 9 }} /><button type="button" style={button} onClick={() => markProviderPaid(event.conversion_txn)}>Confirm provider funds received</button></div>}
+            {event.status === 'payable' && event.conversion_txn && <div style={{ marginTop: 10 }}><p style={{ color: '#166534', fontSize: 13 }}>Provider payout reference: {event.provider_payment_reference || 'recorded'}</p><button type="button" style={button} onClick={() => settleConversion(event.conversion_txn)}>Settle user wallet</button></div>}
+            {event.status === 'paid' && <p style={{ color: '#166534', fontSize: 13, marginBottom: 0 }}>Wallet transaction: {event.wallet_transaction_id || 'settled'}</p>}
+          </article>)}
+        </div>
       </div>
       {sandboxAdmin?.enabled && <div style={{ ...panel, marginBottom: 16, borderStyle: 'dashed', borderColor: '#d97706' }}>
         <h3 style={{ marginTop: 0 }}>Platform Sandbox Totals — Test Only</h3>

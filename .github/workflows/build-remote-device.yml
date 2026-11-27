@@ -41,6 +41,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push
+        id: build
         uses: docker/build-push-action@v6
         with:
           context: ./platform/remote-device/gateway
@@ -54,7 +55,7 @@ jobs:
 
       - name: Update GitOps image reference
         env:
-          IMAGE: ${{ env.IMAGE_NAME }}:${{ github.sha }}
+          IMAGE: ${{ env.IMAGE_NAME }}@${{ steps.build.outputs.digest }}
         run: |
           python3 - <<'PY'
           from pathlib import Path
@@ -63,13 +64,12 @@ jobs:
 
           p = Path("k8s/services/remote-device/deployment.yaml")
           text = p.read_text()
-
           image = os.environ["IMAGE"]
 
           pattern = (
               r'(?m)^([ \t]+image:) '
               r'ghcr\.io/asaduzzamanbheramara-prog/'
-              r'shopnoltd-remote-device-gateway:[^\n]+$'
+              r'shopnoltd-remote-device-gateway(?:[:@])[^\n]+$'
           )
 
           updated, count = re.subn(
@@ -102,6 +102,5 @@ jobs:
             exit 0
           fi
 
-          git commit             -m "chore: update remote-device-gateway image to ${GITHUB_SHA} [skip ci]"
-
+          git commit -m "chore: update remote-device-gateway image to ${GITHUB_SHA} [skip ci]"
           git push origin HEAD:${GITHUB_REF_NAME}
