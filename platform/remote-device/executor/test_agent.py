@@ -9,6 +9,29 @@ import agent
 
 
 class ExecutorEnrollmentTests(unittest.TestCase):
+    def test_termux_environment_is_reported_as_android(self):
+        with patch.dict(os.environ, {"ANDROID_ROOT": "/system"}, clear=False):
+            self.assertEqual(agent.reported_platform(), "Android")
+
+    def test_non_android_host_uses_native_platform_name(self):
+        with patch.dict(os.environ, {"ANDROID_ROOT": "", "ANDROID_DATA": ""}, clear=False), patch.object(agent.Path, "exists", return_value=False):
+            self.assertEqual(agent.reported_platform(), agent.platform.system())
+
+    def test_android_memory_status_reads_available_memory(self):
+        meminfo = "MemTotal: 1024 kB\nMemAvailable: 256 kB\n"
+        with patch.object(agent.platform, "system", return_value="Linux"), patch.object(agent.Path, "exists", return_value=True), patch.object(agent.Path, "read_text", return_value=meminfo):
+            result = agent.operation_memory_status()
+        self.assertEqual(result["total_bytes"], 1024 * 1024)
+        self.assertEqual(result["available_bytes"], 256 * 1024)
+        self.assertEqual(result["used_bytes"], 768 * 1024)
+
+    def test_android_disk_status_uses_home_filesystem(self):
+        from types import SimpleNamespace
+        with patch.object(agent.platform, "system", return_value="Linux"), patch.object(agent.Path, "home", return_value=Path("/data/data/com.termux/files/home")), patch.object(agent.shutil, "disk_usage", return_value=SimpleNamespace(total=1000, used=600, free=400)):
+            result = agent.operation_disk_status()
+        self.assertEqual(result["total_bytes"], 1000)
+        self.assertEqual(result["free_bytes"], 400)
+
     def test_complete_enrollment_persists_agent_credentials_without_token(self):
         original = {"gateway_url": "https://remote.example", "device_id": "device-1", "enrollment_token": "one-time"}
         response = {"ok": True, "agent_id": "agent-1", "secret": "base64-secret"}

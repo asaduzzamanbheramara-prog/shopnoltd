@@ -1,13 +1,23 @@
 #!/usr/bin/env python3
 """Shopnoltd outbound-only executor with unified device/network profile reporting."""
 from __future__ import annotations
-import base64, hashlib, hmac, json, os, platform, re, socket, subprocess, sys, time, uuid
+import base64, hashlib, hmac, json, os, platform, re, shutil, socket, subprocess, sys, time, uuid
 from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 CONFIG_PATH = Path(os.getenv("SHOPNOLTD_EXECUTOR_CONFIG", r"C:\ProgramData\Shopnoltd\executor.json"))
-POLL_SECONDS=5; HEARTBEAT_SECONDS=30; HTTP_TIMEOUT=30; COMMAND_TIMEOUT=60
+POLL_SECONDS = max(5, int(os.getenv("SHOPNOLTD_POLL_SECONDS", "5")))
+HEARTBEAT_SECONDS = max(30, int(os.getenv("SHOPNOLTD_HEARTBEAT_SECONDS", "30")))
+HTTP_TIMEOUT = 30
+COMMAND_TIMEOUT = 60
+
+
+def reported_platform():
+    """Normalize Termux hosts to Android without claiming screen-control support."""
+    if os.getenv("ANDROID_ROOT") or os.getenv("ANDROID_DATA") or Path("/system/build.prop").exists():
+        return "Android"
+    return platform.system()
 
 
 def load_config():
@@ -76,7 +86,7 @@ def sign(secret,timestamp,nonce,method,path,body):
 def request(config,method,path,payload=None):
     gateway=config["gateway_url"].rstrip("/"); body=canonical_json(payload) if payload is not None else ""
     ts=str(int(time.time())); nonce=uuid.uuid4().hex
-    headers={"Accept":"application/json","Content-Type":"application/json","X-Shopnoltd-Device":config["device_id"],"X-Shopnoltd-Agent":config["agent_id"],"X-Shopnoltd-Timestamp":ts,"X-Shopnoltd-Nonce":nonce,"X-Shopnoltd-Signature":sign(config["secret"],ts,nonce,method,path,body),"User-Agent":"Shopnoltd-Executor/2.0"}
+    headers={"Accept":"application/json","Content-Type":"application/json","X-Shopnoltd-Device":config["device_id"],"X-Shopnoltd-Agent":config["agent_id"],"X-Shopnoltd-Timestamp":ts,"X-Shopnoltd-Nonce":nonce,"X-Shopnoltd-Signature":sign(config["secret"],ts,nonce,method,path,body),"User-Agent":"Shopnoltd-Executor/2.1"}
     req=Request(gateway+path,data=body.encode() if body else None,headers=headers,method=method.upper())
     with urlopen(req,timeout=HTTP_TIMEOUT) as response: raw=response.read().decode("utf-8")
     return json.loads(raw) if raw else {}
@@ -134,7 +144,7 @@ def interface_profile():
 
 
 def system_profile():
-    return {"hostname":socket.gethostname(),"system":platform.system(),"platform":platform.platform(),"release":platform.release(),"machine":platform.machine(),"python":platform.python_version(),"time":time.time()}
+    return {"hostname":socket.gethostname(),"system":platform.system(),"device_platform":reported_platform(),"platform":platform.platform(),"release":platform.release(),"machine":platform.machine(),"python":platform.python_version(),"time":time.time()}
 
 
 def operation_system_info(): return system_profile()
@@ -144,10 +154,51 @@ def operation_k3s_info(): return run(["wsl.exe","-e","bash","-lc","export KUBECO
 def operation_k8s_pods(): return run(["wsl.exe","-e","bash","-lc","export KUBECONFIG=/home/shopno/k3s.yaml; kubectl get pods -A -o wide"],90)
 def operation_k8s_services(): return run(["wsl.exe","-e","bash","-lc","export KUBECONFIG=/home/shopno/k3s.yaml; kubectl get svc -A -o wide"],90)
 def operation_git_status(): return run(["wsl.exe","-e","bash","-lc","cd /mnt/c/Users/asadu/PROJECTS/shopnoltd && git status --short --branch"])
-def operation_shopnoltd_health(): return run(["powershell.exe","-NoProfile","-NonInteractive","-Command","$urls=@('https://api.shopnoltd.dpdns.org/healthz','https://api.shopnoltd.dpdns.org/readyz','https://remote.shopnoltd.dpdns.org/healthz');$urls|%{$r=Invoke-WebRequest -UseBasicParsing -Uri $_ -TimeoutSec 15;$_.ToString()+' '+$r.StatusCode+' '+$r.Content}"],60)
-def operation_disk_status(): return run(["powershell.exe","-NoProfile","-NonInteractive","-Command","Get-PSDrive -PSProvider FileSystem|Select-Object Name,Used,Free|ConvertTo-Json -Compress"])
-def operation_memory_status(): return run(["powershell.exe","-NoProfile","-NonInteractive","-Command","$o=[ordered]@{TotalPhysicalMemory=(Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory;FreePhysicalMemory=(Get-CimInstance Win32_OperatingSystem).FreePhysicalMemory};$o|ConvertTo-Json -Compress"])
-def operation_remote_device_status(): return run(["wsl.exe","-e","bash","-lc","export KUBECONFIG=/home/shopno/k3s.yaml; kubectl -n shopno-tools get pods,svc -l app=remote-device-gateway -o wide; kubectl -n shopno-tools get pods,svc -l app=remote-device-registry -o wide; kubectl -n shopno-tools get pods,svc -l app=remote-device-ui -o wide"],90)
+def http_health_checks(urls):
+    checks=[]
+    for url in urls:
+        try:
+            with urlopen(url,timeout=8) as response:
+                body=response.read(2048).decode("utf-8",errors="replace")
+                checks.append({"url":url,"ok":200 <= response.status < 400,"status":response.status,"body":body[:500]})
+        except Exception as exc:
+            checks.append({"url":url,"ok":False,"error":str(exc)[:300]})
+    return {"ok":all(item["ok"] for item in checks),"checks":checks}
+
+
+def operation_shopnoltd_health():
+    return http_health_checks(["https://api.shopnoltd.dpdns.org/healthz","https://api.shopnoltd.dpdns.org/readyz","https://shopnoltd.dpdns.org/"])
+
+
+def operation_disk_status():
+    if platform.system() == "Windows":
+        return run(["powershell.exe","-NoProfile","-NonInteractive","-Command","Get-PSDrive -PSProvider FileSystem|Select-Object Name,Used,Free|ConvertTo-Json -Compress"])
+    usage=shutil.disk_usage(str(Path.home()))
+    return {"path":str(Path.home()),"total_bytes":usage.total,"used_bytes":usage.used,"free_bytes":usage.free}
+
+
+def operation_memory_status():
+    if platform.system() == "Windows":
+        return run(["powershell.exe","-NoProfile","-NonInteractive","-Command","$o=[ordered]@{TotalPhysicalMemory=(Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory;FreePhysicalMemory=(Get-CimInstance Win32_OperatingSystem).FreePhysicalMemory};$o|ConvertTo-Json -Compress"])
+    meminfo=Path("/proc/meminfo")
+    if not meminfo.exists():
+        return {"available":False,"reason":"/proc/meminfo is not available on this platform"}
+    values={}
+    for line in meminfo.read_text(encoding="utf-8",errors="replace").splitlines():
+        if ":" not in line:
+            continue
+        key,raw=line.split(":",1)
+        if key in {"MemTotal","MemAvailable","MemFree"}:
+            parts=raw.split()
+            if parts:
+                values[key]=int(parts[0])*1024
+    total=values.get("MemTotal")
+    available=values.get("MemAvailable",values.get("MemFree"))
+    return {"total_bytes":total,"available_bytes":available,"used_bytes":max(0,total-available) if total is not None and available is not None else None}
+
+
+def operation_remote_device_status():
+    return http_health_checks(["https://devices.shopnoltd.dpdns.org/healthz","https://remote.shopnoltd.dpdns.org/healthz","https://remote-engine.shopnoltd.dpdns.org/healthz"])
 
 OPERATIONS={"system.info":operation_system_info,"windows.info":operation_windows_info,"wsl.info":operation_wsl_info,"k3s.info":operation_k3s_info,"k8s.pods":operation_k8s_pods,"k8s.services":operation_k8s_services,"git.status":operation_git_status,"shopnoltd.health":operation_shopnoltd_health,"disk.status":operation_disk_status,"memory.status":operation_memory_status,"remote-device.status":operation_remote_device_status}
 
@@ -162,8 +213,8 @@ def execute(job):
 
 def enroll(config):
     gateway=config["gateway_url"].rstrip("/"); path=f"/api/executor/enroll/{config['device_id']}"
-    payload={"enrollment_token":config["enrollment_token"],"hostname":socket.gethostname(),"platform":platform.system(),"agent_version":"2.0","profile":system_profile(),"network":interface_profile()}
-    body=canonical_json(payload).encode(); req=Request(gateway+path,data=body,headers={"Accept":"application/json","Content-Type":"application/json","User-Agent":"Shopnoltd-Executor/2.0"},method="POST")
+    payload={"enrollment_token":config["enrollment_token"],"hostname":socket.gethostname(),"platform":reported_platform(),"agent_version":"2.1","profile":system_profile(),"network":interface_profile()}
+    body=canonical_json(payload).encode(); req=Request(gateway+path,data=body,headers={"Accept":"application/json","Content-Type":"application/json","User-Agent":"Shopnoltd-Executor/2.1"},method="POST")
     try:
         with urlopen(req,timeout=HTTP_TIMEOUT) as response:return json.loads(response.read().decode("utf-8"))
     except HTTPError as exc: raise RuntimeError(f"executor enrollment HTTP {exc.code}: {exc.read().decode('utf-8',errors='replace')}") from exc
@@ -192,7 +243,7 @@ def complete_enrollment(config, response):
 
 
 def heartbeat(config):
-    return request(config,"POST",f"/api/executor/heartbeat/{config['device_id']}",{"agent_id":config["agent_id"],"version":"2.0","platform":platform.system(),"hostname":socket.gethostname(),"profile":system_profile(),"network":interface_profile()})
+    return request(config,"POST",f"/api/executor/heartbeat/{config['device_id']}",{"agent_id":config["agent_id"],"version":"2.1","platform":reported_platform(),"hostname":socket.gethostname(),"profile":system_profile(),"network":interface_profile()})
 def poll(config): return request(config,"GET",f"/api/executor/jobs/{config['device_id']}")
 def submit_result(config,job_id,result): return request(config,"POST",f"/api/executor/jobs/{job_id}/result",result)
 

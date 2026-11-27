@@ -10,6 +10,14 @@ const card = { background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14
 const button = { display: 'inline-flex', alignItems: 'center', gap: 7, border: 0, borderRadius: 8, padding: '9px 12px', background: '#0f172a', color: '#fff', cursor: 'pointer', fontWeight: 650 }
 const input = { padding: '10px 12px', border: '1px solid #cbd5e1', borderRadius: 8, minWidth: 0, font: 'inherit' }
 
+const AGENT_RAW = 'https://raw.githubusercontent.com/asaduzzamanbheramara-prog/shopnoltd/main/platform/remote-device/executor'
+function windowsAutoConnectCommand(deviceId) {
+  return "$u='" + AGENT_RAW + "/install-windows.ps1';$p=Join-Path $env:TEMP 'shopnoltd-device-install.ps1';Invoke-WebRequest -UseBasicParsing -Uri $u -OutFile $p;& $p -DeviceId '" + deviceId + "' -GatewayUrl 'https://devices.shopnoltd.dpdns.org'"
+}
+function androidAutoConnectCommand(deviceId) {
+  return "curl -fsSL '" + AGENT_RAW + "/install-termux.sh' -o \"$HOME/shopnoltd-device-install.sh\" && bash \"$HOME/shopnoltd-device-install.sh\" '" + deviceId + "' 'https://devices.shopnoltd.dpdns.org'"
+}
+
 async function request(path, options = {}) {
   let token = localStorage.getItem('shopno_token')
   if (!token) throw new Error('Please sign in to your Shopnoltd account.')
@@ -31,6 +39,7 @@ async function request(path, options = {}) {
 
 function DeviceCard({ device, admin, onDelete, onShare, onToken, onConnect }) {
   const [busy, setBusy] = useState(false)
+  const mobile = ['android', 'ios'].includes(String(device.platform || '').toLowerCase())
   return <article style={card}>
     <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', flexWrap: 'wrap' }}>
       <Monitor size={22} color="#0369a1" />
@@ -44,12 +53,12 @@ function DeviceCard({ device, admin, onDelete, onShare, onToken, onConnect }) {
       <div><dt style={{ color: '#64748b' }}>Device ID</dt><dd style={{ margin: '3px 0', overflowWrap: 'anywhere' }}>{device.id}</dd></div>
       {admin && <div><dt style={{ color: '#64748b' }}>Owner subject</dt><dd style={{ margin: '3px 0', overflowWrap: 'anywhere' }}>{device.owner_id || 'Unavailable'}</dd></div>}
       <div><dt style={{ color: '#64748b' }}>Hostname</dt><dd style={{ margin: '3px 0' }}>{device.hostname || 'Not reported'}</dd></div>
-      <div><dt style={{ color: '#64748b' }}>MeshCentral</dt><dd style={{ margin: '3px 0' }}>{device.meshcentral_node_id ? 'Linked' : 'Not linked'}</dd></div>
+      <div><dt style={{ color: '#64748b' }}>MeshCentral</dt><dd style={{ margin: '3px 0' }}>{mobile ? 'Screen control unavailable on mobile' : device.meshcentral_node_id ? 'Linked' : 'Not linked'}</dd></div>
     </dl>
     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
       {!admin && !device.shared_access && !device.executor_enabled && <button type="button" style={button} disabled={busy} onClick={async () => { setBusy(true); try { await onToken(device) } finally { setBusy(false) } }}>Get enrollment token</button>}
       {!admin && !device.shared_access && <button type="button" style={{ ...button, background: '#334155' }} onClick={() => onShare(device)}>Share device</button>}
-      {device.meshcentral_node_id && <button type="button" style={{ ...button, background: '#0369a1' }} onClick={() => onConnect(device)}><ExternalLink size={15}/> Connect</button>}
+      {device.meshcentral_node_id && !mobile && <button type="button" style={{ ...button, background: '#0369a1' }} onClick={() => onConnect(device)}><ExternalLink size={15}/> Connect</button>}
       {!device.shared_access && <button type="button" style={{ ...button, background: '#b91c1c' }} onClick={() => onDelete(device)}><Trash2 size={15}/> {admin ? 'Revoke device' : 'Remove device'}</button>}
     </div>
   </article>
@@ -65,6 +74,7 @@ export default function Devices({ admin = false }) {
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const [tokenResult, setTokenResult] = useState('')
+  const [enrollmentDevice, setEnrollmentDevice] = useState(null)
 
   const load = useCallback(async () => {
     setLoading(true); setError('')
@@ -77,12 +87,13 @@ export default function Devices({ admin = false }) {
   useEffect(() => { load() }, [load])
 
   async function addDevice(event) {
-    event.preventDefault(); setError(''); setNotice(''); setTokenResult('')
+    event.preventDefault(); setError(''); setNotice(''); setTokenResult(''); setEnrollmentDevice(null)
     if (!name.trim()) return setError('Enter a name for this device.')
     try {
       const result = await request('/api/devices', { method: 'POST', body: JSON.stringify({ name: name.trim(), platform }) })
       setTokenResult(result.enrollment_token || '')
-      setNotice('Device registered to your account. Keep the one-time token private and enter it only in the official device installer.')
+      setEnrollmentDevice({ id: result.id, name: name.trim(), platform })
+      setNotice('Device registered. Use the platform Auto Connect setup below on the target device; the one-time token is requested through a hidden installer prompt.')
       setName('')
       await load()
     } catch (e) { setError(e.message) }
@@ -98,6 +109,7 @@ export default function Devices({ admin = false }) {
     try {
       const result = await request('/api/devices/' + encodeURIComponent(device.id) + '/enrollment-token', { method: 'POST' })
       setTokenResult(result.enrollment_token || '')
+      setEnrollmentDevice({ id: device.id, name: device.name, platform: device.platform })
       setNotice('A new one-time enrollment token was issued. Any previous pending token may no longer work.')
     } catch (e) { setError(e.message) }
   }
@@ -110,6 +122,7 @@ export default function Devices({ admin = false }) {
     try {
       const result = await request('/api/devices/' + encodeURIComponent(device.id) + '/shares', { method: 'POST', body: JSON.stringify({ expires_in_hours: hours }) })
       setTokenResult(result.share_url || '')
+      setEnrollmentDevice(null)
       setNotice('Single-use invitation created. Share it only with the intended Shopnoltd user.')
     } catch (e) { setError(e.message) }
   }
@@ -150,7 +163,19 @@ export default function Devices({ admin = false }) {
       <p style={{ color: '#64748b', fontSize: 13 }}>This value is shown once. Do not post it publicly or send it to anyone except the intended device/user.</p>
       <code style={{ display: 'block', overflowWrap: 'anywhere', padding: 10, background: '#f1f5f9', borderRadius: 8 }}>{tokenResult}</code>
       <button type="button" style={{ ...button, marginTop: 10 }} onClick={() => copy(tokenResult)}><Copy size={15}/> Copy</button>
-      <button type="button" style={{ ...button, marginTop: 10, marginLeft: 8, background: '#475569' }} onClick={() => setTokenResult('')}>Hide</button>
+      <button type="button" style={{ ...button, marginTop: 10, marginLeft: 8, background: '#475569' }} onClick={() => { setTokenResult(''); setEnrollmentDevice(null) }}>Hide</button>
+      {String(enrollmentDevice?.platform || '').toLowerCase() === 'windows' && <div style={{ marginTop: 16, borderTop: '1px solid #e2e8f0', paddingTop: 14 }}>
+        <h3 style={{ margin: '0 0 6px' }}>Auto Connect · Windows / PC-2</h3>
+        <p style={{ color: '#64748b', fontSize: 13 }}>On the target Windows PC, open PowerShell as Administrator and run the copied command. The installer downloads the approved outbound-only agent, asks for this one-time token through a hidden prompt, locks down its credential file and starts at user logon. Python 3 must already be installed.</p>
+        <button type="button" style={button} onClick={() => copy(windowsAutoConnectCommand(enrollmentDevice.id))}><Copy size={15}/> Copy Windows setup command</button>
+        <p style={{ color: '#64748b', fontSize: 12 }}>This agent reports device health, network/IP and approved diagnostics. It does not stream the screen; remote desktop requires the separately authorized MeshCentral agent.</p>
+      </div>}
+      {String(enrollmentDevice?.platform || '').toLowerCase() === 'android' && <div style={{ marginTop: 16, borderTop: '1px solid #e2e8f0', paddingTop: 14 }}>
+        <h3 style={{ margin: '0 0 6px' }}>Auto Connect · Android / Realme C35</h3>
+        <p style={{ color: '#64748b', fontSize: 13 }}>Install and open <a href="https://f-droid.org/packages/com.termux/" target="_blank" rel="noopener noreferrer">Termux from F-Droid</a> on the Realme phone, then run the copied command there. The lightweight agent installs Python, asks for this token through a hidden prompt and starts outbound heartbeat/network diagnostics.</p>
+        <button type="button" style={button} onClick={() => copy(androidAutoConnectCommand(enrollmentDevice.id))}><Copy size={15}/> Copy Android / Termux setup command</button>
+        <p style={{ color: '#64748b', fontSize: 12 }}>For restart after reboot, install Termux:Boot and allow Termux background activity in Android battery settings. This experimental agent does not capture or control the phone screen.</p>
+      </div>}
     </div>}
 
     {!adminView && <form onSubmit={addDevice} style={{ ...card, display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: 10, alignItems: 'end' }}>
@@ -161,6 +186,6 @@ export default function Devices({ admin = false }) {
 
     <div style={{ display: 'flex', gap: 8, alignItems: 'center', margin: '18px 0 12px', color: '#475569' }}><ShieldCheck size={17}/><b>{devices.length} {adminView ? 'registered devices across Shopnoltd' : 'devices available to your account'}</b></div>
     {loading ? <div style={card}>Loading devices…</div> : devices.length ? devices.map(device => <DeviceCard key={device.id} device={device} admin={adminView} onDelete={deleteDevice} onShare={shareDevice} onToken={createToken} onConnect={connectDevice}/>) : <div style={card}><h2 style={{ marginTop: 0 }}>No devices registered</h2><p style={{ color: '#64748b' }}>Add a device above to create its account-owned enrollment record. An agent must be installed separately before the device can report online.</p></div>}
-    <p style={{ color: '#64748b', fontSize: 12, lineHeight: 1.6 }}>Security: ownership is assigned by the authenticated gateway, not by browser-supplied user IDs. Remote control is available only after a device agent is enrolled and linked. Android/iOS support depends on a compatible native agent and platform permissions.</p>
+    <p style={{ color: '#64748b', fontSize: 12, lineHeight: 1.6 }}>Security: ownership is assigned by the authenticated gateway, not by browser-supplied user IDs. Remote control is available only after a device agent is enrolled and linked. Android Termux enrollment is experimental and limited to heartbeat, network inventory and approved diagnostics; it does not provide screen control. iOS native-agent support is not yet available. Desktop remote screen access requires a separately authorized MeshCentral agent.</p>
   </main>
 }

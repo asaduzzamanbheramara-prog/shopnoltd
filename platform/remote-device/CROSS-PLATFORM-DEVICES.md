@@ -16,7 +16,7 @@ All devices use the same gateway, enrollment, heartbeat, job, result, ownership 
 
 Desktop agents are outbound-only and execute a fixed allowlist of safe operations. They must never expose an inbound shell or arbitrary command endpoint.
 
-Mobile/tablet agents use the same enrollment identity but platform-appropriate APIs. Android uses the existing ShopnoltdCollect/Android integration path; iPadOS requires a signed native app because browser JavaScript cannot provide unrestricted device administration or screen control.
+Android can use the experimental Termux-based lightweight executor for outbound heartbeat, device/network inventory and the fixed diagnostics allowlist. It is not a native remote-control agent and does not capture or control the Android screen; Android background execution is subject to Termux setup and battery-optimization settings. iPadOS requires a signed native app because browser JavaScript cannot provide unrestricted device administration or screen control.
 
 ## Capability levels
 
@@ -45,7 +45,7 @@ The repository should publish platform-specific packages from CI:
 - Windows: MSI/EXE installer
 - Linux: DEB, RPM and portable tarball/AppImage where practical
 - macOS: signed/notarized DMG when Apple signing credentials are configured
-- Android: ShopnoltdCollect APK/AAB
+- Android: experimental Termux executor bootstrap for lightweight heartbeat/diagnostics; a native signed APK/AAB is still required for full background service and screen capabilities
 - iPadOS: Xcode project/app target; App Store/TestFlight distribution when Apple signing credentials are configured
 
 Signing credentials remain GitHub Actions secrets and are never committed.

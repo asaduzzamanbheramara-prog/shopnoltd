@@ -37,7 +37,7 @@ data:
         "windows": {"label": "Windows", "family": "desktop", "remote_control": True, "agent": True},
         "linux": {"label": "Linux", "family": "desktop", "remote_control": True, "agent": True},
         "macos": {"label": "macOS", "family": "desktop", "remote_control": True, "agent": True},
-        "android": {"label": "Android phone/tablet", "family": "mobile", "remote_control": "capability-dependent", "agent": "mobile-agent-required"},
+        "android": {"label": "Android phone/tablet", "family": "mobile", "remote_control": False, "agent": "termux-executor-limited"},
         "ios": {"label": "iPhone/iPad", "family": "mobile", "remote_control": "capability-dependent", "agent": "native-mobile-capability-required"},
         "browser": {"label": "Browser", "family": "web", "remote_control": "browser-session", "agent": False},
         "other": {"label": "Other", "family": "other", "remote_control": False, "agent": False},

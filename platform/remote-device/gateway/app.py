@@ -357,6 +357,12 @@ async def connect(device_id: str, request: Request):
             detail="device not found",
         )
 
+    if str(device.get("platform") or "").strip().lower() in {"android", "ios"}:
+        raise HTTPException(
+            status_code=409,
+            detail="MeshCentral remote desktop is not supported for this mobile platform.",
+        )
+
     node_id = device.get("meshcentral_node_id")
 
     if not node_id:
@@ -415,6 +421,12 @@ async def browser_connect(device_id: str, request: Request):
         raise HTTPException(
             status_code=404,
             detail="device not found",
+        )
+
+    if str(device.get("platform") or "").strip().lower() in {"android", "ios"}:
+        raise HTTPException(
+            status_code=409,
+            detail="MeshCentral remote desktop is not supported for this mobile platform.",
         )
 
     node_id = device.get("meshcentral_node_id")
@@ -514,6 +526,8 @@ async def link_meshcentral_device(device_id: str, request: Request):
     device = next((item for item in devices if isinstance(item, dict) and item.get("id") == device_id), None)
     if device is None or (not identity["is_platform_admin"] and device.get("owner_id") != identity["subject"]):
         raise HTTPException(status_code=404, detail="device not found")
+    if str(device.get("platform") or "").strip().lower() in {"android", "ios"}:
+        raise HTTPException(status_code=409, detail="MeshCentral remote desktop is not supported for this mobile platform.")
     try:
         payload = await request.json()
     except ValueError as exc:
