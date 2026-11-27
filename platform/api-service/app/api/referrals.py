@@ -30,9 +30,9 @@ async def current_user(creds: HTTPAuthorizationCredentials = Depends(bearer)):
         raise HTTPException(401, "Invalid authentication token") from exc
 
 def is_admin(u):
-    roles = set(u.get("roles") or [])
-    realm = set(((u.get("realm_access") or {}).get("roles") or []))
-    return bool(roles.intersection({"admin","platform_admin","shopnoltd-admin","administrator"}) or realm.intersection({"admin","platform_admin","shopnoltd-admin","administrator"}) or u.get("is_admin") is True)
+    roles = set(u.get("realm_roles", u.get("roles", [])) or [])
+    roles.update((u.get("realm_access") or {}).get("roles", []) or [])
+    return bool(roles.intersection({"admin", "platform_admin", "shopnoltd-admin", "administrator"}))
 
 def code_for(user_id: str) -> str:
     return "SNO-" + hashlib.sha256(("shopnoltd-referral:" + user_id).encode()).hexdigest()[:12].upper()

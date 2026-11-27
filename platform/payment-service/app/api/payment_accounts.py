@@ -8,6 +8,7 @@ import uuid
 from datetime import datetime
 
 from app.api.admin import require_admin
+from app.core.security import realm_roles
 from app.core.db import SessionLocal
 from app.models.models import AdminAuditLog, PaymentAccount
 from fastapi import APIRouter, Depends, HTTPException
@@ -59,7 +60,7 @@ class PaymentAccountPatch(BaseModel):
 
 
 def _tenant(user, requested=None):
-    roles = set(user.get("roles", []))
+    roles = realm_roles(user)
     current = user.get("tenant_id") or "default"
     if requested and requested != current and "platform_admin" not in roles:
         raise HTTPException(403, "platform_admin required to manage another tenant")
@@ -131,7 +132,7 @@ async def public_payment_accounts(s: AsyncSession = Depends(db)):
 
 @router.get("/admin")
 async def list_payment_accounts(user=Depends(require_admin), s: AsyncSession = Depends(db)):
-    tenant_id = None if "platform_admin" in set(user.get("roles", [])) else _tenant(user)
+    tenant_id = None if "platform_admin" in realm_roles(user) else _tenant(user)
     stmt = select(PaymentAccount).order_by(PaymentAccount.sort_order.asc(), PaymentAccount.created_at.asc())
     if tenant_id:
         stmt = stmt.where(PaymentAccount.tenant_id == tenant_id)
@@ -166,7 +167,7 @@ async def update_payment_account(account_id: str, body: PaymentAccountPatch, use
     except ValueError as exc:
         raise HTTPException(400, "invalid payment account id") from exc
     stmt = select(PaymentAccount).where(PaymentAccount.id == uid)
-    if "platform_admin" not in set(user.get("roles", [])):
+    if "platform_admin" not in realm_roles(user):
         stmt = stmt.where(PaymentAccount.tenant_id == _tenant(user))
     row = (await s.execute(stmt)).scalar_one_or_none()
     if row is None:

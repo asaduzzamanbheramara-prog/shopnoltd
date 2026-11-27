@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 import re
 
 from app.api.admin import require_admin
+from app.core.security import realm_roles
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
@@ -30,7 +31,7 @@ class RestoreRequest(BaseModel):
 
 
 def _platform_admin(user):
-    if "platform_admin" not in set(user.get("roles", [])):
+    if "platform_admin" not in realm_roles(user):
         raise HTTPException(403, "platform_admin required")
 
 

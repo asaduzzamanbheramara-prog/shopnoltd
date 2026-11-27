@@ -17,6 +17,7 @@ export function clearAuthSession(localStorage, sessionStorage) {
     'shopno_profile_provisioned',
     'pkce_verifier',
     'oidc_state',
+    'oidc_nonce',
     'pending_domain',
     'pending_referral_code',
     'pending_referral_category',

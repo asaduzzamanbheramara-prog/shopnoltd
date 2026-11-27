@@ -106,7 +106,7 @@ def current_user(request: Request) -> str:
         payload = jwt.decode(
             token,
             signing_key,
-            algorithms=["RS256", "RS384", "RS512"],
+            algorithms=["RS256"],
             issuer=KEYCLOAK_ISSUER,
             audience=KEYCLOAK_AUDIENCE,
         )

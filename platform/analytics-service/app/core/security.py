@@ -38,7 +38,7 @@ async def verify_token(token: str) -> dict:
                 return jwt.decode(
                     token,
                     key,
-                    algorithms=[key["alg"]],
+                    algorithms=["RS256"],
                     audience=audience,
                     issuer=settings.keycloak_issuer,
                     options={"verify_aud": True, "verify_iss": True},
@@ -55,11 +55,9 @@ async def verify_token(token: str) -> dict:
 
 async def verify_token_admin(token: str) -> dict:
     u = await verify_token(token)
-    roles = set(u.get("roles", []))
-    roles.update((u.get("realm_access") or {}).get("roles", []) or [])
-    for client in (u.get("resource_access") or {}).values():
-        roles.update((client or {}).get("roles", []) or [])
-    if not roles.intersection({"admin", "platform_admin"}):
+    realm_role_claims = set(u.get("roles", []) or [])
+    realm_role_claims.update((u.get("realm_access") or {}).get("roles", []) or [])
+    if not realm_role_claims.intersection({"admin", "platform_admin"}):
         raise PermissionError("admin only")
-    u["roles"] = sorted(roles)
+    u["realm_roles"] = sorted(realm_role_claims)
     return u

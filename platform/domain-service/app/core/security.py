@@ -1,4 +1,5 @@
 import httpx
+import secrets
 from fastapi import HTTPException
 from shopno_core.security.jwt import JWTError, jwt
 
@@ -27,16 +28,17 @@ async def verify_token(token: str) -> dict:
         return jwt.decode(
             token,
             key,
-            algorithms=[key["alg"]],
+            algorithms=["RS256"],
             audience=settings.keycloak_audience,
-            options={"verify_aud": True},
+            issuer=settings.keycloak_issuer,
+            options={"verify_aud": True, "verify_iss": True},
         )
     except (JWTError, StopIteration) as e:
         raise ValueError(f"invalid token: {e}") from e
 
 
 async def verify_token_admin(token: str) -> dict:
-    if settings.freedomain_internal_key and token == settings.freedomain_internal_key:
+    if settings.freedomain_internal_key and secrets.compare_digest(token, settings.freedomain_internal_key):
         return {"service": "freedomain-service", "roles": ["service:freedomain"]}
 
     try:
@@ -48,7 +50,7 @@ async def verify_token_admin(token: str) -> dict:
             headers={"WWW-Authenticate": "Bearer"},
         ) from None
 
-    if "admin" not in u.get("roles", []):
+    if not ({"admin", "platform_admin"} & (set(u.get("realm_roles") or u.get("roles") or []) | set((u.get("realm_access") or {}).get("roles", []) or []))):
         raise HTTPException(
             status_code=403,
             detail="Admin privileges required",

@@ -91,7 +91,7 @@ async def verify_token(token: str) -> dict:
         key = next((k for k in (await _jwks(True))["keys"] if k["kid"] == header["kid"]), None)
     if key is None:
         raise JWTError("signing key not found")
-    claims = jwt.decode(token, key, algorithms=[key["alg"]], audience=AUDIENCE, issuer=ISSUER)
+    claims = jwt.decode(token, key, algorithms=["RS256"], audience=AUDIENCE, issuer=ISSUER)
     # Match api-service realm-role handling without trusting client roles.
     roles = set(claims.get("roles", []) or [])
     roles.update((claims.get("realm_access") or {}).get("roles", []) or [])

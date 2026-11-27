@@ -77,9 +77,9 @@ MICRO_TASK_TYPES = {"simple", "follow", "like", "comment", "share", "view", "vis
 WORK_PLATFORMS = {"shopnoltd", "facebook", "instagram", "youtube", "tiktok", "telegram", "whatsapp", "linkedin", "x", "website", "data", "custom"}
 
 def is_admin(u):
-    roles = set(u.get("roles") or [])
-    realm_roles = set(((u.get("realm_access") or {}).get("roles") or []))
-    return bool(roles.intersection({"admin", "platform_admin", "shopnoltd-admin", "administrator"}) or realm_roles.intersection({"admin", "platform_admin", "shopnoltd-admin", "administrator"}) or u.get("is_admin") is True)
+    roles = set(u.get("realm_roles", u.get("roles", [])) or [])
+    roles.update((u.get("realm_access") or {}).get("roles", []) or [])
+    return bool(roles.intersection({"admin", "platform_admin", "shopnoltd-admin", "administrator"}))
 
 def rate_dict(r):
     return {"platform": r.platform, "task_type": r.task_type, "rate": str(r.rate), "currency": r.currency, "enabled": bool(r.enabled)}

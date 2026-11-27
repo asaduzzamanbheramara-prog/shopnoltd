@@ -66,9 +66,11 @@ async def verify_token(token: str) -> dict:
         last_error = None
         for audience in (settings.keycloak_audience, settings.keycloak_web_audience):
             try:
-                claims = jwt.decode(token, key, algorithms=[key["alg"]], audience=audience, options={"verify_aud": True})
-                roles = set(claims.get("roles", []) or [])
-                roles.update((claims.get("realm_access") or {}).get("roles", []) or [])
+                claims = jwt.decode(token, key, algorithms=["RS256"], audience=audience, issuer=settings.keycloak_issuer, options={"verify_aud": True, "verify_iss": True})
+                realm_role_claims = set(claims.get("roles", []) or [])
+                realm_role_claims.update((claims.get("realm_access") or {}).get("roles", []) or [])
+                claims["realm_roles"] = sorted(realm_role_claims)
+                roles = set(realm_role_claims)
                 for client in (claims.get("resource_access") or {}).values():
                     roles.update((client or {}).get("roles", []) or [])
                 claims["roles"] = sorted(roles)
@@ -80,3 +82,11 @@ async def verify_token(token: str) -> dict:
         raise
     except (JWTError, StopIteration, ValueError) as exc:
         raise HTTPException(status_code=401, detail="Invalid token", headers={"WWW-Authenticate": "Bearer"}) from exc
+
+
+
+def realm_roles(user: dict) -> set[str]:
+    """Return only Keycloak realm roles for platform-wide authorization."""
+    roles = set(user.get("realm_roles", user.get("roles", [])) or [])
+    roles.update((user.get("realm_access") or {}).get("roles", []) or [])
+    return roles

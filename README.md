@@ -43,6 +43,8 @@ Blog data additionally supports tenant-scoped CRUD, draft/publish/unpublish, tra
 
 All protected portal pages use the same Keycloak access token. Direct login and configured social brokers are handled by Keycloak so billing, payment, exchange, AI, domains, social/blog and Work do not maintain separate browser identities.
 
+See [`docs/AUTHENTICATION-SECURITY-HARDENING.md`](docs/AUTHENTICATION-SECURITY-HARDENING.md) for the JWT validation contract, role boundaries, credential handling, security tests, and remaining migration requirements.
+
 Google/Gmail and GitHub login buttons cannot be made operational by frontend code alone: the corresponding Keycloak Identity Provider must have valid provider credentials and callback configuration in the deployment runtime.
 
 ## Work accounting

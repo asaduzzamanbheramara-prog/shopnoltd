@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { KEYCLOAK_CLIENT_ID, KEYCLOAK_REALM, KEYCLOAK_URL, REDIRECT_URI } from '../config'
 import { platformApi } from '../lib/platformApi'
 import { clearAuthTokens } from '../lib/authSession'
+import { hasExpectedOidcNonce } from '../lib/oidc'
 import { trackEvent } from '../lib/analytics'
 
 export default function Callback() {
@@ -17,17 +18,20 @@ export default function Callback() {
     const oauthErrorDescription = params.get('error_description')
     const verifier = sessionStorage.getItem('pkce_verifier')
     const expectedState = sessionStorage.getItem('oidc_state')
+    const expectedNonce = sessionStorage.getItem('oidc_nonce')
 
     if (oauthError) {
       setError(oauthErrorDescription || oauthError)
       sessionStorage.removeItem('pkce_verifier')
       sessionStorage.removeItem('oidc_state')
+      sessionStorage.removeItem('oidc_nonce')
       return
     }
-    if (!code || !verifier || !expectedState || returnedState !== expectedState) {
+    if (!code || !verifier || !expectedState || !expectedNonce || returnedState !== expectedState) {
       setError('Authentication state validation failed. Please try again.')
       sessionStorage.removeItem('pkce_verifier')
       sessionStorage.removeItem('oidc_state')
+      sessionStorage.removeItem('oidc_nonce')
       return
     }
 
@@ -47,6 +51,7 @@ export default function Callback() {
       .then(async (response) => {
         const data = await response.json()
         if (!response.ok || !data.access_token) throw new Error(data.error_description || data.error || 'Authentication failed.')
+        if (!hasExpectedOidcNonce(data.id_token, expectedNonce)) throw new Error('OIDC nonce validation failed. Please sign in again.')
         return data
       })
       .then((data) => {
@@ -75,6 +80,7 @@ export default function Callback() {
 
         sessionStorage.removeItem('pkce_verifier')
         sessionStorage.removeItem('oidc_state')
+        sessionStorage.removeItem('oidc_nonce')
         sessionStorage.removeItem('pending_domain')
         sessionStorage.removeItem('pending_referral_code')
         sessionStorage.removeItem('pending_referral_category')
@@ -114,7 +120,13 @@ export default function Callback() {
           navigate('/dashboard', { replace: true })
         }
       })
-      .catch((err) => setError(err.message))
+      .catch((err) => {
+        sessionStorage.removeItem('pkce_verifier')
+        sessionStorage.removeItem('oidc_state')
+        sessionStorage.removeItem('oidc_nonce')
+        clearAuthTokens(localStorage)
+        setError(err.message)
+      })
   }, [navigate])
 
   if (error) return <div style={{ maxWidth: 640, margin: '80px auto', padding: 24 }}><h2>Authentication failed</h2><p>{error}</p><a href="/login">Return to login</a></div>

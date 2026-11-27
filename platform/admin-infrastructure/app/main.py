@@ -75,7 +75,7 @@ async def require_admin(credentials: HTTPAuthorizationCredentials = Depends(bear
         claims = jwt.decode(
             token,
             key,
-            algorithms=[key["alg"]],
+            algorithms=["RS256"],
             audience=None,
             issuer=KEYCLOAK_ISSUER,
             options={"verify_aud": False, "verify_iss": True},

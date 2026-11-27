@@ -3,7 +3,7 @@ from datetime import datetime
 from decimal import Decimal
 
 from app.core.db import SessionLocal
-from app.core.security import verify_token
+from app.core.security import realm_roles, verify_token
 from app.models.models import Transaction, TxStatus, Wallet
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -21,7 +21,7 @@ async def db():
 
 async def require_admin(creds: HTTPAuthorizationCredentials = Depends(bearer)):
     user = await verify_token(creds.credentials)
-    roles = user.get("roles", [])
+    roles = realm_roles(user)
     if "platform_admin" not in roles and "admin" not in roles:
         raise HTTPException(403, "admin only")
     return user

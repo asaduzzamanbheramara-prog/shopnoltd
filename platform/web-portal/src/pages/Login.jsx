@@ -16,9 +16,11 @@ async function startLogin(provider = '', forceLogin = false) {
   const verifier = randomString(64)
   const challenge = await codeChallengeFor(verifier)
   const state = randomString(32)
+  const nonce = randomString(32)
 
   sessionStorage.setItem('pkce_verifier', verifier)
   sessionStorage.setItem('oidc_state', state)
+  sessionStorage.setItem('oidc_nonce', nonce)
 
   const paramsIn = new URLSearchParams(window.location.search)
   const incomingDomain = paramsIn.get('domain')
@@ -43,6 +45,7 @@ async function startLogin(provider = '', forceLogin = false) {
     response_type: 'code',
     scope: 'openid profile email',
     state,
+    nonce,
     code_challenge: challenge,
     code_challenge_method: 'S256',
   })
