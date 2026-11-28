@@ -28,6 +28,14 @@ data:
     config.settings.cert = "remote.shopnoltd.dpdns.org";
     config.settings.tlsOffload = false;
 
+    // Permit authenticated desktop-view embedding only from the Shopnoltd portal.
+    config.settings.allowFraming = true;
+    config.settings.allowedFramingOrigins = [
+      "https://devices.shopnoltd.dpdns.org"
+    ];
+    // Cross-site iframe sessions require SameSite=None over HTTPS.
+    config.settings.sessionSameSite = "none";
+
     config.domains[""].certUrl =
       "https://remote.shopnoltd.dpdns.org";
 
