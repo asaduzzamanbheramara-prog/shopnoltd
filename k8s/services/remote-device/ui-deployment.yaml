@@ -11,7 +11,7 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/ui-source: device-screens-v2
+        checksum/ui-source: b91d118c838c18e18db5579c4b1e622fb2c4f533
       labels:
         app: remote-device-ui
     spec:
