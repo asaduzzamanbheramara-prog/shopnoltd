@@ -55,6 +55,7 @@ try {
         throw 'The pairing code is missing or invalid.'
     }
     $pairingBody = @{
+        device_id = $DeviceId
         pairing_secret = $pairingCode
         hostname = $env:COMPUTERNAME
         platform = 'windows'
