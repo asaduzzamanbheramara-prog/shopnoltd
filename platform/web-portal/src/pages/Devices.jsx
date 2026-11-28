@@ -14,6 +14,9 @@ const AGENT_RAW = 'https://raw.githubusercontent.com/asaduzzamanbheramara-prog/s
 function windowsAutoConnectCommand(deviceId) {
   return "$u='" + AGENT_RAW + "/install-windows.ps1';$p=Join-Path $env:TEMP 'shopnoltd-device-install.ps1';Invoke-WebRequest -UseBasicParsing -Uri $u -OutFile $p;& $p -DeviceId '" + deviceId + "' -GatewayUrl 'https://devices.shopnoltd.dpdns.org'"
 }
+function linuxAutoConnectCommand(deviceId) {
+  return "d=\"$HOME/shopnoltd-device-installer\"; mkdir -p \"$d\" && curl -fsSL '" + AGENT_RAW + "/agent.py' -o \"$d/agent.py\" && curl -fsSL '" + AGENT_RAW + "/install-wsl.sh' -o \"$d/install-wsl.sh\" && chmod 700 \"$d/install-wsl.sh\" && bash \"$d/install-wsl.sh\" '" + deviceId + "' 'https://devices.shopnoltd.dpdns.org'"
+}
 function androidAutoConnectCommand(deviceId) {
   return "curl -fsSL '" + AGENT_RAW + "/install-termux.sh' -o \"$HOME/shopnoltd-device-install.sh\" && bash \"$HOME/shopnoltd-device-install.sh\" '" + deviceId + "' 'https://devices.shopnoltd.dpdns.org'"
 }
@@ -39,7 +42,7 @@ async function request(path, options = {}) {
 
 function DeviceCard({ device, admin, onDelete, onShare, onToken, onConnect }) {
   const [busy, setBusy] = useState(false)
-  const mobile = ['android', 'ios'].includes(String(device.platform || '').toLowerCase())
+  const mobile = ['android', 'ios', 'termux'].includes(String(device.platform || '').toLowerCase())
   return <article style={card}>
     <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', flexWrap: 'wrap' }}>
       <Monitor size={22} color="#0369a1" />
@@ -175,6 +178,15 @@ export default function Devices({ admin = false }) {
         <button type="button" style={button} onClick={() => copy(windowsAutoConnectCommand(enrollmentDevice.id))}><Copy size={15}/> Copy Windows setup command</button>
         <p style={{ color: '#64748b', fontSize: 12 }}>This agent reports device health, network/IP and approved diagnostics. It does not stream the screen; remote desktop requires the separately authorized MeshCentral agent.</p>
       </div>}
+      {String(enrollmentDevice?.platform || '').toLowerCase() === 'linux' && <div style={{ marginTop: 16, borderTop: '1px solid #e2e8f0', paddingTop: 14 }}>
+        <h3 style={{ margin: '0 0 6px' }}>Auto Connect · Linux / WSL (systemd)</h3>
+        <p style={{ color: '#64748b', fontSize: 13 }}>On the target Linux/WSL terminal, use the setup command below. This installer requires Python 3 and an active systemd service manager; WSL must have systemd enabled. It asks for the one-time token through hidden input and installs the outbound executor service.</p>
+        <button type="button" style={button} onClick={() => copy(linuxAutoConnectCommand(enrollmentDevice.id))}><Copy size={15}/> Copy Linux / WSL setup command</button>
+        <p style={{ color: '#64748b', fontSize: 12 }}>This is for systemd-based Linux/WSL only; it does not install a remote-screen agent. Do not run it on macOS or non-systemd Linux distributions.</p>
+      </div>}
+      {String(enrollmentDevice?.platform || '').toLowerCase() === 'macos' && <div role="status" style={{ marginTop: 16, borderTop: '1px solid #e2e8f0', paddingTop: 14, color: '#92400e' }}>
+        macOS native installer is not yet available. The device record can be prepared, but do not expect the executor to become Online until a reviewed macOS installer is released.
+      </div>}
       {String(enrollmentDevice?.platform || '').toLowerCase() === 'android' && <div style={{ marginTop: 16, borderTop: '1px solid #e2e8f0', paddingTop: 14 }}>
         <h3 style={{ margin: '0 0 6px' }}>Auto Connect · Android / Realme C35</h3>
         <p style={{ color: '#64748b', fontSize: 13 }}>Install and open <a href="https://f-droid.org/packages/com.termux/" target="_blank" rel="noopener noreferrer">Termux from F-Droid</a> on the Realme phone, then run the copied command there. The lightweight agent installs Python, asks for this token through a hidden prompt and starts outbound heartbeat/network diagnostics.</p>
@@ -185,7 +197,7 @@ export default function Devices({ admin = false }) {
 
     {!adminView && <form onSubmit={addDevice} style={{ ...card, display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: 10, alignItems: 'end' }}>
       <label style={{ display: 'grid', gap: 5, fontSize: 13 }}>Device name<input style={input} value={name} onChange={e => setName(e.target.value)} placeholder="e.g. My Windows PC" maxLength={80}/></label>
-      <label style={{ display: 'grid', gap: 5, fontSize: 13 }}>Platform<select style={input} value={platform} onChange={e => setPlatform(e.target.value)}><option value="windows">Windows</option><option value="linux">Linux</option><option value="macos">macOS</option><option value="android">Android</option><option value="ios">iPhone / iPad</option><option value="browser">Browser</option><option value="other">Other</option></select></label>
+      <label style={{ display: 'grid', gap: 5, fontSize: 13 }}>Platform<select style={input} value={platform} onChange={e => setPlatform(e.target.value)}><option value="windows">Windows</option><option value="linux">Linux / WSL (systemd)</option><option value="macos">macOS</option><option value="android">Android</option><option value="ios">iPhone / iPad</option><option value="browser">Browser</option><option value="other">Other</option></select></label>
       <button type="submit" style={button}><Plus size={16}/> Connect Device</button>
     </form>}
 
