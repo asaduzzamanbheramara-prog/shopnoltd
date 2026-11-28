@@ -24,6 +24,7 @@ data:
         .row{display:flex;justify-content:space-between;gap:14px;border-top:1px solid #edf0f4;padding:7px 0}.row:first-child{border-top:0}.value{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;word-break:break-all;text-align:right}
         .chips{display:flex;gap:6px;flex-wrap:wrap}.chip{background:#eef2ff;padding:4px 8px;border-radius:999px;font-size:12px}.vpn{background:#dcfce7}.profile{margin-top:12px}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
         .token{margin-top:12px;padding:10px;background:#f3f4f6;font-family:monospace;font-size:11px;word-break:break-all;border-radius:8px}
+        .fullscreen-mode{background:#0b1220;color:#e5e7eb;min-height:100vh}.fullscreen-mode header{padding:14px 24px}.fullscreen-mode main{max-width:none;margin:12px auto;padding:0 16px}.fullscreen-mode .card{background:#111c2e;color:#e5e7eb;border:1px solid #29364a}.fullscreen-mode .row{border-color:#29364a}.fullscreen-mode .muted{color:#aab6c8}.fullscreen-mode .toolbar{position:sticky;top:0;z-index:10;background:#0b1220;padding:10px 0}.fullscreen-mode .grid{grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr))}.fullscreen-mode input,.fullscreen-mode select{background:#182438;color:#e5e7eb;border-color:#40516b}
       </style>
     </head>
     <body>
@@ -33,7 +34,7 @@ data:
         <input id="name" placeholder="Device name">
         <select id="platform"><option value="windows">Windows</option><option value="linux">Linux</option><option value="macos">macOS</option><option value="android">Android phone/tablet</option><option value="ios">iPhone/iPad</option><option value="browser">Browser</option><option value="other">Other</option></select>
         <input id="filter" placeholder="Filter name, platform, IP, VPN IP" oninput="render()">
-        <button onclick="addDevice()">Add device</button><button onclick="loadDevices()">Refresh</button><button onclick="logout()">Sign out</button>
+        <button id="fullscreen-toggle" onclick="toggleFullscreen()">⛶ Full-Screen Console</button><button onclick="addDevice()">Add device</button><button onclick="loadDevices()">Refresh</button><button onclick="logout()">Sign out</button>
       </div>
       <div id="enrollment-result"></div>
       <div id="summary" class="summary"></div>
@@ -98,6 +99,8 @@ data:
       }catch(e){alert(e.message)}
     }
     async function connect(id){const w=open("about:blank","_blank");try{const d=await(await api(`/api/connect/${id}`)).json();if(!d.connect_url)throw Error("No connection URL returned.");if(w)w.location=d.connect_url;else location=d.connect_url}catch(e){if(w)w.close();alert(e.message)}}
+    async function toggleFullscreen(){try{if(!document.fullscreenElement){await document.documentElement.requestFullscreen()}else{await document.exitFullscreen()}}catch(e){alert("Full-screen mode was blocked by the browser: "+e.message)}}
+    document.addEventListener("fullscreenchange",()=>{const active=!!document.fullscreenElement;document.body.classList.toggle("fullscreen-mode",active);const b=document.getElementById("fullscreen-toggle");if(b)b.textContent=active?"⤢ Exit Full Screen":"⛶ Full-Screen Console"});
     function logout(){clear();showLogin("You have been signed out.")}
     async function init(){try{const shareToken=new URLSearchParams(location.search).get("share");if(shareToken){sessionStorage.setItem("pending_device_share",shareToken);history.replaceState({},document.title,location.pathname)}await completeLogin();if(!token()){showLogin();return}await redeemPendingShare();await loadDevices()}catch(e){clear();showLogin(e.message)}}
     init();setInterval(()=>token()&&loadDevices(),10000);
