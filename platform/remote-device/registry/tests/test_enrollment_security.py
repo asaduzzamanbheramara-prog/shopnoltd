@@ -165,7 +165,7 @@ class RegistryEnrollmentSecurityTests(unittest.TestCase):
         self.assertNotIn("pairing_secret", pairing)
         self.assertEqual(pairing["secret_hash"], self.module.hashlib.sha256(result["pairing_secret"].encode()).hexdigest())
         consumed = self.module.consume_pairing_session(
-            self.module.PairingConsume(pairing_secret=result["pairing_secret"], hostname="ci-host", platform="windows")
+            self.module.PairingConsume(device_id=created.id, pairing_secret=result["pairing_secret"], hostname="ci-host", platform="windows")
         )
         self.assertTrue(consumed["enrollment_token"])
         self.assertEqual(self.module.load_devices()[0]["pairing_session"]["status"], "consumed")
@@ -184,7 +184,7 @@ class RegistryEnrollmentSecurityTests(unittest.TestCase):
         )
         with self.assertRaises(HTTPException) as caught:
             self.module.consume_pairing_session(
-                self.module.PairingConsume(pairing_secret=result["pairing_secret"], hostname="ci-host", platform="android")
+                self.module.PairingConsume(device_id=created.id, pairing_secret=result["pairing_secret"], hostname="ci-host", platform="android")
             )
         self.assertEqual(caught.exception.status_code, 403)
 
@@ -214,7 +214,7 @@ class RegistryEnrollmentSecurityTests(unittest.TestCase):
         self.assertEqual(revoked["status"], "revoked")
         with self.assertRaises(HTTPException) as caught2:
             self.module.consume_pairing_session(
-                self.module.PairingConsume(pairing_secret=result2["pairing_secret"], hostname="ci-host", platform="windows")
+                self.module.PairingConsume(device_id=created2.id, pairing_secret=result2["pairing_secret"], hostname="ci-host", platform="windows")
             )
         self.assertEqual(caught2.exception.status_code, 401)
 
