@@ -10,6 +10,8 @@ spec:
       app: meshcentral
   template:
     metadata:
+      annotations:
+        checksum/config-init: framing-session-samesite-none-v1
       labels:
         app: meshcentral
     spec:
