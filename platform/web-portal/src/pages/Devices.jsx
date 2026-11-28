@@ -14,6 +14,9 @@ const AGENT_RAW = 'https://raw.githubusercontent.com/asaduzzamanbheramara-prog/s
 function windowsAutoConnectCommand(deviceId) {
   return "$u='" + AGENT_RAW + "/install-windows.ps1';$p=Join-Path $env:TEMP 'shopnoltd-device-install.ps1';Invoke-WebRequest -UseBasicParsing -Uri $u -OutFile $p;& $p -DeviceId '" + deviceId + "' -GatewayUrl 'https://devices.shopnoltd.dpdns.org'"
 }
+function linuxAutoConnectCommand(deviceId) {
+  return "d=\"$HOME/shopnoltd-device-installer\"; mkdir -p \"$d\" && curl -fsSL '" + AGENT_RAW + "/agent.py' -o \"$d/agent.py\" && curl -fsSL '" + AGENT_RAW + "/install-wsl.sh' -o \"$d/install-wsl.sh\" && chmod 700 \"$d/install-wsl.sh\" && bash \"$d/install-wsl.sh\" '" + deviceId + "' 'https://devices.shopnoltd.dpdns.org'"
+}
 function androidAutoConnectCommand(deviceId) {
   return "curl -fsSL '" + AGENT_RAW + "/install-termux.sh' -o \"$HOME/shopnoltd-device-install.sh\" && bash \"$HOME/shopnoltd-device-install.sh\" '" + deviceId + "' 'https://devices.shopnoltd.dpdns.org'"
 }
@@ -39,15 +42,15 @@ async function request(path, options = {}) {
 
 function DeviceCard({ device, admin, onDelete, onShare, onToken, onConnect }) {
   const [busy, setBusy] = useState(false)
-  const mobile = ['android', 'ios'].includes(String(device.platform || '').toLowerCase())
+  const mobile = ['android', 'ios', 'termux'].includes(String(device.platform || '').toLowerCase())
   return <article style={card}>
     <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', flexWrap: 'wrap' }}>
       <Monitor size={22} color="#0369a1" />
       <div style={{ flex: 1, minWidth: 180 }}>
         <h2 style={{ margin: 0, fontSize: 18 }}>{device.name || 'Unnamed device'}</h2>
-        <div style={{ color: '#64748b', fontSize: 13, marginTop: 4 }}>{device.platform || 'Unknown platform'} · {device.status || 'status unknown'}</div>
+        <div style={{ color: '#64748b', fontSize: 13, marginTop: 4 }}>{device.platform || 'Unknown platform'} · Executor: {device.executor_enabled ? (device.status === 'online' ? 'online · heartbeat fresh' : 'offline · heartbeat stale') : 'not enrolled'}</div>
       </div>
-      <span style={{ borderRadius: 20, padding: '4px 9px', background: device.status === 'online' ? '#dcfce7' : '#f1f5f9', color: '#334155', fontSize: 12 }}>{device.executor_enabled ? 'Agent enrolled' : 'Not enrolled'}</span>
+      <span style={{ borderRadius: 20, padding: '4px 9px', background: device.executor_enabled && device.status === 'online' ? '#dcfce7' : '#f1f5f9', color: '#334155', fontSize: 12 }}>{device.executor_enabled ? (device.status === 'online' ? 'Executor online' : 'Executor offline') : 'Pairing required'}</span>
     </div>
     <dl style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: 9, margin: '16px 0', fontSize: 13 }}>
       <div><dt style={{ color: '#64748b' }}>Device ID</dt><dd style={{ margin: '3px 0', overflowWrap: 'anywhere' }}>{device.id}</dd></div>
@@ -76,15 +79,20 @@ export default function Devices({ admin = false }) {
   const [tokenResult, setTokenResult] = useState('')
   const [enrollmentDevice, setEnrollmentDevice] = useState(null)
 
-  const load = useCallback(async () => {
-    setLoading(true); setError('')
+  const load = useCallback(async ({ quiet = false } = {}) => {
+    if (!quiet) setLoading(true)
+    setError('')
     try {
       const result = await request('/api/devices')
       setDevices(Array.isArray(result) ? result : [])
-    } catch (e) { setError(e.message) } finally { setLoading(false) }
+    } catch (e) { setError(e.message) } finally { if (!quiet) setLoading(false) }
   }, [])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    load()
+    const refresh = window.setInterval(() => { load({ quiet: true }) }, 15000)
+    return () => window.clearInterval(refresh)
+  }, [load])
 
   async function addDevice(event) {
     event.preventDefault(); setError(''); setNotice(''); setTokenResult(''); setEnrollmentDevice(null)
@@ -160,7 +168,7 @@ export default function Devices({ admin = false }) {
     {notice && <div role="status" style={{ ...card, borderColor: '#bbf7d0', color: '#166534' }}>{notice}</div>}
     {tokenResult && <div style={{ ...card, borderColor: '#93c5fd' }}>
       <b>{tokenResult.startsWith('http') ? 'Single-use device invitation' : 'One-time enrollment token'}</b>
-      <p style={{ color: '#64748b', fontSize: 13 }}>This value is shown once. Do not post it publicly or send it to anyone except the intended device/user.</p>
+      <p style={{ color: '#64748b', fontSize: 13 }}>{tokenResult.startsWith('http') ? 'This single-use invitation expires at the time shown by the invitation service. Share it only with the intended Shopnoltd user.' : 'This one-time enrollment token expires after 20 minutes. Do not post it publicly or send it to anyone except the intended device. If it expires, generate a fresh token in My Devices.'}</p>
       <code style={{ display: 'block', overflowWrap: 'anywhere', padding: 10, background: '#f1f5f9', borderRadius: 8 }}>{tokenResult}</code>
       <button type="button" style={{ ...button, marginTop: 10 }} onClick={() => copy(tokenResult)}><Copy size={15}/> Copy</button>
       <button type="button" style={{ ...button, marginTop: 10, marginLeft: 8, background: '#475569' }} onClick={() => { setTokenResult(''); setEnrollmentDevice(null) }}>Hide</button>
@@ -169,6 +177,15 @@ export default function Devices({ admin = false }) {
         <p style={{ color: '#64748b', fontSize: 13 }}>On the target Windows PC, open PowerShell as Administrator and run the copied command. The installer downloads the approved outbound-only agent, asks for this one-time token through a hidden prompt, locks down its credential file and starts at user logon. Python 3 must already be installed.</p>
         <button type="button" style={button} onClick={() => copy(windowsAutoConnectCommand(enrollmentDevice.id))}><Copy size={15}/> Copy Windows setup command</button>
         <p style={{ color: '#64748b', fontSize: 12 }}>This agent reports device health, network/IP and approved diagnostics. It does not stream the screen; remote desktop requires the separately authorized MeshCentral agent.</p>
+      </div>}
+      {String(enrollmentDevice?.platform || '').toLowerCase() === 'linux' && <div style={{ marginTop: 16, borderTop: '1px solid #e2e8f0', paddingTop: 14 }}>
+        <h3 style={{ margin: '0 0 6px' }}>Auto Connect · Linux / WSL (systemd)</h3>
+        <p style={{ color: '#64748b', fontSize: 13 }}>On the target Linux/WSL terminal, use the setup command below. This installer requires Python 3 and an active systemd service manager; WSL must have systemd enabled. It asks for the one-time token through hidden input and installs the outbound executor service.</p>
+        <button type="button" style={button} onClick={() => copy(linuxAutoConnectCommand(enrollmentDevice.id))}><Copy size={15}/> Copy Linux / WSL setup command</button>
+        <p style={{ color: '#64748b', fontSize: 12 }}>This is for systemd-based Linux/WSL only; it does not install a remote-screen agent. Do not run it on macOS or non-systemd Linux distributions.</p>
+      </div>}
+      {String(enrollmentDevice?.platform || '').toLowerCase() === 'macos' && <div role="status" style={{ marginTop: 16, borderTop: '1px solid #e2e8f0', paddingTop: 14, color: '#92400e' }}>
+        macOS native installer is not yet available. The device record can be prepared, but do not expect the executor to become Online until a reviewed macOS installer is released.
       </div>}
       {String(enrollmentDevice?.platform || '').toLowerCase() === 'android' && <div style={{ marginTop: 16, borderTop: '1px solid #e2e8f0', paddingTop: 14 }}>
         <h3 style={{ margin: '0 0 6px' }}>Auto Connect · Android / Realme C35</h3>
@@ -180,7 +197,7 @@ export default function Devices({ admin = false }) {
 
     {!adminView && <form onSubmit={addDevice} style={{ ...card, display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: 10, alignItems: 'end' }}>
       <label style={{ display: 'grid', gap: 5, fontSize: 13 }}>Device name<input style={input} value={name} onChange={e => setName(e.target.value)} placeholder="e.g. My Windows PC" maxLength={80}/></label>
-      <label style={{ display: 'grid', gap: 5, fontSize: 13 }}>Platform<select style={input} value={platform} onChange={e => setPlatform(e.target.value)}><option value="windows">Windows</option><option value="linux">Linux</option><option value="macos">macOS</option><option value="android">Android</option><option value="ios">iPhone / iPad</option><option value="browser">Browser</option><option value="other">Other</option></select></label>
+      <label style={{ display: 'grid', gap: 5, fontSize: 13 }}>Platform<select style={input} value={platform} onChange={e => setPlatform(e.target.value)}><option value="windows">Windows</option><option value="linux">Linux / WSL (systemd)</option><option value="macos">macOS</option><option value="android">Android</option><option value="ios">iPhone / iPad</option><option value="browser">Browser</option><option value="other">Other</option></select></label>
       <button type="submit" style={button}><Plus size={16}/> Connect Device</button>
     </form>}
 

@@ -151,10 +151,21 @@ data:
         return dict(PLATFORM_PROFILES.get(key, PLATFORM_PROFILES["other"]))
 
     def public_device(device: dict) -> DevicePublic:
+        status = device.get("status", "pending")
+        last_seen = device.get("executor_last_seen") or device.get("last_seen")
+        if device.get("executor_enabled") is True:
+            try:
+                seen_at = datetime.fromisoformat(last_seen) if last_seen else None
+                if seen_at is None or datetime.now(timezone.utc) - seen_at > timedelta(seconds=120):
+                    status = "offline"
+                else:
+                    status = "online"
+            except (TypeError, ValueError):
+                status = "offline"
         return DevicePublic(
             id=device["id"], name=device["name"], platform=device["platform"],
             platform_profile=profile_for(device["platform"]), owner_id=device["owner_id"],
-            status=device["status"], agent_id=device.get("agent_id"),
+            status=status, agent_id=device.get("agent_id"),
             executor_enabled=bool(device.get("executor_enabled", False)),
             executor_last_seen=device.get("executor_last_seen"), last_seen=device.get("last_seen"),
             created_at=device["created_at"], hostname=device.get("hostname"),
@@ -231,13 +242,15 @@ data:
             now = datetime.now(timezone.utc).isoformat()
             device = {
                 "id": secrets.token_urlsafe(18), "name": req.name, "platform": req.platform,
-                "owner_id": req.owner_id, "status": "pending", "enrollment_token": secrets.token_urlsafe(32),
+                "owner_id": req.owner_id, "status": "pending",
+                "enrollment_token_hash": hashlib.sha256((token := secrets.token_urlsafe(32)).encode()).hexdigest(),
+                "enrollment_token_expires_at": (datetime.now(timezone.utc) + timedelta(minutes=20)).isoformat(),
                 "created_at": now, "system_profile": {}, "network_profile": {},
             }
             items.append(device)
             save_devices(items)
             public = public_device(device)
-            return DeviceCreated(**public.model_dump(), enrollment_token=device["enrollment_token"])
+            return DeviceCreated(**public.model_dump(), enrollment_token=token)
 
     @app.post("/api/devices/{device_id}/meshcentral-link", response_model=DevicePublic)
     def link_meshcentral(device_id: str, req: MeshCentralLink, request: Request):
@@ -318,10 +331,12 @@ data:
                     if device.get("executor_enabled") is True:
                         raise HTTPException(status_code=409, detail="device is already enrolled")
                     token = secrets.token_urlsafe(32)
-                    device["enrollment_token"] = token
+                    device.pop("enrollment_token", None)
+                    device["enrollment_token_hash"] = hashlib.sha256(token.encode()).hexdigest()
+                    device["enrollment_token_expires_at"] = (datetime.now(timezone.utc) + timedelta(minutes=20)).isoformat()
                     device["status"] = "pending"
                     save_devices(devices)
-                    return {"ok": True, "device_id": device_id, "enrollment_token": token}
+                    return {"ok": True, "device_id": device_id, "enrollment_token": token, "expires_in_seconds": 1200}
         raise HTTPException(status_code=404, detail="device not found")
 
     @app.delete("/api/devices/{device_id}")
@@ -341,17 +356,41 @@ data:
             for device in devices:
                 if device["id"] != device_id:
                     continue
-                token = device.get("enrollment_token")
-                if not token:
-                    raise HTTPException(status_code=409, detail="enrollment token unavailable")
-                if not hmac.compare_digest(token, req.enrollment_token):
-                    raise HTTPException(status_code=401, detail="invalid enrollment token")
+                if device.get("executor_enabled") is True:
+                    raise HTTPException(status_code=409, detail="device is already enrolled")
+                token_hash = device.get("enrollment_token_hash")
+                if token_hash:
+                    expires_at = device.get("enrollment_token_expires_at")
+                    try:
+                        expired = not expires_at or datetime.fromisoformat(expires_at) <= datetime.now(timezone.utc)
+                    except (TypeError, ValueError):
+                        expired = True
+                    supplied_hash = hashlib.sha256(req.enrollment_token.encode()).hexdigest()
+                    if expired:
+                        raise HTTPException(status_code=410, detail="enrollment token expired; generate a new token in My Devices")
+                    if not hmac.compare_digest(token_hash, supplied_hash):
+                        raise HTTPException(status_code=401, detail="invalid enrollment token")
+                else:
+                    # Backward compatibility for very recent records created before hashed tokens.
+                    # Legacy plaintext tokens are accepted for at most 20 minutes from device creation.
+                    legacy_token = device.get("enrollment_token")
+                    try:
+                        created_at = datetime.fromisoformat(device.get("created_at", ""))
+                        legacy_expired = datetime.now(timezone.utc) - created_at > timedelta(minutes=20)
+                    except (TypeError, ValueError):
+                        legacy_expired = True
+                    if legacy_expired:
+                        raise HTTPException(status_code=410, detail="legacy enrollment token expired; generate a new token in My Devices")
+                    if not legacy_token or not hmac.compare_digest(legacy_token, req.enrollment_token):
+                        raise HTTPException(status_code=401, detail="invalid enrollment token")
                 raw_secret = secrets.token_bytes(32)
                 secret_b64 = base64.b64encode(raw_secret).decode()
                 auth_key = hashlib.sha256(b"shopnoltd-executor-hmac-v1:" + raw_secret).digest()
                 now = datetime.now(timezone.utc).isoformat()
                 device.update({
                     "enrollment_token": None,
+                    "enrollment_token_hash": None,
+                    "enrollment_token_expires_at": None,
                     "agent_id": "agent-" + uuid.uuid4().hex,
                     "executor_enabled": True,
                     "executor_secret_hash": hashlib.sha256(raw_secret).hexdigest(),

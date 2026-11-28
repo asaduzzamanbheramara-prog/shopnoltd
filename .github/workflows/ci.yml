@@ -15,6 +15,18 @@ jobs:
       - name: Run role guard regression tests
         working-directory: platform/web-portal
         run: npm run test:authz
+  test-remote-device-registry:
+    name: Test remote-device enrollment security
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install registry test dependencies
+        run: python -m pip install fastapi==0.116.1 pydantic==2.11.7 PyYAML==6.0.2
+      - name: Test enrollment token expiry, hashing, replay and heartbeat freshness
+        run: python -m unittest discover -s platform/remote-device/registry/tests -v
   test-agent-service:
     name: Test autonomous agent service
     runs-on: ubuntu-latest
