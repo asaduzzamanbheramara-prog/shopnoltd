@@ -78,10 +78,12 @@ class ExecutorEnrollmentTests(unittest.TestCase):
         import io
         from urllib.error import HTTPError
         config = {"gateway_url": "https://remote.example", "device_id": "device-1", "enrollment_token": "one-time"}
-        error = HTTPError("https://remote.example", 409, "Conflict", {}, io.BytesIO(b'{"detail":"enrollment token unavailable"}'))
-        with patch.object(agent, "urlopen", side_effect=error):
-            with self.assertRaises(agent.EnrollmentRejected):
-                agent.enroll(config)
+        for status in (401, 404, 409):
+            with self.subTest(status=status):
+                error = HTTPError("https://remote.example", status, "Rejected", {}, io.BytesIO(b'{"detail":"enrollment rejected"}'))
+                with patch.object(agent, "urlopen", side_effect=error):
+                    with self.assertRaises(agent.EnrollmentRejected):
+                        agent.enroll(config)
         with patch.object(agent, "load_config", return_value=config), patch.object(agent, "prepare_config_storage"), patch.object(agent, "enroll", side_effect=agent.EnrollmentRejected("HTTP 409")):
             with self.assertRaises(SystemExit) as caught:
                 agent.main()
