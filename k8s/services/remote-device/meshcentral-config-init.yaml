@@ -33,8 +33,6 @@ data:
     config.settings.allowedFramingOrigins = [
       "https://devices.shopnoltd.dpdns.org"
     ];
-    // Cross-site iframe sessions require SameSite=None over HTTPS.
-    config.settings.sessionSameSite = "none";
 
     config.domains[""].certUrl =
       "https://remote.shopnoltd.dpdns.org";
