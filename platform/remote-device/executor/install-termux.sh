@@ -45,13 +45,35 @@ python3 - "$CONFIG_FILE" "$DEVICE_ID" "$GATEWAY_URL" <<'PY'
 import getpass
 import json
 import os
+import socket
 import sys
+import urllib.request
 from pathlib import Path
 
 path, device_id, gateway_url = sys.argv[1:]
-token = getpass.getpass("Paste the one-time Shopnoltd enrollment token (input hidden): ").strip()
-if len(token) < 10:
-    raise SystemExit("Enrollment token is missing or too short.")
+pairing_secret = getpass.getpass("Paste the one-time Shopnoltd pairing code (input hidden): ").strip()
+if len(pairing_secret) < 20:
+    raise SystemExit("Pairing code is missing or too short.")
+payload = json.dumps({
+    "pairing_secret": pairing_secret,
+    "hostname": socket.gethostname(),
+    "platform": "android",
+    "agent_version": "2.1",
+}).encode()
+request = urllib.request.Request(
+    gateway_url.rstrip("/") + "/api/pairing/consume",
+    data=payload,
+    headers={"Content-Type": "application/json", "Accept": "application/json"},
+    method="POST",
+)
+try:
+    with urllib.request.urlopen(request, timeout=20) as response:
+        pairing = json.loads(response.read().decode("utf-8"))
+except Exception as exc:
+    raise SystemExit(f"Pairing failed: {exc}") from exc
+token = pairing.get("enrollment_token")
+if not isinstance(token, str) or len(token) < 10:
+    raise SystemExit("Pairing service did not return an enrollment grant.")
 target = Path(path)
 temporary = target.with_name(target.name + ".tmp")
 config = {
