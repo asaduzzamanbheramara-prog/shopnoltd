@@ -45,9 +45,9 @@ function DeviceCard({ device, admin, onDelete, onShare, onToken, onConnect }) {
       <Monitor size={22} color="#0369a1" />
       <div style={{ flex: 1, minWidth: 180 }}>
         <h2 style={{ margin: 0, fontSize: 18 }}>{device.name || 'Unnamed device'}</h2>
-        <div style={{ color: '#64748b', fontSize: 13, marginTop: 4 }}>{device.platform || 'Unknown platform'} · {device.status || 'status unknown'}</div>
+        <div style={{ color: '#64748b', fontSize: 13, marginTop: 4 }}>{device.platform || 'Unknown platform'} · Executor: {device.executor_enabled ? (device.status === 'online' ? 'online · heartbeat fresh' : 'offline · heartbeat stale') : 'not enrolled'}</div>
       </div>
-      <span style={{ borderRadius: 20, padding: '4px 9px', background: device.status === 'online' ? '#dcfce7' : '#f1f5f9', color: '#334155', fontSize: 12 }}>{device.executor_enabled ? 'Agent enrolled' : 'Not enrolled'}</span>
+      <span style={{ borderRadius: 20, padding: '4px 9px', background: device.executor_enabled && device.status === 'online' ? '#dcfce7' : '#f1f5f9', color: '#334155', fontSize: 12 }}>{device.executor_enabled ? (device.status === 'online' ? 'Executor online' : 'Executor offline') : 'Pairing required'}</span>
     </div>
     <dl style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: 9, margin: '16px 0', fontSize: 13 }}>
       <div><dt style={{ color: '#64748b' }}>Device ID</dt><dd style={{ margin: '3px 0', overflowWrap: 'anywhere' }}>{device.id}</dd></div>
@@ -84,7 +84,11 @@ export default function Devices({ admin = false }) {
     } catch (e) { setError(e.message) } finally { setLoading(false) }
   }, [])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    load()
+    const refresh = window.setInterval(() => { load() }, 15000)
+    return () => window.clearInterval(refresh)
+  }, [load])
 
   async function addDevice(event) {
     event.preventDefault(); setError(''); setNotice(''); setTokenResult(''); setEnrollmentDevice(null)
@@ -160,7 +164,7 @@ export default function Devices({ admin = false }) {
     {notice && <div role="status" style={{ ...card, borderColor: '#bbf7d0', color: '#166534' }}>{notice}</div>}
     {tokenResult && <div style={{ ...card, borderColor: '#93c5fd' }}>
       <b>{tokenResult.startsWith('http') ? 'Single-use device invitation' : 'One-time enrollment token'}</b>
-      <p style={{ color: '#64748b', fontSize: 13 }}>This value is shown once. Do not post it publicly or send it to anyone except the intended device/user.</p>
+      <p style={{ color: '#64748b', fontSize: 13 }}>This one-time token expires after 20 minutes. Do not post it publicly or send it to anyone except the intended device. If it expires, generate a fresh token in My Devices.</p>
       <code style={{ display: 'block', overflowWrap: 'anywhere', padding: 10, background: '#f1f5f9', borderRadius: 8 }}>{tokenResult}</code>
       <button type="button" style={{ ...button, marginTop: 10 }} onClick={() => copy(tokenResult)}><Copy size={15}/> Copy</button>
       <button type="button" style={{ ...button, marginTop: 10, marginLeft: 8, background: '#475569' }} onClick={() => { setTokenResult(''); setEnrollmentDevice(null) }}>Hide</button>
