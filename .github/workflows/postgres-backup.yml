@@ -29,6 +29,9 @@ jobs:
   backup:
     name: Create, encrypt, verify and publish database and Secrets snapshots
     runs-on: [self-hosted, linux]
+    # K3s exec streams have been closing mid-dump over WebSockets; force the legacy SPDY transport for backup streams.
+    env:
+      KUBECTL_REMOTE_COMMAND_WEBSOCKETS: "false"
     timeout-minutes: 60
     steps:
       - name: Checkout source
