@@ -110,3 +110,23 @@ The website-first experience should therefore use:
 - Android and iOS capability labels match actual platform support.
 - Existing production Keycloak clients, Secrets, databases and PVCs are not
   modified as part of the UX work.
+
+
+## Current implementation gaps found during review
+
+- The current WSL installer expects the pending **device ID** as its first
+  argument; it asks for the one-time enrollment token separately through hidden
+  input. A token must never be supplied as the first argument.
+- The current Devices page exposes a copied shell command for Windows/Android;
+  Linux/WSL and macOS do not have a complete website-guided installer flow.
+- The registry currently stores the pending executor enrollment token in its
+  device JSON record and does not enforce a pairing-session expiry. This must
+  be replaced with a hash-only, expiring, single-use pairing session before
+  broad self-service onboarding is considered production-ready.
+- The current registry executor-enroll route returns the long-lived HMAC secret
+  to the local executor after successful token exchange. Preserve that
+  server-to-agent exchange, but do not route the long-lived secret through the
+  browser or a downloadable script.
+- The current MeshCentral link API accepts a node ID from the authenticated
+  user flow, but the system still needs an independently verified ownership
+  and reachability check before it can advertise Screen Ready.
