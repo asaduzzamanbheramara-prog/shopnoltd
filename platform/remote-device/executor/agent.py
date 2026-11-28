@@ -10,6 +10,14 @@ CONFIG_PATH = Path(os.getenv("SHOPNOLTD_EXECUTOR_CONFIG", r"C:\ProgramData\Shopn
 POLL_SECONDS = max(5, int(os.getenv("SHOPNOLTD_POLL_SECONDS", "5")))
 HEARTBEAT_SECONDS = max(30, int(os.getenv("SHOPNOLTD_HEARTBEAT_SECONDS", "30")))
 HTTP_TIMEOUT = 30
+# Permanent enrollment rejection: retrying a spent/invalid token cannot succeed.
+EXIT_ENROLLMENT_REJECTED = 78
+
+
+class EnrollmentRejected(RuntimeError):
+    """Enrollment was refused for a reason that retrying cannot fix (401/404/409)."""
+
+
 COMMAND_TIMEOUT = 60
 
 
@@ -217,7 +225,10 @@ def enroll(config):
     body=canonical_json(payload).encode(); req=Request(gateway+path,data=body,headers={"Accept":"application/json","Content-Type":"application/json","User-Agent":"Shopnoltd-Executor/2.1"},method="POST")
     try:
         with urlopen(req,timeout=HTTP_TIMEOUT) as response:return json.loads(response.read().decode("utf-8"))
-    except HTTPError as exc: raise RuntimeError(f"executor enrollment HTTP {exc.code}: {exc.read().decode('utf-8',errors='replace')}") from exc
+    except HTTPError as exc:
+        detail=exc.read().decode('utf-8',errors='replace')
+        if exc.code in (401,404,409): raise EnrollmentRejected(f"executor enrollment HTTP {exc.code}: {detail}") from exc
+        raise RuntimeError(f"executor enrollment HTTP {exc.code}: {detail}") from exc
     except URLError as exc: raise RuntimeError(f"executor enrollment connection failed: {exc}") from exc
 
 
@@ -254,7 +265,12 @@ def main():
         # Restrict and preflight the credential directory before consuming the
         # server-side one-time token. The returned secret is only shown once.
         prepare_config_storage()
-        response=enroll(config)
+        try: response=enroll(config)
+        except EnrollmentRejected as exc:
+            print(f"{exc}\nThe enrollment token is spent, invalid or no longer available, so this service will not retry. "
+                  "Generate a new token in the Shopnoltd devices portal (Regenerate token), remove the old "
+                  "executor config or reinstall, and start the service again.",file=sys.stderr,flush=True)
+            sys.exit(EXIT_ENROLLMENT_REJECTED)
         config=complete_enrollment(config,response)
         print("Shopnoltd Executor enrollment completed; credentials saved with restricted permissions.", flush=True)
     last=0.0
