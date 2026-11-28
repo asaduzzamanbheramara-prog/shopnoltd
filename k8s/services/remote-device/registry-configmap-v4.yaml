@@ -371,9 +371,16 @@ data:
                     if not hmac.compare_digest(token_hash, supplied_hash):
                         raise HTTPException(status_code=401, detail="invalid enrollment token")
                 else:
-                    # Backward compatibility for pending records created before hashed tokens.
-                    # Regenerate once in My Devices to receive a short-lived hashed token.
+                    # Backward compatibility for very recent records created before hashed tokens.
+                    # Legacy plaintext tokens are accepted for at most 20 minutes from device creation.
                     legacy_token = device.get("enrollment_token")
+                    try:
+                        created_at = datetime.fromisoformat(device.get("created_at", ""))
+                        legacy_expired = datetime.now(timezone.utc) - created_at > timedelta(minutes=20)
+                    except (TypeError, ValueError):
+                        legacy_expired = True
+                    if legacy_expired:
+                        raise HTTPException(status_code=410, detail="legacy enrollment token expired; generate a new token in My Devices")
                     if not legacy_token or not hmac.compare_digest(legacy_token, req.enrollment_token):
                         raise HTTPException(status_code=401, detail="invalid enrollment token")
                 raw_secret = secrets.token_bytes(32)
