@@ -175,6 +175,26 @@ class RegistryEnrollmentSecurityTests(unittest.TestCase):
             )
         self.assertEqual(caught.exception.status_code, 401)
 
+    def test_pairing_rejects_wrong_device_without_consuming_session(self):
+        created = self.new_device()
+        other = self.module.create_device(
+            self.module.DeviceCreate(name="Other CI device", platform="windows", owner_id="ci-user")
+        )
+        result = self.module.create_pairing_session(
+            created.id,
+            self.module.PairingCreate(platform="windows", created_by="ci-user"),
+            self.control_request(),
+        )
+        with self.assertRaises(HTTPException) as caught:
+            self.module.consume_pairing_session(
+                self.module.PairingConsume(device_id=other.id, pairing_secret=result["pairing_secret"], hostname="ci-host", platform="windows")
+            )
+        self.assertEqual(caught.exception.status_code, 403)
+        consumed = self.module.consume_pairing_session(
+            self.module.PairingConsume(device_id=created.id, pairing_secret=result["pairing_secret"], hostname="ci-host", platform="windows")
+        )
+        self.assertEqual(consumed["device_id"], created.id)
+
     def test_pairing_rejects_platform_mismatch(self):
         created = self.new_device()
         result = self.module.create_pairing_session(
