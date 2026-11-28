@@ -117,12 +117,17 @@ The website-first experience should therefore use:
 - The current WSL installer expects the pending **device ID** as its first
   argument; it asks for the one-time enrollment token separately through hidden
   input. A token must never be supplied as the first argument.
-- The current Devices page exposes a copied shell command for Windows/Android;
-  Linux/WSL and macOS do not have a complete website-guided installer flow.
-- The registry currently stores the pending executor enrollment token in its
-  device JSON record and does not enforce a pairing-session expiry. This must
-  be replaced with a hash-only, expiring, single-use pairing session before
-  broad self-service onboarding is considered production-ready.
+- **Still open:** the current Devices page exposes a copied shell command
+  for Windows/Android; Linux/WSL and macOS do not have a complete website-guided
+  installer flow. This branch adds heartbeat polling and truthful executor
+  online/offline labels, but does not yet eliminate the OS-authorized installer
+  step or provide native signed installers.
+- **Implemented in this branch:** newly issued executor enrollment tokens
+  are stored as SHA-256 hashes, expire after 20 minutes, are single-use, and
+  are cleared after successful enrollment. Existing pre-change pending records
+  retain a compatibility path; regenerate their token to receive the new
+  hashed/expiring format. This is a short-lived enrollment token improvement,
+  not yet the full browser-to-native pairing-session protocol described above.
 - The current registry executor-enroll route returns the long-lived HMAC secret
   to the local executor after successful token exchange. Preserve that
   server-to-agent exchange, but do not route the long-lived secret through the
