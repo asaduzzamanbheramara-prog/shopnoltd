@@ -153,5 +153,25 @@ class RegistryEnrollmentSecurityTests(unittest.TestCase):
         self.assertEqual(self.module.public_device(stored[0]).status, "offline")
 
 
+    def test_delete_requires_authenticated_gateway(self):
+        created = self.new_device()
+        unauthenticated = Request({
+            "type": "http", "http_version": "1.1", "method": "DELETE",
+            "scheme": "http", "path": "/", "raw_path": b"/",
+            "query_string": b"", "headers": [],
+            "server": ("test", 80), "client": ("test", 1234),
+        })
+        with self.assertRaises(HTTPException) as caught:
+            self.module.delete_device(created.id, unauthenticated)
+        self.assertEqual(caught.exception.status_code, 401)
+        self.assertEqual(len(self.module.load_devices()), 1)
+
+    def test_authenticated_gateway_can_delete_device(self):
+        created = self.new_device()
+        result = self.module.delete_device(created.id, self.control_request())
+        self.assertTrue(result["ok"])
+        self.assertEqual(self.module.load_devices(), [])
+
+
 if __name__ == "__main__":
     unittest.main()
