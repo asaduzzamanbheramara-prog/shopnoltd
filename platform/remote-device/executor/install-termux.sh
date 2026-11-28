@@ -31,7 +31,7 @@ mkdir -p "$INSTALL_DIR" "$CONFIG_DIR"
 chmod 0700 "$CONFIG_DIR"
 AGENT_URL="https://raw.githubusercontent.com/asaduzzamanbheramara-prog/shopnoltd/main/platform/remote-device/executor/agent.py"
 curl --fail --silent --show-error --location "$AGENT_URL" -o "$AGENT_SOURCE"
-EXPECTED_AGENT_SHA256="28b01956c9360f7efd642a9a87740240514c4a5c5ed11ffd16e9e69ae626171e"
+EXPECTED_AGENT_SHA256="d6716448b7fe65d33b1658a24c6ba1dd18a262a2e5f75d53e9db48cea01ba32d"
 ACTUAL_AGENT_SHA256="$(sha256sum "$AGENT_SOURCE")"
 ACTUAL_AGENT_SHA256="${ACTUAL_AGENT_SHA256%% *}"
 if [[ "$ACTUAL_AGENT_SHA256" != "$EXPECTED_AGENT_SHA256" ]]; then
