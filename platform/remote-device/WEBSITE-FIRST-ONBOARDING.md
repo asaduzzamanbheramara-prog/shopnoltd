@@ -124,10 +124,10 @@ The website-first experience should therefore use:
   step or provide native signed installers.
 - **Implemented in this branch:** newly issued executor enrollment tokens
   are stored as SHA-256 hashes, expire after 20 minutes, are single-use, and
-  are cleared after successful enrollment. Existing pre-change pending records
-  retain a compatibility path; regenerate their token to receive the new
-  hashed/expiring format. This is a short-lived enrollment token improvement,
-  not yet the full browser-to-native pairing-session protocol described above.
+  are cleared after successful enrollment. Legacy plaintext tokens are accepted
+  only for 20 minutes from device creation; older pending records must regenerate
+  a token. This is a short-lived enrollment-token improvement, not yet the full
+  browser-to-native pairing-session protocol described above.
 - The current registry executor-enroll route returns the long-lived HMAC secret
   to the local executor after successful token exchange. Preserve that
   server-to-agent exchange, but do not route the long-lived secret through the
