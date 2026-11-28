@@ -62,6 +62,7 @@ pairing_secret = getpass.getpass("Paste the one-time Shopnoltd pairing code (inp
 if len(pairing_secret) < 20:
     raise SystemExit("Pairing code is missing or too short.")
 payload = json.dumps({
+    "device_id": device_id,
     "pairing_secret": pairing_secret,
     "hostname": socket.gethostname(),
     "platform": "linux",
