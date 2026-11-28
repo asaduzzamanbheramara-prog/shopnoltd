@@ -74,5 +74,34 @@ class ExecutorEnrollmentTests(unittest.TestCase):
             self.assertEqual(os.stat(path.parent).st_mode & 0o777, 0o700)
 
 
+    def test_spent_enrollment_token_exits_without_retry_loop(self):
+        import io
+        from urllib.error import HTTPError
+        config = {"gateway_url": "https://remote.example", "device_id": "device-1", "enrollment_token": "one-time"}
+        error = HTTPError("https://remote.example", 409, "Conflict", {}, io.BytesIO(b'{"detail":"enrollment token unavailable"}'))
+        with patch.object(agent, "urlopen", side_effect=error):
+            with self.assertRaises(agent.EnrollmentRejected):
+                agent.enroll(config)
+        with patch.object(agent, "load_config", return_value=config), patch.object(agent, "prepare_config_storage"), patch.object(agent, "enroll", side_effect=agent.EnrollmentRejected("HTTP 409")):
+            with self.assertRaises(SystemExit) as caught:
+                agent.main()
+        self.assertEqual(caught.exception.code, agent.EXIT_ENROLLMENT_REJECTED)
+
+    def test_server_errors_during_enrollment_stay_retryable(self):
+        import io
+        from urllib.error import HTTPError
+        config = {"gateway_url": "https://remote.example", "device_id": "device-1", "enrollment_token": "one-time"}
+        error = HTTPError("https://remote.example", 502, "Bad Gateway", {}, io.BytesIO(b"bad gateway"))
+        with patch.object(agent, "urlopen", side_effect=error):
+            with self.assertRaises(RuntimeError) as caught:
+                agent.enroll(config)
+        self.assertNotIsInstance(caught.exception, agent.EnrollmentRejected)
+
+    def test_wsl_unit_does_not_restart_after_rejected_enrollment(self):
+        unit = Path(__file__).with_name("install-wsl.sh").read_text(encoding="utf-8")
+        self.assertIn("RestartPreventExitStatus=%d" % agent.EXIT_ENROLLMENT_REJECTED, unit)
+
+
+
 if __name__ == "__main__":
     unittest.main()
