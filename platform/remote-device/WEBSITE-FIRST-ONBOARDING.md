@@ -117,11 +117,15 @@ The website-first experience should therefore use:
 - The current WSL installer expects the pending **device ID** as its first
   argument; it asks for the one-time enrollment token separately through hidden
   input. A token must never be supplied as the first argument.
-- **Still open:** the current Devices page exposes a copied shell command
-  for Windows/Android; Linux/WSL and macOS do not have a complete website-guided
-  installer flow. This branch adds heartbeat polling and truthful executor
-  online/offline labels, but does not yet eliminate the OS-authorized installer
-  step or provide native signed installers.
+- **Partially improved in this branch:** My Devices now offers guided setup
+  instructions for Windows, Android/Termux, and systemd-based Linux/WSL. Linux/WSL
+  downloads the existing `agent.py` and `install-wsl.sh` into a local directory
+  and invokes the installer with the device ID; the one-time token is still
+  requested locally through hidden input. This is not a signed native installer
+  and does not support non-systemd distributions. macOS remains record-only:
+  no native macOS executor installer is available. The browser still cannot
+  silently install privileged software, and an OS-authorized local install step
+  remains required.
 - **Implemented in this branch:** newly issued executor enrollment tokens
   are stored as SHA-256 hashes, expire after 20 minutes, are single-use, and
   are cleared after successful enrollment. Legacy plaintext tokens are accepted
