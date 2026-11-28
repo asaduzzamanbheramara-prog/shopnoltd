@@ -28,7 +28,7 @@ spec:
 
       containers:
         - name: remote-device-gateway
-          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-remote-device-gateway@sha256:b9fb6fa9004d8d3721ac40ff30654d61d680364b4866385e78f18a1242da86d2
+          image: ghcr.io/asaduzzamanbheramara-prog/shopnoltd-remote-device-gateway@sha256:30dce11d9512ad601dbf527642f574ca602b402bcdd376e791214428039faac2
           imagePullPolicy: IfNotPresent
           volumeMounts:
             - name: gateway-source
