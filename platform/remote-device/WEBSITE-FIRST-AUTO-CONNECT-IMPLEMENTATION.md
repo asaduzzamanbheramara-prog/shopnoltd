@@ -10,6 +10,17 @@ This work is intentionally isolated from production deployment and existing devi
 - The target device completes one OS-authorized first-time bootstrap. A normal website cannot silently install privileged software or bypass UAC, Android package installation, MediaProjection, Accessibility, or other OS consent prompts.
 - After bootstrap, the local service reconnects automatically; users do not repeat terminal commands for ordinary reconnects.
 
+## Implementation progress
+
+- [x] Registry pairing-session create/status/revoke/consume endpoints added on this branch.
+- [x] Gateway exposes owner-authorized create/status/revoke endpoints and a local-bootstrapper consume endpoint.
+- [x] Registry security tests cover hashed secret storage, single use, expiry, platform binding, and revocation.
+- [ ] Replace the current command/token UI with a website pairing wizard.
+- [ ] Deliver a signed native bootstrapper for each supported OS and implement automatic reconnect.
+- [ ] Verify real-device heartbeat and independent MeshCentral screen readiness.
+
+The current API work is a backend foundation only. It does not yet remove the existing commands from the live website or install an agent on a device.
+
 ## Required implementation stages
 
 ### 1. Pairing control plane
