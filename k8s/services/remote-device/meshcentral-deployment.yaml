@@ -11,7 +11,7 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config-init: framing-session-samesite-none-v1
+        checksum/config-init: portal-framing-v2
       labels:
         app: meshcentral
     spec:
