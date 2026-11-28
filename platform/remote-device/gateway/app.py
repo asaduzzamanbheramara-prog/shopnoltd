@@ -4,6 +4,7 @@ from urllib.parse import urlencode
 
 import httpx
 from fastapi import FastAPI, HTTPException, Request, status
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse, Response
 from jose import JWTError, jwt
 
@@ -11,6 +12,15 @@ from jose import JWTError, jwt
 app = FastAPI(
     title="Shopnoltd Remote Device Gateway",
     version="3.2.0",
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["https://shopnoltd.dpdns.org", "https://devices.shopnoltd.dpdns.org"],
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "Accept"],
+    max_age=600,
 )
 
 
@@ -256,6 +266,13 @@ async def registry_control_request(
         ) from exc
 
     if parse_json:
+        if response.is_error:
+            try:
+                error_payload = response.json()
+                detail = error_payload.get("detail", error_payload) if isinstance(error_payload, dict) else error_payload
+            except ValueError:
+                detail = "registry request failed"
+            raise HTTPException(status_code=response.status_code, detail=detail)
         try:
             return response.json()
         except ValueError as exc:
@@ -512,11 +529,15 @@ async def create_device(
         sort_keys=True,
     ).encode()
 
-    return await registry_control_request(
+    created = await registry_control_request(
         "POST",
         "/api/devices",
         body,
+        parse_json=True,
     )
+    if isinstance(created, dict):
+        created.pop("enrollment_token", None)
+    return created
 
 
 @app.post("/api/devices/{device_id}/meshcentral-link")
@@ -598,6 +619,56 @@ async def revoke_device_share(device_id: str, shared_user_id: str, request: Requ
     if device is None or (not identity["is_platform_admin"] and device.get("owner_id") != identity["subject"]):
         raise HTTPException(status_code=404, detail="device not found")
     return await registry_control_request("DELETE", f"/api/devices/{device_id}/shares/{shared_user_id}")
+
+
+@app.post("/api/devices/{device_id}/pairing")
+async def create_pairing_session(device_id: str, request: Request):
+    identity = await verify_user(request)
+    devices = await registry_control_request("GET", "/api/devices", parse_json=True)
+    device = next((item for item in devices if isinstance(item, dict) and item.get("id") == device_id), None)
+    if device is None or (not identity["is_platform_admin"] and device.get("owner_id") != identity["subject"]):
+        raise HTTPException(status_code=404, detail="device not found")
+    if device.get("executor_enabled") is True:
+        raise HTTPException(status_code=409, detail="device is already enrolled")
+    try:
+        payload = await request.json()
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="invalid JSON body") from exc
+    platform = str(payload.get("platform") or device.get("platform") or "").strip().lower() if isinstance(payload, dict) else ""
+    if platform not in {"windows", "linux", "macos", "android"}:
+        raise HTTPException(status_code=400, detail="unsupported pairing platform")
+    body = json.dumps({"platform": platform, "created_by": identity["subject"]}, separators=(",", ":"), sort_keys=True).encode()
+    return await registry_control_request("POST", f"/api/devices/{device_id}/pairing", body, parse_json=True)
+
+
+@app.get("/api/devices/{device_id}/pairing")
+async def get_pairing_status(device_id: str, request: Request):
+    identity = await verify_user(request)
+    devices = await registry_control_request("GET", "/api/devices", parse_json=True)
+    device = next((item for item in devices if isinstance(item, dict) and item.get("id") == device_id), None)
+    if device is None or (not identity["is_platform_admin"] and device.get("owner_id") != identity["subject"]):
+        raise HTTPException(status_code=404, detail="device not found")
+    return await registry_control_request("GET", f"/api/devices/{device_id}/pairing", parse_json=True)
+
+
+@app.delete("/api/devices/{device_id}/pairing")
+async def cancel_pairing_session(device_id: str, request: Request):
+    identity = await verify_user(request)
+    devices = await registry_control_request("GET", "/api/devices", parse_json=True)
+    device = next((item for item in devices if isinstance(item, dict) and item.get("id") == device_id), None)
+    if device is None or (not identity["is_platform_admin"] and device.get("owner_id") != identity["subject"]):
+        raise HTTPException(status_code=404, detail="device not found")
+    return await registry_control_request("DELETE", f"/api/devices/{device_id}/pairing", parse_json=True)
+
+
+@app.post("/api/pairing/consume")
+async def consume_pairing_session(request: Request):
+    # The one-time pairing secret is sent only by the local bootstrapper over TLS.
+    # It is never returned to or stored by the browser after the pairing handoff.
+    body = await request.body()
+    if len(body) > 4096:
+        raise HTTPException(status_code=413, detail="pairing request too large")
+    return await registry_request("POST", "/api/pairing/consume", request)
 
 
 @app.post("/api/devices/{device_id}/enrollment-token")

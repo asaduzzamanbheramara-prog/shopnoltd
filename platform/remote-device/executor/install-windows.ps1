@@ -47,25 +47,34 @@ if ($actualAgentHash -ne $expectedAgentHash) {
     throw 'Downloaded Shopnoltd agent failed its SHA-256 integrity check.'
 }
 
-$secureToken = Read-Host 'Paste the one-time Shopnoltd enrollment token (input hidden)' -AsSecureString
-$ptr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secureToken)
+$pairingSecret = Read-Host 'Paste the one-time Shopnoltd pairing code (input hidden)' -AsSecureString
+$ptr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($pairingSecret)
 try {
-    $token = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($ptr)
-    if ([string]::IsNullOrWhiteSpace($token) -or $token.Length -lt 10) {
-        throw 'The enrollment token is missing or invalid.'
+    $pairingCode = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($ptr)
+    if ([string]::IsNullOrWhiteSpace($pairingCode) -or $pairingCode.Length -lt 20) {
+        throw 'The pairing code is missing or invalid.'
     }
+    $pairingBody = @{
+        device_id = $DeviceId
+        pairing_secret = $pairingCode
+        hostname = $env:COMPUTERNAME
+        platform = 'windows'
+        agent_version = '2.1'
+    } | ConvertTo-Json -Compress
+    $pairing = Invoke-RestMethod -Uri ($GatewayUrl.TrimEnd('/') + '/api/pairing/consume') -Method Post -ContentType 'application/json' -Body $pairingBody
+    if (-not $pairing.enrollment_token) { throw 'Pairing service did not return an enrollment grant.' }
     $config = [ordered]@{
         gateway_url = $GatewayUrl.TrimEnd('/')
         device_id = $DeviceId
-        enrollment_token = $token
+        enrollment_token = $pairing.enrollment_token
     }
     $json = $config | ConvertTo-Json -Depth 4
     [IO.File]::WriteAllText($configPath, $json, [Text.UTF8Encoding]::new($false))
 }
 finally {
     [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ptr)
-    $token = $null
-    $secureToken.Dispose()
+    $pairingCode = $null
+    $pairingSecret.Dispose()
 }
 & icacls.exe $configPath /inheritance:r /grant:r '*S-1-5-18:F' '*S-1-5-32-544:F' | Out-Null
 if ($LASTEXITCODE -ne 0) { throw 'Could not restrict the Shopnoltd credential file permissions.' }
