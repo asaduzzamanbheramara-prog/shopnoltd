@@ -4,6 +4,7 @@ from urllib.parse import urlencode
 
 import httpx
 from fastapi import FastAPI, HTTPException, Request, status
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse, Response
 from jose import JWTError, jwt
 
@@ -11,6 +12,15 @@ from jose import JWTError, jwt
 app = FastAPI(
     title="Shopnoltd Remote Device Gateway",
     version="3.2.0",
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["https://shopnoltd.dpdns.org", "https://devices.shopnoltd.dpdns.org"],
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "Accept"],
+    max_age=600,
 )
 
 
@@ -512,11 +522,15 @@ async def create_device(
         sort_keys=True,
     ).encode()
 
-    return await registry_control_request(
+    created = await registry_control_request(
         "POST",
         "/api/devices",
         body,
+        parse_json=True,
     )
+    if isinstance(created, dict):
+        created.pop("enrollment_token", None)
+    return created
 
 
 @app.post("/api/devices/{device_id}/meshcentral-link")
