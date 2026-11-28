@@ -98,10 +98,8 @@ export default function Devices({ admin = false }) {
     event.preventDefault(); setError(''); setNotice(''); setTokenResult(''); setEnrollmentDevice(null)
     if (!name.trim()) return setError('Enter a name for this device.')
     try {
-      const result = await request('/api/devices', { method: 'POST', body: JSON.stringify({ name: name.trim(), platform }) })
-      setTokenResult(result.enrollment_token || '')
-      setEnrollmentDevice({ id: result.id, name: name.trim(), platform })
-      setNotice('Device registered. Use the platform Auto Connect setup below on the target device; the one-time token is requested through a hidden installer prompt.')
+      await request('/api/devices', { method: 'POST', body: JSON.stringify({ name: name.trim(), platform }) })
+      setNotice('Device registered. Select Auto Connect on its card to create a one-time pairing code for the target device.')
       setName('')
       await load()
     } catch (e) { setError(e.message) }
@@ -176,7 +174,7 @@ export default function Devices({ admin = false }) {
       <button type="button" style={{ ...button, marginTop: 10 }} onClick={() => copy(tokenResult)}><Copy size={15}/> Copy</button>
       <button type="button" style={{ ...button, marginTop: 10, marginLeft: 8, background: '#475569' }} onClick={() => { setTokenResult(''); setEnrollmentDevice(null) }}>Hide</button>
       {String(enrollmentDevice?.platform || '').toLowerCase() === 'windows' && <div style={{ marginTop: 16, borderTop: '1px solid #e2e8f0', paddingTop: 14 }}>
-        <h3 style={{ margin: '0 0 6px' }}>Auto Connect · Windows / PC-2</h3>
+        <h3 style={{ margin: '0 0 6px' }}>Auto Connect · Windows</h3>
         <p style={{ color: '#64748b', fontSize: 13 }}>On the target Windows PC, open PowerShell as Administrator and run the copied command. The installer downloads the approved outbound-only agent, asks for this one-time pairing code through a hidden prompt, locks down its credential file and starts at user logon. Python 3 must already be installed.</p>
         <button type="button" style={button} onClick={() => copy(windowsAutoConnectCommand(enrollmentDevice.id))}><Copy size={15}/> Copy Windows setup command</button>
         <p style={{ color: '#64748b', fontSize: 12 }}>This agent reports device health, network/IP and approved diagnostics. It does not stream the screen; remote desktop requires the separately authorized MeshCentral agent.</p>
@@ -191,7 +189,7 @@ export default function Devices({ admin = false }) {
         macOS native installer is not yet available. The device record can be prepared, but do not expect the executor to become Online until a reviewed macOS installer is released.
       </div>}
       {String(enrollmentDevice?.platform || '').toLowerCase() === 'android' && <div style={{ marginTop: 16, borderTop: '1px solid #e2e8f0', paddingTop: 14 }}>
-        <h3 style={{ margin: '0 0 6px' }}>Auto Connect · Android / Realme C35</h3>
+        <h3 style={{ margin: '0 0 6px' }}>Auto Connect · Android / Termux</h3>
         <p style={{ color: '#64748b', fontSize: 13 }}>Install and open <a href="https://f-droid.org/packages/com.termux/" target="_blank" rel="noopener noreferrer">Termux from F-Droid</a> on the Realme phone, then run the copied command there. The lightweight agent installs Python, asks for this pairing code through a hidden prompt and starts outbound heartbeat/network diagnostics.</p>
         <button type="button" style={button} onClick={() => copy(androidAutoConnectCommand(enrollmentDevice.id))}><Copy size={15}/> Copy Android / Termux setup command</button>
         <p style={{ color: '#64748b', fontSize: 12 }}>For restart after reboot, install Termux:Boot and allow Termux background activity in Android battery settings. This experimental agent does not capture or control the phone screen.</p>
