@@ -220,7 +220,7 @@ class RegistryEnrollmentSecurityTests(unittest.TestCase):
         self.module.save_devices(stored)
         with self.assertRaises(HTTPException) as caught:
             self.module.consume_pairing_session(
-                self.module.PairingConsume(pairing_secret=result["pairing_secret"], hostname="ci-host", platform="windows")
+                self.module.PairingConsume(device_id=created.id, pairing_secret=result["pairing_secret"], hostname="ci-host", platform="windows")
             )
         self.assertEqual(caught.exception.status_code, 410)
 
