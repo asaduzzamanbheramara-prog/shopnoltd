@@ -25,6 +25,7 @@ data:
         .chips{display:flex;gap:6px;flex-wrap:wrap}.chip{background:#eef2ff;padding:4px 8px;border-radius:999px;font-size:12px}.vpn{background:#dcfce7}.profile{margin-top:12px}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
         .token{margin-top:12px;padding:10px;background:#f3f4f6;font-family:monospace;font-size:11px;word-break:break-all;border-radius:8px}
         .fullscreen-mode{background:#0b1220;color:#e5e7eb;min-height:100vh}.fullscreen-mode header{padding:14px 24px}.fullscreen-mode main{max-width:none;margin:12px auto;padding:0 16px}.fullscreen-mode .card{background:#111c2e;color:#e5e7eb;border:1px solid #29364a}.fullscreen-mode .row{border-color:#29364a}.fullscreen-mode .muted{color:#aab6c8}.fullscreen-mode .toolbar{position:sticky;top:0;z-index:10;background:#0b1220;padding:10px 0}.fullscreen-mode .grid{grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr))}.fullscreen-mode input,.fullscreen-mode select{background:#182438;color:#e5e7eb;border-color:#40516b}
+.screens{margin-top:28px}.screens h2{margin:0 0 6px}.screens-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(520px,100%),1fr));gap:16px}.screen-tile{background:#fff;border-radius:12px;padding:14px;box-shadow:0 3px 15px rgba(0,0,0,.08);min-width:0}.screen-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}.screen-frame{width:100%;height:420px;border:0;border-radius:8px;background:#0b1220}.screen-empty{display:flex;align-items:center;justify-content:center;min-height:120px;border-radius:8px;background:#f3f4f6;color:#667085;font-size:13px;text-align:center;padding:10px}
       </style>
     </head>
     <body>
@@ -39,6 +40,7 @@ data:
       <div id="enrollment-result"></div>
       <div id="summary" class="summary"></div>
       <div id="devices" class="grid"></div>
+      <section class="screens"><h2>Device screens</h2><div class="muted">Live screens for linked Windows, Linux and macOS devices. Sign in to MeshCentral when prompted. Mobile devices need a separate supported screen-control integration.</div><div id="screens" class="screens-grid"></div></section>
     </main>
     <script>
     const KEYCLOAK_URL="https://auth.shopnoltd.dpdns.org",REALM="shopnoltd",CLIENT_ID="shopnoltd-web",REDIRECT_URI=window.location.origin+"/";
@@ -101,6 +103,35 @@ data:
     async function connect(id){const w=open("about:blank","_blank");try{const d=await(await api(`/api/connect/${id}`)).json();if(!d.connect_url)throw Error("No connection URL returned.");if(w)w.location=d.connect_url;else location=d.connect_url}catch(e){if(w)w.close();alert(e.message)}}
     async function toggleFullscreen(){try{if(!document.fullscreenElement){await document.documentElement.requestFullscreen()}else{await document.exitFullscreen()}}catch(e){alert("Full-screen mode was blocked by the browser: "+e.message)}}
     document.addEventListener("fullscreenchange",()=>{const active=!!document.fullscreenElement;document.body.classList.toggle("fullscreen-mode",active);const b=document.getElementById("fullscreen-toggle");if(b)b.textContent=active?"⤢ Exit Full Screen":"⛶ Full-Screen Console"});
+    let screensKey="";
+    function screenCapable(d){const p=String(d.platform||"").toLowerCase();return !["android","ios","browser"].includes(p)&&!!d.meshcentral_node_id}
+    function renderScreens(){
+      const root=document.getElementById("screens");if(!root)return;
+      const list=devices.filter(screenCapable);
+      const key=list.map(d=>d.id).join(",");
+      if(key===screensKey){list.forEach(d=>{const el=document.querySelector("#tile-"+CSS.escape(encodeURIComponent(d.id))+" .status");if(el){el.textContent=d.status;el.className="status "+d.status}});return}
+      screensKey=key;
+      if(!list.length){root.innerHTML='<div class="screen-empty">No linked desktop devices yet. Install the MeshCentral agent on a Windows, Linux or macOS device, then link its node ID.</div>';return}
+      root.innerHTML=list.map(d=>{const id=encodeURIComponent(d.id);return '<div class="screen-tile" id="tile-'+id+'"><div class="screen-head"><b>'+esc(d.name)+'</b><span class="status '+esc(d.status)+'">'+esc(d.status)+'</span></div><div id="slot-'+id+'"><div class="screen-empty">Screen not started</div></div><div class="actions"><button onclick="showScreen(\''+id+'\')">Show screen</button><button onclick="fullScreen(\''+id+'\')">⛶ Full screen</button><button onclick="connect(\''+id+'\')">Open in new tab</button><button class="danger" onclick="hideScreen(\''+id+'\')">Stop</button></div></div>'}).join("")
+    }
+    async function showScreen(id){
+      const slot=document.getElementById("slot-"+id);if(!slot)return;
+      slot.innerHTML='<div class="screen-empty">Starting screen...</div>';
+      try{
+        const d=await(await api("/api/connect/"+id)).json();
+        if(!d.connect_url)throw Error("No connection URL returned.");
+        const f=document.createElement("iframe");f.className="screen-frame";f.title="Remote desktop";f.allow="fullscreen; clipboard-read; clipboard-write";f.setAttribute("allowfullscreen","");f.referrerPolicy="no-referrer";f.src=d.connect_url;
+        slot.replaceChildren(f)
+      }catch(e){slot.innerHTML='<div class="screen-empty">'+esc(e.message)+'</div>'}
+    }
+    function hideScreen(id){const slot=document.getElementById("slot-"+id);if(slot)slot.innerHTML='<div class="screen-empty">Screen not started</div>'}
+    async function fullScreen(id){
+      let slot=document.getElementById("slot-"+id);if(!slot)return;
+      if(!slot.querySelector("iframe")){await showScreen(id);slot=document.getElementById("slot-"+id)}
+      const f=slot.querySelector("iframe");if(!f)return;
+      try{await f.requestFullscreen()}catch(e){alert("Full-screen was blocked by the browser: "+e.message)}
+    }
+    const baseRender=render;render=function(){baseRender();renderScreens()};
     function logout(){clear();showLogin("You have been signed out.")}
     async function init(){try{const shareToken=new URLSearchParams(location.search).get("share");if(shareToken){sessionStorage.setItem("pending_device_share",shareToken);history.replaceState({},document.title,location.pathname)}await completeLogin();if(!token()){showLogin();return}await redeemPendingShare();await loadDevices()}catch(e){clear();showLogin(e.message)}}
     init();setInterval(()=>token()&&loadDevices(),10000);
