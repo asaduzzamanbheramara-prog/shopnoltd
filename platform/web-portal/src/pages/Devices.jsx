@@ -76,17 +76,18 @@ export default function Devices({ admin = false }) {
   const [tokenResult, setTokenResult] = useState('')
   const [enrollmentDevice, setEnrollmentDevice] = useState(null)
 
-  const load = useCallback(async () => {
-    setLoading(true); setError('')
+  const load = useCallback(async ({ quiet = false } = {}) => {
+    if (!quiet) setLoading(true)
+    setError('')
     try {
       const result = await request('/api/devices')
       setDevices(Array.isArray(result) ? result : [])
-    } catch (e) { setError(e.message) } finally { setLoading(false) }
+    } catch (e) { setError(e.message) } finally { if (!quiet) setLoading(false) }
   }, [])
 
   useEffect(() => {
     load()
-    const refresh = window.setInterval(() => { load() }, 15000)
+    const refresh = window.setInterval(() => { load({ quiet: true }) }, 15000)
     return () => window.clearInterval(refresh)
   }, [load])
 
