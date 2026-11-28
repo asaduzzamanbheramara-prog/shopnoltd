@@ -266,6 +266,13 @@ async def registry_control_request(
         ) from exc
 
     if parse_json:
+        if response.is_error:
+            try:
+                error_payload = response.json()
+                detail = error_payload.get("detail", error_payload) if isinstance(error_payload, dict) else error_payload
+            except ValueError:
+                detail = "registry request failed"
+            raise HTTPException(status_code=response.status_code, detail=detail)
         try:
             return response.json()
         except ValueError as exc:
