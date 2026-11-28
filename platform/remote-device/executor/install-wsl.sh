@@ -102,6 +102,7 @@ UMask=0077
 ExecStart=/usr/bin/python3 $INSTALL_DIR/agent.py
 Restart=always
 RestartSec=15
+RestartPreventExitStatus=78
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=full
