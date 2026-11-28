@@ -11,7 +11,7 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/registry-source: 4239ac13ef6ee1316aa6e6acde7676f60496328efac87c384bfbac8006ca5851
+        checksum/registry-source: e6db1eb62a7fa0b964f04f3b68c2f31092a9b6b0
       labels:
         app: remote-device-registry
     spec:
