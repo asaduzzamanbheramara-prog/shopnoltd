@@ -165,7 +165,7 @@ export default function Devices({ admin = false }) {
     {notice && <div role="status" style={{ ...card, borderColor: '#bbf7d0', color: '#166534' }}>{notice}</div>}
     {tokenResult && <div style={{ ...card, borderColor: '#93c5fd' }}>
       <b>{tokenResult.startsWith('http') ? 'Single-use device invitation' : 'One-time enrollment token'}</b>
-      <p style={{ color: '#64748b', fontSize: 13 }}>This one-time token expires after 20 minutes. Do not post it publicly or send it to anyone except the intended device. If it expires, generate a fresh token in My Devices.</p>
+      <p style={{ color: '#64748b', fontSize: 13 }}>{tokenResult.startsWith('http') ? 'This single-use invitation expires at the time shown by the invitation service. Share it only with the intended Shopnoltd user.' : 'This one-time enrollment token expires after 20 minutes. Do not post it publicly or send it to anyone except the intended device. If it expires, generate a fresh token in My Devices.'}</p>
       <code style={{ display: 'block', overflowWrap: 'anywhere', padding: 10, background: '#f1f5f9', borderRadius: 8 }}>{tokenResult}</code>
       <button type="button" style={{ ...button, marginTop: 10 }} onClick={() => copy(tokenResult)}><Copy size={15}/> Copy</button>
       <button type="button" style={{ ...button, marginTop: 10, marginLeft: 8, background: '#475569' }} onClick={() => { setTokenResult(''); setEnrollmentDevice(null) }}>Hide</button>
